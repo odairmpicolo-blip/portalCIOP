@@ -158,8 +158,10 @@ th{color:var(--blue);background:#f8fafc}
                 <select id="novoPerfil">
                     <option>Administrador</option>
                     <option>Supervisor</option>
+                    <option>Gerencia</option>
                     <option>Analista</option>
-                    <option>Usuario</option>
+                    <option>SAC</option>
+                    <option>Secretária</option>
                 </select>
 
                 <div class="actions">
@@ -167,11 +169,6 @@ th{color:var(--blue);background:#f8fafc}
                     <a class="btn btn-secondary" href="https://console.firebase.google.com/project/portal-ciop/authentication/users" target="_blank">Abrir Firebase</a>
                 </div>
 
-                <label for="codigoCadastro">Backup usuarios.js opcional</label>
-                <textarea id="codigoCadastro" readonly></textarea>
-                <div class="actions">
-                    <button class="btn btn-secondary" type="button" onclick="baixarUsuarios()">Baixar backup usuarios.js</button>
-                </div>
                 <div id="cadastroStatus" class="status"></div>
             </section>
 
@@ -224,7 +221,7 @@ import {
     normalizarCadastro
 } from "../assets/js/portal-firestore.js";
 
-const perfisDisponiveis = ["Administrador", "Supervisor", "Analista", "Usuario"];
+const perfisDisponiveis = ["Administrador", "Supervisor", "Gerencia", "Analista", "SAC", "Secretária"];
 const usuariosEditados = {};
 
 function carregarUsuariosLocais() {
@@ -238,18 +235,7 @@ function escapeAttr(value) {
     return String(value || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/'/g, "&#39;");
 }
 
-function gerarArquivoUsuarios() {
-    const linhas = Object.entries(usuariosEditados).map(([email, user]) => {
-        return "  \"" + email + "\": {\n" +
-            "    nome: \"" + user.nome + "\",\n" +
-            "    perfil: \"" + user.perfil + "\"\n" +
-            "  }";
-    });
-    return "export const usuarios = {\n" + linhas.join(",\n") + "\n};\n";
-}
-
-function atualizarBackup(mensagem, tipo = "ok") {
-    document.getElementById("codigoCadastro").value = gerarArquivoUsuarios();
+function atualizarStatus(mensagem, tipo = "ok") {
     const status = document.getElementById("cadastroStatus");
     status.className = "status " + tipo;
     status.textContent = mensagem;
@@ -283,7 +269,7 @@ async function salvarUsuario(email, nome, perfil, mensagem) {
         const usuario = await salvarUsuarioFirestore(email, { nome, perfil });
         usuariosEditados[usuario.email] = usuario;
         renderUsuarios();
-        atualizarBackup(mensagem);
+        atualizarStatus(mensagem);
     } catch (error) {
         status.className = "status erro";
         status.textContent = "Nao foi possivel salvar no Firestore: " + error.message;
@@ -310,16 +296,6 @@ window.gerarCadastro = function () {
     salvarUsuario(email, nome, perfil, "Usuario salvo automaticamente no Firestore. Cadastre ou confirme o login no Firebase Authentication.");
 };
 
-window.baixarUsuarios = function () {
-    const conteudo = gerarArquivoUsuarios();
-    const blob = new Blob([conteudo], { type: "text/javascript" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "usuarios.js";
-    link.click();
-    URL.revokeObjectURL(url);
-};
 
 window.enviarRecuperacao = async function () {
     const email = document.getElementById("acaoEmail").value.trim();
@@ -350,10 +326,10 @@ async function iniciar() {
             usuariosEditados[email] = user;
         });
         renderUsuarios();
-        atualizarBackup("Usuarios carregados do Firestore. Alteracoes agora salvam automaticamente online.");
+        atualizarStatus("Usuarios carregados do Firestore. Alteracoes agora salvam automaticamente online.");
     } catch (error) {
         renderUsuarios();
-        atualizarBackup("Firestore ainda nao carregou. Usando usuarios.js como fallback: " + error.message, "erro");
+        atualizarStatus("Firestore ainda nao carregou. Usando cadastro local como fallback: " + error.message, "erro");
     }
 }
 
