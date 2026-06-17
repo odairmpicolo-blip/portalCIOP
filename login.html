@@ -1,24 +1,207 @@
-<!doctype html><html><head><meta charset='utf-8'><title>Portal CIOP Login</title></head><body><h2>Portal CIOP</h2><p>Login Firebase configurado.</p></body></html>
-<a href="#" onclick="resetarSenha(); return false;">
-Esqueci minha senha
-</a>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal CIOP / TCGL</title>
 
-<script>
-async function resetarSenha(){
+<style>
 
-  const email = document.getElementById("email").value;
+body{
+    margin:0;
+    font-family:Arial, Helvetica, sans-serif;
+    background:#f5f7fb;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
 
-  if(!email){
-      alert("Informe o e-mail.");
-      return;
-  }
+.login-box{
+    width:420px;
+    background:white;
+    border-radius:12px;
+    padding:35px;
+    box-shadow:0 10px 30px rgba(0,0,0,.12);
+}
 
-  try{
-      await recuperarSenha(email);
-      alert("E-mail enviado.");
-  }catch(e){
-      alert(e.message);
-  }
+.logos{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.logos img{
+    height:55px;
+}
+
+h2{
+    text-align:center;
+    color:#06245c;
+    margin-bottom:25px;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    margin-bottom:12px;
+    border:1px solid #dfe5ef;
+    border-radius:6px;
+    box-sizing:border-box;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    background:#06245c;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+button:hover{
+    background:#0b3a8a;
+}
+
+.links{
+    text-align:center;
+    margin-top:15px;
+}
+
+.links a{
+    color:#06245c;
+    text-decoration:none;
+    font-size:14px;
+}
+
+#erro{
+    color:red;
+    text-align:center;
+    margin-top:10px;
+}
+
+</style>
+</head>
+<body>
+
+<div class="login-box">
+
+<div class="logos">
+    <img src="CIOP Sem Fundo.png">
+    <img src="LOGO_TCGL-removebg-preview.png">
+</div>
+
+<h2>Portal CIOP / TCGL</h2>
+
+<input type="email"
+       id="email"
+       placeholder="E-mail">
+
+<input type="password"
+       id="senha"
+       placeholder="Senha">
+
+<button onclick="login()">
+Entrar
+</button>
+
+<div class="links">
+    <a href="#"
+       onclick="resetarSenha(); return false;">
+       Esqueci minha senha
+    </a>
+</div>
+
+<div id="erro"></div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+ getAuth,
+ signInWithEmailAndPassword,
+ sendPasswordResetEmail
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+ apiKey: "AIzaSyDNMnb01cPrfJQkP-M44LE6bgwJMYq2Cq8",
+ authDomain: "portal-ciop.firebaseapp.com",
+ projectId: "portal-ciop",
+ storageBucket: "portal-ciop.firebasestorage.app",
+ messagingSenderId: "455189133437",
+ appId: "1:455189133437:web:34dae49eb1fdaf65191914"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+window.login = async function(){
+
+ const email =
+ document.getElementById("email").value;
+
+ const senha =
+ document.getElementById("senha").value;
+
+ try{
+
+   await signInWithEmailAndPassword(
+      auth,
+      email,
+      senha
+   );
+
+   window.location.href =
+   "index.html";
+
+ }catch(error){
+
+   document.getElementById("erro")
+   .innerHTML =
+   "Usuário ou senha inválidos";
+
+ }
 
 }
+
+window.resetarSenha = async function(){
+
+ const email =
+ document.getElementById("email").value;
+
+ if(!email){
+   alert("Informe seu e-mail.");
+   return;
+ }
+
+ try{
+
+   await sendPasswordResetEmail(
+      auth,
+      email
+   );
+
+   alert(
+    "E-mail de recuperação enviado."
+   );
+
+ }catch(error){
+
+   alert(error.message);
+
+ }
+
+}
+
 </script>
+
+</body>
+</html>
