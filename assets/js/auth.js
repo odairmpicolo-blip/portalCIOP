@@ -46,6 +46,31 @@ window.recuperarSenha = function (email) {
   return sendPasswordResetEmail(auth, email);
 };
 
+function isAdministrador(cadastro) {
+  return String(cadastro.perfil || "").toLowerCase() === "administrador";
+}
+
+function aplicarPermissoes(cadastro) {
+  const admin = isAdministrador(cadastro);
+  document.documentElement.dataset.perfil = cadastro.perfil || "Usuario";
+  window.portalUsuario = {
+    nome: cadastro.nome,
+    perfil: cadastro.perfil,
+    isAdmin: admin
+  };
+
+  document.querySelectorAll("[data-admin-only]").forEach((el) => {
+    el.style.display = admin ? "flex" : "none";
+  });
+
+  if (document.body?.dataset.requireAdmin === "true" && !admin) {
+    const conteudo = document.getElementById("adminConteudo");
+    const negado = document.getElementById("adminNegado");
+    if (conteudo) conteudo.style.display = "none";
+    if (negado) negado.style.display = "block";
+  }
+}
+
 onAuthStateChanged(auth, (user) => {
   const pagina = window.location.pathname.toLowerCase();
 
@@ -62,4 +87,5 @@ onAuthStateChanged(auth, (user) => {
 
   if (nome) nome.textContent = cadastro.nome;
   if (perfil) perfil.textContent = cadastro.perfil;
+  aplicarPermissoes(cadastro);
 });
