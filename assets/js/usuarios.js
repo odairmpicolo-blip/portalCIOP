@@ -1,14 +1,19 @@
-export const usuarios = {
-  "admin@ciop.com.br": {
-    nome: "Administrador",
+export const usuarios = 
+{
+  "monitoramento@tcgl.com.br": {
+    nome: "Islan Jesus",
     perfil: "Administrador"
   },
-  "supervisor@ciop.com.br": {
-    nome: "Supervisor",
-    perfil: "Supervisor"
+  "rehder@tcgl.com.br": {
+    nome: "Rehder",
+    perfil: "Administrador"
   },
-  "analista@ciop.com.br": {
-    nome: "Analista",
-    perfil: "Analista"
+  "ciopcontroladores@gamil.com": {
+    nome: "CIOP",
+    perfil: "Usuário"
+  },
+  "odair.marin@icloud.com": {
+    nome: "Odair Marino",
+    perfil: "Administrador"
   }
 };
