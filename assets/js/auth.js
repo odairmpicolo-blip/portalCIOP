@@ -50,17 +50,45 @@ function isAdministrador(cadastro) {
   return String(cadastro.perfil || "").toLowerCase() === "administrador";
 }
 
+function listaAtributo(valor) {
+  return String(valor || "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function usuarioPodeVer(el, cadastro) {
+  if (isAdministrador(cadastro)) return true;
+
+  const perfil = String(cadastro.perfil || "Usuario").toLowerCase();
+  const email = String(cadastro.email || "").toLowerCase();
+  const perfisPermitidos = listaAtributo(el.dataset.perfis);
+  const usuariosPermitidos = listaAtributo(el.dataset.usuarios);
+
+  const temRegraPerfil = perfisPermitidos.length > 0;
+  const temRegraUsuario = usuariosPermitidos.length > 0;
+
+  if (!temRegraPerfil && !temRegraUsuario) return true;
+
+  return perfisPermitidos.includes(perfil) || usuariosPermitidos.includes(email);
+}
+
 function aplicarPermissoes(cadastro) {
   const admin = isAdministrador(cadastro);
   document.documentElement.dataset.perfil = cadastro.perfil || "Usuario";
   window.portalUsuario = {
     nome: cadastro.nome,
     perfil: cadastro.perfil,
+    email: cadastro.email,
     isAdmin: admin
   };
 
   document.querySelectorAll("[data-admin-only]").forEach((el) => {
     el.style.display = admin ? "flex" : "none";
+  });
+
+  document.querySelectorAll("[data-perfis], [data-usuarios]").forEach((el) => {
+    el.style.display = usuarioPodeVer(el, cadastro) ? "" : "none";
   });
 
   if (document.body?.dataset.requireAdmin === "true" && !admin) {
@@ -81,7 +109,7 @@ onAuthStateChanged(auth, (user) => {
     return;
   }
 
-  const cadastro = getCadastro(user);
+  const cadastro = { ...getCadastro(user), email: user.email };
   const nome = document.getElementById("usuarioLogado");
   const perfil = document.getElementById("perfilUsuario");
 
