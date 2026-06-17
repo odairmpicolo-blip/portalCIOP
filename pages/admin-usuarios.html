@@ -142,7 +142,7 @@ th{color:var(--blue);background:#f8fafc}
 
     <div id="adminConteudo">
         <div class="notice">
-            Para criar login real, cadastre o e-mail no Firebase Authentication. Esta tela administra o cadastro de exibicao do portal, permite alterar o tipo de usuario e enviar recuperacao de senha para usuarios ja cadastrados no Firebase.
+            Para criar login real, cadastre o e-mail no Firebase Authentication. Esta tela monta automaticamente o arquivo usuarios.js do portal, permite alterar o tipo de usuario e enviar recuperacao de senha para usuarios ja cadastrados no Firebase.
         </div>
 
         <div class="grid">
@@ -163,12 +163,15 @@ th{color:var(--blue);background:#f8fafc}
                 </select>
 
                 <div class="actions">
-                    <button class="btn btn-primary" type="button" onclick="gerarCadastro()">Gerar cadastro</button>
+                    <button class="btn btn-primary" type="button" onclick="gerarCadastro()">Publicar usuario</button>
                     <a class="btn btn-secondary" href="https://console.firebase.google.com/project/portal-ciop/authentication/users" target="_blank">Abrir Firebase</a>
                 </div>
 
-                <label for="codigoCadastro">Trecho para colar em usuarios.js</label>
+                <label for="codigoCadastro">Arquivo usuarios.js atualizado</label>
                 <textarea id="codigoCadastro" readonly></textarea>
+                <div class="actions">
+                    <button class="btn btn-secondary" type="button" onclick="baixarUsuarios()">Baixar usuarios.js</button>
+                </div>
                 <div id="cadastroStatus" class="status"></div>
             </section>
 
@@ -216,6 +219,9 @@ th{color:var(--blue);background:#f8fafc}
 <script type="module">
 import { usuarios } from "../assets/js/usuarios.js";
 
+const perfisDisponiveis = ["Administrador", "Supervisor", "Analista", "Usuario"];
+const usuariosEditados = {};
+
 function normalizarCadastro(cadastro, email) {
     if (typeof cadastro === "string") {
         return { nome: email, perfil: cadastro };
@@ -226,16 +232,34 @@ function normalizarCadastro(cadastro, email) {
     };
 }
 
-const perfisDisponiveis = ["Administrador", "Supervisor", "Analista", "Usuario"];
+Object.entries(usuarios).forEach(([email, cadastro]) => {
+    usuariosEditados[email] = normalizarCadastro(cadastro, email);
+});
 
 function escapeAttr(value) {
-    return String(value || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    return String(value || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/'/g, "&#39;");
+}
+
+function gerarArquivoUsuarios() {
+    const linhas = Object.entries(usuariosEditados).map(([email, user]) => {
+        return "  \"" + email + "\": {\n" +
+            "    nome: \"" + user.nome + "\",\n" +
+            "    perfil: \"" + user.perfil + "\"\n" +
+            "  }";
+    });
+    return "export const usuarios = {\n" + linhas.join(",\n") + "\n};\n";
+}
+
+function publicarArquivoUsuarios(mensagem) {
+    document.getElementById("codigoCadastro").value = gerarArquivoUsuarios();
+    const status = document.getElementById("cadastroStatus");
+    status.className = "status ok";
+    status.textContent = mensagem;
 }
 
 function renderUsuarios() {
     const tbody = document.getElementById("usuariosTabela");
-    tbody.innerHTML = Object.entries(usuarios).map(([email, cadastro]) => {
-        const user = normalizarCadastro(cadastro, email);
+    tbody.innerHTML = Object.entries(usuariosEditados).map(([email, user]) => {
         const selectId = "perfil_" + email.replace(/[^a-z0-9]/gi, "_");
         const options = perfisDisponiveis.map((perfil) => {
             const selected = perfil === user.perfil ? " selected" : "";
@@ -253,16 +277,9 @@ function renderUsuarios() {
 
 window.alterarPerfil = function (email, nome, selectId) {
     const perfil = document.getElementById(selectId).value;
-    const status = document.getElementById("cadastroStatus");
-
-    document.getElementById("codigoCadastro").value =
-        "  \"" + email + "\": {\n" +
-        "    nome: \"" + nome + "\",\n" +
-        "    perfil: \"" + perfil + "\"\n" +
-        "  },";
-
-    status.className = "status ok";
-    status.textContent = "Perfil alterado no trecho. Cole este trecho em assets/js/usuarios.js e publique o portal.";
+    usuariosEditados[email] = { nome, perfil };
+    renderUsuarios();
+    publicarArquivoUsuarios("Perfil atualizado no arquivo usuarios.js. Baixe o arquivo e substitua em assets/js/usuarios.js.");
 };
 
 window.gerarCadastro = function () {
@@ -277,14 +294,20 @@ window.gerarCadastro = function () {
         return;
     }
 
-    document.getElementById("codigoCadastro").value =
-        "  \"" + email + "\": {\n" +
-        "    nome: \"" + nome + "\",\n" +
-        "    perfil: \"" + perfil + "\"\n" +
-        "  },";
+    usuariosEditados[email] = { nome, perfil };
+    renderUsuarios();
+    publicarArquivoUsuarios("Usuario publicado no arquivo usuarios.js. Cadastre o login no Firebase, baixe o arquivo e substitua em assets/js/usuarios.js.");
+};
 
-    status.className = "status ok";
-    status.textContent = "Agora cadastre o login no Firebase e cole este trecho em assets/js/usuarios.js.";
+window.baixarUsuarios = function () {
+    const conteudo = gerarArquivoUsuarios();
+    const blob = new Blob([conteudo], { type: "text/javascript" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "usuarios.js";
+    link.click();
+    URL.revokeObjectURL(url);
 };
 
 window.enviarRecuperacao = async function () {
@@ -308,6 +331,7 @@ window.enviarRecuperacao = async function () {
 };
 
 renderUsuarios();
+publicarArquivoUsuarios("Arquivo usuarios.js carregado. Altere um perfil ou publique um novo usuario para atualizar.");
 </script>
 </body>
 </html>
