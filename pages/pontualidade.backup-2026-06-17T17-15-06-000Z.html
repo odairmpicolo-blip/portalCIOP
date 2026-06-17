@@ -32,7 +32,7 @@ body {
     background: white;
     padding: 6px 20px;
     display: grid;
-    grid-template-columns: 180px 1fr minmax(300px, auto);
+    grid-template-columns: 180px 1fr 180px;
     gap: 15px;
     align-items: center;
     border-bottom: 1px solid #e8edf6;
@@ -220,15 +220,18 @@ tr:hover {
 
 
 .ciop-session{
-    position:static;
+    position:fixed;
+    top:8px;
+    left:10px;
+    z-index:10000;
     display:flex;
     align-items:center;
     gap:6px;
-    max-width:260px;
+    max-width:320px;
     padding:4px 6px;
     border:1px solid rgba(6,36,92,.12);
     border-radius:6px;
-    background:rgba(255,255,255,.96);
+    background:rgba(255,255,255,.94);
     box-shadow:0 2px 8px rgba(16,24,40,.08);
     color:#06245c;
     font-size:11px;
@@ -259,24 +262,6 @@ tr:hover {
     background:#b91c1c;
 }
 
-.header-actions{
-    justify-self:end;
-    display:flex;
-    align-items:center;
-    justify-content:flex-end;
-    gap:10px;
-    min-width:0;
-}
-.header-actions .ciop-session{
-    flex:0 1 auto;
-}
-@media(max-width:900px){
-    .header-actions{
-        justify-self:center;
-        flex-wrap:wrap;
-    }
-}
-
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
@@ -285,24 +270,23 @@ tr:hover {
 
 </head>
 <body>
+<div class="ciop-session" aria-label="Sessao do usuario">
+    <span id="usuarioLogado" class="ciop-session-user">Usuario</span>
+    <span id="perfilUsuario" class="ciop-session-profile">Perfil</span>
+    <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+</div>
+
 <div class="header">
     <a href="https://mov1.com.br" target="_blank" style="justify-self: start; display: flex;">
         <img class="logo-ciop" src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
     </a>
     <div>
         <h1>Dashboard de Pontualidade</h1>
-        <div class="subtitle" id="dashboardSubtitle">CIOP / TCGL</div>
+        <div class="subtitle">CIOP / TCGL</div>
     </div>
-    <div class="header-actions">
-        <div class="ciop-session" aria-label="Sessao do usuario">
-    <span id="usuarioLogado" class="ciop-session-user">Usuario</span>
-    <span id="perfilUsuario" class="ciop-session-profile">Perfil</span>
-    <button onclick="logout()" class="btn-logout" type="button">Sair</button>
-</div>
-        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" style="display: flex;">
-            <img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
-        </a>
-    </div>
+    <a href="https://www.tcgrandelondrina.com.br/" target="_blank" style="justify-self: end; display: flex;">
+        <img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+    </a>
 </div>
 <div class="main-content">
     <div class="content-body">
