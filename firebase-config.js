@@ -1,9 +1,9 @@
-
 export const firebaseConfig = {
- apiKey:"SUA_API_KEY",
- authDomain:"SEU_PROJETO.firebaseapp.com",
- projectId:"SEU_PROJETO",
- storageBucket:"SEU_PROJETO.appspot.com",
- messagingSenderId:"000000000",
- appId:"APP_ID"
+  apiKey: "AIzaSyDNMnb01cPrfJQkP-M44LE6bgwJMYq2Cq8",
+  authDomain: "portal-ciop.firebaseapp.com",
+  projectId: "portal-ciop",
+  storageBucket: "portal-ciop.firebasestorage.app",
+  messagingSenderId: "455189133437",
+  appId: "1:455189133437:web:34dae49eb1fdaf65191914",
+  measurementId: "G-80K1Q9JJ10"
 };
