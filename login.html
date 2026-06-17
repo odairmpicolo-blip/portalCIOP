@@ -1,6 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal CIOP / TCGL</title>
 
-<!DOCTYPE html><html><head><meta charset="utf-8"><title>Login CIOP</title></head>
-<body style="font-family:Arial;padding:40px;text-align:center">
+<style>
+body{
+    margin:0;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#f5f7fb;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+.login-box{
+    background:white;
+    width:420px;
+    padding:35px;
+    border-radius:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,.12);
+}
+
+.logos{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.logos img{
+    height:50px;
+}
+
+h2{
+    text-align:center;
+    color:#06245c;
+    margin-bottom:25px;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    margin-bottom:12px;
+    border:1px solid #dfe5ef;
+    border-radius:6px;
+    box-sizing:border-box;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    background:#06245c;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+button:hover{
+    background:#0b3a8a;
+}
+
+#erro{
+    color:red;
+    margin-top:12px;
+    text-align:center;
+}
+</style>
+</head>
+<body>
+
+<div class="login-box">
+
+<div class="logos">
+<img src="CIOP Sem Fundo.png">
+<img src="LOGO_TCGL-removebg-preview.png">
+</div>
+
 <h2>Portal CIOP / TCGL</h2>
-<p>Configure o Firebase e personalize esta tela.</p>
-</body></html>
+
+<input type="email" id="email" placeholder="E-mail">
+
+<input type="password" id="senha" placeholder="Senha">
+
+<button onclick="login()">Entrar</button>
+
+<div id="erro"></div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+getAuth,
+signInWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyDNMnb01cPrfJQkP-M44LE6bgwJMYq2Cq8",
+authDomain: "portal-ciop.firebaseapp.com",
+projectId: "portal-ciop",
+storageBucket: "portal-ciop.firebasestorage.app",
+messagingSenderId: "455189133437",
+appId: "1:455189133437:web:34dae49eb1fdaf65191914"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+window.login = function(){
+
+const email = document.getElementById("email").value;
+const senha = document.getElementById("senha").value;
+
+signInWithEmailAndPassword(auth,email,senha)
+
+.then(() => {
+
+window.location.href =
+"https://odairmpicolo-blip.github.io/portalCIOP/index.html";
+
+})
+
+.catch((error)=>{
+
+document.getElementById("erro").innerHTML =
+"Usuário ou senha inválidos";
+
+console.log(error);
+
+});
+
+}
+
+</script>
+
+</body>
+</html>
