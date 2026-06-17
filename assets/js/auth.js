@@ -55,7 +55,13 @@ window.recuperarSenha = function (email) {
 };
 
 function isAdministrador(cadastro) {
-  return String(cadastro.perfil || "").toLowerCase() === "administrador";
+  const perfil = String(cadastro.perfil || "").toLowerCase();
+  return perfil === "administrador" || perfil === "gerencia";
+}
+
+function temAcessoTotal(cadastro) {
+  const perfil = String(cadastro.perfil || "").toLowerCase();
+  return isAdministrador(cadastro) || perfil === "secretária" || perfil === "secretaria";
 }
 
 function listaAtributo(valor) {
@@ -66,10 +72,13 @@ function listaAtributo(valor) {
 }
 
 function usuarioPodeVer(el, cadastro) {
-  if (isAdministrador(cadastro)) return true;
-
   const perfil = String(cadastro.perfil || "Usuario").toLowerCase();
   const email = String(cadastro.email || "").toLowerCase();
+  const perfisBloqueados = listaAtributo(el.dataset.excluirPerfis);
+  if (perfisBloqueados.includes(perfil)) return false;
+
+  if (temAcessoTotal(cadastro)) return true;
+
   const perfisPermitidos = listaAtributo(el.dataset.perfis);
   const usuariosPermitidos = listaAtributo(el.dataset.usuarios);
 
@@ -106,9 +115,15 @@ function aplicarPermissoes(cadastro) {
     if (negado) negado.style.display = "block";
   }
 
+  const perfilAtual = String(cadastro.perfil || "Usuario").toLowerCase();
+  const perfisBloqueadosPagina = listaAtributo(document.body?.dataset.excluirPerfis);
+  if (perfisBloqueadosPagina.includes(perfilAtual)) {
+    window.location.href = portalPath("index.html");
+    return;
+  }
+
   const perfisObrigatorios = listaAtributo(document.body?.dataset.requirePerfis);
-  if (perfisObrigatorios.length && !admin) {
-    const perfilAtual = String(cadastro.perfil || "Usuario").toLowerCase();
+  if (perfisObrigatorios.length && !temAcessoTotal(cadastro)) {
     if (!perfisObrigatorios.includes(perfilAtual)) {
       window.location.href = portalPath("index.html");
     }
