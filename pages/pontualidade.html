@@ -309,7 +309,7 @@ tr:hover {
         <div class="kpi-container">
 <div class="kpi-card highlight">
     <div class="kpi-value" id="melhorHorario">0%</div>
-    <div class="kpi-title melhor-indice-data">🏆 Melhor índice: <span id="melhorData">--</span></div>
+    <div class="kpi-title melhor-indice-data">Melhor mes: <span id="melhorData">--</span></div>
 </div>
 <div class="kpi-card">
     <div class="kpi-title">🔺  Dias acima da Meta</div>
@@ -607,6 +607,33 @@ function updateFilters(trigger) {
     renderDashboard();
 }
 
+function calcularMelhorMes(dados) {
+    const meses = {};
+
+    dados.forEach(item => {
+        const parts = item.date.split('-');
+        const key = parts[0] + '-' + parts[1];
+
+        if (!meses[key]) {
+            meses[key] = {
+                total: 0,
+                count: 0,
+                label: fullMonthNames[parts[1]] + '/' + parts[0]
+            };
+        }
+
+        meses[key].total += item.no_horario;
+        meses[key].count++;
+    });
+
+    return Object.values(meses)
+        .map(mes => ({
+            label: mes.label,
+            media: mes.count ? mes.total / mes.count : 0
+        }))
+        .sort((a, b) => b.media - a.media)[0];
+}
+
 function renderDashboard() {
     const anoSel = document.getElementById('anoFilter').value;
     const trimSel = document.getElementById('trimestreFilter').value;
@@ -731,11 +758,11 @@ function renderDashboard() {
     
     // Indicadores executivos
     try{
-      let melhor=filteredData.reduce((a,b)=> b.no_horario>a.no_horario?b:a, filteredData[0]);
-      document.getElementById('melhorHorario').innerHTML=(melhor.no_horario*100).toFixed(2)+'%';
-      document.getElementById('melhorData').innerHTML=formatDateBR(melhor.date);
-      document.getElementById('diasMeta').innerHTML=filteredData.filter(x=>x.no_horario*100>=93).length;
-      document.getElementById('diasAbaixo').innerHTML=filteredData.filter(x=>x.no_horario*100<93).length;
+      const melhorMes = calcularMelhorMes(filteredData);
+      document.getElementById('melhorHorario').innerHTML = melhorMes ? (melhorMes.media * 100).toFixed(2) + '%' : '0%';
+      document.getElementById('melhorData').innerHTML = melhorMes ? melhorMes.label : '--';
+      document.getElementById('diasMeta').innerHTML = filteredData.filter(x=>x.no_horario*100>=93).length;
+      document.getElementById('diasAbaixo').innerHTML = filteredData.filter(x=>x.no_horario*100<93).length;
     }catch(e){}
 const ctx = document.getElementById('lineChartCanvas').getContext('2d');
     if (chartInstance) {
@@ -880,40 +907,20 @@ window.onload = function() {
 
 
 <script>
-document.addEventListener('DOMContentLoaded',function(){
-setTimeout(function(){
- try{
-   if(window.filteredData && filteredData.length){
-      let melhor=filteredData.reduce((a,b)=>
-       parseFloat(b.noHorario||b['No Horário']||0) >
-       parseFloat(a.noHorario||a['No Horário']||0) ? b : a);
-      const v=parseFloat(melhor.noHorario||melhor['No Horário']||0);
-      const d=melhor.data||melhor.DATA||'--';
-      const e=document.getElementById('melhorHorario');
-      const dt=document.getElementById('melhorData');
-      if(e) e.innerHTML=v.toFixed(2)+'%';
-      if(dt) dt.innerHTML=formatDateBR(d);
-   }
- } catch(e){}
-},1500);
-});
-</script>
-
-
-<script>
 function atualizarIndicadoresExecutivos(dados){
  try{
    if(!dados || !dados.length) return;
-   let melhor=dados.reduce((a,b)=>parseFloat(b["No Horário"]||b.noHorario||0)>
-     parseFloat(a["No Horário"]||a.noHorario||0)?b:a);
+   const normalizados = dados
+     .map(item => ({
+       date: item.date || item.data || item.DATA,
+       no_horario: item.no_horario || item.noHorario || item["No Horário"] || 0
+     }))
+     .filter(item => item.date);
+   const melhorMes = calcularMelhorMes(normalizados);
+   if (!melhorMes) return;
 
-   let acima=dados.filter(x=>parseFloat(x["No Horário"]||x.noHorario||0)>=93).length;
-   let abaixo=dados.filter(x=>parseFloat(x["No Horário"]||x.noHorario||0)<93).length;
-
-   document.getElementById("melhorHorario").innerHTML=(parseFloat(melhor["No Horário"]||melhor.noHorario||0)).toFixed(2)+"%";
-   document.getElementById("melhorData").innerHTML=formatDateBR(melhor["DATA"]||melhor.data||"--");
-   document.getElementById("diasMeta").innerHTML=acima;
-   document.getElementById("diasAbaixo").innerHTML=abaixo;
+   document.getElementById("melhorHorario").innerHTML=(melhorMes.media*100).toFixed(2)+"%";
+   document.getElementById("melhorData").innerHTML=melhorMes.label;
  }catch(e){}
 }
 </script>
