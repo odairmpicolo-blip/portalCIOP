@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal Operacional - CIOP</title>
+
+<style>
+
+:root{
+    --azul:#06245c;
+    --azul-hover:#0b3a8a;
+    --laranja:#ff6b00;
+    --fundo:#f5f7fb;
+    --borda:#dfe5ef;
+    --texto:#101828;
+    --cinza:#667085;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial, Helvetica, sans-serif;
+    background:var(--fundo);
+    color:var(--texto);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+}
+
+/* HEADER */
+
+.header{
+    background:#ffffff;
+    display:grid;
+    grid-template-columns:200px 1fr 200px;
+    align-items:center;
+    padding:15px 25px;
+    border-bottom:1px solid #e5e7eb;
+    box-shadow:0 2px 10px rgba(0,0,0,.05);
+}
+
+.logo{
+    height:60px;
+    object-fit:contain;
+}
+
+.logo-right{
+    justify-self:end;
+}
+
+h1{
+    text-align:center;
+    color:var(--azul);
+    font-size:32px;
+    font-weight:800;
+}
+
+/* BARRA SUPERIOR */
+
+.toolbar{
+    background:#fff;
+    padding:12px 25px;
+    border-bottom:1px solid #e5e7eb;
+}
+
+.menu-toggle{
+    background:var(--azul);
+    color:white;
+    border:none;
+    border-radius:8px;
+    padding:12px 18px;
+    cursor:pointer;
+    font-size:15px;
+    font-weight:600;
+    transition:.2s;
+}
+
+.menu-toggle:hover{
+    background:var(--azul-hover);
+}
+
+/* MENU LATERAL */
+
+.sidebar{
+    position:fixed;
+    top:0;
+    left:-280px;
+    width:280px;
+    height:100%;
+    background:var(--azul);
+    transition:.3s;
+    z-index:1000;
+    overflow-y:auto;
+    box-shadow:3px 0 15px rgba(0,0,0,.2);
+}
+
+.sidebar.active{
+    left:0;
+}
+
+.sidebar-header{
+    padding:25px;
+    font-size:20px;
+    font-weight:bold;
+    color:white;
+    text-align:center;
+    border-bottom:1px solid rgba(255,255,255,.15);
+}
+
+.side-link{
+    display:block;
+    color:white;
+    text-decoration:none;
+    padding:16px 20px;
+    transition:.2s;
+    border-bottom:1px solid rgba(255,255,255,.08);
+}
+
+.side-link:hover{
+    background:var(--laranja);
+}
+
+#overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    display:none;
+    z-index:999;
+}
+
+#overlay.active{
+    display:block;
+}
+
+/* CONTAINER */
+
+.container{
+    width:100%;
+    max-width:1200px;
+    margin:35px auto;
+    padding:0 20px;
+    flex:1;
+}
+
+.welcome{
+    text-align:center;
+    color:var(--cinza);
+    margin-bottom:35px;
+    font-size:17px;
+}
+
+/* CARDS */
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(175px,1fr));
+    gap:18px;
+}
+
+.card{
+    background:#fff;
+    border-radius:6px;
+    border:1px solid var(-borda);
+    padding:25px;
+    text-decoration:none;
+    color:inherit;
+    transition:.25s;
+    display:flex;
+    flex-direction:column;
+}
+
+.card:hover{
+    transform:translateY(-5px);
+    border-color:var(--azul);
+    box-shadow:0 10px 25px rgba(6,36,92,.12);
+}
+
+.card-title{
+    font-size:18px;
+    font-weight:700;
+    color:var(--azul);
+    margin-bottom:10px;
+}
+
+.card-desc{
+    color:var(--cinza);
+    line-height:1.5;
+    margin-bottom:20px;
+    flex:1;
+}
+
+.card-btn{
+    background:var(--azul);
+    color:white;
+    text-align:center;
+    padding:12px;
+    border-radius:8px;
+    font-weight:bold;
+    transition:.2s;
+}
+
+.card:hover .card-btn{
+    background:var(--laranja);
+}
+
+/* FOOTER */
+
+footer{
+    background:#fff;
+    border-top:1px solid #e5e7eb;
+    text-align:center;
+    padding:15px;
+}
+
+.footer-text{
+    color:var(--cinza);
+    font-size:12px;
+}
+
+/* RESPONSIVO */
+
+@media(max-width:900px){
+
+    .header{
+        grid-template-columns:1fr;
+        gap:12px;
+    }
+
+    .logo,
+    .logo-right{
+        justify-self:center;
+    }
+
+    h1{
+        font-size:24px;
+    }
+
+    .sidebar{
+        width:260px;
+    }
+}
+
+
+.user-area{display:flex;justify-content:flex-end;align-items:center;}
+.btn-logout{background:#dc2626;color:#fff;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:bold;}
+
+</style>
+
+<script type="module" src="auth.js"></script>
+
+<style id="ciop-header-fix">
+.top-user-bar{position:absolute;top:10px;right:20px;display:flex;align-items:center;gap:8px;font-size:12px;color:#667085;z-index:9999}
+.btn-logout{background:#e52424;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600}
+</style>
+
+</head>
+
+<body>
+
+<!-- MENU LATERAL -->
+
+<div class="sidebar" id="sidebar">
+
+    <div class="sidebar-header">
+        Links Operacionais
+    </div>
+    
+   <a class="side-link"
+       href="http://intranet.grandelondrina.com.br:8080/escala/"
+       target="_blank">
+       📄 Escala
+    </a>
+
+    <a class="side-link"
+       href="https://docs.google.com/forms/d/e/1FAIpQLScgGUDPuZdyN2KHVQfVWG0dORMmfOx06XEFYCEqwedqrPKwug/viewform"
+       target="_blank">
+       🎥 Pedido de Imagem
+    </a>
+    
+    <a class="side-link"
+       href="https://monitoramentotcgl.github.io/tajetos/index.html"
+       target="_blank">
+       🚌 Itinerários
+    </a>
+
+     <a class="side-link"
+       href="https://docs.google.com/spreadsheets/d/1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA/edit?gid=665320337#gid=665320337"
+       target="_blank">
+      ✍🏻 Criar Relatório
+    </a>
+    
+    <a class="side-link"
+       href="https://cioplondrina.com.br/CADIncidentManagement/?ReturnUrl=%2fCADIncidentManagement%2fg%2f6ac2842af62b497aa5b0e515ef4b2ce9"
+       target="_blank">
+    ⚠️ Gerenciamento de Incidentes
+    </a>
+
+    <a class="side-link"
+       href="http://10.235.142.105:8888/Timeout.i4"
+       target="_blank">
+       📋 Clever Reports
+    </a>
+
+     <a class="side-link"
+       href="https://fleetbus.app/"
+       target="_blank">
+     📡 FleetBus
+    </a>
+
+    <a class="side-link"
+   href="https://www.gsgsistem.com/tcgl/index.php"
+   target="_blank">
+    🖥️ GSG Sistem
+</a>
+    
+    <a class="side-link"
+   href="https://cmp.passaromarron.com.br"
+   target="_blank">
+   🌐 Globus
+</a>
+    
+    <a class="side-link"
+   href="https://editor.mobilibus.com/web/home"
+   target="_blank">
+   ₿ Mobilibus
+</a>
+    
+</div>
+
+<div id="overlay" onclick="toggleMenu()"></div>
+
+<!-- CABEÇALHO -->
+
+<header class="header">
+
+    <a href="https://mov1.com.br" target="_blank">
+        <img src="CIOP Sem Fundo.png"
+             class="logo"
+             alt="CIOP">
+    </a>
+
+    <h1>Portal CIOP - TCGL</h1>
+
+    <a href="https://www.tcgrandelondrina.com.br/" target="_blank">
+        <img src="LOGO_TCGL-removebg-preview.png"
+             class="logo logo-right"
+             alt="TCGL">
+    </a>
+
+
+<div class="user-area"><button onclick="logout()" class="btn-logout">🚪 Sair</button></div>
+
+    <div id="usuarioLogado"
+     style="
+     color:#06245c;
+     font-weight:bold;
+     margin-right:15px;">
+</div>
+    
+</header>
+
+<!-- BOTÃO SISTEMAS -->
+
+<div class="toolbar">
+    <button class="menu-toggle" onclick="toggleMenu()">
+        ☰ Links Operação
+    </button>
+</div>
+
+<!-- CONTEÚDO -->
+
+<div class="container">
+
+    <div class="welcome">
+        Selecione abaixo o que deseja visualizar.
+    </div>
+
+    <div class="grid">
+
+        <a href="Folhadeservico.html" class="card" target="_blank">
+            <div class="card-title">📈 Dashboard Planilha CIOP</div>
+            <div class="card-desc">
+                Dashboard da planilha.
+            </div>
+            <div class="card-btn">Acessar</div>
+        </a>
+        
+        <a href="pontualidade.html" class="card" target="_blank">
+            <div class="card-title">⏱️ Dashboard de Pontualidade</div>
+            <div class="card-desc">
+                Indicadores operacionais.
+            </div>
+            <div class="card-btn">Acessar</div>
+        </a>
+
+        <a href="https://drive.google.com/drive/folders/1m9ODnZuVVtFVUP1p_FUECy9E1xVBN1yd" class="card" target="_blank">
+            <div class="card-title">♻️ Drive Monitoramento</div>
+            <div class="card-desc">
+                Drive - Oficial Monitoramento.
+            </div>
+            <div class="card-btn">Acessar</div>
+        </a>
+        
+        <a href="https://drive.google.com/drive/folders/140AXmLicGVvTm2Z5ALESVEmv0-K_mhYW" class="card" target="_blank">
+            <div class="card-title">🚍 Saida de carros</div>
+            <div class="card-desc">
+                Saida de carros da COT.
+            </div>
+            <div class="card-btn">Acessar</div>
+        </a>
+
+       <a href="https://drive.google.com/drive/folders/1-jBeEFxHtTgvXbjkJbhonY-ijKg16UcF" class="card" target="_blank">
+            <div class="card-title">📆 Diários de bordo</div>
+            <div class="card-desc">
+               Diários de bordo.
+            </div>
+            <div class="card-btn">Acessar</div>
+        </a>
+
+        <a href="https://drive.google.com/drive/folders/111RpLw8iQI3Pypwi_sYdJ3NO1iG_Ow5K" class="card" target="_blank">
+            <div class="card-title">🕤 Horários para fiscais</div>
+            <div class="card-desc">
+               Diários de bordo.
+            </div>
+            <div class="card-btn">Acessar</div>
+        </a>
+        
+        <a href="https://docs.google.com/spreadsheets/d/1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA/edit?gid=1013912232#gid=1013912232" class="card" target="_blank">
+            <div class="card-title">📝 Planilha</div>
+            <div class="card-desc">
+                Acesso a Planilha CIOP.
+            </div>
+            <div class="card-btn">Acessar</div>
+        </a>
+        
+       <a href="https://drive.google.com/drive/folders/1oq_QLjcIpZGqWD6zRcLtK4PIj5my6TtE" class="card" target="_blank">
+            <div class="card-title">📋 Tabelas</div>
+            <div class="card-desc">
+                Tabelas Planejamento.
+            </div>
+            <div class="card-btn">Acessar</div>
+        </a>
+
+        <a href="https://www.canva.com/design/DAGmHCnCGlc/hBDsSXTyhOo_FJjbAsIRMQ/edit" class="card" target="_blank">
+            <div class="card-title">🚨 Desvios</div>
+            <div class="card-desc">
+                Acesso aos desvios criados.
+            </div>
+            <div class="card-btn">Acessar</div>
+        </a>
+
+        <a href="https://www.canva.com/design/DAHDub_Za2k/oMlNaOEy98L0BTW1m1-Wuw/edit" class="card" target="_blank">
+            <div class="card-title">🏷️ Cenário Atual</div>
+            <div class="card-desc">
+                Acesso ao cenário atual - Divergências.
+            </div>
+            <div class="card-btn">Acessar</div>
+        </a>
+
+        <a href="https://www.canva.com/" class="card" target="_blank">
+            <div class="card-title">🔏 Canva</div>
+            <div class="card-desc">
+                Acesso ao Canva - Inicio.
+            </div>
+            <div class="card-btn">Acessar</div>
+        </a>
+        
+        <a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vQcoPBPbjoZKmWb6KlDMMpwm0-AbzPA4PRziV6zS8U-VzXRKMtKEp_sbVf4cgHNEg/pubhtml#" class="card" target="_blank">
+            <div class="card-title">📍 Pontos de controle</div>
+            <div class="card-desc">
+                Localização dos pontos de controle.
+            </div>
+            <div class="card-btn">Acessar</div>
+        </a>
+
+    </div>
+
+</div>
+
+<footer>
+    <span class="footer-text">
+        © 2026 CIOP - Todos os direitos reservados
+    </span>
+</footer>
+
+<script>
+function toggleMenu(){
+    document.getElementById("sidebar").classList.toggle("active");
+    document.getElementById("overlay").classList.toggle("active");
+}
+</script>
+
+
+<script>
+function logout(){
+ localStorage.clear();
+ sessionStorage.clear();
+ window.location.href='login.html';
+}
+</script>
+</body>
+
+</html>
