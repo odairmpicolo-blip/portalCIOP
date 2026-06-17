@@ -1,14 +1,12 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth,
   onAuthStateChanged,
   signOut,
   sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { firebaseConfig } from "./firebase-config.js";
+import { app, buscarUsuarioFirestore, normalizarCadastro } from "./portal-firestore.js";
 import { usuarios } from "./usuarios.js";
 
-const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 function portalPath(file) {
@@ -16,22 +14,32 @@ function portalPath(file) {
   return inPages ? "../" + file : file;
 }
 
-function getCadastro(user) {
-  const cadastro = usuarios[user.email] || usuarios[user.email?.toLowerCase()];
-  if (!cadastro) {
+async function getCadastro(user) {
+  const email = String(user.email || "").toLowerCase();
+
+  try {
+    const cadastroOnline = await buscarUsuarioFirestore(email);
+    if (cadastroOnline) {
+      return {
+        nome: cadastroOnline.nome || user.displayName || email,
+        perfil: cadastroOnline.perfil || "Usuario"
+      };
+    }
+  } catch (error) {
+    console.warn("Nao foi possivel buscar usuario no Firestore:", error);
+  }
+
+  const cadastroLocal = usuarios[email] || usuarios[user.email];
+  if (!cadastroLocal) {
     return {
       nome: user.displayName || user.email,
       perfil: "Usuario"
     };
   }
-  if (typeof cadastro === "string") {
-    return {
-      nome: user.email,
-      perfil: cadastro
-    };
-  }
+
+  const cadastro = normalizarCadastro(cadastroLocal, email);
   return {
-    nome: cadastro.nome || user.displayName || user.email,
+    nome: cadastro.nome || user.displayName || email,
     perfil: cadastro.perfil || "Usuario"
   };
 }
@@ -107,7 +115,7 @@ function aplicarPermissoes(cadastro) {
   }
 }
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   const pagina = window.location.pathname.toLowerCase();
 
   if (!user) {
@@ -117,7 +125,7 @@ onAuthStateChanged(auth, (user) => {
     return;
   }
 
-  const cadastro = { ...getCadastro(user), email: user.email };
+  const cadastro = { ...await getCadastro(user), email: user.email };
   const nome = document.getElementById("usuarioLogado");
   const perfil = document.getElementById("perfilUsuario");
 

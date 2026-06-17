@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+
+    function email() {
+      return request.auth.token.email;
+    }
+
+    function bootstrapGestor() {
+      return email() in ['admin@ciop.com.br', 'supervisor@ciop.com.br'];
+    }
+
+    function perfilAtual() {
+      return get(/databases/$(database)/documents/usuarios/$(email())).data.perfil;
+    }
+
+    function gestor() {
+      return signedIn() && (bootstrapGestor() || perfilAtual() in ['Administrador', 'Supervisor']);
+    }
+
+    match /usuarios/{userEmail} {
+      allow read: if signedIn() && (userEmail == email() || gestor());
+      allow create, update: if gestor();
+      allow delete: if gestor();
+    }
+  }
+}

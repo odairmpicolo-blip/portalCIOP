@@ -142,7 +142,7 @@ th{color:var(--blue);background:#f8fafc}
 
     <div id="adminConteudo">
         <div class="notice">
-            Para criar login real, cadastre o e-mail no Firebase Authentication. Esta tela monta automaticamente o arquivo usuarios.js do portal, permite alterar o tipo de usuario e enviar recuperacao de senha para usuarios ja cadastrados no Firebase.
+            Para criar login real, cadastre o e-mail no Firebase Authentication. Esta tela salva nome e perfil automaticamente no Firestore e envia recuperacao de senha para usuarios ja cadastrados no Firebase.
         </div>
 
         <div class="grid">
@@ -163,14 +163,14 @@ th{color:var(--blue);background:#f8fafc}
                 </select>
 
                 <div class="actions">
-                    <button class="btn btn-primary" type="button" onclick="gerarCadastro()">Publicar usuario</button>
+                    <button class="btn btn-primary" type="button" onclick="gerarCadastro()">Salvar no Firestore</button>
                     <a class="btn btn-secondary" href="https://console.firebase.google.com/project/portal-ciop/authentication/users" target="_blank">Abrir Firebase</a>
                 </div>
 
-                <label for="codigoCadastro">Arquivo usuarios.js atualizado</label>
+                <label for="codigoCadastro">Backup usuarios.js opcional</label>
                 <textarea id="codigoCadastro" readonly></textarea>
                 <div class="actions">
-                    <button class="btn btn-secondary" type="button" onclick="baixarUsuarios()">Baixar usuarios.js</button>
+                    <button class="btn btn-secondary" type="button" onclick="baixarUsuarios()">Baixar backup usuarios.js</button>
                 </div>
                 <div id="cadastroStatus" class="status"></div>
             </section>
@@ -218,23 +218,21 @@ th{color:var(--blue);background:#f8fafc}
 
 <script type="module">
 import { usuarios } from "../assets/js/usuarios.js";
+import {
+    listarUsuariosFirestore,
+    salvarUsuarioFirestore,
+    normalizarCadastro
+} from "../assets/js/portal-firestore.js";
 
 const perfisDisponiveis = ["Administrador", "Supervisor", "Analista", "Usuario"];
 const usuariosEditados = {};
 
-function normalizarCadastro(cadastro, email) {
-    if (typeof cadastro === "string") {
-        return { nome: email, perfil: cadastro };
-    }
-    return {
-        nome: cadastro.nome || email,
-        perfil: cadastro.perfil || "Usuario"
-    };
+function carregarUsuariosLocais() {
+    Object.entries(usuarios).forEach(([email, cadastro]) => {
+        const user = normalizarCadastro(cadastro, email);
+        usuariosEditados[user.email] = user;
+    });
 }
-
-Object.entries(usuarios).forEach(([email, cadastro]) => {
-    usuariosEditados[email] = normalizarCadastro(cadastro, email);
-});
 
 function escapeAttr(value) {
     return String(value || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/'/g, "&#39;");
@@ -250,16 +248,17 @@ function gerarArquivoUsuarios() {
     return "export const usuarios = {\n" + linhas.join(",\n") + "\n};\n";
 }
 
-function publicarArquivoUsuarios(mensagem) {
+function atualizarBackup(mensagem, tipo = "ok") {
     document.getElementById("codigoCadastro").value = gerarArquivoUsuarios();
     const status = document.getElementById("cadastroStatus");
-    status.className = "status ok";
+    status.className = "status " + tipo;
     status.textContent = mensagem;
 }
 
 function renderUsuarios() {
     const tbody = document.getElementById("usuariosTabela");
-    tbody.innerHTML = Object.entries(usuariosEditados).map(([email, user]) => {
+    const ordenados = Object.entries(usuariosEditados).sort(([a], [b]) => a.localeCompare(b));
+    tbody.innerHTML = ordenados.map(([email, user]) => {
         const selectId = "perfil_" + email.replace(/[^a-z0-9]/gi, "_");
         const options = perfisDisponiveis.map((perfil) => {
             const selected = perfil === user.perfil ? " selected" : "";
@@ -270,16 +269,30 @@ function renderUsuarios() {
             "<td>" + user.nome + "</td>" +
             "<td>" + user.perfil + "</td>" +
             "<td><div class=\"perfil-row\"><select id=\"" + selectId + "\">" + options + "</select>" +
-            "<button class=\"btn btn-primary\" type=\"button\" onclick=\"alterarPerfil('" + escapeAttr(email) + "','" + escapeAttr(user.nome) + "','" + selectId + "')\">Alterar</button></div></td>" +
+            "<button class=\"btn btn-primary\" type=\"button\" onclick=\"alterarPerfil('" + escapeAttr(email) + "','" + escapeAttr(user.nome) + "','" + selectId + "')\">Salvar</button></div></td>" +
             "</tr>";
     }).join("");
 }
 
+async function salvarUsuario(email, nome, perfil, mensagem) {
+    const status = document.getElementById("cadastroStatus");
+    status.className = "status";
+    status.textContent = "Salvando no Firestore...";
+
+    try {
+        const usuario = await salvarUsuarioFirestore(email, { nome, perfil });
+        usuariosEditados[usuario.email] = usuario;
+        renderUsuarios();
+        atualizarBackup(mensagem);
+    } catch (error) {
+        status.className = "status erro";
+        status.textContent = "Nao foi possivel salvar no Firestore: " + error.message;
+    }
+}
+
 window.alterarPerfil = function (email, nome, selectId) {
     const perfil = document.getElementById(selectId).value;
-    usuariosEditados[email] = { nome, perfil };
-    renderUsuarios();
-    publicarArquivoUsuarios("Perfil atualizado no arquivo usuarios.js. Baixe o arquivo e substitua em assets/js/usuarios.js.");
+    salvarUsuario(email, nome, perfil, "Perfil salvo automaticamente no Firestore.");
 };
 
 window.gerarCadastro = function () {
@@ -294,9 +307,7 @@ window.gerarCadastro = function () {
         return;
     }
 
-    usuariosEditados[email] = { nome, perfil };
-    renderUsuarios();
-    publicarArquivoUsuarios("Usuario publicado no arquivo usuarios.js. Cadastre o login no Firebase, baixe o arquivo e substitua em assets/js/usuarios.js.");
+    salvarUsuario(email, nome, perfil, "Usuario salvo automaticamente no Firestore. Cadastre ou confirme o login no Firebase Authentication.");
 };
 
 window.baixarUsuarios = function () {
@@ -330,8 +341,23 @@ window.enviarRecuperacao = async function () {
     }
 };
 
-renderUsuarios();
-publicarArquivoUsuarios("Arquivo usuarios.js carregado. Altere um perfil ou publique um novo usuario para atualizar.");
+async function iniciar() {
+    carregarUsuariosLocais();
+
+    try {
+        const usuariosOnline = await listarUsuariosFirestore();
+        Object.entries(usuariosOnline).forEach(([email, user]) => {
+            usuariosEditados[email] = user;
+        });
+        renderUsuarios();
+        atualizarBackup("Usuarios carregados do Firestore. Alteracoes agora salvam automaticamente online.");
+    } catch (error) {
+        renderUsuarios();
+        atualizarBackup("Firestore ainda nao carregou. Usando usuarios.js como fallback: " + error.message, "erro");
+    }
+}
+
+iniciar();
 </script>
 </body>
 </html>
