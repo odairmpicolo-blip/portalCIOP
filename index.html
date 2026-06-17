@@ -37,7 +37,7 @@ body{
 .header{
     background:#ffffff;
     display:grid;
-    grid-template-columns:200px 1fr 200px;
+    grid-template-columns:200px 1fr minmax(300px, auto);
     align-items:center;
     padding:15px 25px;
     border-bottom:1px solid #e5e7eb;
@@ -251,18 +251,15 @@ footer{
 
 
 .ciop-session{
-    position:fixed;
-    top:8px;
-    left:10px;
-    z-index:10000;
+    position:static;
     display:flex;
     align-items:center;
     gap:6px;
-    max-width:320px;
+    max-width:260px;
     padding:4px 6px;
     border:1px solid rgba(6,36,92,.12);
     border-radius:6px;
-    background:rgba(255,255,255,.94);
+    background:rgba(255,255,255,.96);
     box-shadow:0 2px 8px rgba(16,24,40,.08);
     color:#06245c;
     font-size:11px;
@@ -293,6 +290,24 @@ footer{
     background:#b91c1c;
 }
 
+.header-actions{
+    justify-self:end;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:10px;
+    min-width:0;
+}
+.header-actions .ciop-session{
+    flex:0 1 auto;
+}
+@media(max-width:900px){
+    .header-actions{
+        justify-self:center;
+        flex-wrap:wrap;
+    }
+}
+
 </style>
 
 <script type="module" src="assets/js/auth.js"></script>
@@ -300,13 +315,6 @@ footer{
 </head>
 
 <body>
-<div class="ciop-session" aria-label="Sessao do usuario">
-    <span id="usuarioLogado" class="ciop-session-user">Usuario</span>
-    <span id="perfilUsuario" class="ciop-session-profile">Perfil</span>
-    <button onclick="logout()" class="btn-logout" type="button">Sair</button>
-</div>
-
-
 <!-- MENU LATERAL -->
 
 <div class="sidebar" id="sidebar">
@@ -391,11 +399,18 @@ footer{
 
     <h1>Portal CIOP - TCGL</h1>
 
-    <a href="https://www.tcgrandelondrina.com.br/" target="_blank">
-        <img src="assets/img/LOGO_TCGL-removebg-preview.png"
-             class="logo logo-right"
-             alt="TCGL">
-    </a>
+    <div class="header-actions">
+        <div class="ciop-session" aria-label="Sessao do usuario">
+    <span id="usuarioLogado" class="ciop-session-user">Usuario</span>
+    <span id="perfilUsuario" class="ciop-session-profile">Perfil</span>
+    <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+</div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank">
+            <img src="assets/img/LOGO_TCGL-removebg-preview.png"
+                 class="logo logo-right"
+                 alt="TCGL">
+        </a>
+    </div>
 </header>
 
 <!-- BOTÃO SISTEMAS -->
