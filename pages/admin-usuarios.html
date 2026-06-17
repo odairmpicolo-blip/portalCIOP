@@ -142,7 +142,7 @@ th{color:var(--blue);background:#f8fafc}
 
     <div id="adminConteudo">
         <div class="notice">
-            Para criar login real, cadastre o e-mail no Firebase Authentication. Esta tela salva nome e perfil automaticamente no Firestore e envia recuperacao de senha para usuarios ja cadastrados no Firebase.
+            Cadastre o login e senha no Firebase Authentication pelo botao abaixo. Depois a lista puxa os usuarios salvos no Firestore para voce classificar ou alterar o perfil.
         </div>
 
         <div class="grid">
@@ -165,8 +165,8 @@ th{color:var(--blue);background:#f8fafc}
                 </select>
 
                 <div class="actions">
-                    <button class="btn btn-primary" type="button" onclick="gerarCadastro()">Salvar no Firestore</button>
-                    <a class="btn btn-secondary" href="https://console.firebase.google.com/project/portal-ciop/authentication/users" target="_blank">Abrir Firebase</a>
+                    <a class="btn btn-primary" href="https://console.firebase.google.com/project/portal-ciop/authentication/users" target="_blank">Cadastrar novo usuário</a>
+                    <button class="btn btn-secondary" type="button" onclick="gerarCadastro()">Salvar perfil no Firestore</button>
                 </div>
 
                 <div id="cadastroStatus" class="status"></div>
@@ -197,7 +197,10 @@ th{color:var(--blue);background:#f8fafc}
         </section>
 
         <section class="panel">
-            <h2 class="panel-title">Usuarios configurados no portal</h2>
+            <h2 class="panel-title">Usuários para classificar</h2>
+            <div class="actions" style="margin-bottom:12px">
+                <button class="btn btn-secondary" type="button" onclick="recarregarUsuarios()">Atualizar lista</button>
+            </div>
             <table>
                 <thead>
                     <tr>
@@ -298,7 +301,7 @@ window.gerarCadastro = function () {
         return;
     }
 
-    salvarUsuario(email, nome, perfil, "Usuario salvo automaticamente no Firestore. Cadastre ou confirme o login no Firebase Authentication.");
+    salvarUsuario(email, nome, perfil, "Perfil salvo no Firestore. Confirme que o login tambem existe no Firebase Authentication.");
 };
 
 
@@ -322,7 +325,14 @@ window.enviarRecuperacao = async function () {
     }
 };
 
-async function iniciar() {
+window.recarregarUsuarios = function () {
+    iniciar(true);
+};
+
+async function iniciar(limparAntes = false) {
+    if (limparAntes) {
+        Object.keys(usuariosEditados).forEach((email) => delete usuariosEditados[email]);
+    }
     carregarUsuariosLocais();
 
     try {
