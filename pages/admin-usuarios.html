@@ -98,6 +98,9 @@ textarea{min-height:116px;resize:vertical}
 table{width:100%;border-collapse:collapse;background:#fff;font-size:13px}
 th,td{padding:10px;border-bottom:1px solid var(--border);text-align:left}
 th{color:var(--blue);background:#f8fafc}
+.perfil-row{display:flex;gap:8px;align-items:center}
+.perfil-row select{min-width:150px}
+.perfil-row .btn{white-space:nowrap;padding:9px 12px}
 .status{font-size:12px;font-weight:700;margin-top:10px}
 .ok{color:var(--green)}
 .erro{color:var(--red)}
@@ -110,7 +113,7 @@ th{color:var(--blue);background:#f8fafc}
 </style>
 <script type="module" src="../assets/js/auth.js"></script>
 </head>
-<body data-require-admin="true">
+<body data-require-perfis="Administrador,Supervisor">
 <header class="header">
     <a href="https://mov1.com.br" target="_blank">
         <img src="../assets/img/CIOP Sem Fundo.png" class="logo-ciop" alt="CIOP">
@@ -134,12 +137,12 @@ th{color:var(--blue);background:#f8fafc}
     </div>
 
     <div id="adminNegado" class="notice">
-        Acesso restrito aos administradores do portal.
+        Acesso restrito aos administradores e supervisores do portal.
     </div>
 
     <div id="adminConteudo">
         <div class="notice">
-            Para criar login real, cadastre o e-mail no Firebase Authentication. Esta tela administra o cadastro de exibicao do portal e permite enviar recuperacao de senha para usuarios ja cadastrados no Firebase.
+            Para criar login real, cadastre o e-mail no Firebase Authentication. Esta tela administra o cadastro de exibicao do portal, permite alterar o tipo de usuario e enviar recuperacao de senha para usuarios ja cadastrados no Firebase.
         </div>
 
         <div class="grid">
@@ -201,6 +204,7 @@ th{color:var(--blue);background:#f8fafc}
                         <th>E-mail</th>
                         <th>Nome</th>
                         <th>Perfil</th>
+                        <th>Alterar perfil</th>
                     </tr>
                 </thead>
                 <tbody id="usuariosTabela"></tbody>
@@ -222,13 +226,44 @@ function normalizarCadastro(cadastro, email) {
     };
 }
 
+const perfisDisponiveis = ["Administrador", "Supervisor", "Analista", "Usuario"];
+
+function escapeAttr(value) {
+    return String(value || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}
+
 function renderUsuarios() {
     const tbody = document.getElementById("usuariosTabela");
     tbody.innerHTML = Object.entries(usuarios).map(([email, cadastro]) => {
         const user = normalizarCadastro(cadastro, email);
-        return "<tr><td>" + email + "</td><td>" + user.nome + "</td><td>" + user.perfil + "</td></tr>";
+        const selectId = "perfil_" + email.replace(/[^a-z0-9]/gi, "_");
+        const options = perfisDisponiveis.map((perfil) => {
+            const selected = perfil === user.perfil ? " selected" : "";
+            return "<option" + selected + ">" + perfil + "</option>";
+        }).join("");
+        return "<tr>" +
+            "<td>" + email + "</td>" +
+            "<td>" + user.nome + "</td>" +
+            "<td>" + user.perfil + "</td>" +
+            "<td><div class=\"perfil-row\"><select id=\"" + selectId + "\">" + options + "</select>" +
+            "<button class=\"btn btn-primary\" type=\"button\" onclick=\"alterarPerfil('" + escapeAttr(email) + "','" + escapeAttr(user.nome) + "','" + selectId + "')\">Alterar</button></div></td>" +
+            "</tr>";
     }).join("");
 }
+
+window.alterarPerfil = function (email, nome, selectId) {
+    const perfil = document.getElementById(selectId).value;
+    const status = document.getElementById("cadastroStatus");
+
+    document.getElementById("codigoCadastro").value =
+        "  \"" + email + "\": {\n" +
+        "    nome: \"" + nome + "\",\n" +
+        "    perfil: \"" + perfil + "\"\n" +
+        "  },";
+
+    status.className = "status ok";
+    status.textContent = "Perfil alterado no trecho. Cole este trecho em assets/js/usuarios.js e publique o portal.";
+};
 
 window.gerarCadastro = function () {
     const email = document.getElementById("novoEmail").value.trim().toLowerCase();

@@ -1,22 +1,14 @@
 export const usuarios = {
-  "odair.marin@icloud.com": {
-    nome: "Odair Marino",
+  "admin@ciop.com.br": {
+    nome: "Administrador",
     perfil: "Administrador"
   },
-  "rehder@tcgl.com.br": {
-    nome: "Rehder",
+  "supervisor@ciop.com.br": {
+    nome: "Supervisor",
     perfil: "Supervisor"
   },
-  "monitoramento@tcgl.com.br": {
-    nome: "Islan Jesus",
-    perfil: "Supervisor"
-  },
-  "danielmartin@tcgl.com.br": {
-    nome: "Daniel Martins",
-    perfil: "Supervisor"
-  },
-  "ciopcontroladores@gmail.com": {
-    nome: "CIOP",
+  "analista@ciop.com.br": {
+    nome: "Analista",
     perfil: "Analista"
   }
 };
