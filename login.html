@@ -135,6 +135,23 @@ import { firebaseConfig } from "./assets/js/firebase-config.js";
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
+function mensagemErroLogin(error) {
+  const code = error && error.code ? error.code : "";
+  if (code === "auth/user-not-found" || code === "auth/invalid-credential") {
+    return "E-mail ou senha incorretos. Confirme se este usuario existe no Firebase Authentication.";
+  }
+  if (code === "auth/wrong-password") {
+    return "Senha incorreta.";
+  }
+  if (code === "auth/invalid-email") {
+    return "E-mail invalido.";
+  }
+  if (code === "auth/too-many-requests") {
+    return "Muitas tentativas. Aguarde um pouco e tente novamente.";
+  }
+  return "Nao foi possivel entrar: " + (error.message || code);
+}
+
 window.login = async function(){
 
  const email =
@@ -158,7 +175,7 @@ window.login = async function(){
 
    document.getElementById("erro")
    .innerHTML =
-   "Usuário ou senha inválidos";
+   mensagemErroLogin(error);
 
  }
 
