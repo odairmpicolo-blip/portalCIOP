@@ -7,3 +7,11 @@ export const usuarios = {
  "analista@ciop.com.br":"Analista"
 
 };
+<div id="perfilUsuario"></div>
+import { usuarios } from "./usuarios.js";
+
+const perfil =
+usuarios[user.email] || "Usuário";
+
+document.getElementById("perfilUsuario")
+.innerHTML = perfil;
