@@ -154,6 +154,27 @@ h1{
     font-size:17px;
 }
 
+.password-panel{
+    display:none;
+    max-width:520px;
+    margin:0 auto 24px;
+    background:#fff;
+    border:1px solid var(--borda);
+    border-radius:6px;
+    padding:16px;
+    box-shadow:0 8px 20px rgba(6,36,92,.08);
+}
+.password-panel.active{display:block}
+.password-panel h2{margin:0 0 12px;color:var(--azul);font-size:16px}
+.password-panel label{display:block;margin:8px 0 4px;color:var(--cinza);font-size:12px;font-weight:700}
+.password-panel input{width:100%;box-sizing:border-box;border:1px solid var(--borda);border-radius:6px;padding:9px 10px;font-size:14px}
+.password-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn-small{border:none;border-radius:5px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;background:#06245c;color:#fff}
+.btn-small.secondary{background:#e8edf6;color:#06245c}
+.password-status{font-size:12px;font-weight:700;margin-top:10px}
+.password-status.ok{color:#2e9b45}
+.password-status.erro{color:#dc2626}
+
 /* CARDS */
 
 .grid{
@@ -435,6 +456,7 @@ footer{
         <div class="ciop-session" aria-label="Sessao do usuario">
     <span id="usuarioLogado" class="ciop-session-user">Usuario</span>
     <span id="perfilUsuario" class="ciop-session-profile">Perfil</span>
+    <button onclick="toggleSenhaPanel()" class="btn-logout" type="button">Senha</button>
     <button onclick="logout()" class="btn-logout" type="button">Sair</button>
 </div>
         <a href="https://www.tcgrandelondrina.com.br/" target="_blank">
@@ -467,6 +489,21 @@ footer{
     <div class="welcome">
         Selecione abaixo o que deseja visualizar.
     </div>
+
+    <section id="senhaPanel" class="password-panel" aria-label="Alterar senha">
+        <h2>Alterar senha de acesso</h2>
+        <label for="senhaAtual">Senha atual</label>
+        <input id="senhaAtual" type="password" autocomplete="current-password">
+        <label for="novaSenha">Nova senha</label>
+        <input id="novaSenha" type="password" autocomplete="new-password">
+        <label for="confirmarSenha">Confirmar nova senha</label>
+        <input id="confirmarSenha" type="password" autocomplete="new-password">
+        <div class="password-actions">
+            <button class="btn-small" type="button" onclick="salvarNovaSenha()">Salvar senha</button>
+            <button class="btn-small secondary" type="button" onclick="toggleSenhaPanel(false)">Cancelar</button>
+        </div>
+        <div id="senhaStatus" class="password-status"></div>
+    </section>
 
     <div class="grid">
 
@@ -588,6 +625,47 @@ footer{
 function toggleMenu(){
     document.getElementById("sidebar").classList.toggle("active");
     document.getElementById("overlay").classList.toggle("active");
+}
+
+function toggleSenhaPanel(force){
+    const panel = document.getElementById("senhaPanel");
+    const abrir = typeof force === "boolean" ? force : !panel.classList.contains("active");
+    panel.classList.toggle("active", abrir);
+    if (!abrir) {
+        document.getElementById("senhaAtual").value = "";
+        document.getElementById("novaSenha").value = "";
+        document.getElementById("confirmarSenha").value = "";
+        document.getElementById("senhaStatus").textContent = "";
+        document.getElementById("senhaStatus").className = "password-status";
+    }
+}
+
+async function salvarNovaSenha(){
+    const status = document.getElementById("senhaStatus");
+    const senhaAtual = document.getElementById("senhaAtual").value;
+    const novaSenha = document.getElementById("novaSenha").value;
+    const confirmarSenha = document.getElementById("confirmarSenha").value;
+
+    if (novaSenha !== confirmarSenha) {
+        status.className = "password-status erro";
+        status.textContent = "A confirmacao da senha nao confere.";
+        return;
+    }
+
+    status.className = "password-status";
+    status.textContent = "Alterando senha...";
+
+    try {
+        await window.alterarSenha(senhaAtual, novaSenha);
+        status.className = "password-status ok";
+        status.textContent = "Senha alterada com sucesso.";
+        document.getElementById("senhaAtual").value = "";
+        document.getElementById("novaSenha").value = "";
+        document.getElementById("confirmarSenha").value = "";
+    } catch (error) {
+        status.className = "password-status erro";
+        status.textContent = "Nao foi possivel alterar: " + error.message;
+    }
 }
 </script>
 

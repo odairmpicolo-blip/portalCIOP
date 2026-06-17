@@ -2,7 +2,10 @@ import {
   getAuth,
   onAuthStateChanged,
   signOut,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { app, buscarUsuarioFirestore, normalizarCadastro } from "./portal-firestore.js";
 import { usuarios } from "./usuarios.js";
@@ -52,6 +55,23 @@ window.logout = function () {
 
 window.recuperarSenha = function (email) {
   return sendPasswordResetEmail(auth, email);
+};
+
+window.alterarSenha = async function (senhaAtual, novaSenha) {
+  const user = auth.currentUser;
+  if (!user || !user.email) {
+    throw new Error("Sessao expirada. Entre novamente no portal.");
+  }
+  if (!senhaAtual || !novaSenha) {
+    throw new Error("Informe a senha atual e a nova senha.");
+  }
+  if (novaSenha.length < 6) {
+    throw new Error("A nova senha deve ter pelo menos 6 caracteres.");
+  }
+
+  const credencial = EmailAuthProvider.credential(user.email, senhaAtual);
+  await reauthenticateWithCredential(user, credencial);
+  await updatePassword(user, novaSenha);
 };
 
 function isAdministrador(cadastro) {
