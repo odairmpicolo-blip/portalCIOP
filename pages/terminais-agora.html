@@ -116,7 +116,7 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
 .btn-secondary{background:#e8edf6;color:var(--blue)}
 .summary-panel{
     display:grid;
-    grid-template-columns:250px 1fr;
+    grid-template-columns:280px 1fr;
     gap:12px;
     align-items:start;
     margin-bottom:12px;
@@ -126,15 +126,71 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
     border:1px solid #e5ebf4;
     border-left:3px solid #9aa8bd;
     border-radius:8px;
-    padding:12px 14px;
-    min-height:96px;
+    padding:11px 12px;
+    min-height:0;
     box-shadow:0 2px 8px rgba(16,24,40,.04);
-    display:flex;
-    align-items:center;
 }
 .kpi-label{color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase}
-.kpi-value{margin-top:5px;color:var(--blue);font-size:24px;font-weight:900;line-height:1}
-.kpi-sub{margin-top:7px;color:var(--muted);font-size:11px;font-weight:700;line-height:1.35}
+.kpi-value{margin-top:5px;color:var(--blue);font-size:28px;font-weight:900;line-height:1}
+.kpi-sub{margin-top:6px;color:var(--muted);font-size:11px;font-weight:700;line-height:1.3}
+.exchange-feature{
+    padding:0 0 10px;
+    border-bottom:1px solid #edf1f7;
+}
+.exchange-meta{
+    margin-top:8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    color:var(--muted);
+    font-size:10px;
+    font-weight:900;
+    text-transform:uppercase;
+}
+.exchange-list{
+    margin-top:8px;
+    display:grid;
+    gap:6px;
+    max-height:320px;
+    overflow:auto;
+    padding-right:3px;
+}
+.exchange-item{
+    display:grid;
+    grid-template-columns:44px 1fr;
+    gap:8px;
+    align-items:start;
+    border:1px solid #edf1f7;
+    background:#f8fafc;
+    border-radius:7px;
+    padding:7px;
+}
+.exchange-time{
+    color:var(--blue);
+    font-size:13px;
+    font-weight:900;
+    line-height:1;
+}
+.exchange-kind{
+    color:var(--muted);
+    font-size:9px;
+    font-weight:900;
+    text-transform:uppercase;
+    margin-top:3px;
+}
+.exchange-person{
+    color:var(--text);
+    font-size:11px;
+    font-weight:900;
+    line-height:1.15;
+}
+.exchange-terminal{
+    color:var(--muted);
+    font-size:10px;
+    font-weight:800;
+    margin-top:3px;
+    line-height:1.2;
+}
 .section-title.compact{margin-bottom:8px}
 .terminal-kpis{
     display:grid;
@@ -431,10 +487,17 @@ td{padding:10px;border-bottom:1px solid #eef2f7;border-right:1px solid #eef2f7;f
 
     <section class="summary-panel" aria-label="Resumo dos terminais">
         <div class="exchange-card">
-            <div>
+            <div class="exchange-feature">
                 <div class="kpi-label">Próxima troca</div>
                 <div id="kpiProxima" class="kpi-value">--:--</div>
                 <div id="kpiProximaSub" class="kpi-sub">Sem próxima movimentação</div>
+            </div>
+            <div class="exchange-meta">
+                <span>Próximas</span>
+                <span id="contadorTrocas">0 trocas</span>
+            </div>
+            <div id="listaTrocas" class="exchange-list">
+                <div class="empty">Sem próximas trocas.</div>
             </div>
         </div>
         <div>
@@ -907,14 +970,36 @@ async function carregarPlanilha(manual){
         window.portalOcultarCarregando?.();
     }
 }
-function proximaMovimentacao(now){
+function proximasMovimentacoes(now){
     const candidatos = [];
     REGISTROS.forEach(function(item){
         if (item.start > now) candidatos.push({date:item.start, item, tipo:"Início"});
         if (item.end > now) candidatos.push({date:item.end, item, tipo:"Fim"});
     });
-    candidatos.sort(function(a, b){return a.date - b.date;});
-    return candidatos[0] || null;
+    candidatos.sort(function(a, b){
+        return a.date - b.date || compararTerminais(a.item.terminal, b.item.terminal) || a.item.nome.localeCompare(b.item.nome, "pt-BR");
+    });
+    return candidatos;
+}
+function proximaMovimentacao(now){
+    return proximasMovimentacoes(now)[0] || null;
+}
+function resumoTroca(troca){
+    return troca.tipo + " - " + troca.item.nome + " - " + displayTerminal(troca.item.terminal);
+}
+function renderListaTrocas(trocas){
+    byId("contadorTrocas").textContent = formatInt(trocas.length) + (trocas.length === 1 ? " troca" : " trocas");
+    const demais = trocas.slice(1);
+    if (!demais.length) {
+        byId("listaTrocas").innerHTML = '<div class="empty">Sem outras trocas programadas.</div>';
+        return;
+    }
+    byId("listaTrocas").innerHTML = demais.map(function(troca){
+        return '<div class="exchange-item">' +
+            '<div><div class="exchange-time">' + escapeHtml(formatHora(troca.date)) + '</div><div class="exchange-kind">' + escapeHtml(troca.tipo) + '</div></div>' +
+            '<div><div class="exchange-person">' + escapeHtml(troca.item.nome) + '</div><div class="exchange-terminal">' + escapeHtml(displayTerminal(troca.item.terminal)) + '</div></div>' +
+        '</div>';
+    }).join("");
 }
 function contatoPessoa(item){
     return item.telefone || item.email || "";
@@ -929,9 +1014,11 @@ function contatoItem(item){
     return contatoPessoa(item) || telefoneTerminal(item.terminal);
 }
 function renderKpis(now){
-    const proxima = proximaMovimentacao(now);
+    const trocas = proximasMovimentacoes(now);
+    const proxima = trocas[0] || null;
     byId("kpiProxima").textContent = proxima ? formatHora(proxima.date) : "--:--";
-    byId("kpiProximaSub").textContent = proxima ? proxima.tipo + " - " + proxima.item.nome + " - " + displayTerminal(proxima.item.terminal) : "Sem próxima movimentação";
+    byId("kpiProximaSub").textContent = proxima ? resumoTroca(proxima) : "Sem próxima movimentação";
+    renderListaTrocas(trocas);
     renderTerminalKpis(now);
 }
 function renderTerminalKpis(now){
