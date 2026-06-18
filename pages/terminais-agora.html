@@ -1,0 +1,921 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terminais Agora - Portal CIOP</title>
+<style>
+:root{
+    --blue:#06245c;
+    --blue2:#0b3a8a;
+    --orange:#ff6b00;
+    --bg:#f5f7fb;
+    --border:#dfe5ef;
+    --text:#101828;
+    --muted:#667085;
+    --green:#15803d;
+    --red:#dc2626;
+    --yellow:#f59e0b;
+    --soft:#eef4ff;
+    --white:#fff;
+}
+*{box-sizing:border-box}
+body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:Arial, Helvetica, sans-serif;
+    min-height:100vh;
+}
+.header{
+    background:#fff;
+    display:grid;
+    grid-template-columns:180px 1fr minmax(300px, auto);
+    gap:16px;
+    align-items:center;
+    padding:10px 22px;
+    border-bottom:1px solid #e8edf6;
+}
+.logo-ciop{height:48px;object-fit:contain}
+.logo-tcgl{height:52px;object-fit:contain}
+.header-title{text-align:center;min-width:0}
+h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
+.subtitle{margin-top:4px;color:var(--muted);font-size:12px;font-weight:700}
+.header-actions{
+    justify-self:end;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:10px;
+    min-width:0;
+}
+.ciop-session{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    max-width:270px;
+    padding:4px 6px;
+    border:1px solid rgba(6,36,92,.12);
+    border-radius:6px;
+    background:rgba(255,255,255,.96);
+    box-shadow:0 2px 8px rgba(16,24,40,.08);
+    color:var(--blue);
+    font-size:11px;
+    line-height:1;
+}
+.ciop-session-user{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.ciop-session-profile{color:var(--muted);font-weight:600}
+.btn-logout,.btn{
+    border:0;
+    border-radius:6px;
+    padding:8px 10px;
+    font-weight:800;
+    cursor:pointer;
+    font-family:inherit;
+}
+.ciop-session .btn-logout{background:var(--red);color:#fff;padding:4px 7px;font-size:11px}
+.container{max-width:1280px;margin:20px auto 28px;padding:0 18px}
+.topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+}
+.btn-link{
+    display:inline-flex;
+    align-items:center;
+    background:var(--blue);
+    color:#fff;
+    text-decoration:none;
+    padding:7px 12px;
+    border-radius:6px;
+    font-weight:800;
+    font-size:12px;
+}
+.source-status{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:700;
+    flex-wrap:wrap;
+}
+.dot{
+    width:9px;
+    height:9px;
+    border-radius:999px;
+    background:var(--yellow);
+    display:inline-block;
+}
+.dot.ok{background:var(--green)}
+.dot.erro{background:var(--red)}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-secondary{background:#e8edf6;color:var(--blue)}
+.dashboard{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(150px, 1fr));
+    gap:12px;
+    margin-bottom:12px;
+}
+.kpi{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:14px;
+    min-height:92px;
+    box-shadow:0 4px 14px rgba(16,24,40,.05);
+}
+.kpi-label{color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase}
+.kpi-value{margin-top:6px;color:var(--blue);font-size:26px;font-weight:900;line-height:1}
+.kpi-sub{margin-top:7px;color:var(--muted);font-size:12px;font-weight:700;line-height:1.35}
+.panel{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:14px;
+    box-shadow:0 4px 14px rgba(16,24,40,.05);
+}
+.controls{
+    display:grid;
+    grid-template-columns:minmax(220px, 1.2fr) minmax(180px, .8fr) auto auto;
+    gap:10px;
+    align-items:end;
+    margin-bottom:12px;
+}
+label{display:block;margin:0 0 5px;color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase}
+input,select{
+    width:100%;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:9px 10px;
+    min-height:38px;
+    font-size:14px;
+    font-family:inherit;
+    background:#fff;
+}
+input:focus,select:focus{outline:2px solid rgba(11,58,138,.14);border-color:var(--blue2)}
+.segmented{
+    display:flex;
+    gap:4px;
+    padding:4px;
+    border:1px solid var(--border);
+    background:#f8fafc;
+    border-radius:8px;
+}
+.segmented button{
+    border:0;
+    border-radius:6px;
+    background:transparent;
+    color:var(--blue);
+    min-height:30px;
+    padding:0 10px;
+    font-weight:800;
+    cursor:pointer;
+}
+.segmented button.active{background:var(--blue);color:#fff}
+.main-grid{
+    display:grid;
+    grid-template-columns:1fr 360px;
+    gap:12px;
+    align-items:start;
+}
+.section-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+}
+.section-title h2{margin:0;color:var(--blue);font-size:17px}
+.section-title span{color:var(--muted);font-size:12px;font-weight:700}
+.terminal-board{
+    display:grid;
+    gap:10px;
+    max-height:620px;
+    overflow:auto;
+}
+.terminal-card{
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px;
+    background:#fff;
+}
+.terminal-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    margin-bottom:8px;
+}
+.terminal-name{font-weight:900;color:var(--blue)}
+.count-pill{
+    background:var(--soft);
+    color:var(--blue);
+    border-radius:999px;
+    padding:3px 8px;
+    font-size:11px;
+    font-weight:900;
+}
+.person-line{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:8px;
+    padding:7px 0;
+    border-top:1px solid #eef2f7;
+    font-size:13px;
+}
+.person-line b{color:var(--text)}
+.person-line small{display:block;color:var(--muted);font-weight:700;margin-top:2px}
+.time-chip{
+    align-self:start;
+    color:var(--blue);
+    background:#f8fafc;
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:3px 7px;
+    font-size:11px;
+    font-weight:900;
+    white-space:nowrap;
+}
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px}
+table{width:100%;border-collapse:collapse;min-width:920px;background:#fff}
+th{
+    position:sticky;
+    top:0;
+    z-index:1;
+    background:var(--blue);
+    color:#fff;
+    font-size:11px;
+    text-transform:uppercase;
+    padding:11px 10px;
+    text-align:left;
+    border-right:1px solid rgba(255,255,255,.18);
+}
+td{padding:10px;border-bottom:1px solid #eef2f7;border-right:1px solid #eef2f7;font-size:13px;vertical-align:top}
+.status-badge{
+    display:inline-flex;
+    align-items:center;
+    border-radius:999px;
+    padding:4px 8px;
+    font-size:11px;
+    font-weight:900;
+    white-space:nowrap;
+}
+.status-now{background:#dcfce7;color:#166534}
+.status-next{background:#fff7ed;color:#9a3412}
+.status-today{background:#dbeafe;color:#1e40af}
+.status-ended{background:#f1f5f9;color:#475569}
+.status-reserve{background:#fef3c7;color:#92400e}
+.terminal-card.reserve{background:#fffbeb;border-color:#fde68a}
+.terminal-card.reserve .terminal-name{color:#92400e}
+.count-pill.reserve{background:#fef3c7;color:#92400e}
+.muted{color:var(--muted);font-weight:700}
+.empty{
+    padding:26px;
+    text-align:center;
+    color:var(--muted);
+    font-weight:700;
+    line-height:1.45;
+}
+.error-box{
+    display:none;
+    margin-bottom:12px;
+    border:1px solid #fecaca;
+    background:#fff1f2;
+    color:#991b1b;
+    border-radius:8px;
+    padding:12px 14px;
+    font-size:13px;
+    line-height:1.45;
+}
+.error-box.active{display:block}
+@media(max-width:980px){
+    .header{grid-template-columns:1fr;text-align:center}
+    .header-actions{justify-self:center;flex-wrap:wrap}
+    .logo-ciop,.logo-tcgl{justify-self:center}
+    .dashboard{grid-template-columns:repeat(2, minmax(150px, 1fr))}
+    .controls{grid-template-columns:1fr}
+    .main-grid{grid-template-columns:1fr}
+    .terminal-board{max-height:none}
+}
+@media(max-width:560px){
+    .dashboard{grid-template-columns:1fr}
+    h1{font-size:21px}
+}
+</style>
+<script src="../assets/js/loading.js"></script>
+<script type="module" src="../assets/js/auth.js"></script>
+</head>
+<body>
+<header class="header">
+    <a href="https://mov1.com.br" target="_blank">
+        <img src="../assets/img/CIOP Sem Fundo.png" class="logo-ciop" alt="CIOP">
+    </a>
+    <div class="header-title">
+        <h1>Terminais Agora</h1>
+        <div class="subtitle">Presença operacional por terminal</div>
+    </div>
+    <div class="header-actions">
+        <div class="ciop-session" aria-label="Sessao do usuario">
+            <span id="usuarioLogado" class="ciop-session-user">Usuario</span>
+            <span id="perfilUsuario" class="ciop-session-profile">Perfil</span>
+            <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+        </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank">
+            <img src="../assets/img/LOGO_TCGL-removebg-preview.png" class="logo-tcgl" alt="TCGL">
+        </a>
+    </div>
+</header>
+
+<main class="container">
+    <div class="topbar">
+        <a href="../index.html" class="btn-link" aria-label="Voltar ao portal">Portal</a>
+        <div class="source-status" aria-live="polite">
+            <span id="sourceDot" class="dot"></span>
+            <span id="sourceText">Aguardando leitura da planilha</span>
+            <button class="btn btn-secondary" type="button" onclick="carregarPlanilha(true)">Atualizar</button>
+        </div>
+    </div>
+
+    <div id="erroFonte" class="error-box"></div>
+
+    <section class="dashboard" aria-label="Resumo dos terminais">
+        <div class="kpi">
+            <div class="kpi-label">Pessoas agora</div>
+            <div id="kpiAgora" class="kpi-value">0</div>
+            <div id="kpiAgoraSub" class="kpi-sub">Sem dados carregados</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-label">Terminais ativos</div>
+            <div id="kpiTerminais" class="kpi-value">0</div>
+            <div id="kpiTerminaisSub" class="kpi-sub">Nenhum terminal no momento</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-label">Próxima troca</div>
+            <div id="kpiProxima" class="kpi-value">--:--</div>
+            <div id="kpiProximaSub" class="kpi-sub">Sem próxima movimentação</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-label">Registros hoje</div>
+            <div id="kpiHoje" class="kpi-value">0</div>
+            <div id="kpiHojeSub" class="kpi-sub">Base da planilha</div>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="controls">
+            <div>
+                <label for="busca">Buscar</label>
+                <input id="busca" type="search" placeholder="Nome, terminal, função ou observação">
+            </div>
+            <div>
+                <label for="terminalFiltro">Terminal</label>
+                <select id="terminalFiltro">
+                    <option value="">Todos os terminais</option>
+                </select>
+            </div>
+            <div>
+                <label>Visão</label>
+                <div class="segmented" role="tablist" aria-label="Visao dos registros">
+                    <button id="modoAgora" class="active" type="button" onclick="setModo('agora')">Agora</button>
+                    <button id="modoHoje" type="button" onclick="setModo('hoje')">Hoje</button>
+                    <button id="modoProximos" type="button" onclick="setModo('proximos')">Próximos</button>
+                </div>
+            </div>
+            <div>
+                <label>&nbsp;</label>
+                <button class="btn btn-primary" type="button" onclick="limparFiltros()">Limpar</button>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div>
+                <div class="section-title">
+                    <h2 id="tituloTabela">Quem está nos terminais agora</h2>
+                    <span id="contadorTabela">0 registros</span>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Terminal</th>
+                                <th>Pessoa</th>
+                                <th>Horário</th>
+                                <th>Status</th>
+                                <th>Função / Equipe</th>
+                                <th>Contato</th>
+                                <th>Observação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="linhasTabela">
+                            <tr><td colspan="7" class="empty">Carregando dados da planilha...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <aside>
+                <div class="section-title">
+                    <h2>Terminais</h2>
+                    <span id="contadorTerminais">0 ativos</span>
+                </div>
+                <div id="terminalBoard" class="terminal-board">
+                    <div class="empty">Sem terminais ativos agora.</div>
+                </div>
+            </aside>
+        </div>
+    </section>
+</main>
+
+<script>
+const SHEET_ID = "1ndvKADOPINtmO-i3UyNTj0q7a4VGQKE77-LiLiQj7bg";
+const GID_DADOS = "960902644";
+const GID_PROGRAMACAO = "1037933022";
+const BASE_CSV = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=csv&gid=";
+const AUTO_FETCH_MS = 120000;
+const AUTO_RENDER_MS = 30000;
+
+let REGISTROS = [];
+let DADOS = [];
+let modoAtual = "agora";
+let planilhaIniciada = false;
+let fetchTimer = null;
+let renderTimer = null;
+
+const CAMPOS = {
+    nome: ["nome", "pessoa", "colaborador", "funcionario", "funcionário", "agente", "fiscal", "operador", "nome completo"],
+    matricula: ["matricula", "matrícula", "codigo", "código", "id", "registro"],
+    email: ["email", "e-mail", "mail"],
+    cargo: ["cargo", "função", "funcao", "atividade", "perfil"],
+    equipe: ["equipe", "turno", "grupo"],
+    telefone: ["telefone", "celular", "contato", "fone"],
+    data: ["data", "dia", "dt"],
+    horario: ["horario", "horário", "periodo", "período", "escala"],
+    inicio: ["inicio", "início", "hora inicio", "hora início", "entrada", "das"],
+    fim: ["fim", "termino", "término", "saida", "saída", "ate", "até"],
+    terminal: ["terminal", "local", "posto", "ponto", "base", "localizacao", "localização"],
+    observacao: ["observacao", "observação", "obs", "comentario", "comentário", "nota"]
+};
+
+function byId(id){return document.getElementById(id);}
+function normalizarChave(texto){
+    return String(texto || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+}
+function normalizarTexto(texto){
+    return String(texto || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+}
+function escapeHtml(value){
+    return String(value ?? "").replace(/[&<>"]/g, function(match){
+        return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[match];
+    });
+}
+function formatInt(value){return Number(value || 0).toLocaleString("pt-BR");}
+function formatHora(date){
+    if (!date || Number.isNaN(date.getTime())) return "--:--";
+    return date.toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"});
+}
+function formatDataCurta(date){
+    if (!date || Number.isNaN(date.getTime())) return "";
+    return date.toLocaleDateString("pt-BR", {day:"2-digit", month:"2-digit"});
+}
+function mesmoDia(a, b){
+    return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+function inicioDoDia(date){return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);}
+function fimDoDia(date){return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);}
+
+function parseCsv(text){
+    const rows = [];
+    let row = [];
+    let cell = "";
+    let quoted = false;
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const next = text[i + 1];
+        if (char === "\"") {
+            if (quoted && next === "\"") {
+                cell += "\"";
+                i++;
+            } else {
+                quoted = !quoted;
+            }
+        } else if (char === "," && !quoted) {
+            row.push(cell);
+            cell = "";
+        } else if ((char === "\n" || char === "\r") && !quoted) {
+            if (char === "\r" && next === "\n") i++;
+            row.push(cell);
+            if (row.some(function(value){return String(value).trim() !== "";})) rows.push(row);
+            row = [];
+            cell = "";
+        } else {
+            cell += char;
+        }
+    }
+    row.push(cell);
+    if (row.some(function(value){return String(value).trim() !== "";})) rows.push(row);
+    return rows;
+}
+function csvToObjects(text){
+    const rows = parseCsv(text);
+    if (!rows.length) return [];
+    const headers = rows[0].map(function(header, index){
+        const text = String(header || "").trim();
+        return text || ("COL" + (index + 1));
+    });
+    return rows.slice(1).map(function(values){
+        const item = {};
+        headers.forEach(function(header, index){item[header] = values[index] || "";});
+        return item;
+    });
+}
+function normalizarLinha(row){
+    const out = {};
+    Object.keys(row || {}).forEach(function(key){
+        out[normalizarChave(key)] = String(row[key] ?? "").trim();
+    });
+    return out;
+}
+function pegar(row, aliases){
+    for (const alias of aliases) {
+        const value = row[normalizarChave(alias)];
+        if (value !== undefined && value !== null && String(value).trim() !== "") return String(value).trim();
+    }
+    return "";
+}
+async function buscarAba(gid){
+    const url = BASE_CSV + gid + "&_=" + Date.now();
+    const response = await fetch(url, {cache:"no-store"});
+    const text = await response.text();
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    if (/<!doctype|<html|Acesse a sua conta|Fazer login|ServiceLogin/i.test(text.slice(0, 1200))) {
+        throw new Error("A planilha nao esta liberada para leitura publica por CSV.");
+    }
+    return csvToObjects(text);
+}
+function parseData(value){
+    const text = String(value || "").trim();
+    if (!text) return null;
+    if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
+        const parts = text.slice(0, 10).split("-").map(Number);
+        return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+    let match = text.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+    if (match) {
+        const year = match[3].length === 2 ? Number("20" + match[3]) : Number(match[3]);
+        return new Date(year, Number(match[2]) - 1, Number(match[1]));
+    }
+    match = text.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+    if (match) {
+        const now = new Date();
+        return new Date(now.getFullYear(), Number(match[2]) - 1, Number(match[1]));
+    }
+    if (/^\d+(\.\d+)?$/.test(text) && Number(text) > 20000) {
+        const excelEpoch = new Date(1899, 11, 30);
+        excelEpoch.setDate(excelEpoch.getDate() + Math.floor(Number(text)));
+        return inicioDoDia(excelEpoch);
+    }
+    const parsed = new Date(text);
+    return Number.isNaN(parsed.getTime()) ? null : inicioDoDia(parsed);
+}
+function extrairHoras(text){
+    const matches = String(text || "").match(/\b([01]?\d|2[0-3])(?:[:hH]([0-5]\d))?\b/g) || [];
+    return matches.map(function(item){
+        const clean = item.replace(/[hH]/, ":");
+        const parts = clean.split(":");
+        const hora = Number(parts[0]);
+        const minuto = parts[1] === undefined ? 0 : Number(parts[1]);
+        return hora * 60 + minuto;
+    });
+}
+function montarIntervalo(data, inicioMin, fimMin){
+    if (!data) return null;
+    let inicio = inicioMin;
+    let fim = fimMin;
+    if (inicio === null && fim === null) {
+        inicio = 0;
+        fim = 1439;
+    } else if (inicio !== null && fim === null) {
+        fim = inicio + 59;
+    } else if (inicio === null && fim !== null) {
+        inicio = Math.max(0, fim - 59);
+    }
+    const start = new Date(data.getFullYear(), data.getMonth(), data.getDate(), Math.floor(inicio / 60), inicio % 60, 0, 0);
+    const end = new Date(data.getFullYear(), data.getMonth(), data.getDate(), Math.floor(fim / 60), fim % 60, 59, 999);
+    if (end <= start) end.setDate(end.getDate() + 1);
+    return {start, end};
+}
+function pareceTelefone(value){
+    const text = String(value || "").trim();
+    return /\d/.test(text) && !/^terminal\b/i.test(text);
+}
+function normalizarDados(rows){
+    const mapa = new Map();
+    const lista = rows.map(function(row){
+        const clean = normalizarLinha(row);
+        const telefonePrincipal = pegar(clean, CAMPOS.telefone);
+        const telefoneSemCabecalho = pegar(clean, ["COL4", "COL5"]);
+        const telefone = pareceTelefone(telefonePrincipal) ? telefonePrincipal : (pareceTelefone(telefoneSemCabecalho) ? telefoneSemCabecalho : "");
+        const terminal = pegar(clean, CAMPOS.terminal) || (/^terminal\b/i.test(telefonePrincipal) ? telefonePrincipal : "");
+        const pessoa = {
+            nome: pegar(clean, CAMPOS.nome),
+            matricula: pegar(clean, CAMPOS.matricula),
+            email: pegar(clean, CAMPOS.email),
+            cargo: pegar(clean, CAMPOS.cargo),
+            equipe: pegar(clean, CAMPOS.equipe),
+            telefone: telefone,
+            terminal: terminal
+        };
+        if (pessoa.nome) mapa.set("nome:" + normalizarTexto(pessoa.nome), pessoa);
+        if (pessoa.matricula) mapa.set("mat:" + normalizarTexto(pessoa.matricula), pessoa);
+        if (pessoa.email) mapa.set("email:" + normalizarTexto(pessoa.email), pessoa);
+        return pessoa;
+    }).filter(function(pessoa){return pessoa.nome || pessoa.matricula || pessoa.email || pessoa.terminal;});
+    return {lista, mapa};
+}
+function normalizarProgramacao(rows, dadosMapa){
+    return rows.map(function(row, index){
+        const clean = normalizarLinha(row);
+        const nome = pegar(clean, CAMPOS.nome);
+        const matricula = pegar(clean, CAMPOS.matricula);
+        const email = pegar(clean, CAMPOS.email);
+        const pessoaDados = dadosMapa.get("mat:" + normalizarTexto(matricula)) || dadosMapa.get("email:" + normalizarTexto(email)) || dadosMapa.get("nome:" + normalizarTexto(nome)) || {};
+        const data = parseData(pegar(clean, CAMPOS.data));
+        const horarioTexto = pegar(clean, CAMPOS.horario);
+        const inicioTexto = pegar(clean, CAMPOS.inicio);
+        const fimTexto = pegar(clean, CAMPOS.fim);
+        let inicioMin = extrairHoras(inicioTexto)[0];
+        let fimMin = extrairHoras(fimTexto)[0];
+        const horasPeriodo = extrairHoras(horarioTexto);
+        if (inicioMin === undefined && horasPeriodo.length) inicioMin = horasPeriodo[0];
+        if (fimMin === undefined && horasPeriodo.length > 1) fimMin = horasPeriodo[1];
+        const intervalo = montarIntervalo(data, inicioMin === undefined ? null : inicioMin, fimMin === undefined ? null : fimMin);
+        const terminal = pegar(clean, CAMPOS.terminal);
+        const observacao = pegar(clean, CAMPOS.observacao);
+        const item = {
+            id: index + 1,
+            nome: nome || pessoaDados.nome || "Sem nome",
+            matricula: matricula || pessoaDados.matricula || "",
+            email: email || pessoaDados.email || "",
+            cargo: pegar(clean, CAMPOS.cargo) || pessoaDados.cargo || "",
+            equipe: pegar(clean, CAMPOS.equipe) || pessoaDados.equipe || "",
+            telefone: pegar(clean, CAMPOS.telefone) || pessoaDados.telefone || "",
+            terminal: terminal || "Sem terminal",
+            observacao: observacao,
+            data: data,
+            start: intervalo ? intervalo.start : null,
+            end: intervalo ? intervalo.end : null,
+            horario: horarioTexto || (intervalo ? formatHora(intervalo.start) + " - " + formatHora(intervalo.end) : "")
+        };
+        return item;
+    }).filter(function(item){
+        return item.data && item.start && item.end && (item.nome || item.terminal);
+    });
+}
+function statusItem(item, now){
+    if (item.reserva) return {key:"reserve", label:"Mot. Reserva"};
+    if (item.start <= now && item.end >= now) return {key:"now", label:"Agora"};
+    if (item.start > now) return {key:"next", label:"Próximo"};
+    if (mesmoDia(item.start, now)) return {key:"today", label:"Hoje"};
+    return {key:"ended", label:"Encerrado"};
+}
+function registrosAgora(now){
+    return REGISTROS.filter(function(item){return item.start <= now && item.end >= now;});
+}
+function terminaisConhecidos(){
+    const terminais = new Set();
+    REGISTROS.forEach(function(item){
+        if (item.terminal && item.terminal !== "Sem terminal") terminais.add(item.terminal);
+    });
+    DADOS.forEach(function(item){
+        if (item.terminal && item.terminal !== "Sem terminal") terminais.add(item.terminal);
+    });
+    return [...terminais].sort(function(a, b){return a.localeCompare(b, "pt-BR");});
+}
+function criarReservaTerminal(terminal, now){
+    return {
+        id: "reserva-" + terminal,
+        reserva: true,
+        nome: "Mot. Reserva",
+        matricula: "",
+        email: "",
+        cargo: "",
+        equipe: "",
+        telefone: "",
+        terminal: terminal,
+        observacao: "Sem fiscal escalado neste horário",
+        data: inicioDoDia(now),
+        start: now,
+        end: now,
+        horario: "Reserva"
+    };
+}
+function registrosAgoraComReserva(now){
+    const ativos = registrosAgora(now);
+    const terminaisComPessoa = new Set(ativos.map(function(item){return item.terminal;}));
+    const reservas = terminaisConhecidos()
+        .filter(function(terminal){return !terminaisComPessoa.has(terminal);})
+        .map(function(terminal){return criarReservaTerminal(terminal, now);});
+    return ativos.concat(reservas);
+}
+function registrosHoje(now){
+    const inicio = inicioDoDia(now);
+    const fim = fimDoDia(now);
+    return REGISTROS.filter(function(item){return item.start <= fim && item.end >= inicio;});
+}
+function registrosProximos(now){
+    return REGISTROS.filter(function(item){return item.start > now;}).sort(function(a, b){return a.start - b.start;}).slice(0, 80);
+}
+function aplicarFiltros(rows){
+    const busca = normalizarTexto(byId("busca").value);
+    const terminal = byId("terminalFiltro").value;
+    return rows.filter(function(item){
+        if (terminal && item.terminal !== terminal) return false;
+        if (!busca) return true;
+        const texto = normalizarTexto([item.nome, item.terminal, item.cargo, item.equipe, item.telefone, item.observacao, item.horario].join(" "));
+        return texto.includes(busca);
+    });
+}
+function atualizarSelectTerminais(){
+    const select = byId("terminalFiltro");
+    const atual = select.value;
+    const terminais = terminaisConhecidos();
+    select.innerHTML = '<option value="">Todos os terminais</option>' + terminais.map(function(terminal){
+        return '<option value="' + escapeHtml(terminal) + '">' + escapeHtml(terminal) + '</option>';
+    }).join("");
+    if (terminais.includes(atual)) select.value = atual;
+}
+function setStatusFonte(tipo, texto){
+    const dot = byId("sourceDot");
+    dot.className = "dot" + (tipo ? " " + tipo : "");
+    byId("sourceText").textContent = texto;
+}
+function setErroFonte(mensagem){
+    const box = byId("erroFonte");
+    if (!mensagem) {
+        box.classList.remove("active");
+        box.textContent = "";
+        return;
+    }
+    box.classList.add("active");
+    box.textContent = mensagem;
+}
+async function carregarPlanilha(manual){
+    window.portalMostrarCarregando?.("Carregando terminais");
+    setStatusFonte("", "Lendo planilha...");
+    setErroFonte("");
+    try {
+        const resultado = await Promise.allSettled([buscarAba(GID_DADOS), buscarAba(GID_PROGRAMACAO)]);
+        const dadosRows = resultado[0].status === "fulfilled" ? resultado[0].value : [];
+        if (resultado[1].status !== "fulfilled") throw resultado[1].reason;
+        const dados = normalizarDados(dadosRows);
+        DADOS = dados.lista;
+        REGISTROS = normalizarProgramacao(resultado[1].value, dados.mapa);
+        atualizarSelectTerminais();
+        render();
+        const agora = new Date();
+        const texto = "Atualizado " + agora.toLocaleString("pt-BR", {dateStyle:"short", timeStyle:"short"}) + " | Registros: " + formatInt(REGISTROS.length);
+        setStatusFonte("ok", texto);
+    } catch (error) {
+        console.error("Erro ao carregar planilha:", error);
+        setStatusFonte("erro", "Falha ao ler a planilha");
+        setErroFonte("Não consegui ler a planilha. Para funcionar automaticamente, compartilhe a planilha como visualização para quem tiver o link ou publique as abas usadas. Aba Escala configurada: gid " + GID_PROGRAMACAO + ". Aba Base de Dados configurada: gid " + GID_DADOS + ".");
+        render();
+    } finally {
+        window.portalOcultarCarregando?.();
+    }
+}
+function proximaMovimentacao(now){
+    const candidatos = [];
+    REGISTROS.forEach(function(item){
+        if (item.start > now) candidatos.push({date:item.start, item, tipo:"Início"});
+        if (item.end > now) candidatos.push({date:item.end, item, tipo:"Fim"});
+    });
+    candidatos.sort(function(a, b){return a.date - b.date;});
+    return candidatos[0] || null;
+}
+function renderKpis(now){
+    const ativos = registrosAgora(now);
+    const hoje = registrosHoje(now);
+    const terminaisAtivos = new Set(ativos.map(function(item){return item.terminal;}));
+    const proxima = proximaMovimentacao(now);
+    byId("kpiAgora").textContent = formatInt(ativos.length);
+    byId("kpiAgoraSub").textContent = ativos.length ? "Em atendimento neste momento" : "Nenhuma presença ativa";
+    byId("kpiTerminais").textContent = formatInt(terminaisAtivos.size);
+    byId("kpiTerminaisSub").textContent = terminaisAtivos.size ? [...terminaisAtivos].sort().slice(0, 3).join(", ") : "Nenhum terminal no momento";
+    byId("kpiProxima").textContent = proxima ? formatHora(proxima.date) : "--:--";
+    byId("kpiProximaSub").textContent = proxima ? proxima.tipo + " de " + proxima.item.nome + " em " + proxima.item.terminal : "Sem próxima movimentação";
+    byId("kpiHoje").textContent = formatInt(hoje.length);
+    byId("kpiHojeSub").textContent = "Para " + now.toLocaleDateString("pt-BR");
+}
+function getRowsModo(now){
+    if (modoAtual === "hoje") return registrosHoje(now).sort(function(a, b){return a.start - b.start || a.terminal.localeCompare(b.terminal, "pt-BR");});
+    if (modoAtual === "proximos") return registrosProximos(now);
+    return registrosAgoraComReserva(now).sort(function(a, b){return a.terminal.localeCompare(b.terminal, "pt-BR") || Number(Boolean(a.reserva)) - Number(Boolean(b.reserva)) || a.end - b.end || a.nome.localeCompare(b.nome, "pt-BR");});
+}
+function renderTabela(rows, now){
+    byId("contadorTabela").textContent = formatInt(rows.length) + (rows.length === 1 ? " registro" : " registros");
+    if (!rows.length) {
+        byId("linhasTabela").innerHTML = '<tr><td colspan="7" class="empty">Nenhum registro encontrado para esta visão.</td></tr>';
+        return;
+    }
+    byId("linhasTabela").innerHTML = rows.map(function(item){
+        const status = statusItem(item, now);
+        const periodo = item.reserva ? "Sem escala no horário" : formatDataCurta(item.start) + " " + formatHora(item.start) + " - " + formatHora(item.end);
+        const funcao = [item.cargo, item.equipe].filter(Boolean).join(" / ");
+        const contato = item.telefone || item.email || "";
+        return "<tr>" +
+            "<td><b>" + escapeHtml(item.terminal) + "</b></td>" +
+            "<td><b>" + escapeHtml(item.nome) + "</b>" + (item.matricula ? '<div class="muted">' + escapeHtml(item.matricula) + '</div>' : "") + "</td>" +
+            "<td>" + escapeHtml(periodo) + "</td>" +
+            '<td><span class="status-badge status-' + status.key + '">' + status.label + "</span></td>" +
+            '<td>' + (funcao ? escapeHtml(funcao) : '<span class="muted">Não informado</span>') + '</td>' +
+            '<td>' + (contato ? escapeHtml(contato) : '<span class="muted">Não informado</span>') + '</td>' +
+            '<td>' + (item.observacao ? escapeHtml(item.observacao) : '<span class="muted">-</span>') + '</td>' +
+        "</tr>";
+    }).join("");
+}
+function renderBoard(now){
+    const ativos = aplicarFiltros(registrosAgoraComReserva(now));
+    const grupos = new Map();
+    ativos.forEach(function(item){
+        if (!grupos.has(item.terminal)) grupos.set(item.terminal, []);
+        grupos.get(item.terminal).push(item);
+    });
+    const gruposOrdenados = [...grupos.entries()].sort(function(a, b){return a[0].localeCompare(b[0], "pt-BR");});
+    byId("contadorTerminais").textContent = formatInt(gruposOrdenados.length) + " terminais";
+    if (!gruposOrdenados.length) {
+        byId("terminalBoard").innerHTML = '<div class="empty">Sem terminais para exibir.</div>';
+        return;
+    }
+    byId("terminalBoard").innerHTML = gruposOrdenados.map(function(entry){
+        const terminal = entry[0];
+        const pessoas = entry[1].sort(function(a, b){return Number(Boolean(a.reserva)) - Number(Boolean(b.reserva)) || a.end - b.end || a.nome.localeCompare(b.nome, "pt-BR");});
+        const somenteReserva = pessoas.every(function(item){return item.reserva;});
+        return '<div class="terminal-card' + (somenteReserva ? ' reserve' : '') + '">' +
+            '<div class="terminal-head"><div class="terminal-name">' + escapeHtml(terminal) + '</div><span class="count-pill' + (somenteReserva ? ' reserve' : '') + '">' + (somenteReserva ? 'Reserva' : formatInt(pessoas.length)) + '</span></div>' +
+            pessoas.map(function(item){
+                const detalhe = item.reserva ? "Sem fiscal escalado neste horário" : [item.cargo, item.equipe].filter(Boolean).join(" / ");
+                return '<div class="person-line"><div><b>' + escapeHtml(item.nome) + '</b><small>' + escapeHtml(detalhe || "Até " + formatHora(item.end)) + '</small></div><span class="time-chip">' + (item.reserva ? 'reserva' : 'até ' + formatHora(item.end)) + '</span></div>';
+            }).join("") +
+        '</div>';
+    }).join("");
+}
+function render(){
+    const now = new Date();
+    renderKpis(now);
+    const rows = aplicarFiltros(getRowsModo(now));
+    byId("tituloTabela").textContent = modoAtual === "agora" ? "Quem está nos terminais agora" : (modoAtual === "hoje" ? "Programação de hoje" : "Próximas presenças");
+    renderTabela(rows, now);
+    renderBoard(now);
+}
+function setModo(modo){
+    modoAtual = modo;
+    ["Agora", "Hoje", "Proximos"].forEach(function(nome){
+        byId("modo" + nome).classList.toggle("active", normalizarTexto(nome) === normalizarTexto(modo));
+    });
+    render();
+}
+function limparFiltros(){
+    byId("busca").value = "";
+    byId("terminalFiltro").value = "";
+    setModo("agora");
+}
+function iniciarUmaVez(){
+    if (planilhaIniciada) return;
+    planilhaIniciada = true;
+    byId("busca").addEventListener("input", render);
+    byId("terminalFiltro").addEventListener("change", render);
+    window.carregarPlanilha = carregarPlanilha;
+    window.setModo = setModo;
+    window.limparFiltros = limparFiltros;
+    carregarPlanilha(false);
+    fetchTimer = window.setInterval(function(){carregarPlanilha(false);}, AUTO_FETCH_MS);
+    renderTimer = window.setInterval(render, AUTO_RENDER_MS);
+}
+window.addEventListener("beforeunload", function(){
+    if (fetchTimer) window.clearInterval(fetchTimer);
+    if (renderTimer) window.clearInterval(renderTimer);
+});
+if (typeof window.portalAguardarUsuario === "function") {
+    window.portalAguardarUsuario(iniciarUmaVez);
+} else if (window.portalUsuarioValidado) {
+    iniciarUmaVez();
+} else {
+    window.addEventListener("portal:usuario-validado", iniciarUmaVez, { once: true });
+}
+</script>
+</body>
+</html>
