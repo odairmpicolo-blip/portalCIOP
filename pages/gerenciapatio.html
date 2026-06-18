@@ -32,18 +32,19 @@ body {
     flex-direction: column;
     min-height: 100vh;
 }
-.operator-panel {
+.consulta-panel {
     display: grid;
-    grid-template-columns: repeat(2, minmax(150px, 190px));
-    gap: 10px;
-    align-items: end;
-    padding: 10px;
+    grid-template-columns: minmax(260px, 360px) minmax(280px, 1fr);
+    gap: 12px;
+    align-items: stretch;
+    flex: 1;
+    padding: 12px;
     background: rgba(255, 255, 255, 0.98);
     border: 1px solid var(--border);
     border-radius: 8px;
     box-shadow: 0 10px 24px rgba(16, 24, 40, 0.08);
 }
-.operator-field label {
+.consulta-field label {
     display: block;
     font-size: 10px;
     line-height: 1;
@@ -52,20 +53,33 @@ body {
     text-transform: uppercase;
     margin-bottom: 6px;
 }
-.operator-field select {
+.consulta-field input {
     width: 100%;
-    min-height: 34px;
+    min-height: 40px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 7px;
     background: #fff;
     color: var(--blue);
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 800;
     outline: none;
-    padding: 0 8px;
+    padding: 0 12px;
 }
-@media (max-width: 640px) {
-    .operator-panel {
+.consulta-field input:focus {
+    border-color: var(--blue2);
+    box-shadow: 0 0 0 3px rgba(11, 58, 138, 0.10);
+}
+.consulta-panel .result-box {
+    margin: 0;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+}
+.consulta-panel .result-box:empty {
+    display: none;
+}
+@media (max-width: 820px) {
+    .consulta-panel {
         width: 100%;
         grid-template-columns: 1fr;
     }
@@ -489,26 +503,12 @@ footer {
 <div class="container">
     <div class="portal-toolbar">
         <a href="../index.html" class="btn-portal">Portal CIOP</a>
-        <div class="operator-panel" aria-label="Dados de operação">
-            <div class="operator-field">
-                <label for="operadorPatio">Operador</label>
-                <select id="operadorPatio">
-                    <option value="Odair">Odair</option>
-                    <option value="CIOP 01">CIOP 01</option>
-                    <option value="CIOP 02">CIOP 02</option>
-                    <option value="Fiscalizacao">Fiscalizacao</option>
-                    <option value="Plantao">Plantao</option>
-                </select>
+        <div class="consulta-panel" aria-label="Consulta de saida">
+            <div class="consulta-field">
+                <label for="searchBus">Consulta de saída</label>
+                <input type="text" id="searchBus" placeholder="Digite o prefixo do veículo" list="frotaList" autocomplete="off" inputmode="numeric">
             </div>
-            <div class="operator-field">
-                <label for="portaSaida">Porta de saída</label>
-                <select id="portaSaida">
-                    <option value="Porta 1">Porta 1</option>
-                    <option value="Porta 2">Porta 2</option>
-                    <option value="Porta 3">Porta 3</option>
-                    <option value="Garagem">Garagem</option>
-                </select>
-            </div>
+            <div id="resultOutput" class="result-box"></div>
         </div>
     </div>
 
@@ -534,17 +534,6 @@ footer {
                 <button class="btn" style="width: 100%; display: none;" onclick="adicionarNaFila()">Alocar no Pátio</button>
             </div>
 
-            <div class="card">
-                <div class="card-title">🔍 Consulta de Saída</div>
-                <div class="form-group">
-                    <label for="searchBus">Análise Disponibilidade:</label>
-                    <div class="form-row">
-                        <input type="text" id="searchBus" class="form-control" placeholder="Ex: 1150" list="frotaList">
-                        <button class="btn btn-orange" onclick="verificarAcessibilidade()">Analisar</button>
-                    </div>
-                </div>
-                <div id="resultOutput" class="result-box"></div>
-            </div>
 
             <div class="card">
                 <div class="card-title">🔵 Destinar para RPL</div>
@@ -633,7 +622,6 @@ let patio = JSON.parse(localStorage.getItem('patio_tcgl_v2')) || {
 };
 
 function inicializarGerenciamentoPatio() {
-    configurarOperacao();
     popularDatalist();
     
     // Foca na primeira caixa de texto ao abrir a página
@@ -668,24 +656,27 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-function obterDadosOperacao() {
-    return {
-        operador: document.getElementById('operadorPatio')?.value || 'Nao informado',
-        porta: document.getElementById('portaSaida')?.value || 'Nao informada',
-        geradoEm: new Date().toLocaleString('pt-BR')
-    };
-}
+function configurarConsultaAutomatica() {
+    const input = document.getElementById('searchBus');
+    const resultBox = document.getElementById('resultOutput');
+    if (!input) return;
 
-function configurarOperacao() {
-    const usuarioSelect = document.getElementById('operadorPatio');
-    const portaSelect = document.getElementById('portaSaida');
-    usuarioSelect.value = localStorage.getItem('patio_tcgl_usuario') || usuarioSelect.value;
-    portaSelect.value = localStorage.getItem('patio_tcgl_porta_saida') || portaSelect.value;
-    usuarioSelect.addEventListener('change', () => {
-        localStorage.setItem('patio_tcgl_usuario', usuarioSelect.value);
+    input.addEventListener('input', function() {
+        const prefixo = input.value.trim();
+        if (!prefixo) {
+            resultBox.className = 'result-box';
+            resultBox.innerHTML = '';
+            return;
+        }
+        if (prefixo.length >= 4) {
+            verificarAcessibilidade();
+        }
     });
-    portaSelect.addEventListener('change', () => {
-        localStorage.setItem('patio_tcgl_porta_saida', portaSelect.value);
+
+    input.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            verificarAcessibilidade();
+        }
     });
 }
 
@@ -705,6 +696,8 @@ function popularDatalist() {
 }
 
 function configurarInputsComEnter() {
+    configurarConsultaAutomatica();
+
     // Alocação Fila
     document.getElementById('inputFilaBus').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
@@ -974,10 +967,9 @@ function exportarExcel() {
         patio.oficina.length
     );
     
-    const operacao = obterDadosOperacao();
     const dadosExcel = [
         ["GERENCIAMENTO DO PATIO - CIOP / TCGL"],
-        ["Operador", operacao.operador, "Porta de saida", operacao.porta, "Gerado em", operacao.geradoEm],
+        ["Gerado em", new Date().toLocaleString('pt-BR')],
         [],
         ["FILA DO MURO", "1ª FILA", "2ª FILA", "3ª FILA", "4ª FILA", "OFICINA"]
     ];
