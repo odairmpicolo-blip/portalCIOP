@@ -83,6 +83,41 @@ button:hover{
     margin-top:10px;
 }
 
+.login-loading-overlay{
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(135deg,rgba(245,247,251,.96),rgba(232,237,246,.96));
+    backdrop-filter:blur(8px);
+}
+.login-loading-overlay.active{display:flex}
+.login-loading-box{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+    min-width:220px;
+    padding:24px 28px;
+    border:1px solid rgba(6,36,92,.12);
+    border-radius:10px;
+    background:rgba(255,255,255,.92);
+    box-shadow:0 18px 50px rgba(16,24,40,.16);
+    color:#06245c;
+}
+.login-loading-mark{position:relative;width:54px;height:54px}
+.login-loading-mark::before,.login-loading-mark::after{content:"";position:absolute;inset:0;border-radius:50%;border:4px solid transparent}
+.login-loading-mark::before{border-top-color:#06245c;border-right-color:#0b3a8a;animation:loginSpin .85s linear infinite}
+.login-loading-mark::after{inset:9px;border-bottom-color:#ff6b00;border-left-color:#ff6b00;animation:loginSpin 1.15s linear infinite reverse}
+.login-loading-title{font-size:15px;font-weight:800}
+.login-loading-dots{display:flex;gap:5px}
+.login-loading-dots span{width:6px;height:6px;border-radius:50%;background:#ff6b00;animation:loginPulse 1s ease-in-out infinite}
+.login-loading-dots span:nth-child(2){animation-delay:.15s}.login-loading-dots span:nth-child(3){animation-delay:.3s}
+@keyframes loginSpin{to{transform:rotate(360deg)}}
+@keyframes loginPulse{0%,80%,100%{opacity:.35;transform:translateY(0)}40%{opacity:1;transform:translateY(-4px)}}
+
 </style>
 </head>
 <body>
@@ -119,6 +154,14 @@ Entrar
 
 </div>
 
+<div id="loginLoading" class="login-loading-overlay" role="status" aria-live="polite">
+  <div class="login-loading-box">
+    <div class="login-loading-mark" aria-hidden="true"></div>
+    <div id="loginLoadingText" class="login-loading-title">Carregando</div>
+    <div class="login-loading-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+  </div>
+</div>
+
 <script type="module">
 
 import { initializeApp }
@@ -134,6 +177,15 @@ from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseConfig } from "./assets/js/firebase-config.js";
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+
+function mostrarCarregando(texto) {
+  document.getElementById("loginLoadingText").textContent = texto || "Carregando";
+  document.getElementById("loginLoading").classList.add("active");
+}
+
+function ocultarCarregando() {
+  document.getElementById("loginLoading").classList.remove("active");
+}
 
 function mensagemErroLogin(error) {
   const code = error && error.code ? error.code : "";
@@ -162,6 +214,8 @@ window.login = async function(){
 
  try{
 
+   mostrarCarregando("Entrando no portal");
+
    await signInWithEmailAndPassword(
       auth,
       email,
@@ -172,6 +226,8 @@ window.login = async function(){
    "index.html";
 
  }catch(error){
+
+   ocultarCarregando();
 
    document.getElementById("erro")
    .innerHTML =
@@ -204,10 +260,14 @@ window.resetarSenha = async function(){
 
  try{
 
+   mostrarCarregando("Enviando recuperacao");
+
    await sendPasswordResetEmail(
       auth,
       email
    );
+
+   ocultarCarregando();
 
    alert(
     "E-mail de recuperação enviado."
@@ -215,6 +275,7 @@ window.resetarSenha = async function(){
 
  }catch(error){
 
+   ocultarCarregando();
    alert(error.message);
 
  }

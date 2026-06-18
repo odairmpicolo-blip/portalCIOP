@@ -12,6 +12,57 @@ import { usuarios } from "./usuarios.js";
 
 const auth = getAuth(app);
 
+const LOADING_ID = "portalLoadingOverlay";
+
+function mostrarCarregando(texto = "Carregando portal") {
+  if (document.getElementById(LOADING_ID)) return;
+
+  const style = document.createElement("style");
+  style.id = "portalLoadingStyle";
+  style.textContent = `
+    .portal-loading-overlay{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(245,247,251,.96),rgba(232,237,246,.96));backdrop-filter:blur(8px);transition:opacity .25s ease,visibility .25s ease}
+    .portal-loading-overlay.hide{opacity:0;visibility:hidden}
+    .portal-loading-box{display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px 28px;border:1px solid rgba(6,36,92,.12);border-radius:10px;background:rgba(255,255,255,.92);box-shadow:0 18px 50px rgba(16,24,40,.16);color:#06245c;font-family:Arial,Helvetica,sans-serif;min-width:220px}
+    .portal-loading-mark{position:relative;width:54px;height:54px}
+    .portal-loading-mark::before,.portal-loading-mark::after{content:"";position:absolute;inset:0;border-radius:50%;border:4px solid transparent}
+    .portal-loading-mark::before{border-top-color:#06245c;border-right-color:#0b3a8a;animation:portalSpin .85s linear infinite}
+    .portal-loading-mark::after{inset:9px;border-bottom-color:#ff6b00;border-left-color:#ff6b00;animation:portalSpin 1.15s linear infinite reverse}
+    .portal-loading-title{font-size:15px;font-weight:800;letter-spacing:.2px}
+    .portal-loading-dots{display:flex;gap:5px}
+    .portal-loading-dots span{width:6px;height:6px;border-radius:50%;background:#ff6b00;animation:portalPulse 1s ease-in-out infinite}
+    .portal-loading-dots span:nth-child(2){animation-delay:.15s}.portal-loading-dots span:nth-child(3){animation-delay:.3s}
+    @keyframes portalSpin{to{transform:rotate(360deg)}}
+    @keyframes portalPulse{0%,80%,100%{opacity:.35;transform:translateY(0)}40%{opacity:1;transform:translateY(-4px)}}
+  `;
+  document.head.appendChild(style);
+
+  const overlay = document.createElement("div");
+  overlay.id = LOADING_ID;
+  overlay.className = "portal-loading-overlay";
+  overlay.setAttribute("role", "status");
+  overlay.setAttribute("aria-live", "polite");
+  overlay.innerHTML = `
+    <div class="portal-loading-box">
+      <div class="portal-loading-mark" aria-hidden="true"></div>
+      <div class="portal-loading-title">${texto}</div>
+      <div class="portal-loading-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function ocultarCarregando() {
+  const overlay = document.getElementById(LOADING_ID);
+  if (!overlay) return;
+  overlay.classList.add("hide");
+  window.setTimeout(() => overlay.remove(), 280);
+}
+
+if (document.body) {
+  mostrarCarregando();
+} else {
+  document.addEventListener("DOMContentLoaded", () => mostrarCarregando(), { once: true });
+}
+
 function portalPath(file) {
   const inPages = window.location.pathname.includes("/pages/");
   return inPages ? "../" + file : file;
@@ -142,15 +193,17 @@ function aplicarPermissoes(cadastro) {
   const perfisBloqueadosPagina = listaAtributo(document.body?.dataset.excluirPerfis);
   if (perfisBloqueadosPagina.includes(perfilAtual)) {
     window.location.href = portalPath("index.html");
-    return;
+    return false;
   }
 
   const perfisObrigatorios = listaAtributo(document.body?.dataset.requirePerfis);
   if (perfisObrigatorios.length && !temAcessoTotal(cadastro)) {
     if (!perfisObrigatorios.includes(perfilAtual)) {
       window.location.href = portalPath("index.html");
+      return false;
     }
   }
+  return true;
 }
 
 onAuthStateChanged(auth, async (user) => {
@@ -177,5 +230,7 @@ onAuthStateChanged(auth, async (user) => {
 
   if (nome) nome.textContent = cadastro.nome;
   if (perfil) perfil.textContent = cadastro.perfil;
-  aplicarPermissoes(cadastro);
+  if (aplicarPermissoes(cadastro) !== false) {
+    ocultarCarregando();
+  }
 });
