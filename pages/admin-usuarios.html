@@ -188,7 +188,7 @@ th{color:var(--blue);background:#f8fafc}
                         <th>Acesso</th>
                     </tr>
                 </thead>
-                <tbody id="usuariosTabela"></tbody>
+                <tbody id="usuariosTabela"><tr><td colspan="6" class="no-data">Carregando usuários...</td></tr></tbody>
             </table>
         </section>
     </div>
@@ -225,6 +225,10 @@ function atualizarStatus(mensagem, tipo = "ok") {
 function renderUsuarios() {
     const tbody = document.getElementById("usuariosTabela");
     const ordenados = Object.entries(usuariosEditados).sort(([a], [b]) => a.localeCompare(b));
+    if (!ordenados.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="no-data">Nenhum usuário cadastrado no portal.</td></tr>';
+        return;
+    }
     tbody.innerHTML = ordenados.map(([email, user]) => {
         const idBase = email.replace(/[^a-z0-9]/gi, "_");
         const selectId = "perfil_" + idBase;
@@ -238,9 +242,9 @@ function renderUsuarios() {
             return "<option" + selected + ">" + perfil + "</option>";
         }).join("");
         return "<tr>" +
-            "<td>" + email + "</td>" +
-            "<td>" + user.nome + "</td>" +
-            "<td>" + user.perfil + "</td>" +
+            "<td>" + escapeHtml(email) + "</td>" +
+            "<td>" + escapeHtml(user.nome) + "</td>" +
+            "<td>" + escapeHtml(user.perfil) + "</td>" +
             "<td><span class=\"status " + statusClass + "\">" + statusLabel + "</span></td>" +
             "<td><div class=\"perfil-row\"><select id=\"" + selectId + "\">" + options + "</select>" +
             "<button class=\"btn btn-primary\" type=\"button\" onclick=\"alterarPerfil('" + escapeAttr(email) + "','" + escapeAttr(user.nome) + "','" + selectId + "')\">Salvar</button></div></td>" +
@@ -324,15 +328,28 @@ window.recarregarUsuarios = function () {
     window.location.reload();
 };
 
+function aguardarComTempoLimite(promise, ms, mensagem) {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => window.setTimeout(() => reject(new Error(mensagem)), ms))
+    ]);
+}
+
 async function iniciar(limparAntes = false) {
     window.portalMostrarCarregando?.("Carregando usuários");
     if (limparAntes) {
         Object.keys(usuariosEditados).forEach((email) => delete usuariosEditados[email]);
     }
     carregarUsuariosLocais();
+    renderUsuarios();
+    atualizarStatus("Usuários locais carregados. Buscando atualizações online...");
 
     try {
-        const usuariosOnline = await listarUsuariosFirestore();
+        const usuariosOnline = await aguardarComTempoLimite(
+            listarUsuariosFirestore(),
+            10000,
+            "Tempo esgotado ao buscar usuários online."
+        );
         Object.entries(usuariosOnline).forEach(([email, user]) => {
             usuariosEditados[email] = user;
         });
@@ -346,7 +363,20 @@ async function iniciar(limparAntes = false) {
     }
 }
 
-window.portalAguardarUsuario?.(() => iniciar());
+let adminUsuariosIniciado = false;
+function iniciarAdminUsuariosUmaVez() {
+    if (adminUsuariosIniciado) return;
+    adminUsuariosIniciado = true;
+    iniciar();
+}
+
+if (typeof window.portalAguardarUsuario === "function") {
+    window.portalAguardarUsuario(iniciarAdminUsuariosUmaVez);
+} else if (window.portalUsuarioValidado) {
+    iniciarAdminUsuariosUmaVez();
+} else {
+    window.addEventListener("portal:usuario-validado", iniciarAdminUsuariosUmaVez, { once: true });
+}
 </script>
 </body>
 </html>
