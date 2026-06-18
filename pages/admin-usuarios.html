@@ -337,17 +337,26 @@ function aguardarComTempoLimite(promise, ms, mensagem) {
 
 async function iniciar(limparAntes = false) {
     window.portalMostrarCarregando?.("Carregando usuários");
-    if (limparAntes) {
-        Object.keys(usuariosEditados).forEach((email) => delete usuariosEditados[email]);
+
+    try {
+        if (limparAntes) {
+            Object.keys(usuariosEditados).forEach((email) => delete usuariosEditados[email]);
+        }
+
+        carregarUsuariosLocais();
+        renderUsuarios();
+        atualizarStatus("Usuários locais carregados. Buscando atualizações online...");
+    } catch (error) {
+        console.error("Erro ao montar lista local de usuários:", error);
+        atualizarStatus("Nao foi possivel montar a lista local: " + error.message, "erro");
+    } finally {
+        window.portalOcultarCarregando?.();
     }
-    carregarUsuariosLocais();
-    renderUsuarios();
-    atualizarStatus("Usuários locais carregados. Buscando atualizações online...");
 
     try {
         const usuariosOnline = await aguardarComTempoLimite(
             listarUsuariosFirestore(),
-            10000,
+            6000,
             "Tempo esgotado ao buscar usuários online."
         );
         Object.entries(usuariosOnline).forEach(([email, user]) => {
@@ -358,8 +367,6 @@ async function iniciar(limparAntes = false) {
     } catch (error) {
         renderUsuarios();
         atualizarStatus("Firestore ainda nao carregou. Usando cadastro local como fallback: " + error.message, "erro");
-    } finally {
-        window.portalOcultarCarregando?.();
     }
 }
 
