@@ -25,7 +25,8 @@ async function getCadastro(user) {
     if (cadastroOnline) {
       return {
         nome: cadastroOnline.nome || user.displayName || email,
-        perfil: cadastroOnline.perfil || "Usuario"
+        perfil: cadastroOnline.perfil || "Usuario",
+        ativo: cadastroOnline.ativo !== false
       };
     }
   } catch (error) {
@@ -36,14 +37,16 @@ async function getCadastro(user) {
   if (!cadastroLocal) {
     return {
       nome: user.displayName || user.email,
-      perfil: "Usuario"
+      perfil: "Usuario",
+      ativo: true
     };
   }
 
   const cadastro = normalizarCadastro(cadastroLocal, email);
   return {
     nome: cadastro.nome || user.displayName || email,
-    perfil: cadastro.perfil || "Usuario"
+    perfil: cadastro.perfil || "Usuario",
+    ativo: cadastro.ativo !== false
   };
 }
 
@@ -161,6 +164,14 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   const cadastro = { ...await getCadastro(user), email: user.email };
+
+  if (cadastro.ativo === false) {
+    alert("Seu acesso ao portal esta desativado. Procure um administrador.");
+    await signOut(auth);
+    window.location.href = portalPath("login.html");
+    return;
+  }
+
   const nome = document.getElementById("usuarioLogado");
   const perfil = document.getElementById("perfilUsuario");
 

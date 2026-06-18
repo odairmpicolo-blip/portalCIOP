@@ -182,7 +182,9 @@ th{color:var(--blue);background:#f8fafc}
                         <th>E-mail</th>
                         <th>Nome</th>
                         <th>Perfil</th>
+                        <th>Status</th>
                         <th>Alterar perfil</th>
+                        <th>Acesso</th>
                     </tr>
                 </thead>
                 <tbody id="usuariosTabela"></tbody>
@@ -223,7 +225,13 @@ function renderUsuarios() {
     const tbody = document.getElementById("usuariosTabela");
     const ordenados = Object.entries(usuariosEditados).sort(([a], [b]) => a.localeCompare(b));
     tbody.innerHTML = ordenados.map(([email, user]) => {
-        const selectId = "perfil_" + email.replace(/[^a-z0-9]/gi, "_");
+        const idBase = email.replace(/[^a-z0-9]/gi, "_");
+        const selectId = "perfil_" + idBase;
+        const ativo = user.ativo !== false;
+        const statusLabel = ativo ? "Ativo" : "Desativado";
+        const statusClass = ativo ? "ok" : "erro";
+        const acaoLabel = ativo ? "Desativar" : "Ativar";
+        const acaoClass = ativo ? "btn-danger" : "btn-secondary";
         const options = perfisDisponiveis.map((perfil) => {
             const selected = perfil === user.perfil ? " selected" : "";
             return "<option" + selected + ">" + perfil + "</option>";
@@ -232,19 +240,21 @@ function renderUsuarios() {
             "<td>" + email + "</td>" +
             "<td>" + user.nome + "</td>" +
             "<td>" + user.perfil + "</td>" +
+            "<td><span class=\"status " + statusClass + "\">" + statusLabel + "</span></td>" +
             "<td><div class=\"perfil-row\"><select id=\"" + selectId + "\">" + options + "</select>" +
             "<button class=\"btn btn-primary\" type=\"button\" onclick=\"alterarPerfil('" + escapeAttr(email) + "','" + escapeAttr(user.nome) + "','" + selectId + "')\">Salvar</button></div></td>" +
+            "<td><button class=\"btn " + acaoClass + "\" type=\"button\" onclick=\"alternarAcesso('" + escapeAttr(email) + "')\">" + acaoLabel + "</button></td>" +
             "</tr>";
     }).join("");
 }
 
-async function salvarUsuario(email, nome, perfil, mensagem) {
+async function salvarUsuario(email, nome, perfil, mensagem, ativo = true) {
     const status = document.getElementById("cadastroStatus");
     status.className = "status";
     status.textContent = "Salvando no Firestore...";
 
     try {
-        const usuario = await salvarUsuarioFirestore(email, { nome, perfil });
+        const usuario = await salvarUsuarioFirestore(email, { nome, perfil, ativo });
         usuariosEditados[usuario.email] = usuario;
         renderUsuarios();
         atualizarStatus(mensagem);
@@ -256,7 +266,26 @@ async function salvarUsuario(email, nome, perfil, mensagem) {
 
 window.alterarPerfil = function (email, nome, selectId) {
     const perfil = document.getElementById(selectId).value;
-    salvarUsuario(email, nome, perfil, "Perfil salvo automaticamente no Firestore.");
+    const user = usuariosEditados[String(email || "").toLowerCase()];
+    salvarUsuario(email, nome, perfil, "Perfil salvo automaticamente no Firestore.", user?.ativo !== false);
+};
+
+window.alternarAcesso = function (email) {
+    const id = String(email || "").toLowerCase();
+    const user = usuariosEditados[id];
+    if (!user) return;
+
+    const usuarioAtual = String(window.portalUsuario?.email || "").toLowerCase();
+    if (id && id === usuarioAtual) {
+        atualizarStatus("Voce nao pode desativar o proprio acesso enquanto esta logado.", "erro");
+        return;
+    }
+
+    const novoStatus = user.ativo === false;
+    const acao = novoStatus ? "ativar" : "desativar";
+    if (!confirm("Deseja realmente " + acao + " o acesso de " + id + "?")) return;
+
+    salvarUsuario(id, user.nome, user.perfil, novoStatus ? "Usuario ativado no portal." : "Usuario desativado no portal.", novoStatus);
 };
 
 window.classificarUsuario = function () {

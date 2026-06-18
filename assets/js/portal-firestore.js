@@ -26,7 +26,8 @@ export function normalizarCadastro(cadastro, email) {
   return {
     email: normalizarEmail(cadastro?.email || email),
     nome: cadastro?.nome || email,
-    perfil: cadastro?.perfil || "Usuario"
+    perfil: cadastro?.perfil || "Usuario",
+    ativo: cadastro?.ativo !== false
   };
 }
 
@@ -54,6 +55,7 @@ export async function salvarUsuarioFirestore(email, cadastro) {
     email: id,
     nome: dados.nome,
     perfil: dados.perfil,
+    ativo: dados.ativo !== false,
     atualizadoEm: serverTimestamp()
   }, { merge: true });
   return dados;
