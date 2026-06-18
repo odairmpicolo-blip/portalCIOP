@@ -493,7 +493,7 @@ let renderTimer = null;
 
 const CAMPOS = {
     nome: ["nome", "pessoa", "colaborador", "funcionario", "funcionário", "agente", "fiscal", "operador", "nome completo"],
-    matricula: ["matricula", "matrícula", "codigo", "código", "id", "registro"],
+    matricula: ["matricula", "matrícula", "codigo", "código", "id", "registro", "regist"],
     email: ["email", "e-mail", "mail"],
     cargo: ["cargo", "função", "funcao", "atividade", "perfil"],
     equipe: ["equipe", "turno", "grupo"],
@@ -521,6 +521,49 @@ function normalizarTexto(texto){
         .toLowerCase()
         .replace(/\s+/g, " ")
         .trim();
+}
+function normalizarTerminal(texto){
+    return normalizarTexto(texto)
+        .replace(/[^a-z0-9]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+const TERMINAIS_PADRAO = [
+    {ordem:1, nome:"Terminal Central Superior", aliases:["terminal central superior", "central superior"]},
+    {ordem:2, nome:"Terminal Central Inferior", aliases:["terminal central inferior", "central inferior"]},
+    {ordem:3, nome:"Terminal Vivi Xavier", aliases:["terminal vivi xavier", "vivi xavier"]},
+    {ordem:4, nome:"Estação Catuaí", aliases:["estacao catuai", "terminal shopping catuai", "shopping catuai", "terminal catuai"]},
+    {ordem:5, nome:"Terminal Ouro Verde", aliases:["terminal ouro verde", "ouro verde"]},
+    {ordem:6, nome:"Terminal Milton Gavetti", aliases:["terminal milton gavetti", "milton gavetti"]},
+    {ordem:7, nome:"Terminal Acapulco", aliases:["terminal acapulco", "acapulco"]},
+    {ordem:8, nome:"Terminal Oeste", aliases:["terminal oeste", "terminal regiao oeste", "regiao oeste", "oeste"]}
+];
+function terminalPadraoInfo(terminal){
+    const chave = normalizarTerminal(terminal);
+    return TERMINAIS_PADRAO.find(function(item){
+        return item.aliases.some(function(alias){return chave === alias || chave.includes(alias);});
+    }) || null;
+}
+function displayTerminal(terminal){
+    const info = terminalPadraoInfo(terminal);
+    return info ? info.nome : terminal;
+}
+function ordemTerminal(terminal){
+    const info = terminalPadraoInfo(terminal);
+    return info ? info.ordem : 999;
+}
+function chaveTerminalComparacao(terminal){
+    const info = terminalPadraoInfo(terminal);
+    return info ? "padrao:" + info.ordem : "raw:" + normalizarTerminal(terminal);
+}
+function mesmoTerminal(a, b){
+    return chaveTerminalComparacao(a) === chaveTerminalComparacao(b);
+}
+function compararTerminais(a, b){
+    const ordemA = ordemTerminal(a);
+    const ordemB = ordemTerminal(b);
+    if (ordemA !== ordemB) return ordemA - ordemB;
+    return displayTerminal(a).localeCompare(displayTerminal(b), "pt-BR");
 }
 function escapeHtml(value){
     return String(value ?? "").replace(/[&<>"]/g, function(match){
@@ -748,7 +791,7 @@ function terminaisConhecidos(){
     DADOS.forEach(function(item){
         if (item.terminal && item.terminal !== "Sem terminal") terminais.add(item.terminal);
     });
-    return [...terminais].sort(function(a, b){return a.localeCompare(b, "pt-BR");});
+    return [...terminais].sort(compararTerminais);
 }
 function criarReservaTerminal(terminal, now){
     return {
@@ -770,9 +813,9 @@ function criarReservaTerminal(terminal, now){
 }
 function registrosAgoraComReserva(now){
     const ativos = registrosAgora(now);
-    const terminaisComPessoa = new Set(ativos.map(function(item){return item.terminal;}));
+    const terminaisComPessoa = new Set(ativos.map(function(item){return chaveTerminalComparacao(item.terminal);}));
     const reservas = terminaisConhecidos()
-        .filter(function(terminal){return !terminaisComPessoa.has(terminal);})
+        .filter(function(terminal){return !terminaisComPessoa.has(chaveTerminalComparacao(terminal));})
         .map(function(terminal){return criarReservaTerminal(terminal, now);});
     return ativos.concat(reservas);
 }
@@ -790,7 +833,7 @@ function aplicarFiltros(rows){
     return rows.filter(function(item){
         if (terminal && item.terminal !== terminal) return false;
         if (!busca) return true;
-        const texto = normalizarTexto([item.nome, item.matricula, item.terminal, item.telefone, item.email, telefoneTerminal(item.terminal), item.horario].join(" "));
+        const texto = normalizarTexto([item.nome, item.matricula, item.terminal, displayTerminal(item.terminal), item.telefone, item.email, telefoneTerminal(item.terminal), item.horario].join(" "));
         return texto.includes(busca);
     });
 }
@@ -799,7 +842,7 @@ function atualizarSelectTerminais(){
     const atual = select.value;
     const terminais = terminaisConhecidos();
     select.innerHTML = '<option value="">Todos os terminais</option>' + terminais.map(function(terminal){
-        return '<option value="' + escapeHtml(terminal) + '">' + escapeHtml(terminal) + '</option>';
+        return '<option value="' + escapeHtml(terminal) + '">' + escapeHtml(displayTerminal(terminal)) + '</option>';
     }).join("");
     if (terminais.includes(atual)) select.value = atual;
 }
@@ -856,9 +899,8 @@ function contatoPessoa(item){
     return item.telefone || item.email || "";
 }
 function telefoneTerminal(terminal){
-    const chave = normalizarTexto(terminal);
     const item = DADOS.find(function(pessoa){
-        return pessoa.telefone && normalizarTexto(pessoa.terminal) === chave;
+        return pessoa.telefone && mesmoTerminal(pessoa.terminal, terminal);
     });
     return item ? item.telefone : "";
 }
@@ -868,7 +910,7 @@ function contatoItem(item){
 function renderKpis(now){
     const proxima = proximaMovimentacao(now);
     byId("kpiProxima").textContent = proxima ? formatHora(proxima.date) : "--:--";
-    byId("kpiProximaSub").textContent = proxima ? proxima.tipo + " - " + proxima.item.nome + " - " + proxima.item.terminal : "Sem próxima movimentação";
+    byId("kpiProximaSub").textContent = proxima ? proxima.tipo + " - " + proxima.item.nome + " - " + displayTerminal(proxima.item.terminal) : "Sem próxima movimentação";
     renderTerminalKpis(now);
 }
 function renderTerminalKpis(now){
@@ -878,7 +920,7 @@ function renderTerminalKpis(now){
         if (!grupos.has(item.terminal)) grupos.set(item.terminal, []);
         grupos.get(item.terminal).push(item);
     });
-    const gruposOrdenados = [...grupos.entries()].sort(function(a, b){return a[0].localeCompare(b[0], "pt-BR");});
+    const gruposOrdenados = [...grupos.entries()].sort(function(a, b){return compararTerminais(a[0], b[0]);});
     byId("contadorKpisTerminais").textContent = formatInt(gruposOrdenados.length) + (gruposOrdenados.length === 1 ? " terminal" : " terminais");
     if (!gruposOrdenados.length) {
         byId("terminalKpis").innerHTML = '<div class="empty">Nenhum terminal encontrado para o filtro atual.</div>';
@@ -889,21 +931,24 @@ function renderTerminalKpis(now){
         const pessoas = entry[1].sort(function(a, b){return Number(Boolean(a.reserva)) - Number(Boolean(b.reserva)) || a.end - b.end || a.nome.localeCompare(b.nome, "pt-BR");});
         const somenteReserva = pessoas.every(function(item){return item.reserva;});
         const contatos = [...new Set([telefoneTerminal(terminal)].concat(pessoas.map(contatoPessoa)).filter(Boolean))];
-        const contatoResumo = contatos.length ? contatos.slice(0, 2).join(" / ") : (somenteReserva ? "Reserva" : "Sem telefone");
+        const limiteContatos = ordemTerminal(terminal) === 2 ? 1 : 2;
+        const contatoResumo = contatos.length ? contatos.slice(0, limiteContatos).join(" / ") : (somenteReserva ? "Reserva" : "Sem telefone");
         return '<div class="terminal-kpi-card' + (somenteReserva ? ' reserve' : '') + '">' +
-            '<div class="terminal-kpi-head"><div><div class="terminal-kpi-name">' + escapeHtml(terminal) + '</div><div class="terminal-kpi-phone">' + escapeHtml(contatoResumo) + '</div></div><span class="status-badge status-' + (somenteReserva ? 'reserve' : 'now') + '">' + (somenteReserva ? 'Mot. Reserva' : 'Agora') + '</span></div>' +
+            '<div class="terminal-kpi-head"><div><div class="terminal-kpi-name">' + escapeHtml(displayTerminal(terminal)) + '</div><div class="terminal-kpi-phone">' + escapeHtml(contatoResumo) + '</div></div><span class="status-badge status-' + (somenteReserva ? 'reserve' : 'now') + '">' + (somenteReserva ? 'Mot. Reserva' : 'Agora') + '</span></div>' +
             pessoas.map(function(item){
                 const contato = contatoItem(item);
                 const horario = item.reserva ? "Sem escala no horário" : formatHora(item.start) + " - " + formatHora(item.end);
-                return '<div class="terminal-kpi-person"><div><b>' + escapeHtml(item.nome) + '</b><small>' + escapeHtml(contato || horario) + '</small></div><span class="terminal-kpi-time">' + escapeHtml(item.reserva ? 'reserva' : 'até ' + formatHora(item.end)) + '</span></div>';
+                const registro = item.matricula ? "Reg. " + item.matricula : "";
+                const detalhe = item.reserva ? horario : [registro, contato || horario].filter(Boolean).join(" | ");
+                return '<div class="terminal-kpi-person"><div><b>' + escapeHtml(item.nome) + '</b><small>' + escapeHtml(detalhe) + '</small></div><span class="terminal-kpi-time">' + escapeHtml(item.reserva ? 'reserva' : 'até ' + formatHora(item.end)) + '</span></div>';
             }).join("") +
         '</div>';
     }).join("");
 }
 function getRowsModo(now){
-    if (modoAtual === "hoje") return registrosHoje(now).sort(function(a, b){return a.start - b.start || a.terminal.localeCompare(b.terminal, "pt-BR");});
+    if (modoAtual === "hoje") return registrosHoje(now).sort(function(a, b){return a.start - b.start || compararTerminais(a.terminal, b.terminal);});
     if (modoAtual === "proximos") return registrosProximos(now);
-    return registrosAgoraComReserva(now).sort(function(a, b){return a.terminal.localeCompare(b.terminal, "pt-BR") || Number(Boolean(a.reserva)) - Number(Boolean(b.reserva)) || a.end - b.end || a.nome.localeCompare(b.nome, "pt-BR");});
+    return registrosAgoraComReserva(now).sort(function(a, b){return compararTerminais(a.terminal, b.terminal) || Number(Boolean(a.reserva)) - Number(Boolean(b.reserva)) || a.end - b.end || a.nome.localeCompare(b.nome, "pt-BR");});
 }
 function renderTabela(rows, now){
     byId("contadorTabela").textContent = formatInt(rows.length) + (rows.length === 1 ? " registro" : " registros");
@@ -916,7 +961,7 @@ function renderTabela(rows, now){
         const periodo = item.reserva ? "Sem escala no horário" : formatDataCurta(item.start) + " " + formatHora(item.start) + " - " + formatHora(item.end);
         const contato = contatoItem(item);
         return "<tr>" +
-            "<td><b>" + escapeHtml(item.terminal) + "</b></td>" +
+            "<td><b>" + escapeHtml(displayTerminal(item.terminal)) + "</b></td>" +
             "<td><b>" + escapeHtml(item.nome) + "</b>" + (item.matricula ? '<div class="muted">' + escapeHtml(item.matricula) + '</div>' : "") + "</td>" +
             '<td>' + (contato ? escapeHtml(contato) : '<span class="muted">Não informado</span>') + '</td>' +
             "<td>" + escapeHtml(periodo) + "</td>" +
