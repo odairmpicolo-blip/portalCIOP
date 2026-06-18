@@ -91,6 +91,50 @@ h1 { margin: 0; text-align: center; color: #071f57; font-size: 22px; font-weight
     overflow-y: auto;
 }
 
+.scenario-switch {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.05);
+}
+.scenario-button {
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    background: #f8fafc;
+    color: var(--blue);
+    padding: 14px 16px;
+    min-height: 74px;
+    cursor: pointer;
+    text-align: left;
+    transition: .2s;
+}
+.scenario-button:hover {
+    border-color: var(--blue2);
+    background: #eef4ff;
+}
+.scenario-button.active {
+    border-color: var(--blue);
+    background: #06245c;
+    color: #fff;
+    box-shadow: 0 10px 24px rgba(6, 36, 92, .18);
+}
+.scenario-title {
+    display: block;
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 4px;
+}
+.scenario-desc {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    opacity: .82;
+}
+
 .kpi-container {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
@@ -306,6 +350,17 @@ tr:hover {
 </div>
 <div class="main-content">
     <div class="content-body">
+        <div class="scenario-switch" aria-label="Selecionar realidade de pontualidade">
+            <button id="cenarioPadrao" class="scenario-button active" type="button" data-cenario="padrao" onclick="trocarCenario('padrao')">
+                <span class="scenario-title">Realidade 2 / 6</span>
+                <span class="scenario-desc">2 adiantado e 6 atrasado</span>
+            </button>
+            <button id="cenarioAlternativo" class="scenario-button" type="button" data-cenario="alternativo" onclick="trocarCenario('alternativo')">
+                <span class="scenario-title">Realidade 1 / 3</span>
+                <span class="scenario-desc">1 adiantado e 3 atrasado</span>
+            </button>
+        </div>
+
         <div class="kpi-container">
 <div class="kpi-card highlight">
     <div class="kpi-value" id="melhorHorario">0%</div>
@@ -418,6 +473,21 @@ tr:hover {
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbyp7XWfaBxU3IgoEvbS9SoA3hDGzTwl5M1YqLjtNAW5VDpmPoRwn0NuYLbow1chiEch/exec';
+const CENARIOS = {
+    padrao: {
+        nome: 'Realidade 2 / 6',
+        descricao: '2 adiantado e 6 atrasado',
+        tipo: 'json',
+        url: API_URL
+    },
+    alternativo: {
+        nome: 'Realidade 1 / 3',
+        descricao: '1 adiantado e 3 atrasado',
+        tipo: 'json',
+        url: 'https://script.google.com/macros/s/AKfycbzy0pdXv86xNJ_3AkhdePEz2mdt7rFpny7KmF0YHwCQBQLfpiC-HEzRNeBpwYQnOCIt/exec'
+    }
+};
+let cenarioAtual = 'padrao';
 let rawData = [];
 
 function pickValue(row, keys) {
@@ -454,6 +524,40 @@ function parsePercentValue(value) {
     return number > 1 ? number / 100 : number;
 }
 
+function parseCsvLine(line) {
+    const values = [];
+    let current = '';
+    let quoted = false;
+
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const next = line[i + 1];
+        if (char === '"' && quoted && next === '"') {
+            current += '"';
+            i++;
+        } else if (char === '"') {
+            quoted = !quoted;
+        } else if (char === ',' && !quoted) {
+            values.push(current);
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    values.push(current);
+    return values.map(value => value.trim());
+}
+
+function parseCsv(text) {
+    const lines = String(text || '').replace(/\r/g, '').split('\n').filter(line => line.trim());
+    if (!lines.length) return [];
+    const headers = parseCsvLine(lines[0]);
+    return lines.slice(1).map(line => {
+        const values = parseCsvLine(line);
+        return Object.fromEntries(headers.map((header, index) => [header, values[index] || '']));
+    });
+}
+
 function normalizeApiData(payload) {
     let rows = Array.isArray(payload) ? payload : (payload.data || payload.dados || payload.rows || payload.valores || []);
 
@@ -476,21 +580,32 @@ function normalizeApiData(payload) {
 }
 
 async function loadDashboardData() {
-    document.getElementById('dashboardSubtitle').innerText = 'Carregando dados da API...';
+    const cenario = CENARIOS[cenarioAtual];
+    document.getElementById('dashboardSubtitle').innerText = 'Carregando ' + cenario.nome + '...';
 
     try {
-        const response = await fetch(API_URL, { cache: 'no-store' });
+        const response = await fetch(cenario.url, { cache: 'no-store' });
         if (!response.ok) throw new Error('HTTP ' + response.status);
 
-        const payload = await response.json();
+        let payload;
+        if (cenario.tipo === 'csv') {
+            const text = await response.text();
+            if (/accounts\.google\.com|ServiceLogin|<html/i.test(text)) {
+                throw new Error('A planilha 1/3 precisa estar publicada ou compartilhada para leitura.');
+            }
+            payload = parseCsv(text);
+        } else {
+            payload = await response.json();
+        }
+
         rawData = normalizeApiData(payload);
 
         initFilters();
         renderDashboard();
     } catch (error) {
-        console.error('Erro ao carregar dados da API:', error);
+        console.error('Erro ao carregar dados:', error);
         rawData = [];
-        document.getElementById('dashboardSubtitle').innerText = 'Erro ao carregar dados da API';
+        document.getElementById('dashboardSubtitle').innerText = 'Erro ao carregar ' + cenario.nome + ': ' + error.message;
         initFilters();
         renderDashboard();
     }
@@ -576,6 +691,19 @@ function updateDayDropdown() {
     if (uniqueDates.includes(prevValue)) {
         diaSelect.value = prevValue;
     }
+}
+
+function atualizarBotoesCenario() {
+    document.querySelectorAll('.scenario-button').forEach(button => {
+        button.classList.toggle('active', button.dataset.cenario === cenarioAtual);
+    });
+}
+
+function trocarCenario(cenario) {
+    if (!CENARIOS[cenario] || cenarioAtual === cenario) return;
+    cenarioAtual = cenario;
+    atualizarBotoesCenario();
+    loadDashboardData();
 }
 
 function updateFilters(trigger) {
@@ -678,9 +806,9 @@ function renderDashboard() {
     // Update Dashboard Header subtitle
     const subt = document.getElementById('dashboardSubtitle');
     if (anoSel !== 'todos') {
-        subt.innerText = `Indicadores de Pontualidade Geral - Ano ${anoSel}`;
+        subt.innerText = CENARIOS[cenarioAtual].nome + ' - Ano ' + anoSel;
     } else {
-        subt.innerText = 'Indicadores de Pontualidade Geral - Histórico Completo';
+        subt.innerText = CENARIOS[cenarioAtual].nome + ' - Histórico Completo';
     }
 
     if (filteredData.length > 0) {
@@ -916,7 +1044,10 @@ const ctx = document.getElementById('lineChartCanvas').getContext('2d');
     });
 }
 
+window.trocarCenario = trocarCenario;
+
 window.onload = function() {
+    atualizarBotoesCenario();
     loadDashboardData();
 };
 </script>
