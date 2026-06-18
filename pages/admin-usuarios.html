@@ -141,64 +141,39 @@ th{color:var(--blue);background:#f8fafc}
     </div>
 
     <div id="adminConteudo">
-        <div class="notice">
-            Cadastre o login e senha no Firebase Authentication pelo botao abaixo. Depois a lista puxa os usuarios salvos no Firestore para voce classificar ou alterar o perfil.
+        <div class="actions" style="margin-bottom:16px">
+            <a class="btn btn-primary" href="https://console.firebase.google.com/project/portal-ciop/authentication/users" target="_blank">Cadastrar novo usuário</a>
         </div>
-
-        <div class="grid">
-            <section class="panel">
-                <h2 class="panel-title">Cadastrar no perfil do portal</h2>
-                <label for="novoEmail">E-mail</label>
-                <input id="novoEmail" type="email" placeholder="usuario@empresa.com.br">
-
-                <label for="novoNome">Nome</label>
-                <input id="novoNome" type="text" placeholder="Nome do usuario">
-
-                <label for="novoPerfil">Perfil</label>
-                <select id="novoPerfil">
-                    <option>Administrador</option>
-                    <option>Supervisor</option>
-                    <option>Gerencia</option>
-                    <option>Analista</option>
-                    <option>SAC</option>
-                    <option>Secretária</option>
-                </select>
-
-                <div class="actions">
-                    <a class="btn btn-primary" href="https://console.firebase.google.com/project/portal-ciop/authentication/users" target="_blank">Cadastrar novo usuário</a>
-                    <button class="btn btn-secondary" type="button" onclick="gerarCadastro()">Salvar perfil no Firestore</button>
-                </div>
-
-                <div id="cadastroStatus" class="status"></div>
-            </section>
-
-            <section class="panel">
-                <h2 class="panel-title">Acoes de acesso</h2>
-                <label for="acaoEmail">E-mail do usuario</label>
-                <input id="acaoEmail" type="email" placeholder="usuario@empresa.com.br">
-                <div class="actions">
-                    <button class="btn btn-primary" type="button" onclick="enviarRecuperacao()">Enviar recuperacao de senha</button>
-                </div>
-                <div id="acaoStatus" class="status"></div>
-            </section>
-        </div>
-
-        <section class="panel">
-            <h2 class="panel-title">Escolher conteudo por usuario</h2>
-            <div class="notice" style="margin-bottom:0">
-                Para restringir qualquer card ou link do portal, edite o item no HTML e adicione uma destas regras:
-                <br><br>
-                <strong>Por perfil:</strong> <code>data-perfis="Administrador,Supervisor,Gerencia"</code>
-                <br>
-                <strong>Por e-mail:</strong> <code>data-usuarios="usuario@empresa.com.br"</code>
-                <br><br>
-                Se nao tiver regra, o conteudo aparece para todos. Administrador e Gerencia veem tudo automaticamente.
-            </div>
-        </section>
+        <div id="cadastroStatus" class="status"></div>
 
         <section class="panel">
             <h2 class="panel-title">Usuários para classificar</h2>
+            <div class="notice" style="margin-bottom:12px">
+                Depois de criar o login no Firebase, informe o e-mail aqui para classificar o perfil no portal.
+            </div>
+            <div class="grid" style="margin-bottom:12px">
+                <div>
+                    <label for="classificarEmail">E-mail</label>
+                    <input id="classificarEmail" type="email" placeholder="usuario@empresa.com.br">
+                </div>
+                <div>
+                    <label for="classificarNome">Nome</label>
+                    <input id="classificarNome" type="text" placeholder="Nome do usuario">
+                </div>
+                <div>
+                    <label for="classificarPerfil">Perfil</label>
+                    <select id="classificarPerfil">
+                        <option>Administrador</option>
+                        <option>Supervisor</option>
+                        <option>Gerencia</option>
+                        <option>Analista</option>
+                        <option>SAC</option>
+                        <option>Secretária</option>
+                    </select>
+                </div>
+            </div>
             <div class="actions" style="margin-bottom:12px">
+                <button class="btn btn-primary" type="button" onclick="classificarUsuario()">Salvar classificação</button>
                 <button class="btn btn-secondary" type="button" onclick="recarregarUsuarios()">Atualizar lista</button>
             </div>
             <table>
@@ -272,11 +247,6 @@ async function salvarUsuario(email, nome, perfil, mensagem) {
         const usuario = await salvarUsuarioFirestore(email, { nome, perfil });
         usuariosEditados[usuario.email] = usuario;
         renderUsuarios();
-        if (document.getElementById("novoEmail").value.trim().toLowerCase() === usuario.email) {
-            document.getElementById("novoEmail").value = "";
-            document.getElementById("novoNome").value = "";
-            document.getElementById("novoPerfil").value = "Administrador";
-        }
         atualizarStatus(mensagem);
     } catch (error) {
         status.className = "status erro";
@@ -289,41 +259,24 @@ window.alterarPerfil = function (email, nome, selectId) {
     salvarUsuario(email, nome, perfil, "Perfil salvo automaticamente no Firestore.");
 };
 
-window.gerarCadastro = function () {
-    const email = document.getElementById("novoEmail").value.trim().toLowerCase();
-    const nome = document.getElementById("novoNome").value.trim();
-    const perfil = document.getElementById("novoPerfil").value;
+window.classificarUsuario = function () {
+    const email = document.getElementById("classificarEmail").value.trim().toLowerCase();
+    const nome = document.getElementById("classificarNome").value.trim();
+    const perfil = document.getElementById("classificarPerfil").value;
     const status = document.getElementById("cadastroStatus");
 
     if (!email || !nome) {
         status.className = "status erro";
-        status.textContent = "Informe e-mail e nome.";
+        status.textContent = "Informe e-mail e nome para classificar.";
         return;
     }
 
-    salvarUsuario(email, nome, perfil, "Perfil salvo no Firestore. Confirme que o login tambem existe no Firebase Authentication.");
+    salvarUsuario(email, nome, perfil, "Usuario classificado no Firestore.");
+    document.getElementById("classificarEmail").value = "";
+    document.getElementById("classificarNome").value = "";
+    document.getElementById("classificarPerfil").value = "Administrador";
 };
 
-
-window.enviarRecuperacao = async function () {
-    const email = document.getElementById("acaoEmail").value.trim();
-    const status = document.getElementById("acaoStatus");
-
-    if (!email) {
-        status.className = "status erro";
-        status.textContent = "Informe o e-mail.";
-        return;
-    }
-
-    try {
-        await window.recuperarSenha(email);
-        status.className = "status ok";
-        status.textContent = "E-mail de recuperacao enviado.";
-    } catch (error) {
-        status.className = "status erro";
-        status.textContent = "Nao foi possivel enviar: " + error.message;
-    }
-};
 
 window.recarregarUsuarios = function () {
     iniciar(true);
