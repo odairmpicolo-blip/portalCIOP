@@ -109,6 +109,13 @@ if (document.body) {
   document.addEventListener("DOMContentLoaded", () => mostrarCarregando(), { once: true });
 }
 
+function comTempoLimite(promise, ms, mensagem) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => window.setTimeout(() => reject(new Error(mensagem)), ms))
+  ]);
+}
+
 function portalPath(file) {
   const inPages = window.location.pathname.includes("/pages/");
   return inPages ? "../" + file : file;
@@ -118,7 +125,7 @@ async function getCadastro(user) {
   const email = String(user.email || "").toLowerCase();
 
   try {
-    const cadastroOnline = await buscarUsuarioFirestore(email);
+    const cadastroOnline = await comTempoLimite(buscarUsuarioFirestore(email), 8000, "Tempo esgotado ao buscar perfil no Firestore.");
     if (cadastroOnline) {
       return {
         nome: cadastroOnline.nome || user.displayName || email,
@@ -255,31 +262,43 @@ function aplicarPermissoes(cadastro) {
 onAuthStateChanged(auth, async (user) => {
   const pagina = window.location.pathname.toLowerCase();
 
-  if (!user) {
-    if (!pagina.endsWith("/login.html") && !pagina.endsWith("login.html")) {
-      window.location.href = portalPath("login.html");
+  try {
+    if (!user) {
+      if (!pagina.endsWith("/login.html") && !pagina.endsWith("login.html")) {
+        window.location.href = portalPath("login.html");
+      } else {
+        liberarHtmlValidado();
+        ocultarCarregando();
+      }
+      return;
     }
-    return;
-  }
 
-  const cadastro = { ...await getCadastro(user), email: user.email };
+    const cadastro = { ...await getCadastro(user), email: user.email };
 
-  if (cadastro.ativo === false) {
-    alert("Seu acesso ao portal esta desativado. Procure um administrador.");
-    await signOut(auth);
-    window.location.href = portalPath("login.html");
-    return;
-  }
+    if (cadastro.ativo === false) {
+      alert("Seu acesso ao portal esta desativado. Procure um administrador.");
+      await signOut(auth);
+      window.location.href = portalPath("login.html");
+      return;
+    }
 
-  const nome = document.getElementById("usuarioLogado");
-  const perfil = document.getElementById("perfilUsuario");
+    const nome = document.getElementById("usuarioLogado");
+    const perfil = document.getElementById("perfilUsuario");
 
-  if (nome) nome.textContent = cadastro.nome;
-  if (perfil) perfil.textContent = cadastro.perfil;
-  if (aplicarPermissoes(cadastro) !== false) {
-    window.portalUsuarioValidado = true;
+    if (nome) nome.textContent = cadastro.nome;
+    if (perfil) perfil.textContent = cadastro.perfil;
+    if (aplicarPermissoes(cadastro) !== false) {
+      window.portalUsuarioValidado = true;
+      liberarHtmlValidado();
+      ocultarCarregando();
+      window.dispatchEvent(new CustomEvent("portal:usuario-validado", { detail: window.portalUsuario }));
+    }
+  } catch (error) {
+    console.error("Erro ao validar usuario:", error);
+    alert("Nao foi possivel validar seu acesso. Entre novamente no portal.");
+    await signOut(auth).catch(() => {});
     liberarHtmlValidado();
     ocultarCarregando();
-    window.dispatchEvent(new CustomEvent("portal:usuario-validado", { detail: window.portalUsuario }));
+    window.location.href = portalPath("login.html");
   }
 });
