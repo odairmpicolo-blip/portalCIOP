@@ -13,11 +13,17 @@ import { usuarios } from "./usuarios.js";
 const auth = getAuth(app);
 
 const LOADING_ID = "portalLoadingOverlay";
-const loadingGlobalDisponivel = typeof window.portalMostrarCarregando === "function";
+const loadingExternoMostrar = typeof window.portalMostrarCarregando === "function"
+  ? window.portalMostrarCarregando.bind(window)
+  : null;
+const loadingExternoOcultar = typeof window.portalOcultarCarregando === "function"
+  ? window.portalOcultarCarregando.bind(window)
+  : null;
+const loadingGlobalDisponivel = Boolean(loadingExternoMostrar && loadingExternoOcultar);
 
 function mostrarCarregando(texto = "Carregando portal") {
   if (loadingGlobalDisponivel) {
-    window.portalMostrarCarregando(texto);
+    loadingExternoMostrar(texto);
     return;
   }
   const existente = document.getElementById(LOADING_ID);
@@ -63,7 +69,7 @@ function mostrarCarregando(texto = "Carregando portal") {
 
 function ocultarCarregando() {
   if (loadingGlobalDisponivel) {
-    window.portalOcultarCarregando?.();
+    loadingExternoOcultar();
     return;
   }
   const overlay = document.getElementById(LOADING_ID);
@@ -72,8 +78,10 @@ function ocultarCarregando() {
   window.setTimeout(() => overlay.remove(), 280);
 }
 
-window.portalMostrarCarregando = mostrarCarregando;
-window.portalOcultarCarregando = ocultarCarregando;
+if (!loadingGlobalDisponivel) {
+  window.portalMostrarCarregando = mostrarCarregando;
+  window.portalOcultarCarregando = ocultarCarregando;
+}
 
 if (document.body) {
   mostrarCarregando();
