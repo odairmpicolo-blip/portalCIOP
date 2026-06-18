@@ -108,6 +108,28 @@
     }
     window.addEventListener("portal:usuario-validado", callback, { once: true });
   };
+  function irParaLoginPorTimeout() {
+    const path = window.location.pathname.toLowerCase();
+    if (path.endsWith('/login.html') || path.endsWith('login.html')) {
+      document.documentElement.classList.remove('portal-auth-pending');
+      ocultar();
+      return;
+    }
+
+    mostrar('Tempo excedido. Voltando ao login');
+    window.setTimeout(() => {
+      const inPages = window.location.pathname.includes('/pages/');
+      window.location.href = (inPages ? '../' : '') + 'login.html?erro=tempo';
+    }, 1200);
+  }
+
+  window.portalLoadingWatchdog = window.setTimeout(() => {
+    const overlay = document.getElementById(ID);
+    if (!overlay || overlay.classList.contains('hide')) return;
+    if (window.portalUsuarioValidado) return;
+    irParaLoginPorTimeout();
+  }, 15000);
+
   window.portalMostrarCarregando = mostrar;
   window.portalOcultarCarregando = ocultar;
 })();
