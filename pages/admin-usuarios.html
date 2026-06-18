@@ -255,12 +255,14 @@ async function salvarUsuario(email, nome, perfil, mensagem, ativo = true) {
 
     try {
         const usuario = await salvarUsuarioFirestore(email, { nome, perfil, ativo });
-        usuariosEditados[usuario.email] = usuario;
+        usuariosEditados[usuario.email] = { ...usuario, ativo };
         renderUsuarios();
         atualizarStatus(mensagem);
+        return usuario;
     } catch (error) {
         status.className = "status erro";
         status.textContent = "Nao foi possivel salvar no Firestore: " + error.message;
+        throw error;
     }
 }
 
@@ -270,7 +272,7 @@ window.alterarPerfil = function (email, nome, selectId) {
     salvarUsuario(email, nome, perfil, "Perfil salvo automaticamente no Firestore.", user?.ativo !== false);
 };
 
-window.alternarAcesso = function (email) {
+window.alternarAcesso = async function (email) {
     const id = String(email || "").toLowerCase();
     const user = usuariosEditados[id];
     if (!user) return;
@@ -285,7 +287,17 @@ window.alternarAcesso = function (email) {
     const acao = novoStatus ? "ativar" : "desativar";
     if (!confirm("Deseja realmente " + acao + " o acesso de " + id + "?")) return;
 
-    salvarUsuario(id, user.nome, user.perfil, novoStatus ? "Usuario ativado no portal." : "Usuario desativado no portal.", novoStatus);
+    try {
+        await salvarUsuario(
+            id,
+            user.nome,
+            user.perfil,
+            novoStatus ? "Acesso ativado e salvo no Firestore." : "Acesso desativado e salvo no Firestore.",
+            novoStatus
+        );
+    } catch (error) {
+        console.error(error);
+    }
 };
 
 window.classificarUsuario = function () {
@@ -308,7 +320,7 @@ window.classificarUsuario = function () {
 
 
 window.recarregarUsuarios = function () {
-    iniciar(true);
+    window.location.reload();
 };
 
 async function iniciar(limparAntes = false) {
