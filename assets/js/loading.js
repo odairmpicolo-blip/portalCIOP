@@ -100,6 +100,14 @@
     hideTimer = window.setTimeout(() => overlay.remove(), 300);
   }
 
+  window.portalUsuarioValidado = window.portalUsuarioValidado || false;
+  window.portalAguardarUsuario = function (callback) {
+    if (window.portalUsuarioValidado) {
+      callback();
+      return;
+    }
+    window.addEventListener("portal:usuario-validado", callback, { once: true });
+  };
   window.portalMostrarCarregando = mostrar;
   window.portalOcultarCarregando = ocultar;
 })();

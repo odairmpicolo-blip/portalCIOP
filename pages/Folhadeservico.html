@@ -443,7 +443,7 @@
     let chartOcorrenciasInstance = null;
     let chartSituacaoInstance = null;
 
-    window.onload = () => {
+    function carregarFolhaServico() {
         window.portalMostrarCarregando?.("Carregando folha de serviço");
         fetch(URL_DO_SCRIPT_GOOGLE)
             .then(response => response.json())
@@ -458,7 +458,9 @@
                 document.getElementById('tabela-corpo').innerHTML = `<tr><td colspan="5" style="color:red; text-align:center; padding:20px;">Erro ao ler a planilha. Verifique se as permissões de implantação estão para 'Qualquer pessoa'.</td></tr>`;
             })
             .finally(() => window.portalOcultarCarregando?.());
-    };
+    }
+
+    window.onload = () => window.portalAguardarUsuario?.(carregarFolhaServico);
 
     function gerarFiltrosDinamicos(dados) {
         const analistas = new Set();

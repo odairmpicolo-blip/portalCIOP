@@ -13,6 +13,26 @@ import { usuarios } from "./usuarios.js";
 const auth = getAuth(app);
 
 const LOADING_ID = "portalLoadingOverlay";
+const AUTH_PENDING_CLASS = "portal-auth-pending";
+
+function bloquearHtmlAteValidar() {
+  document.documentElement.classList.add(AUTH_PENDING_CLASS);
+  if (document.getElementById("portalAuthPendingStyle")) return;
+  const style = document.createElement("style");
+  style.id = "portalAuthPendingStyle";
+  style.textContent = `
+    .${AUTH_PENDING_CLASS} body > :not(#portalLoadingOverlay) {
+      visibility: hidden !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function liberarHtmlValidado() {
+  document.documentElement.classList.remove(AUTH_PENDING_CLASS);
+}
+
+bloquearHtmlAteValidar();
 const loadingExternoMostrar = typeof window.portalMostrarCarregando === "function"
   ? window.portalMostrarCarregando.bind(window)
   : null;
@@ -257,6 +277,9 @@ onAuthStateChanged(auth, async (user) => {
   if (nome) nome.textContent = cadastro.nome;
   if (perfil) perfil.textContent = cadastro.perfil;
   if (aplicarPermissoes(cadastro) !== false) {
+    window.portalUsuarioValidado = true;
+    liberarHtmlValidado();
     ocultarCarregando();
+    window.dispatchEvent(new CustomEvent("portal:usuario-validado", { detail: window.portalUsuario }));
   }
 });
