@@ -930,8 +930,7 @@ function renderTerminalKpis(now){
         const pessoas = entry[1].sort(function(a, b){return Number(Boolean(a.reserva)) - Number(Boolean(b.reserva)) || a.end - b.end || a.nome.localeCompare(b.nome, "pt-BR");});
         const somenteReserva = pessoas.every(function(item){return item.reserva;});
         const contatos = [...new Set([telefoneTerminal(terminal)].concat(pessoas.map(contatoPessoa)).filter(Boolean))];
-        const limiteContatos = ordemTerminal(terminal) === 2 ? 1 : 2;
-        const contatoResumo = contatos.length ? contatos.slice(0, limiteContatos).join(" / ") : (somenteReserva ? "Reserva" : "Sem telefone");
+        const contatoResumo = contatos.length ? contatos[0] : (somenteReserva ? "Reserva" : "Sem telefone");
         return '<div class="terminal-kpi-card' + (somenteReserva ? ' reserve' : '') + '">' +
             '<div class="terminal-kpi-head"><div><div class="terminal-kpi-name">' + escapeHtml(displayTerminal(terminal)) + '</div><div class="terminal-kpi-phone">' + escapeHtml(contatoResumo) + '</div></div><span class="status-badge status-' + (somenteReserva ? 'reserve' : 'now') + '">' + (somenteReserva ? 'Mot. Reserva' : 'Agora') + '</span></div>' +
             pessoas.map(function(item){
