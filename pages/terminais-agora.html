@@ -248,6 +248,23 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
     font-weight:800;
     line-height:1.25;
 }
+.terminal-phone-link{
+    color:inherit;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    border-bottom:1px solid rgba(102,112,133,.32);
+}
+.terminal-phone-link:hover{
+    color:var(--terminal-chip-text);
+    border-bottom-color:var(--terminal-chip-text);
+}
+.terminal-phone-link:focus-visible{
+    outline:2px solid var(--terminal-border);
+    outline-offset:2px;
+    border-radius:4px;
+}
 .terminal-kpi-person{
     display:grid;
     grid-template-columns:1fr auto;
@@ -1013,6 +1030,18 @@ function telefoneTerminal(terminal){
 function contatoItem(item){
     return contatoPessoa(item) || telefoneTerminal(item.terminal);
 }
+function whatsappHref(telefone){
+    const digits = String(telefone || "").replace(/\D/g, "");
+    if (digits.length < 8) return "";
+    if (digits.startsWith("55") && digits.length >= 12) return "https://wa.me/" + digits;
+    if (digits.length === 10 || digits.length === 11) return "https://wa.me/55" + digits;
+    return "https://wa.me/5543" + digits;
+}
+function telefoneTerminalHtml(telefone){
+    const href = whatsappHref(telefone);
+    if (!href) return escapeHtml(telefone);
+    return '<a class="terminal-phone-link" href="' + escapeHtml(href) + '" target="_blank" rel="noopener noreferrer" aria-label="Abrir conversa no WhatsApp com ' + escapeHtml(telefone) + '">' + escapeHtml(telefone) + '</a>';
+}
 function renderKpis(now){
     const trocas = proximasMovimentacoes(now);
     const proxima = trocas[0] || null;
@@ -1043,7 +1072,7 @@ function renderTerminalKpis(now){
         const tema = ordemTerminal(terminal);
         const temaClasse = somenteReserva ? " reserve" : (tema >= 1 && tema <= 8 ? " theme-" + tema : " theme-extra");
         return '<div class="terminal-kpi-card' + temaClasse + '">' +
-            '<div class="terminal-kpi-head"><div><div class="terminal-kpi-name">' + escapeHtml(displayTerminal(terminal)) + '</div><div class="terminal-kpi-phone">' + escapeHtml(contatoResumo) + '</div></div><span class="status-badge status-' + (somenteReserva ? 'reserve' : 'now') + '">' + (somenteReserva ? 'Mot. Reserva' : 'Agora') + '</span></div>' +
+            '<div class="terminal-kpi-head"><div><div class="terminal-kpi-name">' + escapeHtml(displayTerminal(terminal)) + '</div><div class="terminal-kpi-phone">' + telefoneTerminalHtml(contatoResumo) + '</div></div><span class="status-badge status-' + (somenteReserva ? 'reserve' : 'now') + '">' + (somenteReserva ? 'Mot. Reserva' : 'Agora') + '</span></div>' +
             pessoas.map(function(item){
                 const horario = item.reserva ? "Sem escala no horário" : formatHora(item.start) + " - " + formatHora(item.end);
                 const registro = item.matricula ? "Reg. " + item.matricula : "";
