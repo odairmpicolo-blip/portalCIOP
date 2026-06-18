@@ -116,25 +116,25 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
 .btn-secondary{background:#e8edf6;color:var(--blue)}
 .summary-panel{
     display:grid;
-    grid-template-columns:300px 1fr;
+    grid-template-columns:250px 1fr;
     gap:12px;
     align-items:start;
     margin-bottom:12px;
 }
 .exchange-card{
     background:#fff;
-    border:1px solid var(--border);
-    border-left:4px solid var(--orange);
+    border:1px solid #e5ebf4;
+    border-left:3px solid #9aa8bd;
     border-radius:8px;
-    padding:16px;
-    min-height:128px;
-    box-shadow:0 4px 14px rgba(16,24,40,.05);
+    padding:12px 14px;
+    min-height:96px;
+    box-shadow:0 2px 8px rgba(16,24,40,.04);
     display:flex;
     align-items:center;
 }
-.kpi-label{color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase}
-.kpi-value{margin-top:6px;color:var(--blue);font-size:30px;font-weight:900;line-height:1}
-.kpi-sub{margin-top:8px;color:var(--muted);font-size:12px;font-weight:700;line-height:1.4}
+.kpi-label{color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase}
+.kpi-value{margin-top:5px;color:var(--blue);font-size:24px;font-weight:900;line-height:1}
+.kpi-sub{margin-top:7px;color:var(--muted);font-size:11px;font-weight:700;line-height:1.35}
 .section-title.compact{margin-bottom:8px}
 .terminal-kpis{
     display:grid;
@@ -142,16 +142,34 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
     gap:10px;
 }
 .terminal-kpi-card{
-    background:#fff;
-    border:1px solid var(--border);
+    --terminal-accent:#0b3a8a;
+    --terminal-bg:#f8fafc;
+    --terminal-border:#d8e2f1;
+    --terminal-chip:#eef4ff;
+    --terminal-chip-text:#0b3a8a;
+    background:linear-gradient(180deg, var(--terminal-bg) 0%, #fff 74%);
+    border:1px solid var(--terminal-border);
+    border-left:4px solid var(--terminal-accent);
     border-radius:8px;
     padding:12px;
     min-height:118px;
-    box-shadow:0 4px 14px rgba(16,24,40,.05);
+    box-shadow:0 4px 14px rgba(16,24,40,.06);
 }
+.terminal-kpi-card.theme-1{--terminal-accent:#0b3a8a;--terminal-bg:#eef4ff;--terminal-border:#c7d7f4;--terminal-chip:#dbeafe;--terminal-chip-text:#123c7c}
+.terminal-kpi-card.theme-2{--terminal-accent:#0f766e;--terminal-bg:#ecfdf5;--terminal-border:#bae6d5;--terminal-chip:#ccfbf1;--terminal-chip-text:#115e59}
+.terminal-kpi-card.theme-3{--terminal-accent:#7c3aed;--terminal-bg:#f5f3ff;--terminal-border:#ddd6fe;--terminal-chip:#ede9fe;--terminal-chip-text:#5b21b6}
+.terminal-kpi-card.theme-4{--terminal-accent:#0369a1;--terminal-bg:#f0f9ff;--terminal-border:#bae6fd;--terminal-chip:#e0f2fe;--terminal-chip-text:#075985}
+.terminal-kpi-card.theme-5{--terminal-accent:#15803d;--terminal-bg:#f0fdf4;--terminal-border:#bbf7d0;--terminal-chip:#dcfce7;--terminal-chip-text:#166534}
+.terminal-kpi-card.theme-6{--terminal-accent:#b45309;--terminal-bg:#fffbeb;--terminal-border:#fde68a;--terminal-chip:#fef3c7;--terminal-chip-text:#92400e}
+.terminal-kpi-card.theme-7{--terminal-accent:#be123c;--terminal-bg:#fff1f2;--terminal-border:#fecdd3;--terminal-chip:#ffe4e6;--terminal-chip-text:#9f1239}
+.terminal-kpi-card.theme-8{--terminal-accent:#475569;--terminal-bg:#f8fafc;--terminal-border:#cbd5e1;--terminal-chip:#e2e8f0;--terminal-chip-text:#334155}
+.terminal-kpi-card.theme-extra{--terminal-accent:#0f172a;--terminal-bg:#f8fafc;--terminal-border:#d8e2f1;--terminal-chip:#e2e8f0;--terminal-chip-text:#334155}
 .terminal-kpi-card.reserve{
-    background:#fffbeb;
-    border-color:#fde68a;
+    --terminal-accent:#b45309;
+    --terminal-bg:#fffbeb;
+    --terminal-border:#fde68a;
+    --terminal-chip:#fef3c7;
+    --terminal-chip-text:#92400e;
 }
 .terminal-kpi-head{
     display:flex;
@@ -161,7 +179,7 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
     margin-bottom:8px;
 }
 .terminal-kpi-name{
-    color:var(--blue);
+    color:var(--terminal-chip-text);
     font-size:14px;
     font-weight:900;
     line-height:1.2;
@@ -187,14 +205,18 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
 .terminal-kpi-person small{display:block;color:var(--muted);font-weight:700;margin-top:2px}
 .terminal-kpi-time{
     align-self:start;
-    color:var(--blue);
-    background:#f8fafc;
-    border:1px solid var(--border);
+    color:var(--terminal-chip-text);
+    background:#fff;
+    border:1px solid var(--terminal-border);
     border-radius:999px;
     padding:3px 7px;
     font-size:11px;
     font-weight:900;
     white-space:nowrap;
+}
+.terminal-kpi-card .status-now{
+    background:var(--terminal-chip);
+    color:var(--terminal-chip-text);
 }
 .panel{
     background:#fff;
@@ -931,7 +953,9 @@ function renderTerminalKpis(now){
         const somenteReserva = pessoas.every(function(item){return item.reserva;});
         const contatos = [...new Set([telefoneTerminal(terminal)].concat(pessoas.map(contatoPessoa)).filter(Boolean))];
         const contatoResumo = contatos.length ? contatos[0] : (somenteReserva ? "Reserva" : "Sem telefone");
-        return '<div class="terminal-kpi-card' + (somenteReserva ? ' reserve' : '') + '">' +
+        const tema = ordemTerminal(terminal);
+        const temaClasse = somenteReserva ? " reserve" : (tema >= 1 && tema <= 8 ? " theme-" + tema : " theme-extra");
+        return '<div class="terminal-kpi-card' + temaClasse + '">' +
             '<div class="terminal-kpi-head"><div><div class="terminal-kpi-name">' + escapeHtml(displayTerminal(terminal)) + '</div><div class="terminal-kpi-phone">' + escapeHtml(contatoResumo) + '</div></div><span class="status-badge status-' + (somenteReserva ? 'reserve' : 'now') + '">' + (somenteReserva ? 'Mot. Reserva' : 'Agora') + '</span></div>' +
             pessoas.map(function(item){
                 const horario = item.reserva ? "Sem escala no horário" : formatHora(item.start) + " - " + formatHora(item.end);
