@@ -98,6 +98,39 @@ textarea{min-height:116px;resize:vertical}
 table{width:100%;border-collapse:collapse;background:#fff;font-size:13px}
 th,td{padding:10px;border-bottom:1px solid var(--border);text-align:left}
 th{color:var(--blue);background:#f8fafc}
+.sort-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    border:0;
+    background:transparent;
+    color:var(--blue);
+    font:inherit;
+    font-weight:800;
+    cursor:pointer;
+    padding:0;
+    text-align:left;
+}
+.sort-btn:hover .sort-label,
+.sort-btn:focus-visible .sort-label{text-decoration:underline}
+.sort-btn:focus-visible{outline:2px solid rgba(255,107,0,.35);outline-offset:3px;border-radius:4px}
+.sort-arrow{
+    width:18px;
+    height:18px;
+    border-radius:999px;
+    display:inline-grid;
+    place-items:center;
+    background:#e8edf6;
+    color:var(--muted);
+    font-size:11px;
+    line-height:1;
+    font-weight:900;
+    transition:.2s;
+}
+.sort-btn.active .sort-arrow{
+    background:var(--orange);
+    color:#fff;
+}
 .table-actions{display:flex;gap:8px;align-items:center}
 .table-actions .btn{white-space:nowrap;padding:9px 12px}
 .status{font-size:12px;font-weight:700;margin-top:10px}
@@ -231,11 +264,11 @@ body.modal-open{overflow:hidden}
             <table>
                 <thead>
                     <tr>
-                        <th>E-mail</th>
-                        <th>Nome</th>
-                        <th>Registro</th>
-                        <th>Perfil</th>
-                        <th>Status</th>
+                        <th aria-sort="ascending"><button class="sort-btn active" type="button" data-sort-btn="registro" onclick="ordenarUsuarios('registro')" aria-label="Ordenar por registro"><span class="sort-label">Registro</span><span class="sort-arrow" id="sort_registro">↑</span></button></th>
+                        <th aria-sort="none"><button class="sort-btn" type="button" data-sort-btn="nome" onclick="ordenarUsuarios('nome')" aria-label="Ordenar por nome"><span class="sort-label">Nome</span><span class="sort-arrow" id="sort_nome">↕</span></button></th>
+                        <th aria-sort="none"><button class="sort-btn" type="button" data-sort-btn="email" onclick="ordenarUsuarios('email')" aria-label="Ordenar por e-mail"><span class="sort-label">E-mail</span><span class="sort-arrow" id="sort_email">↕</span></button></th>
+                        <th aria-sort="none"><button class="sort-btn" type="button" data-sort-btn="perfil" onclick="ordenarUsuarios('perfil')" aria-label="Ordenar por perfil"><span class="sort-label">Perfil</span><span class="sort-arrow" id="sort_perfil">↕</span></button></th>
+                        <th aria-sort="none"><button class="sort-btn" type="button" data-sort-btn="status" onclick="ordenarUsuarios('status')" aria-label="Ordenar por status"><span class="sort-label">Status</span><span class="sort-arrow" id="sort_status">↕</span></button></th>
                         <th>Editar</th>
                         <th>Acesso</th>
                     </tr>
@@ -296,6 +329,7 @@ import {
 const perfisDisponiveis = ["Administrador", "Supervisor", "Gerencia", "Analista", "SAC", "Secretária"];
 const usuariosEditados = {};
 let usuarioEmEdicao = null;
+const ordenacaoUsuarios = { campo: "registro", direcao: "asc" };
 
 function carregarUsuariosLocais() {
     Object.entries(usuarios).forEach(([email, cadastro]) => {
@@ -348,9 +382,66 @@ function preencherPerfilEditor(perfilAtual) {
     select.innerHTML = opcoesPerfil(perfilAtual);
 }
 
+function valorOrdenacaoUsuario(email, user, campo) {
+    if (campo === "email") return email;
+    if (campo === "nome") return user.nome || "";
+    if (campo === "registro") return String(user.registro || "").trim();
+    if (campo === "perfil") return user.perfil || "";
+    if (campo === "status") return user.ativo !== false ? "Ativo" : "Desativado";
+    return email;
+}
+
+function textoOrdenacao(valor) {
+    return String(valor || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+}
+
+function compararRegistro(a, b) {
+    const somenteNumeroA = /^\d+$/.test(a);
+    const somenteNumeroB = /^\d+$/.test(b);
+    if (somenteNumeroA && somenteNumeroB) {
+        return Number(a) - Number(b);
+    }
+    return textoOrdenacao(a).localeCompare(textoOrdenacao(b), "pt-BR", { numeric: true });
+}
+
+function compararUsuarios([emailA, userA], [emailB, userB]) {
+    const campo = ordenacaoUsuarios.campo;
+    const valorA = valorOrdenacaoUsuario(emailA, userA, campo);
+    const valorB = valorOrdenacaoUsuario(emailB, userB, campo);
+    const direcao = ordenacaoUsuarios.direcao === "desc" ? -1 : 1;
+    const comparacao = campo === "registro"
+        ? compararRegistro(String(valorA || "").trim(), String(valorB || "").trim())
+        : textoOrdenacao(valorA).localeCompare(textoOrdenacao(valorB), "pt-BR", { numeric: true });
+
+    if (comparacao !== 0) return comparacao * direcao;
+    return emailA.localeCompare(emailB) * direcao;
+}
+
+function atualizarCabecalhoOrdenacao() {
+    const botoes = document.querySelectorAll?.("[data-sort-btn]");
+    botoes?.forEach((botao) => {
+        const campo = botao.dataset.sortBtn;
+        const ativo = campo === ordenacaoUsuarios.campo;
+        const seta = botao.querySelector(".sort-arrow");
+        const th = botao.closest("th");
+        botao.classList.toggle("active", ativo);
+        if (seta) {
+            seta.textContent = ativo ? (ordenacaoUsuarios.direcao === "asc" ? "↑" : "↓") : "↕";
+        }
+        if (th) {
+            th.setAttribute("aria-sort", ativo ? (ordenacaoUsuarios.direcao === "asc" ? "ascending" : "descending") : "none");
+        }
+    });
+}
+
 function renderUsuarios() {
     const tbody = document.getElementById("usuariosTabela");
-    const ordenados = Object.entries(usuariosEditados).sort(([a], [b]) => a.localeCompare(b));
+    atualizarCabecalhoOrdenacao();
+    const ordenados = Object.entries(usuariosEditados).sort(compararUsuarios);
     if (!ordenados.length) {
         tbody.innerHTML = '<tr><td colspan="7" class="no-data">Nenhum usuário cadastrado no portal.</td></tr>';
         return;
@@ -364,9 +455,9 @@ function renderUsuarios() {
         const emailParam = encodeURIComponent(email);
         const registro = String(user.registro || "").trim();
         return "<tr>" +
-            "<td>" + escapeHtml(email) + "</td>" +
-            "<td>" + escapeHtml(user.nome) + "</td>" +
             "<td>" + escapeHtml(registro || "-") + "</td>" +
+            "<td>" + escapeHtml(user.nome) + "</td>" +
+            "<td>" + escapeHtml(email) + "</td>" +
             "<td>" + escapeHtml(user.perfil) + "</td>" +
             "<td><span class=\"status " + statusClass + "\">" + statusLabel + "</span></td>" +
             "<td><div class=\"table-actions\"><button class=\"btn btn-primary\" type=\"button\" onclick=\"abrirEditorUsuario('" + emailParam + "')\">Editar</button></div></td>" +
@@ -374,6 +465,16 @@ function renderUsuarios() {
             "</tr>";
     }).join("");
 }
+
+window.ordenarUsuarios = function (campo) {
+    if (ordenacaoUsuarios.campo === campo) {
+        ordenacaoUsuarios.direcao = ordenacaoUsuarios.direcao === "asc" ? "desc" : "asc";
+    } else {
+        ordenacaoUsuarios.campo = campo;
+        ordenacaoUsuarios.direcao = "asc";
+    }
+    renderUsuarios();
+};
 
 async function salvarUsuario(email, nome, perfil, registro, mensagem, ativo = true) {
     const status = document.getElementById("cadastroStatus");
