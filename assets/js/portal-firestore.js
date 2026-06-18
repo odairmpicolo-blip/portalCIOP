@@ -6,6 +6,7 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  deleteDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
@@ -59,4 +60,11 @@ export async function salvarUsuarioFirestore(email, cadastro) {
     atualizadoEm: serverTimestamp()
   }, { merge: true });
   return dados;
+}
+
+
+export async function excluirUsuarioFirestore(email) {
+  const id = normalizarEmail(email);
+  if (!id) throw new Error("E-mail invalido.");
+  await deleteDoc(doc(db, COLECAO_USUARIOS, id));
 }

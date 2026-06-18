@@ -98,19 +98,64 @@ textarea{min-height:116px;resize:vertical}
 table{width:100%;border-collapse:collapse;background:#fff;font-size:13px}
 th,td{padding:10px;border-bottom:1px solid var(--border);text-align:left}
 th{color:var(--blue);background:#f8fafc}
-.perfil-row{display:flex;gap:8px;align-items:center}
-.perfil-row select{min-width:150px}
-.perfil-row .btn{white-space:nowrap;padding:9px 12px}
-.table-input{min-width:180px}
-td select{min-width:140px}
+.table-actions{display:flex;gap:8px;align-items:center}
+.table-actions .btn{white-space:nowrap;padding:9px 12px}
 .status{font-size:12px;font-weight:700;margin-top:10px}
 .ok{color:var(--green)}
 .erro{color:var(--red)}
+.modal-backdrop{
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:rgba(16,24,40,.46);
+    z-index:20;
+}
+.modal-backdrop[hidden]{display:none}
+.user-modal{
+    width:min(560px, 100%);
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:8px;
+    box-shadow:0 18px 48px rgba(16,24,40,.22);
+}
+.modal-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:14px;
+    padding:18px 20px 12px;
+    border-bottom:1px solid var(--border);
+}
+.modal-header h2{margin:0;color:var(--blue);font-size:18px}
+.modal-header p{margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.45}
+.modal-close{
+    border:0;
+    background:#eef2f7;
+    color:var(--blue);
+    border-radius:6px;
+    width:32px;
+    height:32px;
+    cursor:pointer;
+    font-size:20px;
+    line-height:1;
+}
+.modal-body{padding:16px 20px 20px}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-grid .full{grid-column:1/-1}
+.modal-note{margin:10px 0 0;color:var(--muted);font-size:12px;line-height:1.45}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px}
+body.modal-open{overflow:hidden}
 #adminNegado{display:none}
 @media(max-width:850px){
     .header{grid-template-columns:1fr;text-align:center}
     .header-actions{justify-self:center;flex-wrap:wrap}
     .grid{grid-template-columns:1fr}
+}
+@media(max-width:650px){
+    .modal-grid{grid-template-columns:1fr}
 }
 </style>
 <script src="../assets/js/loading.js"></script>
@@ -193,6 +238,40 @@ td select{min-width:140px}
                 <tbody id="usuariosTabela"><tr><td colspan="6" class="no-data">Carregando usuários...</td></tr></tbody>
             </table>
         </section>
+
+        <div id="editarUsuarioModal" class="modal-backdrop" hidden>
+            <div class="user-modal" role="dialog" aria-modal="true" aria-labelledby="editarUsuarioTitulo">
+                <div class="modal-header">
+                    <div>
+                        <h2 id="editarUsuarioTitulo">Editar usuário</h2>
+                        <p>Use o mesmo e-mail cadastrado no Firebase Authentication.</p>
+                    </div>
+                    <button class="modal-close" type="button" onclick="fecharEditorUsuario()" aria-label="Fechar">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-grid">
+                        <div class="full">
+                            <label for="editarUsuarioEmail">E-mail</label>
+                            <input id="editarUsuarioEmail" type="email" autocomplete="off">
+                        </div>
+                        <div>
+                            <label for="editarUsuarioNome">Nome</label>
+                            <input id="editarUsuarioNome" type="text" autocomplete="off">
+                        </div>
+                        <div>
+                            <label for="editarUsuarioPerfil">Perfil</label>
+                            <select id="editarUsuarioPerfil"></select>
+                        </div>
+                    </div>
+                    <p class="modal-note">Ao alterar o e-mail, o registro antigo do portal será substituído pelo novo.</p>
+                    <div id="editarUsuarioStatus" class="status"></div>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" type="button" onclick="fecharEditorUsuario()">Cancelar</button>
+                        <button class="btn btn-primary" type="button" onclick="salvarEditorUsuario()">Salvar alterações</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </main>
 
@@ -201,11 +280,13 @@ import { usuarios } from "../assets/js/usuarios.js";
 import {
     listarUsuariosFirestore,
     salvarUsuarioFirestore,
+    excluirUsuarioFirestore,
     normalizarCadastro
 } from "../assets/js/portal-firestore.js";
 
 const perfisDisponiveis = ["Administrador", "Supervisor", "Gerencia", "Analista", "SAC", "Secretária"];
 const usuariosEditados = {};
+let usuarioEmEdicao = null;
 
 function carregarUsuariosLocais() {
     Object.entries(usuarios).forEach(([email, cadastro]) => {
@@ -233,6 +314,31 @@ function atualizarStatus(mensagem, tipo = "ok") {
     status.textContent = mensagem;
 }
 
+function normalizarEmailLocal(email) {
+    return String(email || "").trim().toLowerCase();
+}
+
+function decodificarEmailParam(email) {
+    try {
+        return decodeURIComponent(String(email || ""));
+    } catch (error) {
+        return String(email || "");
+    }
+}
+
+function opcoesPerfil(perfilAtual) {
+    const perfis = perfisDisponiveis.includes(perfilAtual) ? perfisDisponiveis : [perfilAtual, ...perfisDisponiveis].filter(Boolean);
+    return perfis.map((perfil) => {
+        const selected = perfil === perfilAtual ? " selected" : "";
+        return "<option" + selected + ">" + perfil + "</option>";
+    }).join("");
+}
+
+function preencherPerfilEditor(perfilAtual) {
+    const select = document.getElementById("editarUsuarioPerfil");
+    select.innerHTML = opcoesPerfil(perfilAtual);
+}
+
 function renderUsuarios() {
     const tbody = document.getElementById("usuariosTabela");
     const ordenados = Object.entries(usuariosEditados).sort(([a], [b]) => a.localeCompare(b));
@@ -241,26 +347,19 @@ function renderUsuarios() {
         return;
     }
     tbody.innerHTML = ordenados.map(([email, user]) => {
-        const idBase = email.replace(/[^a-z0-9]/gi, "_");
-        const nomeId = "nome_" + idBase;
-        const perfilId = "perfil_" + idBase;
         const ativo = user.ativo !== false;
         const statusLabel = ativo ? "Ativo" : "Desativado";
         const statusClass = ativo ? "ok" : "erro";
         const acaoLabel = ativo ? "Desativar" : "Ativar";
         const acaoClass = ativo ? "btn-danger" : "btn-secondary";
-        const perfis = perfisDisponiveis.includes(user.perfil) ? perfisDisponiveis : [user.perfil, ...perfisDisponiveis].filter(Boolean);
-        const options = perfis.map((perfil) => {
-            const selected = perfil === user.perfil ? " selected" : "";
-            return "<option" + selected + ">" + perfil + "</option>";
-        }).join("");
+        const emailParam = encodeURIComponent(email);
         return "<tr>" +
             "<td>" + escapeHtml(email) + "</td>" +
-            "<td><input class=\"table-input\" id=\"" + nomeId + "\" type=\"text\" value=\"" + escapeAttr(user.nome) + "\"></td>" +
-            "<td><select id=\"" + perfilId + "\">" + options + "</select></td>" +
+            "<td>" + escapeHtml(user.nome) + "</td>" +
+            "<td>" + escapeHtml(user.perfil) + "</td>" +
             "<td><span class=\"status " + statusClass + "\">" + statusLabel + "</span></td>" +
-            "<td><button class=\"btn btn-primary\" type=\"button\" onclick=\"salvarEdicao('" + escapeAttr(email) + "','" + nomeId + "','" + perfilId + "')\">Salvar</button></td>" +
-            "<td><button class=\"btn " + acaoClass + "\" type=\"button\" onclick=\"alternarAcesso('" + escapeAttr(email) + "')\">" + acaoLabel + "</button></td>" +
+            "<td><div class=\"table-actions\"><button class=\"btn btn-primary\" type=\"button\" onclick=\"abrirEditorUsuario('" + emailParam + "')\">Editar</button></div></td>" +
+            "<td><div class=\"table-actions\"><button class=\"btn " + acaoClass + "\" type=\"button\" onclick=\"alternarAcesso('" + emailParam + "')\">" + acaoLabel + "</button></div></td>" +
             "</tr>";
     }).join("");
 }
@@ -283,24 +382,105 @@ async function salvarUsuario(email, nome, perfil, mensagem, ativo = true) {
     }
 }
 
-window.salvarEdicao = function (email, nomeId, perfilId) {
-    const id = String(email || "").toLowerCase();
-    const user = usuariosEditados[id];
-    const nomeCampo = document.getElementById(nomeId);
-    const perfilCampo = document.getElementById(perfilId);
-    const nome = String(nomeCampo?.value || "").trim();
-    const perfil = perfilCampo?.value;
-
-    if (!user || !nome || !perfil) {
-        atualizarStatus("Informe nome e perfil para salvar o usuário.", "erro");
+window.abrirEditorUsuario = function (emailParam) {
+    const email = normalizarEmailLocal(decodificarEmailParam(emailParam));
+    const user = usuariosEditados[email];
+    if (!user) {
+        atualizarStatus("Usuário não encontrado para edição.", "erro");
         return;
     }
 
-    salvarUsuario(id, nome, perfil, "Usuário atualizado no Firestore.", user.ativo !== false);
+    usuarioEmEdicao = email;
+    document.getElementById("editarUsuarioEmail").value = user.email || email;
+    document.getElementById("editarUsuarioNome").value = user.nome || "";
+    preencherPerfilEditor(user.perfil);
+    const status = document.getElementById("editarUsuarioStatus");
+    status.className = "status";
+    status.textContent = "";
+
+    const modal = document.getElementById("editarUsuarioModal");
+    modal.hidden = false;
+    document.body.classList.add("modal-open");
+    window.setTimeout(() => document.getElementById("editarUsuarioNome").focus(), 0);
 };
 
-window.alternarAcesso = async function (email) {
-    const id = String(email || "").toLowerCase();
+window.fecharEditorUsuario = function () {
+    const modal = document.getElementById("editarUsuarioModal");
+    modal.hidden = true;
+    document.body.classList.remove("modal-open");
+    usuarioEmEdicao = null;
+};
+
+window.salvarEditorUsuario = async function () {
+    const status = document.getElementById("editarUsuarioStatus");
+    const emailAntigo = usuarioEmEdicao;
+    const user = usuariosEditados[emailAntigo];
+    const novoEmail = normalizarEmailLocal(document.getElementById("editarUsuarioEmail").value);
+    const nome = document.getElementById("editarUsuarioNome").value.trim();
+    const perfil = document.getElementById("editarUsuarioPerfil").value;
+
+    if (!user) {
+        status.className = "status erro";
+        status.textContent = "Usuário não encontrado para salvar.";
+        return;
+    }
+    if (!novoEmail || !nome || !perfil) {
+        status.className = "status erro";
+        status.textContent = "Informe e-mail, nome e perfil para salvar.";
+        return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(novoEmail)) {
+        status.className = "status erro";
+        status.textContent = "Informe um e-mail válido.";
+        return;
+    }
+    if (novoEmail !== emailAntigo && usuariosEditados[novoEmail]) {
+        status.className = "status erro";
+        status.textContent = "Já existe um usuário cadastrado com esse e-mail.";
+        return;
+    }
+    const usuarioAtual = normalizarEmailLocal(window.portalUsuario?.email);
+    if (emailAntigo === usuarioAtual && novoEmail !== emailAntigo) {
+        status.className = "status erro";
+        status.textContent = "Não altere o e-mail do usuário logado por aqui. Atualize primeiro no Firebase Authentication.";
+        return;
+    }
+
+    status.className = "status";
+    status.textContent = "Salvando alterações...";
+
+    try {
+        const ativo = user.ativo !== false;
+        const usuario = await salvarUsuarioFirestore(novoEmail, { nome, perfil, ativo });
+        if (novoEmail !== emailAntigo) {
+            await excluirUsuarioFirestore(emailAntigo);
+            delete usuariosEditados[emailAntigo];
+        }
+        usuariosEditados[usuario.email] = { ...usuario, ativo };
+        renderUsuarios();
+        window.fecharEditorUsuario();
+        atualizarStatus(novoEmail !== emailAntigo ? "Usuário atualizado com novo e-mail." : "Usuário atualizado no Firestore.");
+    } catch (error) {
+        console.error(error);
+        status.className = "status erro";
+        status.textContent = "Não foi possível salvar as alterações: " + error.message;
+    }
+};
+
+document.getElementById("editarUsuarioModal")?.addEventListener("click", (event) => {
+    if (event.target.id === "editarUsuarioModal") {
+        window.fecharEditorUsuario();
+    }
+});
+
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !document.getElementById("editarUsuarioModal")?.hidden) {
+        window.fecharEditorUsuario();
+    }
+});
+
+window.alternarAcesso = async function (emailParam) {
+    const id = normalizarEmailLocal(decodificarEmailParam(emailParam));
     const user = usuariosEditados[id];
     if (!user) return;
 
