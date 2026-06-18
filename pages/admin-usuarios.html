@@ -212,8 +212,17 @@ function carregarUsuariosLocais() {
     });
 }
 
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 function escapeAttr(value) {
-    return String(value || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/'/g, "&#39;");
+    return escapeHtml(value);
 }
 
 function atualizarStatus(mensagem, tipo = "ok") {

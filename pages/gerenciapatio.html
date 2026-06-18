@@ -1,0 +1,1023 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gerenciador de Pátio e Filas - CIOP / TCGL</title>
+<script src="../assets/js/loading.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script type="module" src="../assets/js/auth.js"></script>
+<style>
+:root {
+    --blue: #06245c;
+    --blue2: #0b3a8a;
+    --orange: #ff6b00;
+    --bg: #f5f7fb;
+    --border: #dfe5ef;
+    --text: #101828;
+    --muted: #667085;
+    --success: #12b76a;
+    --danger: #f04438;
+    --warning: #f79009;
+    --dark: #1d2939;
+    --rpl: #0b3a8a; /* Azul mais escuro conforme solicitado */
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    background: var(--bg);
+    font-family: Arial, Helvetica, sans-serif;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+.operator-panel {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(150px, 190px));
+    gap: 10px;
+    align-items: end;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 10px 24px rgba(16, 24, 40, 0.08);
+}
+.operator-field label {
+    display: block;
+    font-size: 10px;
+    line-height: 1;
+    color: var(--muted);
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+.operator-field select {
+    width: 100%;
+    min-height: 34px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--blue);
+    font-size: 13px;
+    font-weight: 800;
+    outline: none;
+    padding: 0 8px;
+}
+@media (max-width: 640px) {
+    .operator-panel {
+        width: 100%;
+        grid-template-columns: 1fr;
+    }
+}
+.header {
+    background: white;
+    padding: 10px 24px;
+    display: grid;
+    grid-template-columns: 190px 1fr minmax(310px, auto);
+    gap: 15px;
+    align-items: center;
+    border-bottom: 1px solid #e8edf6;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.logo-ciop {
+    height: 48px;
+    object-fit: contain;
+    justify-self: start;
+}
+.logo-tcgl {
+    height: 48px;
+    object-fit: contain;
+    justify-self: end;
+}
+h1 {
+    margin: 0;
+    text-align: center;
+    color: #071f57;
+    font-size: 24px;
+    line-height: 1.05;
+    font-weight: 800;
+}
+.header-title {
+    text-align: center;
+    min-width: 0;
+}
+.header-subtitle {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 4px;
+}
+.header-actions {
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    min-width: 0;
+}
+.ciop-session {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(6, 36, 92, 0.06);
+    border: 1px solid #dce5f4;
+    border-radius: 8px;
+    padding: 6px 8px;
+    max-width: 270px;
+    overflow: hidden;
+}
+.ciop-session-user,
+.ciop-session-profile {
+    color: var(--blue);
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ciop-session-profile {
+    color: var(--orange);
+}
+.btn-logout {
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 8px;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+}
+.btn-logout:hover {
+    background: #b91c1c;
+}
+@media (max-width: 960px) {
+    .header {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    .logo-ciop,
+    .logo-tcgl,
+    .header-actions {
+        justify-self: center;
+    }
+    .header-actions {
+        flex-wrap: wrap;
+    }
+}
+.container {
+    max-width: 1400px;
+    margin: 25px auto;
+    padding: 0 20px;
+    width: 100%;
+    flex: 1;
+}
+
+.portal-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+.btn-back {
+    background: white;
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 6px;
+    color: var(--blue);
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-back:hover {
+    background: #f8f9fa;
+    border-color: #b3c0d8;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 25px;
+}
+@media (min-width: 992px) {
+    .dashboard-grid {
+        grid-template-columns: 350px 1fr;
+    }
+}
+
+.card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+.card-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--blue);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 2px solid var(--bg);
+    padding-bottom: 10px;
+}
+
+/* Form controls */
+.form-group {
+    margin-bottom: 15px;
+}
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #344054;
+}
+.form-row {
+    display: flex;
+    gap: 10px;
+}
+.form-control {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    outline: none;
+}
+.form-control:focus {
+    border-color: var(--blue2);
+    box-shadow: 0 0 0 3px rgba(11, 58, 138, 0.1);
+}
+.btn {
+    background: var(--blue);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+.btn:hover {
+    background: var(--blue2);
+}
+.btn-orange {
+    background: var(--orange);
+}
+.btn-orange:hover {
+    background: #e05e00;
+}
+.btn-excel {
+    background: #107c41;
+}
+.btn-excel:hover {
+    background: #0b592e;
+}
+
+/* Patio Visual Layout */
+.patio-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+@media (min-width: 768px) {
+    .patio-container {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+.fila-col {
+    background: #f8fafc;
+    border: 2px dashed #e2e8f0;
+    border-radius: 10px;
+    padding: 12px;
+    min-height: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.fila-header {
+    font-weight: bold;
+    text-align: center;
+    font-size: 13px;
+    color: var(--blue);
+    background: #edf2f7;
+    padding: 6px;
+    border-radius: 6px;
+    margin-bottom: 5px;
+    border: 1px solid #cbd5e1;
+}
+.fila-header.muro { background: #344054; color: white; }
+.fila-header.free { border-left: 4px solid var(--success); }
+.fila-header.blocked-lane { border-left: 4px solid var(--warning); }
+.fila-header.oficina-header { background: #111827; color: white; border-left: 4px solid #000; }
+
+/* Car Tag Style */
+.car-tag {
+    background: white;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--blue2);
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+.car-tag:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos de Status Solicitados */
+.car-tag.analisado {
+    border-left-color: var(--danger);
+    background-color: #fef2f2;
+}
+.car-tag.analisado span {
+    color: var(--danger);
+}
+.car-tag.rpl-status {
+    border-left-color: #031b44;
+    background-color: var(--rpl);
+    color: #ffffff;
+}
+.car-tag.rpl-status .tech {
+    background-color: #1149ab;
+    color: #ffffff;
+}
+.car-tag.oficina-status {
+    border-left-color: #000000;
+    background-color: #1f2937;
+    color: #ffffff;
+}
+.car-tag.oficina-status .tech {
+    background-color: #374151;
+    color: #d1d5db;
+}
+
+.car-tag .tech {
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: normal;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    max-width: 90px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.car-tag .remove-btn {
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 5px;
+}
+.car-tag.oficina-status .remove-btn, .car-tag.rpl-status .remove-btn {
+    color: #fca5a5;
+}
+
+/* Result Box */
+.result-box {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: none;
+    line-height: 1.4;
+}
+.result-box.success { display: block; background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+.result-box.warning { display: block; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+.result-box.danger { display: block; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+
+.clear-data {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+.btn-text {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+.btn-text:hover { color: var(--danger); }
+
+footer {
+    background: white;
+    padding: 15px;
+    text-align: center;
+    border-top: 1px solid #e8edf6;
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 40px;
+}
+     .portal-return{
+    margin:15px 0 0 0;
+    padding:0 20px;
+    display:flex;
+    justify-content:flex-start;
+}
+
+.btn-portal{
+    display:inline-flex;
+   align-items:center;
+   justify-content:center;
+   background:#06245c;
+   color:#fff;
+   text-decoration:none;
+   padding:11px 16px;
+   border-radius:7px;
+   font-weight:800;
+   font-size:13px;
+   box-shadow: 0 10px 20px rgba(6, 36, 92, 0.16);
+}
+.btn-portal:hover{
+   background:#0b3a8a;
+}
+.result-box {
+   border-radius: 10px;
+   border-width: 1px;
+   box-shadow: 0 10px 24px rgba(16, 24, 40, 0.08);
+   line-height: 1.45;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <a href="https://mov1.com.br" target="_blank" style="display: flex;">
+        <img src="../assets/img/CIOP Sem Fundo.png" class="logo-ciop" alt="CIOP">
+    </a>
+    <div class="header-title">
+        <h1>Gerenciamento do Pátio</h1>
+        <div class="header-subtitle">Saída de carros e filas operacionais</div>
+    </div>
+    <div class="header-actions">
+        <div class="ciop-session" aria-label="Sessao do usuario">
+            <span id="usuarioLogado" class="ciop-session-user">Usuario</span>
+            <span id="perfilUsuario" class="ciop-session-profile">Perfil</span>
+            <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+        </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" style="display: flex;">
+            <img src="../assets/img/LOGO_TCGL-removebg-preview.png" class="logo-tcgl" alt="TCGL">
+        </a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="portal-toolbar">
+        <a href="../index.html" class="btn-portal">Portal CIOP</a>
+        <div class="operator-panel" aria-label="Dados de operação">
+            <div class="operator-field">
+                <label for="operadorPatio">Operador</label>
+                <select id="operadorPatio">
+                    <option value="Odair">Odair</option>
+                    <option value="CIOP 01">CIOP 01</option>
+                    <option value="CIOP 02">CIOP 02</option>
+                    <option value="Fiscalizacao">Fiscalizacao</option>
+                    <option value="Plantao">Plantao</option>
+                </select>
+            </div>
+            <div class="operator-field">
+                <label for="portaSaida">Porta de saída</label>
+                <select id="portaSaida">
+                    <option value="Porta 1">Porta 1</option>
+                    <option value="Porta 2">Porta 2</option>
+                    <option value="Porta 3">Porta 3</option>
+                    <option value="Garagem">Garagem</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="dashboard-grid">
+        <div>
+            <div class="card">
+                <div class="card-title">📍 Alocar Veículo na Fila</div>
+                <div class="form-group">
+                    <label for="inputFilaBus">Número do Veículo + [ENTER]:</label>
+                    <input type="text" id="inputFilaBus" class="form-control" placeholder="Digite o prefixo e aperte Enter" list="frotaList" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="selectFila">Selecionar Fila de Destino:</label>
+                    <select id="selectFila" class="form-control">
+                        <option value="filaMuro">Fila do Muro (Livre)</option>
+                        <option value="fila1">1ª Fila (Livre)</option>
+                        <option value="fila2">2ª Fila (Requer 1ª Fila Livre)</option>
+                        <option value="fila3">3ª Fila (Requer 1ª e 2ª Livres)</option>
+                        <option value="fila4">4ª Fila (Preso pelas anteriores)</option>
+                    </select>
+                </div>
+                <button class="btn" style="width: 100%; display: none;" onclick="adicionarNaFila()">Alocar no Pátio</button>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔍 Consulta de Saída</div>
+                <div class="form-group">
+                    <label for="searchBus">Análise Disponibilidade:</label>
+                    <div class="form-row">
+                        <input type="text" id="searchBus" class="form-control" placeholder="Ex: 1150" list="frotaList">
+                        <button class="btn btn-orange" onclick="verificarAcessibilidade()">Analisar</button>
+                    </div>
+                </div>
+                <div id="resultOutput" class="result-box"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔵 Destinar para RPL</div>
+                <div class="form-group">
+                    <label for="rplBus">Prefixo para RPL + [ENTER]:</label>
+                    <input type="text" id="rplBus" class="form-control" placeholder="Digite o prefixo e aperte Enter" list="frotaList" autocomplete="off">
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🛠️ Bloqueio de Oficina</div>
+                <div class="form-group">
+                    <label for="oficinaBus">Enviar p/ Oficina + [ENTER]:</label>
+                    <input type="text" id="oficinaBus" class="form-control" placeholder="Digite o prefixo e aperte Enter" list="frotaList" autocomplete="off">
+                </div>
+            </div>
+            
+            <div class="clear-data">
+                <button class="btn btn-excel" onclick="exportarExcel()">📊 Baixar Gabarito Excel</button>
+                <button class="btn-text" onclick="limparTudo()">Resetar Tudo</button>
+            </div>
+        </div>
+
+        <div>
+            <div class="card" style="margin-bottom: 0;">
+                <div class="card-title">🚘 Distribuição das Filas no Pátio (Visual Dinâmico)</div>
+                <p style="font-size: 13px; color: var(--muted); margin-top: -10px; margin-bottom: 15px;">
+                    Legenda de Cores: <span style="color:var(--blue2)">● Normal</span> | <span style="color:var(--danger)">● Já Analisado/Utilizado</span> | <span style="color:var(--rpl)">● RPL</span> | <span style="color:#000">● Oficina</span>
+                </p>
+                
+                <div class="patio-container">
+                    <div class="fila-col">
+                        <div class="fila-header muro free">Fila do Muro<br><small>🟢 Livre</small></div>
+                        <div id="filaMuro" style="min-height:300px;"></div>
+                    </div>
+
+                    <div class="fila-col">
+                        <div class="fila-header free">1ª Fila<br><small>🟢 Saída Direta</small></div>
+                        <div id="fila1" style="min-height:300px;"></div>
+                    </div>
+
+                    <div class="fila-col">
+                        <div class="fila-header blocked-lane">2ª Fila<br><small>⚠️ Requer 1ª</small></div>
+                        <div id="fila2" style="min-height:300px;"></div>
+                    </div>
+
+                    <div class="fila-col">
+                        <div class="fila-header blocked-lane">3ª Fila<br><small>⚠️ Requer 1ª/2ª</small></div>
+                        <div id="fila3" style="min-height:300px;"></div>
+                    </div>
+
+                    <div class="fila-col">
+                        <div class="fila-header blocked-lane">4ª Fila<br><small>⚠️ Fundo</small></div>
+                        <div id="fila4" style="min-height:300px;"></div>
+                    </div>
+
+                    <div class="fila-col" style="background: #f1f5f9; border-color: #94a3b8;">
+                        <div class="fila-header oficina-header">🛠️ Oficina<br><small>⚫ Retido/Bloqueado</small></div>
+                        <div id="oficina" style="min-height:300px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<datalist id="frotaList"></datalist>
+
+<footer>
+    &copy; 2026 CIOP / TCGL - Gerenciamento de Logística e Frota Operacional
+</footer>
+
+<script>
+const frotaDados = [{"veiculo": "1042", "tecnologia": "Mini Especial"}, {"veiculo": "1044", "tecnologia": "Leve Especial"}, {"veiculo": "1052", "tecnologia": "Van Especial"}, {"veiculo": "1150", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1151", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1152", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1153", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1154", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1155", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1156", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1157", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1158", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1159", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1160", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1161", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1162", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1163", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1164", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1165", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1166", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1167", "tecnologia": "Azul pesado com AR"}, {"veiculo": "1168", "tecnologia": "Azul pesado com AR"}, {"veiculo": "2101", "tecnologia": "Articulado"}, {"veiculo": "2102", "tecnologia": "Arsticulado"}, {"veiculo": "2103", "tecnologia": "BRT"}, {"veiculo": "2104", "tecnologia": "BRT"}, {"veiculo": "2105", "tecnologia": "BRT"}, {"veiculo": "2106", "tecnologia": "BRT"}, {"veiculo": "2107", "tecnologia": "BRT"}, {"veiculo": "2108", "tecnologia": "BRT"}, {"veiculo": "2109", "tecnologia": "BRT"}, {"veiculo": "2110", "tecnologia": "BRT"}, {"veiculo": "3001", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3002", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3003", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3004", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3005", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3006", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3007", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3008", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3009", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3010", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3011", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3012", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3013", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3014", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3015", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3016", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3017", "tecnologia": "Amarelo pesado "}, {"veiculo": "3018", "tecnologia": "Amarelo pesado "}, {"veiculo": "3019", "tecnologia": "Amarelo pesado "}, {"veiculo": "3020", "tecnologia": "Amarelo pesado "}, {"veiculo": "3021", "tecnologia": "Amarelo pesado "}, {"veiculo": "3022", "tecnologia": "Amarelo pesado "}, {"veiculo": "3023", "tecnologia": "Amarelo pesado "}, {"veiculo": "3024", "tecnologia": "Amarelo pesado "}, {"veiculo": "3025", "tecnologia": "Amarelo pesado "}, {"veiculo": "3026", "tecnologia": "Amarelo pesado "}, {"veiculo": "3027", "tecnologia": "Amarelo pesado "}, {"veiculo": "3028", "tecnologia": "Amarelo pesado "}, {"veiculo": "3029", "tecnologia": "Amarelo pesado "}, {"veiculo": "3030", "tecnologia": "Amarelo pesado "}, {"veiculo": "3031", "tecnologia": "Amarelo pesado "}, {"veiculo": "3032", "tecnologia": "Amarelo pesado "}, {"veiculo": "3033", "tecnologia": "Amarelo pesado "}, {"veiculo": "3034", "tecnologia": "Amarelo pesado "}, {"veiculo": "3035", "tecnologia": "Amarelo pesado "}, {"veiculo": "3036", "tecnologia": "Amarelo pesado "}, {"veiculo": "3037", "tecnologia": "Amarelo pesado "}, {"veiculo": "3038", "tecnologia": "Amarelo pesado "}, {"veiculo": "3039", "tecnologia": "Amarelo pesado "}, {"veiculo": "3040", "tecnologia": "Amarelo pesado "}, {"veiculo": "3041", "tecnologia": "Amarelo pesado "}, {"veiculo": "3042", "tecnologia": "Amarelo pesado "}, {"veiculo": "3043", "tecnologia": "Amarelo pesado "}, {"veiculo": "3044", "tecnologia": "Amarelo pesado "}, {"veiculo": "3045", "tecnologia": "Amarelo pesado "}, {"veiculo": "3046", "tecnologia": "Amarelo pesado "}, {"veiculo": "3047", "tecnologia": "Amarelo pesado "}, {"veiculo": "3048", "tecnologia": "Amarelo pesado "}, {"veiculo": "3049", "tecnologia": "Amarelo pesado "}, {"veiculo": "3050", "tecnologia": "Amarelo pesado "}, {"veiculo": "3051", "tecnologia": "Amarelo pesado "}, {"veiculo": "3052", "tecnologia": "Amarelo pesado "}, {"veiculo": "3053", "tecnologia": "Amarelo pesado "}, {"veiculo": "3054", "tecnologia": "Amarelo pesado "}, {"veiculo": "3060", "tecnologia": "Amarelo leve"}, {"veiculo": "3061", "tecnologia": "Amarelo leve"}, {"veiculo": "3062", "tecnologia": "Amarelo leve"}, {"veiculo": "3063", "tecnologia": "Amarelo leve"}, {"veiculo": "3064", "tecnologia": "Amarelo leve"}, {"veiculo": "3065", "tecnologia": "Amarelo leve"}, {"veiculo": "3066", "tecnologia": "Amarelo leve"}, {"veiculo": "3067", "tecnologia": "Amarelo leve"}, {"veiculo": "3068", "tecnologia": "Amarelo leve"}, {"veiculo": "3069", "tecnologia": "Amarelo leve"}, {"veiculo": "3070", "tecnologia": "Amarelo leve"}, {"veiculo": "3071", "tecnologia": "Amarelo leve"}, {"veiculo": "3072", "tecnologia": "Amarelo leve"}, {"veiculo": "3073", "tecnologia": "Amarelo leve"}, {"veiculo": "3074", "tecnologia": "Amarelo leve"}, {"veiculo": "3075", "tecnologia": "Amarelo leve"}, {"veiculo": "3076", "tecnologia": "Amarelo leve"}, {"veiculo": "3077", "tecnologia": "Amarelo leve"}, {"veiculo": "3078", "tecnologia": "Amarelo leve"}, {"veiculo": "3079", "tecnologia": "Amarelo leve"}, {"veiculo": "3080", "tecnologia": "Amarelo leve"}, {"veiculo": "3081", "tecnologia": "Amarelo leve"}, {"veiculo": "3082", "tecnologia": "Amarelo leve"}, {"veiculo": "3083", "tecnologia": "Amarelo leve"}, {"veiculo": "3084", "tecnologia": "Amarelo leve"}, {"veiculo": "3085", "tecnologia": "Amarelo leve"}, {"veiculo": "3086", "tecnologia": "Amarelo leve"}, {"veiculo": "3087", "tecnologia": "Amarelo leve"}, {"veiculo": "3088", "tecnologia": "Amarelo leve"}, {"veiculo": "3089", "tecnologia": "Amarelo leve"}, {"veiculo": "3090", "tecnologia": "Amarelo leve"}, {"veiculo": "3091", "tecnologia": "Amarelo leve"}, {"veiculo": "3092", "tecnologia": "Amarelo leve"}, {"veiculo": "3093", "tecnologia": "Amarelo leve"}, {"veiculo": "3094", "tecnologia": "Amarelo leve"}, {"veiculo": "3095", "tecnologia": "Amarelo leve"}, {"veiculo": "3096", "tecnologia": "Amarelo leve"}, {"veiculo": "3100", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3101", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3102", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3103", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3104", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3105", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3106", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3107", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3108", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3109", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3110", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3111", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3112", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3113", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3114", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3115", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3116", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3117", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3118", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3119", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3120", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3121", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3122", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3123", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3124", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3125", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3126", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3127", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3128", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3129", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3130", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3131", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3132", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3133", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3134", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3135", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3136", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3137", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3138", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3139", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3140", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3141", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3142", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3143", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3144", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3145", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3146", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3147", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3148", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3149", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3150", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3151", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3152", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3153", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3154", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3155", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3156", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3157", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3158", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3159", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3160", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3161", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3162", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3163", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3164", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3165", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3166", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3167", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3168", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3169", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3170", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3171", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3172", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3173", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3174", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3175", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3176", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3177", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3178", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3179", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "3180", "tecnologia": "Amarelo pesado com AR"}, {"veiculo": "4501", "tecnologia": "Azul Pesado"}, {"veiculo": "4502", "tecnologia": "Azul Pesado"}, {"veiculo": "4503", "tecnologia": "Azul Pesado"}, {"veiculo": "4504", "tecnologia": "Azul Pesado"}, {"veiculo": "4505", "tecnologia": "Azul Pesado"}, {"veiculo": "4506", "tecnologia": "Azul Pesado"}, {"veiculo": "4507", "tecnologia": "Azul Pesado"}, {"veiculo": "4508", "tecnologia": "Azul Pesado"}, {"veiculo": "4509", "tecnologia": "Azul Pesado"}, {"veiculo": "4510", "tecnologia": "Azul Pesado"}, {"veiculo": "4511", "tecnologia": "Azul Pesado"}, {"veiculo": "4512", "tecnologia": "Azul Pesado"}, {"veiculo": "4514", "tecnologia": "Azul Pesado"}, {"veiculo": "4515", "tecnologia": "Azul Pesado"}, {"veiculo": "4516", "tecnologia": "Azul Pesado"}, {"veiculo": "4517", "tecnologia": "Azul Pesado"}, {"veiculo": "4518", "tecnologia": "Azul Pesado"}, {"veiculo": "4519", "tecnologia": "Azul Pesado"}, {"veiculo": "4520", "tecnologia": "Azul Pesado"}, {"veiculo": "4521", "tecnologia": "Azul Pesado"}, {"veiculo": "4522", "tecnologia": "Azul Pesado"}, {"veiculo": "4523", "tecnologia": "Azul Pesado"}, {"veiculo": "4524", "tecnologia": "Azul Pesado"}, {"veiculo": "4525", "tecnologia": "Amarelo pesado "}, {"veiculo": "4526", "tecnologia": "Azul pesado com AR"}, {"veiculo": "4527", "tecnologia": "Azul pesado com AR"}, {"veiculo": "4528", "tecnologia": "Azul pesado com AR"}, {"veiculo": "4529", "tecnologia": "Azul pesado com AR"}, {"veiculo": "4550", "tecnologia": "Azul leve"}, {"veiculo": "4551", "tecnologia": "Azul leve"}, {"veiculo": "4552", "tecnologia": "Azul leve"}, {"veiculo": "4553", "tecnologia": "Azul leve"}, {"veiculo": "4554", "tecnologia": "Azul leve"}, {"veiculo": "4555", "tecnologia": "Azul leve"}, {"veiculo": "4559", "tecnologia": "Amarelo leve"}, {"veiculo": "4601", "tecnologia": "Minionibus"}, {"veiculo": "4602", "tecnologia": "Minionibus"}, {"veiculo": "4603", "tecnologia": "Minionibus"}, {"veiculo": "4604", "tecnologia": "Minionibus"}, {"veiculo": "4605", "tecnologia": "Minionibus"}, {"veiculo": "4606", "tecnologia": "Low entry"}, {"veiculo": "4607", "tecnologia": "Low entry"}, {"veiculo": "4608", "tecnologia": "Low entry"}, {"veiculo": "4609", "tecnologia": "Low entry"}, {"veiculo": "4610", "tecnologia": "Minionibus"}, {"veiculo": "4611", "tecnologia": "Minionibus"}];
+
+// Estados das filas + histórico de status (analisados e rpl)
+let patio = JSON.parse(localStorage.getItem('patio_tcgl_v2')) || {
+    filaMuro: [],
+    fila1: [],
+    fila2: [],
+    fila3: [],
+    fila4: [],
+    oficina: [],
+    analisados: [], // Array para guardar os que ficaram vermelhos
+    rpl: []         // Array para guardar os que ficaram azuis
+};
+
+function inicializarGerenciamentoPatio() {
+    configurarOperacao();
+    popularDatalist();
+    
+    // Foca na primeira caixa de texto ao abrir a página
+    document.getElementById('inputFilaBus').focus();
+    
+    // Captura o evento Enter nos inputs
+    configurarInputsComEnter();
+    
+    // Carga inicial ilustrativa caso esteja totalmente zerado
+    if (patio.filaMuro.length === 0 && patio.fila1.length === 0 && patio.fila2.length === 0 && patio.oficina.length === 0) {
+        if(frotaDados.length > 5) {
+            patio.filaMuro.push(frotaDados[0].veiculo);
+            patio.fila1.push(frotaDados[3].veiculo);
+            patio.fila2.push(frotaDados[10].veiculo);
+            patio.oficina.push(frotaDados[1].veiculo);
+            patio.rpl.push(frotaDados[3].veiculo); 
+            patio.analisados.push(frotaDados[10].veiculo);
+        }
+    }
+    
+    renderizarPatio();
+    if (window.portalLoading) {
+        window.portalLoading.hide();
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    if (typeof window.portalAguardarUsuario === "function") {
+        window.portalAguardarUsuario(inicializarGerenciamentoPatio);
+    } else {
+        inicializarGerenciamentoPatio();
+    }
+});
+
+function obterDadosOperacao() {
+    return {
+        operador: document.getElementById('operadorPatio')?.value || 'Nao informado',
+        porta: document.getElementById('portaSaida')?.value || 'Nao informada',
+        geradoEm: new Date().toLocaleString('pt-BR')
+    };
+}
+
+function configurarOperacao() {
+    const usuarioSelect = document.getElementById('operadorPatio');
+    const portaSelect = document.getElementById('portaSaida');
+    usuarioSelect.value = localStorage.getItem('patio_tcgl_usuario') || usuarioSelect.value;
+    portaSelect.value = localStorage.getItem('patio_tcgl_porta_saida') || portaSelect.value;
+    usuarioSelect.addEventListener('change', () => {
+        localStorage.setItem('patio_tcgl_usuario', usuarioSelect.value);
+    });
+    portaSelect.addEventListener('change', () => {
+        localStorage.setItem('patio_tcgl_porta_saida', portaSelect.value);
+    });
+}
+
+function popularDatalist() {
+    const datalist = document.getElementById('frotaList');
+    datalist.innerHTML = '';
+    frotaDados.forEach(item => {
+        // Se o veículo já estiver nos analisados (vermelho), ignora e não adiciona nas opções
+        if (patio.analisados.includes(item.veiculo)) {
+            return;
+        }
+        const option = document.createElement('option');
+        option.value = item.veiculo;
+        option.textContent = item.tecnologia;
+        datalist.appendChild(option);
+    });
+}
+
+function configurarInputsComEnter() {
+    // Alocação Fila
+    document.getElementById('inputFilaBus').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            adicionarNaFila();
+        }
+    });
+
+    // Enviar para RPL
+    document.getElementById('rplBus').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            enviarParaRPL();
+        }
+    });
+
+    // Enviar para Oficina
+    document.getElementById('oficinaBus').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            enviarParaOficina();
+        }
+    });
+}
+
+function obterTecnologia(prefixo) {
+    const veiculo = frotaDados.find(item => item.veiculo == prefixo);
+    return veiculo ? veiculo.tecnologia : "Geral";
+}
+
+function salvarEstado() {
+    localStorage.setItem('patio_tcgl_v2', JSON.stringify(patio));
+}
+
+function adicionarNaFila() {
+    const input = document.getElementById('inputFilaBus');
+    const prefixo = input.value.trim();
+    const filaSelecionada = document.getElementById('selectFila').value;
+    
+    if (!prefixo) return;
+    
+    removerVeiculoDeTudo(prefixo);
+    patio[filaSelecionada].push(prefixo);
+    salvarEstado();
+    renderizarPatio();
+    
+    // Retira do input e mantém o foco conforme solicitado
+    input.value = '';
+    input.focus();
+}
+
+function enviarParaRPL() {
+    const input = document.getElementById('rplBus');
+    const prefixo = input.value.trim();
+    
+    if (!prefixo) return;
+    
+    // Se o veículo já estiver em alguma fila, marca ele como RPL
+    if (!patio.rpl.includes(prefixo)) {
+        patio.rpl.push(prefixo);
+    }
+    // Remove do status vermelho caso esteja nele
+    patio.analisados = patio.analisados.filter(p => p != prefixo);
+    
+    salvarEstado();
+    renderizarPatio();
+    
+    input.value = '';
+    document.getElementById('inputFilaBus').focus();
+}
+
+function enviarParaOficina() {
+    const input = document.getElementById('oficinaBus');
+    const prefixo = input.value.trim();
+    
+    if (!prefixo) return;
+    
+    removerVeiculoDeTudo(prefixo);
+    patio.oficina.push(prefixo);
+    salvarEstado();
+    renderizarPatio();
+    
+    input.value = '';
+    document.getElementById('inputFilaBus').focus();
+}
+
+function removerVeiculoDeTudo(prefixo) {
+    const chaves = ['filaMuro', 'fila1', 'fila2', 'fila3', 'fila4', 'oficina', 'analisados', 'rpl'];
+    chaves.forEach(fila => {
+        patio[fila] = patio[fila].filter(p => p != prefixo);
+    });
+}
+
+function obterNomeFila(chave) {
+    const nomes = {
+        filaMuro: "Fila do Muro",
+        fila1: "1ª Fila",
+        fila2: "2ª Fila",
+        fila3: "3ª Fila",
+        fila4: "4ª Fila",
+        oficina: "Oficina"
+    };
+    return nomes[chave] || chave;
+}
+
+function renderizarPatio() {
+    const chavesFilas = ['filaMuro', 'fila1', 'fila2', 'fila3', 'fila4', 'oficina'];
+    
+    chavesFilas.forEach(filaKey => {
+        const container = document.getElementById(filaKey);
+        container.innerHTML = '';
+        
+        patio[filaKey].forEach((prefixo, index) => {
+            const tech = obterTecnologia(prefixo);
+            const card = document.createElement('div');
+            
+            // Define a classe de cor com base nos status e regras solicitadas
+            let statusClass = '';
+            let textoPrefixo = prefixo;
+
+            if (filaKey === 'oficina') {
+                statusClass = 'oficina-status';
+            } else if (patio.analisados.includes(prefixo)) {
+                statusClass = 'analisado'; // Vermelho
+            } else if (patio.rpl.includes(prefixo)) {
+                statusClass = 'rpl-status'; // Azul Escuro
+                textoPrefixo = prefixo + " - RPL"; // Escreve RPL nele conforme solicitado
+            }
+            
+            card.className = `car-tag ${statusClass}`;
+            card.innerHTML = `
+                <div>
+                    <span style="font-size:10px; display:block; font-weight:normal; opacity: 0.8;">Posição ${index+1}</span>
+                    <span>${textoPrefixo}</span>
+                </div>
+                <div class="tech" title="${tech}">${tech}</div>
+                <span class="remove-btn" onclick="liberarCarro('${prefixo}')" title="Remover das Filas">×</span>
+            `;
+            container.appendChild(card);
+        });
+    });
+    
+    // Atualiza a lista de opções para sumir com os carros analisados
+    popularDatalist();
+}
+
+function liberarCarro(prefixo) {
+    removerVeiculoDeTudo(prefixo);
+    salvarEstado();
+    renderizarPatio();
+}
+
+function limparTudo() {
+    if(confirm("Deseja redefinir todo o pátio, históricos e configurações?")) {
+        patio = { filaMuro: [], fila1: [], fila2: [], fila3: [], fila4: [], oficina: [], analisados: [], rpl: [] };
+        salvarEstado();
+        renderizarPatio();
+        document.getElementById('resultOutput').style.display = 'none';
+        document.getElementById('inputFilaBus').focus();
+    }
+}
+
+function verificarAcessibilidade() {
+    const input = document.getElementById('searchBus');
+    const prefixo = input.value.trim();
+    const resultBox = document.getElementById('resultOutput');
+    
+    if (!prefixo) {
+        resultBox.className = "result-box danger";
+        resultBox.innerHTML = "Por favor, insira o número de um veículo.";
+        return;
+    }
+    
+    // Adiciona o prefixo na lista dos analisados (vai pintar de vermelho nas filas)
+    if (!patio.analisados.includes(prefixo) && !patio.oficina.includes(prefixo)) {
+        patio.analisados.push(prefixo);
+        // Se for marcado como utilizado, remove do status azul de RPL
+        patio.rpl = patio.rpl.filter(p => p != prefixo);
+        salvarEstado();
+        renderizarPatio();
+    }
+    
+    if (patio.oficina.includes(prefixo)) {
+        resultBox.className = "result-box danger";
+        resultBox.innerHTML = `❌ <b>BLOQUEIO DE OFICINA:</b> O veículo <b>${prefixo}</b> está retido na Oficina (Preto). Manobra não permitida!`;
+        input.value = '';
+        return;
+    }
+    
+    let filaEncontrada = null;
+    let posicao = -1;
+    
+    const colunas = ['filaMuro', 'fila1', 'fila2', 'fila3', 'fila4'];
+    for (let fila of colunas) {
+        const idx = patio[fila].indexOf(prefixo);
+        if (idx !== -1) {
+            filaEncontrada = fila;
+            posicao = idx;
+            break;
+        }
+    }
+    
+    if (!filaEncontrada) {
+        const existeNaFrota = frotaDados.some(item => item.veiculo == prefixo);
+        if (existeNaFrota) {
+            resultBox.className = "result-box success";
+            resultBox.innerHTML = `🟢 <b>Livre Fora do Pátio:</b> O veículo <b>${prefixo}</b> (${obterTecnologia(prefixo)}) está disponível fora das filas de confinamento.`;
+        } else {
+            resultBox.className = "result-box warning";
+            resultBox.innerHTML = `⚠️ Veículo <b>${prefixo}</b> não cadastrado no mapa da frota.`;
+        }
+        input.value = '';
+        return;
+    }
+    
+    if (filaEncontrada === 'filaMuro') {
+        resultBox.className = "result-box success";
+        resultBox.innerHTML = `🟢 <b>OPÇÃO MAIS ACESSÍVEL:</b> O veículo <b>${prefixo}</b> está na <b>Fila do Muro</b>. Rota Livre e imediata!`;
+        input.value = '';
+        return;
+    }
+    
+    if (filaEncontrada === 'fila1') {
+        if (posicao === 0) {
+            resultBox.className = "result-box success";
+            resultBox.innerHTML = `🟢 <b>Acesso Direto:</b> O veículo <b>${prefixo}</b> está na <b>1ª Fila (Posição 1)</b>. Pronto para saída!`;
+        } else {
+            resultBox.className = "result-box warning";
+            resultBox.innerHTML = `⚠️ <b>Parcialmente Acessível:</b> Está na <b>1ª Fila</b>, mas necessita afastar <b>${posicao} veículo(s)</b> à frente.`;
+        }
+        input.value = '';
+        return;
+    }
+    
+    let carrosFila1 = patio.fila1.length;
+    let carrosFila2 = patio.fila2.length;
+    let carrosFila3 = patio.fila3.length;
+    
+    if (filaEncontrada === 'fila2') {
+        if (carrosFila1 === 0) {
+            resultBox.className = "result-box success";
+            resultBox.innerHTML = `🟢 <b>Canal Aberto:</b> O veículo <b>${prefixo}</b> está na 2ª Fila. Como a 1ª Fila está vazia, sai livre!`;
+        } else {
+            resultBox.className = "result-box warning";
+            resultBox.innerHTML = `⚠️ <b>Manobra Obrigatória:</b> Preso na 2ª Fila. É necessário que os <b>${carrosFila1} veículo(s) da 1ª Fila</b> deem saída primeiro.`;
+        }
+    } else if (filaEncontrada === 'fila3') {
+        if (carrosFila1 === 0 && carrosFila2 === 0) {
+            resultBox.className = "result-box success";
+            resultBox.innerHTML = `🟢 <b>Rota Livre:</b> O veículo está na 3ª Fila, mas as colunas da frente estão limpas!`;
+        } else {
+            resultBox.className = "result-box danger";
+            resultBox.innerHTML = `🛑 <b>Obstrução:</b> Veículo na 3ª Fila. Libere a 1ª Fila (${carrosFila1} carros) e a 2ª Fila (${carrosFila2} carros).`;
+        }
+    } else if (filaEncontrada === 'fila4') {
+        resultBox.className = "result-box danger";
+        resultBox.innerHTML = `🛑 <b>BLOQUEIO SEVERO:</b> O veículo <b>${prefixo}</b> está no fundo da 4ª Fila. Necessário esvaziar as Filas 1 (${carrosFila1}), 2 (${carrosFila2}) e 3 (${carrosFila3}).`;
+    }
+    input.value = '';
+}
+
+// Nova Função de Exportação para Excel (.xlsx)
+function exportarExcel() {
+    const maxLinhas = Math.max(
+        patio.filaMuro.length,
+        patio.fila1.length,
+        patio.fila2.length,
+        patio.fila3.length,
+        patio.fila4.length,
+        patio.oficina.length
+    );
+    
+    const operacao = obterDadosOperacao();
+    const dadosExcel = [
+        ["GERENCIAMENTO DO PATIO - CIOP / TCGL"],
+        ["Operador", operacao.operador, "Porta de saida", operacao.porta, "Gerado em", operacao.geradoEm],
+        [],
+        ["FILA DO MURO", "1ª FILA", "2ª FILA", "3ª FILA", "4ª FILA", "OFICINA"]
+    ];
+    
+    for(let i = 0; i < maxLinhas; i++) {
+        let linha = [
+            obterTextoCel(patio.filaMuro[i]),
+            obterTextoCel(patio.fila1[i]),
+            obterTextoCel(patio.fila2[i]),
+            obterTextoCel(patio.fila3[i]),
+            obterTextoCel(patio.fila4[i]),
+            obterTextoCel(patio.oficina[i])
+        ];
+        dadosExcel.push(linha);
+    }
+    
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(dadosExcel);
+    ws['!cols'] = [
+        { wch: 28 },
+        { wch: 28 },
+        { wch: 28 },
+        { wch: 28 },
+        { wch: 28 },
+        { wch: 28 }
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws, "Gabarito Patio");
+    XLSX.writeFile(wb, "Gabarito_Patio_CIOP_TCGL.xlsx");
+}
+
+function obterTextoCel(prefixo) {
+    if (!prefixo) return "";
+    let status = " [Normal]";
+    if (patio.oficina.includes(prefixo)) status = " [OFICINA]";
+    else if (patio.analisados.includes(prefixo)) status = " [UTILIZADO]";
+    else if (patio.rpl.includes(prefixo)) status = " [RPL]";
+    
+    return `${prefixo} - ${obterTecnologia(prefixo)}${status}`;
+}
+</script>
+</body>
+</html>
