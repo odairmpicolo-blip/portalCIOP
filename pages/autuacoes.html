@@ -116,8 +116,10 @@ function normalizeRows(payload){
     }).filter(d=>d.data_iso||d.data_br||d.notificacao||d.auto||d.motivo||d.agente);
 }
 async function loadData(){
+    window.portalMostrarCarregando?.('Carregando autuações');
     if(!API_URL){
         init();
+        window.portalOcultarCarregando?.();
         return;
     }
     try{
@@ -130,6 +132,7 @@ async function loadData(){
         console.error('Erro ao carregar dados do Google Sheets:',error);
     }
     init();
+    window.portalOcultarCarregando?.();
 }
 const COLORS = ['#1359c7','#28a64a','#ff6b00','#7045b8','#de1b1b','#f6bf26','#00a6a6','#7a8b99','#9b59b6','#2c3e50','#e67e22','#16a085'];
 function formatInt(n){return Number(n||0).toLocaleString('pt-BR');}

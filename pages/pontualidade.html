@@ -631,6 +631,7 @@ function normalizeApiData(payload) {
 
 async function loadDashboardData() {
     const cenario = CENARIOS[cenarioAtual];
+    window.portalMostrarCarregando?.('Carregando pontualidade - ' + cenario.nome);
     document.getElementById('dashboardSubtitle').innerText = 'Carregando ' + cenario.nome + '...';
 
     try {
@@ -658,6 +659,8 @@ async function loadDashboardData() {
         document.getElementById('dashboardSubtitle').innerText = 'Erro ao carregar ' + cenario.nome + ': ' + error.message;
         initFilters();
         renderDashboard();
+    } finally {
+        window.portalOcultarCarregando?.();
     }
 }
 

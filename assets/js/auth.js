@@ -15,7 +15,13 @@ const auth = getAuth(app);
 const LOADING_ID = "portalLoadingOverlay";
 
 function mostrarCarregando(texto = "Carregando portal") {
-  if (document.getElementById(LOADING_ID)) return;
+  const existente = document.getElementById(LOADING_ID);
+  if (existente) {
+    const titulo = existente.querySelector(".portal-loading-title");
+    if (titulo) titulo.textContent = texto;
+    existente.classList.remove("hide");
+    return;
+  }
 
   const style = document.createElement("style");
   style.id = "portalLoadingStyle";
@@ -56,6 +62,9 @@ function ocultarCarregando() {
   overlay.classList.add("hide");
   window.setTimeout(() => overlay.remove(), 280);
 }
+
+window.portalMostrarCarregando = mostrarCarregando;
+window.portalOcultarCarregando = ocultarCarregando;
 
 if (document.body) {
   mostrarCarregando();

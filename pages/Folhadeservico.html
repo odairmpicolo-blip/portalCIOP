@@ -443,6 +443,7 @@
     let chartSituacaoInstance = null;
 
     window.onload = () => {
+        window.portalMostrarCarregando?.("Carregando folha de serviço");
         fetch(URL_DO_SCRIPT_GOOGLE)
             .then(response => response.json())
             .then(dados => {
@@ -454,7 +455,8 @@
             .catch(error => {
                 console.error("Erro ao carregar dados:", error);
                 document.getElementById('tabela-corpo').innerHTML = `<tr><td colspan="5" style="color:red; text-align:center; padding:20px;">Erro ao ler a planilha. Verifique se as permissões de implantação estão para 'Qualquer pessoa'.</td></tr>`;
-            });
+            })
+            .finally(() => window.portalOcultarCarregando?.());
     };
 
     function gerarFiltrosDinamicos(dados) {
