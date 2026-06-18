@@ -306,7 +306,7 @@ input:focus,select:focus{outline:2px solid rgba(11,58,138,.14);border-color:var(
     white-space:nowrap;
 }
 .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px}
-table{width:100%;border-collapse:collapse;min-width:720px;background:#fff}
+table{width:100%;border-collapse:collapse;min-width:620px;background:#fff}
 th{
     position:sticky;
     top:0;
@@ -462,13 +462,12 @@ td{padding:10px;border-bottom:1px solid #eef2f7;border-right:1px solid #eef2f7;f
                         <tr>
                             <th>Terminal</th>
                             <th>Pessoa</th>
-                            <th>Contato</th>
                             <th>Horário</th>
                             <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="linhasTabela">
-                        <tr><td colspan="5" class="empty">Carregando dados da planilha...</td></tr>
+                        <tr><td colspan="4" class="empty">Carregando dados da planilha...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -936,10 +935,9 @@ function renderTerminalKpis(now){
         return '<div class="terminal-kpi-card' + (somenteReserva ? ' reserve' : '') + '">' +
             '<div class="terminal-kpi-head"><div><div class="terminal-kpi-name">' + escapeHtml(displayTerminal(terminal)) + '</div><div class="terminal-kpi-phone">' + escapeHtml(contatoResumo) + '</div></div><span class="status-badge status-' + (somenteReserva ? 'reserve' : 'now') + '">' + (somenteReserva ? 'Mot. Reserva' : 'Agora') + '</span></div>' +
             pessoas.map(function(item){
-                const contato = contatoItem(item);
                 const horario = item.reserva ? "Sem escala no horário" : formatHora(item.start) + " - " + formatHora(item.end);
                 const registro = item.matricula ? "Reg. " + item.matricula : "";
-                const detalhe = item.reserva ? horario : [registro, contato || horario].filter(Boolean).join(" | ");
+                const detalhe = item.reserva ? horario : (registro || horario);
                 return '<div class="terminal-kpi-person"><div><b>' + escapeHtml(item.nome) + '</b><small>' + escapeHtml(detalhe) + '</small></div><span class="terminal-kpi-time">' + escapeHtml(item.reserva ? 'reserva' : 'até ' + formatHora(item.end)) + '</span></div>';
             }).join("") +
         '</div>';
@@ -953,17 +951,15 @@ function getRowsModo(now){
 function renderTabela(rows, now){
     byId("contadorTabela").textContent = formatInt(rows.length) + (rows.length === 1 ? " registro" : " registros");
     if (!rows.length) {
-        byId("linhasTabela").innerHTML = '<tr><td colspan="5" class="empty">Nenhum registro encontrado para esta visão.</td></tr>';
+        byId("linhasTabela").innerHTML = '<tr><td colspan="4" class="empty">Nenhum registro encontrado para esta visão.</td></tr>';
         return;
     }
     byId("linhasTabela").innerHTML = rows.map(function(item){
         const status = statusItem(item, now);
         const periodo = item.reserva ? "Sem escala no horário" : formatDataCurta(item.start) + " " + formatHora(item.start) + " - " + formatHora(item.end);
-        const contato = contatoItem(item);
         return "<tr>" +
             "<td><b>" + escapeHtml(displayTerminal(item.terminal)) + "</b></td>" +
             "<td><b>" + escapeHtml(item.nome) + "</b>" + (item.matricula ? '<div class="muted">' + escapeHtml(item.matricula) + '</div>' : "") + "</td>" +
-            '<td>' + (contato ? escapeHtml(contato) : '<span class="muted">Não informado</span>') + '</td>' +
             "<td>" + escapeHtml(periodo) + "</td>" +
             '<td><span class="status-badge status-' + status.key + '">' + status.label + "</span></td>" +
         "</tr>";
