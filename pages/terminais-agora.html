@@ -114,23 +114,88 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
 .dot.erro{background:var(--red)}
 .btn-primary{background:var(--blue);color:#fff}
 .btn-secondary{background:#e8edf6;color:var(--blue)}
-.dashboard{
+.summary-panel{
     display:grid;
-    grid-template-columns:repeat(4, minmax(150px, 1fr));
+    grid-template-columns:300px 1fr;
     gap:12px;
+    align-items:start;
     margin-bottom:12px;
 }
-.kpi{
+.exchange-card{
+    background:#fff;
+    border:1px solid var(--border);
+    border-left:4px solid var(--orange);
+    border-radius:8px;
+    padding:16px;
+    min-height:128px;
+    box-shadow:0 4px 14px rgba(16,24,40,.05);
+    display:flex;
+    align-items:center;
+}
+.kpi-label{color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase}
+.kpi-value{margin-top:6px;color:var(--blue);font-size:30px;font-weight:900;line-height:1}
+.kpi-sub{margin-top:8px;color:var(--muted);font-size:12px;font-weight:700;line-height:1.4}
+.section-title.compact{margin-bottom:8px}
+.terminal-kpis{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    gap:10px;
+}
+.terminal-kpi-card{
     background:#fff;
     border:1px solid var(--border);
     border-radius:8px;
-    padding:14px;
-    min-height:92px;
+    padding:12px;
+    min-height:118px;
     box-shadow:0 4px 14px rgba(16,24,40,.05);
 }
-.kpi-label{color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase}
-.kpi-value{margin-top:6px;color:var(--blue);font-size:26px;font-weight:900;line-height:1}
-.kpi-sub{margin-top:7px;color:var(--muted);font-size:12px;font-weight:700;line-height:1.35}
+.terminal-kpi-card.reserve{
+    background:#fffbeb;
+    border-color:#fde68a;
+}
+.terminal-kpi-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:8px;
+    margin-bottom:8px;
+}
+.terminal-kpi-name{
+    color:var(--blue);
+    font-size:14px;
+    font-weight:900;
+    line-height:1.2;
+}
+.terminal-kpi-card.reserve .terminal-kpi-name{color:#92400e}
+.terminal-kpi-phone{
+    margin-top:4px;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:800;
+    line-height:1.25;
+}
+.terminal-kpi-person{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:8px;
+    padding-top:8px;
+    margin-top:8px;
+    border-top:1px solid #eef2f7;
+    font-size:13px;
+}
+.terminal-kpi-person b{color:var(--text)}
+.terminal-kpi-person small{display:block;color:var(--muted);font-weight:700;margin-top:2px}
+.terminal-kpi-time{
+    align-self:start;
+    color:var(--blue);
+    background:#f8fafc;
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:3px 7px;
+    font-size:11px;
+    font-weight:900;
+    white-space:nowrap;
+}
 .panel{
     background:#fff;
     border:1px solid var(--border);
@@ -241,7 +306,7 @@ input:focus,select:focus{outline:2px solid rgba(11,58,138,.14);border-color:var(
     white-space:nowrap;
 }
 .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px}
-table{width:100%;border-collapse:collapse;min-width:920px;background:#fff}
+table{width:100%;border-collapse:collapse;min-width:720px;background:#fff}
 th{
     position:sticky;
     top:0;
@@ -296,13 +361,13 @@ td{padding:10px;border-bottom:1px solid #eef2f7;border-right:1px solid #eef2f7;f
     .header{grid-template-columns:1fr;text-align:center}
     .header-actions{justify-self:center;flex-wrap:wrap}
     .logo-ciop,.logo-tcgl{justify-self:center}
-    .dashboard{grid-template-columns:repeat(2, minmax(150px, 1fr))}
+    .summary-panel{grid-template-columns:1fr}
     .controls{grid-template-columns:1fr}
     .main-grid{grid-template-columns:1fr}
     .terminal-board{max-height:none}
 }
 @media(max-width:560px){
-    .dashboard{grid-template-columns:1fr}
+    .terminal-kpis{grid-template-columns:1fr}
     h1{font-size:21px}
 }
 </style>
@@ -342,26 +407,22 @@ td{padding:10px;border-bottom:1px solid #eef2f7;border-right:1px solid #eef2f7;f
 
     <div id="erroFonte" class="error-box"></div>
 
-    <section class="dashboard" aria-label="Resumo dos terminais">
-        <div class="kpi">
-            <div class="kpi-label">Pessoas agora</div>
-            <div id="kpiAgora" class="kpi-value">0</div>
-            <div id="kpiAgoraSub" class="kpi-sub">Sem dados carregados</div>
+    <section class="summary-panel" aria-label="Resumo dos terminais">
+        <div class="exchange-card">
+            <div>
+                <div class="kpi-label">Próxima troca</div>
+                <div id="kpiProxima" class="kpi-value">--:--</div>
+                <div id="kpiProximaSub" class="kpi-sub">Sem próxima movimentação</div>
+            </div>
         </div>
-        <div class="kpi">
-            <div class="kpi-label">Terminais ativos</div>
-            <div id="kpiTerminais" class="kpi-value">0</div>
-            <div id="kpiTerminaisSub" class="kpi-sub">Nenhum terminal no momento</div>
-        </div>
-        <div class="kpi">
-            <div class="kpi-label">Próxima troca</div>
-            <div id="kpiProxima" class="kpi-value">--:--</div>
-            <div id="kpiProximaSub" class="kpi-sub">Sem próxima movimentação</div>
-        </div>
-        <div class="kpi">
-            <div class="kpi-label">Registros hoje</div>
-            <div id="kpiHoje" class="kpi-value">0</div>
-            <div id="kpiHojeSub" class="kpi-sub">Base da planilha</div>
+        <div>
+            <div class="section-title compact">
+                <h2>Terminais neste momento</h2>
+                <span id="contadorKpisTerminais">0 terminais</span>
+            </div>
+            <div id="terminalKpis" class="terminal-kpis">
+                <div class="empty">Carregando terminais...</div>
+            </div>
         </div>
     </section>
 
@@ -369,7 +430,7 @@ td{padding:10px;border-bottom:1px solid #eef2f7;border-right:1px solid #eef2f7;f
         <div class="controls">
             <div>
                 <label for="busca">Buscar</label>
-                <input id="busca" type="search" placeholder="Nome, terminal, função ou observação">
+                <input id="busca" type="search" placeholder="Nome, terminal ou telefone">
             </div>
             <div>
                 <label for="terminalFiltro">Terminal</label>
@@ -378,54 +439,39 @@ td{padding:10px;border-bottom:1px solid #eef2f7;border-right:1px solid #eef2f7;f
                 </select>
             </div>
             <div>
-                <label>Visão</label>
-                <div class="segmented" role="tablist" aria-label="Visao dos registros">
-                    <button id="modoAgora" class="active" type="button" onclick="setModo('agora')">Agora</button>
+                <label>Consulta</label>
+                <div class="segmented" role="tablist" aria-label="Consulta dos registros">
                     <button id="modoHoje" type="button" onclick="setModo('hoje')">Hoje</button>
                     <button id="modoProximos" type="button" onclick="setModo('proximos')">Próximos</button>
                 </div>
             </div>
             <div>
                 <label>&nbsp;</label>
-                <button class="btn btn-primary" type="button" onclick="limparFiltros()">Limpar</button>
+                <button class="btn btn-primary" type="button" onclick="limparFiltros()">Atual</button>
             </div>
         </div>
 
-        <div class="main-grid">
-            <div>
-                <div class="section-title">
-                    <h2 id="tituloTabela">Quem está nos terminais agora</h2>
-                    <span id="contadorTabela">0 registros</span>
-                </div>
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Terminal</th>
-                                <th>Pessoa</th>
-                                <th>Horário</th>
-                                <th>Status</th>
-                                <th>Função / Equipe</th>
-                                <th>Contato</th>
-                                <th>Observação</th>
-                            </tr>
-                        </thead>
-                        <tbody id="linhasTabela">
-                            <tr><td colspan="7" class="empty">Carregando dados da planilha...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+        <div>
+            <div class="section-title">
+                <h2 id="tituloTabela">Visão atual dos terminais</h2>
+                <span id="contadorTabela">0 registros</span>
             </div>
-
-            <aside>
-                <div class="section-title">
-                    <h2>Terminais</h2>
-                    <span id="contadorTerminais">0 ativos</span>
-                </div>
-                <div id="terminalBoard" class="terminal-board">
-                    <div class="empty">Sem terminais ativos agora.</div>
-                </div>
-            </aside>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Terminal</th>
+                            <th>Pessoa</th>
+                            <th>Contato</th>
+                            <th>Horário</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="linhasTabela">
+                        <tr><td colspan="5" class="empty">Carregando dados da planilha...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </section>
 </main>
@@ -744,7 +790,7 @@ function aplicarFiltros(rows){
     return rows.filter(function(item){
         if (terminal && item.terminal !== terminal) return false;
         if (!busca) return true;
-        const texto = normalizarTexto([item.nome, item.terminal, item.cargo, item.equipe, item.telefone, item.observacao, item.horario].join(" "));
+        const texto = normalizarTexto([item.nome, item.matricula, item.terminal, item.telefone, item.email, telefoneTerminal(item.terminal), item.horario].join(" "));
         return texto.includes(busca);
     });
 }
@@ -806,19 +852,53 @@ function proximaMovimentacao(now){
     candidatos.sort(function(a, b){return a.date - b.date;});
     return candidatos[0] || null;
 }
+function contatoPessoa(item){
+    return item.telefone || item.email || "";
+}
+function telefoneTerminal(terminal){
+    const chave = normalizarTexto(terminal);
+    const item = DADOS.find(function(pessoa){
+        return pessoa.telefone && normalizarTexto(pessoa.terminal) === chave;
+    });
+    return item ? item.telefone : "";
+}
+function contatoItem(item){
+    return contatoPessoa(item) || telefoneTerminal(item.terminal);
+}
 function renderKpis(now){
-    const ativos = registrosAgora(now);
-    const hoje = registrosHoje(now);
-    const terminaisAtivos = new Set(ativos.map(function(item){return item.terminal;}));
     const proxima = proximaMovimentacao(now);
-    byId("kpiAgora").textContent = formatInt(ativos.length);
-    byId("kpiAgoraSub").textContent = ativos.length ? "Em atendimento neste momento" : "Nenhuma presença ativa";
-    byId("kpiTerminais").textContent = formatInt(terminaisAtivos.size);
-    byId("kpiTerminaisSub").textContent = terminaisAtivos.size ? [...terminaisAtivos].sort().slice(0, 3).join(", ") : "Nenhum terminal no momento";
     byId("kpiProxima").textContent = proxima ? formatHora(proxima.date) : "--:--";
-    byId("kpiProximaSub").textContent = proxima ? proxima.tipo + " de " + proxima.item.nome + " em " + proxima.item.terminal : "Sem próxima movimentação";
-    byId("kpiHoje").textContent = formatInt(hoje.length);
-    byId("kpiHojeSub").textContent = "Para " + now.toLocaleDateString("pt-BR");
+    byId("kpiProximaSub").textContent = proxima ? proxima.tipo + " - " + proxima.item.nome + " - " + proxima.item.terminal : "Sem próxima movimentação";
+    renderTerminalKpis(now);
+}
+function renderTerminalKpis(now){
+    const rows = aplicarFiltros(registrosAgoraComReserva(now));
+    const grupos = new Map();
+    rows.forEach(function(item){
+        if (!grupos.has(item.terminal)) grupos.set(item.terminal, []);
+        grupos.get(item.terminal).push(item);
+    });
+    const gruposOrdenados = [...grupos.entries()].sort(function(a, b){return a[0].localeCompare(b[0], "pt-BR");});
+    byId("contadorKpisTerminais").textContent = formatInt(gruposOrdenados.length) + (gruposOrdenados.length === 1 ? " terminal" : " terminais");
+    if (!gruposOrdenados.length) {
+        byId("terminalKpis").innerHTML = '<div class="empty">Nenhum terminal encontrado para o filtro atual.</div>';
+        return;
+    }
+    byId("terminalKpis").innerHTML = gruposOrdenados.map(function(entry){
+        const terminal = entry[0];
+        const pessoas = entry[1].sort(function(a, b){return Number(Boolean(a.reserva)) - Number(Boolean(b.reserva)) || a.end - b.end || a.nome.localeCompare(b.nome, "pt-BR");});
+        const somenteReserva = pessoas.every(function(item){return item.reserva;});
+        const contatos = [...new Set([telefoneTerminal(terminal)].concat(pessoas.map(contatoPessoa)).filter(Boolean))];
+        const contatoResumo = contatos.length ? contatos.slice(0, 2).join(" / ") : (somenteReserva ? "Reserva" : "Sem telefone");
+        return '<div class="terminal-kpi-card' + (somenteReserva ? ' reserve' : '') + '">' +
+            '<div class="terminal-kpi-head"><div><div class="terminal-kpi-name">' + escapeHtml(terminal) + '</div><div class="terminal-kpi-phone">' + escapeHtml(contatoResumo) + '</div></div><span class="status-badge status-' + (somenteReserva ? 'reserve' : 'now') + '">' + (somenteReserva ? 'Mot. Reserva' : 'Agora') + '</span></div>' +
+            pessoas.map(function(item){
+                const contato = contatoItem(item);
+                const horario = item.reserva ? "Sem escala no horário" : formatHora(item.start) + " - " + formatHora(item.end);
+                return '<div class="terminal-kpi-person"><div><b>' + escapeHtml(item.nome) + '</b><small>' + escapeHtml(contato || horario) + '</small></div><span class="terminal-kpi-time">' + escapeHtml(item.reserva ? 'reserva' : 'até ' + formatHora(item.end)) + '</span></div>';
+            }).join("") +
+        '</div>';
+    }).join("");
 }
 function getRowsModo(now){
     if (modoAtual === "hoje") return registrosHoje(now).sort(function(a, b){return a.start - b.start || a.terminal.localeCompare(b.terminal, "pt-BR");});
@@ -828,63 +908,37 @@ function getRowsModo(now){
 function renderTabela(rows, now){
     byId("contadorTabela").textContent = formatInt(rows.length) + (rows.length === 1 ? " registro" : " registros");
     if (!rows.length) {
-        byId("linhasTabela").innerHTML = '<tr><td colspan="7" class="empty">Nenhum registro encontrado para esta visão.</td></tr>';
+        byId("linhasTabela").innerHTML = '<tr><td colspan="5" class="empty">Nenhum registro encontrado para esta visão.</td></tr>';
         return;
     }
     byId("linhasTabela").innerHTML = rows.map(function(item){
         const status = statusItem(item, now);
         const periodo = item.reserva ? "Sem escala no horário" : formatDataCurta(item.start) + " " + formatHora(item.start) + " - " + formatHora(item.end);
-        const funcao = [item.cargo, item.equipe].filter(Boolean).join(" / ");
-        const contato = item.telefone || item.email || "";
+        const contato = contatoItem(item);
         return "<tr>" +
             "<td><b>" + escapeHtml(item.terminal) + "</b></td>" +
             "<td><b>" + escapeHtml(item.nome) + "</b>" + (item.matricula ? '<div class="muted">' + escapeHtml(item.matricula) + '</div>' : "") + "</td>" +
+            '<td>' + (contato ? escapeHtml(contato) : '<span class="muted">Não informado</span>') + '</td>' +
             "<td>" + escapeHtml(periodo) + "</td>" +
             '<td><span class="status-badge status-' + status.key + '">' + status.label + "</span></td>" +
-            '<td>' + (funcao ? escapeHtml(funcao) : '<span class="muted">Não informado</span>') + '</td>' +
-            '<td>' + (contato ? escapeHtml(contato) : '<span class="muted">Não informado</span>') + '</td>' +
-            '<td>' + (item.observacao ? escapeHtml(item.observacao) : '<span class="muted">-</span>') + '</td>' +
         "</tr>";
-    }).join("");
-}
-function renderBoard(now){
-    const ativos = aplicarFiltros(registrosAgoraComReserva(now));
-    const grupos = new Map();
-    ativos.forEach(function(item){
-        if (!grupos.has(item.terminal)) grupos.set(item.terminal, []);
-        grupos.get(item.terminal).push(item);
-    });
-    const gruposOrdenados = [...grupos.entries()].sort(function(a, b){return a[0].localeCompare(b[0], "pt-BR");});
-    byId("contadorTerminais").textContent = formatInt(gruposOrdenados.length) + " terminais";
-    if (!gruposOrdenados.length) {
-        byId("terminalBoard").innerHTML = '<div class="empty">Sem terminais para exibir.</div>';
-        return;
-    }
-    byId("terminalBoard").innerHTML = gruposOrdenados.map(function(entry){
-        const terminal = entry[0];
-        const pessoas = entry[1].sort(function(a, b){return Number(Boolean(a.reserva)) - Number(Boolean(b.reserva)) || a.end - b.end || a.nome.localeCompare(b.nome, "pt-BR");});
-        const somenteReserva = pessoas.every(function(item){return item.reserva;});
-        return '<div class="terminal-card' + (somenteReserva ? ' reserve' : '') + '">' +
-            '<div class="terminal-head"><div class="terminal-name">' + escapeHtml(terminal) + '</div><span class="count-pill' + (somenteReserva ? ' reserve' : '') + '">' + (somenteReserva ? 'Reserva' : formatInt(pessoas.length)) + '</span></div>' +
-            pessoas.map(function(item){
-                const detalhe = item.reserva ? "Sem fiscal escalado neste horário" : [item.cargo, item.equipe].filter(Boolean).join(" / ");
-                return '<div class="person-line"><div><b>' + escapeHtml(item.nome) + '</b><small>' + escapeHtml(detalhe || "Até " + formatHora(item.end)) + '</small></div><span class="time-chip">' + (item.reserva ? 'reserva' : 'até ' + formatHora(item.end)) + '</span></div>';
-            }).join("") +
-        '</div>';
     }).join("");
 }
 function render(){
     const now = new Date();
     renderKpis(now);
     const rows = aplicarFiltros(getRowsModo(now));
-    byId("tituloTabela").textContent = modoAtual === "agora" ? "Quem está nos terminais agora" : (modoAtual === "hoje" ? "Programação de hoje" : "Próximas presenças");
+    byId("tituloTabela").textContent = modoAtual === "agora" ? "Visão atual dos terminais" : (modoAtual === "hoje" ? "Programação de hoje" : "Próximas presenças");
     renderTabela(rows, now);
-    renderBoard(now);
 }
 function setModo(modo){
     modoAtual = modo;
-    ["Agora", "Hoje", "Proximos"].forEach(function(nome){
-        byId("modo" + nome).classList.toggle("active", normalizarTexto(nome) === normalizarTexto(modo));
+    [
+        {id:"modoHoje", modo:"hoje"},
+        {id:"modoProximos", modo:"proximos"}
+    ].forEach(function(item){
+        const botao = byId(item.id);
+        if (botao) botao.classList.toggle("active", modoAtual === item.modo);
     });
     render();
 }
