@@ -206,7 +206,11 @@ body.modal-open{overflow:hidden}
                 </div>
                 <div>
                     <label for="classificarNome">Nome</label>
-                    <input id="classificarNome" type="text" placeholder="Nome do usuario">
+                    <input id="classificarNome" type="text" placeholder="Nome do usuário">
+                </div>
+                <div>
+                    <label for="classificarRegistro">Registro</label>
+                    <input id="classificarRegistro" type="text" inputmode="numeric" placeholder="Número de registro">
                 </div>
                 <div>
                     <label for="classificarPerfil">Perfil</label>
@@ -229,13 +233,14 @@ body.modal-open{overflow:hidden}
                     <tr>
                         <th>E-mail</th>
                         <th>Nome</th>
+                        <th>Registro</th>
                         <th>Perfil</th>
                         <th>Status</th>
                         <th>Editar</th>
                         <th>Acesso</th>
                     </tr>
                 </thead>
-                <tbody id="usuariosTabela"><tr><td colspan="6" class="no-data">Carregando usuários...</td></tr></tbody>
+                <tbody id="usuariosTabela"><tr><td colspan="7" class="no-data">Carregando usuários...</td></tr></tbody>
             </table>
         </section>
 
@@ -257,6 +262,10 @@ body.modal-open{overflow:hidden}
                         <div>
                             <label for="editarUsuarioNome">Nome</label>
                             <input id="editarUsuarioNome" type="text" autocomplete="off">
+                        </div>
+                        <div>
+                            <label for="editarUsuarioRegistro">Registro</label>
+                            <input id="editarUsuarioRegistro" type="text" inputmode="numeric" autocomplete="off">
                         </div>
                         <div>
                             <label for="editarUsuarioPerfil">Perfil</label>
@@ -343,7 +352,7 @@ function renderUsuarios() {
     const tbody = document.getElementById("usuariosTabela");
     const ordenados = Object.entries(usuariosEditados).sort(([a], [b]) => a.localeCompare(b));
     if (!ordenados.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="no-data">Nenhum usuário cadastrado no portal.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="no-data">Nenhum usuário cadastrado no portal.</td></tr>';
         return;
     }
     tbody.innerHTML = ordenados.map(([email, user]) => {
@@ -353,9 +362,11 @@ function renderUsuarios() {
         const acaoLabel = ativo ? "Desativar" : "Ativar";
         const acaoClass = ativo ? "btn-danger" : "btn-secondary";
         const emailParam = encodeURIComponent(email);
+        const registro = String(user.registro || "").trim();
         return "<tr>" +
             "<td>" + escapeHtml(email) + "</td>" +
             "<td>" + escapeHtml(user.nome) + "</td>" +
+            "<td>" + escapeHtml(registro || "-") + "</td>" +
             "<td>" + escapeHtml(user.perfil) + "</td>" +
             "<td><span class=\"status " + statusClass + "\">" + statusLabel + "</span></td>" +
             "<td><div class=\"table-actions\"><button class=\"btn btn-primary\" type=\"button\" onclick=\"abrirEditorUsuario('" + emailParam + "')\">Editar</button></div></td>" +
@@ -364,20 +375,20 @@ function renderUsuarios() {
     }).join("");
 }
 
-async function salvarUsuario(email, nome, perfil, mensagem, ativo = true) {
+async function salvarUsuario(email, nome, perfil, registro, mensagem, ativo = true) {
     const status = document.getElementById("cadastroStatus");
     status.className = "status";
     status.textContent = "Salvando no Firestore...";
 
     try {
-        const usuario = await salvarUsuarioFirestore(email, { nome, perfil, ativo });
+        const usuario = await salvarUsuarioFirestore(email, { nome, perfil, registro, ativo });
         usuariosEditados[usuario.email] = { ...usuario, ativo };
         renderUsuarios();
         atualizarStatus(mensagem);
         return usuario;
     } catch (error) {
         status.className = "status erro";
-        status.textContent = "Nao foi possivel salvar no Firestore: " + error.message;
+        status.textContent = "Não foi possível salvar no Firestore: " + error.message;
         throw error;
     }
 }
@@ -393,6 +404,7 @@ window.abrirEditorUsuario = function (emailParam) {
     usuarioEmEdicao = email;
     document.getElementById("editarUsuarioEmail").value = user.email || email;
     document.getElementById("editarUsuarioNome").value = user.nome || "";
+    document.getElementById("editarUsuarioRegistro").value = String(user.registro || "").trim();
     preencherPerfilEditor(user.perfil);
     const status = document.getElementById("editarUsuarioStatus");
     status.className = "status";
@@ -417,6 +429,7 @@ window.salvarEditorUsuario = async function () {
     const user = usuariosEditados[emailAntigo];
     const novoEmail = normalizarEmailLocal(document.getElementById("editarUsuarioEmail").value);
     const nome = document.getElementById("editarUsuarioNome").value.trim();
+    const registro = document.getElementById("editarUsuarioRegistro").value.trim();
     const perfil = document.getElementById("editarUsuarioPerfil").value;
 
     if (!user) {
@@ -424,9 +437,9 @@ window.salvarEditorUsuario = async function () {
         status.textContent = "Usuário não encontrado para salvar.";
         return;
     }
-    if (!novoEmail || !nome || !perfil) {
+    if (!novoEmail || !nome || !registro || !perfil) {
         status.className = "status erro";
-        status.textContent = "Informe e-mail, nome e perfil para salvar.";
+        status.textContent = "Informe e-mail, nome, registro e perfil para salvar.";
         return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(novoEmail)) {
@@ -451,7 +464,7 @@ window.salvarEditorUsuario = async function () {
 
     try {
         const ativo = user.ativo !== false;
-        const usuario = await salvarUsuarioFirestore(novoEmail, { nome, perfil, ativo });
+        const usuario = await salvarUsuarioFirestore(novoEmail, { nome, perfil, registro, ativo });
         if (novoEmail !== emailAntigo) {
             await excluirUsuarioFirestore(emailAntigo);
             delete usuariosEditados[emailAntigo];
@@ -486,7 +499,7 @@ window.alternarAcesso = async function (emailParam) {
 
     const usuarioAtual = String(window.portalUsuario?.email || "").toLowerCase();
     if (id && id === usuarioAtual) {
-        atualizarStatus("Voce nao pode desativar o proprio acesso enquanto esta logado.", "erro");
+        atualizarStatus("Você não pode desativar o próprio acesso enquanto está logado.", "erro");
         return;
     }
 
@@ -499,6 +512,7 @@ window.alternarAcesso = async function (emailParam) {
             id,
             user.nome,
             user.perfil,
+            user.registro || "",
             novoStatus ? "Acesso ativado e salvo no Firestore." : "Acesso desativado e salvo no Firestore.",
             novoStatus
         );
@@ -510,19 +524,21 @@ window.alternarAcesso = async function (emailParam) {
 window.classificarUsuario = function () {
     const email = document.getElementById("classificarEmail").value.trim().toLowerCase();
     const nome = document.getElementById("classificarNome").value.trim();
+    const registro = document.getElementById("classificarRegistro").value.trim();
     const perfil = document.getElementById("classificarPerfil").value;
     const status = document.getElementById("cadastroStatus");
 
-    if (!email || !nome) {
+    if (!email || !nome || !registro) {
         status.className = "status erro";
-        status.textContent = "Informe e-mail e nome para classificar.";
+        status.textContent = "Informe e-mail, nome e registro para classificar.";
         return;
     }
 
     const usuarioExistente = usuariosEditados[email];
-    salvarUsuario(email, nome, perfil, "Usuário salvo no Firestore.", usuarioExistente?.ativo !== false);
+    salvarUsuario(email, nome, perfil, registro, "Usuário salvo no Firestore.", usuarioExistente?.ativo !== false);
     document.getElementById("classificarEmail").value = "";
     document.getElementById("classificarNome").value = "";
+    document.getElementById("classificarRegistro").value = "";
     document.getElementById("classificarPerfil").value = "Administrador";
 };
 
@@ -551,7 +567,7 @@ async function iniciar(limparAntes = false) {
         atualizarStatus("Usuários locais carregados. Buscando atualizações online...");
     } catch (error) {
         console.error("Erro ao montar lista local de usuários:", error);
-        atualizarStatus("Nao foi possivel montar a lista local: " + error.message, "erro");
+        atualizarStatus("Não foi possível montar a lista local: " + error.message, "erro");
     } finally {
         window.portalOcultarCarregando?.();
     }
@@ -566,10 +582,10 @@ async function iniciar(limparAntes = false) {
             usuariosEditados[email] = user;
         });
         renderUsuarios();
-        atualizarStatus("Usuarios carregados do Firestore. Alteracoes agora salvam automaticamente online.");
+        atualizarStatus("Usuários carregados do Firestore. Alterações agora salvam automaticamente online.");
     } catch (error) {
         renderUsuarios();
-        atualizarStatus("Firestore ainda nao carregou. Usando cadastro local como fallback: " + error.message, "erro");
+        atualizarStatus("Firestore ainda não carregou. Usando cadastro local como fallback: " + error.message, "erro");
     }
 }
 
