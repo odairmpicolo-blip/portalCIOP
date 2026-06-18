@@ -15,8 +15,8 @@
         display:flex;
         align-items:center;
         justify-content:center;
-        background:rgba(255,255,255,.78);
-        backdrop-filter:blur(5px);
+        background:rgba(255,255,255,.38);
+        backdrop-filter:blur(2px);
         transition:opacity .28s ease,visibility .28s ease;
       }
       .portal-loading-overlay.hide{opacity:0;visibility:hidden}
@@ -29,8 +29,8 @@
         gap:14px;
         border:1px solid rgba(6,36,92,.14);
         border-radius:10px;
-        background:rgba(255,255,255,.94);
-        box-shadow:0 20px 60px rgba(16,24,40,.18);
+        background:rgba(255,255,255,.82);
+        box-shadow:0 16px 45px rgba(16,24,40,.14);
         color:#06245c;
         font-family:Arial,Helvetica,sans-serif;
       }
@@ -95,10 +95,9 @@
   function ocultar() {
     const overlay = document.getElementById(ID);
     if (!overlay) return;
-    hideTimer = window.setTimeout(() => {
-      overlay.classList.add("hide");
-      window.setTimeout(() => overlay.remove(), 300);
-    }, 450);
+    window.clearTimeout(hideTimer);
+    overlay.classList.add("hide");
+    hideTimer = window.setTimeout(() => overlay.remove(), 300);
   }
 
   window.portalMostrarCarregando = mostrar;
