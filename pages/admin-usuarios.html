@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Administração de Usuário - Portal CIOP</title>
+<title>Categorizar usuários - Portal CIOP</title>
 <style>
 :root{
     --blue:#06245c;
@@ -101,6 +101,8 @@ th{color:var(--blue);background:#f8fafc}
 .perfil-row{display:flex;gap:8px;align-items:center}
 .perfil-row select{min-width:150px}
 .perfil-row .btn{white-space:nowrap;padding:9px 12px}
+.table-input{min-width:180px}
+td select{min-width:140px}
 .status{font-size:12px;font-weight:700;margin-top:10px}
 .ok{color:var(--green)}
 .erro{color:var(--red)}
@@ -119,7 +121,7 @@ th{color:var(--blue);background:#f8fafc}
     <a href="https://mov1.com.br" target="_blank">
         <img src="../assets/img/CIOP Sem Fundo.png" class="logo-ciop" alt="CIOP">
     </a>
-    <h1>Administração de Usuário</h1>
+    <h1>Categorizar usuários</h1>
     <div class="header-actions">
         <div class="ciop-session" aria-label="Sessao do usuario">
             <span id="usuarioLogado" class="ciop-session-user">Usuario</span>
@@ -148,7 +150,7 @@ th{color:var(--blue);background:#f8fafc}
         <div id="cadastroStatus" class="status"></div>
 
         <section class="panel">
-            <h2 class="panel-title">Usuários para classificar</h2>
+            <h2 class="panel-title">Categorizar usuários</h2>
             <div class="notice" style="margin-bottom:12px">
                 Depois de criar o login no Firebase, informe o e-mail aqui para classificar o perfil no portal.
             </div>
@@ -174,7 +176,7 @@ th{color:var(--blue);background:#f8fafc}
                 </div>
             </div>
             <div class="actions" style="margin-bottom:12px">
-                <button class="btn btn-primary" type="button" onclick="classificarUsuario()">Salvar classificação</button>
+                <button class="btn btn-primary" type="button" onclick="classificarUsuario()">Salvar usuário</button>
                 <button class="btn btn-secondary" type="button" onclick="recarregarUsuarios()">Atualizar lista</button>
             </div>
             <table>
@@ -184,7 +186,7 @@ th{color:var(--blue);background:#f8fafc}
                         <th>Nome</th>
                         <th>Perfil</th>
                         <th>Status</th>
-                        <th>Alterar perfil</th>
+                        <th>Editar</th>
                         <th>Acesso</th>
                     </tr>
                 </thead>
@@ -240,23 +242,24 @@ function renderUsuarios() {
     }
     tbody.innerHTML = ordenados.map(([email, user]) => {
         const idBase = email.replace(/[^a-z0-9]/gi, "_");
-        const selectId = "perfil_" + idBase;
+        const nomeId = "nome_" + idBase;
+        const perfilId = "perfil_" + idBase;
         const ativo = user.ativo !== false;
         const statusLabel = ativo ? "Ativo" : "Desativado";
         const statusClass = ativo ? "ok" : "erro";
         const acaoLabel = ativo ? "Desativar" : "Ativar";
         const acaoClass = ativo ? "btn-danger" : "btn-secondary";
-        const options = perfisDisponiveis.map((perfil) => {
+        const perfis = perfisDisponiveis.includes(user.perfil) ? perfisDisponiveis : [user.perfil, ...perfisDisponiveis].filter(Boolean);
+        const options = perfis.map((perfil) => {
             const selected = perfil === user.perfil ? " selected" : "";
             return "<option" + selected + ">" + perfil + "</option>";
         }).join("");
         return "<tr>" +
             "<td>" + escapeHtml(email) + "</td>" +
-            "<td>" + escapeHtml(user.nome) + "</td>" +
-            "<td>" + escapeHtml(user.perfil) + "</td>" +
+            "<td><input class=\"table-input\" id=\"" + nomeId + "\" type=\"text\" value=\"" + escapeAttr(user.nome) + "\"></td>" +
+            "<td><select id=\"" + perfilId + "\">" + options + "</select></td>" +
             "<td><span class=\"status " + statusClass + "\">" + statusLabel + "</span></td>" +
-            "<td><div class=\"perfil-row\"><select id=\"" + selectId + "\">" + options + "</select>" +
-            "<button class=\"btn btn-primary\" type=\"button\" onclick=\"alterarPerfil('" + escapeAttr(email) + "','" + escapeAttr(user.nome) + "','" + selectId + "')\">Salvar</button></div></td>" +
+            "<td><button class=\"btn btn-primary\" type=\"button\" onclick=\"salvarEdicao('" + escapeAttr(email) + "','" + nomeId + "','" + perfilId + "')\">Salvar</button></td>" +
             "<td><button class=\"btn " + acaoClass + "\" type=\"button\" onclick=\"alternarAcesso('" + escapeAttr(email) + "')\">" + acaoLabel + "</button></td>" +
             "</tr>";
     }).join("");
@@ -280,10 +283,20 @@ async function salvarUsuario(email, nome, perfil, mensagem, ativo = true) {
     }
 }
 
-window.alterarPerfil = function (email, nome, selectId) {
-    const perfil = document.getElementById(selectId).value;
-    const user = usuariosEditados[String(email || "").toLowerCase()];
-    salvarUsuario(email, nome, perfil, "Perfil salvo automaticamente no Firestore.", user?.ativo !== false);
+window.salvarEdicao = function (email, nomeId, perfilId) {
+    const id = String(email || "").toLowerCase();
+    const user = usuariosEditados[id];
+    const nomeCampo = document.getElementById(nomeId);
+    const perfilCampo = document.getElementById(perfilId);
+    const nome = String(nomeCampo?.value || "").trim();
+    const perfil = perfilCampo?.value;
+
+    if (!user || !nome || !perfil) {
+        atualizarStatus("Informe nome e perfil para salvar o usuário.", "erro");
+        return;
+    }
+
+    salvarUsuario(id, nome, perfil, "Usuário atualizado no Firestore.", user.ativo !== false);
 };
 
 window.alternarAcesso = async function (email) {
@@ -326,7 +339,8 @@ window.classificarUsuario = function () {
         return;
     }
 
-    salvarUsuario(email, nome, perfil, "Usuario classificado no Firestore.");
+    const usuarioExistente = usuariosEditados[email];
+    salvarUsuario(email, nome, perfil, "Usuário salvo no Firestore.", usuarioExistente?.ativo !== false);
     document.getElementById("classificarEmail").value = "";
     document.getElementById("classificarNome").value = "";
     document.getElementById("classificarPerfil").value = "Administrador";
