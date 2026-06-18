@@ -152,9 +152,8 @@ h1{
 
 .container{
     width:100%;
-    max-width:1200px;
-    margin:35px auto;
-    padding:0 20px;
+    margin:35px 0;
+    padding:0 25px;
     flex:1;
 }
 
@@ -190,39 +189,75 @@ h1{
 
 .grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(175px,1fr));
-    gap:18px;
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+    gap:16px;
+    align-items:stretch;
 }
 
 .card{
+    --card-accent:#06245c;
+    --card-soft:#eef4ff;
     background:#fff;
-    border-radius:6px;
+    border-radius:8px;
     border:1px solid var(--borda);
-    padding:25px;
+    padding:16px;
+    min-height:210px;
+    aspect-ratio:1 / 1;
     text-decoration:none;
     color:inherit;
-    transition:.25s;
+    transition:.22s;
     display:flex;
     flex-direction:column;
+    box-shadow:0 3px 12px rgba(16,24,40,.04);
 }
 
 .card:hover{
-    transform:translateY(-5px);
-    border-color:var(--azul);
-    box-shadow:0 10px 25px rgba(6,36,92,.12);
+    transform:translateY(-3px);
+    border-color:var(--card-accent);
+    box-shadow:0 12px 26px rgba(16,24,40,.11);
+}
+
+.card-top{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom:10px;
+}
+
+.card-figure{
+    width:42px;
+    height:42px;
+    border-radius:8px;
+    background:var(--card-soft);
+    color:var(--card-accent);
+    display:grid;
+    place-items:center;
+    flex:0 0 auto;
+}
+
+.card-figure svg{
+    width:23px;
+    height:23px;
+    stroke:currentColor;
+    stroke-width:1.9;
+    fill:none;
+    stroke-linecap:round;
+    stroke-linejoin:round;
 }
 
 .card-title{
-    font-size:18px;
-    font-weight:700;
+    font-size:16px;
+    font-weight:800;
     color:var(--azul);
-    margin-bottom:10px;
+    line-height:1.22;
+    margin:2px 0 0;
 }
 
 .card-desc{
     color:var(--cinza);
-    line-height:1.5;
-    margin-bottom:20px;
+    font-size:13px;
+    line-height:1.38;
+    margin-bottom:14px;
     flex:1;
 }
 
@@ -230,15 +265,28 @@ h1{
     background:var(--azul);
     color:white;
     text-align:center;
-    padding:12px;
-    border-radius:8px;
-    font-weight:bold;
+    padding:10px;
+    border-radius:6px;
+    font-size:13px;
+    font-weight:800;
     transition:.2s;
 }
 
 .card:hover .card-btn{
-    background:var(--laranja);
+    background:var(--card-accent);
 }
+
+.card.theme-blue{--card-accent:#0b3a8a;--card-soft:#eef4ff}
+.card.theme-teal{--card-accent:#0f766e;--card-soft:#ecfdf5}
+.card.theme-amber{--card-accent:#b45309;--card-soft:#fffbeb}
+.card.theme-violet{--card-accent:#7c3aed;--card-soft:#f5f3ff}
+.card.theme-sky{--card-accent:#0369a1;--card-soft:#f0f9ff}
+.card.theme-green{--card-accent:#15803d;--card-soft:#f0fdf4}
+.card.theme-cyan{--card-accent:#0891b2;--card-soft:#ecfeff}
+.card.theme-slate{--card-accent:#475569;--card-soft:#f8fafc}
+.card.theme-indigo{--card-accent:#4338ca;--card-soft:#eef2ff}
+.card.theme-rose{--card-accent:#be123c;--card-soft:#fff1f2}
+.card.theme-red{--card-accent:#b91c1c;--card-soft:#fef2f2}
 
 /* FOOTER */
 
@@ -402,6 +450,9 @@ footer{
 }
 
 @media(max-width:520px){
+    .container{
+        padding:0 16px;
+    }
     .toolbar{
         padding:10px 0;
     }
@@ -614,120 +665,165 @@ footer{
 
     <div class="grid">
 
-        <a href="pages/Folhadeservico.html" class="card">
-            <div class="card-title">📈 Dashboard Planilha CIOP</div>
+        <a href="pages/Folhadeservico.html" class="card theme-blue">
+            <div class="card-top">
+                <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"/><path d="M7 16V9"/><path d="M12 16V5"/><path d="M17 16v-4"/></svg></div>
+                <div class="card-title">Dashboard Planilha CIOP</div>
+            </div>
             <div class="card-desc">
                 Dashboard da planilha.
             </div>
             <div class="card-btn">Acessar</div>
         </a>
         
-        <a href="pages/pontualidade.html" class="card">
-            <div class="card-title">⏱️ Dashboard de Pontualidade</div>
+        <a href="pages/pontualidade.html" class="card theme-teal">
+            <div class="card-top">
+                <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg></div>
+                <div class="card-title">Dashboard de Pontualidade</div>
+            </div>
             <div class="card-desc">
                 Indicadores operacionais.
             </div>
             <div class="card-btn">Acessar</div>
         </a>
         
-        <a href="pages/autuacoes.html" class="card" data-perfis="Administrador,Supervisor,Gerencia">
-            <div class="card-title">Autuacoes TCGL</div>
+        <a href="pages/autuacoes.html" class="card theme-amber" data-perfis="Administrador,Supervisor,Gerencia">
+            <div class="card-top">
+                <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 3 20h18L12 4Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></div>
+                <div class="card-title">Autuacoes TCGL</div>
+            </div>
             <div class="card-desc">
                 Consulta e indicadores de autuacoes.
             </div>
             <div class="card-btn">Acessar</div>
         </a>
        
-        <a href="pages/terminais-agora.html" class="card">
-            <div class="card-title">Terminais Agora</div>
+        <a href="pages/terminais-agora.html" class="card theme-violet">
+            <div class="card-top">
+                <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="12" rx="2"/><path d="M8 20h8"/><path d="M10 17v3"/><path d="M14 17v3"/></svg></div>
+                <div class="card-title">Terminais Agora</div>
+            </div>
             <div class="card-desc">
                 Presença por terminal em tempo real.
             </div>
             <div class="card-btn">Acessar</div>
         </a>
         
-      <a href="pages/gerenciapatio.html" class="card">
-            <div class="card-title">🚘 Gerenciamento de Pátio</div>
+      <a href="pages/gerenciapatio.html" class="card theme-sky">
+            <div class="card-top">
+                <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16h12l-1-5H7l-1 5Z"/><path d="M7 11l2-4h6l2 4"/><circle cx="8" cy="17" r="1.5"/><circle cx="16" cy="17" r="1.5"/></svg></div>
+                <div class="card-title">Gerenciamento de Pátio</div>
+            </div>
             <div class="card-desc">
                 Controle de filas, RPL, oficina e saída de carros.
             </div>
             <div class="card-btn">Acessar</div>
         </a>
         
-        <a href="https://drive.google.com/drive/folders/1m9ODnZuVVtFVUP1p_FUECy9E1xVBN1yd" class="card" target="_blank">
-            <div class="card-title">♻️ Drive Monitoramento</div>
+        <a href="https://drive.google.com/drive/folders/1m9ODnZuVVtFVUP1p_FUECy9E1xVBN1yd" class="card theme-green" target="_blank">
+            <div class="card-top">
+                <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h7l2 2h7v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z"/><path d="M4 8V6a2 2 0 0 1 2-2h4l2 4"/></svg></div>
+                <div class="card-title">Drive Monitoramento</div>
+            </div>
             <div class="card-desc">
                 Drive - Oficial Monitoramento.
             </div>
             <div class="card-btn">Acessar</div>
         </a>
         
-        <a href="https://drive.google.com/drive/folders/140AXmLicGVvTm2Z5ALESVEmv0-K_mhYW" class="card" target="_blank">
-            <div class="card-title">🚍 Saida de carros</div>
+        <a href="https://drive.google.com/drive/folders/140AXmLicGVvTm2Z5ALESVEmv0-K_mhYW" class="card theme-cyan" target="_blank">
+            <div class="card-top">
+                <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="14" rx="2"/><path d="M8 18v2"/><path d="M16 18v2"/><path d="M5 10h14"/><path d="M8 7h8"/></svg></div>
+                <div class="card-title">Saída de carros</div>
+            </div>
             <div class="card-desc">
                 Saida de carros da COT.
             </div>
             <div class="card-btn">Acessar</div>
         </a>
 
-       <a href="https://drive.google.com/drive/folders/1-jBeEFxHtTgvXbjkJbhonY-ijKg16UcF" class="card" target="_blank">
-            <div class="card-title">📆 Diários de bordo</div>
+       <a href="https://drive.google.com/drive/folders/1-jBeEFxHtTgvXbjkJbhonY-ijKg16UcF" class="card theme-slate" target="_blank">
+            <div class="card-top">
+                <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5a3 3 0 0 1 3-3h11v18H8a3 3 0 0 0-3 3V5Z"/><path d="M5 5v16"/><path d="M9 6h6"/></svg></div>
+                <div class="card-title">Diários de bordo</div>
+            </div>
             <div class="card-desc">
                Diários de bordo.
             </div>
             <div class="card-btn">Acessar</div>
         </a>
 
-        <a href="https://drive.google.com/drive/folders/111RpLw8iQI3Pypwi_sYdJ3NO1iG_Ow5K" class="card" target="_blank">
-            <div class="card-title">🕤 Horários para fiscais</div>
+        <a href="https://drive.google.com/drive/folders/111RpLw8iQI3Pypwi_sYdJ3NO1iG_Ow5K" class="card theme-indigo" target="_blank">
+            <div class="card-top">
+                <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg></div>
+                <div class="card-title">Horários para fiscais</div>
+            </div>
             <div class="card-desc">
                Diários de bordo.
             </div>
             <div class="card-btn">Acessar</div>
         </a>
         
-        <a href="https://docs.google.com/spreadsheets/d/1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA/edit?gid=1013912232#gid=1013912232" class="card" target="_blank">
-            <div class="card-title">📝 Planilha</div>
+        <a href="https://docs.google.com/spreadsheets/d/1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA/edit?gid=1013912232#gid=1013912232" class="card theme-blue" target="_blank">
+            <div class="card-top">
+                <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7V3Z"/><path d="M14 3v5h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></div>
+                <div class="card-title">Planilha</div>
+            </div>
             <div class="card-desc">
                 Acesso a Planilha CIOP.
             </div>
             <div class="card-btn">Acessar</div>
         </a>
         
-       <a href="https://drive.google.com/drive/folders/1oq_QLjcIpZGqWD6zRcLtK4PIj5my6TtE" class="card" target="_blank">
-            <div class="card-title">📋 Tabelas</div>
+       <a href="https://drive.google.com/drive/folders/1oq_QLjcIpZGqWD6zRcLtK4PIj5my6TtE" class="card theme-teal" target="_blank">
+            <div class="card-top">
+                <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16"/><path d="M10 5v14"/><path d="M15 5v14"/></svg></div>
+                <div class="card-title">Tabelas</div>
+            </div>
             <div class="card-desc">
                 Tabelas Planejamento.
             </div>
             <div class="card-btn">Acessar</div>
         </a>
 
-        <a href="https://www.canva.com/design/DAGmHCnCGlc/hBDsSXTyhOo_FJjbAsIRMQ/edit" class="card" target="_blank">
-            <div class="card-title">🚨 Desvios</div>
+        <a href="https://www.canva.com/design/DAGmHCnCGlc/hBDsSXTyhOo_FJjbAsIRMQ/edit" class="card theme-rose" target="_blank">
+            <div class="card-top">
+                <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5"/><path d="M12 18h.01"/></svg></div>
+                <div class="card-title">Desvios</div>
+            </div>
             <div class="card-desc">
                 Acesso aos desvios criados.
             </div>
             <div class="card-btn">Acessar</div>
         </a>
 
-        <a href="https://www.canva.com/design/DAHDub_Za2k/oMlNaOEy98L0BTW1m1-Wuw/edit" class="card" target="_blank">
-            <div class="card-title">🏷️ Cenário Atual</div>
+        <a href="https://www.canva.com/design/DAHDub_Za2k/oMlNaOEy98L0BTW1m1-Wuw/edit" class="card theme-amber" target="_blank">
+            <div class="card-top">
+                <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4-8 4-8-4 8-4Z"/><path d="m4 12 8 4 8-4"/><path d="m4 17 8 4 8-4"/></svg></div>
+                <div class="card-title">Cenário Atual</div>
+            </div>
             <div class="card-desc">
                 Acesso ao cenário atual - Divergências.
             </div>
             <div class="card-btn">Acessar</div>
         </a>
 
-        <a href="https://www.canva.com/" class="card" target="_blank">
-            <div class="card-title">🔏 Canva</div>
+        <a href="https://www.canva.com/" class="card theme-violet" target="_blank">
+            <div class="card-top">
+                <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4-1 11-11-3-3L5 16l-1 4Z"/><path d="m14 7 3 3"/></svg></div>
+                <div class="card-title">Canva</div>
+            </div>
             <div class="card-desc">
                 Acesso ao Canva - Inicio.
             </div>
             <div class="card-btn">Acessar</div>
         </a>
         
-        <a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vQcoPBPbjoZKmWb6KlDMMpwm0-AbzPA4PRziV6zS8U-VzXRKMtKEp_sbVf4cgHNEg/pubhtml#" class="card" target="_blank">
-            <div class="card-title">📍 Pontos de controle</div>
+        <a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vQcoPBPbjoZKmWb6KlDMMpwm0-AbzPA4PRziV6zS8U-VzXRKMtKEp_sbVf4cgHNEg/pubhtml#" class="card theme-red" target="_blank">
+            <div class="card-top">
+                <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.4 6-11a6 6 0 0 0-12 0c0 5.6 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/></svg></div>
+                <div class="card-title">Pontos de controle</div>
+            </div>
             <div class="card-desc">
                 Localização dos pontos de controle.
             </div>
