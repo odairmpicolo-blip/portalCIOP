@@ -97,6 +97,29 @@ function criarPerfisRegraAviso(perfis) {
   return [...variantes];
 }
 
+function normalizarDataAviso(valor) {
+  if (!valor) return null;
+  if (valor instanceof Date) return Number.isNaN(valor.getTime()) ? null : valor;
+  if (valor?.toDate) {
+    const data = valor.toDate();
+    return Number.isNaN(data.getTime()) ? null : data;
+  }
+  if (typeof valor?.seconds === "number") return new Date(valor.seconds * 1000);
+  const data = new Date(valor);
+  return Number.isNaN(data.getTime()) ? null : data;
+}
+
+function millisAviso(valor) {
+  const data = normalizarDataAviso(valor);
+  return data ? data.getTime() : null;
+}
+
+function avisoEmExposicao(aviso, agora = Date.now()) {
+  const inicio = millisAviso(aviso?.inicioEm);
+  const fim = millisAviso(aviso?.fimEm);
+  return (inicio === null || inicio <= agora) && (fim === null || fim >= agora);
+}
+
 function normalizarAviso(id, dados = {}) {
   const perfis = normalizarListaAviso(dados.perfis);
   const usuarios = normalizarListaAviso(dados.usuarios).map(normalizarEmail).filter(Boolean);
@@ -111,6 +134,8 @@ function normalizarAviso(id, dados = {}) {
     usuarios,
     autorEmail: normalizarEmail(dados.autorEmail),
     autorNome: dados.autorNome || "",
+    inicioEm: dados.inicioEm || null,
+    fimEm: dados.fimEm || null,
     ativo: dados.ativo !== false,
     criadoEm: dados.criadoEm || null,
     atualizadoEm: dados.atualizadoEm || null
@@ -118,15 +143,16 @@ function normalizarAviso(id, dados = {}) {
 }
 
 function avisoTimestamp(aviso) {
-  const data = aviso?.criadoEm || aviso?.atualizadoEm;
+  const data = aviso?.inicioEm || aviso?.criadoEm || aviso?.atualizadoEm;
   if (data?.toMillis) return data.toMillis();
   if (typeof data?.seconds === "number") return data.seconds * 1000;
   return 0;
 }
 
-function ordenarAvisos(lista) {
+function ordenarAvisos(lista, { somenteEmExposicao = false } = {}) {
   return lista
     .filter((aviso) => aviso.ativo !== false)
+    .filter((aviso) => !somenteEmExposicao || avisoEmExposicao(aviso))
     .sort((a, b) => avisoTimestamp(b) - avisoTimestamp(a));
 }
 
@@ -158,13 +184,17 @@ export async function listarAvisosFirestore({ email = "", perfil = "", gestor = 
 
   const resultados = await Promise.all(consultas);
   resultados.forEach((snap) => adicionarAvisosDoSnap(avisos, snap));
-  return ordenarAvisos([...avisos.values()]);
+  return ordenarAvisos([...avisos.values()], { somenteEmExposicao: true });
 }
 
 export async function salvarAvisoFirestore(aviso) {
   const titulo = String(aviso?.titulo || "").trim();
   const mensagem = String(aviso?.mensagem || "").trim();
   if (!titulo || !mensagem) throw new Error("Informe titulo e mensagem do aviso.");
+  const inicioEm = normalizarDataAviso(aviso?.inicioEm);
+  const fimEm = normalizarDataAviso(aviso?.fimEm);
+  if (!inicioEm || !fimEm) throw new Error("Informe inicio e fim de exposicao do aviso.");
+  if (fimEm.getTime() <= inicioEm.getTime()) throw new Error("O fim da exposicao deve ser depois do inicio.");
 
   const id = aviso?.id || "aviso_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
   const perfis = normalizarListaAviso(aviso?.perfis);
@@ -178,6 +208,8 @@ export async function salvarAvisoFirestore(aviso) {
     perfisRegra,
     perfisBusca: perfis.map(normalizarPerfilAviso),
     usuarios,
+    inicioEm,
+    fimEm,
     autorEmail: normalizarEmail(aviso?.autorEmail),
     autorNome: aviso?.autorNome || "",
     ativo: aviso?.ativo !== false,

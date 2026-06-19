@@ -665,6 +665,7 @@ footer{
 }
 
 .notice-modal input[type="text"],
+.notice-modal input[type="datetime-local"],
 .notice-modal textarea{
     width:100%;
     border:1px solid var(--borda);
@@ -1097,7 +1098,6 @@ h1 {
     <button id="sidebarAdicionarAviso"
             class="side-link side-link-button"
             type="button"
-            onclick="abrirEditorAvisos(); toggleMenu();"
             data-perfis="Administrador,Supervisor,Gerência,Gerencia,Secretária,Secretaria">
         <span class="side-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16"/><path d="M4 12h10"/><path d="M4 19h16"/><path d="M17 10h4"/><path d="M19 8v4"/></svg></span>
         <span class="side-text">Adicionar Aviso</span>
@@ -1302,6 +1302,14 @@ h1 {
                     <div class="notice-field-full">
                         <label for="avisoMensagem">Mensagem</label>
                         <textarea id="avisoMensagem" maxlength="800"></textarea>
+                    </div>
+                    <div>
+                        <label for="avisoInicio">Início</label>
+                        <input id="avisoInicio" type="datetime-local" required>
+                    </div>
+                    <div>
+                        <label for="avisoFim">Fim</label>
+                        <input id="avisoFim" type="datetime-local" required>
                     </div>
                     <fieldset class="notice-targets">
                         <legend>Grupos</legend>
@@ -1597,6 +1605,7 @@ import {
 const avisosLista = document.getElementById("avisosLista");
 const avisosContador = document.getElementById("avisosContador");
 const avisoEditorBtn = document.getElementById("abrirAvisoEditor");
+const sidebarAvisoBtn = document.getElementById("sidebarAdicionarAviso");
 const avisoModal = document.getElementById("avisoModal");
 const avisoStatus = document.getElementById("avisoEditorStatus");
 const avisosGerenciarLista = document.getElementById("avisosGerenciarLista");
@@ -1622,6 +1631,11 @@ function usuarioPodeEnviarAviso() {
     return Boolean(window.portalUsuario?.isAdmin || ["administrador", "supervisor", "gerencia", "secretaria"].includes(perfil));
 }
 
+function fecharMenuLateralAviso() {
+    document.getElementById("sidebar")?.classList.remove("active");
+    document.getElementById("overlay")?.classList.remove("active");
+}
+
 function avisoTimestampLocal(aviso) {
     const data = aviso?.criadoEm || aviso?.atualizadoEm;
     if (data?.toDate) return data.toDate();
@@ -1633,6 +1647,59 @@ function formatarDataAviso(aviso) {
     const data = avisoTimestampLocal(aviso);
     if (!data) return "";
     return data.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+}
+
+function dataAvisoLocal(valor) {
+    if (!valor) return null;
+    if (valor?.toDate) return valor.toDate();
+    if (typeof valor?.seconds === "number") return new Date(valor.seconds * 1000);
+    if (valor instanceof Date) return valor;
+    const data = new Date(valor);
+    return Number.isNaN(data.getTime()) ? null : data;
+}
+
+function formatarDataHoraAviso(valor) {
+    const data = dataAvisoLocal(valor);
+    if (!data) return "";
+    return data.toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+}
+
+function formatarPeriodoAviso(aviso) {
+    const inicio = formatarDataHoraAviso(aviso?.inicioEm);
+    const fim = formatarDataHoraAviso(aviso?.fimEm);
+    if (inicio && fim) return inicio + " até " + fim;
+    if (inicio) return "A partir de " + inicio;
+    if (fim) return "Até " + fim;
+    return "";
+}
+
+function valorDateTimeLocal(data) {
+    const pad = (valor) => String(valor).padStart(2, "0");
+    return data.getFullYear() + "-" + pad(data.getMonth() + 1) + "-" + pad(data.getDate()) +
+        "T" + pad(data.getHours()) + ":" + pad(data.getMinutes());
+}
+
+function definirPeriodoAvisoPadrao(force = false) {
+    const inicio = document.getElementById("avisoInicio");
+    const fim = document.getElementById("avisoFim");
+    if (!inicio || !fim) return;
+    const agora = new Date();
+    agora.setSeconds(0, 0);
+    const fimPadrao = new Date(agora.getTime() + 24 * 60 * 60 * 1000);
+    if (force || !inicio.value) inicio.value = valorDateTimeLocal(agora);
+    if (force || !fim.value) fim.value = valorDateTimeLocal(fimPadrao);
+}
+
+function lerDataHoraAviso(id) {
+    const valor = document.getElementById(id)?.value;
+    if (!valor) return null;
+    const data = new Date(valor);
+    return Number.isNaN(data.getTime()) ? null : data;
 }
 
 function destinatariosAviso(aviso) {
@@ -1657,7 +1724,7 @@ function renderAvisos(lista) {
         <article class="notice-item">
             <div class="notice-item-title">${escapeAviso(aviso.titulo)}</div>
             <div class="notice-item-text">${escapeAviso(aviso.mensagem)}</div>
-            <div class="notice-item-meta">${escapeAviso(formatarDataAviso(aviso))}</div>
+            <div class="notice-item-meta">${escapeAviso(formatarPeriodoAviso(aviso) || formatarDataAviso(aviso))}</div>
         </article>
     `).join("");
 }
@@ -1674,6 +1741,7 @@ function renderAvisosGestor(lista) {
             <div>
                 <strong>${escapeAviso(aviso.titulo)}</strong>
                 <span>${escapeAviso(destinatariosAviso(aviso))}</span>
+                <span>${escapeAviso(formatarPeriodoAviso(aviso) || "Sem período")}</span>
             </div>
             <button class="notice-delete-btn" type="button" onclick="excluirAvisoPortal('${escapeAviso(aviso.id)}')" aria-label="Excluir aviso">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>
@@ -1717,13 +1785,17 @@ function resetarFormularioAviso() {
     document.getElementById("avisoTitulo").value = "";
     document.getElementById("avisoMensagem").value = "";
     document.getElementById("avisoUsuarios").value = "";
+    document.getElementById("avisoInicio").value = "";
+    document.getElementById("avisoFim").value = "";
     document.getElementById("avisoTodos").checked = true;
     document.querySelectorAll('input[name="avisoPerfil"]').forEach((item) => item.checked = false);
+    definirPeriodoAvisoPadrao(true);
     setAvisoStatus("");
 }
 
 window.abrirEditorAvisos = async function () {
     if (!usuarioPodeEnviarAviso()) return;
+    definirPeriodoAvisoPadrao();
     avisoModal.hidden = false;
     document.body.classList.add("modal-open");
     await carregarAvisosGestor();
@@ -1747,9 +1819,19 @@ window.salvarAvisoPortal = async function (event) {
         .split(/[\n,;]+/)
         .map((item) => item.trim().toLowerCase())
         .filter(Boolean);
+    const inicioEm = lerDataHoraAviso("avisoInicio");
+    const fimEm = lerDataHoraAviso("avisoFim");
 
     if (!titulo || !mensagem) {
         setAvisoStatus("Informe título e mensagem.", "erro");
+        return;
+    }
+    if (!inicioEm || !fimEm) {
+        setAvisoStatus("Informe início e fim da exposição.", "erro");
+        return;
+    }
+    if (fimEm.getTime() <= inicioEm.getTime()) {
+        setAvisoStatus("O fim da exposição deve ser depois do início.", "erro");
         return;
     }
     if (!publico && !perfis.length && !usuarios.length) {
@@ -1766,6 +1848,8 @@ window.salvarAvisoPortal = async function (event) {
             publico,
             perfis,
             usuarios,
+            inicioEm,
+            fimEm,
             autorEmail: window.portalUsuario?.email,
             autorNome: window.portalUsuario?.nome
         });
@@ -1791,6 +1875,13 @@ window.excluirAvisoPortal = async function (id) {
         setAvisoStatus("Não foi possível excluir: " + error.message, "erro");
     }
 };
+
+sidebarAvisoBtn?.addEventListener("click", async (event) => {
+    event.preventDefault();
+    if (!usuarioPodeEnviarAviso()) return;
+    await window.abrirEditorAvisos();
+    fecharMenuLateralAviso();
+});
 
 avisoModal?.addEventListener("click", (event) => {
     if (event.target === avisoModal) window.fecharEditorAvisos();
