@@ -676,6 +676,7 @@ footer{
 }
 
 .notice-modal input[type="text"],
+.notice-modal input[type="search"],
 .notice-modal input[type="datetime-local"],
 .notice-modal textarea{
     width:100%;
@@ -697,6 +698,46 @@ footer{
     border-radius:8px;
     padding:10px;
     background:#f8fafc;
+}
+
+.notice-users-box{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    min-height:166px;
+}
+
+.notice-users-list{
+    max-height:218px;
+    overflow:auto;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+    padding:8px;
+    border:1px solid #e4eaf4;
+    border-radius:8px;
+    background:#f8fafc;
+}
+
+.notice-user-check{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    min-width:0;
+    padding:7px 8px;
+    border:1px solid #dfe6f2;
+    border-radius:7px;
+    background:#fff;
+    color:var(--azul);
+    font-size:11px;
+    font-weight:800;
+}
+
+.notice-user-check span{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
 }
 
 .notice-checks{
@@ -808,6 +849,13 @@ footer{
     font-weight:700;
 }
 
+.notice-manage-actions{
+    display:flex;
+    align-items:center;
+    gap:7px;
+}
+
+.notice-edit-btn,
 .notice-delete-btn{
     width:34px;
     height:34px;
@@ -815,9 +863,17 @@ footer{
     border-radius:7px;
     display:grid;
     place-items:center;
+    cursor:pointer;
+}
+
+.notice-edit-btn{
+    background:#e8edf6;
+    color:var(--azul);
+}
+
+.notice-delete-btn{
     background:#fee2e2;
     color:#b91c1c;
-    cursor:pointer;
 }
 
 @media(max-width:980px){
@@ -840,7 +896,8 @@ footer{
     }
     .notice-list,
     .notice-form-grid,
-    .notice-checks{
+    .notice-checks,
+    .notice-users-list{
         grid-template-columns:1fr;
     }
 }
@@ -1305,6 +1362,7 @@ h1 {
         </div>
         <div class="notice-modal-body">
             <form id="avisoForm" onsubmit="salvarAvisoPortal(event)">
+                <input id="avisoIdEdicao" type="hidden">
                 <div class="notice-form-grid">
                     <div class="notice-field-full">
                         <label for="avisoTitulo">Título</label>
@@ -1335,13 +1393,18 @@ h1 {
                         </div>
                     </fieldset>
                     <div>
-                        <label for="avisoUsuarios">Usuários</label>
-                        <textarea id="avisoUsuarios" placeholder="email@empresa.com.br"></textarea>
+                        <label for="avisoBuscaUsuarios">Usuários</label>
+                        <div class="notice-users-box">
+                            <input id="avisoBuscaUsuarios" type="search" placeholder="Buscar usuário" autocomplete="off">
+                            <div id="avisoUsuariosLista" class="notice-users-list">
+                                <div class="notice-empty">Carregando usuários...</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="notice-actions">
                     <button class="notice-action-secondary" type="button" onclick="fecharEditorAvisos()">Cancelar</button>
-                    <button class="notice-action-primary" type="submit">Enviar aviso</button>
+                    <button id="avisoSubmitBtn" class="notice-action-primary" type="submit">Enviar aviso</button>
                 </div>
                 <div id="avisoEditorStatus" class="notice-editor-status"></div>
             </form>
@@ -1609,9 +1672,12 @@ async function salvarNovaSenha(){
 <script type="module" id="portalAvisosScript">
 import {
     listarAvisosFirestore,
+    listarUsuariosFirestore,
     salvarAvisoFirestore,
-    excluirAvisoFirestore
+    excluirAvisoFirestore,
+    normalizarCadastro
 } from "./assets/js/portal-firestore.js";
+import { usuarios as usuariosLocais } from "./assets/js/usuarios.js";
 
 const avisosLista = document.getElementById("avisosLista");
 const avisosContador = document.getElementById("avisosContador");
@@ -1620,9 +1686,15 @@ const sidebarAvisoBtn = document.getElementById("sidebarAdicionarAviso");
 const avisoModal = document.getElementById("avisoModal");
 const avisoStatus = document.getElementById("avisoEditorStatus");
 const avisosGerenciarLista = document.getElementById("avisosGerenciarLista");
+const avisoUsuariosLista = document.getElementById("avisoUsuariosLista");
+const avisoBuscaUsuarios = document.getElementById("avisoBuscaUsuarios");
+const avisoSubmitBtn = document.getElementById("avisoSubmitBtn");
+const avisoIdEdicao = document.getElementById("avisoIdEdicao");
 
 let avisosCarregados = [];
 let avisosGestorCarregados = [];
+let usuariosAviso = [];
+let usuariosSelecionadosPendentes = [];
 
 function escapeAviso(valor) {
     return String(valor ?? "")
@@ -1713,6 +1785,64 @@ function lerDataHoraAviso(id) {
     return Number.isNaN(data.getTime()) ? null : data;
 }
 
+function emailUsuarioAviso(usuario) {
+    return String(usuario?.email || "").trim().toLowerCase();
+}
+
+function nomeUsuarioAviso(usuario) {
+    return String(usuario?.nome || usuario?.email || "").trim();
+}
+
+function usuarioCombinaAviso(usuario, busca) {
+    const termo = normalizarAvisoTexto(busca);
+    if (!termo) return true;
+    return normalizarAvisoTexto([usuario.nome, usuario.email, usuario.perfil, usuario.registro].join(" ")).includes(termo);
+}
+
+function renderUsuariosAviso(selecionados = null) {
+    if (!avisoUsuariosLista) return;
+    const marcados = new Set((selecionados || [...document.querySelectorAll('input[name="avisoUsuario"]:checked')].map((item) => item.value)).map((email) => String(email).toLowerCase()));
+    const busca = avisoBuscaUsuarios?.value || "";
+    const lista = usuariosAviso.filter((usuario) => usuarioCombinaAviso(usuario, busca));
+    if (!lista.length) {
+        avisoUsuariosLista.innerHTML = '<div class="notice-empty">Nenhum usuário encontrado.</div>';
+        return;
+    }
+    avisoUsuariosLista.innerHTML = lista.map((usuario) => {
+        const email = emailUsuarioAviso(usuario);
+        const nome = nomeUsuarioAviso(usuario);
+        const perfil = usuario.perfil ? " · " + usuario.perfil : "";
+        return `
+            <label class="notice-user-check" title="${escapeAviso(nome)} - ${escapeAviso(email)}">
+                <input name="avisoUsuario" type="checkbox" value="${escapeAviso(email)}" ${marcados.has(email) ? "checked" : ""}>
+                <span>${escapeAviso(nome || email)}${escapeAviso(perfil)}</span>
+            </label>
+        `;
+    }).join("");
+}
+
+async function carregarUsuariosAviso() {
+    const mapa = new Map();
+    Object.entries(usuariosLocais || {}).forEach(([email, cadastro]) => {
+        const user = normalizarCadastro(cadastro, email);
+        mapa.set(emailUsuarioAviso(user), user);
+    });
+    try {
+        const online = await listarUsuariosFirestore();
+        Object.entries(online).forEach(([email, cadastro]) => {
+            const user = normalizarCadastro(cadastro, email);
+            mapa.set(emailUsuarioAviso(user), user);
+        });
+    } catch (error) {
+        console.warn("Nao foi possivel carregar usuarios online para avisos:", error);
+    }
+    usuariosAviso = [...mapa.values()]
+        .filter((usuario) => usuario.ativo !== false)
+        .sort((a, b) => nomeUsuarioAviso(a).localeCompare(nomeUsuarioAviso(b), "pt-BR"));
+    renderUsuariosAviso(usuariosSelecionadosPendentes);
+    usuariosSelecionadosPendentes = [];
+}
+
 function destinatariosAviso(aviso) {
     if (aviso.publico) return "Todos";
     const partes = [];
@@ -1754,9 +1884,14 @@ function renderAvisosGestor(lista) {
                 <span>${escapeAviso(destinatariosAviso(aviso))}</span>
                 <span>${escapeAviso(formatarPeriodoAviso(aviso) || "Sem período")}</span>
             </div>
-            <button class="notice-delete-btn" type="button" onclick="excluirAvisoPortal('${escapeAviso(aviso.id)}')" aria-label="Excluir aviso">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>
-            </button>
+            <div class="notice-manage-actions">
+                <button class="notice-edit-btn" type="button" onclick="editarAvisoPortal('${escapeAviso(aviso.id)}')" aria-label="Editar aviso">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4-1 11-11-3-3L5 16l-1 4Z"/><path d="m14 7 3 3"/></svg>
+                </button>
+                <button class="notice-delete-btn" type="button" onclick="excluirAvisoPortal('${escapeAviso(aviso.id)}')" aria-label="Excluir aviso">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>
+                </button>
+            </div>
         </div>
     `).join("");
 }
@@ -1793,22 +1928,27 @@ async function carregarAvisosGestor() {
 }
 
 function resetarFormularioAviso() {
+    avisoIdEdicao.value = "";
     document.getElementById("avisoTitulo").value = "";
     document.getElementById("avisoMensagem").value = "";
-    document.getElementById("avisoUsuarios").value = "";
     document.getElementById("avisoInicio").value = "";
     document.getElementById("avisoFim").value = "";
     document.getElementById("avisoTodos").checked = true;
     document.querySelectorAll('input[name="avisoPerfil"]').forEach((item) => item.checked = false);
+    document.querySelectorAll('input[name="avisoUsuario"]').forEach((item) => item.checked = false);
+    if (avisoBuscaUsuarios) avisoBuscaUsuarios.value = "";
+    if (avisoSubmitBtn) avisoSubmitBtn.textContent = "Enviar aviso";
     definirPeriodoAvisoPadrao(true);
+    renderUsuariosAviso([]);
     setAvisoStatus("");
 }
 
 window.abrirEditorAvisos = async function () {
     if (!usuarioPodeEnviarAviso()) return;
-    definirPeriodoAvisoPadrao();
+    if (!avisoIdEdicao.value) definirPeriodoAvisoPadrao();
     avisoModal.hidden = false;
     document.body.classList.add("modal-open");
+    await carregarUsuariosAviso();
     await carregarAvisosGestor();
     window.setTimeout(() => document.getElementById("avisoTitulo")?.focus(), 0);
 };
@@ -1826,9 +1966,8 @@ window.salvarAvisoPortal = async function (event) {
     const mensagem = document.getElementById("avisoMensagem").value.trim();
     const publico = document.getElementById("avisoTodos").checked;
     const perfis = [...document.querySelectorAll('input[name="avisoPerfil"]:checked')].map((item) => item.value);
-    const usuarios = document.getElementById("avisoUsuarios").value
-        .split(/[\n,;]+/)
-        .map((item) => item.trim().toLowerCase())
+    const usuarios = [...document.querySelectorAll('input[name="avisoUsuario"]:checked')]
+        .map((item) => item.value.trim().toLowerCase())
         .filter(Boolean);
     const inicioEm = lerDataHoraAviso("avisoInicio");
     const fimEm = lerDataHoraAviso("avisoFim");
@@ -1854,6 +1993,7 @@ window.salvarAvisoPortal = async function (event) {
 
     try {
         await salvarAvisoFirestore({
+            id: avisoIdEdicao.value || "",
             titulo,
             mensagem,
             publico,
@@ -1864,7 +2004,7 @@ window.salvarAvisoPortal = async function (event) {
             autorEmail: window.portalUsuario?.email,
             autorNome: window.portalUsuario?.nome
         });
-        setAvisoStatus("Aviso enviado.", "ok");
+        setAvisoStatus(avisoIdEdicao.value ? "Aviso atualizado." : "Aviso enviado.", "ok");
         resetarFormularioAviso();
         await carregarAvisos();
         await carregarAvisosGestor();
@@ -1872,6 +2012,29 @@ window.salvarAvisoPortal = async function (event) {
         console.error(error);
         setAvisoStatus("Não foi possível enviar: " + error.message, "erro");
     }
+};
+
+window.editarAvisoPortal = async function (id) {
+    if (!usuarioPodeEnviarAviso()) return;
+    const aviso = avisosGestorCarregados.find((item) => item.id === id);
+    if (!aviso) {
+        setAvisoStatus("Aviso não encontrado para edição.", "erro");
+        return;
+    }
+    avisoIdEdicao.value = aviso.id;
+    document.getElementById("avisoTitulo").value = aviso.titulo || "";
+    document.getElementById("avisoMensagem").value = aviso.mensagem || "";
+    document.getElementById("avisoInicio").value = valorDateTimeLocal(dataAvisoLocal(aviso.inicioEm) || new Date());
+    document.getElementById("avisoFim").value = valorDateTimeLocal(dataAvisoLocal(aviso.fimEm) || new Date(Date.now() + 24 * 60 * 60 * 1000));
+    document.getElementById("avisoTodos").checked = aviso.publico === true;
+    document.querySelectorAll('input[name="avisoPerfil"]').forEach((item) => {
+        item.checked = (aviso.perfis || []).includes(item.value);
+    });
+    usuariosSelecionadosPendentes = aviso.usuarios || [];
+    if (avisoBuscaUsuarios) avisoBuscaUsuarios.value = "";
+    if (avisoSubmitBtn) avisoSubmitBtn.textContent = "Salvar aviso";
+    setAvisoStatus("");
+    await window.abrirEditorAvisos();
 };
 
 window.excluirAvisoPortal = async function (id) {
@@ -1886,6 +2049,8 @@ window.excluirAvisoPortal = async function (id) {
         setAvisoStatus("Não foi possível excluir: " + error.message, "erro");
     }
 };
+
+avisoBuscaUsuarios?.addEventListener("input", () => renderUsuariosAviso());
 
 sidebarAvisoBtn?.addEventListener("click", async (event) => {
     event.preventDefault();
