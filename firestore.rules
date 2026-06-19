@@ -18,7 +18,29 @@ service cloud.firestore {
     }
 
     function gestor() {
-      return signedIn() && (bootstrapGestor() || perfilAtual() in ['Administrador']);
+      return signedIn() && (bootstrapGestor() || perfilAtual() in ['Administrador', 'Supervisor', 'Gerência', 'Gerencia']);
+    }
+
+    function podePostarAviso() {
+      return signedIn() && (bootstrapGestor() || perfilAtual() in ['Administrador', 'Supervisor', 'Gerência', 'Gerencia', 'Secretária', 'Secretaria']);
+    }
+
+    function listaTemUsuario(lista) {
+      return lista is list && email() in lista;
+    }
+
+    function listaTemPerfil(lista) {
+      return lista is list && perfilAtual() in lista;
+    }
+
+    match /avisos/{avisoId} {
+      allow read: if signedIn() && (
+        podePostarAviso() ||
+        resource.data.publico == true ||
+        listaTemUsuario(resource.data.usuarios) ||
+        listaTemPerfil(resource.data.perfisRegra)
+      );
+      allow create, update, delete: if podePostarAviso();
     }
 
     match /usuarios/{userEmail} {
