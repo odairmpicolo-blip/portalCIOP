@@ -585,6 +585,186 @@ h1.pontualidade-title-art {
     opacity: 1;
 }
 
+
+/* Ajustes solicitados: Portal dentro da Realidade de Medição, título centralizado, botões sem laranja e rolagem livre */
+body {
+    min-height: 100vh !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+.main-content {
+    flex: none !important;
+    display: block !important;
+    overflow: visible !important;
+}
+
+.content-body {
+    overflow: visible !important;
+}
+
+.table-wrapper {
+    max-height: none !important;
+    overflow-y: visible !important;
+}
+
+.btn-portal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 36px;
+    border-radius: 8px;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, var(--blue), var(--blue2));
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 12px;
+    box-shadow: 0 8px 16px rgba(6, 36, 92, 0.16);
+    transition: transform 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+}
+
+.btn-portal:hover {
+    background: linear-gradient(135deg, var(--blue), var(--blue2));
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(6, 36, 92, 0.2);
+}
+
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+}
+
+.btn-icon svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.scenario-switch {
+    display: grid !important;
+    grid-template-columns: minmax(110px, 160px) 1fr minmax(320px, 560px);
+    align-items: center;
+    gap: 12px;
+}
+
+.scenario-switch .btn-portal {
+    justify-self: start;
+}
+
+.scenario-label {
+    justify-self: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+}
+
+.scenario-label::before {
+    display: none !important;
+}
+
+.scenario-toggle {
+    justify-self: end;
+    width: 100%;
+    max-width: 560px;
+    margin-left: 0 !important;
+    border: 1px solid #d6deea !important;
+    background: #eef2f7 !important;
+}
+
+.scenario-button:hover {
+    border-color: rgba(6, 36, 92, 0.28) !important;
+}
+
+.scenario-button.active,
+.scenario-button.active:hover {
+    border: 1px solid var(--blue2) !important;
+    background: linear-gradient(135deg, var(--blue), var(--blue2)) !important;
+    color: #ffffff !important;
+    box-shadow: 0 12px 24px rgba(6, 36, 92, 0.18) !important;
+}
+
+.scenario-button.active::before {
+    display: none !important;
+}
+
+.scenario-button.active .scenario-title,
+.scenario-button.active .scenario-desc {
+    color: #ffffff !important;
+}
+
+@media(max-width:900px) {
+    .scenario-switch {
+        grid-template-columns: 1fr !important;
+        align-items: stretch;
+    }
+
+    .scenario-switch .btn-portal {
+        justify-self: start;
+    }
+
+    .scenario-label {
+        justify-self: center;
+    }
+
+    .scenario-toggle {
+        justify-self: stretch;
+        max-width: none;
+    }
+}
+
+
+
+/* Centralização exata do texto "Realidade de medição" na caixa */
+@media(min-width:901px) {
+    .scenario-switch {
+        position: relative;
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .scenario-switch .btn-portal {
+        flex: 0 0 auto;
+    }
+
+    .scenario-switch .scenario-label {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        width: auto;
+        white-space: nowrap;
+        pointer-events: none;
+    }
+
+    .scenario-switch .scenario-toggle {
+        flex: 0 1 560px;
+        margin-left: auto !important;
+    }
+}
+
+
+
+/* Ajuste KPI No Horário: azul igual ao gráfico */
+.kpi-card.kpi-no-horario {
+    border-left: 4px solid #2563eb;
+    background: linear-gradient(to right, #eff6ff, #ffffff);
+}
+
+.kpi-card.kpi-no-horario .kpi-value {
+    color: #2563eb;
+}
+
+
 </style>
 <script src="../assets/js/loading.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -617,10 +797,11 @@ h1.pontualidade-title-art {
 </div>
 <div class="main-content">
     <div class="content-body">
-        <div class="portal-return">
-            <a href="../index.html" class="btn-portal" aria-label="Voltar ao portal">🏠 Portal</a>
-        </div>
         <div class="scenario-switch" aria-label="Selecionar realidade de pontualidade">
+            <a href="../index.html" class="btn-portal" aria-label="Voltar ao portal">
+                <span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>
+                <span>Portal</span>
+            </a>
             <div class="scenario-label">Realidade de medição</div>
             <div class="scenario-toggle" role="group" aria-label="Realidade de medição">
                 <button id="cenarioPadrao" class="scenario-button active" type="button" data-cenario="padrao" onclick="trocarCenario('padrao')">
@@ -639,7 +820,7 @@ h1.pontualidade-title-art {
     <div class="kpi-value" id="melhorHorario">0%</div>
     <div class="kpi-title melhor-indice-data">Melhor mes: <span id="melhorData">--</span></div>
 </div>
-            <div class="kpi-card highlight">
+            <div class="kpi-card kpi-no-horario">
                 <div class="kpi-title">🔵 No Horário</div>
                 <div class="kpi-value" id="kpiNoHorario">-</div>
             </div>
