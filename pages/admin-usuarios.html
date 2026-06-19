@@ -375,6 +375,7 @@ import {
 } from "../assets/js/portal-firestore.js";
 
 const perfisDisponiveis = ["Administrador", "Supervisor", "Gerência", "Analista", "SAC", "Secretária"];
+const EMAIL_DONO_PERFIL = "odair.marin@icloud.com";
 const usuariosEditados = {};
 let usuarioEmEdicao = null;
 let perfilOriginalEdicao = "";
@@ -419,6 +420,14 @@ function usuarioEhLogado(email) {
     return !!emailLogado && normalizarEmailLocal(email) === emailLogado;
 }
 
+function usuarioEhDonoPerfil(email) {
+    return normalizarEmailLocal(email) === EMAIL_DONO_PERFIL;
+}
+
+function usuarioLogadoEhDonoPerfil() {
+    return usuarioEhDonoPerfil(emailUsuarioLogado());
+}
+
 function perfilAtualDoUsuarioLogado() {
     const emailLogado = emailUsuarioLogado();
     return String(
@@ -448,6 +457,10 @@ function usuarioLogadoEhAdministrador() {
     return perfilEhAdministrador(perfilAtualDoUsuarioLogado());
 }
 
+function usuarioLogadoPodeDefinirAdministrador() {
+    return usuarioLogadoEhAdministrador() || usuarioLogadoEhDonoPerfil();
+}
+
 function decodificarEmailParam(email) {
     try {
         return decodeURIComponent(String(email || ""));
@@ -459,7 +472,7 @@ function decodificarEmailParam(email) {
 function perfisPermitidosParaSelecao(perfilAtual = "") {
     const perfilAtualLimpo = String(perfilAtual || "").trim();
     let perfis = perfisDisponiveis.filter((perfil) => {
-        return usuarioLogadoEhAdministrador() || !perfilEhAdministrador(perfil);
+        return usuarioLogadoPodeDefinirAdministrador() || !perfilEhAdministrador(perfil);
     });
 
     if (perfilAtualLimpo && !perfis.includes(perfilAtualLimpo)) {
@@ -574,9 +587,16 @@ function renderUsuarios() {
         const emailParam = encodeURIComponent(email);
         const registro = String(user.registro || "").trim();
         const ehProprioUsuario = usuarioEhLogado(email);
-        const botaoEditar = ehProprioUsuario
-            ? "<button class=\"btn btn-secondary\" type=\"button\" disabled title=\"Você não pode editar o próprio usuário.\">Editar</button>"
-            : "<button class=\"btn btn-primary\" type=\"button\" onclick=\"abrirEditorUsuario('" + emailParam + "')\">Editar</button>";
+        const cadastroProtegidoDoDono = usuarioEhDonoPerfil(email) && !ehProprioUsuario;
+        const proprioUsuarioPodeEditar = ehProprioUsuario && usuarioEhDonoPerfil(email);
+        const botaoEditar = cadastroProtegidoDoDono
+            ? "<button class=\"btn btn-secondary\" type=\"button\" disabled title=\"Cadastro protegido. Apenas odair.marin@icloud.com pode alterar este usuário.\">Editar</button>"
+            : (ehProprioUsuario && !proprioUsuarioPodeEditar
+                ? "<button class=\"btn btn-secondary\" type=\"button\" disabled title=\"Você não pode editar o próprio usuário.\">Editar</button>"
+                : "<button class=\"btn btn-primary\" type=\"button\" onclick=\"abrirEditorUsuario('" + emailParam + "')\">Editar</button>");
+        const botaoAcesso = cadastroProtegidoDoDono
+            ? "<button class=\"btn btn-secondary\" type=\"button\" disabled title=\"Cadastro protegido. Apenas odair.marin@icloud.com pode alterar este usuário.\">" + acaoLabel + "</button>"
+            : "<button class=\"btn " + acaoClass + "\" type=\"button\" onclick=\"alternarAcesso('" + emailParam + "')\">" + acaoLabel + "</button>";
         return "<tr>" +
             "<td>" + escapeHtml(registro || "-") + "</td>" +
             "<td>" + escapeHtml(user.nome) + "</td>" +
@@ -584,7 +604,7 @@ function renderUsuarios() {
             "<td>" + escapeHtml(formatarPerfil(user.perfil)) + "</td>" +
             "<td><span class=\"status " + statusClass + "\">" + statusLabel + "</span></td>" +
             "<td><div class=\"table-actions\">" + botaoEditar + "</div></td>" +
-            "<td><div class=\"table-actions\"><button class=\"btn " + acaoClass + "\" type=\"button\" onclick=\"alternarAcesso('" + emailParam + "')\">" + acaoLabel + "</button></div></td>" +
+            "<td><div class=\"table-actions\">" + botaoAcesso + "</div></td>" +
             "</tr>";
     }).join("");
 }
@@ -625,7 +645,12 @@ window.abrirEditorUsuario = function (emailParam) {
         return;
     }
 
-    if (usuarioEhLogado(email)) {
+    if (usuarioEhDonoPerfil(email) && !usuarioEhLogado(email)) {
+        atualizarStatus("Cadastro protegido. Apenas odair.marin@icloud.com pode alterar este usuário.", "erro");
+        return;
+    }
+
+    if (usuarioEhLogado(email) && !usuarioEhDonoPerfil(email)) {
         atualizarStatus("Você não pode editar o próprio usuário nesta tela.", "erro");
         return;
     }
@@ -639,12 +664,21 @@ window.abrirEditorUsuario = function (emailParam) {
 
     const selectPerfil = document.getElementById("editarUsuarioPerfil");
     const avisoPerfil = document.getElementById("editarUsuarioPerfilAviso");
-    const editandoProprioUsuario = usuarioEhLogado(email);
-    selectPerfil.disabled = editandoProprioUsuario;
-    selectPerfil.title = editandoProprioUsuario
-        ? "Você não pode alterar o próprio tipo de perfil."
-        : "";
-    if (avisoPerfil) avisoPerfil.hidden = !editandoProprioUsuario;
+    const perfilDoDonoBloqueadoParaOutroUsuario = usuarioEhDonoPerfil(email) && !usuarioEhLogado(email);
+    const perfilProprioBloqueado = usuarioEhLogado(email) && !usuarioEhDonoPerfil(email);
+    const perfilBloqueado = perfilDoDonoBloqueadoParaOutroUsuario || perfilProprioBloqueado;
+
+    selectPerfil.disabled = perfilBloqueado;
+    selectPerfil.title = perfilDoDonoBloqueadoParaOutroUsuario
+        ? "Somente odair.marin@icloud.com pode alterar o próprio tipo de perfil."
+        : (perfilProprioBloqueado ? "Você não pode alterar o próprio tipo de perfil." : "");
+
+    if (avisoPerfil) {
+        avisoPerfil.textContent = perfilDoDonoBloqueadoParaOutroUsuario
+            ? "Este perfil é protegido. Somente odair.marin@icloud.com pode alterar o próprio tipo de perfil."
+            : "Você está editando o próprio usuário. Por segurança, o tipo de perfil não pode ser alterado por você mesmo.";
+        avisoPerfil.hidden = !perfilBloqueado;
+    }
 
     const status = document.getElementById("editarUsuarioStatus");
     status.className = "status";
@@ -703,9 +737,15 @@ window.salvarEditorUsuario = async function () {
     }
     const perfilOriginalEraAdministrador = perfilEhAdministrador(perfilOriginalEdicao || user.perfil);
     const novoPerfilEhAdministrador = perfilEhAdministrador(perfil);
-    if (novoPerfilEhAdministrador && !perfilOriginalEraAdministrador && !usuarioLogadoEhAdministrador()) {
+    if (novoPerfilEhAdministrador && !perfilOriginalEraAdministrador && !usuarioLogadoPodeDefinirAdministrador()) {
         status.className = "status erro";
-        status.textContent = "Somente usuários com perfil Administrador podem alterar alguém para Administrador.";
+        status.textContent = "Somente usuários com perfil Administrador ou odair.marin@icloud.com podem alterar alguém para Administrador.";
+        return;
+    }
+
+    if (usuarioEhDonoPerfil(emailAntigo) && !usuarioEhLogado(emailAntigo)) {
+        status.className = "status erro";
+        status.textContent = "Cadastro protegido. Apenas odair.marin@icloud.com pode alterar este usuário.";
         return;
     }
 
@@ -715,7 +755,7 @@ window.salvarEditorUsuario = async function () {
         return;
     }
 
-    if (usuarioEhLogado(emailAntigo)) {
+    if (usuarioEhLogado(emailAntigo) && !usuarioEhDonoPerfil(emailAntigo)) {
         const perfilAtualSalvo = String(user.perfil || perfilOriginalEdicao || perfilAtualDoUsuarioLogado()).trim();
         if (!perfilAtualSalvo || perfil !== perfilAtualSalvo) {
             status.className = "status erro";
@@ -763,6 +803,11 @@ window.alternarAcesso = async function (emailParam) {
     const user = usuariosEditados[id];
     if (!user) return;
 
+    if (usuarioEhDonoPerfil(id) && !usuarioEhLogado(id)) {
+        atualizarStatus("Cadastro protegido. Apenas odair.marin@icloud.com pode alterar este usuário.", "erro");
+        return;
+    }
+
     const usuarioAtual = String(window.portalUsuario?.email || "").toLowerCase();
     if (id && id === usuarioAtual) {
         atualizarStatus("Você não pode desativar o próprio acesso enquanto está logado.", "erro");
@@ -803,13 +848,19 @@ window.classificarUsuario = function () {
     const usuarioExistente = usuariosEditados[email];
 
     const perfilExistenteEraAdministrador = perfilEhAdministrador(usuarioExistente?.perfil);
-    if (perfilEhAdministrador(perfil) && !perfilExistenteEraAdministrador && !usuarioLogadoEhAdministrador()) {
+    if (perfilEhAdministrador(perfil) && !perfilExistenteEraAdministrador && !usuarioLogadoPodeDefinirAdministrador()) {
         status.className = "status erro";
-        status.textContent = "Somente usuários com perfil Administrador podem criar ou alterar perfil para Administrador.";
+        status.textContent = "Somente usuários com perfil Administrador ou odair.marin@icloud.com podem criar ou alterar perfil para Administrador.";
         return;
     }
 
-    if (usuarioEhLogado(email)) {
+    if (usuarioEhDonoPerfil(email) && !usuarioEhLogado(email)) {
+        status.className = "status erro";
+        status.textContent = "Cadastro protegido. Apenas odair.marin@icloud.com pode alterar este usuário.";
+        return;
+    }
+
+    if (usuarioEhLogado(email) && !usuarioEhDonoPerfil(email)) {
         const perfilAtualSalvo = String(usuarioExistente?.perfil || perfilAtualDoUsuarioLogado()).trim();
         if (!perfilAtualSalvo || perfil !== perfilAtualSalvo) {
             status.className = "status erro";
