@@ -186,7 +186,9 @@ from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
  getAuth,
  signInWithEmailAndPassword,
- sendPasswordResetEmail
+ sendPasswordResetEmail,
+ setPersistence,
+ browserSessionPersistence
 }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
@@ -231,6 +233,8 @@ window.login = async function(){
  try{
 
    mostrarCarregando("Entrando no portal");
+
+   await setPersistence(auth, browserSessionPersistence);
 
    await signInWithEmailAndPassword(
       auth,

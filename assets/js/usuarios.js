@@ -1,4 +1,8 @@
 export const usuarios = {
+  "odair.marin@icloud.com": {
+    nome: "Odair Marin",
+    perfil: "Administrador"
+  },
   "admin@ciop.com.br": {
     nome: "Administrador",
     perfil: "Administrador"

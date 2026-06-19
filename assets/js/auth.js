@@ -5,12 +5,17 @@ import {
   sendPasswordResetEmail,
   EmailAuthProvider,
   reauthenticateWithCredential,
-  updatePassword
+  updatePassword,
+  setPersistence,
+  browserSessionPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { app, buscarUsuarioFirestore, normalizarCadastro } from "./portal-firestore.js";
 import { usuarios } from "./usuarios.js";
 
 const auth = getAuth(app);
+const authReady = setPersistence(auth, browserSessionPersistence).catch((error) => {
+  console.warn("Nao foi possivel ajustar a sessao do portal:", error);
+});
 
 const LOADING_ID = "portalLoadingOverlay";
 const AUTH_PENDING_CLASS = "portal-auth-pending";
@@ -188,7 +193,7 @@ function isAdministrador(cadastro) {
 
 function temAcessoTotal(cadastro) {
   const perfil = String(cadastro.perfil || "").toLowerCase();
-  return isAdministrador(cadastro) || perfil === "Supervisor" || perfil === "Supervisor";
+  return isAdministrador(cadastro) || perfil === "supervisor" || perfil === "gerência" || perfil === "gerencia";
 }
 
 function listaAtributo(valor) {
@@ -216,6 +221,15 @@ function usuarioPodeVer(el, cadastro) {
 
   return perfisPermitidos.includes(perfil) || usuariosPermitidos.includes(email);
 }
+
+window.portalAguardarUsuario = function (callback) {
+  if (typeof callback !== "function") return;
+  if (window.portalUsuarioValidado) {
+    callback(window.portalUsuario);
+    return;
+  }
+  window.addEventListener("portal:usuario-validado", () => callback(window.portalUsuario), { once: true });
+};
 
 function aplicarPermissoes(cadastro) {
   const admin = isAdministrador(cadastro);
@@ -259,7 +273,7 @@ function aplicarPermissoes(cadastro) {
   return true;
 }
 
-onAuthStateChanged(auth, async (user) => {
+authReady.finally(() => onAuthStateChanged(auth, async (user) => {
   const pagina = window.location.pathname.toLowerCase();
 
   try {
@@ -301,4 +315,4 @@ onAuthStateChanged(auth, async (user) => {
     ocultarCarregando();
     window.location.href = portalPath("login.html");
   }
-});
+}));
