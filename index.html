@@ -156,6 +156,13 @@ h1{
     min-height:52px;
 }
 
+.side-link-button{
+    width:calc(100% - 20px);
+    font:inherit;
+    text-align:left;
+    cursor:pointer;
+}
+
 .side-link:hover,
 .side-link:focus-visible{
     background:var(--laranja);
@@ -1086,6 +1093,16 @@ h1 {
     <div class="sidebar-header">
         Links Operacionais
     </div>
+
+    <button id="sidebarAdicionarAviso"
+            class="side-link side-link-button"
+            type="button"
+            onclick="abrirEditorAvisos(); toggleMenu();"
+            data-perfis="Administrador,Supervisor,Gerência,Gerencia,Secretária,Secretaria">
+        <span class="side-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16"/><path d="M4 12h10"/><path d="M4 19h16"/><path d="M17 10h4"/><path d="M19 8v4"/></svg></span>
+        <span class="side-text">Adicionar Aviso</span>
+        <span class="side-arrow" aria-hidden="true">›</span>
+    </button>
     
    <a class="side-link"
        href="http://intranet.grandelondrina.com.br:8080/escala/"
@@ -1251,9 +1268,6 @@ h1 {
                 </span>
                 <span class="notice-board-title">Avisos</span>
                 <span id="avisosContador" class="notice-count" hidden>0</span>
-                <button id="abrirAvisoEditor" class="notice-send-btn" type="button" onclick="abrirEditorAvisos()" aria-label="Enviar aviso" hidden>
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-                </button>
             </div>
             <div id="avisosLista" class="notice-list">
                 <div class="notice-empty">Carregando avisos...</div>
@@ -1789,7 +1803,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 function iniciarAvisosPortal() {
-    avisoEditorBtn.hidden = !usuarioPodeEnviarAviso();
+    if (avisoEditorBtn) avisoEditorBtn.hidden = !usuarioPodeEnviarAviso();
     carregarAvisos();
 }
 
