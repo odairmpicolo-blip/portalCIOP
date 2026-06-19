@@ -256,6 +256,129 @@ body.modal-open{overflow:hidden}
     }
 }
 
+/* Ajuste solicitado: cabeçalho da caixa Categorizar usuários */
+.portal-return{
+    margin:0;
+}
+.btn-link,
+.btn-portal{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:36px;
+    background:linear-gradient(135deg,var(--blue),var(--blue2));
+    color:#fff;
+    text-decoration:none;
+    padding:8px 14px;
+    border-radius:8px;
+    font-weight:800;
+    font-size:12px;
+    box-shadow:0 8px 16px rgba(6,36,92,.16);
+    transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+.btn-link:hover,
+.btn-portal:hover{
+    transform:translateY(-1px);
+    box-shadow:0 10px 20px rgba(6,36,92,.22);
+    filter:brightness(1.04);
+}
+.btn-icon{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 auto;
+}
+.btn-icon svg{
+    width:18px;
+    height:18px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+.user-panel-head{
+    display:grid;
+    grid-template-columns:minmax(130px,auto) 1fr minmax(190px,auto);
+    align-items:center;
+    gap:14px;
+    margin-bottom:14px;
+    padding-bottom:14px;
+    border-bottom:1px solid #e8edf6;
+}
+.user-panel-center{
+    text-align:center;
+    min-width:0;
+}
+.user-panel-center .panel-title{
+    margin:0;
+    color:var(--blue);
+    font-size:17px;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.2px;
+}
+.user-panel-center .panel-title-note{
+    display:block;
+    margin-top:5px;
+    color:var(--red);
+    font-size:10px;
+    font-weight:900;
+    line-height:1.25;
+}
+.user-panel-actions{
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    min-width:0;
+}
+.btn-new-user{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:38px;
+    border:0;
+    border-radius:9px;
+    padding:9px 15px;
+    background:linear-gradient(135deg,#0f766e,#15803d);
+    color:#fff;
+    text-decoration:none;
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.1px;
+    box-shadow:0 10px 20px rgba(21,128,61,.18);
+    transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
+    white-space:nowrap;
+}
+.btn-new-user:hover{
+    transform:translateY(-1px);
+    box-shadow:0 12px 24px rgba(21,128,61,.24);
+    filter:brightness(1.04);
+}
+.btn-new-user svg{
+    width:17px;
+    height:17px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:2.2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+@media(max-width:760px){
+    .user-panel-head{
+        grid-template-columns:1fr;
+        text-align:center;
+    }
+    .user-panel-actions,
+    .portal-return{
+        justify-content:center;
+        display:flex;
+    }
+}
+
+
 </style>
 <script src="../assets/js/loading.js"></script>
 <script type="module" src="../assets/js/auth.js"></script>
@@ -281,25 +404,32 @@ body.modal-open{overflow:hidden}
 </header>
 
 <main class="container">
-    <div class="portal-return">
-        <a href="../index.html" class="btn-link" aria-label="Voltar ao portal">🏠 Portal</a>
-    </div>
-
     <div id="adminNegado" class="notice">
         Acesso restrito aos administradores, supervisores e gerencia do portal.
     </div>
 
     <div id="adminConteudo">
-        <div class="actions" style="margin-bottom:16px">
-            <a class="btn btn-primary" href="https://console.firebase.google.com/project/portal-ciop/authentication/users" target="_blank">Cadastrar novo usuário</a>
-        </div>
         <div id="cadastroStatus" class="status"></div>
 
         <section class="panel">
-            <h2 class="panel-title panel-title-inline">
-                <span>Categorizar usuários</span>
-                <span class="panel-title-note">Depois de criar o login no Firebase, informe o e-mail aqui para classificar o perfil no portal.</span>
-            </h2>
+            <div class="user-panel-head">
+                <div class="portal-return">
+                    <a href="../index.html" class="btn-portal" aria-label="Voltar ao portal">
+                        <span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>
+                        <span>Portal</span>
+                    </a>
+                </div>
+                <div class="user-panel-center">
+                    <h2 class="panel-title">Categorizar usuários</h2>
+                    <span class="panel-title-note">Depois de criar o login no Firebase, informe o e-mail aqui para classificar o perfil no portal.</span>
+                </div>
+                <div class="user-panel-actions">
+                    <a class="btn-new-user" href="https://console.firebase.google.com/project/portal-ciop/authentication/users" target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/><circle cx="12" cy="12" r="9"/></svg>
+                        <span>Cadastrar novo usuário</span>
+                    </a>
+                </div>
+            </div>
             <div class="grid" style="margin-bottom:12px">
                 <div>
                     <label for="classificarEmail">E-mail</label>
