@@ -238,7 +238,7 @@ body.modal-open{overflow:hidden}
 <script src="../assets/js/loading.js"></script>
 <script type="module" src="../assets/js/auth.js"></script>
 </head>
-<body data-require-perfis="Administrador,Supervisor,Gerencia" data-excluir-perfis="Secretária,Secretaria">
+<body data-require-perfis="Administrador,Supervisor,Gerência,Gerencia" data-excluir-perfis="Secretária,Secretaria">
 <header class="header">
     <a href="https://mov1.com.br" target="_blank">
         <img src="../assets/img/CIOP Sem Fundo.png" class="logo-ciop" alt="CIOP">
@@ -296,7 +296,7 @@ body.modal-open{overflow:hidden}
                     <select id="classificarPerfil">
                         <option>Administrador</option>
                         <option>Supervisor</option>
-                        <option>Gerencia</option>
+                        <option>Gerência</option>
                         <option>Analista</option>
                         <option>SAC</option>
                         <option>Secretária</option>
@@ -374,7 +374,7 @@ import {
     normalizarCadastro
 } from "../assets/js/portal-firestore.js";
 
-const perfisDisponiveis = ["Administrador", "Supervisor", "Gerencia", "Analista", "SAC", "Secretária"];
+const perfisDisponiveis = ["Administrador", "Supervisor", "Gerência", "Analista", "SAC", "Secretária"];
 const usuariosEditados = {};
 let usuarioEmEdicao = null;
 let perfilOriginalEdicao = "";
@@ -440,6 +440,10 @@ function perfilEhAdministrador(perfil) {
     return normalizarPerfilComparacao(perfil) === "administrador";
 }
 
+function formatarPerfil(perfil) {
+    return normalizarPerfilComparacao(perfil) === "gerencia" ? "Gerência" : String(perfil || "").trim();
+}
+
 function usuarioLogadoEhAdministrador() {
     return perfilEhAdministrador(perfilAtualDoUsuarioLogado());
 }
@@ -466,7 +470,7 @@ function perfisPermitidosParaSelecao(perfilAtual = "") {
 }
 
 function opcoesPerfil(perfilAtual = "") {
-    const perfilAtualLimpo = String(perfilAtual || "").trim();
+    const perfilAtualLimpo = formatarPerfil(perfilAtual);
     return perfisPermitidosParaSelecao(perfilAtualLimpo).map((perfil) => {
         const selected = perfil === perfilAtualLimpo ? " selected" : "";
         return "<option" + selected + ">" + perfil + "</option>";
@@ -500,7 +504,7 @@ function valorOrdenacaoUsuario(email, user, campo) {
     if (campo === "email") return email;
     if (campo === "nome") return user.nome || "";
     if (campo === "registro") return String(user.registro || "").trim();
-    if (campo === "perfil") return user.perfil || "";
+    if (campo === "perfil") return formatarPerfil(user.perfil);
     if (campo === "status") return user.ativo !== false ? "Ativo" : "Desativado";
     return email;
 }
@@ -577,7 +581,7 @@ function renderUsuarios() {
             "<td>" + escapeHtml(registro || "-") + "</td>" +
             "<td>" + escapeHtml(user.nome) + "</td>" +
             "<td>" + escapeHtml(email) + "</td>" +
-            "<td>" + escapeHtml(user.perfil) + "</td>" +
+            "<td>" + escapeHtml(formatarPerfil(user.perfil)) + "</td>" +
             "<td><span class=\"status " + statusClass + "\">" + statusLabel + "</span></td>" +
             "<td><div class=\"table-actions\">" + botaoEditar + "</div></td>" +
             "<td><div class=\"table-actions\"><button class=\"btn " + acaoClass + "\" type=\"button\" onclick=\"alternarAcesso('" + emailParam + "')\">" + acaoLabel + "</button></div></td>" +
