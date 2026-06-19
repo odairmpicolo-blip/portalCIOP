@@ -35,7 +35,7 @@ document.documentElement.classList.add("portal-auth-pending");
 }
 
 body{
-    font-family:Arial, Helvetica, sans-serif;
+    font-family:Arial, Helvetica, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
     background:var(--fundo);
     color:var(--texto);
     min-height:100vh;
@@ -1410,11 +1410,11 @@ h1 {
                 <div class="notice-form-grid">
                     <div class="notice-field-full">
                         <label for="avisoTitulo">Título</label>
-                        <input id="avisoTitulo" type="text" maxlength="80" autocomplete="off">
+                        <input id="avisoTitulo" type="text" maxlength="120" autocomplete="off" inputmode="text">
                     </div>
                     <div class="notice-field-full">
                         <label for="avisoMensagem">Mensagem</label>
-                        <textarea id="avisoMensagem" maxlength="800"></textarea>
+                        <textarea id="avisoMensagem"></textarea>
                     </div>
                     <div>
                         <label for="avisoInicio">Início</label>
@@ -1748,6 +1748,10 @@ let avisosGestorCarregados = [];
 let usuariosAviso = [];
 let usuariosSelecionadosPendentes = [];
 
+function textoAvisoEntrada(valor) {
+    return String(valor || "").normalize("NFC").trim();
+}
+
 function escapeAviso(valor) {
     return String(valor ?? "")
         .replace(/&/g, "&amp;")
@@ -2044,8 +2048,8 @@ window.salvarAvisoPortal = async function (event) {
     event?.preventDefault();
     if (!usuarioPodeEnviarAviso()) return;
 
-    const titulo = document.getElementById("avisoTitulo").value.trim();
-    const mensagem = document.getElementById("avisoMensagem").value.trim();
+    const titulo = textoAvisoEntrada(document.getElementById("avisoTitulo").value);
+    const mensagem = textoAvisoEntrada(document.getElementById("avisoMensagem").value);
     const publico = document.getElementById("avisoTodos").checked;
     const perfis = [...document.querySelectorAll('input[name="avisoPerfil"]:checked')].map((item) => item.value);
     const usuarios = [...document.querySelectorAll('input[name="avisoUsuario"]:checked')]

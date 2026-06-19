@@ -73,6 +73,10 @@ export async function excluirUsuarioFirestore(email) {
   await deleteDoc(doc(db, COLECAO_USUARIOS, id));
 }
 
+function normalizarTextoAviso(valor) {
+  return String(valor || "").normalize("NFC").trim();
+}
+
 function normalizarListaAviso(valor) {
   if (Array.isArray(valor)) {
     return valor.map((item) => String(item || "").trim()).filter(Boolean);
@@ -131,8 +135,8 @@ function normalizarAviso(id, dados = {}) {
   const usuarios = normalizarListaAviso(dados.usuarios).map(normalizarEmail).filter(Boolean);
   return {
     id,
-    titulo: String(dados.titulo || "").trim(),
-    mensagem: String(dados.mensagem || "").trim(),
+    titulo: normalizarTextoAviso(dados.titulo),
+    mensagem: normalizarTextoAviso(dados.mensagem),
     publico: dados.publico === true,
     perfis,
     perfisRegra: normalizarListaAviso(dados.perfisRegra || criarPerfisRegraAviso(perfis)),
@@ -198,8 +202,8 @@ export async function listarAvisosFirestore({ email = "", perfil = "", gestor = 
 }
 
 export async function salvarAvisoFirestore(aviso) {
-  const titulo = String(aviso?.titulo || "").trim();
-  const mensagem = String(aviso?.mensagem || "").trim();
+  const titulo = normalizarTextoAviso(aviso?.titulo);
+  const mensagem = normalizarTextoAviso(aviso?.mensagem);
   if (!titulo || !mensagem) throw new Error("Informe titulo e mensagem do aviso.");
   const inicioEm = normalizarDataAviso(aviso?.inicioEm);
   const fimEm = normalizarDataAviso(aviso?.fimEm);
