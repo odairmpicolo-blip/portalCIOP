@@ -765,6 +765,50 @@ footer{
     height:15px;
 }
 
+.notice-dropdown{
+    position:relative;
+}
+
+.notice-dropdown summary{
+    min-height:40px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 11px;
+    border:1px solid var(--borda);
+    border-radius:7px;
+    background:#fff;
+    color:var(--azul);
+    font-size:13px;
+    font-weight:900;
+    cursor:pointer;
+    list-style:none;
+}
+
+.notice-dropdown summary::-webkit-details-marker{
+    display:none;
+}
+
+.notice-dropdown summary::after{
+    content:"⌄";
+    color:var(--cinza);
+    font-size:14px;
+}
+
+.notice-dropdown[open] summary{
+    border-color:var(--laranja);
+}
+
+.notice-dropdown-menu{
+    margin-top:8px;
+    padding:8px;
+    border:1px solid #dfe6f2;
+    border-radius:8px;
+    background:#f8fafc;
+    box-shadow:0 14px 30px rgba(16,24,40,.12);
+}
+
 .notice-actions{
     display:flex;
     align-items:center;
@@ -1380,26 +1424,32 @@ h1 {
                         <label for="avisoFim">Fim</label>
                         <input id="avisoFim" type="datetime-local" required>
                     </div>
-                    <fieldset class="notice-targets">
-                        <legend>Grupos</legend>
-                        <div class="notice-checks">
-                            <label class="notice-check"><input id="avisoTodos" type="checkbox" checked>Todos</label>
-                            <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="Administrador">Administrador</label>
-                            <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="Supervisor">Supervisor</label>
-                            <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="Gerência">Gerência</label>
-                            <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="Analista">Analista</label>
-                            <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="SAC">SAC</label>
-                            <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="Secretária">Secretária</label>
-                        </div>
-                    </fieldset>
                     <div>
-                        <label for="avisoBuscaUsuarios">Usuários</label>
-                        <div class="notice-users-box">
-                            <input id="avisoBuscaUsuarios" type="search" placeholder="Buscar usuário" autocomplete="off">
-                            <div id="avisoUsuariosLista" class="notice-users-list">
-                                <div class="notice-empty">Carregando usuários...</div>
+                        <label>Grupos</label>
+                        <details class="notice-dropdown" id="avisoGrupoDropdown">
+                            <summary id="avisoGrupoResumo">Todos</summary>
+                            <div class="notice-dropdown-menu notice-checks">
+                                <label class="notice-check"><input id="avisoTodos" type="checkbox" checked>Todos</label>
+                                <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="Administrador">Administrador</label>
+                                <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="Supervisor">Supervisor</label>
+                                <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="Gerência">Gerência</label>
+                                <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="Analista">Analista</label>
+                                <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="SAC">SAC</label>
+                                <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="Secretária">Secretária</label>
                             </div>
-                        </div>
+                        </details>
+                    </div>
+                    <div>
+                        <label>Usuários</label>
+                        <details class="notice-dropdown" id="avisoUsuarioDropdown">
+                            <summary id="avisoUsuarioResumo">Selecionar usuários</summary>
+                            <div class="notice-dropdown-menu notice-users-box">
+                                <input id="avisoBuscaUsuarios" type="search" placeholder="Buscar usuário" autocomplete="off">
+                                <div id="avisoUsuariosLista" class="notice-users-list">
+                                    <div class="notice-empty">Carregando usuários...</div>
+                                </div>
+                            </div>
+                        </details>
                     </div>
                 </div>
                 <div class="notice-actions">
@@ -1688,6 +1738,8 @@ const avisoStatus = document.getElementById("avisoEditorStatus");
 const avisosGerenciarLista = document.getElementById("avisosGerenciarLista");
 const avisoUsuariosLista = document.getElementById("avisoUsuariosLista");
 const avisoBuscaUsuarios = document.getElementById("avisoBuscaUsuarios");
+const avisoGrupoResumo = document.getElementById("avisoGrupoResumo");
+const avisoUsuarioResumo = document.getElementById("avisoUsuarioResumo");
 const avisoSubmitBtn = document.getElementById("avisoSubmitBtn");
 const avisoIdEdicao = document.getElementById("avisoIdEdicao");
 
@@ -1793,6 +1845,30 @@ function nomeUsuarioAviso(usuario) {
     return String(usuario?.nome || usuario?.email || "").trim();
 }
 
+function ajustarTodosAviso(origem) {
+    const todos = document.getElementById("avisoTodos");
+    if (!todos) return;
+    if (origem === "todos" && todos.checked) {
+        document.querySelectorAll('input[name="avisoPerfil"], input[name="avisoUsuario"]').forEach((item) => item.checked = false);
+    }
+    if (origem !== "todos") {
+        const temEspecifico = document.querySelector('input[name="avisoPerfil"]:checked, input[name="avisoUsuario"]:checked');
+        if (temEspecifico) todos.checked = false;
+    }
+}
+
+function atualizarResumosDestinatarios() {
+    const todos = document.getElementById("avisoTodos")?.checked;
+    const perfis = [...document.querySelectorAll('input[name="avisoPerfil"]:checked')].map((item) => item.value);
+    const usuarios = [...document.querySelectorAll('input[name="avisoUsuario"]:checked')].map((item) => item.value);
+    if (avisoGrupoResumo) {
+        avisoGrupoResumo.textContent = todos ? "Todos" : (perfis.length ? perfis.join(", ") : "Selecionar grupos");
+    }
+    if (avisoUsuarioResumo) {
+        avisoUsuarioResumo.textContent = usuarios.length ? usuarios.length + " usuário(s) selecionado(s)" : "Selecionar usuários";
+    }
+}
+
 function usuarioCombinaAviso(usuario, busca) {
     const termo = normalizarAvisoTexto(busca);
     if (!termo) return true;
@@ -1819,6 +1895,13 @@ function renderUsuariosAviso(selecionados = null) {
             </label>
         `;
     }).join("");
+    avisoUsuariosLista.querySelectorAll('input[name="avisoUsuario"]').forEach((item) => {
+        item.addEventListener("change", () => {
+            ajustarTodosAviso("usuario");
+            atualizarResumosDestinatarios();
+        });
+    });
+    atualizarResumosDestinatarios();
 }
 
 async function carregarUsuariosAviso() {
@@ -1940,6 +2023,7 @@ function resetarFormularioAviso() {
     if (avisoSubmitBtn) avisoSubmitBtn.textContent = "Enviar aviso";
     definirPeriodoAvisoPadrao(true);
     renderUsuariosAviso([]);
+    atualizarResumosDestinatarios();
     setAvisoStatus("");
 }
 
@@ -2030,6 +2114,7 @@ window.editarAvisoPortal = async function (id) {
     document.querySelectorAll('input[name="avisoPerfil"]').forEach((item) => {
         item.checked = (aviso.perfis || []).includes(item.value);
     });
+    atualizarResumosDestinatarios();
     usuariosSelecionadosPendentes = aviso.usuarios || [];
     if (avisoBuscaUsuarios) avisoBuscaUsuarios.value = "";
     if (avisoSubmitBtn) avisoSubmitBtn.textContent = "Salvar aviso";
@@ -2051,6 +2136,17 @@ window.excluirAvisoPortal = async function (id) {
 };
 
 avisoBuscaUsuarios?.addEventListener("input", () => renderUsuariosAviso());
+document.getElementById("avisoTodos")?.addEventListener("change", () => {
+    ajustarTodosAviso("todos");
+    renderUsuariosAviso([]);
+    atualizarResumosDestinatarios();
+});
+document.querySelectorAll('input[name="avisoPerfil"]').forEach((item) => {
+    item.addEventListener("change", () => {
+        ajustarTodosAviso("perfil");
+        atualizarResumosDestinatarios();
+    });
+});
 
 sidebarAvisoBtn?.addEventListener("click", async (event) => {
     event.preventDefault();

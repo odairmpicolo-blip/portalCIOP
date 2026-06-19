@@ -179,7 +179,9 @@ export async function listarAvisosFirestore({ email = "", perfil = "", gestor = 
 
   const emailUsuario = normalizarEmail(email);
   const perfilRegra = String(perfil || "").trim();
-  const consultas = [getDocs(query(col, where("publico", "==", true)))];
+  const consultas = [
+    getDocs(query(col, where("publico", "==", true)))
+  ];
 
   if (emailUsuario) {
     consultas.push(getDocs(query(col, where("usuarios", "array-contains", emailUsuario))));
@@ -188,8 +190,10 @@ export async function listarAvisosFirestore({ email = "", perfil = "", gestor = 
     consultas.push(getDocs(query(col, where("perfisRegra", "array-contains", perfilRegra))));
   }
 
-  const resultados = await Promise.all(consultas);
-  resultados.forEach((snap) => adicionarAvisosDoSnap(avisos, snap));
+  const resultados = await Promise.allSettled(consultas);
+  resultados.forEach((resultado) => {
+    if (resultado.status === "fulfilled") adicionarAvisosDoSnap(avisos, resultado.value);
+  });
   return ordenarAvisos([...avisos.values()], { somenteEmExposicao: true });
 }
 
