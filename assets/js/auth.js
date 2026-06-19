@@ -183,7 +183,7 @@ window.alterarSenha = async function (senhaAtual, novaSenha) {
 
 function isAdministrador(cadastro) {
   const perfil = String(cadastro.perfil || "").toLowerCase();
-  return perfil === "administrador" || perfil === "gerencia";
+  return perfil === "administrador" || perfil === "administrador";
 }
 
 function temAcessoTotal(cadastro) {
