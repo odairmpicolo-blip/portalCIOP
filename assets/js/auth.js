@@ -188,7 +188,7 @@ function isAdministrador(cadastro) {
 
 function temAcessoTotal(cadastro) {
   const perfil = String(cadastro.perfil || "").toLowerCase();
-  return isAdministrador(cadastro) || perfil === "secretária" || perfil === "secretaria";
+  return isAdministrador(cadastro) || perfil === "Supervisor" || perfil === "Supervisor";
 }
 
 function listaAtributo(valor) {
