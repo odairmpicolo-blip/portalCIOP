@@ -95,6 +95,11 @@ textarea{min-height:116px;resize:vertical}
 .btn-primary{background:var(--blue);color:#fff}
 .btn-secondary{background:#e8edf6;color:var(--blue)}
 .btn-danger{background:var(--red);color:#fff}
+.btn:disabled{
+    opacity:.55;
+    cursor:not-allowed;
+    filter:grayscale(.15);
+}
 table{width:100%;border-collapse:collapse;background:#fff;font-size:13px}
 th,td{padding:10px;border-bottom:1px solid var(--border);text-align:left}
 th{color:var(--blue);background:#f8fafc}
@@ -181,6 +186,16 @@ th{color:var(--blue);background:#f8fafc}
 .modal-note{margin:10px 0 0;color:var(--muted);font-size:12px;line-height:1.45}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px}
 body.modal-open{overflow:hidden}
+
+#editarUsuarioPerfil:disabled{
+    background:#f3f4f6;
+    color:var(--muted);
+    cursor:not-allowed;
+}
+.perfil-bloqueado{
+    color:var(--red);
+    font-weight:700;
+}
 #adminNegado{display:none}
 @media(max-width:850px){
     .header{grid-template-columns:1fr;text-align:center}
@@ -286,6 +301,7 @@ body.modal-open{overflow:hidden}
                         <option>SAC</option>
                         <option>Secretária</option>
                     </select>
+                    <p id="cadastroAdminAviso" class="modal-note perfil-bloqueado" hidden>Somente usuários com perfil Administrador podem criar ou alterar perfil para Administrador.</p>
                 </div>
             </div>
             <div class="actions" style="margin-bottom:12px">
@@ -337,6 +353,7 @@ body.modal-open{overflow:hidden}
                         </div>
                     </div>
                     <p class="modal-note">Ao alterar o e-mail, o registro antigo do portal será substituído pelo novo.</p>
+                    <p id="editarUsuarioPerfilAviso" class="modal-note perfil-bloqueado" hidden>Você está editando o próprio usuário. Por segurança, o tipo de perfil não pode ser alterado por você mesmo.</p>
                     <div id="editarUsuarioStatus" class="status"></div>
                     <div class="modal-actions">
                         <button class="btn btn-secondary" type="button" onclick="fecharEditorUsuario()">Cancelar</button>
@@ -360,6 +377,7 @@ import {
 const perfisDisponiveis = ["Administrador", "Supervisor", "Gerencia", "Analista", "SAC", "Secretária"];
 const usuariosEditados = {};
 let usuarioEmEdicao = null;
+let perfilOriginalEdicao = "";
 const ordenacaoUsuarios = { campo: "registro", direcao: "asc" };
 
 function carregarUsuariosLocais() {
@@ -392,6 +410,40 @@ function normalizarEmailLocal(email) {
     return String(email || "").trim().toLowerCase();
 }
 
+function emailUsuarioLogado() {
+    return normalizarEmailLocal(window.portalUsuario?.email || "");
+}
+
+function usuarioEhLogado(email) {
+    const emailLogado = emailUsuarioLogado();
+    return !!emailLogado && normalizarEmailLocal(email) === emailLogado;
+}
+
+function perfilAtualDoUsuarioLogado() {
+    const emailLogado = emailUsuarioLogado();
+    return String(
+        usuariosEditados[emailLogado]?.perfil ||
+        window.portalUsuario?.perfil ||
+        ""
+    ).trim();
+}
+
+function normalizarPerfilComparacao(perfil) {
+    return String(perfil || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+}
+
+function perfilEhAdministrador(perfil) {
+    return normalizarPerfilComparacao(perfil) === "administrador";
+}
+
+function usuarioLogadoEhAdministrador() {
+    return perfilEhAdministrador(perfilAtualDoUsuarioLogado());
+}
+
 function decodificarEmailParam(email) {
     try {
         return decodeURIComponent(String(email || ""));
@@ -400,10 +452,23 @@ function decodificarEmailParam(email) {
     }
 }
 
-function opcoesPerfil(perfilAtual) {
-    const perfis = perfisDisponiveis.includes(perfilAtual) ? perfisDisponiveis : [perfilAtual, ...perfisDisponiveis].filter(Boolean);
-    return perfis.map((perfil) => {
-        const selected = perfil === perfilAtual ? " selected" : "";
+function perfisPermitidosParaSelecao(perfilAtual = "") {
+    const perfilAtualLimpo = String(perfilAtual || "").trim();
+    let perfis = perfisDisponiveis.filter((perfil) => {
+        return usuarioLogadoEhAdministrador() || !perfilEhAdministrador(perfil);
+    });
+
+    if (perfilAtualLimpo && !perfis.includes(perfilAtualLimpo)) {
+        perfis = [perfilAtualLimpo, ...perfis];
+    }
+
+    return perfis;
+}
+
+function opcoesPerfil(perfilAtual = "") {
+    const perfilAtualLimpo = String(perfilAtual || "").trim();
+    return perfisPermitidosParaSelecao(perfilAtualLimpo).map((perfil) => {
+        const selected = perfil === perfilAtualLimpo ? " selected" : "";
         return "<option" + selected + ">" + perfil + "</option>";
     }).join("");
 }
@@ -411,6 +476,24 @@ function opcoesPerfil(perfilAtual) {
 function preencherPerfilEditor(perfilAtual) {
     const select = document.getElementById("editarUsuarioPerfil");
     select.innerHTML = opcoesPerfil(perfilAtual);
+}
+
+function atualizarPerfilCadastroDisponivel() {
+    const select = document.getElementById("classificarPerfil");
+    if (!select) return;
+
+    const valorAtual = select.value;
+    select.innerHTML = opcoesPerfil("");
+
+    const valorAindaPermitido = Array.from(select.options).some((option) => option.value === valorAtual);
+    if (valorAindaPermitido) {
+        select.value = valorAtual;
+    } else if (select.options.length) {
+        select.value = select.options[0].value;
+    }
+
+    const aviso = document.getElementById("cadastroAdminAviso");
+    if (aviso) aviso.hidden = usuarioLogadoEhAdministrador();
 }
 
 function valorOrdenacaoUsuario(email, user, campo) {
@@ -471,6 +554,7 @@ function atualizarCabecalhoOrdenacao() {
 
 function renderUsuarios() {
     const tbody = document.getElementById("usuariosTabela");
+    atualizarPerfilCadastroDisponivel();
     atualizarCabecalhoOrdenacao();
     const ordenados = Object.entries(usuariosEditados).sort(compararUsuarios);
     if (!ordenados.length) {
@@ -485,13 +569,17 @@ function renderUsuarios() {
         const acaoClass = ativo ? "btn-danger" : "btn-secondary";
         const emailParam = encodeURIComponent(email);
         const registro = String(user.registro || "").trim();
+        const ehProprioUsuario = usuarioEhLogado(email);
+        const botaoEditar = ehProprioUsuario
+            ? "<button class=\"btn btn-secondary\" type=\"button\" disabled title=\"Você não pode editar o próprio usuário.\">Editar</button>"
+            : "<button class=\"btn btn-primary\" type=\"button\" onclick=\"abrirEditorUsuario('" + emailParam + "')\">Editar</button>";
         return "<tr>" +
             "<td>" + escapeHtml(registro || "-") + "</td>" +
             "<td>" + escapeHtml(user.nome) + "</td>" +
             "<td>" + escapeHtml(email) + "</td>" +
             "<td>" + escapeHtml(user.perfil) + "</td>" +
             "<td><span class=\"status " + statusClass + "\">" + statusLabel + "</span></td>" +
-            "<td><div class=\"table-actions\"><button class=\"btn btn-primary\" type=\"button\" onclick=\"abrirEditorUsuario('" + emailParam + "')\">Editar</button></div></td>" +
+            "<td><div class=\"table-actions\">" + botaoEditar + "</div></td>" +
             "<td><div class=\"table-actions\"><button class=\"btn " + acaoClass + "\" type=\"button\" onclick=\"alternarAcesso('" + emailParam + "')\">" + acaoLabel + "</button></div></td>" +
             "</tr>";
     }).join("");
@@ -533,11 +621,27 @@ window.abrirEditorUsuario = function (emailParam) {
         return;
     }
 
+    if (usuarioEhLogado(email)) {
+        atualizarStatus("Você não pode editar o próprio usuário nesta tela.", "erro");
+        return;
+    }
+
     usuarioEmEdicao = email;
     document.getElementById("editarUsuarioEmail").value = user.email || email;
     document.getElementById("editarUsuarioNome").value = user.nome || "";
     document.getElementById("editarUsuarioRegistro").value = String(user.registro || "").trim();
+    perfilOriginalEdicao = String(user.perfil || "").trim();
     preencherPerfilEditor(user.perfil);
+
+    const selectPerfil = document.getElementById("editarUsuarioPerfil");
+    const avisoPerfil = document.getElementById("editarUsuarioPerfilAviso");
+    const editandoProprioUsuario = usuarioEhLogado(email);
+    selectPerfil.disabled = editandoProprioUsuario;
+    selectPerfil.title = editandoProprioUsuario
+        ? "Você não pode alterar o próprio tipo de perfil."
+        : "";
+    if (avisoPerfil) avisoPerfil.hidden = !editandoProprioUsuario;
+
     const status = document.getElementById("editarUsuarioStatus");
     status.className = "status";
     status.textContent = "";
@@ -553,6 +657,15 @@ window.fecharEditorUsuario = function () {
     modal.hidden = true;
     document.body.classList.remove("modal-open");
     usuarioEmEdicao = null;
+    perfilOriginalEdicao = "";
+
+    const selectPerfil = document.getElementById("editarUsuarioPerfil");
+    const avisoPerfil = document.getElementById("editarUsuarioPerfilAviso");
+    if (selectPerfil) {
+        selectPerfil.disabled = false;
+        selectPerfil.title = "";
+    }
+    if (avisoPerfil) avisoPerfil.hidden = true;
 };
 
 window.salvarEditorUsuario = async function () {
@@ -562,7 +675,7 @@ window.salvarEditorUsuario = async function () {
     const novoEmail = normalizarEmailLocal(document.getElementById("editarUsuarioEmail").value);
     const nome = document.getElementById("editarUsuarioNome").value.trim();
     const registro = document.getElementById("editarUsuarioRegistro").value.trim();
-    const perfil = document.getElementById("editarUsuarioPerfil").value;
+    let perfil = document.getElementById("editarUsuarioPerfil").value;
 
     if (!user) {
         status.className = "status erro";
@@ -584,11 +697,28 @@ window.salvarEditorUsuario = async function () {
         status.textContent = "Já existe um usuário cadastrado com esse e-mail.";
         return;
     }
-    const usuarioAtual = normalizarEmailLocal(window.portalUsuario?.email);
-    if (emailAntigo === usuarioAtual && novoEmail !== emailAntigo) {
+    const perfilOriginalEraAdministrador = perfilEhAdministrador(perfilOriginalEdicao || user.perfil);
+    const novoPerfilEhAdministrador = perfilEhAdministrador(perfil);
+    if (novoPerfilEhAdministrador && !perfilOriginalEraAdministrador && !usuarioLogadoEhAdministrador()) {
+        status.className = "status erro";
+        status.textContent = "Somente usuários com perfil Administrador podem alterar alguém para Administrador.";
+        return;
+    }
+
+    if (usuarioEhLogado(emailAntigo) && novoEmail !== emailAntigo) {
         status.className = "status erro";
         status.textContent = "Não altere o e-mail do usuário logado por aqui. Atualize primeiro no Firebase Authentication.";
         return;
+    }
+
+    if (usuarioEhLogado(emailAntigo)) {
+        const perfilAtualSalvo = String(user.perfil || perfilOriginalEdicao || perfilAtualDoUsuarioLogado()).trim();
+        if (!perfilAtualSalvo || perfil !== perfilAtualSalvo) {
+            status.className = "status erro";
+            status.textContent = "Você não pode alterar o próprio tipo de perfil. Peça para outro administrador fazer essa alteração.";
+            return;
+        }
+        perfil = perfilAtualSalvo;
     }
 
     status.className = "status";
@@ -667,11 +797,28 @@ window.classificarUsuario = function () {
     }
 
     const usuarioExistente = usuariosEditados[email];
+
+    const perfilExistenteEraAdministrador = perfilEhAdministrador(usuarioExistente?.perfil);
+    if (perfilEhAdministrador(perfil) && !perfilExistenteEraAdministrador && !usuarioLogadoEhAdministrador()) {
+        status.className = "status erro";
+        status.textContent = "Somente usuários com perfil Administrador podem criar ou alterar perfil para Administrador.";
+        return;
+    }
+
+    if (usuarioEhLogado(email)) {
+        const perfilAtualSalvo = String(usuarioExistente?.perfil || perfilAtualDoUsuarioLogado()).trim();
+        if (!perfilAtualSalvo || perfil !== perfilAtualSalvo) {
+            status.className = "status erro";
+            status.textContent = "Você não pode alterar o próprio tipo de perfil. Peça para outro administrador fazer essa alteração.";
+            return;
+        }
+    }
+
     salvarUsuario(email, nome, perfil, registro, "Usuário salvo no Firestore.", usuarioExistente?.ativo !== false);
     document.getElementById("classificarEmail").value = "";
     document.getElementById("classificarNome").value = "";
     document.getElementById("classificarRegistro").value = "";
-    document.getElementById("classificarPerfil").value = "Administrador";
+    atualizarPerfilCadastroDisponivel();
 };
 
 
