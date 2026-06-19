@@ -81,6 +81,28 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:24px}
 .notice{color:var(--muted);line-height:1.45}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .panel-title{margin:0 0 12px;color:var(--blue);font-size:16px}
+.panel-title-inline{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    flex-wrap:wrap;
+}
+.panel-title-note{
+    color:var(--red);
+    font-size:10px;
+    font-weight:800;
+    line-height:1.2;
+}
+.user-search{
+    display:grid;
+    grid-template-columns:minmax(240px, 420px);
+    gap:4px;
+    margin:12px 0;
+}
+.user-search input{
+    height:36px;
+    font-size:13px;
+}
 label{display:block;margin:10px 0 5px;color:var(--muted);font-size:12px;font-weight:700}
 input,select,textarea{
     width:100%;
@@ -274,10 +296,10 @@ body.modal-open{overflow:hidden}
         <div id="cadastroStatus" class="status"></div>
 
         <section class="panel">
-            <h2 class="panel-title">Categorizar usuários</h2>
-            <div class="notice" style="margin-bottom:12px">
-                Depois de criar o login no Firebase, informe o e-mail aqui para classificar o perfil no portal.
-            </div>
+            <h2 class="panel-title panel-title-inline">
+                <span>Categorizar usuários</span>
+                <span class="panel-title-note">Depois de criar o login no Firebase, informe o e-mail aqui para classificar o perfil no portal.</span>
+            </h2>
             <div class="grid" style="margin-bottom:12px">
                 <div>
                     <label for="classificarEmail">E-mail</label>
@@ -307,6 +329,10 @@ body.modal-open{overflow:hidden}
             <div class="actions" style="margin-bottom:12px">
                 <button class="btn btn-primary" type="button" onclick="classificarUsuario()">Salvar usuário</button>
                 <button class="btn btn-secondary" type="button" onclick="recarregarUsuarios()">Atualizar lista</button>
+            </div>
+            <div class="user-search">
+                <label for="buscaUsuarios">Buscar usuários</label>
+                <input id="buscaUsuarios" type="search" placeholder="Buscar por nome, registro, e-mail ou perfil" oninput="filtrarUsuarios()" autocomplete="off">
             </div>
             <table>
                 <thead>
@@ -379,6 +405,7 @@ const EMAIL_DONO_PERFIL = "odair.marin@icloud.com";
 const usuariosEditados = {};
 let usuarioEmEdicao = null;
 let perfilOriginalEdicao = "";
+let filtroUsuarios = "";
 const ordenacaoUsuarios = { campo: "registro", direcao: "asc" };
 
 function carregarUsuariosLocais() {
@@ -530,6 +557,25 @@ function textoOrdenacao(valor) {
         .trim();
 }
 
+function textoBuscaUsuario(valor) {
+    return textoOrdenacao(valor);
+}
+
+function usuarioCombinaComBusca(email, user) {
+    const busca = textoBuscaUsuario(filtroUsuarios);
+    if (!busca) return true;
+
+    const conteudo = [
+        user.registro || "",
+        user.nome || "",
+        email || "",
+        formatarPerfil(user.perfil) || "",
+        user.perfil || ""
+    ].join(" ");
+
+    return textoBuscaUsuario(conteudo).includes(busca);
+}
+
 function compararRegistro(a, b) {
     const somenteNumeroA = /^\d+$/.test(a);
     const somenteNumeroB = /^\d+$/.test(b);
@@ -573,9 +619,14 @@ function renderUsuarios() {
     const tbody = document.getElementById("usuariosTabela");
     atualizarPerfilCadastroDisponivel();
     atualizarCabecalhoOrdenacao();
-    const ordenados = Object.entries(usuariosEditados).sort(compararUsuarios);
+    const ordenados = Object.entries(usuariosEditados)
+        .filter(([email, user]) => usuarioCombinaComBusca(email, user))
+        .sort(compararUsuarios);
     if (!ordenados.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="no-data">Nenhum usuário cadastrado no portal.</td></tr>';
+        const mensagem = filtroUsuarios
+            ? "Nenhum usuário encontrado para a busca informada."
+            : "Nenhum usuário cadastrado no portal.";
+        tbody.innerHTML = '<tr><td colspan="7" class="no-data">' + mensagem + '</td></tr>';
         return;
     }
     tbody.innerHTML = ordenados.map(([email, user]) => {
@@ -608,6 +659,11 @@ function renderUsuarios() {
             "</tr>";
     }).join("");
 }
+
+window.filtrarUsuarios = function () {
+    filtroUsuarios = document.getElementById("buscaUsuarios")?.value || "";
+    renderUsuarios();
+};
 
 window.ordenarUsuarios = function (campo) {
     if (ordenacaoUsuarios.campo === campo) {
