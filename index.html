@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<meta charset="UTF-8">
 <script>
 document.documentElement.classList.add("portal-auth-pending");
 </script>
@@ -12,7 +13,6 @@ document.documentElement.classList.add("portal-auth-pending");
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portal Operacional - CIOP</title>
 
@@ -562,6 +562,15 @@ footer{
     border-radius:7px;
     background:#fff;
     padding:7px 9px;
+}
+
+.notice-item-title,
+.notice-item-text,
+.notice-manage-item strong,
+.notice-manage-item span,
+#avisoTitulo,
+#avisoMensagem{
+    font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",Arial,Helvetica,sans-serif;
 }
 
 .notice-item-title{
@@ -1948,12 +1957,19 @@ function renderAvisos(lista) {
         return;
     }
 
-    avisosLista.innerHTML = visiveis.map((aviso) => `
-        <article class="notice-item">
-            <div class="notice-item-title">${escapeAviso(aviso.titulo)}</div>
-            <div class="notice-item-text">${escapeAviso(aviso.mensagem)}</div>
-        </article>
-    `).join("");
+    avisosLista.innerHTML = "";
+    visiveis.forEach((aviso) => {
+        const item = document.createElement("article");
+        item.className = "notice-item";
+        const titulo = document.createElement("div");
+        titulo.className = "notice-item-title";
+        titulo.textContent = aviso.titulo || "";
+        const mensagem = document.createElement("div");
+        mensagem.className = "notice-item-text";
+        mensagem.textContent = aviso.mensagem || "";
+        item.append(titulo, mensagem);
+        avisosLista.appendChild(item);
+    });
 }
 
 function renderAvisosGestor(lista) {
