@@ -43,6 +43,11 @@ service cloud.firestore {
       allow create, update, delete: if podePostarAviso();
     }
 
+    match /avisosPorUsuario/{userEmail}/itens/{avisoId} {
+      allow read: if signedIn() && userEmail == email();
+      allow create, update, delete: if podePostarAviso();
+    }
+
     match /usuarios/{userEmail} {
       allow read: if signedIn() && (userEmail == email() || gestor() || podePostarAviso());
       allow create, update: if gestor();

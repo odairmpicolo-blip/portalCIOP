@@ -18,6 +18,7 @@ export const db = getFirestore(app);
 
 const COLECAO_USUARIOS = "usuarios";
 const COLECAO_AVISOS = "avisos";
+const COLECAO_AVISOS_USUARIO = "avisosPorUsuario";
 
 export function normalizarEmail(email) {
   return String(email || "").trim().toLowerCase();
@@ -178,13 +179,31 @@ function adicionarAvisosDoSnap(destino, snap) {
   });
 }
 
+async function sincronizarAvisosPorUsuario(lista) {
+  const tarefas = [];
+  lista.forEach((aviso) => {
+    (aviso.usuarios || []).forEach((emailUsuario) => {
+      const emailNormalizado = normalizarEmail(emailUsuario);
+      if (!emailNormalizado) return;
+      tarefas.push(setDoc(
+        doc(db, COLECAO_AVISOS_USUARIO, emailNormalizado, "itens", aviso.id),
+        aviso,
+        { merge: true }
+      ));
+    });
+  });
+  await Promise.allSettled(tarefas);
+}
+
 export async function listarAvisosFirestore({ email = "", perfil = "", gestor = false } = {}) {
   const avisos = new Map();
   const col = collection(db, COLECAO_AVISOS);
 
   if (gestor) {
     adicionarAvisosDoSnap(avisos, await getDocs(col));
-    return ordenarAvisos([...avisos.values()]);
+    const listaGestor = ordenarAvisos([...avisos.values()]);
+    await sincronizarAvisosPorUsuario(listaGestor);
+    return listaGestor;
   }
 
   const emailUsuario = normalizarEmail(email);
@@ -193,9 +212,9 @@ export async function listarAvisosFirestore({ email = "", perfil = "", gestor = 
     getDocs(query(col, where("publico", "==", true)))
   ];
 
-  variantesEmailAviso(email).forEach((emailBusca) => {
-    consultas.push(getDocs(query(col, where("usuarios", "array-contains", emailBusca))));
-  });
+  if (emailUsuario) {
+    consultas.push(getDocs(collection(db, COLECAO_AVISOS_USUARIO, emailUsuario, "itens")));
+  }
   if (perfilRegra) {
     consultas.push(getDocs(query(col, where("perfisRegra", "array-contains", perfilRegra))));
   }
@@ -203,6 +222,7 @@ export async function listarAvisosFirestore({ email = "", perfil = "", gestor = 
   const resultados = await Promise.allSettled(consultas);
   resultados.forEach((resultado) => {
     if (resultado.status === "fulfilled") adicionarAvisosDoSnap(avisos, resultado.value);
+    if (resultado.status === "rejected") console.warn("Consulta de avisos indisponivel:", resultado.reason);
   });
   return ordenarAvisos([...avisos.values()], { somenteEmExposicao: true });
 }
@@ -236,13 +256,38 @@ export async function salvarAvisoFirestore(aviso) {
     atualizadoEm: serverTimestamp()
   };
 
+  let usuariosAntigos = [];
+  if (aviso?.id) {
+    const snapAntigo = await getDoc(doc(db, COLECAO_AVISOS, id));
+    if (snapAntigo.exists()) usuariosAntigos = normalizarAviso(id, snapAntigo.data()).usuarios;
+  }
+
   if (!aviso?.id) payload.criadoEm = serverTimestamp();
   await setDoc(doc(db, COLECAO_AVISOS, id), payload, { merge: true });
+
+  const usuariosAtuais = new Set(usuarios);
+  await Promise.all([
+    ...usuarios.map((emailUsuario) => setDoc(
+      doc(db, COLECAO_AVISOS_USUARIO, emailUsuario, "itens", id),
+      { id, ...payload },
+      { merge: true }
+    )),
+    ...usuariosAntigos
+      .filter((emailUsuario) => !usuariosAtuais.has(emailUsuario))
+      .map((emailUsuario) => deleteDoc(doc(db, COLECAO_AVISOS_USUARIO, emailUsuario, "itens", id)))
+  ]);
+
   return { id, ...payload };
 }
 
 export async function excluirAvisoFirestore(id) {
   const avisoId = String(id || "").trim();
   if (!avisoId) throw new Error("Aviso invalido.");
-  await deleteDoc(doc(db, COLECAO_AVISOS, avisoId));
+  const avisoRef = doc(db, COLECAO_AVISOS, avisoId);
+  const snap = await getDoc(avisoRef);
+  const usuarios = snap.exists() ? normalizarAviso(avisoId, snap.data()).usuarios : [];
+  await Promise.all([
+    deleteDoc(avisoRef),
+    ...usuarios.map((emailUsuario) => deleteDoc(doc(db, COLECAO_AVISOS_USUARIO, emailUsuario, "itens", avisoId)))
+  ]);
 }
