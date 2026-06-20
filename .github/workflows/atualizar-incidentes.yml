@@ -1,0 +1,39 @@
+name: Atualizar incidentes TCGL
+
+on:
+  schedule:
+    # GitHub Actions usa UTC. 19:00 UTC = 16:00 em America/Sao_Paulo.
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Baixar portal
+        uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Atualizar incidentes TCGL
+        env:
+          CIOP_INCIDENTES_USUARIO: ${{ secrets.CIOP_INCIDENTES_USUARIO }}
+          CIOP_INCIDENTES_SENHA: ${{ secrets.CIOP_INCIDENTES_SENHA }}
+          PORTAL_ROOT: ${{ github.workspace }}
+        run: node scripts/atualizar-incidentes-tcgl.mjs
+
+      - name: Publicar dados atualizados
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Atualiza incidentes TCGL"
+          file_pattern: assets/data/incidentes-tcgl.json
+
+          name: Sincronizar main antes do commit

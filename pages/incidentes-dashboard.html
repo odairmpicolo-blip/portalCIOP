@@ -33,7 +33,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial, Helvetic
 .header{
     background:#fff;
     display:grid;
-    grid-template-columns:minmax(260px,1fr) auto minmax(260px,1fr);
+    grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);
     gap:16px;
     align-items:center;
     padding:6px 20px;
@@ -79,12 +79,15 @@ h1{margin:0;color:var(--blue);font-size:24px;font-weight:900;letter-spacing:0;te
     gap:8px;
     min-height:38px;
     text-decoration:none;
-    border-radius:8px;
+    border-radius:6px;
     font-size:12px;
     box-shadow:0 1px 2px rgba(16,24,40,.08);
 }
-.btn-portal,.btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;padding:8px 14px}
+.btn-portal,.btn-primary{background:var(--blue);color:#fff;padding:8px 14px;font-weight:800}
+.btn-portal:hover,.btn-primary:hover{background:var(--blue2)}
 .btn-secondary{background:#e8edf6;color:var(--blue);padding:8px 12px}
+.btn-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex:0 0 auto}
+.btn-icon svg{width:16px;height:16px;display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .status-line{color:var(--muted);font-size:12px;font-weight:700}
 .kpi-grid{display:grid;grid-template-columns:repeat(5,minmax(160px,1fr));gap:12px;margin-bottom:14px}
 .kpi{
@@ -152,12 +155,26 @@ thead th{
     color:var(--blue);
     border-bottom:1px solid var(--border);
     padding:10px;
-    text-align:left;
+    text-align:center;
     font-size:11px;
     text-transform:uppercase;
     cursor:pointer;
     white-space:nowrap;
 }
+.sort-label{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    width:100%;
+}
+.sort-icon{
+    color:#98a2b3;
+    font-size:10px;
+    line-height:1;
+}
+thead th[aria-sort="ascending"] .sort-icon,
+thead th[aria-sort="descending"] .sort-icon{color:var(--orange)}
 tbody td{border-bottom:1px solid #edf2f7;padding:9px 10px;vertical-align:top;color:#1f2937}
 tbody tr:hover{background:#fff7ed}
 .pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-weight:900;font-size:11px;background:#eef2ff;color:var(--blue)}
@@ -180,23 +197,28 @@ tbody tr:hover{background:#fff7ed}
 </head>
 <body>
 <header class="header">
-    <a href="../index.html" aria-label="Voltar ao portal">
+    <a href="https://mov1.com.br" target="_blank" rel="noopener" aria-label="CIOP">
         <img class="logo-ciop" src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
     </a>
     <div class="title-wrap"><h1>Dashboard de Incidentes</h1></div>
     <div class="header-actions">
-        <img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
         <div class="ciop-session" aria-label="Usuário logado">
             <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
             <span class="ciop-session-profile" id="perfilUsuario">Perfil</span>
             <button class="btn-logout" type="button" id="btnLogout">Sair</button>
         </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener" style="display:flex">
+            <img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+        </a>
     </div>
 </header>
 
 <main class="container">
     <div class="topbar">
-        <a class="btn-portal" href="../index.html">Voltar ao Portal</a>
+        <a class="btn-portal" href="../index.html" aria-label="Voltar ao portal">
+            <span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>
+            <span>Portal</span>
+        </a>
         <div class="status-line" id="statusLine">Carregando incidentes TCGL...</div>
     </div>
 
@@ -301,17 +323,17 @@ tbody tr:hover{background:#fff7ed}
             <table>
                 <thead>
                     <tr>
-                        <th data-sort="id">ID</th>
-                        <th data-sort="data">Data</th>
-                        <th data-sort="hora">Hora</th>
-                        <th data-sort="veiculo">Veículo</th>
-                        <th data-sort="linha">Linha</th>
-                        <th data-sort="criadoPor">Criado por</th>
-                        <th data-sort="tipo">Tipo do incidente</th>
-                        <th data-sort="proprietario">Proprietário</th>
-                        <th data-sort="estado">Estado</th>
-                        <th data-sort="natureOfProblem">Nature Of Problem</th>
-                        <th data-sort="instructions">Instructions</th>
+                        <th data-sort="id"><span class="sort-label">ID <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                        <th data-sort="data"><span class="sort-label">Data <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                        <th data-sort="hora"><span class="sort-label">Hora <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                        <th data-sort="veiculo"><span class="sort-label">Veículo <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                        <th data-sort="linha"><span class="sort-label">Linha <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                        <th data-sort="criadoPor"><span class="sort-label">Criado por <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                        <th data-sort="tipo"><span class="sort-label">Tipo do incidente <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                        <th data-sort="proprietario"><span class="sort-label">Proprietário <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                        <th data-sort="estado"><span class="sort-label">Estado <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                        <th data-sort="natureOfProblem"><span class="sort-label">Natureza do Problema <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                        <th data-sort="instructions"><span class="sort-label">Instruções <span class="sort-icon" aria-hidden="true">↕</span></span></th>
                     </tr>
                 </thead>
                 <tbody id="tabelaIncidentes"></tbody>
@@ -467,6 +489,15 @@ function renderChart(targetId, key) {
     }).join("") || '<div class="empty">Sem dados</div>';
 }
 
+function updateSortIndicators() {
+    document.querySelectorAll("th[data-sort]").forEach((th) => {
+        const active = th.dataset.sort === state.sortKey;
+        th.setAttribute("aria-sort", active ? (state.sortDir === "asc" ? "ascending" : "descending") : "none");
+        const icon = th.querySelector(".sort-icon");
+        if (icon) icon.textContent = active ? (state.sortDir === "asc" ? "↑" : "↓") : "↕";
+    });
+}
+
 function renderTable() {
     const tbody = document.getElementById("tabelaIncidentes");
     const empty = document.getElementById("emptyState");
@@ -497,6 +528,7 @@ function render() {
     renderChart("chartProprietario", "proprietario");
     renderChart("chartEstado", "estado");
     renderChart("chartLinha", "linha");
+    updateSortIndicators();
     renderTable();
 }
 
@@ -505,7 +537,7 @@ function csvValue(value) {
 }
 
 function exportCsv() {
-    const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Nature Of Problem","Instructions"];
+    const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções"];
     const lines = [header.map(csvValue).join(";")].concat(state.filtered.map((row) => [
         row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,row.tipo,row.proprietario,row.estado,row.natureOfProblem,row.instructions
     ].map(csvValue).join(";")));
@@ -514,7 +546,7 @@ function exportCsv() {
 
 function exportExcel() {
     const rows = state.filtered.map((row) => [row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,row.tipo,row.proprietario,row.estado,row.natureOfProblem,row.instructions]);
-    const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Nature Of Problem","Instructions"];
+    const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções"];
     const table = '<html><head><meta charset="utf-8"></head><body><table><thead><tr>' +
         header.map((cell) => '<th>' + escapeHtml(cell) + '</th>').join("") +
         '</tr></thead><tbody>' +
@@ -566,6 +598,7 @@ document.querySelectorAll("th[data-sort]").forEach((th) => {
             state.sortDir = key === "id" || key === "data" ? "desc" : "asc";
         }
         sortRows();
+        updateSortIndicators();
         renderTable();
     });
 });
