@@ -87,6 +87,12 @@ function normalizarListaAviso(valor) {
     .filter(Boolean);
 }
 
+function variantesEmailAviso(email) {
+  const original = String(email || "").trim();
+  const normalizado = normalizarEmail(original);
+  return [...new Set([original, normalizado].filter(Boolean))];
+}
+
 function normalizarPerfilAviso(perfil) {
   return String(perfil || "")
     .trim()
@@ -187,9 +193,9 @@ export async function listarAvisosFirestore({ email = "", perfil = "", gestor = 
     getDocs(query(col, where("publico", "==", true)))
   ];
 
-  if (emailUsuario) {
-    consultas.push(getDocs(query(col, where("usuarios", "array-contains", emailUsuario))));
-  }
+  variantesEmailAviso(email).forEach((emailBusca) => {
+    consultas.push(getDocs(query(col, where("usuarios", "array-contains", emailBusca))));
+  });
   if (perfilRegra) {
     consultas.push(getDocs(query(col, where("perfisRegra", "array-contains", perfilRegra))));
   }

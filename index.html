@@ -1767,6 +1767,7 @@ let avisosCarregados = [];
 let avisosGestorCarregados = [];
 let usuariosAviso = [];
 let usuariosSelecionadosPendentes = [];
+const usuariosAvisoSelecionados = new Set();
 
 function textoAvisoEntrada(valor) {
     return String(valor || "").normalize("NFC").trim();
@@ -1869,6 +1870,18 @@ function nomeUsuarioAviso(usuario) {
     return String(usuario?.nome || usuario?.email || "").trim();
 }
 
+function usuariosSelecionadosAviso() {
+    return [...usuariosAvisoSelecionados].map((email) => String(email || "").trim().toLowerCase()).filter(Boolean);
+}
+
+function definirUsuariosSelecionadosAviso(emails = []) {
+    usuariosAvisoSelecionados.clear();
+    emails.forEach((email) => {
+        const normalizado = String(email || "").trim().toLowerCase();
+        if (normalizado) usuariosAvisoSelecionados.add(normalizado);
+    });
+}
+
 function ajustarTodosAviso(origem) {
     const todos = document.getElementById("avisoTodos");
     if (!todos) return;
@@ -1890,7 +1903,7 @@ function ajustarTodosAviso(origem) {
 function atualizarResumosDestinatarios() {
     const todos = document.getElementById("avisoTodos")?.checked;
     const perfis = [...document.querySelectorAll('input[name="avisoPerfil"]:checked')].map((item) => item.value);
-    const usuarios = [...document.querySelectorAll('input[name="avisoUsuario"]:checked')].map((item) => item.value);
+    const usuarios = usuariosSelecionadosAviso();
     if (avisoGrupoResumo) {
         avisoGrupoResumo.textContent = todos ? "Todos" : (perfis.length ? perfis.join(", ") : (usuarios.length ? "Somente usuários" : "Selecionar grupos"));
     }
@@ -1907,7 +1920,8 @@ function usuarioCombinaAviso(usuario, busca) {
 
 function renderUsuariosAviso(selecionados = null) {
     if (!avisoUsuariosLista) return;
-    const marcados = new Set((selecionados || [...document.querySelectorAll('input[name="avisoUsuario"]:checked')].map((item) => item.value)).map((email) => String(email).toLowerCase()));
+    if (selecionados) definirUsuariosSelecionadosAviso(selecionados);
+    const marcados = new Set(usuariosSelecionadosAviso());
     const busca = avisoBuscaUsuarios?.value || "";
     const lista = usuariosAviso.filter((usuario) => usuarioCombinaAviso(usuario, busca));
     if (!lista.length) {
@@ -1927,6 +1941,9 @@ function renderUsuariosAviso(selecionados = null) {
     }).join("");
     avisoUsuariosLista.querySelectorAll('input[name="avisoUsuario"]').forEach((item) => {
         item.addEventListener("change", () => {
+            const email = String(item.value || "").trim().toLowerCase();
+            if (item.checked && email) usuariosAvisoSelecionados.add(email);
+            if (!item.checked && email) usuariosAvisoSelecionados.delete(email);
             ajustarTodosAviso("usuario");
             atualizarResumosDestinatarios();
         });
@@ -2054,6 +2071,7 @@ function resetarFormularioAviso() {
     document.getElementById("avisoTodos").checked = true;
     document.querySelectorAll('input[name="avisoPerfil"]').forEach((item) => item.checked = false);
     document.querySelectorAll('input[name="avisoUsuario"]').forEach((item) => item.checked = false);
+    usuariosAvisoSelecionados.clear();
     if (avisoBuscaUsuarios) avisoBuscaUsuarios.value = "";
     if (avisoSubmitBtn) avisoSubmitBtn.textContent = "Enviar aviso";
     definirPeriodoAvisoPadrao(true);
@@ -2085,9 +2103,7 @@ window.salvarAvisoPortal = async function (event) {
     const mensagem = textoAvisoEntrada(document.getElementById("avisoMensagem").value);
     const publico = document.getElementById("avisoTodos").checked;
     const perfis = [...document.querySelectorAll('input[name="avisoPerfil"]:checked')].map((item) => item.value);
-    const usuarios = [...document.querySelectorAll('input[name="avisoUsuario"]:checked')]
-        .map((item) => item.value.trim().toLowerCase())
-        .filter(Boolean);
+    const usuarios = usuariosSelecionadosAviso();
     const inicioEm = lerDataHoraAviso("avisoInicio");
     const fimEm = lerDataHoraAviso("avisoFim");
 
@@ -2150,6 +2166,7 @@ window.editarAvisoPortal = async function (id) {
         item.checked = (aviso.perfis || []).includes(item.value);
     });
     atualizarResumosDestinatarios();
+    definirUsuariosSelecionadosAviso(aviso.usuarios || []);
     usuariosSelecionadosPendentes = aviso.usuarios || [];
     if (avisoBuscaUsuarios) avisoBuscaUsuarios.value = "";
     if (avisoSubmitBtn) avisoSubmitBtn.textContent = "Salvar aviso";
