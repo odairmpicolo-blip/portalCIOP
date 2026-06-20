@@ -136,6 +136,10 @@ input[readonly]{
     background:#f8fafc;
     color:#344054;
 }
+#numeroRelatorio{
+    color:var(--red);
+    font-weight:900;
+}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .status{min-height:18px;margin-top:10px;font-size:12px;font-weight:700;color:var(--muted)}
 .status.erro{color:var(--red)}
@@ -202,8 +206,9 @@ input[readonly]{
     border:1px solid #6b7280;
     background:#f8fafc;
     padding:7px 10px;
+    color:var(--red);
     font-size:14px;
-    font-weight:800;
+    font-weight:900;
     white-space:nowrap;
 }
 .report-fields{
@@ -329,8 +334,8 @@ input[readonly]{
                     <input id="registroFuncionario" type="text" readonly>
                 </div>
                 <div>
-                    <label for="numeroRelatorio">Nº relatório</label>
-                    <input id="numeroRelatorio" type="text" inputmode="numeric">
+                    <label for="numeroRelatorio">Nº Protocolo</label>
+                    <input id="numeroRelatorio" type="text" readonly>
                 </div>
                 <div class="full">
                     <label for="nomeFuncionario">Nome</label>
@@ -354,11 +359,6 @@ input[readonly]{
                     <input id="linhaRelatorio" list="listaLinhas" type="text">
                     <datalist id="listaLinhas"></datalist>
                 </div>
-                <div class="full">
-                    <label for="motivoRelatorio">Motivo</label>
-                    <input id="motivoRelatorio" list="listaMotivos" type="text">
-                    <datalist id="listaMotivos"></datalist>
-                </div>
             </div>
 
             <label for="assinaturaSelect">Assinatura</label>
@@ -366,10 +366,19 @@ input[readonly]{
                 <option value="">Carregando usuários...</option>
             </select>
 
+            <label for="cargoAssinaturaSelect">Cargo da assinatura</label>
+            <select id="cargoAssinaturaSelect">
+                <option value="">Selecione o cargo</option>
+                <option value="Analista de Monitoramento">Analista de Monitoramento</option>
+                <option value="Diretor Operacional">Diretor Operacional</option>
+                <option value="Coordenador de Planejamento">Coordenador de Planejamento</option>
+                <option value="Coordenador de Monitoramento">Coordenador de Monitoramento</option>
+                <option value="Assist. de Atendimento">Assist. de Atendimento</option>
+                <option value="Analista de Planejamento">Analista de Planejamento</option>
+            </select>
+
             <div class="actions">
                 <button class="btn btn-secondary" type="button" id="gerarTextoBtn">Gerar texto</button>
-                <button class="btn btn-secondary" type="button" id="proximoNumeroBtn">Reservar próximo</button>
-                <button class="btn btn-primary" type="button" id="imprimirBtn">Gerar PDF</button>
                 <button class="btn btn-secondary" type="button" id="limparBtn">Limpar</button>
             </div>
             <div class="status" id="statusRelatorio">Preparando base do relatório...</div>
@@ -395,7 +404,6 @@ input[readonly]{
                     <div class="report-line"><span class="report-label">Carro:</span> <span id="previewCarro"></span></div>
                     <div class="report-line"><span class="report-label">Data:</span> <span id="previewData"></span></div>
                     <div class="report-line"><span class="report-label">Linha/Rota:</span> <span id="previewLinha"></span></div>
-                    <div class="report-line full"><span class="report-label">Motivo:</span> <span id="previewMotivo"></span></div>
                 </div>
 
                 <div class="report-body-label">Descrição</div>
@@ -407,6 +415,7 @@ input[readonly]{
                     <div class="signature-line">
                         <strong id="previewAssinaturaNome">Selecione o usuário para assinatura</strong>
                         <span id="previewAssinaturaRegistro"></span>
+                        <span id="previewAssinaturaCargo"></span>
                     </div>
                 </div>
             </article>
@@ -421,12 +430,15 @@ import { usuarios as usuariosLocais } from "../assets/js/usuarios.js";
 
 const SHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const GID_RO = "665320337";
+const GID_CONT_PROT = "1001265560";
 const GID_FUNCIONARIOS = "1931884858";
 const GID_DADOS = "665133219";
-const STORAGE_NUMERO = "portalRelatorioUltimoNumero";
+const PROTOCOLO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGuAS3XN7FQkaqj2n4pjZTcGOt_mIvdMG1rg14bS9F928A-zMUDEI2nZneKm8vUtCcOA/exec";
+const TIPO_DOCUMENTO_PROTOCOLO = "R. OCORRÊNCIA";
 
 const funcionarioSelect = document.getElementById("funcionarioSelect");
 const assinaturaSelect = document.getElementById("assinaturaSelect");
+const cargoAssinaturaSelect = document.getElementById("cargoAssinaturaSelect");
 const statusRelatorio = document.getElementById("statusRelatorio");
 const corpoRelatorio = document.getElementById("corpoRelatorio");
 const corpoRelatorioPrint = document.getElementById("corpoRelatorioPrint");
@@ -438,7 +450,7 @@ const campos = {
     data: document.getElementById("dataRelatorio"),
     carro: document.getElementById("carroRelatorio"),
     linha: document.getElementById("linhaRelatorio"),
-    motivo: document.getElementById("motivoRelatorio")
+
 };
 const preview = {
     numero: document.getElementById("previewNumero"),
@@ -448,12 +460,16 @@ const preview = {
     data: document.getElementById("previewData"),
     carro: document.getElementById("previewCarro"),
     linha: document.getElementById("previewLinha"),
-    motivo: document.getElementById("previewMotivo"),
     assinaturaNome: document.getElementById("previewAssinaturaNome"),
-    assinaturaRegistro: document.getElementById("previewAssinaturaRegistro")
+    assinaturaRegistro: document.getElementById("previewAssinaturaRegistro"),
+    assinaturaCargo: document.getElementById("previewAssinaturaCargo")
 };
 
 let funcionarios = [];
+let usuariosAssinatura = [];
+let protocoloAtual = null;
+let usuarioCriador = null;
+let protocoloRegistrado = false;
 let corpoFoiEditado = false;
 
 function setStatus(texto, tipo) {
@@ -551,24 +567,32 @@ function carregarFuncionarios(linhas) {
 function carregarDadosGerais(linhas) {
     preencherDatalist("listaCarros", linhas.slice(1).map((linha) => linha[4]));
     preencherDatalist("listaLinhas", linhas.slice(1).map((linha) => linha[5]));
-    preencherDatalist("listaMotivos", linhas.slice(1).map((linha) => linha[6]));
 }
 
-function acharNumeroBase(linhas) {
-    const texto = linhas.flat().join(" ");
-    const encontrados = [...texto.matchAll(/CIOP\s*0*(\d+)/gi)].map((item) => Number(item[1])).filter(Boolean);
-    return encontrados.length ? Math.max(...encontrados) : 0;
+function protocoloDisponivel(linhas) {
+    const idx = linhas.findIndex((linha, index) => {
+        if (index <= 1) return false;
+        const protocolo = String(linha[0] || "").trim();
+        const semDados = [1, 2, 3, 4].every((coluna) => !String(linha[coluna] || "").trim());
+        return protocolo && semDados;
+    });
+    if (idx < 0) return null;
+    return {
+        linhaPlanilha: idx + 1,
+        protocolo: String(linhas[idx][0] || "").trim()
+    };
 }
 
 function formatarNumero(valor) {
-    const numero = Number(String(valor || "").replace(/\D/g, ""));
-    return "CIOP" + String(numero || 0).padStart(5, "0");
+    const texto = String(valor || "").trim();
+    if (/^N[°º]?\s*CIOP/i.test(texto)) return texto.replace(/^Nº/i, "N°");
+    const numero = Number(texto.replace(/\D/g, ""));
+    return "N° CIOP" + String(numero || 0).padStart(5, "0");
 }
 
-function configurarNumero(base) {
-    const salvo = Number(localStorage.getItem(STORAGE_NUMERO) || "0");
-    const proximo = Math.max(base + 1, salvo + 1, 1);
-    campos.numero.value = String(proximo).padStart(5, "0");
+function configurarProtocolo(linhas) {
+    protocoloAtual = protocoloDisponivel(linhas);
+    campos.numero.value = protocoloAtual?.protocolo || "";
     atualizarPreview();
 }
 
@@ -579,8 +603,7 @@ function gerarCorpoPadrao() {
     const funcao = campos.funcao.value || "função";
     const carro = campos.carro.value ? ", carro " + campos.carro.value : "";
     const linha = campos.linha.value ? ", linha/rota " + campos.linha.value : "";
-    const motivo = campos.motivo.value ? ", referente a " + campos.motivo.value : "";
-    return "No dia " + data + ", o(a) " + funcao.toLowerCase() + " " + nome + ", registro " + registro + carro + linha + motivo + ", apresentou a ocorrência descrita neste relatório.\n\nDescreva aqui os detalhes da ocorrência, providências tomadas e demais informações necessárias.";
+    return "No dia " + data + ", o(a) " + funcao.toLowerCase() + " " + nome + ", registro " + registro + carro + linha + ", apresentou a ocorrência descrita neste relatório.\n\nDescreva aqui os detalhes da ocorrência, providências tomadas e demais informações necessárias.";
 }
 
 function atualizarCorpoPDF() {
@@ -594,17 +617,17 @@ function autoGrow() {
 }
 
 function atualizarPreview() {
-    preview.numero.textContent = "N° " + formatarNumero(campos.numero.value);
+    preview.numero.textContent = formatarNumero(campos.numero.value);
     preview.registro.textContent = campos.registro.value || "";
     preview.nome.textContent = campos.nome.value || "";
     preview.funcao.textContent = campos.funcao.value || "";
     preview.data.textContent = normalizarDataInput(campos.data.value);
     preview.carro.textContent = campos.carro.value || "";
     preview.linha.textContent = campos.linha.value || "";
-    preview.motivo.textContent = campos.motivo.value || "";
     const opcao = assinaturaSelect.selectedOptions[0];
     preview.assinaturaNome.textContent = opcao?.dataset.nome || "Selecione o usuário para assinatura";
     preview.assinaturaRegistro.textContent = opcao?.dataset.registro ? "Registro " + opcao.dataset.registro : "";
+    preview.assinaturaCargo.textContent = cargoAssinaturaSelect.value || "";
     if (!corpoFoiEditado && campos.registro.value) {
         corpoRelatorio.value = gerarCorpoPadrao();
         autoGrow();
@@ -652,6 +675,8 @@ async function carregarAssinaturas() {
     const lista = [...mapa.values()]
         .filter((user) => user.nome)
         .sort((a, b) => (Number(a.registro) || 999999) - (Number(b.registro) || 999999) || a.nome.localeCompare(b.nome, "pt-BR"));
+    usuariosAssinatura = lista;
+    usuarioCriador = lista.find((user) => user.email && user.email === window.portalUsuario?.email) || null;
     assinaturaSelect.innerHTML = "<option value=\"\">Selecione registro e nome</option>" + lista.map((user) => {
         const label = (user.registro ? user.registro + " - " : "") + user.nome;
         return "<option value=\"" + escapeOption(user.registro || user.email) + "\" data-nome=\"" + escapeOption(user.nome) + "\" data-registro=\"" + escapeOption(user.registro) + "\">" + escapeOption(label) + "</option>";
@@ -662,19 +687,20 @@ async function iniciarRelatorio() {
     window.portalMostrarCarregando?.("Carregando relatório");
     campos.data.value = hojeISO();
     try {
-        const [funcionariosCsv, dadosCsv, roCsv] = await Promise.all([
+        const [funcionariosCsv, dadosCsv, contProtCsv] = await Promise.all([
             carregarCsv(GID_FUNCIONARIOS),
             carregarCsv(GID_DADOS),
-            carregarCsv(GID_RO).catch(() => [])
+            carregarCsv(GID_CONT_PROT)
         ]);
         carregarFuncionarios(funcionariosCsv);
         carregarDadosGerais(dadosCsv);
-        configurarNumero(acharNumeroBase(roCsv));
+        configurarProtocolo(contProtCsv);
         await carregarAssinaturas();
         corpoRelatorio.value = gerarCorpoPadrao();
         autoGrow();
         atualizarPreview();
-        setStatus("Base carregada. Escolha o funcionário e edite o corpo do relatório.", "ok");
+        const protocoloTexto = protocoloAtual ? " Próximo protocolo: " + protocoloAtual.protocolo + "." : "";
+        setStatus("Base carregada." + protocoloTexto + " Escolha o funcionário e edite o corpo do relatório.", "ok");
     } catch (error) {
         console.error(error);
         funcionarioSelect.innerHTML = "<option value=\"\">Não foi possível carregar a base</option>";
@@ -686,6 +712,7 @@ async function iniciarRelatorio() {
 
 funcionarioSelect.addEventListener("change", selecionarFuncionario);
 assinaturaSelect.addEventListener("change", atualizarPreview);
+cargoAssinaturaSelect.addEventListener("change", atualizarPreview);
 Object.values(campos).forEach((campo) => campo.addEventListener("input", atualizarPreview));
 corpoRelatorio.addEventListener("input", () => {
     corpoFoiEditado = true;
@@ -696,22 +723,56 @@ document.getElementById("gerarTextoBtn").addEventListener("click", () => {
     corpoRelatorio.value = gerarCorpoPadrao();
     autoGrow();
 });
-document.getElementById("proximoNumeroBtn").addEventListener("click", () => {
-    const atual = Number(String(campos.numero.value || "").replace(/\D/g, "")) || 0;
-    const proximo = atual + 1;
-    campos.numero.value = String(proximo).padStart(5, "0");
-    localStorage.setItem(STORAGE_NUMERO, String(proximo));
-    atualizarPreview();
-});
-function gerarPDF() {
-    const atual = Number(String(campos.numero.value || "").replace(/\D/g, "")) || 0;
-    if (atual) localStorage.setItem(STORAGE_NUMERO, String(atual));
+function dadosProtocolo() {
+    const analista = usuarioCriador || usuariosAssinatura.find((user) => user.registro && user.registro === assinaturaSelect.value) || null;
+    return {
+        protocolo: campos.numero.value,
+        linhaPlanilha: protocoloAtual?.linhaPlanilha || "",
+        tipoDocumento: TIPO_DOCUMENTO_PROTOCOLO,
+        funcionario: analista?.registro || "",
+        dataDocumento: normalizarDataInput(campos.data.value),
+        analista: analista ? ((analista.registro ? analista.registro + " - " : "") + analista.nome) : "",
+        cargoAnalista: cargoAssinaturaSelect.value || ""
+    };
+}
+
+async function registrarProtocolo() {
+    if (protocoloRegistrado) return true;
+    const dados = dadosProtocolo();
+    if (!dados.protocolo || !dados.linhaPlanilha) {
+        setStatus("Não foi possível identificar o próximo protocolo livre.", "erro");
+        return false;
+    }
+    if (!dados.funcionario || !dados.analista) {
+        setStatus("Não encontrei o registro do usuário logado para preencher o protocolo.", "erro");
+        return false;
+    }
+    if (!PROTOCOLO_SCRIPT_URL) {
+        setStatus("Protocolo " + dados.protocolo + " separado. Para gravar na planilha, falta publicar o Apps Script de gravação da aba CONT. PROT.", "erro");
+        return false;
+    }
+    const resposta = await fetch(PROTOCOLO_SCRIPT_URL, {
+        method: "POST",
+        mode: "cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(dados)
+    });
+    if (!resposta.ok) throw new Error("Falha ao registrar protocolo.");
+    const retorno = await resposta.json().catch(() => ({ ok: true }));
+    if (retorno.ok === false) throw new Error(retorno.erro || "Falha ao registrar protocolo.");
+    protocoloRegistrado = true;
+    setStatus("Protocolo " + dados.protocolo + " registrado na planilha.", "ok");
+    return true;
+}
+
+async function gerarPDF() {
+    const registrado = await registrarProtocolo();
+    if (!registrado && PROTOCOLO_SCRIPT_URL) return;
     atualizarCorpoPDF();
-    document.title = "Relatorio-" + formatarNumero(campos.numero.value);
+    document.title = "Relatorio-" + formatarNumero(campos.numero.value).replace(/\s+/g, "-");
     window.print();
 }
 
-document.getElementById("imprimirBtn").addEventListener("click", gerarPDF);
 document.getElementById("pdfTopoBtn").addEventListener("click", gerarPDF);
 window.addEventListener("beforeprint", atualizarCorpoPDF);
 document.getElementById("limparBtn").addEventListener("click", () => {
@@ -721,8 +782,8 @@ document.getElementById("limparBtn").addEventListener("click", () => {
     campos.funcao.value = "";
     campos.carro.value = "";
     campos.linha.value = "";
-    campos.motivo.value = "";
     assinaturaSelect.value = "";
+    cargoAssinaturaSelect.value = "";
     corpoFoiEditado = false;
     corpoRelatorio.value = gerarCorpoPadrao();
     autoGrow();
