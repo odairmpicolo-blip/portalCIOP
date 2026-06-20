@@ -583,6 +583,12 @@ h1 {
                     </select>
                     <p id="cadastroAdminAviso" class="modal-note perfil-bloqueado" hidden>Somente usuários com perfil Administrador podem criar ou alterar perfil para Administrador.</p>
                 </div>
+                <div class="full">
+                    <label for="classificarCargo">Cargo</label>
+                    <select id="classificarCargo">
+                        <option value="">Selecione o cargo</option>
+                    </select>
+                </div>
             </div>
             <div class="actions" style="margin-bottom:12px">
                 <button class="btn btn-primary" type="button" onclick="classificarUsuario()">Salvar usuário</button>
@@ -590,7 +596,7 @@ h1 {
             </div>
             <div class="user-search">
                 <label for="buscaUsuarios">Buscar usuários</label>
-                <input id="buscaUsuarios" type="search" placeholder="Buscar por nome, registro, e-mail ou perfil" oninput="filtrarUsuarios()" autocomplete="off">
+                <input id="buscaUsuarios" type="search" placeholder="Buscar por nome, registro, e-mail, perfil ou cargo" oninput="filtrarUsuarios()" autocomplete="off">
             </div>
             <table>
                 <thead>
@@ -599,12 +605,13 @@ h1 {
                         <th aria-sort="none"><button class="sort-btn" type="button" data-sort-btn="nome" onclick="ordenarUsuarios('nome')" aria-label="Ordenar por nome"><span class="sort-label">Nome</span><span class="sort-arrow" id="sort_nome">↕</span></button></th>
                         <th aria-sort="none"><button class="sort-btn" type="button" data-sort-btn="email" onclick="ordenarUsuarios('email')" aria-label="Ordenar por e-mail"><span class="sort-label">E-mail</span><span class="sort-arrow" id="sort_email">↕</span></button></th>
                         <th aria-sort="none"><button class="sort-btn" type="button" data-sort-btn="perfil" onclick="ordenarUsuarios('perfil')" aria-label="Ordenar por perfil"><span class="sort-label">Perfil</span><span class="sort-arrow" id="sort_perfil">↕</span></button></th>
+                        <th>Cargo</th>
                         <th aria-sort="none"><button class="sort-btn" type="button" data-sort-btn="status" onclick="ordenarUsuarios('status')" aria-label="Ordenar por status"><span class="sort-label">Status</span><span class="sort-arrow" id="sort_status">↕</span></button></th>
                         <th>Editar</th>
                         <th>Acesso</th>
                     </tr>
                 </thead>
-                <tbody id="usuariosTabela"><tr><td colspan="7" class="no-data">Carregando usuários...</td></tr></tbody>
+                <tbody id="usuariosTabela"><tr><td colspan="8" class="no-data">Carregando usuários...</td></tr></tbody>
             </table>
         </section>
 
@@ -635,6 +642,10 @@ h1 {
                             <label for="editarUsuarioPerfil">Perfil</label>
                             <select id="editarUsuarioPerfil"></select>
                         </div>
+                        <div class="full">
+                            <label for="editarUsuarioCargo">Cargo</label>
+                            <select id="editarUsuarioCargo"></select>
+                        </div>
                     </div>
                     <p class="modal-note">Ao alterar o e-mail, o registro antigo do portal será substituído pelo novo.</p>
                     <p id="editarUsuarioPerfilAviso" class="modal-note perfil-bloqueado" hidden>Você está editando o próprio usuário. Por segurança, o tipo de perfil não pode ser alterado por você mesmo.</p>
@@ -659,12 +670,28 @@ import {
 } from "../assets/js/portal-firestore.js";
 
 const perfisDisponiveis = ["Administrador", "Supervisor", "Gerência", "Analista", "SAC", "Secretária"];
+const cargosDisponiveis = [
+    "Analista de Monitoramento",
+    "Diretor Operacional",
+    "Coordenador de Planejamento",
+    "Coordenador de Monitoramento",
+    "Assist. de Atendimento",
+    "Analista de Planejamento"
+];
 const EMAIL_DONO_PERFIL = "odair.marin@icloud.com";
 const usuariosEditados = {};
 let usuarioEmEdicao = null;
 let perfilOriginalEdicao = "";
 let filtroUsuarios = "";
 const ordenacaoUsuarios = { campo: "registro", direcao: "asc" };
+
+function preencherSelectCargos(select, valor = "") {
+    if (!select) return;
+    select.innerHTML = "<option value=\"\">Selecione o cargo</option>" + cargosDisponiveis.map((cargo) =>
+        "<option value=\"" + escapeHtml(cargo) + "\">" + escapeHtml(cargo) + "</option>"
+    ).join("");
+    select.value = valor || "";
+}
 
 function carregarUsuariosLocais() {
     Object.entries(usuarios).forEach(([email, cadastro]) => {
@@ -884,7 +911,7 @@ function renderUsuarios() {
         const mensagem = filtroUsuarios
             ? "Nenhum usuário encontrado para a busca informada."
             : "Nenhum usuário cadastrado no portal.";
-        tbody.innerHTML = '<tr><td colspan="7" class="no-data">' + mensagem + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="no-data">' + mensagem + '</td></tr>';
         return;
     }
     tbody.innerHTML = ordenados.map(([email, user]) => {
@@ -911,6 +938,7 @@ function renderUsuarios() {
             "<td>" + escapeHtml(user.nome) + "</td>" +
             "<td>" + escapeHtml(email) + "</td>" +
             "<td>" + escapeHtml(formatarPerfil(user.perfil)) + "</td>" +
+            "<td>" + escapeHtml(user.cargo || "-") + "</td>" +
             "<td><span class=\"status " + statusClass + "\">" + statusLabel + "</span></td>" +
             "<td><div class=\"table-actions\">" + botaoEditar + "</div></td>" +
             "<td><div class=\"table-actions\">" + botaoAcesso + "</div></td>" +
@@ -933,13 +961,13 @@ window.ordenarUsuarios = function (campo) {
     renderUsuarios();
 };
 
-async function salvarUsuario(email, nome, perfil, registro, mensagem, ativo = true) {
+async function salvarUsuario(email, nome, perfil, registro, cargo, mensagem, ativo = true) {
     const status = document.getElementById("cadastroStatus");
     status.className = "status";
     status.textContent = "Salvando no Firestore...";
 
     try {
-        const usuario = await salvarUsuarioFirestore(email, { nome, perfil, registro, ativo });
+        const usuario = await salvarUsuarioFirestore(email, { nome, perfil, registro, cargo, ativo });
         usuariosEditados[usuario.email] = { ...usuario, ativo };
         renderUsuarios();
         atualizarStatus(mensagem);
@@ -973,6 +1001,7 @@ window.abrirEditorUsuario = function (emailParam) {
     document.getElementById("editarUsuarioEmail").value = user.email || email;
     document.getElementById("editarUsuarioNome").value = user.nome || "";
     document.getElementById("editarUsuarioRegistro").value = String(user.registro || "").trim();
+    preencherSelectCargos(document.getElementById("editarUsuarioCargo"), user.cargo || "");
     perfilOriginalEdicao = String(user.perfil || "").trim();
     preencherPerfilEditor(user.perfil);
 
@@ -1027,6 +1056,7 @@ window.salvarEditorUsuario = async function () {
     const novoEmail = normalizarEmailLocal(document.getElementById("editarUsuarioEmail").value);
     const nome = document.getElementById("editarUsuarioNome").value.trim();
     const registro = document.getElementById("editarUsuarioRegistro").value.trim();
+    const cargo = document.getElementById("editarUsuarioCargo").value;
     let perfil = document.getElementById("editarUsuarioPerfil").value;
 
     if (!user) {
@@ -1084,7 +1114,7 @@ window.salvarEditorUsuario = async function () {
 
     try {
         const ativo = user.ativo !== false;
-        const usuario = await salvarUsuarioFirestore(novoEmail, { nome, perfil, registro, ativo });
+        const usuario = await salvarUsuarioFirestore(novoEmail, { nome, perfil, registro, cargo, ativo });
         if (novoEmail !== emailAntigo) {
             await excluirUsuarioFirestore(emailAntigo);
             delete usuariosEditados[emailAntigo];
@@ -1138,6 +1168,7 @@ window.alternarAcesso = async function (emailParam) {
             user.nome,
             user.perfil,
             user.registro || "",
+            user.cargo || "",
             novoStatus ? "Acesso ativado e salvo no Firestore." : "Acesso desativado e salvo no Firestore.",
             novoStatus
         );
@@ -1151,6 +1182,7 @@ window.classificarUsuario = function () {
     const nome = document.getElementById("classificarNome").value.trim();
     const registro = document.getElementById("classificarRegistro").value.trim();
     const perfil = document.getElementById("classificarPerfil").value;
+    const cargo = document.getElementById("classificarCargo").value;
     const status = document.getElementById("cadastroStatus");
 
     if (!email || !nome || !registro) {
@@ -1183,10 +1215,11 @@ window.classificarUsuario = function () {
         }
     }
 
-    salvarUsuario(email, nome, perfil, registro, "Usuário salvo no Firestore.", usuarioExistente?.ativo !== false);
+    salvarUsuario(email, nome, perfil, registro, cargo, "Usuário salvo no Firestore.", usuarioExistente?.ativo !== false);
     document.getElementById("classificarEmail").value = "";
     document.getElementById("classificarNome").value = "";
     document.getElementById("classificarRegistro").value = "";
+    document.getElementById("classificarCargo").value = "";
     atualizarPerfilCadastroDisponivel();
 };
 
@@ -1241,6 +1274,7 @@ let adminUsuariosIniciado = false;
 function iniciarAdminUsuariosUmaVez() {
     if (adminUsuariosIniciado) return;
     adminUsuariosIniciado = true;
+    preencherSelectCargos(document.getElementById("classificarCargo"));
     iniciar();
 }
 

@@ -33,6 +33,7 @@ export function normalizarCadastro(cadastro, email) {
     nome: cadastro?.nome || email,
     perfil: cadastro?.perfil || "Usuario",
     registro: String(cadastro?.registro ?? cadastro?.matricula ?? cadastro?.regist ?? "").trim(),
+    cargo: String(cadastro?.cargo ?? cadastro?.funcaoCargo ?? "").trim(),
     ativo: cadastro?.ativo !== false
   };
 }
@@ -62,6 +63,7 @@ export async function salvarUsuarioFirestore(email, cadastro) {
     nome: dados.nome,
     perfil: dados.perfil,
     registro: dados.registro,
+    cargo: dados.cargo || "",
     ativo: dados.ativo !== false,
     atualizadoEm: serverTimestamp()
   }, { merge: true });
