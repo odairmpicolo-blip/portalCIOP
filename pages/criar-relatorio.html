@@ -87,16 +87,40 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:24px}
     gap:12px;
     flex-wrap:wrap;
 }
-.btn-link,.btn-primary,.btn-secondary{
+.btn-link,.btn-portal,.btn-primary,.btn-secondary{
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    gap:7px;
+    gap:8px;
     text-decoration:none;
     min-height:38px;
     box-shadow:0 1px 2px rgba(16,24,40,.08);
 }
-.btn-link,.btn-primary{background:var(--blue);color:#fff}
+.btn-link,.btn-portal{
+    background:linear-gradient(135deg,var(--blue),var(--blue2));
+    color:#fff;
+    padding:8px 14px;
+    border-radius:8px;
+    font-size:12px;
+    font-weight:800;
+    box-shadow:0 8px 16px rgba(6,36,92,.16);
+}
+.btn-icon{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 auto;
+}
+.btn-icon svg{
+    width:18px;
+    height:18px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+.btn-primary{background:var(--blue);color:#fff}
 .btn-secondary{background:#e8edf6;color:var(--blue)}
 .btn-danger{background:var(--red);color:#fff}
 .workspace{
@@ -287,14 +311,15 @@ input[readonly]{
     .report-number{justify-self:center}
     .report-fields{grid-template-columns:1fr}
 }
-@page{size:A4;margin:10mm}
+@page{size:A4;margin:0}
 @media print{
-    body{background:#fff}
+    html,body{width:210mm;min-height:297mm;background:#fff!important}
+    body::before,body::after,.container::before,.container::after{display:none!important;content:none!important}
     .header,.portal-return,.panel{display:none!important}
-    .container{max-width:none;margin:0;padding:0}
+    .container{max-width:none;margin:0;padding:0;background:#fff!important}
     .workspace{display:block}
-    .paper-wrap{border:0;padding:0;background:#fff;overflow:visible}
-    .paper{width:190mm;max-width:none;min-height:277mm;border:0;box-shadow:none;padding:0}
+    .paper-wrap{border:0;padding:0;background:#fff!important;overflow:visible}
+    .paper{width:210mm;max-width:none;min-height:297mm;border:0;box-shadow:none;padding:12mm 14mm;background:#fff!important}
     .report-body{display:none}
     .report-body-print{display:block}
 }
@@ -315,7 +340,10 @@ input[readonly]{
 
 <main class="container">
     <div class="portal-return">
-        <a class="btn btn-link" href="../index.html">Voltar ao portal</a>
+        <a class="btn btn-portal" href="../index.html" aria-label="Voltar ao portal">
+            <span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>
+            <span>Portal</span>
+        </a>
         <button class="btn btn-primary" type="button" id="pdfTopoBtn">Gerar PDF</button>
     </div>
 
@@ -323,15 +351,11 @@ input[readonly]{
         <aside class="panel">
             <h2 class="panel-title">Dados do relatório</h2>
 
-            <label for="funcionarioSelect">Funcionário</label>
-            <select id="funcionarioSelect">
-                <option value="">Carregando funcionários...</option>
-            </select>
-
             <div class="field-grid">
                 <div>
-                    <label for="registroFuncionario">Registro</label>
-                    <input id="registroFuncionario" type="text" readonly>
+                    <label for="registroFuncionario">Registro do funcionário</label>
+                    <input id="registroFuncionario" type="text" inputmode="numeric" autocomplete="off" list="listaFuncionarios" placeholder="Digite o registro">
+                    <datalist id="listaFuncionarios"></datalist>
                 </div>
                 <div>
                     <label for="numeroRelatorio">Nº Protocolo</label>
@@ -436,7 +460,6 @@ const GID_DADOS = "665133219";
 const PROTOCOLO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGuAS3XN7FQkaqj2n4pjZTcGOt_mIvdMG1rg14bS9F928A-zMUDEI2nZneKm8vUtCcOA/exec";
 const TIPO_DOCUMENTO_PROTOCOLO = "R. OCORRÊNCIA";
 
-const funcionarioSelect = document.getElementById("funcionarioSelect");
 const assinaturaSelect = document.getElementById("assinaturaSelect");
 const cargoAssinaturaSelect = document.getElementById("cargoAssinaturaSelect");
 const statusRelatorio = document.getElementById("statusRelatorio");
@@ -559,8 +582,9 @@ function carregarFuncionarios(linhas) {
         .filter((item) => item.registro && item.nome)
         .sort((a, b) => Number(a.registro) - Number(b.registro) || a.nome.localeCompare(b.nome, "pt-BR"));
     funcionarios = dados;
-    funcionarioSelect.innerHTML = "<option value=\"\">Selecione o registro do funcionário</option>" + dados.map((item) =>
-        "<option value=\"" + escapeOption(item.registro) + "\">" + escapeOption(item.registro + " - " + item.nome) + "</option>"
+    const lista = document.getElementById("listaFuncionarios");
+    lista.innerHTML = dados.map((item) =>
+        "<option value=\"" + escapeOption(item.registro) + "\">" + escapeOption(item.nome + " - " + item.funcao) + "</option>"
     ).join("");
 }
 
@@ -634,12 +658,16 @@ function atualizarPreview() {
     }
 }
 
-function selecionarFuncionario() {
-    const registro = funcionarioSelect.value;
+function preencherFuncionarioPorRegistro() {
+    const registro = String(campos.registro.value || "").trim();
     const funcionario = funcionarios.find((item) => item.registro === registro);
-    campos.registro.value = funcionario?.registro || "";
     campos.nome.value = funcionario?.nome || "";
     campos.funcao.value = funcionario?.funcao || "";
+    if (!funcionario && registro) {
+        setStatus("Registro " + registro + " não encontrado na base de funcionários.", "erro");
+    } else if (funcionario) {
+        setStatus("Funcionário carregado: " + funcionario.registro + " - " + funcionario.nome + ".", "ok");
+    }
     if (!corpoFoiEditado) corpoRelatorio.value = gerarCorpoPadrao();
     atualizarPreview();
 }
@@ -700,17 +728,17 @@ async function iniciarRelatorio() {
         autoGrow();
         atualizarPreview();
         const protocoloTexto = protocoloAtual ? " Próximo protocolo: " + protocoloAtual.protocolo + "." : "";
-        setStatus("Base carregada." + protocoloTexto + " Escolha o funcionário e edite o corpo do relatório.", "ok");
+        setStatus("Base carregada." + protocoloTexto + " Digite o registro do funcionário e edite o corpo do relatório.", "ok");
     } catch (error) {
         console.error(error);
-        funcionarioSelect.innerHTML = "<option value=\"\">Não foi possível carregar a base</option>";
         setStatus("Não foi possível carregar a base da planilha: " + error.message, "erro");
     } finally {
         window.portalOcultarCarregando?.();
     }
 }
 
-funcionarioSelect.addEventListener("change", selecionarFuncionario);
+campos.registro.addEventListener("change", preencherFuncionarioPorRegistro);
+campos.registro.addEventListener("blur", preencherFuncionarioPorRegistro);
 assinaturaSelect.addEventListener("change", atualizarPreview);
 cargoAssinaturaSelect.addEventListener("change", atualizarPreview);
 Object.values(campos).forEach((campo) => campo.addEventListener("input", atualizarPreview));
@@ -729,9 +757,9 @@ function dadosProtocolo() {
         protocolo: campos.numero.value,
         linhaPlanilha: protocoloAtual?.linhaPlanilha || "",
         tipoDocumento: TIPO_DOCUMENTO_PROTOCOLO,
-        funcionario: analista?.registro || "",
+        funcionario: String(campos.registro.value || "").trim(),
         dataDocumento: normalizarDataInput(campos.data.value),
-        analista: analista ? ((analista.registro ? analista.registro + " - " : "") + analista.nome) : "",
+        analista: analista ? ((analista.registro ? analista.registro + " - " : "") + analista.nome).toUpperCase() : "",
         cargoAnalista: cargoAssinaturaSelect.value || ""
     };
 }
@@ -743,8 +771,12 @@ async function registrarProtocolo() {
         setStatus("Não foi possível identificar o próximo protocolo livre.", "erro");
         return false;
     }
-    if (!dados.funcionario || !dados.analista) {
-        setStatus("Não encontrei o registro do usuário logado para preencher o protocolo.", "erro");
+    if (!dados.funcionario || !campos.nome.value) {
+        setStatus("Digite um registro de funcionário válido antes de gerar o PDF.", "erro");
+        return false;
+    }
+    if (!dados.analista) {
+        setStatus("Não encontrei o registro do usuário logado para preencher o analista.", "erro");
         return false;
     }
     if (!PROTOCOLO_SCRIPT_URL) {
@@ -776,7 +808,6 @@ async function gerarPDF() {
 document.getElementById("pdfTopoBtn").addEventListener("click", gerarPDF);
 window.addEventListener("beforeprint", atualizarCorpoPDF);
 document.getElementById("limparBtn").addEventListener("click", () => {
-    funcionarioSelect.value = "";
     campos.registro.value = "";
     campos.nome.value = "";
     campos.funcao.value = "";
