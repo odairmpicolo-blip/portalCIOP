@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>
+document.documentElement.classList.add("portal-auth-pending");
+</script>
+<style id="portalAuthBootStyle">
+.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}
+</style>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard de Incidentes - Portal CIOP</title>
+<style>
+:root{
+    --blue:#06245c;
+    --blue2:#0b3a8a;
+    --orange:#ff6b00;
+    --bg:#f5f7fb;
+    --border:#dfe5ef;
+    --text:#101828;
+    --muted:#667085;
+    --white:#fff;
+    --red:#dc2626;
+    --green:#15803d;
+    --cyan:#0369a1;
+    --amber:#b45309;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial, Helvetica, sans-serif;min-height:100vh}
+.header{
+    background:#fff;
+    display:grid;
+    grid-template-columns:minmax(260px,1fr) auto minmax(260px,1fr);
+    gap:16px;
+    align-items:center;
+    padding:6px 20px;
+    border-bottom:1px solid #e8edf6;
+}
+.header > a:first-child{justify-self:start;display:flex;align-items:center}
+.logo-ciop{height:40px;object-fit:contain}
+.logo-tcgl{height:45px;object-fit:contain}
+.title-wrap{justify-self:center;display:flex;align-items:center;justify-content:center;min-width:0}
+h1{margin:0;color:var(--blue);font-size:24px;font-weight:900;letter-spacing:0;text-transform:uppercase;text-align:center}
+.header-actions{justify-self:end;display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}
+.ciop-session{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    max-width:260px;
+    padding:4px 6px;
+    border:1px solid rgba(6,36,92,.12);
+    border-radius:6px;
+    background:rgba(255,255,255,.96);
+    box-shadow:0 2px 8px rgba(16,24,40,.08);
+    color:var(--blue);
+    font-size:11px;
+    line-height:1;
+}
+.ciop-session-user{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.ciop-session-profile{color:var(--muted);font-weight:600}
+.btn-logout,.btn{
+    border:0;
+    border-radius:6px;
+    padding:8px 10px;
+    font-weight:800;
+    cursor:pointer;
+    font-family:inherit;
+}
+.ciop-session .btn-logout{background:var(--red);color:#fff;padding:4px 7px;font-size:11px}
+.container{max-width:1540px;margin:22px auto 34px;padding:0 18px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.btn-portal,.btn-primary,.btn-secondary{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:38px;
+    text-decoration:none;
+    border-radius:8px;
+    font-size:12px;
+    box-shadow:0 1px 2px rgba(16,24,40,.08);
+}
+.btn-portal,.btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;padding:8px 14px}
+.btn-secondary{background:#e8edf6;color:var(--blue);padding:8px 12px}
+.status-line{color:var(--muted);font-size:12px;font-weight:700}
+.kpi-grid{display:grid;grid-template-columns:repeat(5,minmax(160px,1fr));gap:12px;margin-bottom:14px}
+.kpi{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:14px;
+    box-shadow:0 10px 28px rgba(16,24,40,.07);
+    min-height:96px;
+}
+.kpi-label{font-size:11px;font-weight:900;color:var(--muted);text-transform:uppercase}
+.kpi-value{margin-top:8px;color:var(--blue);font-size:26px;font-weight:900;line-height:1.05}
+.kpi-sub{margin-top:6px;color:var(--muted);font-size:12px;font-weight:700;line-height:1.25}
+.kpi.accent-line{border-top:4px solid var(--orange)}
+.kpi.accent-type{border-top:4px solid var(--cyan)}
+.kpi.accent-user{border-top:4px solid var(--green)}
+.kpi.accent-owner{border-top:4px solid var(--amber)}
+.filters{
+    display:grid;
+    grid-template-columns:1.6fr repeat(4,1fr);
+    gap:10px;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:14px;
+    box-shadow:0 10px 28px rgba(16,24,40,.07);
+    margin-bottom:14px;
+}
+.field label{display:block;margin:0 0 5px;color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase}
+input,select{
+    width:100%;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:9px 10px;
+    font-size:13px;
+    font-family:inherit;
+    background:#fff;
+    color:var(--text);
+}
+.filter-actions{display:flex;gap:8px;align-items:end}
+.charts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.chart-card,.table-card{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:8px;
+    box-shadow:0 10px 28px rgba(16,24,40,.07);
+}
+.chart-card{padding:14px;min-height:310px}
+.card-title{margin:0 0 12px;color:var(--blue);font-size:15px;font-weight:900}
+.bar-row{display:grid;grid-template-columns:minmax(0,1fr) 46px;gap:8px;align-items:center;margin:8px 0}
+.bar-label{font-size:12px;color:#344054;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-count{text-align:right;color:var(--blue);font-size:12px;font-weight:900}
+.bar-track{grid-column:1/-1;height:8px;background:#edf2f7;border-radius:999px;overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--orange));border-radius:999px}
+.table-card{overflow:hidden}
+.table-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.table-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.table-wrap{overflow:auto;max-height:620px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;min-width:1180px}
+thead th{
+    position:sticky;
+    top:0;
+    z-index:2;
+    background:#f8fafc;
+    color:var(--blue);
+    border-bottom:1px solid var(--border);
+    padding:10px;
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    cursor:pointer;
+    white-space:nowrap;
+}
+tbody td{border-bottom:1px solid #edf2f7;padding:9px 10px;vertical-align:top;color:#1f2937}
+tbody tr:hover{background:#fff7ed}
+.pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-weight:900;font-size:11px;background:#eef2ff;color:var(--blue)}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-top:1px solid var(--border);flex-wrap:wrap}
+.pager-controls{display:flex;align-items:center;gap:8px}
+.empty{padding:24px;color:var(--muted);font-weight:800;text-align:center}
+@media (max-width:1180px){
+    .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .charts{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:720px){
+    .header{grid-template-columns:1fr;padding:10px 14px}
+    .header > a:first-child,.header-actions,.title-wrap{justify-self:center}
+    .kpi-grid,.filters,.charts{grid-template-columns:1fr}
+    .filter-actions{align-items:stretch;flex-direction:column}
+    h1{font-size:20px}
+}
+</style>
+</head>
+<body>
+<header class="header">
+    <a href="../index.html" aria-label="Voltar ao portal">
+        <img class="logo-ciop" src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
+    </a>
+    <div class="title-wrap"><h1>Dashboard de Incidentes</h1></div>
+    <div class="header-actions">
+        <img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+        <div class="ciop-session" aria-label="Usuário logado">
+            <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
+            <span class="ciop-session-profile" id="perfilUsuario">Perfil</span>
+            <button class="btn-logout" type="button" id="btnLogout">Sair</button>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <div class="topbar">
+        <a class="btn-portal" href="../index.html">Voltar ao Portal</a>
+        <div class="status-line" id="statusLine">Carregando incidentes TCGL...</div>
+    </div>
+
+    <section class="kpi-grid" aria-label="Indicadores principais">
+        <article class="kpi">
+            <div class="kpi-label">Incidentes filtrados</div>
+            <div class="kpi-value" id="kpiTotal">0</div>
+            <div class="kpi-sub" id="kpiPeriodo">Todos os registros TCGL</div>
+        </article>
+        <article class="kpi accent-line">
+            <div class="kpi-label">Linha com mais incidentes</div>
+            <div class="kpi-value" id="kpiLinha">-</div>
+            <div class="kpi-sub" id="kpiLinhaQtd">0 incidentes</div>
+        </article>
+        <article class="kpi accent-type">
+            <div class="kpi-label">Maior tipo de incidente</div>
+            <div class="kpi-value" id="kpiTipo">-</div>
+            <div class="kpi-sub" id="kpiTipoQtd">0 incidentes</div>
+        </article>
+        <article class="kpi accent-user">
+            <div class="kpi-label">Maior criador</div>
+            <div class="kpi-value" id="kpiCriador">-</div>
+            <div class="kpi-sub" id="kpiCriadorQtd">0 incidentes</div>
+        </article>
+        <article class="kpi accent-owner">
+            <div class="kpi-label">Maior proprietário</div>
+            <div class="kpi-value" id="kpiProprietario">-</div>
+            <div class="kpi-sub" id="kpiProprietarioQtd">0 incidentes</div>
+        </article>
+    </section>
+
+    <section class="filters" aria-label="Filtros">
+        <div class="field">
+            <label for="buscaFiltro">Busca geral</label>
+            <input id="buscaFiltro" type="search" placeholder="ID, veículo, linha, tipo, usuário ou estado">
+        </div>
+        <div class="field">
+            <label for="dataInicioFiltro">Data inicial</label>
+            <input id="dataInicioFiltro" type="date">
+        </div>
+        <div class="field">
+            <label for="dataFimFiltro">Data final</label>
+            <input id="dataFimFiltro" type="date">
+        </div>
+        <div class="field">
+            <label for="estadoFiltro">Estado</label>
+            <select id="estadoFiltro"><option value="">Todos</option></select>
+        </div>
+        <div class="field">
+            <label for="tipoFiltro">Tipo do incidente</label>
+            <select id="tipoFiltro"><option value="">Todos</option></select>
+        </div>
+        <div class="field">
+            <label for="linhaFiltro">Linha</label>
+            <select id="linhaFiltro"><option value="">Todas</option></select>
+        </div>
+        <div class="field">
+            <label for="veiculoFiltro">Veículo</label>
+            <select id="veiculoFiltro"><option value="">Todos</option></select>
+        </div>
+        <div class="field">
+            <label for="criadoFiltro">Criado por</label>
+            <select id="criadoFiltro"><option value="">Todos</option></select>
+        </div>
+        <div class="field">
+            <label for="proprietarioFiltro">Proprietário</label>
+            <select id="proprietarioFiltro"><option value="">Todos</option></select>
+        </div>
+        <div class="filter-actions">
+            <button class="btn btn-secondary" type="button" id="limparFiltros">Limpar</button>
+        </div>
+    </section>
+
+    <section class="charts" aria-label="Gráficos">
+        <article class="chart-card">
+            <h2 class="card-title">Criado por</h2>
+            <div id="chartCriado"></div>
+        </article>
+        <article class="chart-card">
+            <h2 class="card-title">Proprietário</h2>
+            <div id="chartProprietario"></div>
+        </article>
+        <article class="chart-card">
+            <h2 class="card-title">Estado</h2>
+            <div id="chartEstado"></div>
+        </article>
+        <article class="chart-card">
+            <h2 class="card-title">Linha</h2>
+            <div id="chartLinha"></div>
+        </article>
+    </section>
+
+    <section class="table-card" aria-label="Tabela de incidentes">
+        <div class="table-head">
+            <h2 class="card-title">Incidentes TCGL</h2>
+            <div class="table-actions">
+                <button class="btn btn-secondary" type="button" id="exportCsv">Exportar CSV</button>
+                <button class="btn btn-primary" type="button" id="exportExcel">Exportar Excel</button>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th data-sort="id">ID</th>
+                        <th data-sort="data">Data</th>
+                        <th data-sort="hora">Hora</th>
+                        <th data-sort="veiculo">Veículo</th>
+                        <th data-sort="linha">Linha</th>
+                        <th data-sort="criadoPor">Criado por</th>
+                        <th data-sort="tipo">Tipo do incidente</th>
+                        <th data-sort="proprietario">Proprietário</th>
+                        <th data-sort="estado">Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaIncidentes"></tbody>
+            </table>
+            <div class="empty" id="emptyState" hidden>Nenhum incidente encontrado para os filtros selecionados.</div>
+        </div>
+        <div class="pager">
+            <div class="status-line" id="pageInfo">0 registros</div>
+            <div class="pager-controls">
+                <button class="btn btn-secondary" type="button" id="prevPage">Anterior</button>
+                <select id="pageSize">
+                    <option value="50">50 por página</option>
+                    <option value="100" selected>100 por página</option>
+                    <option value="250">250 por página</option>
+                    <option value="500">500 por página</option>
+                </select>
+                <button class="btn btn-secondary" type="button" id="nextPage">Próxima</button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script type="module" src="../assets/js/auth.js"></script>
+<script>
+const state = {
+    all: [],
+    filtered: [],
+    page: 1,
+    pageSize: 100,
+    sortKey: "id",
+    sortDir: "desc"
+};
+
+const fields = {
+    busca: document.getElementById("buscaFiltro"),
+    dataInicio: document.getElementById("dataInicioFiltro"),
+    dataFim: document.getElementById("dataFimFiltro"),
+    estado: document.getElementById("estadoFiltro"),
+    tipo: document.getElementById("tipoFiltro"),
+    linha: document.getElementById("linhaFiltro"),
+    veiculo: document.getElementById("veiculoFiltro"),
+    criado: document.getElementById("criadoFiltro"),
+    proprietario: document.getElementById("proprietarioFiltro")
+};
+
+function formatNumber(value) {
+    return Number(value || 0).toLocaleString("pt-BR");
+}
+
+function normalizeText(value) {
+    return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function dateToIso(value) {
+    const parts = String(value || "").split("/");
+    if (parts.length !== 3) return "";
+    return parts[2] + "-" + parts[1].padStart(2, "0") + "-" + parts[0].padStart(2, "0");
+}
+
+function countBy(rows, key) {
+    const map = new Map();
+    rows.forEach((row) => {
+        const label = row[key] || "Sem informação";
+        map.set(label, (map.get(label) || 0) + 1);
+    });
+    return Array.from(map, ([label, total]) => ({ label, total }))
+        .sort((a, b) => b.total - a.total || a.label.localeCompare(b.label, "pt-BR"));
+}
+
+function firstCounter(rows, key) {
+    return countBy(rows, key)[0] || { label: "-", total: 0 };
+}
+
+function populateSelect(select, rows, key) {
+    const previous = select.value;
+    const values = Array.from(new Set(rows.map((row) => row[key]).filter(Boolean)))
+        .sort((a, b) => String(a).localeCompare(String(b), "pt-BR", { numeric: true }));
+    select.innerHTML = '<option value="">Todos</option>' + values.map((value) => '<option value="' + escapeHtml(value) + '">' + escapeHtml(value) + '</option>').join("");
+    if (values.includes(previous)) select.value = previous;
+}
+
+function escapeHtml(value) {
+    return String(value || "").replace(/[&<>"']/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[char]));
+}
+
+function applyFilters() {
+    const search = normalizeText(fields.busca.value);
+    const start = fields.dataInicio.value;
+    const end = fields.dataFim.value;
+    const exact = {
+        estado: fields.estado.value,
+        tipo: fields.tipo.value,
+        linha: fields.linha.value,
+        veiculo: fields.veiculo.value,
+        criadoPor: fields.criado.value,
+        proprietario: fields.proprietario.value
+    };
+
+    state.filtered = state.all.filter((row) => {
+        const iso = dateToIso(row.data);
+        if (start && iso < start) return false;
+        if (end && iso > end) return false;
+        if (exact.estado && row.estado !== exact.estado) return false;
+        if (exact.tipo && row.tipo !== exact.tipo) return false;
+        if (exact.linha && row.linha !== exact.linha) return false;
+        if (exact.veiculo && row.veiculo !== exact.veiculo) return false;
+        if (exact.criadoPor && row.criadoPor !== exact.criadoPor) return false;
+        if (exact.proprietario && row.proprietario !== exact.proprietario) return false;
+        if (!search) return true;
+        return normalizeText([row.id, row.data, row.hora, row.veiculo, row.linha, row.criadoPor, row.tipo, row.proprietario, row.estado].join(" ")).includes(search);
+    });
+
+    sortRows();
+    state.page = 1;
+    render();
+}
+
+function sortRows() {
+    const key = state.sortKey;
+    const dir = state.sortDir === "asc" ? 1 : -1;
+    state.filtered.sort((a, b) => {
+        if (key === "id") return (Number(a.id) - Number(b.id)) * dir;
+        if (key === "data") return (dateToIso(a.data) + " " + a.hora).localeCompare(dateToIso(b.data) + " " + b.hora) * dir;
+        return String(a[key] || "").localeCompare(String(b[key] || ""), "pt-BR", { numeric: true }) * dir;
+    });
+}
+
+function renderKpis() {
+    const linha = firstCounter(state.filtered, "linha");
+    const tipo = firstCounter(state.filtered, "tipo");
+    const criado = firstCounter(state.filtered, "criadoPor");
+    const proprietario = firstCounter(state.filtered, "proprietario");
+    document.getElementById("kpiTotal").textContent = formatNumber(state.filtered.length);
+    document.getElementById("kpiPeriodo").textContent = state.filtered.length === state.all.length ? "Todos os registros TCGL" : "Resultado filtrado";
+    setKpi("kpiLinha", "kpiLinhaQtd", linha);
+    setKpi("kpiTipo", "kpiTipoQtd", tipo);
+    setKpi("kpiCriador", "kpiCriadorQtd", criado);
+    setKpi("kpiProprietario", "kpiProprietarioQtd", proprietario);
+}
+
+function setKpi(valueId, subId, counter) {
+    document.getElementById(valueId).textContent = counter.label;
+    document.getElementById(subId).textContent = formatNumber(counter.total) + " incidentes";
+}
+
+function renderChart(targetId, key) {
+    const target = document.getElementById(targetId);
+    const data = countBy(state.filtered, key).slice(0, 10);
+    const max = data[0]?.total || 1;
+    target.innerHTML = data.map((item) => {
+        const width = Math.max(4, Math.round((item.total / max) * 100));
+        return '<div class="bar-row"><div class="bar-label" title="' + escapeHtml(item.label) + '">' + escapeHtml(item.label) + '</div><div class="bar-count">' + formatNumber(item.total) + '</div><div class="bar-track"><div class="bar-fill" style="width:' + width + '%"></div></div></div>';
+    }).join("") || '<div class="empty">Sem dados</div>';
+}
+
+function renderTable() {
+    const tbody = document.getElementById("tabelaIncidentes");
+    const empty = document.getElementById("emptyState");
+    const totalPages = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
+    if (state.page > totalPages) state.page = totalPages;
+    const start = (state.page - 1) * state.pageSize;
+    const pageRows = state.filtered.slice(start, start + state.pageSize);
+    tbody.innerHTML = pageRows.map((row) => '<tr>' +
+        '<td><span class="pill">' + escapeHtml(row.id) + '</span></td>' +
+        '<td>' + escapeHtml(row.data) + '</td>' +
+        '<td>' + escapeHtml(row.hora) + '</td>' +
+        '<td title="' + escapeHtml(row.veiculoDescricao || row.veiculo) + '">' + escapeHtml(row.veiculo) + '</td>' +
+        '<td>' + escapeHtml(row.linha) + '</td>' +
+        '<td>' + escapeHtml(row.criadoPor) + '</td>' +
+        '<td>' + escapeHtml(row.tipo) + '</td>' +
+        '<td>' + escapeHtml(row.proprietario) + '</td>' +
+        '<td>' + escapeHtml(row.estado) + '</td>' +
+    '</tr>').join("");
+    empty.hidden = pageRows.length > 0;
+    document.getElementById("pageInfo").textContent = formatNumber(state.filtered.length) + " registros, página " + state.page + " de " + totalPages;
+    document.getElementById("prevPage").disabled = state.page <= 1;
+    document.getElementById("nextPage").disabled = state.page >= totalPages;
+}
+
+function render() {
+    renderKpis();
+    renderChart("chartCriado", "criadoPor");
+    renderChart("chartProprietario", "proprietario");
+    renderChart("chartEstado", "estado");
+    renderChart("chartLinha", "linha");
+    renderTable();
+}
+
+function csvValue(value) {
+    return '"' + String(value || "").replace(/"/g, '""') + '"';
+}
+
+function exportCsv() {
+    const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado"];
+    const lines = [header.map(csvValue).join(";")].concat(state.filtered.map((row) => [
+        row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,row.tipo,row.proprietario,row.estado
+    ].map(csvValue).join(";")));
+    downloadBlob(new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" }), "incidentes-tcgl.csv");
+}
+
+function exportExcel() {
+    const rows = state.filtered.map((row) => [row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,row.tipo,row.proprietario,row.estado]);
+    const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado"];
+    const table = '<html><head><meta charset="utf-8"></head><body><table><thead><tr>' +
+        header.map((cell) => '<th>' + escapeHtml(cell) + '</th>').join("") +
+        '</tr></thead><tbody>' +
+        rows.map((row) => '<tr>' + row.map((cell) => '<td>' + escapeHtml(cell) + '</td>').join("") + '</tr>').join("") +
+        '</tbody></table></body></html>';
+    downloadBlob(new Blob([table], { type: "application/vnd.ms-excel;charset=utf-8" }), "incidentes-tcgl.xls");
+}
+
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
+async function init() {
+    const response = await fetch("../assets/data/incidentes-tcgl.json?ts=" + Date.now(), { cache: "no-store" });
+    if (!response.ok) throw new Error("Não foi possível carregar o arquivo de incidentes.");
+    const payload = await response.json();
+    state.all = (payload.incidentes || []).filter((row) => String(row.empresa || "").toUpperCase() === "TCGL");
+    state.filtered = state.all.slice();
+    populateSelect(fields.estado, state.all, "estado");
+    populateSelect(fields.tipo, state.all, "tipo");
+    populateSelect(fields.linha, state.all, "linha");
+    populateSelect(fields.veiculo, state.all, "veiculo");
+    populateSelect(fields.criado, state.all, "criadoPor");
+    populateSelect(fields.proprietario, state.all, "proprietario");
+    document.getElementById("statusLine").textContent = "Atualizado em " + new Date(payload.atualizadoEm).toLocaleString("pt-BR") + " - " + formatNumber(state.all.length) + " incidentes TCGL";
+    sortRows();
+    render();
+}
+
+Object.values(fields).forEach((field) => field.addEventListener("input", applyFilters));
+Object.values(fields).forEach((field) => field.addEventListener("change", applyFilters));
+document.getElementById("limparFiltros").addEventListener("click", () => {
+    Object.values(fields).forEach((field) => field.value = "");
+    applyFilters();
+});
+document.querySelectorAll("th[data-sort]").forEach((th) => {
+    th.addEventListener("click", () => {
+        const key = th.dataset.sort;
+        if (state.sortKey === key) state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
+        else {
+            state.sortKey = key;
+            state.sortDir = key === "id" || key === "data" ? "desc" : "asc";
+        }
+        sortRows();
+        renderTable();
+    });
+});
+document.getElementById("pageSize").addEventListener("change", (event) => {
+    state.pageSize = Number(event.target.value);
+    state.page = 1;
+    renderTable();
+});
+document.getElementById("prevPage").addEventListener("click", () => {
+    state.page = Math.max(1, state.page - 1);
+    renderTable();
+});
+document.getElementById("nextPage").addEventListener("click", () => {
+    state.page += 1;
+    renderTable();
+});
+document.getElementById("exportCsv").addEventListener("click", exportCsv);
+document.getElementById("exportExcel").addEventListener("click", exportExcel);
+
+if (window.portalUsuarioValidado) init().catch((error) => document.getElementById("statusLine").textContent = error.message);
+else window.addEventListener("portal:usuario-validado", () => init().catch((error) => document.getElementById("statusLine").textContent = error.message), { once:true });
+</script>
+</body>
+</html>
