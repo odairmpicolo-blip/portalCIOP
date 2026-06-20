@@ -547,10 +547,20 @@ function exportCsv() {
 function exportExcel() {
     const rows = state.filtered.map((row) => [row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,row.tipo,row.proprietario,row.estado,row.natureOfProblem,row.instructions]);
     const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções"];
-    const table = '<html><head><meta charset="utf-8"></head><body><table><thead><tr>' +
-        header.map((cell) => '<th>' + escapeHtml(cell) + '</th>').join("") +
+    const columnWidths = [72,82,60,82,92,150,190,160,110,320,360];
+    const baseCell = "border:1px solid #dfe5ef;padding:9px 10px;font-family:Arial, Helvetica, sans-serif;font-size:12px;color:#1f2937;vertical-align:top;mso-number-format:'\\@';";
+    const headerStyle = "background:#f8fafc;color:#06245c;font-weight:900;text-transform:uppercase;text-align:center;" + baseCell;
+    const cellStyle = (index) => baseCell + "width:" + columnWidths[index] + "px;" + (index <= 8 ? "text-align:center;" : "text-align:left;white-space:normal;");
+    const table = '<html><head><meta charset="utf-8"><style>' +
+        '@page{margin:0.35in 0.25in;mso-page-orientation:landscape;}' +
+        'body{margin:0;font-family:Arial, Helvetica, sans-serif;background:#ffffff;}' +
+        'table{border-collapse:collapse;border-spacing:0;width:100%;}' +
+        'thead th{height:28px;}' +
+        'tbody td{height:24px;}' +
+        '</style></head><body><table><thead><tr>' +
+        header.map((cell, index) => '<th style="' + headerStyle + 'width:' + columnWidths[index] + 'px;">' + escapeHtml(cell) + '</th>').join("") +
         '</tr></thead><tbody>' +
-        rows.map((row) => '<tr>' + row.map((cell) => '<td>' + escapeHtml(cell) + '</td>').join("") + '</tr>').join("") +
+        rows.map((row) => '<tr>' + row.map((cell, index) => '<td style="' + cellStyle(index) + '">' + escapeHtml(cell) + '</td>').join("") + '</tr>').join("") +
         '</tbody></table></body></html>';
     downloadBlob(new Blob([table], { type: "application/vnd.ms-excel;charset=utf-8" }), "incidentes-tcgl.xls");
 }
