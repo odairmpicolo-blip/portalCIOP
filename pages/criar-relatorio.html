@@ -1,0 +1,739 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>
+document.documentElement.classList.add("portal-auth-pending");
+</script>
+<style id="portalAuthBootStyle">
+.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}
+</style>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Criar Relatório - Portal CIOP</title>
+<style>
+:root{
+    --blue:#06245c;
+    --blue2:#0b3a8a;
+    --orange:#ff6b00;
+    --bg:#f5f7fb;
+    --border:#dfe5ef;
+    --text:#101828;
+    --muted:#667085;
+    --white:#fff;
+    --red:#dc2626;
+    --green:#15803d;
+}
+*{box-sizing:border-box}
+body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:Arial, Helvetica, sans-serif;
+    min-height:100vh;
+}
+.header{
+    background:#fff;
+    display:grid;
+    grid-template-columns:180px 1fr minmax(260px, auto);
+    gap:16px;
+    align-items:center;
+    padding:10px 22px;
+    border-bottom:1px solid #e8edf6;
+}
+.logo-ciop{height:48px;object-fit:contain}
+.logo-tcgl{height:52px;object-fit:contain}
+h1{margin:0;text-align:center;color:var(--blue);font-size:24px}
+.header-actions{
+    justify-self:end;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:10px;
+}
+.ciop-session{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    max-width:260px;
+    padding:4px 6px;
+    border:1px solid rgba(6,36,92,.12);
+    border-radius:6px;
+    background:rgba(255,255,255,.96);
+    box-shadow:0 2px 8px rgba(16,24,40,.08);
+    color:var(--blue);
+    font-size:11px;
+    line-height:1;
+}
+.ciop-session-user{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.ciop-session-profile{color:var(--muted);font-weight:600}
+.btn-logout,.btn{
+    border:0;
+    border-radius:6px;
+    padding:8px 10px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+}
+.ciop-session .btn-logout{background:var(--red);color:#fff;padding:4px 7px;font-size:11px}
+.container{max-width:1480px;margin:22px auto;padding:0 18px}
+.portal-return{
+    margin-bottom:14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+}
+.btn-link,.btn-primary,.btn-secondary{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    text-decoration:none;
+    min-height:38px;
+    box-shadow:0 1px 2px rgba(16,24,40,.08);
+}
+.btn-link,.btn-primary{background:var(--blue);color:#fff}
+.btn-secondary{background:#e8edf6;color:var(--blue)}
+.btn-danger{background:var(--red);color:#fff}
+.workspace{
+    display:grid;
+    grid-template-columns:minmax(320px, 400px) minmax(0, 1fr);
+    gap:20px;
+    align-items:start;
+}
+.panel{
+    position:sticky;
+    top:16px;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:18px;
+    box-shadow:0 12px 32px rgba(16,24,40,.08);
+}
+.panel-title{
+    margin:0 0 12px;
+    color:var(--blue);
+    font-size:16px;
+}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-grid .full{grid-column:1/-1}
+label{display:block;margin:10px 0 5px;color:var(--muted);font-size:12px;font-weight:700}
+input,select,textarea{
+    width:100%;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:9px 10px;
+    font-size:14px;
+    font-family:inherit;
+    background:#fff;
+}
+textarea{resize:none;overflow:hidden;line-height:1.55}
+input[readonly]{
+    background:#f8fafc;
+    color:#344054;
+}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.status{min-height:18px;margin-top:10px;font-size:12px;font-weight:700;color:var(--muted)}
+.status.erro{color:var(--red)}
+.status.ok{color:var(--green)}
+.paper-wrap{
+    background:#eef2f7;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:22px;
+    overflow:auto;
+}
+.paper{
+    width:210mm;
+    max-width:100%;
+    min-height:297mm;
+    margin:0 auto;
+    background:#fff;
+    color:#111827;
+    border:1px solid #cbd5e1;
+    box-shadow:0 22px 55px rgba(16,24,40,.16);
+    padding:18mm 17mm 16mm;
+}
+.report-head{
+    display:grid;
+    grid-template-columns:108px 1fr 108px;
+    align-items:center;
+    gap:18px;
+    border:1px solid #6b7280;
+    border-bottom:3px solid var(--blue);
+    padding:10px 12px;
+}
+.report-head img{max-width:100%;height:58px;object-fit:contain}
+.report-company{
+    text-align:center;
+    font-size:14px;
+    font-weight:800;
+    color:#111827;
+    line-height:1.35;
+    text-transform:uppercase;
+}
+.report-kicker{
+    display:block;
+    margin-top:3px;
+    color:#475467;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:0;
+}
+.report-title{
+    margin:18px 0 8px;
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:12px;
+    align-items:center;
+}
+.report-title h2{
+    margin:0;
+    text-align:center;
+    color:#111827;
+    font-size:19px;
+    letter-spacing:0;
+}
+.report-number{
+    border:1px solid #6b7280;
+    background:#f8fafc;
+    padding:7px 10px;
+    font-size:14px;
+    font-weight:800;
+    white-space:nowrap;
+}
+.report-fields{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    border-top:1px solid #6b7280;
+    border-left:1px solid #6b7280;
+    margin-top:10px;
+}
+.report-line{
+    min-height:34px;
+    border-right:1px solid #6b7280;
+    border-bottom:1px solid #6b7280;
+    padding:7px 9px;
+    font-size:13.5px;
+}
+.report-line.full{grid-column:1/-1}
+.report-label{font-weight:800}
+.report-body-label{
+    border:1px solid #6b7280;
+    border-bottom:0;
+    margin-top:16px;
+    padding:7px 10px;
+    background:#f8fafc;
+    font-weight:800;
+    font-size:13.5px;
+}
+.report-body{
+    min-height:410px;
+    width:100%;
+    border:1px solid #6b7280;
+    border-radius:0;
+    padding:13px 14px;
+    font-size:14.5px;
+    line-height:1.7;
+    color:#111827;
+    text-align:justify;
+}
+.report-body-print{
+    display:none;
+    min-height:410px;
+    width:100%;
+    border:1px solid #6b7280;
+    padding:13px 14px;
+    font-size:14.5px;
+    line-height:1.7;
+    color:#111827;
+    white-space:pre-wrap;
+    text-align:justify;
+}
+.signature{
+    margin:58px auto 0;
+    max-width:520px;
+    text-align:center;
+    color:#111827;
+}
+.signature-line{border-top:1px solid #111827;padding-top:9px}
+.signature-title{
+    display:block;
+    margin-bottom:22px;
+    color:#475467;
+    font-size:12px;
+    font-weight:800;
+    text-transform:uppercase;
+}
+.signature strong{display:block;font-size:14px}
+.signature span{display:block;font-size:13px;margin-top:2px}
+.print-only{display:none}
+@media (max-width:980px){
+    .header{grid-template-columns:1fr;justify-items:center;text-align:center}
+    .header-actions{justify-self:center}
+    .workspace{grid-template-columns:1fr}
+    .paper{padding:24px 18px;min-height:auto}
+    .report-head{grid-template-columns:78px 1fr 78px}
+    .report-title{grid-template-columns:1fr}
+    .report-number{justify-self:center}
+    .report-fields{grid-template-columns:1fr}
+}
+@page{size:A4;margin:10mm}
+@media print{
+    body{background:#fff}
+    .header,.portal-return,.panel{display:none!important}
+    .container{max-width:none;margin:0;padding:0}
+    .workspace{display:block}
+    .paper-wrap{border:0;padding:0;background:#fff;overflow:visible}
+    .paper{width:190mm;max-width:none;min-height:277mm;border:0;box-shadow:none;padding:0}
+    .report-body{display:none}
+    .report-body-print{display:block}
+}
+</style>
+</head>
+<body data-require-perfis="Analista,Supervisor,Administrador">
+<header class="header">
+    <img class="logo-ciop" src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
+    <h1>Criar Relatório</h1>
+    <div class="header-actions">
+        <div class="ciop-session" aria-label="Usuário logado">
+            <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
+            <span class="ciop-session-profile" id="perfilUsuario">Perfil</span>
+            <button type="button" class="btn-logout" onclick="window.portalLogout && window.portalLogout()">Sair</button>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <div class="portal-return">
+        <a class="btn btn-link" href="../index.html">Voltar ao portal</a>
+        <button class="btn btn-primary" type="button" id="pdfTopoBtn">Gerar PDF</button>
+    </div>
+
+    <section class="workspace">
+        <aside class="panel">
+            <h2 class="panel-title">Dados do relatório</h2>
+
+            <label for="funcionarioSelect">Funcionário</label>
+            <select id="funcionarioSelect">
+                <option value="">Carregando funcionários...</option>
+            </select>
+
+            <div class="field-grid">
+                <div>
+                    <label for="registroFuncionario">Registro</label>
+                    <input id="registroFuncionario" type="text" readonly>
+                </div>
+                <div>
+                    <label for="numeroRelatorio">Nº relatório</label>
+                    <input id="numeroRelatorio" type="text" inputmode="numeric">
+                </div>
+                <div class="full">
+                    <label for="nomeFuncionario">Nome</label>
+                    <input id="nomeFuncionario" type="text" readonly>
+                </div>
+                <div>
+                    <label for="funcaoFuncionario">Função</label>
+                    <input id="funcaoFuncionario" type="text" readonly>
+                </div>
+                <div>
+                    <label for="dataRelatorio">Data</label>
+                    <input id="dataRelatorio" type="date">
+                </div>
+                <div>
+                    <label for="carroRelatorio">Carro</label>
+                    <input id="carroRelatorio" list="listaCarros" type="text">
+                    <datalist id="listaCarros"></datalist>
+                </div>
+                <div>
+                    <label for="linhaRelatorio">Linha/Rota</label>
+                    <input id="linhaRelatorio" list="listaLinhas" type="text">
+                    <datalist id="listaLinhas"></datalist>
+                </div>
+                <div class="full">
+                    <label for="motivoRelatorio">Motivo</label>
+                    <input id="motivoRelatorio" list="listaMotivos" type="text">
+                    <datalist id="listaMotivos"></datalist>
+                </div>
+            </div>
+
+            <label for="assinaturaSelect">Assinatura</label>
+            <select id="assinaturaSelect">
+                <option value="">Carregando usuários...</option>
+            </select>
+
+            <div class="actions">
+                <button class="btn btn-secondary" type="button" id="gerarTextoBtn">Gerar texto</button>
+                <button class="btn btn-secondary" type="button" id="proximoNumeroBtn">Reservar próximo</button>
+                <button class="btn btn-primary" type="button" id="imprimirBtn">Gerar PDF</button>
+                <button class="btn btn-secondary" type="button" id="limparBtn">Limpar</button>
+            </div>
+            <div class="status" id="statusRelatorio">Preparando base do relatório...</div>
+        </aside>
+
+        <section class="paper-wrap" aria-label="Prévia do relatório">
+            <article class="paper">
+                <div class="report-head">
+                    <img src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+                    <div class="report-company">TRANSPORTES COLETIVOS GRANDE LONDRINA<span class="report-kicker">Centro Integrado de Operações</span></div>
+                    <img src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
+                </div>
+
+                <div class="report-title">
+                    <h2>RELATÓRIO DE OCORRÊNCIAS</h2>
+                    <div class="report-number" id="previewNumero">N° CIOP00000</div>
+                </div>
+
+                <div class="report-fields">
+                    <div class="report-line"><span class="report-label">Funcionário:</span> <span id="previewRegistro"></span></div>
+                    <div class="report-line"><span class="report-label">Nome:</span> <span id="previewNome"></span></div>
+                    <div class="report-line"><span class="report-label">Função:</span> <span id="previewFuncao"></span></div>
+                    <div class="report-line"><span class="report-label">Carro:</span> <span id="previewCarro"></span></div>
+                    <div class="report-line"><span class="report-label">Data:</span> <span id="previewData"></span></div>
+                    <div class="report-line"><span class="report-label">Linha/Rota:</span> <span id="previewLinha"></span></div>
+                    <div class="report-line full"><span class="report-label">Motivo:</span> <span id="previewMotivo"></span></div>
+                </div>
+
+                <div class="report-body-label">Descrição</div>
+                <textarea id="corpoRelatorio" class="report-body" spellcheck="true"></textarea>
+                <div id="corpoRelatorioPrint" class="report-body-print"></div>
+
+                <div class="signature">
+                    <span class="signature-title">Assinatura do responsável</span>
+                    <div class="signature-line">
+                        <strong id="previewAssinaturaNome">Selecione o usuário para assinatura</strong>
+                        <span id="previewAssinaturaRegistro"></span>
+                    </div>
+                </div>
+            </article>
+        </section>
+    </section>
+</main>
+
+<script type="module" src="../assets/js/auth.js"></script>
+<script type="module">
+import { listarUsuariosFirestore, normalizarCadastro } from "../assets/js/portal-firestore.js";
+import { usuarios as usuariosLocais } from "../assets/js/usuarios.js";
+
+const SHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
+const GID_RO = "665320337";
+const GID_FUNCIONARIOS = "1931884858";
+const GID_DADOS = "665133219";
+const STORAGE_NUMERO = "portalRelatorioUltimoNumero";
+
+const funcionarioSelect = document.getElementById("funcionarioSelect");
+const assinaturaSelect = document.getElementById("assinaturaSelect");
+const statusRelatorio = document.getElementById("statusRelatorio");
+const corpoRelatorio = document.getElementById("corpoRelatorio");
+const corpoRelatorioPrint = document.getElementById("corpoRelatorioPrint");
+const campos = {
+    registro: document.getElementById("registroFuncionario"),
+    numero: document.getElementById("numeroRelatorio"),
+    nome: document.getElementById("nomeFuncionario"),
+    funcao: document.getElementById("funcaoFuncionario"),
+    data: document.getElementById("dataRelatorio"),
+    carro: document.getElementById("carroRelatorio"),
+    linha: document.getElementById("linhaRelatorio"),
+    motivo: document.getElementById("motivoRelatorio")
+};
+const preview = {
+    numero: document.getElementById("previewNumero"),
+    registro: document.getElementById("previewRegistro"),
+    nome: document.getElementById("previewNome"),
+    funcao: document.getElementById("previewFuncao"),
+    data: document.getElementById("previewData"),
+    carro: document.getElementById("previewCarro"),
+    linha: document.getElementById("previewLinha"),
+    motivo: document.getElementById("previewMotivo"),
+    assinaturaNome: document.getElementById("previewAssinaturaNome"),
+    assinaturaRegistro: document.getElementById("previewAssinaturaRegistro")
+};
+
+let funcionarios = [];
+let corpoFoiEditado = false;
+
+function setStatus(texto, tipo) {
+    statusRelatorio.textContent = texto;
+    statusRelatorio.className = "status" + (tipo ? " " + tipo : "");
+}
+
+function csvUrl(gid) {
+    return "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=csv&gid=" + gid;
+}
+
+function parseCsv(texto) {
+    const linhas = [];
+    let linha = [];
+    let campo = "";
+    let aspas = false;
+    for (let i = 0; i < texto.length; i += 1) {
+        const c = texto[i];
+        const prox = texto[i + 1];
+        if (c === '"') {
+            if (aspas && prox === '"') {
+                campo += '"';
+                i += 1;
+            } else {
+                aspas = !aspas;
+            }
+        } else if (c === "," && !aspas) {
+            linha.push(campo);
+            campo = "";
+        } else if ((c === "\n" || c === "\r") && !aspas) {
+            if (c === "\r" && prox === "\n") i += 1;
+            linha.push(campo);
+            if (linha.some((item) => String(item).trim())) linhas.push(linha);
+            linha = [];
+            campo = "";
+        } else {
+            campo += c;
+        }
+    }
+    linha.push(campo);
+    if (linha.some((item) => String(item).trim())) linhas.push(linha);
+    return linhas;
+}
+
+async function carregarCsv(gid) {
+    const resposta = await fetch(csvUrl(gid), { cache: "no-store" });
+    if (!resposta.ok) throw new Error("Base " + gid + " indisponível.");
+    return parseCsv(await resposta.text());
+}
+
+function normalizarDataInput(data) {
+    const d = data ? new Date(data + "T12:00:00") : new Date();
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("pt-BR");
+}
+
+function hojeISO() {
+    const d = new Date();
+    const mes = String(d.getMonth() + 1).padStart(2, "0");
+    const dia = String(d.getDate()).padStart(2, "0");
+    return d.getFullYear() + "-" + mes + "-" + dia;
+}
+
+function escapeOption(valor) {
+    return String(valor || "").replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+    }[c]));
+}
+
+function preencherDatalist(id, valores) {
+    const lista = document.getElementById(id);
+    const unicos = [...new Set(valores.map((item) => String(item || "").trim()).filter(Boolean))];
+    lista.innerHTML = unicos.slice(0, 600).map((item) => "<option value=\"" + escapeOption(item) + "\"></option>").join("");
+}
+
+function carregarFuncionarios(linhas) {
+    const dados = linhas.slice(1)
+        .map((linha) => ({
+            registro: String(linha[0] || "").trim(),
+            nome: String(linha[1] || "").trim(),
+            funcao: String(linha[2] || "").trim()
+        }))
+        .filter((item) => item.registro && item.nome)
+        .sort((a, b) => Number(a.registro) - Number(b.registro) || a.nome.localeCompare(b.nome, "pt-BR"));
+    funcionarios = dados;
+    funcionarioSelect.innerHTML = "<option value=\"\">Selecione o registro do funcionário</option>" + dados.map((item) =>
+        "<option value=\"" + escapeOption(item.registro) + "\">" + escapeOption(item.registro + " - " + item.nome) + "</option>"
+    ).join("");
+}
+
+function carregarDadosGerais(linhas) {
+    preencherDatalist("listaCarros", linhas.slice(1).map((linha) => linha[4]));
+    preencherDatalist("listaLinhas", linhas.slice(1).map((linha) => linha[5]));
+    preencherDatalist("listaMotivos", linhas.slice(1).map((linha) => linha[6]));
+}
+
+function acharNumeroBase(linhas) {
+    const texto = linhas.flat().join(" ");
+    const encontrados = [...texto.matchAll(/CIOP\s*0*(\d+)/gi)].map((item) => Number(item[1])).filter(Boolean);
+    return encontrados.length ? Math.max(...encontrados) : 0;
+}
+
+function formatarNumero(valor) {
+    const numero = Number(String(valor || "").replace(/\D/g, ""));
+    return "CIOP" + String(numero || 0).padStart(5, "0");
+}
+
+function configurarNumero(base) {
+    const salvo = Number(localStorage.getItem(STORAGE_NUMERO) || "0");
+    const proximo = Math.max(base + 1, salvo + 1, 1);
+    campos.numero.value = String(proximo).padStart(5, "0");
+    atualizarPreview();
+}
+
+function gerarCorpoPadrao() {
+    const data = normalizarDataInput(campos.data.value);
+    const nome = campos.nome.value || "nome do funcionário";
+    const registro = campos.registro.value || "registro";
+    const funcao = campos.funcao.value || "função";
+    const carro = campos.carro.value ? ", carro " + campos.carro.value : "";
+    const linha = campos.linha.value ? ", linha/rota " + campos.linha.value : "";
+    const motivo = campos.motivo.value ? ", referente a " + campos.motivo.value : "";
+    return "No dia " + data + ", o(a) " + funcao.toLowerCase() + " " + nome + ", registro " + registro + carro + linha + motivo + ", apresentou a ocorrência descrita neste relatório.\n\nDescreva aqui os detalhes da ocorrência, providências tomadas e demais informações necessárias.";
+}
+
+function atualizarCorpoPDF() {
+    corpoRelatorioPrint.textContent = corpoRelatorio.value || "";
+}
+
+function autoGrow() {
+    corpoRelatorio.style.height = "auto";
+    corpoRelatorio.style.height = Math.max(410, corpoRelatorio.scrollHeight + 2) + "px";
+    atualizarCorpoPDF();
+}
+
+function atualizarPreview() {
+    preview.numero.textContent = "N° " + formatarNumero(campos.numero.value);
+    preview.registro.textContent = campos.registro.value || "";
+    preview.nome.textContent = campos.nome.value || "";
+    preview.funcao.textContent = campos.funcao.value || "";
+    preview.data.textContent = normalizarDataInput(campos.data.value);
+    preview.carro.textContent = campos.carro.value || "";
+    preview.linha.textContent = campos.linha.value || "";
+    preview.motivo.textContent = campos.motivo.value || "";
+    const opcao = assinaturaSelect.selectedOptions[0];
+    preview.assinaturaNome.textContent = opcao?.dataset.nome || "Selecione o usuário para assinatura";
+    preview.assinaturaRegistro.textContent = opcao?.dataset.registro ? "Registro " + opcao.dataset.registro : "";
+    if (!corpoFoiEditado && campos.registro.value) {
+        corpoRelatorio.value = gerarCorpoPadrao();
+        autoGrow();
+    }
+}
+
+function selecionarFuncionario() {
+    const registro = funcionarioSelect.value;
+    const funcionario = funcionarios.find((item) => item.registro === registro);
+    campos.registro.value = funcionario?.registro || "";
+    campos.nome.value = funcionario?.nome || "";
+    campos.funcao.value = funcionario?.funcao || "";
+    if (!corpoFoiEditado) corpoRelatorio.value = gerarCorpoPadrao();
+    atualizarPreview();
+}
+
+function normalizarUsuarioAssinatura(cadastro, email) {
+    const user = normalizarCadastro(cadastro, email);
+    return {
+        email: user.email || email,
+        nome: String(user.nome || email || "").trim(),
+        registro: String(user.registro || "").trim(),
+        ativo: user.ativo !== false
+    };
+}
+
+async function carregarAssinaturas() {
+    const mapa = new Map();
+    Object.entries(usuariosLocais || {}).forEach(([email, cadastro]) => {
+        const user = normalizarUsuarioAssinatura(cadastro, email);
+        const chave = user.registro || user.email;
+        if (chave) mapa.set(chave, user);
+    });
+    try {
+        const online = await listarUsuariosFirestore();
+        Object.entries(online).forEach(([email, cadastro]) => {
+            const user = normalizarUsuarioAssinatura(cadastro, email);
+            if (!user.ativo) return;
+            const chave = user.registro || user.email;
+            if (chave) mapa.set(chave, user);
+        });
+    } catch (error) {
+        console.warn("Assinaturas online indisponíveis:", error);
+    }
+    const lista = [...mapa.values()]
+        .filter((user) => user.nome)
+        .sort((a, b) => (Number(a.registro) || 999999) - (Number(b.registro) || 999999) || a.nome.localeCompare(b.nome, "pt-BR"));
+    assinaturaSelect.innerHTML = "<option value=\"\">Selecione registro e nome</option>" + lista.map((user) => {
+        const label = (user.registro ? user.registro + " - " : "") + user.nome;
+        return "<option value=\"" + escapeOption(user.registro || user.email) + "\" data-nome=\"" + escapeOption(user.nome) + "\" data-registro=\"" + escapeOption(user.registro) + "\">" + escapeOption(label) + "</option>";
+    }).join("");
+}
+
+async function iniciarRelatorio() {
+    window.portalMostrarCarregando?.("Carregando relatório");
+    campos.data.value = hojeISO();
+    try {
+        const [funcionariosCsv, dadosCsv, roCsv] = await Promise.all([
+            carregarCsv(GID_FUNCIONARIOS),
+            carregarCsv(GID_DADOS),
+            carregarCsv(GID_RO).catch(() => [])
+        ]);
+        carregarFuncionarios(funcionariosCsv);
+        carregarDadosGerais(dadosCsv);
+        configurarNumero(acharNumeroBase(roCsv));
+        await carregarAssinaturas();
+        corpoRelatorio.value = gerarCorpoPadrao();
+        autoGrow();
+        atualizarPreview();
+        setStatus("Base carregada. Escolha o funcionário e edite o corpo do relatório.", "ok");
+    } catch (error) {
+        console.error(error);
+        funcionarioSelect.innerHTML = "<option value=\"\">Não foi possível carregar a base</option>";
+        setStatus("Não foi possível carregar a base da planilha: " + error.message, "erro");
+    } finally {
+        window.portalOcultarCarregando?.();
+    }
+}
+
+funcionarioSelect.addEventListener("change", selecionarFuncionario);
+assinaturaSelect.addEventListener("change", atualizarPreview);
+Object.values(campos).forEach((campo) => campo.addEventListener("input", atualizarPreview));
+corpoRelatorio.addEventListener("input", () => {
+    corpoFoiEditado = true;
+    autoGrow();
+});
+document.getElementById("gerarTextoBtn").addEventListener("click", () => {
+    corpoFoiEditado = false;
+    corpoRelatorio.value = gerarCorpoPadrao();
+    autoGrow();
+});
+document.getElementById("proximoNumeroBtn").addEventListener("click", () => {
+    const atual = Number(String(campos.numero.value || "").replace(/\D/g, "")) || 0;
+    const proximo = atual + 1;
+    campos.numero.value = String(proximo).padStart(5, "0");
+    localStorage.setItem(STORAGE_NUMERO, String(proximo));
+    atualizarPreview();
+});
+function gerarPDF() {
+    const atual = Number(String(campos.numero.value || "").replace(/\D/g, "")) || 0;
+    if (atual) localStorage.setItem(STORAGE_NUMERO, String(atual));
+    atualizarCorpoPDF();
+    document.title = "Relatorio-" + formatarNumero(campos.numero.value);
+    window.print();
+}
+
+document.getElementById("imprimirBtn").addEventListener("click", gerarPDF);
+document.getElementById("pdfTopoBtn").addEventListener("click", gerarPDF);
+window.addEventListener("beforeprint", atualizarCorpoPDF);
+document.getElementById("limparBtn").addEventListener("click", () => {
+    funcionarioSelect.value = "";
+    campos.registro.value = "";
+    campos.nome.value = "";
+    campos.funcao.value = "";
+    campos.carro.value = "";
+    campos.linha.value = "";
+    campos.motivo.value = "";
+    assinaturaSelect.value = "";
+    corpoFoiEditado = false;
+    corpoRelatorio.value = gerarCorpoPadrao();
+    autoGrow();
+    atualizarPreview();
+});
+
+if (window.portalUsuarioValidado) {
+    iniciarRelatorio();
+} else {
+    window.addEventListener("portal:usuario-validado", iniciarRelatorio, { once: true });
+}
+</script>
+</body>
+</html>
