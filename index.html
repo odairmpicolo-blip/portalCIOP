@@ -1252,7 +1252,7 @@ h1 {
      <a class="side-link"
        href="https://docs.google.com/spreadsheets/d/1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA/edit?gid=665320337#gid=665320337"
        target="_blank"
-         data-perfis="Analistaa,Supervisor,Administrador">
+         data-perfis="Analista,Supervisor,Administrador">
         <span class="side-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4-1 11-11-3-3L5 16l-1 4Z"/><path d="m14 7 3 3"/></svg></span>
         <span class="side-text">Criar Relatório</span>
         <span class="side-arrow" aria-hidden="true">›</span>
@@ -1569,7 +1569,7 @@ h1 {
             <div class="card-btn">Acessar</div>
         </a>
         
-        <a href="https://drive.google.com/drive/folders/140AXmLicGVvTm2Z5ALESVEmv0-K_mhYW" class="card theme-cyan" target="_blank">
+        <a href="https://drive.google.com/drive/folders/140AXmLicGVvTm2Z5ALESVEmv0-K_mhYW" class="card theme-cyan" target="_blank" data-saida-carros-cot="true">
             <div class="card-top">
                 <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="14" rx="2"/><path d="M8 18v2"/><path d="M16 18v2"/><path d="M5 10h14"/><path d="M8 7h8"/></svg></div>
                 <div class="card-title">Saída de carros</div>
@@ -1580,7 +1580,7 @@ h1 {
             <div class="card-btn">Acessar</div>
         </a>
 
-       <a href="https://drive.google.com/drive/folders/1-jBeEFxHtTgvXbjkJbhonY-ijKg16UcF" class="card theme-slate" target="_blank">
+       <a href="https://drive.google.com/drive/folders/1-jBeEFxHtTgvXbjkJbhonY-ijKg16UcF" class="card theme-slate" target="_blank" data-diarios-bordo="true">
             <div class="card-top">
                 <div class="card-figure"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5a3 3 0 0 1 3-3h11v18H8a3 3 0 0 0-3 3V5Z"/><path d="M5 5v16"/><path d="M9 6h6"/></svg></div>
                 <div class="card-title">Diários de bordo</div>
@@ -2195,6 +2195,144 @@ if (window.portalUsuarioValidado) {
 }
 </script><!-- Fim portalAvisosScript -->
 
+
+<script>
+(function configurarSaidaCarrosCot() {
+    const pastaDrive = "https://drive.google.com/drive/folders/140AXmLicGVvTm2Z5ALESVEmv0-K_mhYW";
+    const planilhasPorMes = {
+        "2026-01": { id: "1SyBWJu4ruFbiTJdJgNXfatRdYcpj2TIsF4pIyZ3zo7g", abas: {} },
+        "2026-02": { id: "17D8Ps6KdcsidwYboPHjwduhDIY88zP4t4NYRsMmWmL4", abas: {} },
+        "2026-03": { id: "1-xN-XCT06OZSQ_Ksrkl9FZJAiaSYRsPgXyOR5JLwjwA", abas: {} },
+        "2026-04": { id: "1RT8S_e_YvOo9fwoE6I7AjDcWaU-XzGLlZ2UNetOgySI", abas: {} },
+        "2026-05": { id: "1HZjjWUf31B0KPJZ5wiwkMP7mntZIplFxozzZEv6QJPo", abas: {} },
+        "2026-06": {
+            id: "18AbgwQ8RcYX7Ng_sE_fqzAWaV_k510tbWv4ScWU9ZmA",
+            abas: {
+                "01": "476758202",
+                "02": "1974452398",
+                "03": "385333917",
+                "04": "2079590186",
+                "05": "511125669",
+                "06": "994622231",
+                "07": "292629914",
+                "08": "806090330",
+                "09": "845385074",
+                "10": "1666240587",
+                "11": "44154813",
+                "12": "212963382",
+                "13": "1737897722",
+                "14": "1903936578",
+                "15": "585043884",
+                "16": "364387985",
+                "17": "1229057228",
+                "18": "894847989",
+                "19": "1486499768"
+            }
+        }
+    };
+
+    function doisDigitos(valor) {
+        return String(valor).padStart(2, "0");
+    }
+
+    function linkSaidaCarrosHoje() {
+        const hoje = new Date();
+        const chaveMes = hoje.getFullYear() + "-" + doisDigitos(hoje.getMonth() + 1);
+        const dia = doisDigitos(hoje.getDate());
+        const planilha = planilhasPorMes[chaveMes];
+        if (!planilha) return pastaDrive;
+        const gid = planilha.abas[dia];
+        const base = "https://docs.google.com/spreadsheets/d/" + planilha.id + "/edit";
+        return gid ? base + "?gid=" + gid + "#gid=" + gid : base;
+    }
+
+    function atualizarLinkSaidaCarros() {
+        document.querySelectorAll("[data-saida-carros-cot]").forEach((link) => {
+            link.href = linkSaidaCarrosHoje();
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+        });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", atualizarLinkSaidaCarros);
+    } else {
+        atualizarLinkSaidaCarros();
+    }
+})();
+</script>
+
+<script>
+(function configurarDiariosBordo() {
+    const pastaRaiz = "https://drive.google.com/drive/folders/1-jBeEFxHtTgvXbjkJbhonY-ijKg16UcF";
+    const pastasPorMes = {
+        "2026-01": "1x05B25zRP1miRdLrN6nBIWBBPiI9_lw6",
+        "2026-02": "1Eh_-NqdIhNZv7D3-naqSr6VTJUXxPDTP",
+        "2026-03": "1Z4xIdPaYP7iyyfTNyqaYXHbYroPeJHAt",
+        "2026-04": "15b0Xeia7WjpJk_SkDPgbEPlv1f4uBCTL",
+        "2026-05": "1Z5net1LFdSJUi4ShZp1IUVX2PrEtoxGs",
+        "2026-06": "1SmFg0L0jcj7RIybYqPocdW4anQ3YYEyp",
+        "2026-07": "1b28F_oANDILYAOux3AxTRnB0fN-1k1Cv",
+        "2026-08": "1uzSd9jHJzC_vjeYbwC_ZthH_rpm0Dp5g",
+        "2026-09": "193XroR50xiBD8TDmqPXTj-Bbdpebw5Q7",
+        "2026-10": "1fUkHNUVY6FN-TPv8-W5pX1SEQYTiZrqX",
+        "2026-11": "1Vm5pF5BROXfgSzJapBXmNEXwwTLL-nId",
+        "2026-12": "1pBT5-Gxpp095G-yA3bV1Ll8SBxFzKrQJ"
+    };
+    const arquivosPorDia = {
+        "2026-06-01": "1zKhqjgVhZfGNgkpkzWPBG3YKeKkHMD9o",
+        "2026-06-02": "1AphsvTCDHf1WMSD0elRkMBy758ItqD5j",
+        "2026-06-03": "1KbzrpCNQKmgrjYqiZLt9llgD2o_ahKGV",
+        "2026-06-04": "1oAdhdyqieeXeAzL-iWk7ch7Z34UVx_Ol",
+        "2026-06-05": "1cPoF4YRWnmrjdlXhNqEvr_fkNpybU1Om",
+        "2026-06-06": "1sTqg1gm9x-ZLyIgIFYHUkcS3S3c6ZB0d",
+        "2026-06-07": "1PgFqpfQVvWJdjy92iRhcfd6km_BOg-pe",
+        "2026-06-08": "1T9DpPBnaYFVsW1HcBx91BBfWyiuXPpMW",
+        "2026-06-09": "1_MAovLOS6KKXDzEVPF-wJgn9-yPY9bqV",
+        "2026-06-10": "1nlTryuIePpFEZG76guBg3gzyx48mlj9I",
+        "2026-06-11": "178M0q1W9k44BsAe9IyzrZNarCYjNXOOd",
+        "2026-06-12": "1FHzLA2RQlwbGLfTrDM7f4y92AUsHnGot",
+        "2026-06-13": "1t7EpsZuYjK8Tqu87L8E5m4AGLzgChMYU",
+        "2026-06-14": "19ilezo8491jVYJd0u-YTq_O6xDRfTia4",
+        "2026-06-15": "1hZyO1NPnz4tJ-jqwqFMSlBKynpwns8OL",
+        "2026-06-16": "1rkDuv-WU6eF_q9r1V_Pr9ibdgHPouAXu",
+        "2026-06-17": "1rx_EsfuBZbtmKG68xO6ABYj0eXIVN_AQ",
+        "2026-06-18": "1H5fDGG6IcLZV6Ge1VC17Tt7RDbe1Bp_p",
+        "2026-06-19": "1bkA3ejubFelikITti2e8TSGaVhDjahD7",
+        "2026-06-20": "1eA48pUJ0ND9wrRRtnkXgVCH0LsJXFWf-",
+        "2026-06-21": "1CQHB8ZQPxNOiClRfRCHeMya3_487E1nB",
+        "2026-06-22": "1RQicVMN6YKCOgNLA9BZRocEjWb1zmPfh"
+    };
+
+    function doisDigitos(valor) {
+        return String(valor).padStart(2, "0");
+    }
+
+    function linkDiarioHoje() {
+        const hoje = new Date();
+        const chaveMes = hoje.getFullYear() + "-" + doisDigitos(hoje.getMonth() + 1);
+        const chaveDia = chaveMes + "-" + doisDigitos(hoje.getDate());
+        const arquivoId = arquivosPorDia[chaveDia];
+        if (arquivoId) return "https://drive.google.com/file/d/" + arquivoId + "/view";
+        const pastaMes = pastasPorMes[chaveMes];
+        return pastaMes ? "https://drive.google.com/drive/folders/" + pastaMes : pastaRaiz;
+    }
+
+    function atualizarLinkDiarios() {
+        document.querySelectorAll("[data-diarios-bordo]").forEach((link) => {
+            link.href = linkDiarioHoje();
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+        });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", atualizarLinkDiarios);
+    } else {
+        atualizarLinkDiarios();
+    }
+})();
+</script>
 
 </body>
 
