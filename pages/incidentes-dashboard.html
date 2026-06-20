@@ -143,7 +143,7 @@ input,select{
 .table-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
 .table-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .table-wrap{overflow:auto;max-height:620px}
-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;min-width:1180px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;min-width:1580px}
 thead th{
     position:sticky;
     top:0;
@@ -310,6 +310,8 @@ tbody tr:hover{background:#fff7ed}
                         <th data-sort="tipo">Tipo do incidente</th>
                         <th data-sort="proprietario">Proprietário</th>
                         <th data-sort="estado">Estado</th>
+                        <th data-sort="natureOfProblem">Nature Of Problem</th>
+                        <th data-sort="instructions">Instructions</th>
                     </tr>
                 </thead>
                 <tbody id="tabelaIncidentes"></tbody>
@@ -419,7 +421,7 @@ function applyFilters() {
         if (exact.criadoPor && row.criadoPor !== exact.criadoPor) return false;
         if (exact.proprietario && row.proprietario !== exact.proprietario) return false;
         if (!search) return true;
-        return normalizeText([row.id, row.data, row.hora, row.veiculo, row.linha, row.criadoPor, row.tipo, row.proprietario, row.estado].join(" ")).includes(search);
+        return normalizeText([row.id, row.data, row.hora, row.veiculo, row.linha, row.criadoPor, row.tipo, row.proprietario, row.estado, row.natureOfProblem, row.instructions].join(" ")).includes(search);
     });
 
     sortRows();
@@ -481,7 +483,7 @@ function renderTable() {
         '<td>' + escapeHtml(row.criadoPor) + '</td>' +
         '<td>' + escapeHtml(row.tipo) + '</td>' +
         '<td>' + escapeHtml(row.proprietario) + '</td>' +
-        '<td>' + escapeHtml(row.estado) + '</td>' +
+        '<td>' + escapeHtml(row.estado) + '</td><td>' + escapeHtml(row.natureOfProblem || "") + '</td><td>' + escapeHtml(row.instructions || "") + '</td>' +
     '</tr>').join("");
     empty.hidden = pageRows.length > 0;
     document.getElementById("pageInfo").textContent = formatNumber(state.filtered.length) + " registros, página " + state.page + " de " + totalPages;
@@ -503,16 +505,16 @@ function csvValue(value) {
 }
 
 function exportCsv() {
-    const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado"];
+    const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Nature Of Problem","Instructions"];
     const lines = [header.map(csvValue).join(";")].concat(state.filtered.map((row) => [
-        row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,row.tipo,row.proprietario,row.estado
+        row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,row.tipo,row.proprietario,row.estado,row.natureOfProblem,row.instructions
     ].map(csvValue).join(";")));
     downloadBlob(new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" }), "incidentes-tcgl.csv");
 }
 
 function exportExcel() {
-    const rows = state.filtered.map((row) => [row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,row.tipo,row.proprietario,row.estado]);
-    const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado"];
+    const rows = state.filtered.map((row) => [row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,row.tipo,row.proprietario,row.estado,row.natureOfProblem,row.instructions]);
+    const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Nature Of Problem","Instructions"];
     const table = '<html><head><meta charset="utf-8"></head><body><table><thead><tr>' +
         header.map((cell) => '<th>' + escapeHtml(cell) + '</th>').join("") +
         '</tr></thead><tbody>' +
@@ -536,7 +538,7 @@ async function init() {
     const response = await fetch("../assets/data/incidentes-tcgl.json?ts=" + Date.now(), { cache: "no-store" });
     if (!response.ok) throw new Error("Não foi possível carregar o arquivo de incidentes.");
     const payload = await response.json();
-    state.all = (payload.incidentes || []).filter((row) => String(row.empresa || "").toUpperCase() === "TCGL");
+    state.all = (payload.incidentes || []).filter((row) => String(row.empresa || "").toUpperCase() === "TCGL" && (String(row.natureOfProblem || "").trim() || String(row.instructions || "").trim()));
     state.filtered = state.all.slice();
     populateSelect(fields.estado, state.all, "estado");
     populateSelect(fields.tipo, state.all, "tipo");
@@ -544,7 +546,7 @@ async function init() {
     populateSelect(fields.veiculo, state.all, "veiculo");
     populateSelect(fields.criado, state.all, "criadoPor");
     populateSelect(fields.proprietario, state.all, "proprietario");
-    document.getElementById("statusLine").textContent = "Atualizado em " + new Date(payload.atualizadoEm).toLocaleString("pt-BR") + " - " + formatNumber(state.all.length) + " incidentes TCGL";
+    document.getElementById("statusLine").textContent = "Atualizado em " + new Date(payload.atualizadoEm).toLocaleString("pt-BR") + " - " + formatNumber(state.all.length) + " incidentes TCGL com detalhes";
     sortRows();
     render();
 }
