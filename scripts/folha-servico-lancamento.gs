@@ -15,7 +15,7 @@ const SPREADSHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const ABA_GID = 1013912232;
 const ABA_NOME = "FOLHA DE SERVIÇO";
 const LISTAS_GID = 665133219;
-const SCRIPT_VERSAO = "2026-06-21-recentes-compartilhados";
+const SCRIPT_VERSAO = "2026-06-21-hora-hhmm";
 
 /** Colunas da aba DADOS (gid 665133219) — listas verticais por coluna */
 const COLUNAS_LISTAS = {
@@ -349,10 +349,49 @@ function linhaParaObjeto_(cabecalho, valores, rowNumber) {
   const item = { _row: rowNumber };
   cabecalho.forEach(function (chave, idx) {
     if (!chave) return;
-    item[chave] = valores[idx] == null ? "" : String(valores[idx]).trim();
+    item[chave] = valorCelulaParaJson_(valores[idx], chave);
   });
-  if (item.data) item.data = normalizarDataIso_(item.data) || item.data;
+  if (item.data) {
+    item.data = normalizarDataIso_(item.data) || item.data;
+  }
+  if (item.hora) {
+    item.hora = formatarHoraPlanilha_(item.hora);
+  }
   return item;
+}
+
+function valorCelulaParaJson_(valor, chave) {
+  if (valor == null || valor === "") return "";
+  if (Object.prototype.toString.call(valor) === "[object Date]" && !isNaN(valor)) {
+    const tz = Session.getScriptTimeZone();
+    if (chave === "data") {
+      return Utilities.formatDate(valor, tz, "yyyy-MM-dd");
+    }
+    if (chave === "hora") {
+      return Utilities.formatDate(valor, tz, "HH:mm");
+    }
+  }
+  return String(valor).trim();
+}
+
+function formatarHoraPlanilha_(valor) {
+  if (Object.prototype.toString.call(valor) === "[object Date]" && !isNaN(valor)) {
+    return Utilities.formatDate(valor, Session.getScriptTimeZone(), "HH:mm");
+  }
+  const texto = String(valor || "").trim();
+  if (!texto) return "";
+  const hm = texto.match(/(\d{1,2}):(\d{2})/);
+  if (hm) {
+    return ("0" + hm[1]).slice(-2) + ":" + hm[2];
+  }
+  const num = Number(texto);
+  if (!isNaN(num) && num >= 0 && num < 1) {
+    const totalMin = Math.round(num * 24 * 60);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    return ("0" + h).slice(-2) + ":" + ("0" + m).slice(-2);
+  }
+  return texto;
 }
 
 function normalizarChave_(valor) {

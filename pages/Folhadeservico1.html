@@ -1626,7 +1626,7 @@ h1 {
         }
         const texto = String(valor || "").trim();
         if (!texto) return "";
-        const hm = texto.match(/^(\d{1,2}):(\d{2})/);
+        const hm = texto.match(/(\d{1,2}):(\d{2})/);
         if (hm) return `${hm[1].padStart(2, "0")}:${hm[2]}`;
         const num = Number(texto);
         if (!isNaN(num) && num >= 0 && num < 1) {
@@ -1635,7 +1635,11 @@ h1 {
             const m = totalMin % 60;
             return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
         }
-        return texto.length >= 5 ? texto.slice(0, 5) : texto;
+        const parsed = new Date(texto);
+        if (!isNaN(parsed.getTime()) && /:\d{2}/.test(texto)) {
+            return `${String(parsed.getHours()).padStart(2, "0")}:${String(parsed.getMinutes()).padStart(2, "0")}`;
+        }
+        return "";
     }
 
     window.onload = () => {
