@@ -1253,6 +1253,14 @@ h1 {
                 <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span>Queda de Cliente por Mês</span></div>
                 <div class="chart-container"><canvas id="chartQuedaMes"></canvas></div>
             </div>
+            <div class="chart-card accent-blue chart-wide">
+                <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15h16"/><path d="m10 11 4 4 4-4"/><path d="M12 3v12"/></svg></span><span>Linhas com Mais Atrasos</span></div>
+                <div class="chart-container"><canvas id="chartLinhasAtrasos"></canvas></div>
+            </div>
+            <div class="chart-card accent-teal chart-wide">
+                <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16"/><path d="m14 13-4-4-4 4"/><path d="M12 21V9"/></svg></span><span>Linhas com Mais Adiantamentos</span></div>
+                <div class="chart-container"><canvas id="chartLinhasAdiantamento"></canvas></div>
+            </div>
             <div class="chart-card accent-indigo">
                 <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span>Período de Mais Ocorrências</span></div>
                 <div class="chart-container"><canvas id="chartPeriodo"></canvas></div>
@@ -1967,6 +1975,24 @@ h1 {
             values: quedaMes.length ? quedaMes.map(i => i.qtd) : [0],
             horizontal: false,
             corTema: corQueda
+        });
+
+        const linhasAtrasos = topContagem(contarPor(dados, d => d.linha, item =>
+            ocorrenciaEh(item.ocorrencia, "ATRASADO")), 8);
+        criarGraficoAnalytics("chartLinhasAtrasos", {
+            labels: linhasAtrasos.length ? linhasAtrasos.map(i => "Linha " + i.label) : ["Sem dados"],
+            values: linhasAtrasos.length ? linhasAtrasos.map(i => i.qtd) : [0],
+            horizontal: true,
+            corTema: corAtrasado
+        });
+
+        const linhasAdiant = topContagem(contarPor(dados, d => d.linha, item =>
+            ocorrenciaEh(item.ocorrencia, "ADIANTADO")), 8);
+        criarGraficoAnalytics("chartLinhasAdiantamento", {
+            labels: linhasAdiant.length ? linhasAdiant.map(i => "Linha " + i.label) : ["Sem dados"],
+            values: linhasAdiant.length ? linhasAdiant.map(i => i.qtd) : [0],
+            horizontal: true,
+            corTema: corAdiantado
         });
 
         const contagemPeriodo = { madrugada: 0, manha: 0, tarde: 0, noite: 0 };
