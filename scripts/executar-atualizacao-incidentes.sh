@@ -76,6 +76,13 @@ set +a
 
 export PORTAL_ROOT
 export CIOP_PORTAL_PROD="${CIOP_PORTAL_PROD:-}"
+export CIOP_INCIDENTES_USUARIO="${CIOP_INCIDENTES_USUARIO:-}"
+export CIOP_INCIDENTES_SENHA="${CIOP_INCIDENTES_SENHA:-}"
+
+if [[ -z "$CIOP_INCIDENTES_USUARIO" || -z "$CIOP_INCIDENTES_SENHA" ]]; then
+  log "ERRO: CIOP_INCIDENTES_USUARIO ou CIOP_INCIDENTES_SENHA vazio em $ENV_FILE"
+  exit 1
+fi
 
 if "$NODE_BIN" "$PORTAL_ROOT/scripts/atualizar-incidentes-local.mjs" >> "$LOG_FILE" 2>&1; then
   publish_portal_prod

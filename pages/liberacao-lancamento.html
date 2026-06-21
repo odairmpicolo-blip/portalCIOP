@@ -70,6 +70,11 @@ tbody tr:hover td.cell-active{background:#fff!important}
 .cell-input.saving,.cell-select.saving{background:#fff7ed}
 .cell-input.saved,.cell-select.saved{background:#f0fdf4}
 .cell-input.erro,.cell-select.erro{background:#fef2f2}
+.cell-readonly{display:block;width:100%;min-width:76px;padding:7px 6px;font-size:11px;color:#475467;background:#f8fafc;cursor:default;user-select:text}
+tbody td.cell-locked{background:#f8fafc}
+tbody tr:nth-child(even) td.cell-locked{background:#f1f5f9}
+tbody tr:hover td.cell-locked{background:#f1f5f9}
+.legend-swatch.locked{background:#f8fafc;border-color:#cbd5e1}
 .sync-badge{display:inline-flex;align-items:center;justify-content:center;min-width:68px;padding:4px 8px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.03em}
 .sync-badge.ok{background:#dcfce7;color:var(--green)}
 .sync-badge.saving{background:#ffedd5;color:var(--amber)}
@@ -123,7 +128,7 @@ tbody tr:hover td.cell-active{background:#fff!important}
         <div class="table-head">
             <div>
                 <h2 class="card-title">Planilha de acompanhamento</h2>
-                <div class="table-sub">Use as setas ← → ↑ ↓ ou Tab para navegar entre células · salvamento automático</div>
+                <div class="table-sub">Edite apenas células vazias · setas / Tab / Enter para navegar · salvamento automático</div>
             </div>
             <span class="status-pill" style="padding:6px 10px"><span id="tableInfo">0 linhas</span></span>
         </div>
@@ -141,7 +146,8 @@ tbody tr:hover td.cell-active{background:#fff!important}
             <span class="legend-item"><span class="legend-swatch ok"></span>Salvo</span>
             <span class="legend-item"><span class="legend-swatch saving"></span>Salvando</span>
             <span class="legend-item"><span class="legend-swatch erro"></span>Erro ao salvar</span>
-            <span class="legend-item">Setas / Tab / Enter — navegar células</span>
+            <span class="legend-item"><span class="legend-swatch locked"></span>Preenchido (somente leitura)</span>
+            <span class="legend-item">Setas / Tab / Enter — navegar células editáveis</span>
         </div>
     </section>
 </main>
@@ -181,6 +187,21 @@ function val(row,key){
     if(key==="horario_saida_da_garagem") return row.horario_de_saida_da_garagem||"";
     if(key==="saiu_no_horario") return row.saiu_no_horaro||"";
     return "";
+}
+
+function capturarValoresIniciais(row){
+    row._valoresIniciais={};
+    state.colunas.forEach(c=>{ row._valoresIniciais[c.chave]=String(val(row,c.chave)||"").trim(); });
+    return row;
+}
+
+function celulaPreenchida(row,chave){
+    return String(row._valoresIniciais?.[chave]??"").trim()!=="";
+}
+
+function celulaEditavel(rowIdx,colIdx){
+    if(rowIdx<0||rowIdx>=state.dados.length||colIdx<0||colIdx>=state.colunas.length) return false;
+    return !celulaPreenchida(state.dados[rowIdx],state.colunas[colIdx].chave);
 }
 
 function setStatus(texto, tipo){
@@ -225,11 +246,27 @@ function indiceColuna(chave){
     return state.colunas.findIndex(c=>c.chave===chave);
 }
 
+function encontrarCelulaEditavel(rowIdx,colIdx,stepRow,stepCol){
+    let row=rowIdx,col=colIdx;
+    const total=state.dados.length*state.colunas.length;
+    for(let n=0;n<total;n++){
+        row+=stepRow;
+        col+=stepCol;
+        if(stepCol>0&&col>=state.colunas.length){col=0;row++;}
+        if(stepCol<0&&col<0){col=state.colunas.length-1;row--;}
+        if(row<0||row>=state.dados.length) return null;
+        if(col<0||col>=state.colunas.length) continue;
+        if(celulaEditavel(row,col)) return {row,col};
+    }
+    return null;
+}
+
 function focarCelula(rowIdx,colIdx){
-    if(colIdx<0||colIdx>=state.colunas.length||rowIdx<0||rowIdx>=state.dados.length) return false;
-    const chave=state.colunas[colIdx].chave;
-    const el=document.querySelector('[data-i="'+rowIdx+'"][data-k="'+chave+'"]');
-    if(!el) return false;
+    const dest=celulaEditavel(rowIdx,colIdx)?{row:rowIdx,col:colIdx}:encontrarCelulaEditavel(rowIdx,colIdx,0,1);
+    if(!dest) return false;
+    const chave=state.colunas[dest.col].chave;
+    const el=document.querySelector('[data-i="'+dest.row+'"][data-k="'+chave+'"]');
+    if(!el||!el.matches("input,select")) return false;
     el.focus();
     if(el.tagName==="INPUT") el.select();
     marcarCelulaAtiva(el);
@@ -254,23 +291,18 @@ function onCellKeydown(e){
     const colIdx=indiceColuna(el.dataset.k);
     if(isNaN(rowIdx)||colIdx<0) return;
 
-    let nextRow=rowIdx,nextCol=colIdx,mover=false;
-    if(e.key==="ArrowRight"&&podeNavegarHorizontal(el,"right")){nextCol++;mover=true;}
-    else if(e.key==="ArrowLeft"&&podeNavegarHorizontal(el,"left")){nextCol--;mover=true;}
-    else if(e.key==="ArrowDown"){nextRow++;mover=true;}
-    else if(e.key==="ArrowUp"){nextRow--;mover=true;}
-    else if(e.key==="Enter"&&!e.shiftKey){nextRow++;mover=true;}
-    else if(e.key==="Tab"){
-        e.preventDefault();
-        nextCol+=e.shiftKey?-1:1;
-        mover=true;
-    }
+    let stepRow=0,stepCol=0,mover=false;
+    if(e.key==="ArrowRight"&&podeNavegarHorizontal(el,"right")){stepCol=1;mover=true;}
+    else if(e.key==="ArrowLeft"&&podeNavegarHorizontal(el,"left")){stepCol=-1;mover=true;}
+    else if(e.key==="ArrowDown"){stepRow=1;mover=true;}
+    else if(e.key==="ArrowUp"){stepRow=-1;mover=true;}
+    else if(e.key==="Enter"&&!e.shiftKey){stepRow=1;mover=true;}
+    else if(e.key==="Tab"){stepCol=e.shiftKey?-1:1;mover=true;}
     if(!mover) return;
 
     e.preventDefault();
-    if(nextCol>=state.colunas.length){nextCol=0;nextRow++;}
-    if(nextCol<0){nextCol=state.colunas.length-1;nextRow--;}
-    focarCelula(nextRow,nextCol);
+    const dest=encontrarCelulaEditavel(rowIdx,colIdx,stepRow,stepCol);
+    if(dest) focarCelula(dest.row,dest.col);
 }
 
 function bindCelulas(){
@@ -285,6 +317,10 @@ function bindCelulas(){
 function renderCelula(row, rowIdx, col){
     const chave=col.chave;
     const v=val(row,chave);
+    const locked=celulaPreenchida(row,chave);
+    if(locked){
+        return '<span class="cell-readonly" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" title="Preenchido na planilha">'+escapeHtml(v||"—")+'</span>';
+    }
     if(CAMPOS_SELECT[chave]){
         const opts=CAMPOS_SELECT[chave].map(o=>'<option value="'+escapeHtml(o)+'"'+(o===v?" selected":"")+'>'+(o||"—")+'</option>').join("");
         return '<select class="cell-select" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'">'+opts+'</select>';
@@ -300,7 +336,10 @@ function renderTabela(){
         '<tr data-i="'+i+'">'+
         '<td class="col-fix col-num">'+(i+1)+'</td>'+
         '<td class="col-fix col-sync sync-'+i+'">'+syncBadge(row,i)+'</td>'+
-        cols.map(c=>'<td>'+renderCelula(row,i,c)+'</td>').join("")+
+        cols.map(c=>{
+            const locked=celulaPreenchida(row,c.chave);
+            return '<td'+(locked?' class="cell-locked"':'')+'>'+renderCelula(row,i,c)+'</td>';
+        }).join("")+
         '</tr>'
     ).join("");
     $("emptyState").hidden=state.dados.length>0;
@@ -313,6 +352,7 @@ function onCellChange(e){
     const i=Number(el.dataset.i);
     const k=el.dataset.k;
     if(isNaN(i)||!k) return;
+    if(celulaPreenchida(state.dados[i],k)) return;
     state.dados[i][k]=el.value.trim();
     state.dados[i]._dirty=true;
     state.dados[i]._syncErro=false;
@@ -376,7 +416,7 @@ async function carregar(){
         }else{
             state.colunas=carregarColunasCache()||COLUNAS_PADRAO;
         }
-        state.todos=(res.dados||[]).map(r=>Object.assign({},r));
+        state.todos=(res.dados||[]).map(r=>capturarValoresIniciais(Object.assign({},r)));
         popularMaquinas([...new Set(state.todos.map(d=>String(d.maquina||"").trim()).filter(Boolean))]);
         aplicarFiltroMaquina();
         renderTabela();
