@@ -198,6 +198,27 @@ document.documentElement.classList.add("portal-auth-pending");
             font-weight: bold;
             padding: 12px 16px;
             border-bottom: 2px solid var(--border);
+            text-align: center;
+        }
+        th[data-sort] {
+            cursor: pointer;
+            user-select: none;
+        }
+        .sort-label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+        }
+        .sort-icon {
+            color: #98a2b3;
+            font-size: 11px;
+            line-height: 1;
+        }
+        th[aria-sort="ascending"] .sort-icon,
+        th[aria-sort="descending"] .sort-icon {
+            color: var(--orange);
         }
         td {
             padding: 12px 16px;
@@ -956,11 +977,11 @@ h1 {
         <table>
             <thead>
                 <tr>
-                    <th>Data</th>
-                    <th>Analista</th>
-                    <th>Ocorrência</th>
-                    <th>Linha</th>
-                    <th>Situação</th>
+                    <th data-sort="data"><span class="sort-label">Data <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                    <th data-sort="analista"><span class="sort-label">Analista <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                    <th data-sort="ocorrencia"><span class="sort-label">Ocorrência <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                    <th data-sort="linha"><span class="sort-label">Linha <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                    <th data-sort="situacao"><span class="sort-label">Situação <span class="sort-icon" aria-hidden="true">↕</span></span></th>
                 </tr>
             </thead>
             <tbody id="tabela-corpo">
@@ -984,6 +1005,7 @@ h1 {
     let chartAnalistasInstance = null;
     let chartOcorrenciasInstance = null;
     let chartSituacaoInstance = null;
+    const ordenacaoTabela = { key: "data", dir: "desc" };
 
     function carregarFolhaServico() {
         window.portalMostrarCarregando?.("Carregando folha de serviço");
@@ -1182,16 +1204,41 @@ h1 {
         });
     }
 
+    function valorOrdenacaoTabela(item, key) {
+        if (key === "data") return String(item.data || "");
+        return String(item[key] || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    }
+
+    function ordenarDadosTabela(dados) {
+        const dir = ordenacaoTabela.dir === "asc" ? 1 : -1;
+        return dados.slice().sort((a, b) => {
+            const va = valorOrdenacaoTabela(a, ordenacaoTabela.key);
+            const vb = valorOrdenacaoTabela(b, ordenacaoTabela.key);
+            if (ordenacaoTabela.key === "data") return va.localeCompare(vb) * dir;
+            return va.localeCompare(vb, "pt-BR", { numeric: true }) * dir;
+        });
+    }
+
+    function atualizarSetasTabela() {
+        document.querySelectorAll("th[data-sort]").forEach(th => {
+            const active = th.dataset.sort === ordenacaoTabela.key;
+            th.setAttribute("aria-sort", active ? (ordenacaoTabela.dir === "asc" ? "ascending" : "descending") : "none");
+            const icon = th.querySelector(".sort-icon");
+            if (icon) icon.textContent = active ? (ordenacaoTabela.dir === "asc" ? "↑" : "↓") : "↕";
+        });
+    }
+
     function renderizarTabela(dados) {
         const tbody = document.getElementById('tabela-corpo');
         tbody.innerHTML = "";
+        atualizarSetasTabela();
         
         if(dados.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--muted);">Nenhum registro encontrado para os filtros selecionados.</td></tr>`;
             return;
         }
 
-        dados.forEach(d => {
+        ordenarDadosTabela(dados).forEach(d => {
             let dataFormatada = d.data;
             if(d.data && d.data.includes('-')) {
                 dataFormatada = d.data.split('-').reverse().join('/');
@@ -1210,6 +1257,19 @@ h1 {
             tbody.appendChild(tr);
         });
     }
+
+    document.querySelectorAll("th[data-sort]").forEach(th => {
+        th.addEventListener("click", () => {
+            const key = th.dataset.sort;
+            if (ordenacaoTabela.key === key) {
+                ordenacaoTabela.dir = ordenacaoTabela.dir === "asc" ? "desc" : "asc";
+            } else {
+                ordenacaoTabela.key = key;
+                ordenacaoTabela.dir = key === "data" ? "desc" : "asc";
+            }
+            filtrarDashboard();
+        });
+    });
 
     function filtrarDashboard() {
         const dInicio = document.getElementById('filtro-data-inicio').value;
