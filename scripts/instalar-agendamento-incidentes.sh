@@ -67,7 +67,6 @@ EOF
 launchctl bootout "gui/${UID_NUM}/${PLIST_LABEL}" 2>/dev/null || true
 launchctl bootstrap "gui/${UID_NUM}" "$PLIST_PATH"
 launchctl enable "gui/${UID_NUM}/${PLIST_LABEL}"
-launchctl kickstart -k "gui/${UID_NUM}/${PLIST_LABEL}" 2>/dev/null || true
 
 echo "Agendamento instalado."
 echo "  Horário: todo dia às 16:00 (horário local do Mac)"
