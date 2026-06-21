@@ -62,7 +62,7 @@ thead th.col-sort:hover{background:#e8eef6}
 thead th[aria-sort="ascending"] .sort-icon,thead th[aria-sort="descending"] .sort-icon{color:var(--orange)}
 thead th.col-fix{z-index:5;background:#e8eef6}
 thead th.col-sync{width:88px;min-width:88px}
-thead th.col-num{width:42px;min-width:42px}
+thead th.col-maquina{width:96px;min-width:96px}
 tbody td{border-bottom:1px solid #edf2f7;padding:0;text-align:center;vertical-align:middle;background:var(--white)}
 tbody tr:nth-child(even) td{background:#fafbfd}
 tbody tr:hover td{background:#fff7ed}
@@ -85,7 +85,7 @@ tbody td.cell-locked{background:#f8fafc}
 tbody tr:nth-child(even) td.cell-locked{background:#f1f5f9}
 tbody tr:hover td.cell-locked{background:#f1f5f9}
 .legend-swatch.locked{background:#f8fafc;border-color:#cbd5e1}
-.cell-maquina{font-weight:900;text-transform:uppercase;letter-spacing:.02em}
+.cell-maquina{font-weight:900;text-transform:uppercase;letter-spacing:.02em;font-size:12px;line-height:1.2;white-space:nowrap;padding:8px 4px}
 .cell-maquina.maq-01{color:#67a363}
 .cell-maquina.maq-02{color:#eebc59}
 .cell-maquina.maq-03{color:#6089e1}
@@ -95,7 +95,11 @@ tbody tr:hover td.cell-locked{background:#f1f5f9}
 .cell-maquina.maq-02.cell-input,.cell-maquina.maq-02.cell-select,.cell-maquina.maq-02.cell-readonly{color:#eebc59}
 .cell-maquina.maq-03.cell-input,.cell-maquina.maq-03.cell-select,.cell-maquina.maq-03.cell-readonly{color:#6089e1}
 .cell-maquina.maq-04.cell-input,.cell-maquina.maq-04.cell-select,.cell-maquina.maq-04.cell-readonly{color:#d85e4c}
-tbody td.col-maquina .cell-readonly{color:inherit}
+tbody td.col-maquina{background:var(--white)!important}
+tbody tr:nth-child(even) td.col-maquina{background:#fafbfd!important}
+tbody tr:hover td.col-maquina{background:#fff7ed!important}
+tbody td.col-maquina.cell-locked{background:inherit!important}
+tbody td.col-maquina .cell-readonly{background:transparent;color:inherit;padding:8px 4px}
 .sync-badge{display:inline-flex;align-items:center;justify-content:center;min-width:68px;padding:4px 8px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.03em}
 .sync-badge.ok{background:#dcfce7;color:var(--green)}
 .sync-badge.saving{background:#ffedd5;color:var(--amber)}
@@ -155,7 +159,7 @@ tbody td.col-maquina .cell-readonly{color:inherit}
         </div>
         <div class="table-wrap">
             <table class="planilha">
-                <thead id="tabelaHead"><tr><th class="col-fix col-num">#</th><th class="col-fix col-sync">Status</th></tr></thead>
+                <thead id="tabelaHead"><tr><th class="col-fix col-sync">Status</th></tr></thead>
                 <tbody id="tabelaCorpo"></tbody>
             </table>
             <div class="empty" id="emptyState" hidden>
@@ -180,7 +184,7 @@ tbody td.col-maquina .cell-readonly{color:inherit}
 const API_URL = "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
 const COLUNAS_EXIBICAO = [
     { chave: "data", rotulo: "DATA", largura: 76 },
-    { chave: "maquina", rotulo: "MAQUINA", largura: 76 },
+    { chave: "maquina", rotulo: "MAQUINA", largura: 96 },
     { chave: "linha", rotulo: "LINHA", largura: 52 },
     { chave: "work_id", rotulo: "WORK-ID", largura: 84 },
     { chave: "carro", rotulo: "CARRO", largura: 58 },
@@ -215,6 +219,12 @@ function numeroMaquina(v){
 function classeMaquina(v){
     const n=numeroMaquina(v);
     return n?" cell-maquina maq-"+n:" cell-maquina";
+}
+function exibirMaquina(v){
+    const n=numeroMaquina(v);
+    if(n) return "MAQUINA "+n;
+    const t=normalizarMaquina(v);
+    return t||"—";
 }
 function val(row,key){
     if(row[key]!=null&&row[key]!=="") return row[key];
@@ -455,13 +465,15 @@ function renderCelula(row, rowIdx, col){
     const chave=col.chave;
     const v=val(row,chave);
     const clsMaquina=chave==="maquina"?classeMaquina(v):"";
+    const textoMaquina=chave==="maquina"?exibirMaquina(v):null;
     if(col.formula||isColunaFormula(chave)){
         return '<span class="cell-readonly cell-formula cell-locked" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" aria-readonly="true" tabindex="-1" title="Calculado automaticamente — não editável">'+escapeHtml(v||"—")+'</span>';
     }
     const locked=celulaPreenchida(row,chave);
     const clsExtra=(col.texto?" cell-texto":"")+clsMaquina;
+    const exibir=textoMaquina!=null?textoMaquina:(v||"—");
     if(locked){
-        return '<span class="cell-readonly'+clsExtra+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" title="Preenchido na planilha — não editável">'+escapeHtml(v||"—")+'</span>';
+        return '<span class="cell-readonly'+clsExtra+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" title="Preenchido na planilha — não editável">'+escapeHtml(exibir)+'</span>';
     }
     if(CAMPOS_SELECT[chave]){
         const opts=CAMPOS_SELECT[chave].map(o=>'<option value="'+escapeHtml(o)+'"'+(o===v?" selected":"")+'>'+(o||"—")+'</option>').join("");
@@ -483,8 +495,11 @@ function atualizarCelulasFormula(i){
 
 function renderCabecalho(){
     const cols=state.colunas;
-    $("tabelaHead").innerHTML='<tr><th class="col-fix col-num">#</th><th class="col-fix col-sync">Status</th>'+
-        cols.map(c=>'<th class="col-sort" data-sort="'+escapeHtml(c.chave)+'" style="width:'+c.largura+'px;min-width:'+c.largura+'px" title="Ordenar por '+escapeHtml(c.rotulo)+'"><span class="sort-label">'+escapeHtml(c.rotulo)+' <span class="sort-icon" aria-hidden="true">↕</span></span></th>').join("")+'</tr>';
+    $("tabelaHead").innerHTML='<tr><th class="col-fix col-sync">Status</th>'+
+        cols.map(c=>{
+            const clsMaquina=c.chave==="maquina"?" col-maquina":"";
+            return '<th class="col-sort'+clsMaquina+'" data-sort="'+escapeHtml(c.chave)+'" style="width:'+c.largura+'px;min-width:'+c.largura+'px" title="Ordenar por '+escapeHtml(c.rotulo)+'"><span class="sort-label">'+escapeHtml(c.rotulo)+' <span class="sort-icon" aria-hidden="true">↕</span></span></th>';
+        }).join("")+'</tr>';
     $("tabelaHead").querySelectorAll("th[data-sort]").forEach(th=>th.addEventListener("click",onSortHeader));
     atualizarIndicadoresSort();
 }
@@ -494,11 +509,10 @@ function renderCorpoTabela(){
     $("tabelaCorpo").innerHTML=state.dados.map((row,i)=>{
         aplicarFormulasLinha(row);
         return '<tr data-i="'+i+'">'+
-        '<td class="col-fix col-num">'+(i+1)+'</td>'+
         '<td class="col-fix col-sync sync-'+i+'">'+syncBadge(row,i)+'</td>'+
         cols.map(c=>{
             const locked=celulaPreenchida(row,c.chave);
-            const cls=(locked?" cell-locked":"")+(c.formula?" cell-formula":"");
+            const cls=(locked&&c.chave!=="maquina"?" cell-locked":"")+(c.formula?" cell-formula":"");
             return '<td class="col-'+escapeHtml(c.chave)+cls+'" style="width:'+c.largura+'px">'+renderCelula(row,i,c)+'</td>';
         }).join("")+
         '</tr>';
