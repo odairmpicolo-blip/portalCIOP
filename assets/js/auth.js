@@ -181,9 +181,19 @@ window.alterarSenha = async function (senhaAtual, novaSenha) {
     throw new Error("A nova senha deve ter pelo menos 6 caracteres.");
   }
 
-  const credencial = EmailAuthProvider.credential(user.email, senhaAtual);
-  await reauthenticateWithCredential(user, credencial);
-  await updatePassword(user, novaSenha);
+  try {
+    const credencial = EmailAuthProvider.credential(user.email, senhaAtual);
+    await reauthenticateWithCredential(user, credencial);
+    await updatePassword(user, novaSenha);
+  } catch (error) {
+    const traduzir = typeof window.portalMensagemErroSenha === "function"
+      ? window.portalMensagemErroSenha
+      : null;
+    const mensagem = traduzir ? traduzir(error) : (error.message || String(error));
+    const err = new Error(mensagem);
+    err.code = error.code;
+    throw err;
+  }
 };
 
 function isAdministrador(cadastro) {

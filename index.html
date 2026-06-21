@@ -1215,6 +1215,8 @@ h1 {
 </style>
 
 <script type="module" src="assets/js/auth.js"></script>
+<link rel="stylesheet" href="assets/css/portal-senha.css">
+<script src="assets/js/portal-senha.js" defer></script>
 
 </head>
 
@@ -1366,7 +1368,7 @@ h1 {
         <div class="ciop-session" aria-label="Sessao do usuario">
     <span id="usuarioLogado" class="ciop-session-user">Usuario</span>
     <span id="perfilUsuario" class="ciop-session-profile">Perfil</span>
-    <button onclick="toggleSenhaPanel()" class="btn-logout" type="button">Senha</button>
+    <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-logout btn-senha-portal" type="button">Senha</button>
     <button onclick="logout()" class="btn-logout" type="button">Sair</button>
 </div>
         <a href="https://www.tcgrandelondrina.com.br/" target="_blank">
@@ -1490,12 +1492,13 @@ h1 {
 
     <section id="senhaPanel" class="password-panel" aria-label="Alterar senha">
         <h2>Alterar senha de acesso</h2>
+        <p class="password-panel-note">Qualquer usuário logado pode alterar a própria senha, independente do perfil.</p>
         <label for="senhaAtual">Senha atual</label>
         <input id="senhaAtual" type="password" autocomplete="current-password">
         <label for="novaSenha">Nova senha</label>
-        <input id="novaSenha" type="password" autocomplete="new-password">
+        <input id="novaSenha" type="password" autocomplete="new-password" minlength="6">
         <label for="confirmarSenha">Confirmar nova senha</label>
-        <input id="confirmarSenha" type="password" autocomplete="new-password">
+        <input id="confirmarSenha" type="password" autocomplete="new-password" minlength="6">
         <div class="password-actions">
             <button class="btn-small" type="button" onclick="salvarNovaSenha()">Salvar senha</button>
             <button class="btn-small secondary" type="button" onclick="toggleSenhaPanel(false)">Cancelar</button>
@@ -1716,50 +1719,10 @@ h1 {
 </footer>
 
 <script>
+<script>
 function toggleMenu(){
     document.getElementById("sidebar").classList.toggle("active");
     document.getElementById("overlay").classList.toggle("active");
-}
-
-function toggleSenhaPanel(force){
-    const panel = document.getElementById("senhaPanel");
-    const abrir = typeof force === "boolean" ? force : !panel.classList.contains("active");
-    panel.classList.toggle("active", abrir);
-    if (!abrir) {
-        document.getElementById("senhaAtual").value = "";
-        document.getElementById("novaSenha").value = "";
-        document.getElementById("confirmarSenha").value = "";
-        document.getElementById("senhaStatus").textContent = "";
-        document.getElementById("senhaStatus").className = "password-status";
-    }
-}
-
-async function salvarNovaSenha(){
-    const status = document.getElementById("senhaStatus");
-    const senhaAtual = document.getElementById("senhaAtual").value;
-    const novaSenha = document.getElementById("novaSenha").value;
-    const confirmarSenha = document.getElementById("confirmarSenha").value;
-
-    if (novaSenha !== confirmarSenha) {
-        status.className = "password-status erro";
-        status.textContent = "A confirmacao da senha nao confere.";
-        return;
-    }
-
-    status.className = "password-status";
-    status.textContent = "Alterando senha...";
-
-    try {
-        await window.alterarSenha(senhaAtual, novaSenha);
-        status.className = "password-status ok";
-        status.textContent = "Senha alterada com sucesso.";
-        document.getElementById("senhaAtual").value = "";
-        document.getElementById("novaSenha").value = "";
-        document.getElementById("confirmarSenha").value = "";
-    } catch (error) {
-        status.className = "password-status erro";
-        status.textContent = "Nao foi possivel alterar: " + error.message;
-    }
 }
 </script>
 
