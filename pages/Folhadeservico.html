@@ -696,6 +696,12 @@ document.documentElement.classList.add("portal-auth-pending");
         .analytics-grid .chart-container {
             min-height: 230px;
         }
+        .analytics-grid .chart-card.chart-wide {
+            grid-column: span 2;
+        }
+        .analytics-grid .chart-card.chart-wide .chart-container {
+            min-height: 280px;
+        }
         .analytics-grid .chart-icon {
             width: 30px;
             height: 30px;
@@ -713,6 +719,7 @@ document.documentElement.classList.add("portal-auth-pending");
         .chart-card.accent-navy .chart-icon { color: #1e3a8a; background: #dbeafe; border-color: #bfdbfe; }
         .chart-card.accent-coral .chart-icon { color: #dc2626; background: #fee2e2; border-color: #fecaca; }
         .analytics-grid .chart-card.accent-coral .chart-icon { color: #dc2626; background: #fee2e2; border-color: #fecaca; }
+        .analytics-grid .chart-card.accent-lime .chart-icon { color: #15803d; background: #dcfce7; border-color: #bbf7d0; }
         .chart-card.accent-lime .chart-icon { color: #15803d; background: #dcfce7; border-color: #bbf7d0; }
         .chart-card.accent-navy,
         .chart-card.accent-coral,
@@ -722,9 +729,11 @@ document.documentElement.classList.add("portal-auth-pending");
         }
         @media (max-width: 1280px) {
             .analytics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .analytics-grid .chart-card.chart-wide { grid-column: span 2; }
         }
         @media (max-width: 720px) {
             .analytics-grid { grid-template-columns: 1fr; }
+            .analytics-grid .chart-card.chart-wide { grid-column: span 1; }
         }
         .load-banner {
             display: flex;
@@ -1214,27 +1223,10 @@ h1 {
     </div>
 
     <div class="dashboard-grid">
-        
-        <div class="chart-card main-chart accent-navy">
+        <div class="chart-card main-chart">
             <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10"/><path d="M12 20V4"/><path d="M19 20v-7"/><path d="M3 20h18"/></svg></span><span>Ranking dos Analistas</span></div>
             <div class="chart-container">
                 <canvas id="chartAnalistas"></canvas>
-            </div>
-        </div>
-        
-        <div class="bottom-charts-row">
-            <div class="chart-card secondary-chart accent-coral">
-                <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9h9"/><path d="M20.5 15A9 9 0 1 1 9 3.5"/></svg></span><span>Ocorrências</span></div>
-                <div class="chart-container">
-                    <canvas id="chartOcorrencias"></canvas>
-                </div>
-            </div>
-            
-            <div class="chart-card secondary-chart accent-lime">
-                <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h13"/><path d="M4 12h16"/><path d="M4 18h9"/></svg></span><span>Status dos Serviços</span></div>
-                <div class="chart-container">
-                    <canvas id="chartSituacao"></canvas>
-                </div>
             </div>
         </div>
     </div>
@@ -1245,6 +1237,14 @@ h1 {
             <p>Indicadores detalhados conforme os filtros aplicados</p>
         </div>
         <div class="analytics-grid">
+            <div class="chart-card accent-coral chart-wide">
+                <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9h9"/><path d="M20.5 15A9 9 0 1 1 9 3.5"/></svg></span><span>Ocorrências</span></div>
+                <div class="chart-container"><canvas id="chartOcorrencias"></canvas></div>
+            </div>
+            <div class="chart-card accent-lime chart-wide">
+                <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h13"/><path d="M4 12h16"/><path d="M4 18h9"/></svg></span><span>Status dos Serviços</span></div>
+                <div class="chart-container"><canvas id="chartSituacao"></canvas></div>
+            </div>
             <div class="chart-card accent-indigo">
                 <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span>Período de Mais Ocorrências</span></div>
                 <div class="chart-container"><canvas id="chartPeriodo"></canvas></div>
@@ -1330,9 +1330,13 @@ h1 {
         "FOI SOCORRIDO": "#22c55e",
         "RECOLHEU - GA": "#f59e0b",
         "RECOLHEU GA": "#f59e0b",
+        "RECOLHEU NO GA": "#ea580c",
         "PENDENTE": "#ef4444",
         "CONCLUIDO": "#10b981",
-        "CONCLUÍDO": "#10b981"
+        "CONCLUÍDO": "#10b981",
+        "EM ANDAMENTO": "#3b82f6",
+        "CANCELADO": "#64748b",
+        "CANCELADA": "#64748b"
     };
     const MESES_CURTOS = { "01": "Jan", "02": "Fev", "03": "Mar", "04": "Abr", "05": "Mai", "06": "Jun", "07": "Jul", "08": "Ago", "09": "Set", "10": "Out", "11": "Nov", "12": "Dez" };
     const PERIODOS = [
@@ -1343,6 +1347,7 @@ h1 {
     ];
 
     let dadosMestres = [];
+    let chartAnalistasInstance = null;
     const chartAnalyticsInstances = {};
     let carregamentoEmAndamento = false;
 
@@ -1538,14 +1543,25 @@ h1 {
         }
     }
 
+    function ajustarAlturaGrafico(canvas, labels, horizontal) {
+        const wrap = canvas?.closest(".chart-container");
+        if (!wrap) return;
+        if (horizontal && labels.length > 6) {
+            wrap.style.minHeight = Math.min(520, Math.max(260, labels.length * 24 + 48)) + "px";
+        } else if (horizontal) {
+            wrap.style.minHeight = "260px";
+        }
+    }
+
     function criarGraficoAnalytics(id, config) {
         const canvas = document.getElementById(id);
         if (!canvas) return;
         destruirGrafico(id);
-        const horizontal = !!config.horizontal;
+        const horizontal = config.horizontal !== false;
         const labels = config.labels || [];
         const values = config.values || [];
         const barColors = resolverCoresGrafico(config, labels);
+        ajustarAlturaGrafico(canvas, labels, horizontal);
 
         chartAnalyticsInstances[id] = new Chart(canvas.getContext("2d"), {
             type: "bar",
@@ -1553,10 +1569,10 @@ h1 {
                 labels,
                 datasets: [{
                     data: values,
-                    borderRadius: horizontal ? { topRight: 8, bottomRight: 8 } : { topLeft: 8, topRight: 8 },
+                    borderRadius: horizontal ? { topRight: 10, bottomRight: 10 } : { topLeft: 10, topRight: 10 },
                     borderSkipped: false,
-                    barThickness: horizontal ? 15 : undefined,
-                    maxBarThickness: horizontal ? 18 : 44,
+                    barThickness: horizontal ? 16 : undefined,
+                    maxBarThickness: horizontal ? 20 : 48,
                     _barColors: barColors
                 }]
             },
@@ -1570,7 +1586,8 @@ h1 {
                         const g = horizontal
                             ? ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0)
                             : ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-                        g.addColorStop(0, hexAlpha(c, 0.28));
+                        g.addColorStop(0, hexAlpha(c, 0.16));
+                        g.addColorStop(0.55, hexAlpha(c, 0.72));
                         g.addColorStop(1, c);
                         return g;
                     });
@@ -1580,7 +1597,7 @@ h1 {
                 indexAxis: horizontal ? "y" : "x",
                 responsive: true,
                 maintainAspectRatio: false,
-                layout: { padding: { right: horizontal ? 34 : 4, top: horizontal ? 2 : 18 } },
+                layout: { padding: { right: horizontal ? 40 : 4, top: horizontal ? 4 : 20, left: 4 } },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -1596,21 +1613,25 @@ h1 {
                     x: {
                         beginAtZero: true,
                         grid: { color: "#eef2f7", drawBorder: false },
-                        ticks: { stepSize: 1, font: { size: 10 } }
+                        border: { display: false },
+                        ticks: { stepSize: 1, font: { size: 10, weight: "600" }, color: "#667085" }
                     },
                     y: {
                         grid: { display: false },
-                        ticks: { font: { size: 10, weight: "700" }, autoSkip: false }
+                        border: { display: false },
+                        ticks: { font: { size: 10, weight: "700" }, autoSkip: false, color: "#344054" }
                     }
                 } : {
                     x: {
                         grid: { display: false },
-                        ticks: { font: { size: 10, weight: "600" }, autoSkip: false, maxRotation: 45, minRotation: 0 }
+                        border: { display: false },
+                        ticks: { font: { size: 10, weight: "600" }, autoSkip: false, maxRotation: 45, minRotation: 0, color: "#344054" }
                     },
                     y: {
                         beginAtZero: true,
                         grid: { color: "#eef2f7", drawBorder: false },
-                        ticks: { stepSize: 1, font: { size: 10 } }
+                        border: { display: false },
+                        ticks: { stepSize: 1, font: { size: 10, weight: "600" }, color: "#667085" }
                     }
                 }
             }
@@ -1802,41 +1823,71 @@ h1 {
         }
         document.getElementById('kpi-frequente').innerText = maisFrequente + ` (${((maxVotos/total)*100).toFixed(0)}%)`;
 
-        const ocorOrdenadas = Object.keys(contagemOcorrencias)
-            .map(label => ({ label, qtd: contagemOcorrencias[label] }))
-            .sort((a, b) => b.qtd - a.qtd || a.label.localeCompare(b.label, "pt-BR"));
+        criarGraficoAnalistasClassico(labelsAnalistas, quantidadesAnalistas);
 
-        criarGraficoAnalytics("chartAnalistas", {
-            labels: labelsAnalistas,
-            values: quantidadesAnalistas,
-            horizontal: true,
-            corTema: "#0b3a8a"
-        });
-
-        criarGraficoAnalytics("chartOcorrencias", {
-            labels: ocorOrdenadas.map(i => i.label),
-            values: ocorOrdenadas.map(i => i.qtd),
-            horizontal: true,
-            corPorLabel: label => corOcorrencia(label)
-        });
-
-        criarGraficoAnalytics("chartSituacao", {
-            labels: labelsSituacao,
-            values: quantidadesSituacao,
-            horizontal: true,
-            corPorLabel: label => corSituacao(label)
-        });
-
-        inicializarGraficosAnalytics(dados);
+        inicializarGraficosAnalytics(dados, contagemOcorrencias, contagemSituacao);
     }
 
-    function inicializarGraficosAnalytics(dados) {
+    function criarGraficoAnalistasClassico(labels, values) {
+        const canvas = document.getElementById("chartAnalistas");
+        if (!canvas) return;
+        const wrap = canvas.closest(".chart-container");
+        if (wrap) wrap.style.minHeight = "";
+        if (chartAnalistasInstance) chartAnalistasInstance.destroy();
+        chartAnalistasInstance = new Chart(canvas.getContext("2d"), {
+            type: "bar",
+            data: {
+                labels,
+                datasets: [{
+                    label: "Quantidade de Ocorrências",
+                    data: values,
+                    backgroundColor: "#0b3a8a",
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: c => " Ocorrências: " + c.raw } }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                    x: { ticks: { autoSkip: false } }
+                }
+            }
+        });
+    }
+
+    function inicializarGraficosAnalytics(dados, contagemOcorrencias, contagemSituacao) {
         const corOficina = corOcorrencia("OFICINA");
-        const corBorracharia = corOcorrencia("BORRACHARIA");
         const corColisao = corOcorrencia("COLISÃO");
         const corQueda = corOcorrencia("QUEDA DE PASSAGEIRO");
         const corAdiantado = corOcorrencia("ADIANTADO");
         const corAtrasado = corOcorrencia("ATRASADO");
+
+        const ocorOrdenadas = Object.keys(contagemOcorrencias || {})
+            .map(label => ({ label, qtd: contagemOcorrencias[label] }))
+            .sort((a, b) => b.qtd - a.qtd || a.label.localeCompare(b.label, "pt-BR"));
+
+        criarGraficoAnalytics("chartOcorrencias", {
+            labels: ocorOrdenadas.length ? ocorOrdenadas.map(i => i.label) : ["Sem dados"],
+            values: ocorOrdenadas.length ? ocorOrdenadas.map(i => i.qtd) : [0],
+            horizontal: true,
+            corPorLabel: label => corOcorrencia(label)
+        });
+
+        const situacaoOrdenada = Object.keys(contagemSituacao || {})
+            .map(label => ({ label, qtd: contagemSituacao[label] }))
+            .sort((a, b) => b.qtd - a.qtd || a.label.localeCompare(b.label, "pt-BR"));
+
+        criarGraficoAnalytics("chartSituacao", {
+            labels: situacaoOrdenada.length ? situacaoOrdenada.map(i => i.label) : ["Sem dados"],
+            values: situacaoOrdenada.length ? situacaoOrdenada.map(i => i.qtd) : [0],
+            horizontal: true,
+            corPorLabel: label => corSituacao(label)
+        });
         const contagemPeriodo = { madrugada: 0, manha: 0, tarde: 0, noite: 0 };
         dados.forEach(item => {
             const p = periodoDoDia(item.hora);
@@ -1845,6 +1896,7 @@ h1 {
         criarGraficoAnalytics("chartPeriodo", {
             labels: PERIODOS.map(p => p.rotulo),
             values: PERIODOS.map(p => contagemPeriodo[p.id]),
+            horizontal: true,
             cores: ["#4338ca", "#0284c7", "#ea580c", "#7c3aed"]
         });
 
@@ -1879,6 +1931,7 @@ h1 {
         criarGraficoAnalytics("chartAcidentesMes", {
             labels: acidentesMes.length ? acidentesMes.map(i => i.label) : ["Sem dados"],
             values: acidentesMes.length ? acidentesMes.map(i => i.qtd) : [0],
+            horizontal: true,
             corTema: corColisao
         });
 
@@ -1886,6 +1939,7 @@ h1 {
         criarGraficoAnalytics("chartQuedaMes", {
             labels: quedaMes.length ? quedaMes.map(i => i.label) : ["Sem dados"],
             values: quedaMes.length ? quedaMes.map(i => i.qtd) : [0],
+            horizontal: true,
             corTema: corQueda
         });
 
