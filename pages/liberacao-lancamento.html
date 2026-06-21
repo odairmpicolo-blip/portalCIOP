@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}</style>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lançamento — Acompanhamento da Liberação | Portal CIOP</title>
+<style>
+:root{--blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--bg:#f5f7fb;--border:#dfe5ef;--text:#101828;--muted:#667085;--red:#dc2626;--green:#15803d;--amber:#b45309;--white:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.header{background:var(--white);display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);gap:16px;align-items:center;padding:8px 20px;border-bottom:1px solid #e8edf6;box-shadow:0 1px 0 rgba(6,36,92,.04)}
+.header > a:first-child{justify-self:start;display:flex;align-items:center}
+.logo-ciop{height:42px;object-fit:contain}.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+h1{margin:0;color:var(--blue);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:.02em}
+.header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.ciop-session{display:flex;align-items:center;gap:6px;max-width:260px;padding:4px 8px;border:1px solid rgba(6,36,92,.12);border-radius:6px;background:var(--white);color:var(--blue);font-size:11px}
+.ciop-session-user{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.ciop-session-profile{color:var(--muted);font-weight:600}
+.ciop-session .btn-logout{background:var(--red);color:#fff;border:none;border-radius:5px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer}
+.container{max-width:100%;margin:20px auto 32px;padding:0 20px;flex:1;width:100%}
+.toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.toolbar-left{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;flex:1;min-width:0}
+.nav-actions{display:flex;gap:8px;flex-wrap:wrap;flex:0 0 auto}
+.filters-inline{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;flex:1;min-width:280px}
+.filter-field{min-width:150px;flex:1;max-width:200px}
+.filter-field label{display:block;margin:0 0 4px;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+.filter-field input,.filter-field select{width:100%;min-height:38px;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;background:#fafbfd;transition:border-color .15s,background .15s}
+.filter-field input:focus,.filter-field select:focus{outline:none;border-color:var(--blue2);background:var(--white);box-shadow:0 0 0 3px rgba(11,58,138,.08)}
+.btn-portal,.btn-primary,.btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;text-decoration:none;border-radius:6px;font-size:12px;font-weight:800;padding:8px 14px;border:0;cursor:pointer;font-family:inherit;transition:background .15s,transform .15s}
+.btn-portal,.btn-primary{background:var(--blue);color:#fff;box-shadow:0 1px 2px rgba(16,24,40,.08)}
+.btn-portal:hover,.btn-primary:hover{background:var(--blue2)}
+.btn-secondary{background:#e8edf6;color:var(--blue)}
+.btn-secondary:hover{background:#dbe4f2}
+.btn-icon{display:inline-flex;width:16px;height:16px}.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.status-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;background:var(--white);border:1px solid var(--border);border-radius:999px;font-size:12px;font-weight:700;color:var(--muted);box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;flex:0 0 auto}
+.status-dot.ok{background:var(--green)}.status-dot.load{background:var(--orange);animation:pulse 1s infinite}
+.status-dot.erro{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.legend{display:flex;gap:14px;flex-wrap:wrap;padding:10px 14px;background:#f8fafc;border-top:1px solid var(--border);font-size:10px;color:var(--muted);font-weight:700}
+.legend-item{display:inline-flex;align-items:center;gap:6px}
+.legend-swatch{width:10px;height:10px;border-radius:3px;border:1px solid rgba(0,0,0,.08)}
+.legend-swatch.ok{background:#f0fdf4;border-color:#86efac}
+.legend-swatch.saving{background:#fff7ed;border-color:#fdba74}
+.legend-swatch.erro{background:#fef2f2;border-color:#fca5a5}
+.table-card{overflow:hidden;background:var(--white);border:1px solid var(--border);border-radius:8px;box-shadow:0 10px 28px rgba(16,24,40,.07)}
+.table-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fff,#fafbfd)}
+.card-title{margin:0;color:var(--blue);font-size:15px;font-weight:900}
+.table-sub{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px}
+.table-wrap{overflow:auto;max-height:calc(100vh - 260px);min-height:460px}
+table.planilha{width:100%;border-collapse:separate;border-spacing:0;font-size:11px;min-width:2600px}
+thead th{position:sticky;top:0;z-index:3;background:#f1f5f9;color:var(--blue);padding:9px 8px;font-size:9px;font-weight:900;text-transform:uppercase;text-align:center;white-space:nowrap;border-bottom:2px solid #dbe3ef;letter-spacing:.03em}
+thead th.col-fix{z-index:5;background:#e8eef6}
+thead th.col-sync{width:88px;min-width:88px}
+thead th.col-num{width:42px;min-width:42px}
+tbody td{border-bottom:1px solid #edf2f7;padding:0;text-align:center;vertical-align:middle;background:var(--white)}
+tbody tr:nth-child(even) td{background:#fafbfd}
+tbody tr:hover td{background:#fff7ed}
+tbody td.col-fix{background:#f8fafc;font-weight:700;color:var(--muted);font-size:10px}
+tbody tr:nth-child(even) td.col-fix{background:#f1f5f9}
+tbody td.cell-active{position:relative;z-index:2;box-shadow:inset 0 0 0 2px var(--blue2);background:#fff!important}
+tbody tr:hover td.cell-active{background:#fff!important}
+.cell-input,.cell-select{width:100%;min-width:76px;border:1px solid transparent;background:transparent;padding:7px 6px;font-size:11px;font-family:inherit;text-align:center;border-radius:0;transition:background .15s}
+.cell-input:focus,.cell-select:focus{outline:none;background:var(--white)}
+.cell-input.saving,.cell-select.saving{background:#fff7ed}
+.cell-input.saved,.cell-select.saved{background:#f0fdf4}
+.cell-input.erro,.cell-select.erro{background:#fef2f2}
+.sync-badge{display:inline-flex;align-items:center;justify-content:center;min-width:68px;padding:4px 8px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.03em}
+.sync-badge.ok{background:#dcfce7;color:var(--green)}
+.sync-badge.saving{background:#ffedd5;color:var(--amber)}
+.sync-badge.dirty{background:#e0e7ff;color:#3730a3}
+.sync-badge.erro{background:#fee2e2;color:var(--red)}
+.empty{padding:48px 24px;color:var(--muted);text-align:center}
+.empty-title{font-size:15px;font-weight:900;color:var(--blue);margin-bottom:6px}
+.empty-text{font-size:12px;font-weight:600;line-height:1.5}
+.page-footer{text-align:center;padding:12px 20px 20px;font-size:11px;color:var(--muted);font-weight:600}
+@media(max-width:900px){.toolbar-left,.filters-inline{width:100%}.filter-field{max-width:none}}
+@media(max-width:720px){.header{grid-template-columns:1fr;text-align:center}h1{font-size:18px}}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css">
+<script src="../assets/js/loading.js"></script>
+<script type="module" src="../assets/js/auth.js"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+</head>
+<body>
+<header class="header">
+    <a href="https://mov1.com.br" target="_blank" rel="noopener"><img class="logo-ciop" src="../assets/img/CIOP Sem Fundo.png" alt="CIOP"></a>
+    <div class="title-wrap">
+        <h1>Acompanhamento da Liberação</h1>
+        <div class="header-subtitle">Lançamento operacional — aba ACOMPANHAMENTO LIBERAÇÃO</div>
+    </div>
+    <div class="header-actions">
+        <div class="ciop-session">
+            <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
+            <span class="ciop-session-profile" id="perfilUsuario">Perfil</span>
+            <button class="btn-logout" type="button" onclick="logout()">Sair</button>
+        </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+    </div>
+</header>
+
+<main class="container">
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <div class="nav-actions">
+                <a class="btn-portal" href="../index.html"><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg></span>Portal</a>
+                <a class="btn-secondary" href="liberacao-dashboard.html"><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5"/><path d="M12 16V8"/><path d="M16 16v-7"/><path d="M20 16v-3"/></svg></span>Dashboard</a>
+            </div>
+            <div class="filters-inline" aria-label="Filtros">
+                <div class="filter-field"><label for="dataFiltro">Data</label><input id="dataFiltro" type="date"></div>
+                <div class="filter-field"><label for="maquinaFiltro">Máquina</label><select id="maquinaFiltro"><option value="">Todas as máquinas</option></select></div>
+            </div>
+        </div>
+        <div class="status-pill" id="statusPill"><span class="status-dot load" id="statusDot"></span><span id="statusLine">Carregando planilha...</span></div>
+    </div>
+
+    <section class="table-card" aria-label="Planilha de acompanhamento">
+        <div class="table-head">
+            <div>
+                <h2 class="card-title">Planilha de acompanhamento</h2>
+                <div class="table-sub">Use as setas ← → ↑ ↓ ou Tab para navegar entre células · salvamento automático</div>
+            </div>
+            <span class="status-pill" style="padding:6px 10px"><span id="tableInfo">0 linhas</span></span>
+        </div>
+        <div class="table-wrap">
+            <table class="planilha">
+                <thead id="tabelaHead"><tr><th class="col-fix col-num">#</th><th class="col-fix col-sync">Status</th></tr></thead>
+                <tbody id="tabelaCorpo"></tbody>
+            </table>
+            <div class="empty" id="emptyState" hidden>
+                <div class="empty-title">Nenhum registro encontrado</div>
+                <div class="empty-text">Não há lançamentos para a data e máquina selecionadas.<br>Altere os filtros ou verifique a planilha ACOMPANHAMENTO LIBERAÇÃO.</div>
+            </div>
+        </div>
+        <div class="legend" aria-hidden="true">
+            <span class="legend-item"><span class="legend-swatch ok"></span>Salvo</span>
+            <span class="legend-item"><span class="legend-swatch saving"></span>Salvando</span>
+            <span class="legend-item"><span class="legend-swatch erro"></span>Erro ao salvar</span>
+            <span class="legend-item">Setas / Tab / Enter — navegar células</span>
+        </div>
+    </section>
+</main>
+
+<footer class="page-footer">Portal CIOP · Acompanhamento da Liberação · TCGL</footer>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
+const COLUNAS_PADRAO = [
+    { chave: "data", rotulo: "DATA" }, { chave: "maquina", rotulo: "MAQUINA" }, { chave: "linha", rotulo: "LINHA" },
+    { chave: "work_id", rotulo: "WORK-ID" }, { chave: "carro", rotulo: "CARRO" }, { chave: "motorista", rotulo: "MOTORISTA" },
+    { chave: "preparo", rotulo: "PREPARO" }, { chave: "horario_saida_da_garagem", rotulo: "HORÁRIO DE SAÍDA DA GARAGEM" },
+    { chave: "saida_real", rotulo: "SAÍDA REAL" }, { chave: "saiu_no_horario", rotulo: "SAIU NO HORÁRIO" },
+    { chave: "minutos_atrasado_garagem", rotulo: "MIN. ATRASADO GARAGEM" }, { chave: "minutos_adiantado_garagem", rotulo: "MIN. ADIANTADO GARAGEM" },
+    { chave: "saida_atrasado_adiantado", rotulo: "SAÍDA ATRASADO/ADIANTADO" }, { chave: "local_inicio", rotulo: "LOCAL INÍCIO" },
+    { chave: "trajeto_ocioso_correto", rotulo: "TRAJETO OCIOSO CORRETO?" }, { chave: "horario_de_inicio", rotulo: "HORÁRIO DE INÍCIO" },
+    { chave: "inicio_real", rotulo: "INÍCIO REAL" }, { chave: "inicio_no_horario", rotulo: "INÍCIO NO HORÁRIO" },
+    { chave: "observacoes", rotulo: "OBSERVAÇÕES" }, { chave: "minutos_atrasado_no_inicio", rotulo: "MIN. ATRASADO NO INÍCIO" },
+    { chave: "minutos_adiantado_no_inicio", rotulo: "MIN. ADIANTADO NO INÍCIO" }
+];
+const CAMPOS_SELECT = {
+    saiu_no_horario: ["","SIM","NÃO"],
+    saida_atrasado_adiantado: ["","NO HORÁRIO","ATRASADO","ADIANTADO"],
+    inicio_no_horario: ["","NO HORÁRIO","ATRASADO","ADIANTADO"],
+    trajeto_ocioso_correto: ["","SIM","NÃO"]
+};
+const CATEGORIAS = SECOES.flatMap(s => s.categorias.map(c => Object.assign({ grupo: s.id }, c)));
+const COLUNAS_CACHE = "liberacao_colunas_v8";
+const state = { colunas: COLUNAS_PADRAO, todos: [], dados: [], saveTimers: {}, saving: {} };
+
+function $(id){return document.getElementById(id)}
+function escapeHtml(v){return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function brDate(iso){if(!iso)return "—";const p=iso.split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:iso}
+function formatNumber(v){return Number(v||0).toLocaleString("pt-BR")}
+function normalizarMaquina(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/\s+/g," ").trim()}
+function val(row,key){
+    if(row[key]!=null&&row[key]!=="") return row[key];
+    if(key==="horario_saida_da_garagem") return row.horario_de_saida_da_garagem||"";
+    if(key==="saiu_no_horario") return row.saiu_no_horaro||"";
+    return "";
+}
+
+function setStatus(texto, tipo){
+    $("statusLine").textContent=texto;
+    const dot=$("statusDot");
+    dot.className="status-dot"+(tipo?" "+tipo:"");
+}
+
+async function apiGet(params){
+    const res=await fetch(API_URL+"?"+new URLSearchParams(Object.assign({liberacao:"1"},params)),{cache:"no-store"});
+    const data=await res.json();
+    if(!data.ok) throw new Error(data.erro||"Erro na leitura.");
+    return data;
+}
+async function apiPost(payload){
+    const res=await fetch(API_URL,{method:"POST",body:new URLSearchParams(Object.assign({liberacao:"1"},payload))});
+    const data=await res.json();
+    if(!data.ok) throw new Error(data.erro||"Erro ao salvar.");
+    return data;
+}
+
+function aplicarFiltroMaquina(){
+    const maquina=$("maquinaFiltro").value;
+    state.dados=maquina
+        ? state.todos.filter(r=>normalizarMaquina(r.maquina)===normalizarMaquina(maquina))
+        : state.todos.slice();
+}
+
+function syncBadge(row,i){
+    if(state.saving[i]) return '<span class="sync-badge saving">Salvando</span>';
+    if(row._syncErro) return '<span class="sync-badge erro">Erro</span>';
+    if(row._dirty) return '<span class="sync-badge dirty">Alterado</span>';
+    return '<span class="sync-badge ok">Salvo</span>';
+}
+
+function marcarCelulaAtiva(el){
+    document.querySelectorAll("td.cell-active").forEach(td=>td.classList.remove("cell-active"));
+    el?.closest("td")?.classList.add("cell-active");
+}
+
+function indiceColuna(chave){
+    return state.colunas.findIndex(c=>c.chave===chave);
+}
+
+function focarCelula(rowIdx,colIdx){
+    if(colIdx<0||colIdx>=state.colunas.length||rowIdx<0||rowIdx>=state.dados.length) return false;
+    const chave=state.colunas[colIdx].chave;
+    const el=document.querySelector('[data-i="'+rowIdx+'"][data-k="'+chave+'"]');
+    if(!el) return false;
+    el.focus();
+    if(el.tagName==="INPUT") el.select();
+    marcarCelulaAtiva(el);
+    el.scrollIntoView({block:"nearest",inline:"nearest"});
+    return true;
+}
+
+function podeNavegarHorizontal(el,direcao){
+    if(el.tagName!=="INPUT") return true;
+    const pos=el.selectionStart??0;
+    const fim=el.selectionEnd??0;
+    if(pos!==fim) return false;
+    if(direcao==="right") return pos>=el.value.length;
+    if(direcao==="left") return pos<=0;
+    return true;
+}
+
+function onCellKeydown(e){
+    const el=e.target;
+    if(!el.matches(".cell-input,.cell-select")) return;
+    const rowIdx=Number(el.dataset.i);
+    const colIdx=indiceColuna(el.dataset.k);
+    if(isNaN(rowIdx)||colIdx<0) return;
+
+    let nextRow=rowIdx,nextCol=colIdx,mover=false;
+    if(e.key==="ArrowRight"&&podeNavegarHorizontal(el,"right")){nextCol++;mover=true;}
+    else if(e.key==="ArrowLeft"&&podeNavegarHorizontal(el,"left")){nextCol--;mover=true;}
+    else if(e.key==="ArrowDown"){nextRow++;mover=true;}
+    else if(e.key==="ArrowUp"){nextRow--;mover=true;}
+    else if(e.key==="Enter"&&!e.shiftKey){nextRow++;mover=true;}
+    else if(e.key==="Tab"){
+        e.preventDefault();
+        nextCol+=e.shiftKey?-1:1;
+        mover=true;
+    }
+    if(!mover) return;
+
+    e.preventDefault();
+    if(nextCol>=state.colunas.length){nextCol=0;nextRow++;}
+    if(nextCol<0){nextCol=state.colunas.length-1;nextRow--;}
+    focarCelula(nextRow,nextCol);
+}
+
+function bindCelulas(){
+    $("tabelaCorpo").querySelectorAll("input,select").forEach(el=>{
+        el.addEventListener("change",onCellChange);
+        el.addEventListener("blur",onCellChange);
+        el.addEventListener("focus",()=>marcarCelulaAtiva(el));
+        el.addEventListener("keydown",onCellKeydown);
+    });
+}
+
+function renderCelula(row, rowIdx, col){
+    const chave=col.chave;
+    const v=val(row,chave);
+    if(CAMPOS_SELECT[chave]){
+        const opts=CAMPOS_SELECT[chave].map(o=>'<option value="'+escapeHtml(o)+'"'+(o===v?" selected":"")+'>'+(o||"—")+'</option>').join("");
+        return '<select class="cell-select" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'">'+opts+'</select>';
+    }
+    return '<input class="cell-input" type="text" value="'+escapeHtml(v)+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" autocomplete="off" spellcheck="false">';
+}
+
+function renderTabela(){
+    const cols=state.colunas;
+    $("tabelaHead").innerHTML='<tr><th class="col-fix col-num">#</th><th class="col-fix col-sync">Status</th>'+
+        cols.map(c=>'<th title="'+escapeHtml(c.rotulo)+'">'+escapeHtml(c.rotulo)+'</th>').join("")+'</tr>';
+    $("tabelaCorpo").innerHTML=state.dados.map((row,i)=>
+        '<tr data-i="'+i+'">'+
+        '<td class="col-fix col-num">'+(i+1)+'</td>'+
+        '<td class="col-fix col-sync sync-'+i+'">'+syncBadge(row,i)+'</td>'+
+        cols.map(c=>'<td>'+renderCelula(row,i,c)+'</td>').join("")+
+        '</tr>'
+    ).join("");
+    $("emptyState").hidden=state.dados.length>0;
+    $("tableInfo").textContent=formatNumber(state.dados.length)+" linha(s)";
+    bindCelulas();
+}
+
+function onCellChange(e){
+    const el=e.target;
+    const i=Number(el.dataset.i);
+    const k=el.dataset.k;
+    if(isNaN(i)||!k) return;
+    state.dados[i][k]=el.value.trim();
+    state.dados[i]._dirty=true;
+    state.dados[i]._syncErro=false;
+    el.classList.remove("saved","erro");
+    el.classList.add("saving");
+    document.querySelector(".sync-"+i).innerHTML=syncBadge(state.dados[i],i);
+    clearTimeout(state.saveTimers[i]);
+    state.saveTimers[i]=setTimeout(()=>salvarLinha(i),800);
+}
+
+async function salvarLinha(i){
+    const row=state.dados[i];
+    if(!row||!row._row) return;
+    state.saving[i]=true;
+    document.querySelector(".sync-"+i).innerHTML=syncBadge(row,i);
+    const payload={action:"update",_row:row._row};
+    state.colunas.forEach(c=>{ payload[c.chave]=val(row,c.chave); });
+    try{
+        await apiPost(payload);
+        row._dirty=false;
+        row._syncErro=false;
+        document.querySelectorAll('[data-i="'+i+'"]').forEach(el=>{el.classList.remove("saving","erro");el.classList.add("saved");});
+    }catch(err){
+        row._syncErro=true;
+        document.querySelectorAll('[data-i="'+i+'"]').forEach(el=>{el.classList.remove("saving");el.classList.add("erro");});
+        setStatus(err.message,"erro");
+    }finally{
+        state.saving[i]=false;
+        document.querySelector(".sync-"+i).innerHTML=syncBadge(row,i);
+    }
+}
+
+function popularMaquinas(lista){
+    const sel=$("maquinaFiltro");
+    const prev=sel.value;
+    const items=(lista||[]).slice().sort((a,b)=>a.localeCompare(b,"pt-BR"));
+    sel.innerHTML='<option value="">Todas as máquinas</option>'+items.map(m=>'<option value="'+escapeHtml(m)+'">'+escapeHtml(m)+'</option>').join("");
+    if(items.includes(prev)) sel.value=prev;
+}
+
+function carregarColunasCache(){
+    try{
+        const raw=sessionStorage.getItem(COLUNAS_CACHE);
+        if(raw) return JSON.parse(raw);
+    }catch(_){}
+    return null;
+}
+
+async function carregar(){
+    const data=$("dataFiltro").value;
+    if(!data){setStatus("Informe a data.","erro");return;}
+    setStatus("Carregando planilha...","load");
+    window.portalMostrarCarregando?.("Carregando liberação");
+    try {
+        const params={recurso:"acompanhamento",data,ultima_semana:"0"};
+        if(!carregarColunasCache()) params.incluir_colunas="1";
+        const res=await apiGet(params);
+        if(res.colunas&&res.colunas.length){
+            sessionStorage.setItem(COLUNAS_CACHE,JSON.stringify(res.colunas));
+            state.colunas=res.colunas;
+        }else{
+            state.colunas=carregarColunasCache()||COLUNAS_PADRAO;
+        }
+        state.todos=(res.dados||[]).map(r=>Object.assign({},r));
+        popularMaquinas([...new Set(state.todos.map(d=>String(d.maquina||"").trim()).filter(Boolean))]);
+        aplicarFiltroMaquina();
+        renderTabela();
+        const cacheTxt=res.meta&&res.meta.cache?" · cache":"";
+        setStatus(formatNumber(state.dados.length)+" registro(s) · "+brDate(data)+cacheTxt,"ok");
+    } finally {
+        window.portalOcultarCarregando?.();
+    }
+}
+
+$("dataFiltro").addEventListener("change",()=>carregar().catch(e=>setStatus(e.message,"erro")));
+$("maquinaFiltro").addEventListener("change",()=>{aplicarFiltroMaquina();renderTabela();setStatus(formatNumber(state.dados.length)+" registro(s) · "+brDate($("dataFiltro").value),"ok");});
+
+function iniciar(){
+    $("dataFiltro").value=new Date().toISOString().slice(0,10);
+    carregar().catch(e=>setStatus(e.message,"erro"));
+}
+if(window.portalUsuarioValidado) iniciar();
+else window.addEventListener("portal:usuario-validado", iniciar, { once: true });
+</script>
+</body>
+</html>

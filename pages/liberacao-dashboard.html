@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}</style>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard — Acompanhamento da Liberação | Portal CIOP</title>
+<style>
+:root{--blue:#06245c;--blue2:#0b3a8a;--bg:#f5f7fb;--border:#dfe5ef;--text:#101828;--muted:#667085;--red:#dc2626;--rosa:#ec4899;--laranja:#f97316}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh}
+.header{background:#fff;display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);gap:16px;align-items:center;padding:8px 20px;border-bottom:1px solid #e8edf6}
+.header > a:first-child{justify-self:start;display:flex;align-items:center}
+.logo-ciop{height:42px;object-fit:contain}.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+h1{margin:0;color:var(--blue);font-size:22px;font-weight:900;text-transform:uppercase}
+.header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.ciop-session{display:flex;align-items:center;gap:6px;max-width:260px;padding:4px 8px;border:1px solid rgba(6,36,92,.12);border-radius:6px;background:#fff;color:var(--blue);font-size:11px}
+.ciop-session-user{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.ciop-session-profile{color:var(--muted);font-weight:600}
+.ciop-session .btn-logout{background:var(--red);color:#fff;border:none;border-radius:5px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer}
+.container{max-width:1680px;margin:20px auto 32px;padding:0 20px}
+.toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.toolbar-left{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;flex:1;min-width:0}
+.nav-actions{display:flex;gap:8px;flex-wrap:wrap;flex:0 0 auto}
+.filters-inline{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;flex:1;min-width:280px}
+.filter-field{min-width:140px;flex:1;max-width:180px}
+.filter-field label{display:block;margin:0 0 4px;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+.filter-field input{width:100%;min-height:38px;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;background:#fafbfd}
+.filter-field input:focus{outline:none;border-color:var(--blue2);background:#fff;box-shadow:0 0 0 3px rgba(11,58,138,.08)}
+.btn-portal,.btn-primary,.btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;text-decoration:none;border-radius:6px;font-size:12px;font-weight:800;padding:8px 14px;border:0;cursor:pointer;font-family:inherit}
+.btn-portal,.btn-primary{background:var(--blue);color:#fff}.btn-secondary{background:#e8edf6;color:var(--blue)}
+.btn-icon{display:inline-flex;width:16px;height:16px}.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.status-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;background:#fff;border:1px solid var(--border);border-radius:999px;font-size:12px;font-weight:700;color:var(--muted)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;flex:0 0 auto}
+.status-dot.ok{background:#15803d}.status-dot.load{background:var(--laranja);animation:pulse 1s infinite}.status-dot.erro{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.group-section{margin-bottom:18px}
+.group-head{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:0 2px}
+.group-dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto}
+.group-dot.rosa{background:var(--rosa)}.group-dot.laranja{background:var(--laranja)}.group-dot.vermelha{background:var(--red)}
+.group-title{margin:0;font-size:13px;font-weight:900;color:var(--blue);text-transform:uppercase;letter-spacing:.03em}
+.group-dot.orientar{background:linear-gradient(135deg,var(--rosa) 0%,var(--laranja) 100%)}
+.charts-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.charts-grid.linha-quatro{grid-template-columns:repeat(4,minmax(0,1fr))}
+.chart-card{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 32px rgba(16,24,40,.08);overflow:hidden;display:flex;flex-direction:column;min-height:300px}
+.chart-card.tone-rosa{border-top:4px solid var(--rosa)}.chart-card.tone-laranja{border-top:4px solid var(--laranja)}.chart-card.tone-vermelha{border-top:4px solid var(--red)}
+.chart-head{padding:12px 14px 10px;border-bottom:1px solid rgba(255,255,255,.65);background:rgba(255,255,255,.72);backdrop-filter:blur(4px)}
+.chart-title{margin:0;font-size:10px;font-weight:900;color:var(--blue);line-height:1.35;text-transform:uppercase;letter-spacing:.02em}
+.chart-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+.badge{font-size:9px;font-weight:900;text-transform:uppercase;padding:3px 8px;border-radius:999px;letter-spacing:.04em}
+.badge.orientar{background:#fff7ed;color:#c2410c}.badge.grave{background:#fef2f2;color:var(--red)}
+.chart-total{font-size:11px;font-weight:800;color:var(--muted)}
+.chart-body{flex:1;padding:10px 12px 14px;position:relative;min-height:220px;border-radius:0 0 16px 16px}
+.chart-body.tone-rosa{background:linear-gradient(145deg,rgba(236,72,153,.22) 0%,rgba(236,72,153,.08) 42%,rgba(255,255,255,.92) 100%)}
+.chart-body.tone-laranja{background:linear-gradient(145deg,rgba(249,115,22,.22) 0%,rgba(249,115,22,.08) 42%,rgba(255,255,255,.92) 100%)}
+.chart-body.tone-vermelha{background:linear-gradient(145deg,rgba(220,38,38,.2) 0%,rgba(220,38,38,.07) 42%,rgba(255,255,255,.92) 100%)}
+.chart-body canvas{width:100%!important;height:100%!important}
+.chart-empty[hidden]{display:none!important}
+.chart-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;font-weight:700;background:rgba(255,255,255,.45);border-radius:0 0 16px 16px}
+.empty-page{padding:48px 24px;text-align:center;color:var(--muted);font-weight:700;background:#fff;border:1px solid var(--border);border-radius:16px}
+.pdf-sheet-header{display:none;padding:0 0 10px}
+.pdf-sheet-top{display:grid;grid-template-columns:minmax(140px,1fr) auto minmax(140px,1fr);align-items:center;gap:16px;padding:8px 14px 10px;background:#fff;border-bottom:1px solid #e8edf6;margin-bottom:10px}
+.pdf-sheet-top .logo-ciop{justify-self:start;height:38px}
+.pdf-sheet-top .logo-tcgl{justify-self:end;height:42px}
+.pdf-sheet-title-wrap{text-align:center}
+.pdf-sheet-title{margin:0;color:var(--blue);font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:.02em}
+.pdf-sheet-period{margin:4px 0 0;color:var(--muted);font-size:11px;font-weight:700}
+.pdf-exporting .pdf-sheet-header{display:block}
+.pdf-exporting .toolbar,.pdf-exporting .header,.pdf-exporting .status-pill{display:none!important}
+.pdf-exporting #pdfExport{background:var(--bg);padding:8px 0;width:1680px;max-width:none;margin:0 auto}
+.pdf-exporting .charts-grid,.pdf-exporting .charts-grid.linha-quatro{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+.pdf-exporting .chart-card{min-height:240px}
+@media(max-width:1100px){.charts-grid.linha-quatro{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:960px){.charts-grid,.charts-grid.linha-quatro{grid-template-columns:1fr}.toolbar-left,.filters-inline{width:100%}.filter-field{max-width:none}}
+@media(max-width:720px){.header{grid-template-columns:1fr;text-align:center}h1{font-size:18px}}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="../assets/js/loading.js"></script>
+<script type="module" src="../assets/js/auth.js"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+</head>
+<body>
+<header class="header">
+    <a href="https://mov1.com.br" target="_blank" rel="noopener"><img class="logo-ciop" src="../assets/img/CIOP Sem Fundo.png" alt="CIOP"></a>
+    <div class="title-wrap">
+        <h1>Acompanhamento da Liberação</h1>
+    </div>
+    <div class="header-actions">
+        <div class="ciop-session">
+            <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
+            <span class="ciop-session-profile" id="perfilUsuario">Perfil</span>
+            <button class="btn-logout" type="button" onclick="logout()">Sair</button>
+        </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+    </div>
+</header>
+
+<main class="container">
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <div class="nav-actions">
+                <a class="btn-portal" href="../index.html"><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg></span>Portal</a>
+                <a class="btn-secondary" href="liberacao-lancamento.html"><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>Lançamento</a>
+            </div>
+            <div class="filters-inline" aria-label="Filtros de período">
+                <div class="filter-field"><label for="dataDe">De</label><input id="dataDe" type="date"></div>
+                <div class="filter-field"><label for="dataAte">Até</label><input id="dataAte" type="date"></div>
+            </div>
+            <button class="btn-primary" type="button" id="btnPdf"><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg></span>Gerar PDF</button>
+        </div>
+        <div class="status-pill"><span class="status-dot load" id="statusDot"></span><span id="statusLine">Carregando...</span></div>
+    </div>
+
+    <div id="pdfExport">
+        <div class="pdf-sheet-header" aria-hidden="true">
+            <div class="pdf-sheet-top">
+                <img class="logo-ciop" src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
+                <div class="pdf-sheet-title-wrap">
+                    <h2 class="pdf-sheet-title">Acompanhamento da Liberação</h2>
+                    <p class="pdf-sheet-period" id="pdfPeriodo"></p>
+                </div>
+                <img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+            </div>
+        </div>
+        <div id="chartsRoot"></div>
+    </div>
+    <div class="empty-page" id="pageEmpty" hidden>Nenhum registro no período selecionado.</div>
+</main>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
+
+const SECOES = [
+    {
+        id: "orientar",
+        titulo: "Orientar",
+        dotClass: "orientar",
+        categorias: [
+            { chave: "NO_HORARIO|ATRASADO", titulo: "SAIU NO HORÁRIO E INICIOU ATRASADO", gravidade: "ORIENTAR", cor: "#ec4899", tone: "tone-rosa" },
+            { chave: "NO_HORARIO|ADIANTADO", titulo: "SAIU NO HORÁRIO E INICIOU ADIANTADO", gravidade: "ORIENTAR", cor: "#ec4899", tone: "tone-rosa" },
+            { chave: "ATRASADO|NO_HORARIO", titulo: "SAIU ATRASADO E INICIOU NO HORÁRIO", gravidade: "ORIENTAR", cor: "#f97316", tone: "tone-laranja" },
+            { chave: "ATRASADO|ADIANTADO", titulo: "SAIU ATRASADO E INICIOU ADIANTADO", gravidade: "ORIENTAR", cor: "#f97316", tone: "tone-laranja" }
+        ]
+    },
+    {
+        id: "grave",
+        titulo: "Grave",
+        dotClass: "vermelha",
+        categorias: [
+            { chave: "ATRASADO|ATRASADO", titulo: "SAIU ATRASADO E INICIOU ATRASADO", gravidade: "GRAVE", cor: "#dc2626", tone: "tone-vermelha" },
+            { chave: "ADIANTADO|NO_HORARIO", titulo: "SAIU ADIANTADO E INICIOU NO HORÁRIO", gravidade: "GRAVE", cor: "#dc2626", tone: "tone-vermelha" },
+            { chave: "ADIANTADO|ATRASADO", titulo: "SAIU ADIANTADO E INICIOU ATRASADO", gravidade: "GRAVE", cor: "#dc2626", tone: "tone-vermelha" },
+            { chave: "ADIANTADO|ADIANTADO", titulo: "SAIU ADIANTADO E INICIOU ADIANTADO", gravidade: "GRAVE", cor: "#dc2626", tone: "tone-vermelha" }
+        ]
+    }
+];
+
+const CATEGORIAS = SECOES.flatMap(s => s.categorias.map(c => Object.assign({ grupo: s.id }, c)));
+const state = { mapaGraficos: {}, totalLinhas: 0, cacheChave: "", charts: {}, reloadTimer: null };
+
+function $(id){ return document.getElementById(id); }
+function idGrafico(chave){ return String(chave).replace(/\|/g, "-"); }
+function escapeHtml(v){ return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function formatNumber(v){ return Number(v||0).toLocaleString("pt-BR"); }
+function brDate(iso){ if(!iso) return "—"; const p=iso.split("-"); return p.length===3 ? p[2]+"/"+p[1]+"/"+p[0] : iso; }
+function val(row,key){
+    if(row[key]!=null&&row[key]!=="") return row[key];
+    if(key==="saida_atrasado_adiantado") return row.saida_atrasado_adiantado||"";
+    if(key==="saiu_no_horario") return row.saiu_no_horaro||"";
+    return "";
+}
+function normalizarDataIso(v){
+    if(!v) return "";
+    const t=String(v).trim();
+    if(/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0,10);
+    const m=t.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    return m ? m[3]+"-"+m[2]+"-"+m[1] : "";
+}
+function dataIso(row){ return row.data_iso || normalizarDataIso(val(row,"data")); }
+function normalizarSituacao(v){
+    const t=String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
+    if(!t) return "";
+    if(t.includes("ADIANT")) return "ADIANTADO";
+    if(t.includes("ATRAS")) return "ATRASADO";
+    if(t.includes("HOR")||t==="SIM") return "NO_HORARIO";
+    return "";
+}
+function situacaoSaida(row){ return normalizarSituacao(val(row,"saida_atrasado_adiantado")) || normalizarSituacao(val(row,"saiu_no_horario")); }
+function situacaoInicio(row){ return normalizarSituacao(val(row,"inicio_no_horario")); }
+
+function setStatus(texto, tipo){
+    $("statusLine").textContent = texto;
+    $("statusDot").className = "status-dot" + (tipo ? " "+tipo : "");
+}
+
+async function apiGet(params){
+    const res = await fetch(API_URL+"?"+new URLSearchParams(Object.assign({liberacao:"1"},params)), {cache:"no-store"});
+    const data = await res.json();
+    if(!data.ok) throw new Error(data.erro||"Falha na API.");
+    return data;
+}
+
+function montarHtmlGraficos(){
+    $("chartsRoot").innerHTML = SECOES.map(s => `
+        <section class="group-section" data-grupo="${s.id}">
+            <div class="group-head"><span class="group-dot ${s.dotClass}"></span><h2 class="group-title">${escapeHtml(s.titulo)}</h2></div>
+            <div class="charts-grid linha-quatro">
+                ${s.categorias.map(c => `
+                    <article class="chart-card ${c.tone}" data-chave="${c.chave}">
+                        <div class="chart-head">
+                            <h3 class="chart-title">${escapeHtml(c.titulo)}</h3>
+                            <div class="chart-meta">
+                                <span class="badge ${c.gravidade==="GRAVE"?"grave":"orientar"}">${escapeHtml(c.gravidade)}</span>
+                                <span class="chart-total" id="total-${idGrafico(c.chave)}">0 ocorrências</span>
+                            </div>
+                        </div>
+                        <div class="chart-body ${c.tone}">
+                            <canvas id="chart-${idGrafico(c.chave)}" aria-label="${escapeHtml(c.titulo)}"></canvas>
+                            <div class="chart-empty" id="empty-${idGrafico(c.chave)}" hidden>Sem registros no período</div>
+                        </div>
+                    </article>
+                `).join("")}
+            </div>
+        </section>
+    `).join("");
+}
+
+function hexToRgb(hex){
+    const h = String(hex||"").replace("#","");
+    if(h.length!==6) return {r:236,g:72,b:153};
+    return { r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16) };
+}
+
+function rgbaHex(hex, alpha){
+    const c = hexToRgb(hex);
+    return "rgba("+c.r+","+c.g+","+c.b+","+alpha+")";
+}
+
+function gradienteBarras(chart, cor){
+    const { ctx, chartArea } = chart;
+    if(!chartArea) return cor;
+    const g = ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
+    g.addColorStop(0, rgbaHex(cor, 0.28));
+    g.addColorStop(0.45, rgbaHex(cor, 0.62));
+    g.addColorStop(1, cor);
+    return g;
+}
+
+function agregarPorCategoria(dados){
+    const mapa = {};
+    CATEGORIAS.forEach(c => mapa[c.chave] = {});
+    dados.forEach(row => {
+        const s = situacaoSaida(row), i = situacaoInicio(row), mot = String(val(row,"motorista")).trim();
+        if(!s || !i || !mot) return;
+        const chave = s+"|"+i;
+        if(!mapa[chave]) return;
+        mapa[chave][mot] = (mapa[chave][mot] || 0) + 1;
+    });
+    return mapa;
+}
+
+function dadosGrafico(mapa, chave, limite){
+    const pares = Object.entries(mapa[chave] || {})
+        .sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0],"pt-BR",{numeric:true}))
+        .slice(0, limite || 12);
+    return {
+        labels: pares.map(p => p[0]),
+        values: pares.map(p => p[1]),
+        total: Object.values(mapa[chave] || {}).reduce((a,n) => a+n, 0)
+    };
+}
+
+function destruirGraficos(){
+    Object.values(state.charts).forEach(ch => { try { ch.destroy(); } catch(_){} });
+    state.charts = {};
+}
+
+function renderGraficos(){
+    destruirGraficos();
+    const mapa = state.mapaGraficos || {};
+    let algumDado = false;
+
+    CATEGORIAS.forEach(cat => {
+        const info = dadosGrafico(mapa, cat.chave);
+        const gid = idGrafico(cat.chave);
+        const canvas = $("chart-"+gid);
+        const empty = $("empty-"+gid);
+        const totalEl = $("total-"+gid);
+        if(!canvas) return;
+
+        totalEl.textContent = formatNumber(info.total) + (info.total===1 ? " ocorrência" : " ocorrências");
+        if(!info.total){
+            empty.hidden = false;
+            canvas.style.display = "none";
+            return;
+        }
+        algumDado = true;
+        empty.hidden = true;
+        canvas.style.display = "block";
+        const altura = Math.max(200, Math.min(340, info.labels.length * 32 + 48));
+        canvas.parentElement.style.minHeight = altura + "px";
+        const maxValor = Math.max(...info.values, 1);
+
+        state.charts[cat.chave] = new Chart(canvas.getContext("2d"), {
+            type: "bar",
+            data: {
+                labels: info.labels,
+                datasets: [{
+                    data: info.values,
+                    backgroundColor(context){
+                        return gradienteBarras(context.chart, cat.cor);
+                    },
+                    hoverBackgroundColor: cat.cor,
+                    borderSkipped: false,
+                    borderRadius: 12,
+                    barThickness: 20,
+                    maxBarThickness: 24
+                }]
+            },
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: { right: 36, left: 4, top: 4, bottom: 4 } },
+                animation: { duration: 700, easing: "easeOutQuart" },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: "#101828",
+                        titleFont: { size: 11, weight: "700" },
+                        bodyFont: { size: 11, weight: "700" },
+                        padding: 10,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label(ctx){ return formatNumber(ctx.raw) + " ocorrência(s)"; }
+                        }
+                    },
+                    datalabels: {
+                        anchor: "end",
+                        align: "end",
+                        offset: 6,
+                        clamp: true,
+                        color: "#101828",
+                        font: { size: 10, weight: "800" },
+                        formatter(v){ return formatNumber(v); }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        suggestedMax: maxValor + Math.max(1, Math.ceil(maxValor * 0.15)),
+                        ticks: { display: false },
+                        grid: { display: false },
+                        border: { display: false }
+                    },
+                    y: {
+                        ticks: {
+                            font: { size: 10, weight: "700" },
+                            color: "#344054",
+                            padding: 6
+                        },
+                        grid: { display: false },
+                        border: { display: false }
+                    }
+                }
+            }
+        });
+    });
+
+    $("pageEmpty").hidden = algumDado || state.totalLinhas > 0;
+}
+
+async function carregar(){
+    const dataDe = $("dataDe").value;
+    const dataAte = $("dataAte").value;
+    if(!dataDe || !dataAte){ setStatus("Informe o período (de/até).","erro"); return; }
+    if(dataDe > dataAte){ setStatus("A data inicial não pode ser maior que a final.","erro"); return; }
+
+    const chave = dataDe + "|" + dataAte;
+    if(state.cacheChave === chave && state.mapaGraficos){
+        renderGraficos();
+        setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · memória","ok");
+        return;
+    }
+
+    setStatus("Carregando planilha...","load");
+    window.portalMostrarCarregando?.("Carregando liberação");
+    try {
+        const res = await apiGet({
+            recurso: "graficos",
+            data_de: dataDe,
+            data_ate: dataAte
+        });
+        state.mapaGraficos = res.categorias || {};
+        state.totalLinhas = res.total_linhas || 0;
+        state.cacheChave = chave;
+        renderGraficos();
+        const cacheTxt = res.meta && res.meta.cache ? " · cache" : "";
+        setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + cacheTxt, "ok");
+    } finally {
+        window.portalOcultarCarregando?.();
+    }
+}
+
+function agendarRecarga(){
+    clearTimeout(state.reloadTimer);
+    state.reloadTimer = setTimeout(() => carregar().catch(e => setStatus(e.message,"erro")), 350);
+}
+
+async function gerarPdf(){
+    const dataDe = $("dataDe").value, dataAte = $("dataAte").value;
+    if(!window.jspdf){ setStatus("Biblioteca PDF indisponível.","erro"); return; }
+    if(!window.html2canvas){ setStatus("Biblioteca de captura indisponível.","erro"); return; }
+    if(!$("chartsRoot")?.querySelector(".chart-card")){ setStatus("Carregue os gráficos antes de gerar o PDF.","erro"); return; }
+
+    setStatus("Gerando PDF...","load");
+    window.portalMostrarCarregando?.("Gerando PDF");
+    $("pdfPeriodo").textContent = "Período: " + brDate(dataDe) + " a " + brDate(dataAte);
+    document.body.classList.add("pdf-exporting");
+
+    try {
+        await new Promise(r => setTimeout(r, 120));
+        const alvo = $("pdfExport");
+        const canvas = await html2canvas(alvo, {
+            scale: 2,
+            backgroundColor: "#f5f7fb",
+            logging: false,
+            useCORS: true,
+            windowWidth: alvo.scrollWidth,
+            windowHeight: alvo.scrollHeight
+        });
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+        const pageW = 297, pageH = 210, margin = 4;
+        const availW = pageW - margin * 2;
+        const availH = pageH - margin * 2;
+        const imgRatio = canvas.width / canvas.height;
+        let drawW = availW;
+        let drawH = drawW / imgRatio;
+        if(drawH > availH){
+            drawH = availH;
+            drawW = drawH * imgRatio;
+        }
+        const x = (pageW - drawW) / 2;
+        const y = (pageH - drawH) / 2;
+        pdf.addImage(canvas.toDataURL("image/png"), "PNG", x, y, drawW, drawH);
+        pdf.save("liberacao-" + dataDe + "-" + dataAte + ".pdf");
+        setStatus("PDF gerado · " + brDate(dataDe) + " a " + brDate(dataAte), "ok");
+    } finally {
+        document.body.classList.remove("pdf-exporting");
+        window.portalOcultarCarregando?.();
+    }
+}
+
+function iniciar(){
+    if(window.ChartDataLabels) Chart.register(ChartDataLabels);
+    montarHtmlGraficos();
+    const hoje=new Date().toISOString().slice(0,10);
+    $("dataDe").value=hoje;
+    $("dataAte").value=hoje;
+    $("dataDe").addEventListener("change", agendarRecarga);
+    $("dataAte").addEventListener("change", agendarRecarga);
+    $("btnPdf").addEventListener("click", () => gerarPdf().catch(e => setStatus(e.message,"erro")));
+    carregar().catch(e => setStatus(e.message,"erro"));
+}
+
+if(window.portalUsuarioValidado) iniciar();
+else window.addEventListener("portal:usuario-validado", iniciar, { once: true });
+</script>
+</body>
+</html>
