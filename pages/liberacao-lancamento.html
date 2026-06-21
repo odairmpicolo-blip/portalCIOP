@@ -85,6 +85,17 @@ tbody td.cell-locked{background:#f8fafc}
 tbody tr:nth-child(even) td.cell-locked{background:#f1f5f9}
 tbody tr:hover td.cell-locked{background:#f1f5f9}
 .legend-swatch.locked{background:#f8fafc;border-color:#cbd5e1}
+.cell-maquina{font-weight:900;text-transform:uppercase;letter-spacing:.02em}
+.cell-maquina.maq-01{color:#67a363}
+.cell-maquina.maq-02{color:#eebc59}
+.cell-maquina.maq-03{color:#6089e1}
+.cell-maquina.maq-04{color:#d85e4c}
+.cell-readonly.cell-maquina,.cell-input.cell-maquina,.cell-select.cell-maquina{background:transparent;color:inherit}
+.cell-maquina.maq-01.cell-input,.cell-maquina.maq-01.cell-select,.cell-maquina.maq-01.cell-readonly{color:#67a363}
+.cell-maquina.maq-02.cell-input,.cell-maquina.maq-02.cell-select,.cell-maquina.maq-02.cell-readonly{color:#eebc59}
+.cell-maquina.maq-03.cell-input,.cell-maquina.maq-03.cell-select,.cell-maquina.maq-03.cell-readonly{color:#6089e1}
+.cell-maquina.maq-04.cell-input,.cell-maquina.maq-04.cell-select,.cell-maquina.maq-04.cell-readonly{color:#d85e4c}
+tbody td.col-maquina .cell-readonly{color:inherit}
 .sync-badge{display:inline-flex;align-items:center;justify-content:center;min-width:68px;padding:4px 8px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.03em}
 .sync-badge.ok{background:#dcfce7;color:var(--green)}
 .sync-badge.saving{background:#ffedd5;color:var(--amber)}
@@ -197,6 +208,14 @@ function escapeHtml(v){return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;",
 function brDate(iso){if(!iso)return "—";const p=iso.split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:iso}
 function formatNumber(v){return Number(v||0).toLocaleString("pt-BR")}
 function normalizarMaquina(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/\s+/g," ").trim()}
+function numeroMaquina(v){
+    const m=normalizarMaquina(v).match(/(\d{1,2})\s*$/);
+    return m?String(parseInt(m[1],10)).padStart(2,"0"):"";
+}
+function classeMaquina(v){
+    const n=numeroMaquina(v);
+    return n?" cell-maquina maq-"+n:" cell-maquina";
+}
 function val(row,key){
     if(row[key]!=null&&row[key]!=="") return row[key];
     if(key==="horario_saida_da_garagem") return row.horario_de_saida_da_garagem||"";
@@ -435,11 +454,12 @@ function bindCelulas(){
 function renderCelula(row, rowIdx, col){
     const chave=col.chave;
     const v=val(row,chave);
+    const clsMaquina=chave==="maquina"?classeMaquina(v):"";
     if(col.formula||isColunaFormula(chave)){
         return '<span class="cell-readonly cell-formula cell-locked" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" aria-readonly="true" tabindex="-1" title="Calculado automaticamente — não editável">'+escapeHtml(v||"—")+'</span>';
     }
     const locked=celulaPreenchida(row,chave);
-    const clsExtra=col.texto?" cell-texto":"";
+    const clsExtra=(col.texto?" cell-texto":"")+clsMaquina;
     if(locked){
         return '<span class="cell-readonly'+clsExtra+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" title="Preenchido na planilha — não editável">'+escapeHtml(v||"—")+'</span>';
     }
