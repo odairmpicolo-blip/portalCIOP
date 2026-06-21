@@ -1351,6 +1351,7 @@ h1 {
     let chartAnalistasInstance = null;
     const chartAnalyticsInstances = {};
     let carregamentoEmAndamento = false;
+    let mapaCorPorOcorrencia = {};
 
     const pluginValoresLaterais = {
         id: "valoresLaterais",
@@ -1418,15 +1419,53 @@ h1 {
     }
 
     function corOcorrenciaExata(nome) {
+        if (!nome) return null;
         const chave = chavePaleta(nome);
         for (const rotulo of Object.keys(PALETA_OCORRENCIA)) {
             if (chavePaleta(rotulo) === chave) return PALETA_OCORRENCIA[rotulo];
         }
+        const rotulos = Object.keys(PALETA_OCORRENCIA).sort((a, b) => chavePaleta(b).length - chavePaleta(a).length);
+        for (const rotulo of rotulos) {
+            const k = chavePaleta(rotulo);
+            if (k.length >= 3 && (chave.includes(k) || k.includes(chave))) return PALETA_OCORRENCIA[rotulo];
+        }
         return null;
+    }
+
+    function construirMapaCoresOcorrencias(labels) {
+        const mapa = {};
+        const usadas = new Set();
+        let reservaIdx = 0;
+        (labels || []).forEach(label => {
+            let cor = corOcorrenciaExata(label);
+            if (!cor || usadas.has(cor)) {
+                while (reservaIdx < CORES_OCORRENCIA_RESERVA.length && usadas.has(CORES_OCORRENCIA_RESERVA[reservaIdx])) {
+                    reservaIdx++;
+                }
+                cor = CORES_OCORRENCIA_RESERVA[reservaIdx++] || CORES_BARRAS[usadas.size % CORES_BARRAS.length];
+            }
+            usadas.add(cor);
+            mapa[label] = cor;
+            mapa[chavePaleta(label)] = cor;
+        });
+        Object.entries(PALETA_OCORRENCIA).forEach(([rotulo, cor]) => {
+            const k = chavePaleta(rotulo);
+            if (!mapa[k]) mapa[k] = cor;
+        });
+        mapaCorPorOcorrencia = mapa;
+        return mapa;
+    }
+
+    function corParaOcorrencia(label) {
+        return mapaCorPorOcorrencia[label]
+            || mapaCorPorOcorrencia[chavePaleta(label)]
+            || corOcorrencia(label);
     }
 
     function corAssunto(...tipos) {
         for (const tipo of tipos) {
+            const doMapa = mapaCorPorOcorrencia[chavePaleta(tipo)];
+            if (doMapa) return doMapa;
             const cor = corOcorrenciaExata(tipo);
             if (cor) return cor;
         }
@@ -1443,19 +1482,7 @@ h1 {
     }
 
     function coresUnicasPorOcorrencia(labels) {
-        const usadas = new Set();
-        let reservaIdx = 0;
-        return labels.map(label => {
-            let cor = corOcorrenciaExata(label);
-            if (!cor || usadas.has(cor)) {
-                while (reservaIdx < CORES_OCORRENCIA_RESERVA.length && usadas.has(CORES_OCORRENCIA_RESERVA[reservaIdx])) {
-                    reservaIdx++;
-                }
-                cor = CORES_OCORRENCIA_RESERVA[reservaIdx++] || CORES_BARRAS[usadas.size % CORES_BARRAS.length];
-            }
-            usadas.add(cor);
-            return cor;
-        });
+        return labels.map(label => corParaOcorrencia(label));
     }
 
     function corSituacao(nome) {
@@ -1602,16 +1629,20 @@ h1 {
                     borderSkipped: false,
                     barThickness: horizontal ? 16 : undefined,
                     maxBarThickness: horizontal ? 20 : 48,
-                    _barColors: barColors
+                    backgroundColor: barColors.slice(),
+                    _barColors: barColors.slice()
                 }]
             },
             plugins: [{
                 id: "grad_" + id,
-                beforeDatasetsDraw(chart) {
+                beforeDraw(chart) {
                     const { ctx, chartArea } = chart;
                     if (!chartArea) return;
-                    const colors = chart.data.datasets[0]._barColors;
-                    chart.data.datasets[0].backgroundColor = colors.map(c => {
+                    const ds = chart.data.datasets[0];
+                    const colors = ds._barColors;
+                    if (!colors?.length) return;
+                    ds.backgroundColor = colors.map(c => {
+                        if (typeof c !== "string" || c.charAt(0) !== "#") return c;
                         const g = horizontal
                             ? ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0)
                             : ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
@@ -1890,6 +1921,13 @@ h1 {
     }
 
     function inicializarGraficosAnalytics(dados, contagemOcorrencias, contagemSituacao) {
+        const ocorOrdenadas = Object.keys(contagemOcorrencias || {})
+            .map(label => ({ label, qtd: contagemOcorrencias[label] }))
+            .sort((a, b) => b.qtd - a.qtd || a.label.localeCompare(b.label, "pt-BR"));
+
+        const labelsOcorrencias = ocorOrdenadas.length ? ocorOrdenadas.map(i => i.label) : ["Sem dados"];
+        construirMapaCoresOcorrencias(labelsOcorrencias);
+
         const corOficina = corAssunto("OFICINA");
         const corBorracharia = corAssunto("BORRACHARIA");
         const corColisao = corAssunto("COLISAO", "COLISÃO");
@@ -1897,15 +1935,11 @@ h1 {
         const corAdiantado = corAssunto("ADIANTADO");
         const corAtrasado = corAssunto("ATRASADO");
 
-        const ocorOrdenadas = Object.keys(contagemOcorrencias || {})
-            .map(label => ({ label, qtd: contagemOcorrencias[label] }))
-            .sort((a, b) => b.qtd - a.qtd || a.label.localeCompare(b.label, "pt-BR"));
-
         criarGraficoAnalytics("chartOcorrencias", {
-            labels: ocorOrdenadas.length ? ocorOrdenadas.map(i => i.label) : ["Sem dados"],
+            labels: labelsOcorrencias,
             values: ocorOrdenadas.length ? ocorOrdenadas.map(i => i.qtd) : [0],
             horizontal: true,
-            cores: coresUnicasPorOcorrencia(ocorOrdenadas.length ? ocorOrdenadas.map(i => i.label) : ["Sem dados"])
+            corPorLabel: label => corParaOcorrencia(label)
         });
 
         const situacaoOrdenada = Object.keys(contagemSituacao || {})
