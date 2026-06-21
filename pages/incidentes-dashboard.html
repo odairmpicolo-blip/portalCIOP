@@ -89,6 +89,9 @@ h1{margin:0;color:var(--blue);font-size:24px;font-weight:900;letter-spacing:0;te
 .btn-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex:0 0 auto}
 .btn-icon svg{width:16px;height:16px;display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .status-line{color:var(--muted);font-size:12px;font-weight:700}
+.source-status{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.btn-refresh{min-height:38px;padding:8px 12px;font-size:12px}
+.btn-refresh:disabled{opacity:.55;cursor:not-allowed}
 .kpi-grid{display:grid;grid-template-columns:repeat(6,minmax(140px,1fr));gap:10px;margin-bottom:12px}
 .kpi{
     background:#fff;
@@ -239,7 +242,10 @@ tbody tr:hover{background:#fff7ed}
             <span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>
             <span>Portal</span>
         </a>
-        <div class="status-line" id="statusLine">Carregando incidentes TCGL...</div>
+        <div class="source-status">
+            <div class="status-line" id="statusLine">Carregando incidentes TCGL...</div>
+            <button class="btn btn-secondary btn-refresh" type="button" id="btnAtualizar">Atualizar</button>
+        </div>
     </div>
 
     <section class="kpi-grid" aria-label="Indicadores principais">
@@ -699,21 +705,42 @@ function downloadBlob(blob, filename) {
     URL.revokeObjectURL(url);
 }
 
-async function init() {
-    const response = await fetch("../assets/data/incidentes-tcgl.json?ts=" + Date.now(), { cache: "no-store" });
-    if (!response.ok) throw new Error("Não foi possível carregar o arquivo de incidentes.");
-    const payload = await response.json();
-    state.all = (payload.incidentes || []).filter((row) => String(row.empresa || "").toUpperCase() === "TCGL" && (String(row.natureOfProblem || "").trim() || String(row.instructions || "").trim()));
-    state.filtered = state.all.slice();
-    populateSelect(fields.estado, state.all, "estado");
-    populateSelect(fields.tipo, state.all, "tipo");
-    populateSelect(fields.linha, state.all, "linha");
-    populateSelect(fields.veiculo, state.all, "veiculo");
-    populateSelect(fields.criado, state.all, "criadoPor");
-    populateSelect(fields.proprietario, state.all, "proprietario");
-    document.getElementById("statusLine").textContent = "Atualizado em " + new Date(payload.atualizadoEm).toLocaleString("pt-BR") + " - " + formatNumber(state.all.length) + " incidentes TCGL";
-    sortRows();
-    render();
+let carregandoIncidentes = false;
+
+function atualizarStatusLinha(payload, total) {
+    const quando = payload?.atualizadoEm
+        ? new Date(payload.atualizadoEm).toLocaleString("pt-BR")
+        : "data desconhecida";
+    document.getElementById("statusLine").textContent = "Atualizado em " + quando + " · " + formatNumber(total) + " incidentes TCGL";
+}
+
+async function carregarIncidentes(forcar) {
+    if (carregandoIncidentes) return;
+    carregandoIncidentes = true;
+    const btn = document.getElementById("btnAtualizar");
+    const status = document.getElementById("statusLine");
+    btn.disabled = true;
+    status.textContent = forcar ? "Atualizando tabela..." : "Carregando incidentes TCGL...";
+    try {
+        const response = await fetch("../assets/data/incidentes-tcgl.json?ts=" + Date.now(), { cache: "no-store" });
+        if (!response.ok) throw new Error("Não foi possível carregar o arquivo de incidentes.");
+        const payload = await response.json();
+        state.all = (payload.incidentes || []).filter((row) => String(row.empresa || "").toUpperCase() === "TCGL" && (String(row.natureOfProblem || "").trim() || String(row.instructions || "").trim()));
+        populateSelect(fields.estado, state.all, "estado");
+        populateSelect(fields.tipo, state.all, "tipo");
+        populateSelect(fields.linha, state.all, "linha");
+        populateSelect(fields.veiculo, state.all, "veiculo");
+        populateSelect(fields.criado, state.all, "criadoPor");
+        populateSelect(fields.proprietario, state.all, "proprietario");
+        applyFilters();
+        atualizarStatusLinha(payload, state.all.length);
+    } catch (error) {
+        status.textContent = error.message || "Erro ao atualizar incidentes.";
+        throw error;
+    } finally {
+        carregandoIncidentes = false;
+        btn.disabled = false;
+    }
 }
 
 Object.values(fields).forEach((field) => field.addEventListener("input", applyFilters));
@@ -750,9 +777,12 @@ document.getElementById("nextPage").addEventListener("click", () => {
 });
 document.getElementById("exportCsv").addEventListener("click", exportCsv);
 document.getElementById("exportExcel").addEventListener("click", exportExcel);
+document.getElementById("btnAtualizar").addEventListener("click", () => {
+    carregarIncidentes(true).catch(() => {});
+});
 
-if (window.portalUsuarioValidado) init().catch((error) => document.getElementById("statusLine").textContent = error.message);
-else window.addEventListener("portal:usuario-validado", () => init().catch((error) => document.getElementById("statusLine").textContent = error.message), { once:true });
+if (window.portalUsuarioValidado) carregarIncidentes(false).catch(() => {});
+else window.addEventListener("portal:usuario-validado", () => carregarIncidentes(false).catch(() => {}), { once: true });
 </script>
 </body>
 </html>
