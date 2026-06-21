@@ -1489,7 +1489,11 @@ h1 {
 
     <div class="table-card">
         <div class="chart-header table-title"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M9 4v16"/><path d="M15 4v16"/></svg></span><span>Últimos 10 Lançamentos</span></div>
-        <p class="table-subtitle">Histórico recente guardado neste navegador — atualizado a cada salvamento.</p>
+        <p class="table-subtitle" id="lancamentos-subtitle">Últimos lançamentos da planilha — visíveis para todos os usuários com acesso.</p>
+        <div class="launch-toolbar-actions" style="margin-bottom:10px;">
+            <button type="button" class="btn-sync-opcoes" id="btn-atualizar-lancamentos" onclick="carregarLancamentosRecentes(true)">Atualizar lançamentos</button>
+            <span id="lancamentos-status" class="sync-status" style="margin-left:8px;">Carregando...</span>
+        </div>
         <table class="recent-table">
             <thead>
                 <tr>
@@ -1522,6 +1526,8 @@ h1 {
     const URL_DO_SCRIPT_GOOGLE = "https://script.google.com/macros/s/AKfycbxZCBQvizRj0qQ3zgB_FHSwWWkpaozr0C2w6bQyi4YpLbutAI-SjODwZFVqqCkLjPNYaw/exec";
     const TEMPO_LIMITE_SALVAR_MS = 30000;
     const TEMPO_LIMITE_OPCOES_MS = 45000;
+    const TEMPO_LIMITE_RECENTES_MS = 25000;
+    const INTERVALO_ATUALIZACAO_LANCAMENTOS_MS = 30000;
     const CACHE_STORAGE_KEY = "ciop_folha_lancamentos_recentes_v1";
     const LIMITE_LINHAS_RECENTES = 10;
     const CAMPOS_OCORRENCIA_OFICINA = ["novo-motivo-oficina", "novo-mecanico", "novo-tempo-deslocamento"];
@@ -1544,6 +1550,7 @@ h1 {
     ]);
 
     let dadosMestres = [];
+    let intervaloLancamentosId = null;
     let opcoesPlanilha = {};
     let opcoesFormularioPermitidas = {};
     let linhaEditando = "";
@@ -1632,6 +1639,58 @@ h1 {
         }));
     }
 
+    function urlLancamentosRecentes() {
+        return `${URL_DO_SCRIPT_GOOGLE}?somente_recentes=1&limit=${LIMITE_LINHAS_RECENTES}`;
+    }
+
+    function atualizarStatusLancamentos(texto) {
+        const el = document.getElementById("lancamentos-status");
+        if (el) el.textContent = texto || "";
+    }
+
+    function aplicarLancamentosRecentes(lista, origem) {
+        dadosMestres = normalizarDados(lista).slice(0, LIMITE_LINHAS_RECENTES);
+        salvarCacheLancamentos(dadosMestres, opcoesPlanilha);
+        preencherSelectsDoFormulario(dadosMestres);
+        renderizarTabela(dadosMestres);
+        const agora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+        atualizarStatusLancamentos(`${dadosMestres.length} lançamento(s) da planilha (${origem}) — ${agora}`);
+    }
+
+    async function carregarLancamentosRecentes(mostrarFeedback = false) {
+        const btn = document.getElementById("btn-atualizar-lancamentos");
+        if (btn) btn.disabled = true;
+        if (mostrarFeedback || dadosMestres.length === 0) {
+            atualizarStatusLancamentos("Carregando lançamentos da planilha...");
+        }
+        try {
+            const response = await fetchComTimeout(urlLancamentosRecentes(), {}, TEMPO_LIMITE_RECENTES_MS);
+            const retorno = JSON.parse(await response.text());
+            if (!response.ok || retorno.ok === false) {
+                throw new Error(retorno.erro || "Erro ao carregar lançamentos da planilha.");
+            }
+            aplicarLancamentosRecentes(retorno.dados || [], "atualizado");
+            if (mostrarFeedback) {
+                mostrarMensagemLancamento("Lista de lançamentos atualizada da planilha.", "ok");
+            }
+        } catch (error) {
+            console.warn("Erro ao carregar lançamentos recentes:", error);
+            const cache = lerCacheLancamentos();
+            if (cache.lancamentos.length > 0) {
+                aplicarLancamentosRecentes(cache.lancamentos, "cache local");
+                atualizarStatusLancamentos("Planilha indisponível — exibindo cache local.");
+            } else {
+                renderizarTabela([]);
+                atualizarStatusLancamentos("Não foi possível carregar lançamentos da planilha.");
+            }
+            if (mostrarFeedback) {
+                mostrarMensagemLancamento("Erro ao atualizar lançamentos: " + (error.message || "verifique o Apps Script."), "erro");
+            }
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
     function urlOpcoesPlanilha() {
         return `${URL_DO_SCRIPT_GOOGLE}?somente_opcoes=1`;
     }
@@ -1688,6 +1747,12 @@ h1 {
         aplicarCacheLocal();
         configurarToggleOficina();
         sincronizarOpcoesPlanilha(false);
+        carregarLancamentosRecentes(false);
+        if (intervaloLancamentosId) window.clearInterval(intervaloLancamentosId);
+        intervaloLancamentosId = window.setInterval(
+            () => carregarLancamentosRecentes(false),
+            INTERVALO_ATUALIZACAO_LANCAMENTOS_MS
+        );
     }
 
     function normalizarTextoOcorrencia(valor) {
@@ -2000,7 +2065,7 @@ h1 {
             document.getElementById("form-lancamento").reset();
             preencherDataAtual();
             atualizarCamposOficina();
-            adicionarLancamentoAoCache(payload, retorno);
+            await carregarLancamentosRecentes(false);
         } catch (erro) {
             console.error("Erro ao salvar lançamento:", erro);
             mostrarMensagemLancamento("Erro ao salvar: " + (erro.message || "Confira a implantação do Apps Script e as permissões da planilha."), "erro");
@@ -2046,7 +2111,7 @@ h1 {
         const linhas = dados.slice(0, LIMITE_LINHAS_RECENTES);
 
         if (linhas.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--muted);">Nenhum lançamento recente. Após salvar, as últimas ${LIMITE_LINHAS_RECENTES} linhas ficam guardadas neste navegador.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--muted);">Nenhum lançamento recente na planilha.</td></tr>`;
             return;
         }
         ordenarDadosTabela(linhas).forEach(d => {
@@ -2174,7 +2239,7 @@ h1 {
             if (!resposta.ok || retorno.ok === false) throw new Error(retorno.erro || "Não foi possível atualizar a planilha.");
             mostrarMensagemLancamento("Lançamento atualizado com sucesso.", "ok");
             linhaEditando = "";
-            atualizarLancamentoNoCache(rowKey, payload);
+            await carregarLancamentosRecentes(false);
         } catch (erro) {
             console.error("Erro ao atualizar lançamento:", erro);
             mostrarMensagemLancamento("Erro ao atualizar: " + (erro.message || "Confira o Apps Script."), "erro");

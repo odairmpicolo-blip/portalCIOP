@@ -5,8 +5,9 @@
  * Lançamentos (dados): gid 1013912232
  * Listas padronizadas: gid 665133219 (aba DADOS / referência)
  *
- * GET ?somente_opcoes=1  → { ok, opcoes }
- * GET ?data=YYYY-MM-DD   → filtra registros por data
+ * GET ?somente_opcoes=1     → { ok, opcoes }
+ * GET ?somente_recentes=1  → { ok, dados } (últimos N lançamentos, leitura rápida)
+ * GET ?data=YYYY-MM-DD      → filtra registros por data
  * POST action=create|update
  */
 
@@ -14,7 +15,7 @@ const SPREADSHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const ABA_GID = 1013912232;
 const ABA_NOME = "FOLHA DE SERVIÇO";
 const LISTAS_GID = 665133219;
-const SCRIPT_VERSAO = "2026-06-21-map-params";
+const SCRIPT_VERSAO = "2026-06-21-recentes-compartilhados";
 
 /** Colunas da aba DADOS (gid 665133219) — listas verticais por coluna */
 const COLUNAS_LISTAS = {
@@ -76,6 +77,14 @@ function doGet(e) {
       meta: metaListas_(opcoes)
     });
   }
+  if (String(params.somente_recentes || "") === "1") {
+    const limit = parseInt(params.limit || "10", 10);
+    return json_({
+      ok: true,
+      dados: lerUltimosRegistros_(limit),
+      meta: { versao: SCRIPT_VERSAO, origem: "somente_recentes", limit: limit }
+    });
+  }
   return json_(montarRespostaLeitura_(params));
 }
 
@@ -113,6 +122,28 @@ function montarRespostaLeitura_(params) {
   }
 
   return { ok: true, dados: dados, opcoes: lerOpcoesPadronizadas_() };
+}
+
+function lerUltimosRegistros_(quantidade) {
+  const sheet = abrirAba_();
+  const lastRow = sheet.getLastRow();
+  const numCols = sheet.getLastColumn();
+  if (lastRow < 2 || numCols < 1) return [];
+
+  const qtd = Math.max(1, Math.min(parseInt(quantidade || "10", 10) || 10, 100));
+  const numRows = Math.min(qtd, lastRow - 1);
+  const startRow = lastRow - numRows + 1;
+  const titulos = sheet.getRange(1, 1, 1, numCols).getValues()[0];
+  const cabecalho = titulos.map(normalizarChave_);
+  const valores = sheet.getRange(startRow, 1, numRows, numCols).getValues();
+  const dados = [];
+
+  for (let i = 0; i < valores.length; i++) {
+    dados.push(linhaParaObjeto_(cabecalho, valores[i], startRow + i));
+  }
+
+  dados.reverse();
+  return dados;
 }
 
 function lerOpcoesPadronizadas_() {
