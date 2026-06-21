@@ -53,8 +53,13 @@ h1{margin:0;color:var(--blue);font-size:22px;font-weight:900;text-transform:uppe
 .card-title{margin:0;color:var(--blue);font-size:15px;font-weight:900}
 .table-sub{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px}
 .table-wrap{overflow:auto;max-height:calc(100vh - 260px);min-height:460px}
-table.planilha{width:100%;border-collapse:separate;border-spacing:0;font-size:11px;min-width:2600px}
-thead th{position:sticky;top:0;z-index:3;background:#f1f5f9;color:var(--blue);padding:9px 8px;font-size:9px;font-weight:900;text-transform:uppercase;text-align:center;white-space:nowrap;border-bottom:2px solid #dbe3ef;letter-spacing:.03em}
+table.planilha{width:100%;border-collapse:separate;border-spacing:0;font-size:11px;min-width:1280px;table-layout:fixed}
+thead th{position:sticky;top:0;z-index:3;background:#f1f5f9;color:var(--blue);padding:9px 6px;font-size:9px;font-weight:900;text-transform:uppercase;text-align:center;white-space:normal;line-height:1.25;border-bottom:2px solid #dbe3ef;letter-spacing:.03em}
+thead th.col-sort{cursor:pointer;user-select:none}
+thead th.col-sort:hover{background:#e8eef6}
+.sort-label{display:inline-flex;align-items:center;justify-content:center;gap:4px;width:100%}
+.sort-icon{color:#98a2b3;font-size:10px;line-height:1}
+thead th[aria-sort="ascending"] .sort-icon,thead th[aria-sort="descending"] .sort-icon{color:var(--orange)}
 thead th.col-fix{z-index:5;background:#e8eef6}
 thead th.col-sync{width:88px;min-width:88px}
 thead th.col-num{width:42px;min-width:42px}
@@ -65,7 +70,12 @@ tbody td.col-fix{background:#f8fafc;font-weight:700;color:var(--muted);font-size
 tbody tr:nth-child(even) td.col-fix{background:#f1f5f9}
 tbody td.cell-active{position:relative;z-index:2;box-shadow:inset 0 0 0 2px var(--blue2);background:#fff!important}
 tbody tr:hover td.cell-active{background:#fff!important}
-.cell-input,.cell-select{width:100%;min-width:76px;border:1px solid transparent;background:transparent;padding:7px 6px;font-size:11px;font-family:inherit;text-align:center;border-radius:0;transition:background .15s}
+.cell-input,.cell-select{width:100%;min-width:0;border:1px solid transparent;background:transparent;padding:7px 5px;font-size:11px;font-family:inherit;text-align:center;border-radius:0;transition:background .15s}
+.cell-input.cell-texto,.cell-readonly.cell-texto{text-align:left}
+.cell-readonly.cell-formula{color:#1d4ed8;background:#eff6ff;font-weight:700;pointer-events:none;cursor:not-allowed}
+tbody td.cell-formula{background:#f8fbff}
+tbody tr:nth-child(even) td.cell-formula{background:#f1f6ff}
+.legend-swatch.formula{background:#eff6ff;border-color:#93c5fd}
 .cell-input:focus,.cell-select:focus{outline:none;background:var(--white)}
 .cell-input.saving,.cell-select.saving{background:#fff7ed}
 .cell-input.saved,.cell-select.saved{background:#f0fdf4}
@@ -128,7 +138,7 @@ tbody tr:hover td.cell-locked{background:#f1f5f9}
         <div class="table-head">
             <div>
                 <h2 class="card-title">Planilha de acompanhamento</h2>
-                <div class="table-sub">Edite apenas células vazias · setas / Tab / Enter para navegar · salvamento automático</div>
+                <div class="table-sub">Edite células vazias · horários calculam automaticamente · setas / Tab para navegar</div>
             </div>
             <span class="status-pill" style="padding:6px 10px"><span id="tableInfo">0 linhas</span></span>
         </div>
@@ -147,6 +157,7 @@ tbody tr:hover td.cell-locked{background:#f1f5f9}
             <span class="legend-item"><span class="legend-swatch saving"></span>Salvando</span>
             <span class="legend-item"><span class="legend-swatch erro"></span>Erro ao salvar</span>
             <span class="legend-item"><span class="legend-swatch locked"></span>Preenchido (somente leitura)</span>
+            <span class="legend-item"><span class="legend-swatch formula"></span>Calculado automaticamente</span>
             <span class="legend-item">Setas / Tab / Enter — navegar células editáveis</span>
         </div>
     </section>
@@ -156,26 +167,30 @@ tbody tr:hover td.cell-locked{background:#f1f5f9}
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
-const COLUNAS_PADRAO = [
-    { chave: "data", rotulo: "DATA" }, { chave: "maquina", rotulo: "MAQUINA" }, { chave: "linha", rotulo: "LINHA" },
-    { chave: "work_id", rotulo: "WORK-ID" }, { chave: "carro", rotulo: "CARRO" }, { chave: "motorista", rotulo: "MOTORISTA" },
-    { chave: "preparo", rotulo: "PREPARO" }, { chave: "horario_saida_da_garagem", rotulo: "HORÁRIO DE SAÍDA DA GARAGEM" },
-    { chave: "saida_real", rotulo: "SAÍDA REAL" }, { chave: "saiu_no_horario", rotulo: "SAIU NO HORÁRIO" },
-    { chave: "minutos_atrasado_garagem", rotulo: "MIN. ATRASADO GARAGEM" }, { chave: "minutos_adiantado_garagem", rotulo: "MIN. ADIANTADO GARAGEM" },
-    { chave: "saida_atrasado_adiantado", rotulo: "SAÍDA ATRASADO/ADIANTADO" }, { chave: "local_inicio", rotulo: "LOCAL INÍCIO" },
-    { chave: "trajeto_ocioso_correto", rotulo: "TRAJETO OCIOSO CORRETO?" }, { chave: "horario_de_inicio", rotulo: "HORÁRIO DE INÍCIO" },
-    { chave: "inicio_real", rotulo: "INÍCIO REAL" }, { chave: "inicio_no_horario", rotulo: "INÍCIO NO HORÁRIO" },
-    { chave: "observacoes", rotulo: "OBSERVAÇÕES" }, { chave: "minutos_atrasado_no_inicio", rotulo: "MIN. ATRASADO NO INÍCIO" },
-    { chave: "minutos_adiantado_no_inicio", rotulo: "MIN. ADIANTADO NO INÍCIO" }
+const COLUNAS_EXIBICAO = [
+    { chave: "data", rotulo: "DATA", largura: 76 },
+    { chave: "maquina", rotulo: "MAQUINA", largura: 76 },
+    { chave: "linha", rotulo: "LINHA", largura: 52 },
+    { chave: "work_id", rotulo: "WORK-ID", largura: 84 },
+    { chave: "carro", rotulo: "CARRO", largura: 58 },
+    { chave: "motorista", rotulo: "MOTORISTA", largura: 72 },
+    { chave: "horario_saida_da_garagem", rotulo: "HORÁRIO DE SAÍDA DA GARAGEM", largura: 68 },
+    { chave: "saida_real", rotulo: "SAÍDA REAL", largura: 64 },
+    { chave: "saiu_no_horario", rotulo: "SAIU NO HORÁRIO", largura: 68, formula: true },
+    { chave: "local_inicio", rotulo: "LOCAL INÍCIO", largura: 112 },
+    { chave: "trajeto_ocioso_correto", rotulo: "TRAJETO OCIOSO CORRETO?", largura: 88 },
+    { chave: "horario_de_inicio", rotulo: "HORÁRIO DE INÍCIO", largura: 68 },
+    { chave: "inicio_real", rotulo: "INÍCIO REAL", largura: 64 },
+    { chave: "inicio_no_horario", rotulo: "INÍCIO NO HORÁRIO", largura: 88, formula: true },
+    { chave: "observacoes", rotulo: "OBSERVAÇÕES", largura: 180, texto: true }
 ];
 const CAMPOS_SELECT = {
-    saiu_no_horario: ["","SIM","NÃO"],
-    saida_atrasado_adiantado: ["","NO HORÁRIO","ATRASADO","ADIANTADO"],
-    inicio_no_horario: ["","NO HORÁRIO","ATRASADO","ADIANTADO"],
     trajeto_ocioso_correto: ["","SIM","NÃO"]
 };
-const COLUNAS_CACHE = "liberacao_colunas_v8";
-const state = { colunas: COLUNAS_PADRAO, todos: [], dados: [], saveTimers: {}, saving: {} };
+const CAMPOS_DISPARO_FORMULA = new Set(["saida_real","inicio_real","horario_saida_da_garagem","horario_de_inicio"]);
+const TOLERANCIA_MIN = 5;
+const CAMPOS_HORA = new Set(["horario_saida_da_garagem","horario_de_inicio","saida_real","inicio_real"]);
+const state = { colunas: COLUNAS_EXIBICAO, todos: [], dados: [], saveTimers: {}, saving: {}, sortKey: "horario_saida_da_garagem", sortDir: "asc" };
 
 function $(id){return document.getElementById(id)}
 function escapeHtml(v){return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -189,19 +204,72 @@ function val(row,key){
     return "";
 }
 
-function capturarValoresIniciais(row){
-    row._valoresIniciais={};
-    state.colunas.forEach(c=>{ row._valoresIniciais[c.chave]=String(val(row,c.chave)||"").trim(); });
+function colunaMeta(chave){
+    return state.colunas.find(c=>c.chave===chave)||null;
+}
+
+function isColunaFormula(chave){
+    const col=colunaMeta(chave);
+    return !!(col&&col.formula);
+}
+
+function minutosDesdeMeiaNoite(v){
+    const p=String(v||"").trim().match(/^(\d{1,2}):(\d{2})/);
+    if(!p) return null;
+    return parseInt(p[1],10)*60+parseInt(p[2],10);
+}
+
+function diffMinutos(real,previsto){
+    const a=minutosDesdeMeiaNoite(real);
+    const b=minutosDesdeMeiaNoite(previsto);
+    if(a==null||b==null) return null;
+    return a-b;
+}
+
+function situacaoHorario(diff){
+    if(diff==null) return "";
+    if(Math.abs(diff)<=TOLERANCIA_MIN) return "NO HORÁRIO";
+    return diff>0?"ATRASADO":"ADIANTADO";
+}
+
+function aplicarFormulasLinha(row){
+    const diffSaida=diffMinutos(val(row,"saida_real"),val(row,"horario_saida_da_garagem"));
+    if(diffSaida!=null){
+        const simNao=Math.abs(diffSaida)<=TOLERANCIA_MIN?"SIM":"NÃO";
+        row.saiu_no_horario=simNao;
+        row.saiu_no_horaro=simNao;
+        row.saida_atrasado_adiantado=situacaoHorario(diffSaida);
+        row.minutos_atrasado_garagem=diffSaida>TOLERANCIA_MIN?String(diffSaida):"";
+        row.minutos_adiantado_garagem=diffSaida<-TOLERANCIA_MIN?String(Math.abs(diffSaida)):"";
+    }
+    const diffInicio=diffMinutos(val(row,"inicio_real"),val(row,"horario_de_inicio"));
+    if(diffInicio!=null){
+        row.inicio_no_horario=situacaoHorario(diffInicio);
+        row.minutos_atrasado_no_inicio=diffInicio>TOLERANCIA_MIN?String(diffInicio):"";
+        row.minutos_adiantado_no_inicio=diffInicio<-TOLERANCIA_MIN?String(Math.abs(diffInicio)):"";
+    }
     return row;
 }
 
+function capturarValoresIniciais(row){
+    row._valoresIniciais={};
+    state.colunas.forEach(c=>{
+        if(c.formula) return;
+        row._valoresIniciais[c.chave]=String(val(row,c.chave)||"").trim();
+    });
+    return aplicarFormulasLinha(row);
+}
+
 function celulaPreenchida(row,chave){
+    if(isColunaFormula(chave)) return true;
     return String(row._valoresIniciais?.[chave]??"").trim()!=="";
 }
 
 function celulaEditavel(rowIdx,colIdx){
     if(rowIdx<0||rowIdx>=state.dados.length||colIdx<0||colIdx>=state.colunas.length) return false;
-    return !celulaPreenchida(state.dados[rowIdx],state.colunas[colIdx].chave);
+    const chave=state.colunas[colIdx].chave;
+    if(isColunaFormula(chave)) return false;
+    return !celulaPreenchida(state.dados[rowIdx],chave);
 }
 
 function setStatus(texto, tipo){
@@ -228,6 +296,56 @@ function aplicarFiltroMaquina(){
     state.dados=maquina
         ? state.todos.filter(r=>normalizarMaquina(r.maquina)===normalizarMaquina(maquina))
         : state.todos.slice();
+    sortRows();
+}
+
+function dataBrParaSort(v){
+    const p=String(v||"").split("/");
+    return p.length===3?p[2]+"-"+p[1].padStart(2,"0")+"-"+p[0].padStart(2,"0"):String(v||"");
+}
+
+function horaParaSort(v){
+    const p=String(v||"").trim().split(":");
+    if(p.length<2) return String(v||"");
+    return p[0].padStart(2,"0")+":"+p[1].padStart(2,"0");
+}
+
+function sortRows(){
+    const key=state.sortKey;
+    if(!key) return;
+    const dir=state.sortDir==="asc"?1:-1;
+    state.dados.sort((a,b)=>{
+        let av=String(val(a,key)||"").trim();
+        let bv=String(val(b,key)||"").trim();
+        if(key==="data") return dataBrParaSort(av).localeCompare(dataBrParaSort(bv))*dir;
+        if(CAMPOS_HORA.has(key)) return horaParaSort(av).localeCompare(horaParaSort(bv))*dir;
+        if(key==="linha"||key==="work_id"){
+            const an=Number(av),bn=Number(bv);
+            if(av!==""&&bv!==""&&!isNaN(an)&&!isNaN(bn)) return (an-bn)*dir;
+        }
+        return av.localeCompare(bv,"pt-BR",{numeric:true,sensitivity:"base"})*dir;
+    });
+}
+
+function atualizarIndicadoresSort(){
+    $("tabelaHead").querySelectorAll("th[data-sort]").forEach(th=>{
+        const ativo=th.dataset.sort===state.sortKey;
+        th.setAttribute("aria-sort",ativo?(state.sortDir==="asc"?"ascending":"descending"):"none");
+        const icon=th.querySelector(".sort-icon");
+        if(icon) icon.textContent=ativo?(state.sortDir==="asc"?"↑":"↓"):"↕";
+    });
+}
+
+function onSortHeader(e){
+    const key=e.currentTarget.dataset.sort;
+    if(!key) return;
+    if(state.sortKey===key) state.sortDir=state.sortDir==="asc"?"desc":"asc";
+    else{ state.sortKey=key; state.sortDir="asc"; }
+    Object.values(state.saveTimers).forEach(t=>clearTimeout(t));
+    state.saveTimers={};
+    sortRows();
+    renderCorpoTabela();
+    atualizarIndicadoresSort();
 }
 
 function syncBadge(row,i){
@@ -317,34 +435,62 @@ function bindCelulas(){
 function renderCelula(row, rowIdx, col){
     const chave=col.chave;
     const v=val(row,chave);
+    if(col.formula||isColunaFormula(chave)){
+        return '<span class="cell-readonly cell-formula cell-locked" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" aria-readonly="true" tabindex="-1" title="Calculado automaticamente — não editável">'+escapeHtml(v||"—")+'</span>';
+    }
     const locked=celulaPreenchida(row,chave);
+    const clsExtra=col.texto?" cell-texto":"";
     if(locked){
-        return '<span class="cell-readonly" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" title="Preenchido na planilha">'+escapeHtml(v||"—")+'</span>';
+        return '<span class="cell-readonly'+clsExtra+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" title="Preenchido na planilha — não editável">'+escapeHtml(v||"—")+'</span>';
     }
     if(CAMPOS_SELECT[chave]){
         const opts=CAMPOS_SELECT[chave].map(o=>'<option value="'+escapeHtml(o)+'"'+(o===v?" selected":"")+'>'+(o||"—")+'</option>').join("");
-        return '<select class="cell-select" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'">'+opts+'</select>';
+        return '<select class="cell-select'+clsExtra+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'">'+opts+'</select>';
     }
-    return '<input class="cell-input" type="text" value="'+escapeHtml(v)+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" autocomplete="off" spellcheck="false">';
+    return '<input class="cell-input'+clsExtra+'" type="text" value="'+escapeHtml(v)+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" autocomplete="off" spellcheck="false">';
 }
 
-function renderTabela(){
+function atualizarCelulasFormula(i){
+    const row=state.dados[i];
+    if(!row) return;
+    aplicarFormulasLinha(row);
+    state.colunas.forEach(col=>{
+        if(!col.formula) return;
+        const el=document.querySelector('[data-i="'+i+'"][data-k="'+col.chave+'"]');
+        if(el) el.textContent=val(row,col.chave)||"—";
+    });
+}
+
+function renderCabecalho(){
     const cols=state.colunas;
     $("tabelaHead").innerHTML='<tr><th class="col-fix col-num">#</th><th class="col-fix col-sync">Status</th>'+
-        cols.map(c=>'<th title="'+escapeHtml(c.rotulo)+'">'+escapeHtml(c.rotulo)+'</th>').join("")+'</tr>';
-    $("tabelaCorpo").innerHTML=state.dados.map((row,i)=>
-        '<tr data-i="'+i+'">'+
+        cols.map(c=>'<th class="col-sort" data-sort="'+escapeHtml(c.chave)+'" style="width:'+c.largura+'px;min-width:'+c.largura+'px" title="Ordenar por '+escapeHtml(c.rotulo)+'"><span class="sort-label">'+escapeHtml(c.rotulo)+' <span class="sort-icon" aria-hidden="true">↕</span></span></th>').join("")+'</tr>';
+    $("tabelaHead").querySelectorAll("th[data-sort]").forEach(th=>th.addEventListener("click",onSortHeader));
+    atualizarIndicadoresSort();
+}
+
+function renderCorpoTabela(){
+    const cols=state.colunas;
+    $("tabelaCorpo").innerHTML=state.dados.map((row,i)=>{
+        aplicarFormulasLinha(row);
+        return '<tr data-i="'+i+'">'+
         '<td class="col-fix col-num">'+(i+1)+'</td>'+
         '<td class="col-fix col-sync sync-'+i+'">'+syncBadge(row,i)+'</td>'+
         cols.map(c=>{
             const locked=celulaPreenchida(row,c.chave);
-            return '<td'+(locked?' class="cell-locked"':'')+'>'+renderCelula(row,i,c)+'</td>';
+            const cls=(locked?" cell-locked":"")+(c.formula?" cell-formula":"");
+            return '<td class="col-'+escapeHtml(c.chave)+cls+'" style="width:'+c.largura+'px">'+renderCelula(row,i,c)+'</td>';
         }).join("")+
-        '</tr>'
-    ).join("");
+        '</tr>';
+    }).join("");
     $("emptyState").hidden=state.dados.length>0;
     $("tableInfo").textContent=formatNumber(state.dados.length)+" linha(s)";
     bindCelulas();
+}
+
+function renderTabela(){
+    renderCabecalho();
+    renderCorpoTabela();
 }
 
 function onCellChange(e){
@@ -352,8 +498,9 @@ function onCellChange(e){
     const i=Number(el.dataset.i);
     const k=el.dataset.k;
     if(isNaN(i)||!k) return;
-    if(celulaPreenchida(state.dados[i],k)) return;
+    if(isColunaFormula(k)||celulaPreenchida(state.dados[i],k)) return;
     state.dados[i][k]=el.value.trim();
+    if(CAMPOS_DISPARO_FORMULA.has(k)) atualizarCelulasFormula(i);
     state.dados[i]._dirty=true;
     state.dados[i]._syncErro=false;
     el.classList.remove("saved","erro");
@@ -366,10 +513,17 @@ function onCellChange(e){
 async function salvarLinha(i){
     const row=state.dados[i];
     if(!row||!row._row) return;
+    aplicarFormulasLinha(row);
     state.saving[i]=true;
     document.querySelector(".sync-"+i).innerHTML=syncBadge(row,i);
     const payload={action:"update",_row:row._row};
-    state.colunas.forEach(c=>{ payload[c.chave]=val(row,c.chave); });
+    state.colunas.forEach(c=>{
+        if(c.formula) return;
+        payload[c.chave]=val(row,c.chave);
+    });
+    ["saiu_no_horario","saiu_no_horaro","saida_atrasado_adiantado","minutos_atrasado_garagem","minutos_adiantado_garagem","inicio_no_horario","minutos_atrasado_no_inicio","minutos_adiantado_no_inicio"].forEach(k=>{
+        payload[k]=val(row,k)||"";
+    });
     try{
         await apiPost(payload);
         row._dirty=false;
@@ -393,29 +547,14 @@ function popularMaquinas(lista){
     if(items.includes(prev)) sel.value=prev;
 }
 
-function carregarColunasCache(){
-    try{
-        const raw=sessionStorage.getItem(COLUNAS_CACHE);
-        if(raw) return JSON.parse(raw);
-    }catch(_){}
-    return null;
-}
-
 async function carregar(){
     const data=$("dataFiltro").value;
     if(!data){setStatus("Informe a data.","erro");return;}
     setStatus("Carregando planilha...","load");
     window.portalMostrarCarregando?.("Carregando liberação");
     try {
-        const params={recurso:"acompanhamento",data,ultima_semana:"0"};
-        if(!carregarColunasCache()) params.incluir_colunas="1";
-        const res=await apiGet(params);
-        if(res.colunas&&res.colunas.length){
-            sessionStorage.setItem(COLUNAS_CACHE,JSON.stringify(res.colunas));
-            state.colunas=res.colunas;
-        }else{
-            state.colunas=carregarColunasCache()||COLUNAS_PADRAO;
-        }
+        const res=await apiGet({recurso:"acompanhamento",data,ultima_semana:"0"});
+        state.colunas=COLUNAS_EXIBICAO;
         state.todos=(res.dados||[]).map(r=>capturarValoresIniciais(Object.assign({},r)));
         popularMaquinas([...new Set(state.todos.map(d=>String(d.maquina||"").trim()).filter(Boolean))]);
         aplicarFiltroMaquina();
