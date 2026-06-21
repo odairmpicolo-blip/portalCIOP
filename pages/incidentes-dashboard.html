@@ -544,25 +544,109 @@ function exportCsv() {
     downloadBlob(new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" }), "incidentes-tcgl.csv");
 }
 
+function xmlText(value) {
+    return String(value || "").replace(/[&<>"']/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&apos;" }[char]));
+}
+
+function columnName(index) {
+    let name = "";
+    let number = index + 1;
+    while (number > 0) {
+        const mod = (number - 1) % 26;
+        name = String.fromCharCode(65 + mod) + name;
+        number = Math.floor((number - mod) / 26);
+    }
+    return name;
+}
+
+function crc32(bytes) {
+    let crc = -1;
+    for (const byte of bytes) {
+        crc ^= byte;
+        for (let i = 0; i < 8; i += 1) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+    }
+    return (crc ^ -1) >>> 0;
+}
+
+function uint16(value) {
+    return [value & 255, (value >>> 8) & 255];
+}
+
+function uint32(value) {
+    return [value & 255, (value >>> 8) & 255, (value >>> 16) & 255, (value >>> 24) & 255];
+}
+
+function createZip(files) {
+    const encoder = new TextEncoder();
+    const chunks = [];
+    const central = [];
+    let offset = 0;
+    files.forEach((file) => {
+        const name = encoder.encode(file.name);
+        const data = encoder.encode(file.content);
+        const crc = crc32(data);
+        const localHeader = new Uint8Array([
+            ...uint32(0x04034b50), ...uint16(20), ...uint16(0), ...uint16(0), ...uint16(0), ...uint16(0),
+            ...uint32(crc), ...uint32(data.length), ...uint32(data.length), ...uint16(name.length), ...uint16(0),
+            ...name
+        ]);
+        chunks.push(localHeader, data);
+        central.push({ file, name, data, crc, offset });
+        offset += localHeader.length + data.length;
+    });
+    const centralOffset = offset;
+    central.forEach((item) => {
+        const entry = new Uint8Array([
+            ...uint32(0x02014b50), ...uint16(20), ...uint16(20), ...uint16(0), ...uint16(0), ...uint16(0), ...uint16(0),
+            ...uint32(item.crc), ...uint32(item.data.length), ...uint32(item.data.length), ...uint16(item.name.length),
+            ...uint16(0), ...uint16(0), ...uint16(0), ...uint16(0), ...uint32(0), ...uint32(item.offset), ...item.name
+        ]);
+        chunks.push(entry);
+        offset += entry.length;
+    });
+    const end = new Uint8Array([
+        ...uint32(0x06054b50), ...uint16(0), ...uint16(0), ...uint16(central.length), ...uint16(central.length),
+        ...uint32(offset - centralOffset), ...uint32(centralOffset), ...uint16(0)
+    ]);
+    chunks.push(end);
+    return new Blob(chunks, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+
 function exportExcel() {
-    const rows = state.filtered.map((row) => [row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,row.tipo,row.proprietario,row.estado,row.natureOfProblem,row.instructions]);
     const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções"];
-    const columnWidths = [72,82,60,82,92,150,190,160,110,320,360];
-    const baseCell = "border:1px solid #dfe5ef;padding:9px 10px;font-family:Arial, Helvetica, sans-serif;font-size:12px;color:#1f2937;vertical-align:top;mso-number-format:'\\@';";
-    const headerStyle = "background:#f8fafc;color:#06245c;font-weight:900;text-transform:uppercase;text-align:center;" + baseCell;
-    const cellStyle = (index) => baseCell + "width:" + columnWidths[index] + "px;" + (index <= 8 ? "text-align:center;" : "text-align:left;white-space:normal;");
-    const table = '<html><head><meta charset="utf-8"><style>' +
-        '@page{margin:0.35in 0.25in;mso-page-orientation:landscape;}' +
-        'body{margin:0;font-family:Arial, Helvetica, sans-serif;background:#ffffff;}' +
-        'table{border-collapse:collapse;border-spacing:0;width:100%;}' +
-        'thead th{height:28px;}' +
-        'tbody td{height:24px;}' +
-        '</style></head><body><table><thead><tr>' +
-        header.map((cell, index) => '<th style="' + headerStyle + 'width:' + columnWidths[index] + 'px;">' + escapeHtml(cell) + '</th>').join("") +
-        '</tr></thead><tbody>' +
-        rows.map((row) => '<tr>' + row.map((cell, index) => '<td style="' + cellStyle(index) + '">' + escapeHtml(cell) + '</td>').join("") + '</tr>').join("") +
-        '</tbody></table></body></html>';
-    downloadBlob(new Blob([table], { type: "application/vnd.ms-excel;charset=utf-8" }), "incidentes-tcgl.xls");
+    const rows = [header].concat(state.filtered.map((row) => [row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,row.tipo,row.proprietario,row.estado,row.natureOfProblem,row.instructions]));
+    const widths = [10,12,9,12,13,22,28,24,16,46,52];
+    const cols = widths.map((width, index) => '<col min="' + (index + 1) + '" max="' + (index + 1) + '" width="' + width + '" customWidth="1"/>').join("");
+    const sheetRows = rows.map((row, rowIndex) => '<row r="' + (rowIndex + 1) + '" ht="' + (rowIndex === 0 ? 28 : 24) + '" customHeight="1">' +
+        row.map((cell, columnIndex) => {
+            const style = rowIndex === 0 ? 1 : (columnIndex <= 8 ? 2 : 3);
+            const ref = columnName(columnIndex) + (rowIndex + 1);
+            return '<c r="' + ref + '" t="inlineStr" s="' + style + '"><is><t>' + xmlText(cell) + '</t></is></c>';
+        }).join("") + '</row>').join("");
+    const sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+        '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+        '<sheetFormatPr defaultRowHeight="24"/><cols>' + cols + '</cols><sheetData>' + sheetRows + '</sheetData>' +
+        '<pageMargins left="0.25" right="0.25" top="0.35" bottom="0.35" header="0.2" footer="0.2"/><pageSetup orientation="landscape"/>' +
+        '</worksheet>';
+    const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+        '<fonts count="2"><font><sz val="12"/><color rgb="FF1F2937"/><name val="Arial"/></font><font><b/><sz val="12"/><color rgb="FF06245C"/><name val="Arial"/></font></fonts>' +
+        '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF8FAFC"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+        '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFDFE5EF"/></left><right style="thin"><color rgb="FFDFE5EF"/></right><top style="thin"><color rgb="FFDFE5EF"/></top><bottom style="thin"><color rgb="FFDFE5EF"/></bottom><diagonal/></border></borders>' +
+        '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+        '<cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="49" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="49" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top" wrapText="1"/></xf><xf numFmtId="49" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf></cellXfs>' +
+        '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
+        '</styleSheet>';
+    const files = [
+        { name: "[Content_Types].xml", content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>' },
+        { name: "_rels/.rels", content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
+        { name: "xl/workbook.xml", content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Incidentes TCGL" sheetId="1" r:id="rId1"/></sheets></workbook>' },
+        { name: "xl/_rels/workbook.xml.rels", content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>' },
+        { name: "xl/styles.xml", content: styles },
+        { name: "xl/worksheets/sheet1.xml", content: sheet }
+    ];
+    downloadBlob(createZip(files), "incidentes-tcgl.xlsx");
 }
 
 function downloadBlob(blob, filename) {
