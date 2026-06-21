@@ -89,7 +89,7 @@ h1{margin:0;color:var(--blue);font-size:24px;font-weight:900;letter-spacing:0;te
 .btn-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex:0 0 auto}
 .btn-icon svg{width:16px;height:16px;display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .status-line{color:var(--muted);font-size:12px;font-weight:700}
-.kpi-grid{display:grid;grid-template-columns:repeat(5,minmax(160px,1fr));gap:12px;margin-bottom:14px}
+.kpi-grid{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:12px;margin-bottom:14px}
 .kpi{
     background:#fff;
     border:1px solid var(--border);
@@ -105,6 +105,7 @@ h1{margin:0;color:var(--blue);font-size:24px;font-weight:900;letter-spacing:0;te
 .kpi.accent-type{border-top:4px solid var(--cyan)}
 .kpi.accent-user{border-top:4px solid var(--green)}
 .kpi.accent-owner{border-top:4px solid var(--amber)}
+.kpi.accent-types{border-top:4px solid #7c3aed}
 .filters{
     display:grid;
     grid-template-columns:1.6fr repeat(4,1fr);
@@ -128,7 +129,7 @@ input,select{
     color:var(--text);
 }
 .filter-actions{display:flex;gap:8px;align-items:end}
-.charts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.charts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}
 .chart-card,.table-card{
     background:#fff;
     border:1px solid var(--border);
@@ -238,6 +239,11 @@ tbody tr:hover{background:#fff7ed}
             <div class="kpi-value" id="kpiTipo">-</div>
             <div class="kpi-sub" id="kpiTipoQtd">0 incidentes</div>
         </article>
+        <article class="kpi accent-types">
+            <div class="kpi-label">Tipos de incidente</div>
+            <div class="kpi-value" id="kpiTiposDistintos">0</div>
+            <div class="kpi-sub" id="kpiTiposDistintosSub">tipos distintos no filtro</div>
+        </article>
         <article class="kpi accent-user">
             <div class="kpi-label">Maior criador</div>
             <div class="kpi-value" id="kpiCriador">-</div>
@@ -308,6 +314,10 @@ tbody tr:hover{background:#fff7ed}
         <article class="chart-card">
             <h2 class="card-title">Linha</h2>
             <div id="chartLinha"></div>
+        </article>
+        <article class="chart-card">
+            <h2 class="card-title">Tipo do incidente</h2>
+            <div id="chartTipo"></div>
         </article>
     </section>
 
@@ -463,15 +473,22 @@ function sortRows() {
     });
 }
 
+function distinctCount(rows, key) {
+    return new Set(rows.map((row) => row[key]).filter(Boolean)).size;
+}
+
 function renderKpis() {
     const linha = firstCounter(state.filtered, "linha");
     const tipo = firstCounter(state.filtered, "tipo");
     const criado = firstCounter(state.filtered, "criadoPor");
     const proprietario = firstCounter(state.filtered, "proprietario");
+    const tiposDistintos = distinctCount(state.filtered, "tipo");
     document.getElementById("kpiTotal").textContent = formatNumber(state.filtered.length);
     document.getElementById("kpiPeriodo").textContent = state.filtered.length === state.all.length ? "Todos os registros TCGL" : "Resultado filtrado";
     setKpi("kpiLinha", "kpiLinhaQtd", linha);
     setKpi("kpiTipo", "kpiTipoQtd", tipo);
+    document.getElementById("kpiTiposDistintos").textContent = formatNumber(tiposDistintos);
+    document.getElementById("kpiTiposDistintosSub").textContent = tiposDistintos === 1 ? "tipo distinto no filtro" : "tipos distintos no filtro";
     setKpi("kpiCriador", "kpiCriadorQtd", criado);
     setKpi("kpiProprietario", "kpiProprietarioQtd", proprietario);
 }
@@ -530,6 +547,7 @@ function render() {
     renderChart("chartProprietario", "proprietario");
     renderChart("chartEstado", "estado");
     renderChart("chartLinha", "linha");
+    renderChart("chartTipo", "tipo");
     updateSortIndicators();
     renderTable();
 }
