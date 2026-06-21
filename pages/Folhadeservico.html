@@ -186,7 +186,96 @@ document.documentElement.classList.add("portal-auth-pending");
             border-radius: 8px;
             padding: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.01);
-            overflow-x: auto;
+            overflow: hidden;
+        }
+        .table-card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .table-card-head .table-title {
+            margin-bottom: 0;
+            border-bottom: none !important;
+            padding-bottom: 0;
+        }
+        .table-meta {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--muted);
+        }
+        .table-wrap {
+            overflow: auto;
+            max-height: min(520px, calc(100vh - 120px));
+            border: 1px solid #e8edf6;
+            border-radius: 8px;
+            background: #fff;
+        }
+        table.planilha-detalhe {
+            width: max-content;
+            min-width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            text-align: center;
+            font-size: 11px;
+        }
+        table.planilha-detalhe th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #f1f5f9;
+            color: var(--blue);
+            font-weight: 800;
+            padding: 8px 10px;
+            border-bottom: 2px solid #dbe3ef;
+            text-align: center;
+            white-space: nowrap;
+            font-size: 9px;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            line-height: 1.25;
+        }
+        table.planilha-detalhe th[data-sort]:hover {
+            background: #e8eef6;
+        }
+        table.planilha-detalhe td {
+            padding: 7px 10px;
+            border-bottom: 1px solid #edf2f7;
+            color: #344054;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        table.planilha-detalhe tbody tr:nth-child(even) td {
+            background: #fafbfd;
+        }
+        table.planilha-detalhe tbody tr:hover td {
+            background: #fff7ed;
+        }
+        table.planilha-detalhe .col-data,
+        table.planilha-detalhe .col-hora {
+            font-weight: 700;
+            color: var(--blue);
+        }
+        table.planilha-detalhe .col-linha {
+            font-weight: 800;
+            color: var(--blue2);
+        }
+        table.planilha-detalhe .col-local {
+            white-space: normal;
+            min-width: 140px;
+            max-width: 220px;
+            text-align: left;
+            font-size: 10px;
+            line-height: 1.35;
+        }
+        table.planilha-detalhe .col-motivo {
+            white-space: normal;
+            min-width: 120px;
+            max-width: 180px;
+            text-align: left;
+            font-size: 10px;
         }
         table {
             width: 100%;
@@ -621,12 +710,50 @@ document.documentElement.classList.add("portal-auth-pending");
         .analytics-grid .chart-card.accent-orange .chart-icon { color: #c2410c; background: #ffedd5; border-color: #fed7aa; }
         .analytics-grid .chart-card.accent-teal .chart-icon { color: #0f766e; background: #ccfbf1; border-color: #99f6e4; }
         .analytics-grid .chart-card.accent-blue .chart-icon { color: #1d4ed8; background: #dbeafe; border-color: #bfdbfe; }
+        .chart-card.accent-navy .chart-icon { color: #1e3a8a; background: #dbeafe; border-color: #bfdbfe; }
+        .chart-card.accent-coral .chart-icon { color: #dc2626; background: #fee2e2; border-color: #fecaca; }
+        .analytics-grid .chart-card.accent-coral .chart-icon { color: #dc2626; background: #fee2e2; border-color: #fecaca; }
+        .chart-card.accent-lime .chart-icon { color: #15803d; background: #dcfce7; border-color: #bbf7d0; }
+        .chart-card.accent-navy,
+        .chart-card.accent-coral,
+        .chart-card.accent-lime {
+            border: 1px solid #d9e2f0;
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+        }
         @media (max-width: 1280px) {
             .analytics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (max-width: 720px) {
             .analytics-grid { grid-template-columns: 1fr; }
         }
+        .load-banner {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid #dbe3ef;
+            background: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--muted);
+            box-shadow: 0 2px 8px rgba(6, 36, 92, 0.04);
+        }
+        .load-banner.ok { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+        .load-banner.erro { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+        .load-banner.load { border-color: #fed7aa; background: #fff7ed; color: #9a3412; }
+        .load-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #94a3b8;
+            flex: 0 0 auto;
+        }
+        .load-banner.ok .load-dot { background: #22c55e; }
+        .load-banner.erro .load-dot { background: #ef4444; }
+        .load-banner.load .load-dot { background: #f97316; animation: pulseLoad 1s infinite; }
+        @keyframes pulseLoad { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
         .table-title {
             margin-bottom: 12px;
             border-bottom: 1px solid #e8edf6 !important;
@@ -1081,9 +1208,14 @@ h1 {
         </div>
     </div>
 
+    <div class="load-banner load" id="load-banner">
+        <span class="load-dot" id="load-dot"></span>
+        <span id="load-message">Preparando dashboard...</span>
+    </div>
+
     <div class="dashboard-grid">
         
-        <div class="chart-card main-chart">
+        <div class="chart-card main-chart accent-navy">
             <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10"/><path d="M12 20V4"/><path d="M19 20v-7"/><path d="M3 20h18"/></svg></span><span>Ranking dos Analistas</span></div>
             <div class="chart-container">
                 <canvas id="chartAnalistas"></canvas>
@@ -1091,14 +1223,14 @@ h1 {
         </div>
         
         <div class="bottom-charts-row">
-            <div class="chart-card secondary-chart">
+            <div class="chart-card secondary-chart accent-coral">
                 <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9h9"/><path d="M20.5 15A9 9 0 1 1 9 3.5"/></svg></span><span>Ocorrências</span></div>
                 <div class="chart-container">
                     <canvas id="chartOcorrencias"></canvas>
                 </div>
             </div>
             
-            <div class="chart-card secondary-chart">
+            <div class="chart-card secondary-chart accent-lime">
                 <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h13"/><path d="M4 12h16"/><path d="M4 18h9"/></svg></span><span>Status dos Serviços</span></div>
                 <div class="chart-container">
                     <canvas id="chartSituacao"></canvas>
@@ -1121,15 +1253,15 @@ h1 {
                 <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="10" rx="2"/><path d="M7 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg></span><span>Carros com Mais Problemas</span></div>
                 <div class="chart-container"><canvas id="chartCarrosProblemas"></canvas></div>
             </div>
-            <div class="chart-card accent-rose">
+            <div class="chart-card accent-sky">
                 <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span><span>Maiores Problemas de Oficina</span></div>
                 <div class="chart-container"><canvas id="chartProblemasOficina"></canvas></div>
             </div>
-            <div class="chart-card accent-amber">
+            <div class="chart-card accent-coral">
                 <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2h4"/><path d="M12 14v8"/><path d="M4.5 10A7.5 7.5 0 0 1 19.5 10"/><path d="m8 22 4-2 4 2"/></svg></span><span>Linhas com Mais Colisão</span></div>
                 <div class="chart-container"><canvas id="chartLinhasColisao"></canvas></div>
             </div>
-            <div class="chart-card accent-emerald">
+            <div class="chart-card accent-coral">
                 <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg></span><span>Resumo de Acidentes por Mês</span></div>
                 <div class="chart-container"><canvas id="chartAcidentesMes"></canvas></div>
             </div>
@@ -1137,8 +1269,12 @@ h1 {
                 <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span>Queda de Cliente por Mês</span></div>
                 <div class="chart-container"><canvas id="chartQuedaMes"></canvas></div>
             </div>
-            <div class="chart-card accent-orange">
-                <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg></span><span>Motoristas — Colisão / Queda</span></div>
+            <div class="chart-card accent-violet">
+                <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span>Motoristas — Queda de Cliente</span></div>
+                <div class="chart-container"><canvas id="chartMotoristasQueda"></canvas></div>
+            </div>
+            <div class="chart-card accent-coral">
+                <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg></span><span>Motoristas — Colisão</span></div>
                 <div class="chart-container"><canvas id="chartMotoristasIncidentes"></canvas></div>
             </div>
             <div class="chart-card accent-teal">
@@ -1152,26 +1288,6 @@ h1 {
         </div>
     </section>
 
-    <div class="table-card">
-        <div class="chart-header table-title"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M9 4v16"/><path d="M15 4v16"/></svg></span><span>Dados Detalhados</span></div>
-        <table>
-            <thead>
-                <tr>
-                    <th data-sort="data"><span class="sort-label">Data <span class="sort-icon" aria-hidden="true">↕</span></span></th>
-                    <th data-sort="analista"><span class="sort-label">Analista <span class="sort-icon" aria-hidden="true">↕</span></span></th>
-                    <th data-sort="ocorrencia"><span class="sort-label">Ocorrência <span class="sort-icon" aria-hidden="true">↕</span></span></th>
-                    <th data-sort="linha"><span class="sort-label">Linha <span class="sort-icon" aria-hidden="true">↕</span></span></th>
-                    <th data-sort="situacao"><span class="sort-label">Situação <span class="sort-icon" aria-hidden="true">↕</span></span></th>
-                </tr>
-            </thead>
-            <tbody id="tabela-corpo">
-                <tr>
-                    <td colspan="5" class="loading">Buscando dados em tempo real do Google Sheets...</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
 </div>
 
 <footer>
@@ -1180,7 +1296,44 @@ h1 {
 
 <script>
     const URL_DO_SCRIPT_GOOGLE = "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
+    const URL_DASHBOARD = URL_DO_SCRIPT_GOOGLE + "?dashboard=1";
+    const CACHE_KEY = "folha_dashboard_v2";
+    const CACHE_TTL_MS = 15 * 60 * 1000;
+    const FETCH_TIMEOUT_MS = 120000;
     const CORES_BARRAS = ["#6366f1", "#8b5cf6", "#ec4899", "#f97316", "#14b8a6", "#22c55e", "#eab308", "#3b82f6", "#ef4444", "#64748b"];
+    const PALETA_OCORRENCIA = {
+        "ATRASADO": "#2563eb",
+        "OFICINA": "#0ea5e9",
+        "COLISAO": "#dc2626",
+        "COLISÃO": "#dc2626",
+        "ADIANTADO": "#14b8a6",
+        "DESVIO": "#8b5cf6",
+        "TROCA DE CARRO": "#64748b",
+        "SUPRESSAO": "#78716c",
+        "SUPRESSÃO": "#78716c",
+        "TROCA DE MOTORISTA": "#a855f7",
+        "QUEDA DE PASSAGEIRO": "#7c3aed",
+        "QUEDA DE CLIENTE": "#7c3aed",
+        "PASSAGEIRO PASSANDO MAL": "#d946ef",
+        "ITINERARIO INCORRETO": "#f97316",
+        "ITINERÁRIO INCORRETO": "#f97316",
+        "SOCORRO": "#0891b2",
+        "VANDALISMO": "#b91c1c",
+        "CORTE DE VOLTA": "#ca8a04",
+        "MOTORISTA PASSANDO MAL": "#db2777",
+        "TROCA": "#94a3b8",
+        "BALDEACAO": "#65a30d",
+        "BALDEAÇÃO": "#65a30d",
+        "BORRACHARIA": "#06b6d4"
+    };
+    const PALETA_SITUACAO = {
+        "FOI SOCORRIDO": "#22c55e",
+        "RECOLHEU - GA": "#f59e0b",
+        "RECOLHEU GA": "#f59e0b",
+        "PENDENTE": "#ef4444",
+        "CONCLUIDO": "#10b981",
+        "CONCLUÍDO": "#10b981"
+    };
     const MESES_CURTOS = { "01": "Jan", "02": "Fev", "03": "Mar", "04": "Abr", "05": "Mai", "06": "Jun", "07": "Jul", "08": "Ago", "09": "Set", "10": "Out", "11": "Nov", "12": "Dez" };
     const PERIODOS = [
         { id: "madrugada", rotulo: "Madrugada (00-04h)" },
@@ -1190,11 +1343,8 @@ h1 {
     ];
 
     let dadosMestres = [];
-    let chartAnalistasInstance = null;
-    let chartOcorrenciasInstance = null;
-    let chartSituacaoInstance = null;
     const chartAnalyticsInstances = {};
-    const ordenacaoTabela = { key: "data", dir: "desc" };
+    let carregamentoEmAndamento = false;
 
     const pluginValoresLaterais = {
         id: "valoresLaterais",
@@ -1233,12 +1383,19 @@ h1 {
     }
 
     function normalizarRegistro(item) {
-        return Object.assign({}, item, {
+        return {
+            data: pickCampo(item, "data"),
+            hora: pickCampo(item, "hora"),
+            ocorrencia: pickCampo(item, "ocorrencia"),
+            analista: pickCampo(item, "analista"),
+            linha: pickCampo(item, "linha"),
+            situacao: pickCampo(item, "situacao"),
             carro: pickCampo(item, "carro_que_sai", "carro_sai", "carro"),
+            carro_sai: pickCampo(item, "carro_que_sai", "carro_sai", "carro"),
+            mot_sai: pickCampo(item, "mot_que_sai", "mot_sai", "motorista"),
             motorista: pickCampo(item, "mot_que_sai", "mot_sai", "motorista"),
-            motivo_oficina: pickCampo(item, "motivo_somente_oficina", "motivo_oficina"),
-            hora: pickCampo(item, "hora")
-        });
+            motivo_oficina: pickCampo(item, "motivo_somente_oficina", "motivo_oficina")
+        };
     }
 
     function normalizarLista(raw) {
@@ -1248,6 +1405,60 @@ h1 {
 
     function normTexto(valor) {
         return String(valor || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+    }
+
+    function chavePaleta(valor) {
+        return normTexto(valor);
+    }
+
+    function corOcorrencia(nome) {
+        const chave = chavePaleta(nome);
+        if (PALETA_OCORRENCIA[chave]) return PALETA_OCORRENCIA[chave];
+        if (PALETA_OCORRENCIA[nome]) return PALETA_OCORRENCIA[nome];
+        for (const rotulo of Object.keys(PALETA_OCORRENCIA)) {
+            const k = chavePaleta(rotulo);
+            if (chave.includes(k) || k.includes(chave)) return PALETA_OCORRENCIA[rotulo];
+        }
+        let hash = 0;
+        for (let i = 0; i < chave.length; i++) hash = (hash + chave.charCodeAt(i) * (i + 1)) % CORES_BARRAS.length;
+        return CORES_BARRAS[hash];
+    }
+
+    function corSituacao(nome) {
+        const chave = chavePaleta(nome);
+        if (PALETA_SITUACAO[chave]) return PALETA_SITUACAO[chave];
+        for (const rotulo of Object.keys(PALETA_SITUACAO)) {
+            if (chave.includes(chavePaleta(rotulo)) || chavePaleta(rotulo).includes(chave)) return PALETA_SITUACAO[rotulo];
+        }
+        let hash = 0;
+        for (let i = 0; i < chave.length; i++) hash = (hash + chave.charCodeAt(i) * (i + 3)) % CORES_BARRAS.length;
+        return CORES_BARRAS[hash];
+    }
+
+    function paletteTema(base, qtd) {
+        if (!base || qtd <= 0) return [];
+        if (qtd === 1) return [base];
+        const h = base.replace("#", "");
+        const r = parseInt(h.slice(0, 2), 16);
+        const g = parseInt(h.slice(2, 4), 16);
+        const b = parseInt(h.slice(4, 6), 16);
+        const out = [];
+        for (let i = 0; i < qtd; i++) {
+            const t = i / Math.max(qtd - 1, 1);
+            const mix = 0.25 + t * 0.75;
+            const rr = Math.round(r * mix + 255 * (1 - mix));
+            const gg = Math.round(g * mix + 255 * (1 - mix));
+            const bb = Math.round(b * mix + 255 * (1 - mix));
+            out.push("#" + [rr, gg, bb].map(v => v.toString(16).padStart(2, "0")).join(""));
+        }
+        return out;
+    }
+
+    function resolverCoresGrafico(config, labels) {
+        if (config.cores && config.cores.length) return labels.map((_, i) => config.cores[i % config.cores.length]);
+        if (config.corPorLabel) return labels.map(l => config.corPorLabel(l));
+        if (config.corTema) return paletteTema(config.corTema, labels.length);
+        return labels.map((_, i) => CORES_BARRAS[i % CORES_BARRAS.length]);
     }
 
     function ocorrenciaEh(valor, ...tipos) {
@@ -1334,7 +1545,7 @@ h1 {
         const horizontal = !!config.horizontal;
         const labels = config.labels || [];
         const values = config.values || [];
-        const barColors = labels.map((_, i) => (config.cores || CORES_BARRAS)[i % (config.cores || CORES_BARRAS).length]);
+        const barColors = resolverCoresGrafico(config, labels);
 
         chartAnalyticsInstances[id] = new Chart(canvas.getContext("2d"), {
             type: "bar",
@@ -1406,21 +1617,106 @@ h1 {
         });
     }
 
+    function setLoadStatus(texto, tipo) {
+        const banner = document.getElementById("load-banner");
+        const msg = document.getElementById("load-message");
+        if (!banner || !msg) return;
+        banner.hidden = false;
+        banner.className = "load-banner" + (tipo ? " " + tipo : "");
+        msg.textContent = texto;
+    }
+
+    function lerCacheLocal() {
+        try {
+            const raw = sessionStorage.getItem(CACHE_KEY);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            if (!parsed?.dados || !parsed?.ts) return null;
+            if (Date.now() - parsed.ts > CACHE_TTL_MS) return null;
+            return parsed.dados;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function salvarCacheLocal(dados) {
+        try {
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), dados }));
+        } catch (_) { /* quota */ }
+    }
+
+    async function fetchComTimeout(url) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+        try {
+            const res = await fetch(url, { cache: "no-store", signal: ctrl.signal });
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return await res.json();
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
+    async function buscarDadosRemotos() {
+        let raw;
+        try {
+            raw = await fetchComTimeout(URL_DASHBOARD);
+            if (raw && raw.ok === false) throw new Error(raw.erro || "dashboard indisponível");
+        } catch (err) {
+            console.warn("Dashboard enxuto indisponível, usando leitura completa:", err);
+            raw = await fetchComTimeout(URL_DO_SCRIPT_GOOGLE);
+        }
+        if (raw && raw.ok === false) throw new Error(raw.erro || "Erro na leitura da planilha");
+        return normalizarLista(raw);
+    }
+
+    function aplicarDadosDashboard(dados, origem) {
+        dadosMestres = dados;
+        gerarFiltrosDinamicos(dadosMestres);
+        const filtrados = filtrarDadosAtuais();
+        requestAnimationFrame(() => {
+            inicializarGraficos(filtrados);
+            setLoadStatus(
+                dados.length.toLocaleString("pt-BR") + " registro(s) · origem: " + origem,
+                "ok"
+            );
+        });
+    }
+
+    async function atualizarDadosRemotos(origemLabel, silencioso) {
+        if (carregamentoEmAndamento) return;
+        carregamentoEmAndamento = true;
+        setLoadStatus(
+            silencioso
+                ? "Atualizando dados em segundo plano..."
+                : "Buscando dados na planilha (pode levar até 1 minuto)...",
+            "load"
+        );
+        if (!silencioso) window.portalMostrarCarregando?.("Carregando folha de serviço");
+        try {
+            const dados = await buscarDadosRemotos();
+            salvarCacheLocal(dados);
+            aplicarDadosDashboard(dados, origemLabel);
+        } catch (error) {
+            console.error("Erro ao carregar dados:", error);
+            setLoadStatus(
+                "Erro ao carregar: " + (error.name === "AbortError" ? "tempo esgotado" : error.message),
+                "erro"
+            );
+        } finally {
+            carregamentoEmAndamento = false;
+            if (!silencioso) window.portalOcultarCarregando?.();
+        }
+    }
+
     function carregarFolhaServico() {
-        window.portalMostrarCarregando?.("Carregando folha de serviço");
-        fetch(URL_DO_SCRIPT_GOOGLE, { cache: "no-store" })
-            .then(response => response.json())
-            .then(raw => {
-                dadosMestres = normalizarLista(raw);
-                gerarFiltrosDinamicos(dadosMestres);
-                inicializarGraficos(dadosMestres);
-                renderizarTabela(dadosMestres);
-            })
-            .catch(error => {
-                console.error("Erro ao carregar dados:", error);
-                document.getElementById("tabela-corpo").innerHTML = `<tr><td colspan="5" style="color:red; text-align:center; padding:20px;">Erro ao ler a planilha. Verifique se as permissões de implantação estão para 'Qualquer pessoa'.</td></tr>`;
-            })
-            .finally(() => window.portalOcultarCarregando?.());
+        const cache = lerCacheLocal();
+        if (cache && cache.length) {
+            aplicarDadosDashboard(cache, "cache local");
+            atualizarDadosRemotos("planilha", true);
+            return;
+        }
+        atualizarDadosRemotos("planilha", false);
     }
 
     window.onload = () => window.portalAguardarUsuario?.(carregarFolhaServico);
@@ -1506,106 +1802,41 @@ h1 {
         }
         document.getElementById('kpi-frequente').innerText = maisFrequente + ` (${((maxVotos/total)*100).toFixed(0)}%)`;
 
-        // GRÁFICO 1: Analistas
-        const ctxA = document.getElementById('chartAnalistas').getContext('2d');
-        if(chartAnalistasInstance) chartAnalistasInstance.destroy();
-        chartAnalistasInstance = new Chart(ctxA, {
-            type: 'bar',
-            data: {
-                labels: labelsAnalistas,
-                datasets: [{
-                    label: 'Quantidade de Ocorrências',
-                    data: quantidadesAnalistas,
-                    backgroundColor: '#0b3a8a',
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { 
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: c => ` Ocorrências: ${c.raw}` } }
-                },
-                scales: { 
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } },
-                    x: { ticks: { autoSkip: false } }
-                }
-            }
+        const ocorOrdenadas = Object.keys(contagemOcorrencias)
+            .map(label => ({ label, qtd: contagemOcorrencias[label] }))
+            .sort((a, b) => b.qtd - a.qtd || a.label.localeCompare(b.label, "pt-BR"));
+
+        criarGraficoAnalytics("chartAnalistas", {
+            labels: labelsAnalistas,
+            values: quantidadesAnalistas,
+            horizontal: true,
+            corTema: "#0b3a8a"
         });
 
-        // GRÁFICO 2: Ocorrências (Mantido em CÍRCULO / DONUT)
-        const ctxO = document.getElementById('chartOcorrencias').getContext('2d');
-        if(chartOcorrenciasInstance) chartOcorrenciasInstance.destroy();
-        chartOcorrenciasInstance = new Chart(ctxO, {
-            type: 'doughnut',
-            data: {
-                labels: labelsOcorrencias,
-                datasets: [{
-                    data: quantidadesOcorrencias,
-                    backgroundColor: ['#ff6b00', '#06245c', '#667085', '#22c55e', '#a855f7', '#eab308']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
-                    tooltip: { 
-                        callbacks: { 
-                            label: c => {
-                                const qtd = c.raw;
-                                const pct = ((qtd / total) * 100).toFixed(1);
-                                return ` ${c.label}: ${qtd} (${pct}%)`;
-                            } 
-                        } 
-                    }
-                }
-            }
+        criarGraficoAnalytics("chartOcorrencias", {
+            labels: ocorOrdenadas.map(i => i.label),
+            values: ocorOrdenadas.map(i => i.qtd),
+            horizontal: true,
+            corPorLabel: label => corOcorrencia(label)
         });
 
-        // GRÁFICO 3: Situação (Modificado para BARRAS LATERAIS FINAS, ORDEM CRESCENTE E COLORIDAS)
-        const ctxS = document.getElementById('chartSituacao').getContext('2d');
-        if(chartSituacaoInstance) chartSituacaoInstance.destroy();
-        chartSituacaoInstance = new Chart(ctxS, {
-            type: 'bar',
-            data: {
-                labels: labelsSituacao,
-                datasets: [{
-                    data: quantidadesSituacao,
-                    // Cores associadas dinamicamente à posição ou ao tipo para colorir as barras individualmente
-                    backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#22c55e'].slice(0, labelsSituacao.length),
-                    borderRadius: 4,
-                    barThickness: 14 // Deixa as barras mais finas lateralmente
-                }]
-            },
-            options: {
-                indexAxis: 'y', // Inverte o eixo para tornar as barras horizontais (laterais)
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { 
-                        callbacks: { 
-                            label: c => {
-                                const qtd = c.raw;
-                                const pct = ((qtd / total) * 100).toFixed(1);
-                                return ` Total: ${qtd} (${pct}%)`;
-                            } 
-                        } 
-                    }
-                },
-                scales: {
-                    x: { beginAtZero: true, ticks: { stepSize: 1 } },
-                    y: { ticks: { font: { weight: 'bold' } } }
-                }
-            }
+        criarGraficoAnalytics("chartSituacao", {
+            labels: labelsSituacao,
+            values: quantidadesSituacao,
+            horizontal: true,
+            corPorLabel: label => corSituacao(label)
         });
 
         inicializarGraficosAnalytics(dados);
     }
 
     function inicializarGraficosAnalytics(dados) {
+        const corOficina = corOcorrencia("OFICINA");
+        const corBorracharia = corOcorrencia("BORRACHARIA");
+        const corColisao = corOcorrencia("COLISÃO");
+        const corQueda = corOcorrencia("QUEDA DE PASSAGEIRO");
+        const corAdiantado = corOcorrencia("ADIANTADO");
+        const corAtrasado = corOcorrencia("ATRASADO");
         const contagemPeriodo = { madrugada: 0, manha: 0, tarde: 0, noite: 0 };
         dados.forEach(item => {
             const p = periodoDoDia(item.hora);
@@ -1623,7 +1854,7 @@ h1 {
             labels: carros.map(i => i.label),
             values: carros.map(i => i.qtd),
             horizontal: true,
-            cores: ["#0ea5e9", "#38bdf8", "#0284c7", "#0369a1", "#075985", "#0c4a6e", "#22d3ee", "#06b6d4"]
+            corTema: corOficina
         });
 
         const oficina = topContagem(contarPor(dados, d => d.motivo_oficina, item =>
@@ -1632,7 +1863,7 @@ h1 {
             labels: oficina.length ? oficina.map(i => i.label) : ["Sem dados"],
             values: oficina.length ? oficina.map(i => i.qtd) : [0],
             horizontal: true,
-            cores: ["#f43f5e", "#fb7185", "#e11d48", "#be123c", "#9f1239", "#fda4af", "#fecdd3", "#fff1f2"]
+            corTema: corOficina
         });
 
         const linhasColisao = topContagem(contarPor(dados, d => d.linha, item =>
@@ -1641,30 +1872,39 @@ h1 {
             labels: linhasColisao.length ? linhasColisao.map(i => "Linha " + i.label) : ["Sem dados"],
             values: linhasColisao.length ? linhasColisao.map(i => i.qtd) : [0],
             horizontal: true,
-            cores: ["#f59e0b", "#fbbf24", "#d97706", "#b45309", "#92400e", "#fcd34d", "#fde68a", "#fef3c7"]
+            corTema: corColisao
         });
 
         const acidentesMes = contagemPorMes(dados, item => ocorrenciaEh(item.ocorrencia, "COLISAO", "COLISÃO"));
         criarGraficoAnalytics("chartAcidentesMes", {
             labels: acidentesMes.length ? acidentesMes.map(i => i.label) : ["Sem dados"],
             values: acidentesMes.length ? acidentesMes.map(i => i.qtd) : [0],
-            cores: ["#059669", "#10b981", "#34d399", "#6ee7b7", "#047857", "#065f46", "#a7f3d0", "#d1fae5", "#064e3b", "#14b8a6", "#2dd4bf", "#5eead4"]
+            corTema: corColisao
         });
 
         const quedaMes = contagemPorMes(dados, item => ocorrenciaEh(item.ocorrencia, "QUEDA DE PASSAGEIRO", "QUEDA DE CLIENTE"));
         criarGraficoAnalytics("chartQuedaMes", {
             labels: quedaMes.length ? quedaMes.map(i => i.label) : ["Sem dados"],
             values: quedaMes.length ? quedaMes.map(i => i.qtd) : [0],
-            cores: ["#7c3aed", "#8b5cf6", "#a78bfa", "#c4b5fd", "#6d28d9", "#5b21b6", "#4c1d95", "#ddd6fe", "#ede9fe", "#9333ea", "#a855f7", "#d8b4fe"]
+            corTema: corQueda
         });
 
-        const motIncidentes = topContagem(contarPor(dados, d => d.motorista, item =>
-            ocorrenciaEh(item.ocorrencia, "COLISAO", "COLISÃO", "QUEDA DE PASSAGEIRO", "QUEDA DE CLIENTE")), 8);
-        criarGraficoAnalytics("chartMotoristasIncidentes", {
-            labels: motIncidentes.length ? motIncidentes.map(i => i.label) : ["Sem dados"],
-            values: motIncidentes.length ? motIncidentes.map(i => i.qtd) : [0],
+        const motQueda = topContagem(contarPor(dados, d => d.motorista, item =>
+            ocorrenciaEh(item.ocorrencia, "QUEDA DE PASSAGEIRO", "QUEDA DE CLIENTE")), 8);
+        criarGraficoAnalytics("chartMotoristasQueda", {
+            labels: motQueda.length ? motQueda.map(i => i.label) : ["Sem dados"],
+            values: motQueda.length ? motQueda.map(i => i.qtd) : [0],
             horizontal: true,
-            cores: ["#ea580c", "#f97316", "#fb923c", "#fdba74", "#c2410c", "#9a3412", "#fed7aa", "#ffedd5"]
+            corTema: corQueda
+        });
+
+        const motColisao = topContagem(contarPor(dados, d => d.motorista, item =>
+            ocorrenciaEh(item.ocorrencia, "COLISAO", "COLISÃO")), 8);
+        criarGraficoAnalytics("chartMotoristasIncidentes", {
+            labels: motColisao.length ? motColisao.map(i => i.label) : ["Sem dados"],
+            values: motColisao.length ? motColisao.map(i => i.qtd) : [0],
+            horizontal: true,
+            corTema: corColisao
         });
 
         const motAdiant = topContagem(contarPor(dados, d => d.motorista, item =>
@@ -1673,7 +1913,7 @@ h1 {
             labels: motAdiant.length ? motAdiant.map(i => i.label) : ["Sem dados"],
             values: motAdiant.length ? motAdiant.map(i => i.qtd) : [0],
             horizontal: true,
-            cores: ["#0d9488", "#14b8a6", "#2dd4bf", "#5eead4", "#0f766e", "#115e59", "#134e4a", "#99f6e4"]
+            corTema: corAdiantado
         });
 
         const motAtrasos = topContagem(contarPor(dados, d => d.motorista, item =>
@@ -1682,86 +1922,19 @@ h1 {
             labels: motAtrasos.length ? motAtrasos.map(i => i.label) : ["Sem dados"],
             values: motAtrasos.length ? motAtrasos.map(i => i.qtd) : [0],
             horizontal: true,
-            cores: ["#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#1d4ed8", "#1e40af", "#1e3a8a", "#dbeafe"]
+            corTema: corAtrasado
         });
     }
 
-    function valorOrdenacaoTabela(item, key) {
-        if (key === "data") return String(item.data || "");
-        return String(item[key] || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    }
+    function filtrarDadosAtuais() {
+        const dInicio = document.getElementById("filtro-data-inicio").value;
+        const dFim = document.getElementById("filtro-data-fim").value;
+        const analista = document.getElementById("filtro-analista").value;
+        const ocorrencia = document.getElementById("filtro-ocorrencia").value;
+        const linha = document.getElementById("filtro-linha").value;
+        const situacao = document.getElementById("filtro-situacao").value;
 
-    function ordenarDadosTabela(dados) {
-        const dir = ordenacaoTabela.dir === "asc" ? 1 : -1;
-        return dados.slice().sort((a, b) => {
-            const va = valorOrdenacaoTabela(a, ordenacaoTabela.key);
-            const vb = valorOrdenacaoTabela(b, ordenacaoTabela.key);
-            if (ordenacaoTabela.key === "data") return va.localeCompare(vb) * dir;
-            return va.localeCompare(vb, "pt-BR", { numeric: true }) * dir;
-        });
-    }
-
-    function atualizarSetasTabela() {
-        document.querySelectorAll("th[data-sort]").forEach(th => {
-            const active = th.dataset.sort === ordenacaoTabela.key;
-            th.setAttribute("aria-sort", active ? (ordenacaoTabela.dir === "asc" ? "ascending" : "descending") : "none");
-            const icon = th.querySelector(".sort-icon");
-            if (icon) icon.textContent = active ? (ordenacaoTabela.dir === "asc" ? "↑" : "↓") : "↕";
-        });
-    }
-
-    function renderizarTabela(dados) {
-        const tbody = document.getElementById('tabela-corpo');
-        tbody.innerHTML = "";
-        atualizarSetasTabela();
-        
-        if(dados.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--muted);">Nenhum registro encontrado para os filtros selecionados.</td></tr>`;
-            return;
-        }
-
-        ordenarDadosTabela(dados).forEach(d => {
-            let dataFormatada = d.data;
-            if(d.data && d.data.includes('-')) {
-                dataFormatada = d.data.split('-').reverse().join('/');
-            }
-            const situacaoLimpa = d.situacao ? d.situacao.trim() : "";
-            const badgeClass = situacaoLimpa.toLowerCase() === "concluído" || situacaoLimpa.toLowerCase() === "concluido" ? "status-concluido" : "status-pendente";
-            
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${dataFormatada}</td>
-                <td><strong>${d.analista}</strong></td>
-                <td>${d.ocorrencia}</td>
-                <td><span style="background:#e8edf6; padding:2px 6px; border-radius:4px; font-weight:bold;">${d.linha}</span></td>
-                <td><span class="status-badge ${badgeClass}">${d.situacao || 'Pendente'}</span></td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    document.querySelectorAll("th[data-sort]").forEach(th => {
-        th.addEventListener("click", () => {
-            const key = th.dataset.sort;
-            if (ordenacaoTabela.key === key) {
-                ordenacaoTabela.dir = ordenacaoTabela.dir === "asc" ? "desc" : "asc";
-            } else {
-                ordenacaoTabela.key = key;
-                ordenacaoTabela.dir = key === "data" ? "desc" : "asc";
-            }
-            filtrarDashboard();
-        });
-    });
-
-    function filtrarDashboard() {
-        const dInicio = document.getElementById('filtro-data-inicio').value;
-        const dFim = document.getElementById('filtro-data-fim').value;
-        const analista = document.getElementById('filtro-analista').value;
-        const ocorrencia = document.getElementById('filtro-ocorrencia').value;
-        const linha = document.getElementById('filtro-linha').value;
-        const situacao = document.getElementById('filtro-situacao').value;
-
-        const dadosFiltrados = dadosMestres.filter(item => {
+        return dadosMestres.filter(item => {
             if (dInicio && item.data < dInicio) return false;
             if (dFim && item.data > dFim) return false;
             if (analista && item.analista !== analista) return false;
@@ -1770,9 +1943,17 @@ h1 {
             if (situacao && item.situacao !== situacao) return false;
             return true;
         });
+    }
 
-        inicializarGraficos(dadosFiltrados);
-        renderizarTabela(dadosFiltrados);
+    function filtrarDashboard() {
+        const dadosFiltrados = filtrarDadosAtuais();
+        requestAnimationFrame(() => {
+            inicializarGraficos(dadosFiltrados);
+            setLoadStatus(
+                dadosFiltrados.length.toLocaleString("pt-BR") + " registro(s) filtrado(s)",
+                "ok"
+            );
+        });
     }
 </script>
 </body>

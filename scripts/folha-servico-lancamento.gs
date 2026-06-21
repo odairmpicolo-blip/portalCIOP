@@ -89,6 +89,9 @@ function doGet(e) {
       meta: { versao: SCRIPT_VERSAO, origem: "somente_recentes", limit: limit }
     });
   }
+  if (String(params.dashboard || "") === "1") {
+    return json_(montarRespostaDashboard_());
+  }
   return json_(montarRespostaLeitura_(params));
   } catch (err) {
     return json_({ ok: false, erro: err.message || String(err) });
@@ -132,6 +135,55 @@ function montarRespostaLeitura_(params) {
   }
 
   return { ok: true, dados: dados, opcoes: lerOpcoesPadronizadas_() };
+}
+
+/** Leitura enxuta para o dashboard (menos campos, leitura parcial da planilha). */
+function montarRespostaDashboard_() {
+  const maxRows = 10000;
+  const sheet = abrirAba_();
+  const lastRow = sheet.getLastRow();
+  const numCols = sheet.getLastColumn();
+  if (lastRow < 2 || numCols < 1) {
+    return { ok: true, dados: [], meta: { versao: SCRIPT_VERSAO, origem: "dashboard", total: 0 } };
+  }
+
+  const titulos = sheet.getRange(1, 1, 1, numCols).getValues()[0];
+  const cabecalho = titulos.map(normalizarChave_);
+  const qtd = Math.min(maxRows, lastRow - 1);
+  const startRow = Math.max(2, lastRow - qtd + 1);
+  const valores = sheet.getRange(startRow, 1, qtd, numCols).getValues();
+  const dados = [];
+
+  for (let i = 0; i < valores.length; i++) {
+    const bruto = linhaParaObjeto_(cabecalho, valores[i], startRow + i);
+    dados.push(objetoDashboardSlim_(bruto));
+  }
+
+  return {
+    ok: true,
+    dados: dados,
+    meta: {
+      versao: SCRIPT_VERSAO,
+      origem: "dashboard",
+      total: dados.length,
+      linha_inicial: startRow,
+      linha_final: lastRow
+    }
+  };
+}
+
+function objetoDashboardSlim_(item) {
+  return {
+    data: item.data || "",
+    hora: item.hora || "",
+    ocorrencia: item.ocorrencia || "",
+    analista: item.analista || "",
+    carro_que_sai: item.carro_que_sai || "",
+    mot_que_sai: item.mot_que_sai || "",
+    motivo_somente_oficina: item.motivo_somente_oficina || "",
+    linha: item.linha || "",
+    situacao: item.situacao || ""
+  };
 }
 
 function lerUltimosRegistros_(quantidade) {
