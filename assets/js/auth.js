@@ -196,30 +196,32 @@ window.alterarSenha = async function (senhaAtual, novaSenha) {
   }
 };
 
-function isAdministrador(cadastro) {
-  const perfil = String(cadastro.perfil || "").toLowerCase();
-  return perfil === "administrador" || perfil === "administrador";
+function normalizarPerfil(perfil) {
+  return String(perfil || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }
 
-function temAcessoTotal(cadastro) {
-  const perfil = String(cadastro.perfil || "").toLowerCase();
-  return isAdministrador(cadastro) || perfil === "supervisor" || perfil === "gerência" || perfil === "gerencia";
+function isAdministrador(cadastro) {
+  return normalizarPerfil(cadastro?.perfil) === "administrador";
 }
 
 function listaAtributo(valor) {
   return String(valor || "")
     .split(",")
-    .map((item) => item.trim().toLowerCase())
+    .map((item) => normalizarPerfil(item))
     .filter(Boolean);
 }
 
 function usuarioPodeVer(el, cadastro) {
-  const perfil = String(cadastro.perfil || "Usuario").toLowerCase();
+  const perfil = normalizarPerfil(cadastro.perfil || "Usuario");
   const email = String(cadastro.email || "").toLowerCase();
   const perfisBloqueados = listaAtributo(el.dataset.excluirPerfis);
   if (perfisBloqueados.includes(perfil)) return false;
 
-  if (temAcessoTotal(cadastro)) return true;
+  if (isAdministrador(cadastro)) return true;
 
   const perfisPermitidos = listaAtributo(el.dataset.perfis);
   const usuariosPermitidos = listaAtributo(el.dataset.usuarios);
@@ -266,7 +268,7 @@ function aplicarPermissoes(cadastro) {
     if (negado) negado.style.display = "block";
   }
 
-  const perfilAtual = String(cadastro.perfil || "Usuario").toLowerCase();
+  const perfilAtual = normalizarPerfil(cadastro.perfil || "Usuario");
   const perfisBloqueadosPagina = listaAtributo(document.body?.dataset.excluirPerfis);
   if (perfisBloqueadosPagina.includes(perfilAtual)) {
     window.location.href = portalPath("index.html");
@@ -274,7 +276,7 @@ function aplicarPermissoes(cadastro) {
   }
 
   const perfisObrigatorios = listaAtributo(document.body?.dataset.requirePerfis);
-  if (perfisObrigatorios.length && !temAcessoTotal(cadastro)) {
+  if (perfisObrigatorios.length && !isAdministrador(cadastro)) {
     if (!perfisObrigatorios.includes(perfilAtual)) {
       window.location.href = portalPath("index.html");
       return false;
