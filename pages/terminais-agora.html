@@ -302,6 +302,13 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
     font-size:13px;
 }
 .terminal-kpi-person b{color:var(--text)}
+.terminal-kpi-name-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:6px 10px;
+}
+.terminal-kpi-name-row b{color:var(--text)}
 .terminal-kpi-person small{display:block;color:var(--muted);font-weight:700;margin-top:2px}
 .terminal-kpi-meta{
     display:flex;
@@ -890,6 +897,7 @@ const AUTO_RENDER_MS = 30000;
 
 let REGISTROS = [];
 let DADOS = [];
+let MAP_TERMINAL_TELEFONE = new Map();
 let modoAtual = "agora";
 let planilhaIniciada = false;
 let fetchTimer = null;
@@ -1114,29 +1122,38 @@ function pareceTelefone(value){
     const text = String(value || "").trim();
     return /\d/.test(text) && !/^terminal\b/i.test(text);
 }
+function pegarColuna(row, index){
+    return String(row[normalizarChave("COL" + index)] || "").trim();
+}
 function normalizarDados(rows){
     const mapa = new Map();
+    const mapaTerminalTelefone = new Map();
     const lista = rows.map(function(row){
         const clean = normalizarLinha(row);
-        const telefonePrincipal = pegar(clean, CAMPOS.telefone);
-        const telefoneSemCabecalho = pegar(clean, ["COL4", "COL5"]);
-        const telefone = pareceTelefone(telefonePrincipal) ? telefonePrincipal : (pareceTelefone(telefoneSemCabecalho) ? telefoneSemCabecalho : "");
-        const terminal = pegar(clean, CAMPOS.terminal) || (/^terminal\b/i.test(telefonePrincipal) ? telefonePrincipal : "");
+        const telefoneFuncionario = pegarColuna(clean, 3) || pegar(clean, CAMPOS.telefone);
+        const telefoneTerminalValor = pegarColuna(clean, 5);
+        const telefone = pareceTelefone(telefoneFuncionario) ? telefoneFuncionario : "";
+        const telefoneTerminalLinha = pareceTelefone(telefoneTerminalValor) ? telefoneTerminalValor : "";
+        const terminal = pegar(clean, CAMPOS.terminal) || pegarColuna(clean, 4) || (/^terminal\b/i.test(telefoneFuncionario) ? telefoneFuncionario : "");
         const pessoa = {
-            nome: pegar(clean, CAMPOS.nome),
-            matricula: pegar(clean, CAMPOS.matricula),
+            nome: pegar(clean, CAMPOS.nome) || pegarColuna(clean, 2),
+            matricula: pegar(clean, CAMPOS.matricula) || pegarColuna(clean, 1),
             email: pegar(clean, CAMPOS.email),
             cargo: pegar(clean, CAMPOS.cargo),
             equipe: pegar(clean, CAMPOS.equipe),
             telefone: telefone,
+            telefoneTerminal: telefoneTerminalLinha,
             terminal: terminal
         };
         if (pessoa.nome) mapa.set("nome:" + normalizarTexto(pessoa.nome), pessoa);
         if (pessoa.matricula) mapa.set("mat:" + normalizarTexto(pessoa.matricula), pessoa);
         if (pessoa.email) mapa.set("email:" + normalizarTexto(pessoa.email), pessoa);
+        if (pessoa.terminal && pessoa.telefoneTerminal) {
+            mapaTerminalTelefone.set(chaveTerminalComparacao(pessoa.terminal), pessoa.telefoneTerminal);
+        }
         return pessoa;
     }).filter(function(pessoa){return pessoa.nome || pessoa.matricula || pessoa.email || pessoa.terminal;});
-    return {lista, mapa};
+    return {lista, mapa, mapaTerminalTelefone};
 }
 function normalizarProgramacao(rows, dadosMapa){
     return rows.map(function(row, index){
@@ -1275,6 +1292,7 @@ async function carregarPlanilha(manual){
         if (resultado[1].status !== "fulfilled") throw resultado[1].reason;
         const dados = normalizarDados(dadosRows);
         DADOS = dados.lista;
+        MAP_TERMINAL_TELEFONE = dados.mapaTerminalTelefone;
         REGISTROS = normalizarProgramacao(resultado[1].value, dados.mapa);
         atualizarSelectTerminais();
         render();
@@ -1330,13 +1348,18 @@ function contatoPessoa(item){
     return String(item.email || "").trim();
 }
 function telefoneTerminal(terminal){
+    if (!terminal) return "";
+    const chave = chaveTerminalComparacao(terminal);
+    const doMapa = MAP_TERMINAL_TELEFONE.get(chave);
+    if (doMapa && pareceTelefone(doMapa)) return doMapa;
     const item = DADOS.find(function(pessoa){
-        return pessoa.telefone && mesmoTerminal(pessoa.terminal, terminal);
+        return pessoa.telefoneTerminal && mesmoTerminal(pessoa.terminal, terminal);
     });
-    return item && pareceTelefone(item.telefone) ? item.telefone : "";
+    return item && pareceTelefone(item.telefoneTerminal) ? item.telefoneTerminal : "";
 }
-function contatoItem(item){
-    return contatoPessoa(item) || telefoneTerminal(item.terminal);
+function telefoneFuncionario(item){
+    const telefone = contatoPessoa(item);
+    return telefone && pareceTelefone(telefone) ? telefone : "";
 }
 function whatsappHref(telefone){
     const digits = String(telefone || "").replace(/\D/g, "");
@@ -1353,14 +1376,21 @@ function telefoneTerminalHtml(telefone){
     const icon = '<span class="terminal-phone-icon" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><path d="M16.01 3.2c-7.02 0-12.73 5.64-12.73 12.58 0 2.24.6 4.42 1.74 6.34L3.2 28.8l6.89-1.77a12.84 12.84 0 0 0 5.92 1.45c7.02 0 12.73-5.64 12.73-12.58S23.03 3.2 16.01 3.2Zm5.83 15.26c-.32-.16-1.9-.93-2.2-1.03-.29-.11-.5-.16-.72.16-.21.32-.82 1.03-1.01 1.24-.19.21-.37.24-.69.08-.32-.16-1.36-.49-2.59-1.55-.96-.84-1.61-1.88-1.8-2.2-.19-.32-.02-.49.14-.65.14-.14.32-.37.48-.55.16-.19.21-.32.32-.53.11-.21.05-.4-.03-.55-.08-.16-.72-1.71-.98-2.34-.26-.62-.52-.53-.72-.54h-.61c-.21 0-.55.08-.84.4-.29.32-1.11 1.07-1.11 2.61s1.14 3.03 1.3 3.24c.16.21 2.25 3.39 5.45 4.75.76.32 1.35.51 1.82.65.76.24 1.45.2 2 .12.61-.09 1.9-.77 2.17-1.51.27-.75.27-1.39.19-1.52-.08-.13-.29-.21-.61-.37Z"/></svg></span>';
     return '<a class="terminal-phone-link" href="' + escapeHtml(href) + '" target="_blank" rel="noopener noreferrer" aria-label="Abrir conversa no WhatsApp com ' + escapeHtml(texto) + '">' + icon + '<span>' + escapeHtml(texto) + '</span></a>';
 }
-function linhaRegistroTelefone(item){
-    const partes = [];
-    if (item.matricula) partes.push('<span class="terminal-kpi-registro">Reg. ' + escapeHtml(item.matricula) + '</span>');
-    if (!ehViatura(item.terminal)) {
-        const telefone = contatoItem(item);
-        if (telefone && pareceTelefone(telefone)) partes.push(telefoneTerminalHtml(telefone));
-    }
-    return partes.join(" · ");
+function telefoneCabecalhoTerminal(terminal){
+    if (ehViatura(terminal)) return "";
+    const telefone = telefoneTerminal(terminal);
+    const html = telefoneTerminalHtml(telefone);
+    return html ? '<div class="terminal-kpi-phone">' + html + '</div>' : "";
+}
+function linhaNomeTelefone(item){
+    const partes = ['<b>' + escapeHtml(item.nome) + '</b>'];
+    const telefone = telefoneFuncionario(item);
+    if (telefone) partes.push(telefoneTerminalHtml(telefone));
+    return '<div class="terminal-kpi-name-row">' + partes.join("") + '</div>';
+}
+function linhaRegistro(item){
+    if (!item.matricula) return "";
+    return '<small class="terminal-kpi-registro">Reg. ' + escapeHtml(item.matricula) + '</small>';
 }
 function horarioInicioFim(item){
     return "Início " + formatHora(item.start) + " · Fim " + formatHora(item.end);
@@ -1402,13 +1432,12 @@ function renderTerminalKpis(now){
         const tema = ordemTerminal(terminal);
         const temaClasse = somenteReserva ? " reserve" : (tema >= 1 && tema <= 8 ? " theme-" + tema : " theme-extra");
         return '<div class="terminal-kpi-card' + temaClasse + '">' +
-            '<div class="terminal-kpi-head"><div><div class="terminal-kpi-name">' + escapeHtml(displayTerminal(terminal)) + '</div></div><span class="status-badge status-' + (somenteReserva ? 'reserve' : 'now') + '">' + (somenteReserva ? 'Mot. Reserva' : 'Agora') + '</span></div>' +
+            '<div class="terminal-kpi-head"><div><div class="terminal-kpi-name">' + escapeHtml(displayTerminal(terminal)) + '</div>' + telefoneCabecalhoTerminal(terminal) + '</div><span class="status-badge status-' + (somenteReserva ? 'reserve' : 'now') + '">' + (somenteReserva ? 'Mot. Reserva' : 'Agora') + '</span></div>' +
             pessoas.map(function(item){
                 if (item.reserva) {
-                    return '<div class="terminal-kpi-person"><div><b>' + escapeHtml(item.nome) + '</b><small>Sem escala no horário</small></div><span class="terminal-kpi-time">reserva</span></div>';
+                    return '<div class="terminal-kpi-person"><div>' + linhaNomeTelefone(item) + '<small>Sem escala no horário</small></div><span class="terminal-kpi-time">reserva</span></div>';
                 }
-                const meta = linhaRegistroTelefone(item);
-                return '<div class="terminal-kpi-person"><div><b>' + escapeHtml(item.nome) + '</b>' + (meta ? '<small class="terminal-kpi-meta">' + meta + '</small>' : '') + '</div><span class="terminal-kpi-time">' + escapeHtml(horarioInicioFim(item)) + '</span></div>';
+                return '<div class="terminal-kpi-person"><div>' + linhaNomeTelefone(item) + linhaRegistro(item) + '</div><span class="terminal-kpi-time">' + escapeHtml(horarioInicioFim(item)) + '</span></div>';
             }).join("") +
         '</div>';
     }).join("");
