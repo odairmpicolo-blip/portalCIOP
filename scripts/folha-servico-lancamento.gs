@@ -15,8 +15,9 @@ const SPREADSHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const ABA_GID = 1013912232;
 const ABA_NOME = "FOLHA DE SERVIÇO";
 const LISTAS_GID = 665133219;
-const SCRIPT_VERSAO = "2026-06-23-dashboard-total";
+const SCRIPT_VERSAO = "2026-06-23-dashboard-paginado";
 const FOLHA_DASHBOARD_DIAS = 0;
+const FOLHA_DASHBOARD_PAGINA = 3500;
 const FOLHA_CHUNK_LINHAS = 800;
 const FOLHA_CACHE_TTL = 600;
 
@@ -189,16 +190,55 @@ function montarRespostaDashboard_(params) {
 
   const titulos = sheet.getRange(1, 1, 1, numCols).getValues()[0];
   const cabecalho = titulos.map(normalizarChave_);
+  const dados = [];
+
+  if (lerTodos) {
+    var offset = Math.max(0, parseInt(String(params.offset || "0"), 10) || 0);
+    var limit = parseInt(String(params.limit || String(FOLHA_DASHBOARD_PAGINA)), 10) || FOLHA_DASHBOARD_PAGINA;
+    limit = Math.max(100, Math.min(limit, 5000));
+    var startRow = 2 + offset;
+    var linhasRestantes = lastRow - startRow + 1;
+    var numRows = Math.min(limit, Math.max(0, linhasRestantes));
+
+    if (numRows > 0) {
+      var valores = sheet.getRange(startRow, 1, numRows, numCols).getValues();
+      for (var j = 0; j < valores.length; j++) {
+        var brutoPag = linhaParaObjeto_(cabecalho, valores[j], startRow + j);
+        dados.push(objetoDashboardSlim_(brutoPag));
+      }
+    }
+
+    var nextOffset = offset + dados.length;
+    var hasMore = nextOffset < totalPlanilha;
+
+    return {
+      ok: true,
+      dados: dados,
+      meta: {
+        versao: SCRIPT_VERSAO,
+        origem: "dashboard",
+        total: dados.length,
+        total_planilha: totalPlanilha,
+        total_carregado: nextOffset,
+        offset: offset,
+        limit: limit,
+        next_offset: hasMore ? nextOffset : null,
+        has_more: hasMore,
+        dias: 0,
+        completo: true,
+        data_de: "",
+        cache: false
+      }
+    };
+  }
+
   const numRows = totalPlanilha;
   const valores = sheet.getRange(2, 1, numRows, numCols).getValues();
-  const dados = [];
 
   for (var i = 0; i < valores.length; i++) {
     var bruto = linhaParaObjeto_(cabecalho, valores[i], i + 2);
-    if (!lerTodos) {
-      var iso = normalizarDataIso_(bruto.data);
-      if (dataMinIso && iso && iso < dataMinIso) continue;
-    }
+    var iso = normalizarDataIso_(bruto.data);
+    if (dataMinIso && iso && iso < dataMinIso) continue;
     dados.push(objetoDashboardSlim_(bruto));
   }
 
