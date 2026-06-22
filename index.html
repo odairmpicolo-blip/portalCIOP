@@ -282,6 +282,7 @@ h1{
 
 .card-section{
     margin-bottom:38px;
+    width:100%;
 }
 
 .card-section:last-child{
@@ -295,22 +296,30 @@ h1{
     margin:0 0 16px;
     padding-bottom:8px;
     border-bottom:2px solid rgba(6,36,92,.12);
+    text-align:center;
 }
 
 .grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-    gap:16px;
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
     align-items:stretch;
+    gap:16px;
+    width:100%;
+    margin:0 auto;
 }
 
 .card{
     --card-accent:var(--azul);
+    --card-soft:#eef4ff;
+    width:168px;
+    max-width:100%;
+    flex:0 1 168px;
     background:#fff;
     border-radius:8px;
     border:1px solid rgba(6,36,92,.12);
-    padding:18px 16px;
-    min-height:202px;
+    padding:clamp(12px, 4cqi, 18px) clamp(10px, 3.5cqi, 16px);
+    min-height:168px;
     aspect-ratio:1 / 1;
     text-decoration:none;
     color:inherit;
@@ -322,12 +331,16 @@ h1{
     text-align:center;
     box-shadow:0 8px 22px rgba(16,24,40,.06);
     outline:none;
+    container-type:inline-size;
+    container-name:portal-card;
+    min-width:0;
+    overflow:hidden;
 }
 
 .card:hover,
 .card:focus-visible{
     transform:translateY(-3px);
-    border-color:var(--azul);
+    border-color:var(--card-accent);
     box-shadow:0 16px 32px rgba(6,36,92,.15);
 }
 
@@ -336,25 +349,28 @@ h1{
     display:flex;
     flex-direction:column;
     align-items:center;
-    justify-content:center;
-    gap:10px;
-    margin:0 0 12px;
+    justify-content:flex-start;
+    gap:clamp(6px, 2.5cqi, 10px);
+    margin:0 0 clamp(6px, 2cqi, 10px);
+    min-width:0;
+    flex:0 1 auto;
+    overflow:hidden;
 }
 
 .card-figure{
-    width:50px;
-    height:50px;
+    width:clamp(38px, 14cqi, 50px);
+    height:clamp(38px, 14cqi, 50px);
     border-radius:8px;
-    background:#eef4ff;
-    color:var(--azul);
+    background:var(--card-soft);
+    color:var(--card-accent);
     display:grid;
     place-items:center;
     flex:0 0 auto;
 }
 
 .card-figure svg{
-    width:27px;
-    height:27px;
+    width:clamp(20px, 7cqi, 27px);
+    height:clamp(20px, 7cqi, 27px);
     stroke:currentColor;
     stroke-width:1.9;
     fill:none;
@@ -364,40 +380,75 @@ h1{
 
 .card-title{
     width:100%;
+    max-width:100%;
     color:var(--azul);
-    font-size:15px;
+    font-size:clamp(10px, 4cqi, 14px);
     font-weight:900;
-    line-height:1.22;
+    line-height:1.15;
     text-align:center;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+    hyphens:auto;
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:2;
+    overflow:hidden;
 }
 
 .card-desc{
     width:100%;
+    max-width:100%;
     color:var(--cinza);
-    font-size:12px;
-    line-height:1.35;
+    font-size:clamp(9px, 3.2cqi, 11px);
+    line-height:1.3;
     margin:0;
     text-align:center;
-    flex:0 1 auto;
+    flex:1 1 auto;
+    min-width:0;
+    min-height:0;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:2;
+    overflow:hidden;
 }
 
 .card-btn{
     width:100%;
-    margin-top:14px;
+    max-width:100%;
+    margin-top:auto;
     border-radius:7px;
-    background:var(--azul);
+    background:var(--card-accent);
     color:#fff;
-    padding:10px 12px;
-    font-size:12px;
+    padding:clamp(6px, 2.2cqi, 9px) clamp(6px, 1.8cqi, 10px);
+    font-size:clamp(9px, 3.2cqi, 11px);
     font-weight:900;
     text-align:center;
     transition:.2s;
+    flex:0 0 auto;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
 }
 
 .card:hover .card-btn,
 .card:focus-visible .card-btn{
     background:var(--laranja);
 }
+
+.card.theme-blue{--card-accent:#2563eb;--card-soft:#eef4ff;}
+.card.theme-orange{--card-accent:#f97316;--card-soft:#fff4ec;}
+.card.theme-violet{--card-accent:#7c3aed;--card-soft:#f3e8ff;}
+.card.theme-cyan{--card-accent:#0891b2;--card-soft:#ecfeff;}
+.card.theme-slate{--card-accent:#475569;--card-soft:#f1f5f9;}
+.card.theme-rose{--card-accent:#e11d48;--card-soft:#fff1f2;}
+.card.theme-teal{--card-accent:#0d9488;--card-soft:#ecfdf5;}
+.card.theme-green{--card-accent:#16a34a;--card-soft:#f0fdf4;}
+.card.theme-indigo{--card-accent:#4f46e5;--card-soft:#eef2ff;}
+.card.theme-amber{--card-accent:#d97706;--card-soft:#fffbeb;}
+.card.theme-red{--card-accent:#dc2626;--card-soft:#fef2f2;}
+.card.theme-sky{--card-accent:#0284c7;--card-soft:#e0f2fe;}
 
 .card.card-soon{
     opacity:.78;
@@ -412,6 +463,18 @@ h1{
 @media(max-width:720px){
     .container{
         padding:0 18px;
+    }
+
+    .card{
+        width:min(168px, calc(50% - 8px));
+        flex-basis:min(168px, calc(50% - 8px));
+    }
+}
+
+@media(max-width:420px){
+    .card{
+        width:min(168px, 100%);
+        flex-basis:min(168px, 100%);
     }
 }
 
@@ -1608,7 +1671,7 @@ h1 {
                 <div class="card-title">Diários de bordo</div>
             </div>
             <div class="card-desc">
-               Diários de bordo.
+                Diários de bordo.
             </div>
             <div class="card-btn">Acessar</div>
         </a>
