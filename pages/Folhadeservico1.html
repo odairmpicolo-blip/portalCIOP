@@ -1057,6 +1057,12 @@ h1 {
             gap: 6px;
             flex-wrap: wrap;
         }
+        tr.row-editing td {
+            background: #fff8e6;
+        }
+        .launch-card.launch-editing {
+            box-shadow: 0 0 0 2px #f59e0b, 0 10px 28px rgba(16, 24, 40, 0.08);
+        }
         .btn-table-action {
             border: 1px solid rgba(6, 36, 92, 0.14);
             border-radius: 6px;
@@ -1469,7 +1475,7 @@ h1 {
             </div>
         </div>
 
-        <div class="launch-card launch-compact-form">
+        <div class="launch-card launch-compact-form" id="formulario-lancamento-card">
             <form id="form-lancamento" onsubmit="enviarLancamento(event)">
                 <div class="launch-compact-grid">
                     <div class="launch-group">
@@ -2104,11 +2110,79 @@ h1 {
         });
     }
 
+    function definirValorCampo(id, valor) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.value = valor == null ? "" : String(valor);
+    }
+
+    function garantirOpcaoSelect(id, valor) {
+        const texto = String(valor || "").trim();
+        if (!texto) return;
+        const el = document.getElementById(id);
+        if (!el || el.tagName !== "SELECT") return;
+        if ([...el.options].some(opt => String(opt.value) === texto)) return;
+        const opt = document.createElement("option");
+        opt.value = texto;
+        opt.textContent = texto;
+        el.appendChild(opt);
+    }
+
+    function atualizarModoFormulario() {
+        const btn = document.getElementById("btn-salvar-lancamento");
+        const btnLimpar = document.querySelector(".btn-clear");
+        const card = document.getElementById("formulario-lancamento-card");
+        if (linhaEditando) {
+            if (btn) btn.textContent = "Atualizar lançamento";
+            if (btnLimpar) btnLimpar.textContent = "Cancelar edição";
+            card?.classList.add("launch-editing");
+        } else {
+            if (btn) btn.textContent = "Salvar";
+            if (btnLimpar) btnLimpar.textContent = "Limpar";
+            card?.classList.remove("launch-editing");
+        }
+    }
+
+    function preencherFormularioEdicao(d) {
+        const registro = normalizarRegistro(d);
+        preencherSelectsDoFormulario(dadosMestres.concat([registro]));
+
+        definirValorCampo("novo-data", dataParaInput(registro.data));
+        definirValorCampo("novo-hora", horaParaTabela(registro.hora));
+        definirValorCampo("novo-tabela", registro.tabela || "");
+        definirValorCampo("novo-servico", registro.servico || "");
+        definirValorCampo("novo-observacoes", registro.observacoes || "");
+
+        camposFormularioComOpcoes.forEach(campo => {
+            garantirOpcaoSelect(campo.id, registro[campo.key]);
+            definirValorCampo(campo.id, registro[campo.key] || "");
+        });
+
+        atualizarCamposOficina();
+        if (ocorrenciaExigeOficina(registro.ocorrencia)) {
+            definirValorCampo("novo-motivo-oficina", registro.motivo_oficina || "");
+            definirValorCampo("novo-mecanico", registro.mecanico || "");
+            definirValorCampo("novo-tempo-deslocamento", registro.tempo_deslocamento || "");
+        }
+
+        linhaEditando = chaveLinhaPlanilha(registro);
+        atualizarModoFormulario();
+        renderizarTabela(dadosMestres);
+        mostrarMensagemLancamento(
+            `Editando lançamento da linha ${linhaEditando}. Todos os campos foram preenchidos — confira Observações e clique em Atualizar.`,
+            "ok"
+        );
+        document.getElementById("formulario-lancamento-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
     function limparLancamento() {
         const form = document.getElementById("form-lancamento");
         if (form) form.reset();
+        linhaEditando = "";
         preencherDataAtual();
         atualizarCamposOficina();
+        atualizarModoFormulario();
+        renderizarTabela(dadosMestres);
         mostrarMensagemLancamento("", "");
     }
 
@@ -2199,10 +2273,11 @@ h1 {
 
         mostrarMensagemLancamento("", "");
         btn.disabled = true;
-        btn.textContent = "Salvando...";
+        btn.textContent = linhaEditando ? "Atualizando..." : "Salvando...";
         try {
             const corpo = new URLSearchParams();
-            corpo.append("action", "create");
+            corpo.append("action", linhaEditando ? "update" : "create");
+            if (linhaEditando) corpo.append("_row", linhaEditando);
             Object.keys(payload).forEach(key => corpo.append(key, payload[key] || ""));
             const resposta = await fetchComTimeout(URL_DO_SCRIPT_GOOGLE, { method: "POST", body: corpo }, TEMPO_LIMITE_SALVAR_MS);
             const texto = await resposta.text();
@@ -2210,17 +2285,23 @@ h1 {
             try { retorno = JSON.parse(texto); } catch(e) { retorno = { ok: resposta.ok }; }
             if (!resposta.ok || retorno.ok === false) throw new Error(retorno.erro || "Não foi possível salvar na planilha.");
 
-            mostrarMensagemLancamento(`Lançamento salvo com sucesso na linha ${retorno.linha || ""}.`, "ok");
+            if (linhaEditando) {
+                mostrarMensagemLancamento(`Lançamento da linha ${linhaEditando} atualizado com sucesso.`, "ok");
+            } else {
+                mostrarMensagemLancamento(`Lançamento salvo com sucesso na linha ${retorno.linha || ""}.`, "ok");
+            }
             document.getElementById("form-lancamento").reset();
+            linhaEditando = "";
             preencherDataAtual();
             atualizarCamposOficina();
+            atualizarModoFormulario();
             await carregarLancamentosRecentes(false);
         } catch (erro) {
             console.error("Erro ao salvar lançamento:", erro);
             mostrarMensagemLancamento("Erro ao salvar: " + (erro.message || "Confira a implantação do Apps Script e as permissões da planilha."), "erro");
         } finally {
             btn.disabled = false;
-            btn.textContent = "Salvar na planilha";
+            btn.textContent = linhaEditando ? "Atualizar lançamento" : "Salvar";
         }
     }
 
@@ -2265,10 +2346,10 @@ h1 {
         }
         ordenarDadosTabela(linhas).forEach(d => {
             const rowKey = chaveLinhaPlanilha(d);
-            const editando = rowKey && String(rowKey) === String(linhaEditando);
             const tr = document.createElement('tr');
             tr.dataset.row = rowKey;
-            tr.innerHTML = editando ? linhaEditavel(d) : linhaSomenteLeitura(d);
+            if (rowKey && String(rowKey) === String(linhaEditando)) tr.classList.add("row-editing");
+            tr.innerHTML = linhaSomenteLeitura(d);
             tbody.appendChild(tr);
         });
     }
@@ -2298,24 +2379,13 @@ h1 {
         return "";
     }
 
-    function opcoesSelectHtml(key, valorSelecionado) {
-        const valores = opcoesPlanilha[key] || [];
-        const opts = ['<option value="">—</option>'];
-        valores.forEach(v => {
-            const sel = String(v) === String(valorSelecionado || "") ? " selected" : "";
-            opts.push(`<option value="${escaparHtml(v)}"${sel}>${escaparHtml(v)}</option>`);
-        });
-        if (valorSelecionado && !valores.some(v => String(v) === String(valorSelecionado))) {
-            opts.push(`<option value="${escaparHtml(valorSelecionado)}" selected>${escaparHtml(valorSelecionado)}</option>`);
+    function editarLancamento(rowKey) {
+        const registro = dadosMestres.find(item => String(chaveLinhaPlanilha(item)) === String(rowKey));
+        if (!registro) {
+            mostrarMensagemLancamento("Não foi possível localizar o lançamento para edição.", "erro");
+            return;
         }
-        return opts.join("");
-    }
-
-    function inputTabela(key, valor, tipo = "text") {
-        if (CHAVES_CAMPOS_SELECT.has(key)) {
-            return `<select class="table-edit-select" data-edit-key="${key}">${opcoesSelectHtml(key, valor)}</select>`;
-        }
-        return `<input class="table-edit-input" type="${tipo}" data-edit-key="${key}" value="${escaparHtml(valor || "")}">`;
+        preencherFormularioEdicao(registro);
     }
 
     function celulaLeituraTabela(key, d) {
@@ -2333,12 +2403,6 @@ h1 {
         return escaparHtml(valor);
     }
 
-    function celulaEdicaoTabela(key, d) {
-        if (key === "data") return inputTabela("data", dataParaInput(d.data), "date");
-        if (key === "hora") return inputTabela("hora", horaParaTabela(d.hora));
-        return inputTabela(key, d[key] || "");
-    }
-
     function linhaSomenteLeitura(d) {
         const rowKey = chaveLinhaPlanilha(d);
         const disabled = rowKey ? "" : " disabled";
@@ -2348,60 +2412,6 @@ h1 {
             return `<td${cls}>${celulaLeituraTabela(col.key, d)}</td>`;
         }).join("");
         return `${cells}<td class="col-acoes"><div class="table-edit-actions"><button class="btn-table-action" type="button" onclick="editarLancamento('${escaparHtml(rowKey)}')"${disabled} title="${titulo}">Editar</button></div></td>`;
-    }
-
-    function linhaEditavel(d) {
-        const rowKey = chaveLinhaPlanilha(d);
-        const cells = COLUNAS_TABELA_LANCAMENTOS.map(col => {
-            const cls = col.key === "local" ? ' class="col-local"' : "";
-            return `<td${cls}>${celulaEdicaoTabela(col.key, d)}</td>`;
-        }).join("");
-        return `${cells}<td class="col-acoes"><div class="table-edit-actions"><button class="btn-table-action primary" type="button" onclick="salvarEdicaoLancamento('${escaparHtml(rowKey)}')">Salvar</button><button class="btn-table-action" type="button" onclick="cancelarEdicaoLancamento()">Cancelar</button></div></td>`;
-    }
-
-    function editarLancamento(rowKey) {
-        linhaEditando = String(rowKey || "");
-        renderizarTabela(dadosMestres);
-    }
-
-    function cancelarEdicaoLancamento() {
-        linhaEditando = "";
-        renderizarTabela(dadosMestres);
-    }
-
-    async function salvarEdicaoLancamento(rowKey) {
-        const tr = document.querySelector(`tr[data-row="${CSS.escape(String(rowKey))}"]`);
-        if (!tr) return;
-        const payload = { action: "update", _row: rowKey };
-        tr.querySelectorAll("[data-edit-key]").forEach(input => {
-            payload[input.dataset.editKey] = (input.value || "").trim();
-        });
-        const erroHora = validarHoraPadrao(payload.hora);
-        if (erroHora) {
-            mostrarMensagemLancamento(erroHora, "erro");
-            return;
-        }
-        const erroValidacao = validarOpcoesPadrao(payload);
-        if (erroValidacao) {
-            mostrarMensagemLancamento(erroValidacao, "erro");
-            return;
-        }
-        mostrarMensagemLancamento("", "");
-        try {
-            const corpo = new URLSearchParams();
-            Object.keys(payload).forEach(key => corpo.append(key, payload[key] || ""));
-            const resposta = await fetchComTimeout(URL_DO_SCRIPT_GOOGLE, { method: "POST", body: corpo }, TEMPO_LIMITE_SALVAR_MS);
-            const texto = await resposta.text();
-            let retorno = {};
-            try { retorno = JSON.parse(texto); } catch(e) { retorno = { ok: resposta.ok }; }
-            if (!resposta.ok || retorno.ok === false) throw new Error(retorno.erro || "Não foi possível atualizar a planilha.");
-            mostrarMensagemLancamento("Lançamento atualizado com sucesso.", "ok");
-            linhaEditando = "";
-            await carregarLancamentosRecentes(false);
-        } catch (erro) {
-            console.error("Erro ao atualizar lançamento:", erro);
-            mostrarMensagemLancamento("Erro ao atualizar: " + (erro.message || "Confira o Apps Script."), "erro");
-        }
     }
 
     document.querySelectorAll("th[data-sort]").forEach(th => {
