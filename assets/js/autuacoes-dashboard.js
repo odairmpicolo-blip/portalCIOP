@@ -507,6 +507,16 @@ function rgbaHex(hex, alpha) {
     return `rgba(${c.r},${c.g},${c.b},${alpha})`;
 }
 
+function escurecerHex(hex, fator = 0.3) {
+    const c = hexToRgb(hex);
+    return `rgb(${Math.round(c.r * (1 - fator))},${Math.round(c.g * (1 - fator))},${Math.round(c.b * (1 - fator))})`;
+}
+
+function clarearHex(hex, fator = 0.22) {
+    const c = hexToRgb(hex);
+    return `rgb(${Math.min(255, Math.round(c.r + (255 - c.r) * fator))},${Math.min(255, Math.round(c.g + (255 - c.g) * fator))},${Math.min(255, Math.round(c.b + (255 - c.b) * fator))})`;
+}
+
 function nomeAgenteCurto(nome) {
     const partes = String(nome || "").trim().split(/\s+/).filter(Boolean);
     if (partes.length <= 2) return partes.join(" ");
@@ -682,11 +692,13 @@ function desenharGraficoAgentes(rows) {
 }
 
 let pieResizeObserver = null;
+const PIE_TILT = 0.62;
 
 function prepararCanvasPie(canvas) {
     const wrap = canvas?.parentElement;
-    const base = wrap ? Math.floor(Math.min(wrap.clientWidth, wrap.clientHeight)) : 160;
-    const size = Math.max(base, 96);
+    const max = 172;
+    const wrapW = wrap ? wrap.clientWidth : max;
+    const size = Math.min(Math.max(Math.floor(wrapW) || max, 108), max);
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(size * dpr);
     canvas.height = Math.round(size * dpr);
@@ -711,14 +723,21 @@ function observarResizePie() {
     pieResizeObserver.observe(wrap);
 }
 
-function corSegmentoPie(ctx, cx, cy, cor, angInicio, angFim, rIn, rOut) {
-    const mid = (angInicio + angFim) / 2;
-    const gx = cx + Math.cos(mid) * (rOut * 0.5);
-    const gy = cy + Math.sin(mid) * (rOut * 0.5);
-    const g = ctx.createRadialGradient(gx, gy, rIn, cx, cy, rOut);
-    g.addColorStop(0, "#fff");
-    g.addColorStop(0.15, cor);
-    g.addColorStop(1, cor);
+function arcoDonut(ctx, cx, cy, rOut, rIn, a0, a1) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, rOut, a0, a1);
+    ctx.arc(cx, cy, rIn, a1, a0, true);
+    ctx.closePath();
+}
+
+function gradienteSegmento3D(ctx, cx, cy, cor, a0, a1, rIn, rOut) {
+    const mid = (a0 + a1) / 2;
+    const gx = cx + Math.cos(mid) * rOut * 0.75;
+    const gy = cy + Math.sin(mid) * rOut * 0.75;
+    const g = ctx.createRadialGradient(gx, gy, rIn * 0.4, cx, cy, rOut);
+    g.addColorStop(0, clarearHex(cor, 0.28));
+    g.addColorStop(0.5, cor);
+    g.addColorStop(1, escurecerHex(cor, 0.32));
     return g;
 }
 
@@ -727,10 +746,12 @@ function drawPie(items, total) {
     if (!canvas) return;
     const { ctx, size } = prepararCanvasPie(canvas);
     const cx = size / 2;
-    const cy = size / 2;
-    const r = size * 0.4;
-    const rInner = size * 0.26;
-    const gap = 0.035;
+    const cy = size / 2 - size * 0.02;
+    const tilt = PIE_TILT;
+    const depth = size * 0.065;
+    const rOut = size * 0.36;
+    const rIn = size * 0.22;
+    const gap = 0.038;
     ctx.clearRect(0, 0, size, size);
 
     if (!total) {
@@ -744,41 +765,91 @@ function drawPie(items, total) {
     }
 
     ctx.save();
-    ctx.shadowColor = "rgba(0,212,255,.25)";
-    ctx.shadowBlur = size * 0.06;
-    let start = -Math.PI / 2;
-    items.forEach(([name, val], i) => {
-        const ang = (val / total) * Math.PI * 2;
-        if (ang <= 0) return;
-        const a0 = start + gap;
-        const a1 = start + ang - gap;
-        if (a1 <= a0) { start += ang; return; }
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, a0, a1);
-        ctx.arc(cx, cy, rInner, a1, a0, true);
-        ctx.closePath();
-        ctx.fillStyle = corSegmentoPie(ctx, cx, cy, COLORS[i % COLORS.length], a0, a1, rInner, r);
-        ctx.fill();
-        start += ang;
-    });
+    const aura = ctx.createRadialGradient(cx, cy - size * 0.04, 0, cx, cy, rOut * 1.35);
+    aura.addColorStop(0, "rgba(0,212,255,.12)");
+    aura.addColorStop(0.55, "rgba(19,89,199,.06)");
+    aura.addColorStop(1, "transparent");
+    ctx.fillStyle = aura;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + depth, rOut * 1.1, rOut * 1.1 * tilt, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
 
-    ctx.beginPath();
-    ctx.arc(cx, cy, rInner - 1, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255,255,255,.96)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(0,212,255,.2)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    let start = -Math.PI / 2;
+    const slices = items.map(([name, val], i) => {
+        const ang = (val / total) * Math.PI * 2;
+        const slice = {
+            name,
+            val,
+            a0: start + gap,
+            a1: start + ang - gap,
+            ang,
+            cor: COLORS[i % COLORS.length]
+        };
+        start += ang;
+        return slice;
+    }).filter((s) => s.a1 > s.a0);
 
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(1, tilt);
+    ctx.translate(-cx, -cy);
+
+    for (let layer = 5; layer >= 1; layer--) {
+        const ly = (depth * layer) / tilt / 5;
+        slices.forEach(({ a0, a1, cor }) => {
+            ctx.save();
+            ctx.translate(0, ly);
+            arcoDonut(ctx, cx, cy, rOut, rIn, a0, a1);
+            ctx.fillStyle = escurecerHex(cor, 0.12 + layer * 0.07);
+            ctx.fill();
+            ctx.restore();
+        });
+    }
+
+    ctx.shadowColor = "rgba(0,212,255,.22)";
+    ctx.shadowBlur = size * 0.04;
+    slices.forEach(({ a0, a1, cor }) => {
+        arcoDonut(ctx, cx, cy, rOut, rIn, a0, a1);
+        ctx.fillStyle = gradienteSegmento3D(ctx, cx, cy, cor, a0, a1, rIn, rOut);
+        ctx.fill();
+        ctx.strokeStyle = rgbaHex(cor, 0.45);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, cy, rOut - 1, a0 + 0.015, a1 - 0.015);
+        ctx.strokeStyle = rgbaHex("#ffffff", 0.4);
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+    });
+    ctx.shadowBlur = 0;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, rIn - 1.5, 0, Math.PI * 2);
+    const hub = ctx.createRadialGradient(cx, cy - rIn * 0.35, 0, cx, cy, rIn);
+    hub.addColorStop(0, "#ffffff");
+    hub.addColorStop(0.65, "#eef6ff");
+    hub.addColorStop(1, "#c7ddff");
+    ctx.fillStyle = hub;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,212,255,.4)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
     ctx.fillStyle = CHART_THEME.navy;
-    ctx.font = `800 ${Math.max(14, size * 0.11)}px 'Segoe UI', system-ui, Arial, sans-serif`;
+    ctx.font = `800 ${Math.max(15, size * 0.12)}px 'Segoe UI', system-ui, Arial, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    ctx.shadowColor = "rgba(0,212,255,.35)";
+    ctx.shadowBlur = 8;
     ctx.fillText(formatInt(total), cx, cy - size * 0.02);
+    ctx.shadowBlur = 0;
     ctx.fillStyle = CHART_THEME.muted;
-    ctx.font = `600 ${Math.max(9, size * 0.055)}px 'Segoe UI', system-ui, Arial, sans-serif`;
-    ctx.fillText("autuações", cx, cy + size * 0.09);
+    ctx.font = `600 ${Math.max(9, size * 0.052)}px 'Segoe UI', system-ui, Arial, sans-serif`;
+    ctx.fillText("autuações", cx, cy + size * 0.085);
+    ctx.restore();
 
     byId("legend").innerHTML = items.slice(0, 10).map(([name, val], i) => {
         const pct = ((val / total) * 100);
