@@ -1,4 +1,4 @@
-name: Atualizar folha de serviço JSON
+name: Atualizar snapshots JSON do portal
 
 on:
   schedule:
@@ -28,8 +28,17 @@ jobs:
           PORTAL_ROOT: ${{ github.workspace }}
         run: node scripts/atualizar-folha-servico-json.mjs
 
+      - name: Gerar JSON (pontualidade, autuações, liberação)
+        env:
+          PORTAL_ROOT: ${{ github.workspace }}
+        run: node scripts/atualizar-portais-json.mjs
+
       - name: Publicar dados atualizados
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Atualiza snapshots JSON da folha de serviço"
-          file_pattern: assets/data/folha-servico/*.json
+          commit_message: "Atualiza snapshots JSON do portal"
+          file_pattern: |
+            assets/data/folha-servico/*.json
+            assets/data/pontualidade/*.json
+            assets/data/autuacoes/*.json
+            assets/data/liberacao/*.json

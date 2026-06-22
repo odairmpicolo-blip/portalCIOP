@@ -210,6 +210,10 @@ const TOLERANCIA_MIN = 5;
 const CAMPOS_HORA = new Set(["horario_saida_da_garagem","horario_de_inicio","saida_real","inicio_real"]);
 const DIAS_JANELA = 7;
 const CACHE_STORAGE_KEY = "portal_liberacao_lancamento_v1";
+const LIBERACAO_DATA_BASE = "../assets/data/liberacao";
+const LIBERACAO_MANIFEST_URL = LIBERACAO_DATA_BASE + "/manifest.json";
+const LIBERACAO_ACOMPANHAMENTO_URL = LIBERACAO_DATA_BASE + "/acompanhamento-semana.json";
+let liberacaoManifest = null;
 const state = {
     colunas: COLUNAS_EXIBICAO,
     semana: [],
@@ -656,6 +660,31 @@ function aplicarFiltroData(data,origem){
     setStatus(formatNumber(state.dados.length)+" registro(s) · "+brDate(data)+" · "+origem+" · "+agora,"ok");
 }
 
+async function carregarManifestLiberacao(){
+    try{
+        const res=await fetch(LIBERACAO_MANIFEST_URL,{cache:"no-store"});
+        if(!res.ok) return null;
+        return await res.json();
+    }catch(_){
+        return null;
+    }
+}
+
+async function carregarSnapshotAcompanhamento(dataDe,hoje){
+    if(!liberacaoManifest) liberacaoManifest=await carregarManifestLiberacao();
+    const meta=liberacaoManifest?.acompanhamento;
+    if(!meta||meta.data_de!==dataDe||meta.data_ate!==hoje) return null;
+    try{
+        const res=await fetch(LIBERACAO_ACOMPANHAMENTO_URL,{cache:"no-store"});
+        if(!res.ok) return null;
+        const payload=await res.json();
+        if(!Array.isArray(payload.dados)||!payload.dados.length) return null;
+        return payload;
+    }catch(_){
+        return null;
+    }
+}
+
 async function carregar(forceRefresh=false){
     const data=$("dataFiltro").value;
     if(!data){setStatus("Informe a data.","erro");return;}
@@ -671,8 +700,18 @@ async function carregar(forceRefresh=false){
     const cache=!forceRefresh?lerCacheLiberacao():null;
     const cacheValido=cache&&cache.data_ate===hoje&&cache.data_de===dataDe&&cache.dados?.length;
     let mostrouCache=false;
+    let mostrouSnapshot=false;
 
-    if(cacheValido){
+    const snapshot=await carregarSnapshotAcompanhamento(dataDe,hoje);
+    if(snapshot){
+        aplicarSemanaCarregada(snapshot.dados.map(r=>capturarValoresIniciais(Object.assign({},r))),dataDe,hoje);
+        if(dataDentroDaJanela(data,dataDe,hoje)){
+            aplicarFiltroData(data,"arquivo JSON");
+            mostrouSnapshot=true;
+        }
+    }
+
+    if(cacheValido&&!mostrouSnapshot){
         aplicarSemanaCarregada(cache.dados.map(r=>capturarValoresIniciais(Object.assign({},r))),dataDe,hoje);
         if(dataDentroDaJanela(data,dataDe,hoje)){
             aplicarFiltroData(data,"cache local");
@@ -680,7 +719,7 @@ async function carregar(forceRefresh=false){
         }
     }
 
-    if(!mostrouCache){
+    if(!mostrouCache&&!mostrouSnapshot){
         setStatus("Carregando planilha...","load");
         window.portalMostrarCarregando?.("Carregando liberação");
     }
@@ -690,7 +729,7 @@ async function carregar(forceRefresh=false){
         const dados=(res.dados||[]).map(r=>capturarValoresIniciais(Object.assign({},r)));
         aplicarSemanaCarregada(dados,dataDe,hoje);
         salvarCacheLiberacao(dados,{data_de:dataDe,data_ate:hoje});
-        const origem=(res.meta&&res.meta.cache?"servidor (cache)":"planilha")+(mostrouCache?" · atualizado":"");
+        const origem=(res.meta&&res.meta.cache?"servidor (cache)":"planilha")+((mostrouCache||mostrouSnapshot)?" · atualizado":"");
         aplicarFiltroData(data,origem);
     } finally {
         window.portalOcultarCarregando?.();

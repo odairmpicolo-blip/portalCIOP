@@ -139,6 +139,9 @@
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
+const LIBERACAO_DATA_BASE = "../assets/data/liberacao";
+const LIBERACAO_MANIFEST_URL = LIBERACAO_DATA_BASE + "/manifest.json";
+let liberacaoManifest = null;
 
 const SECOES = [
     {
@@ -404,6 +407,40 @@ function renderGraficos(){
     $("pageEmpty").hidden = algumDado || state.totalLinhas > 0;
 }
 
+async function carregarManifestLiberacao() {
+    try {
+        const res = await fetch(LIBERACAO_MANIFEST_URL, { cache: "no-store" });
+        if (!res.ok) return null;
+        return await res.json();
+    } catch (_) {
+        return null;
+    }
+}
+
+function resolverSnapshotGraficos(dataDe, dataAte) {
+    const presets = liberacaoManifest?.graficos || {};
+    for (const preset of Object.values(presets)) {
+        if (preset?.data_de === dataDe && preset?.data_ate === dataAte && preset?.arquivo) {
+            return LIBERACAO_DATA_BASE + "/" + preset.arquivo;
+        }
+    }
+    return null;
+}
+
+async function carregarSnapshotGraficos(dataDe, dataAte) {
+    const url = resolverSnapshotGraficos(dataDe, dataAte);
+    if (!url) return null;
+    try {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) return null;
+        const payload = await res.json();
+        if (!payload?.categorias) return null;
+        return payload;
+    } catch (_) {
+        return null;
+    }
+}
+
 async function carregar(){
     const dataDe = $("dataDe").value;
     const dataAte = $("dataAte").value;
@@ -419,7 +456,23 @@ async function carregar(){
 
     const cacheLocal = lerCacheDashboardLiberacao(chave);
     let mostrouCache = false;
-    if (cacheLocal) {
+    let mostrouSnapshot = false;
+
+    if (!liberacaoManifest) liberacaoManifest = await carregarManifestLiberacao();
+    const snapshot = await carregarSnapshotGraficos(dataDe, dataAte);
+    if (snapshot) {
+        state.mapaGraficos = snapshot.categorias || {};
+        state.totalLinhas = snapshot.total_linhas || 0;
+        state.cacheChave = chave;
+        renderGraficos();
+        const extra = liberacaoManifest?.atualizadoEm
+            ? " · snapshot: " + new Date(liberacaoManifest.atualizadoEm).toLocaleString("pt-BR")
+            : "";
+        setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · arquivo JSON" + extra, "ok");
+        mostrouSnapshot = true;
+    }
+
+    if (cacheLocal && !mostrouSnapshot) {
         state.mapaGraficos = cacheLocal.mapaGraficos || {};
         state.totalLinhas = cacheLocal.totalLinhas || 0;
         state.cacheChave = chave;
@@ -428,7 +481,7 @@ async function carregar(){
         mostrouCache = true;
     }
 
-    if (!mostrouCache) {
+    if (!mostrouCache && !mostrouSnapshot) {
         setStatus("Carregando planilha...","load");
         window.portalMostrarCarregando?.("Carregando liberação");
     }
@@ -445,7 +498,7 @@ async function carregar(){
         salvarCacheDashboardLiberacao(chave, state.mapaGraficos, state.totalLinhas);
         renderGraficos();
         const cacheTxt = res.meta && res.meta.cache ? " · cache servidor" : "";
-        const origem = mostrouCache ? " · atualizado" : "";
+        const origem = (mostrouCache || mostrouSnapshot) ? " · atualizado" : "";
         setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + cacheTxt + origem, "ok");
     } finally {
         window.portalOcultarCarregando?.();
