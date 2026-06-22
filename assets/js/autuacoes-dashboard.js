@@ -9,7 +9,6 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 let DATA = [];
 let periodChart = null;
 let agentChart = null;
-let motivosChart = null;
 let sortState = { key: "data_iso", dir: "desc" };
 
 const COLORS = ["#00d4ff", "#1359c7", "#ff6b00", "#7045b8", "#28a64a", "#f6bf26", "#00a6a6", "#de1b1b", "#9b59b6", "#16a085", "#e67e22", "#4d7cff"];
@@ -159,121 +158,29 @@ function truncarTexto(ctx, texto, maxWidth) {
     return `${curto}…`;
 }
 
-function quebrarTextoEmLinhas(ctx, texto, maxWidth, maxLinhas = 3) {
-    const palavras = String(texto || "").trim().split(/\s+/).filter(Boolean);
-    if (!palavras.length) return [];
-    const linhas = [];
-    let atual = "";
-    for (const palavra of palavras) {
-        const tentativa = atual ? `${atual} ${palavra}` : palavra;
-        if (ctx.measureText(tentativa).width <= maxWidth) {
-            atual = tentativa;
-            continue;
-        }
-        if (atual) linhas.push(atual);
-        atual = palavra;
-        if (linhas.length >= maxLinhas - 1) break;
-    }
-    if (atual) {
-        if (linhas.length >= maxLinhas) {
-            linhas[maxLinhas - 1] = truncarTexto(ctx, `${linhas[maxLinhas - 1]} ${atual}`, maxWidth);
-        } else {
-            linhas.push(atual);
-        }
-    }
-    return linhas.slice(0, maxLinhas);
-}
-
-const pluginNomeAgenteAcimaColuna = {
-    id: "nomeAgenteAcimaColuna",
+const pluginNomeAgenteNaBarra = {
+    id: "nomeAgenteNaBarra",
     afterDatasetsDraw(chart) {
-        if (chart.config.options.indexAxis === "y") return;
         const meta = chart.getDatasetMeta(0);
         if (!meta?.data?.length) return;
         const { ctx, data } = chart;
         ctx.save();
-        ctx.font = "700 9px 'Segoe UI', system-ui, Arial, sans-serif";
-        ctx.fillStyle = CHART_THEME.navy;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "bottom";
-        meta.data.forEach((bar, i) => {
-            const nome = String(data.labels[i] || "").trim();
-            if (!nome) return;
-            const barTop = Math.min(bar.y, bar.base);
-            const maxW = Math.max((bar.width || 28) - 4, 36);
-            const linhas = quebrarTextoEmLinhas(ctx, nome, maxW, 3);
-            const lineH = 11;
-            let y = barTop - 8;
-            for (let li = linhas.length - 1; li >= 0; li--) {
-                ctx.fillText(linhas[li], bar.x, y);
-                y -= lineH;
-            }
-        });
-        ctx.restore();
-    }
-};
-
-const pluginMotivosNeon = {
-    id: "motivosNeon",
-    beforeDraw(chart) {
-        const { ctx, chartArea } = chart;
-        if (!chartArea) return;
-        const cx = (chartArea.left + chartArea.right) / 2;
-        const cy = (chartArea.top + chartArea.bottom) / 2;
-        const r = Math.min(chartArea.width, chartArea.height) / 2;
-        ctx.save();
-        const aura = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r * 1.08);
-        aura.addColorStop(0, "rgba(0,212,255,.16)");
-        aura.addColorStop(0.5, "rgba(19,89,199,.07)");
-        aura.addColorStop(1, "transparent");
-        ctx.fillStyle = aura;
-        ctx.beginPath();
-        ctx.arc(cx, cy, r * 1.04, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "rgba(0,212,255,.22)";
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([4, 6]);
-        ctx.beginPath();
-        ctx.arc(cx, cy, r * 0.78, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.restore();
-    }
-};
-
-const pluginMotivosCentro = {
-    id: "motivosCentro",
-    afterDraw(chart) {
-        const cfg = chart.config.options.plugins?.motivosCentro;
-        if (!cfg) return;
-        const { ctx, chartArea } = chart;
-        if (!chartArea) return;
-        const cx = (chartArea.left + chartArea.right) / 2;
-        const cy = (chartArea.top + chartArea.bottom) / 2;
-        const rHub = Math.min(chartArea.width, chartArea.height) * 0.17;
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(cx, cy, rHub, 0, Math.PI * 2);
-        const hub = ctx.createRadialGradient(cx, cy - rHub * 0.35, 0, cx, cy, rHub);
-        hub.addColorStop(0, "#ffffff");
-        hub.addColorStop(0.55, "#f0f7ff");
-        hub.addColorStop(1, "#c7ddff");
-        ctx.fillStyle = hub;
-        ctx.fill();
-        ctx.strokeStyle = "rgba(0,212,255,.4)";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.fillStyle = CHART_THEME.navy;
-        ctx.font = `800 ${Math.max(16, rHub * 0.95)}px 'Segoe UI', system-ui, Arial, sans-serif`;
-        ctx.textAlign = "center";
+        ctx.font = "700 10px 'Segoe UI', system-ui, Arial, sans-serif";
         ctx.textBaseline = "middle";
-        ctx.shadowColor = "rgba(0,212,255,.35)";
-        ctx.shadowBlur = 10;
-        ctx.fillText(formatInt(cfg.total || 0), cx, cy - 3);
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = CHART_THEME.muted;
-        ctx.font = "600 10px 'Segoe UI', system-ui, Arial, sans-serif";
-        ctx.fillText("autuações", cx, cy + rHub * 0.42);
+        meta.data.forEach((bar, i) => {
+            const label = String(data.labels[i] || "");
+            if (!label) return;
+            const barLeft = Math.min(bar.x, bar.base);
+            const barRight = Math.max(bar.x, bar.base);
+            const barWidth = Math.max(barRight - barLeft, 0);
+            const pad = 10;
+            const texto = truncarTexto(ctx, label, Math.max(barWidth - pad * 2 - 28, 0));
+            ctx.textAlign = "left";
+            ctx.shadowColor = "rgba(7,31,87,.45)";
+            ctx.shadowBlur = 4;
+            ctx.fillStyle = "#fff";
+            ctx.fillText(texto, barLeft + pad, bar.y);
+        });
         ctx.restore();
     }
 };
@@ -610,6 +517,11 @@ function clarearHex(hex, fator = 0.22) {
     return `rgb(${Math.min(255, Math.round(c.r + (255 - c.r) * fator))},${Math.min(255, Math.round(c.g + (255 - c.g) * fator))},${Math.min(255, Math.round(c.b + (255 - c.b) * fator))})`;
 }
 
+function nomeAgenteCurto(nome) {
+    const partes = String(nome || "").trim().split(/\s+/).filter(Boolean);
+    if (partes.length <= 2) return partes.join(" ");
+    return `${partes[0]} ${partes[partes.length - 1]}`;
+}
 
 function atualizarRotulosAno(dados, cfg) {
     const el = byId("periodChartYears");
@@ -718,8 +630,9 @@ function desenharGraficoAgentes(rows) {
 
     empty.hidden = true;
     canvas.style.display = "block";
-    const labels = agentes.map(([nome]) => String(nome || "").trim());
+    const labels = agentes.map(([nome]) => nomeAgenteCurto(nome));
     const valores = agentes.map(([, qtd]) => qtd);
+    const totalAgentes = labels.length;
 
     if (agentChart) agentChart.destroy();
     agentChart = new Chart(canvas.getContext("2d"), {
@@ -729,158 +642,225 @@ function desenharGraficoAgentes(rows) {
             datasets: [{
                 label: "Autuações",
                 data: valores,
-                backgroundColor(ctx) { return gradienteNeonVertical(ctx.chart, CHART_THEME.cyan, CHART_THEME.blue); },
-                borderRadius: { topLeft: 10, topRight: 10, bottomLeft: 4, bottomRight: 4 },
+                backgroundColor(ctx) { return gradienteNeonHorizontal(ctx.chart, ctx.dataIndex, totalAgentes); },
+                borderRadius: { topRight: 10, bottomRight: 10, topLeft: 4, bottomLeft: 4 },
                 borderSkipped: false,
-                maxBarThickness: 52
+                barThickness: 20
             }]
         },
         options: {
+            indexAxis: "y",
             responsive: true,
             maintainAspectRatio: false,
             animation: ANIMACAO_FUTURO,
-            layout: { padding: { top: 58, right: 10, left: 6, bottom: 4 } },
+            layout: { padding: { top: 4, right: 48, left: 4, bottom: 4 } },
             plugins: {
                 legend: { display: false },
                 tooltip: {
                     ...TOOLTIP_FUTURO,
                     callbacks: {
-                        title(items) { return labels[items[0]?.dataIndex] || ""; },
+                        title(items) { return agentes[items[0].dataIndex]?.[0] || ""; },
                         label(ctx) { return `${formatInt(ctx.raw)} autuação(ões)`; }
                     }
                 },
                 datalabels: {
                     anchor: "end",
-                    align: "top",
-                    offset: 2,
+                    align: "end",
+                    offset: 6,
                     color: CHART_THEME.navy,
-                    backgroundColor: "rgba(255,255,255,.9)",
+                    backgroundColor: "rgba(255,255,255,.88)",
                     borderRadius: 6,
-                    padding: { top: 2, bottom: 2, left: 5, right: 5 },
+                    padding: { top: 3, bottom: 3, left: 6, right: 6 },
                     font: fonteGrafico("800", 10),
                     formatter(value) { return formatInt(value); }
                 }
             },
             scales: {
                 x: {
+                    ...escalaLinearFuturo("x"),
+                    ticks: { ...escalaLinearFuturo("x").ticks, stepSize: 1 }
+                },
+                y: {
+                    ...escalaLinearFuturo("y"),
                     grid: { display: false },
-                    border: { display: false },
                     ticks: { display: false }
-                },
-                y: escalaLinearFuturo("y")
-            }
-        },
-        plugins: [...pluginsChartJs(), pluginNomeAgenteAcimaColuna]
-    });
-}
-
-let motivosResizeObserver = null;
-
-function renderLegendaMotivosModerna(items, total) {
-    const el = byId("legend");
-    if (!el) return;
-    if (!total || !items.length) {
-        el.innerHTML = "";
-        return;
-    }
-    el.innerHTML = items.slice(0, 8).map(([name, val], i) => {
-        const pct = (val / total) * 100;
-        const cor = COLORS[i % COLORS.length];
-        return `<div class="motivo-card" style="--accent:${cor}">
-            <div class="motivo-card-top">
-                <span class="motivo-swatch" style="background:${cor};box-shadow:0 0 10px ${rgbaHex(cor, 0.55)}"></span>
-                <span class="motivo-name">${escapeHtml(name)}</span>
-                <span class="motivo-pct">${pct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</span>
-            </div>
-            <div class="motivo-track"><span style="width:${pct.toFixed(1)}%;background:linear-gradient(90deg,${rgbaHex(cor, 0.35)},${cor})"></span></div>
-            <span class="motivo-qtd">${formatInt(val)} autuação(ões)</span>
-        </div>`;
-    }).join("");
-}
-
-function desenharGraficoMotivos(items, total) {
-    const canvas = byId("pieChart");
-    if (!canvas || typeof Chart === "undefined") return;
-    configurarChartDefaults();
-
-    if (!total || !items.length) {
-        if (motivosChart) { motivosChart.destroy(); motivosChart = null; }
-        renderLegendaMotivosModerna([], 0);
-        return;
-    }
-
-    const top = items.slice(0, 8);
-    const labels = top.map(([n]) => n);
-    const valores = top.map(([, v]) => v);
-
-    if (motivosChart) motivosChart.destroy();
-    motivosChart = new Chart(canvas.getContext("2d"), {
-        type: "doughnut",
-        data: {
-            labels,
-            datasets: [{
-                data: valores,
-                borderWidth: 3,
-                borderColor: "rgba(255,255,255,.96)",
-                borderRadius: 10,
-                spacing: 4,
-                hoverOffset: 10,
-                backgroundColor(ctx) {
-                    const i = ctx.dataIndex;
-                    const cor = COLORS[i % COLORS.length];
-                    const { chart } = ctx;
-                    const { chartArea } = chart;
-                    if (!chartArea) return cor;
-                    const cx = (chartArea.left + chartArea.right) / 2;
-                    const cy = (chartArea.top + chartArea.bottom) / 2;
-                    const r = Math.min(chartArea.width, chartArea.height) / 2;
-                    const g = chart.ctx.createRadialGradient(cx, cy, r * 0.15, cx, cy, r);
-                    g.addColorStop(0, clarearHex(cor, 0.38));
-                    g.addColorStop(0.55, cor);
-                    g.addColorStop(1, escurecerHex(cor, 0.28));
-                    return g;
                 }
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: "70%",
-            animation: ANIMACAO_FUTURO,
-            layout: { padding: 6 },
-            plugins: {
-                legend: { display: false },
-                motivosCentro: { total },
-                tooltip: {
-                    ...TOOLTIP_FUTURO,
-                    callbacks: {
-                        label(ctx) {
-                            const pct = ((ctx.raw / total) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-                            return ` ${formatInt(ctx.raw)} (${pct}%)`;
-                        }
-                    }
-                },
-                datalabels: { display: false }
             }
         },
-        plugins: [pluginMotivosNeon, pluginMotivosCentro]
+        plugins: [...pluginsChartJs(), pluginNomeAgenteNaBarra]
     });
-
-    renderLegendaMotivosModerna(top, total);
 }
 
-function observarResizeMotivos() {
+let pieResizeObserver = null;
+const PIE_TILT = 0.62;
+
+function prepararCanvasPie(canvas) {
+    const wrap = canvas?.parentElement;
+    const max = 172;
+    const wrapW = wrap ? wrap.clientWidth : max;
+    const size = Math.min(Math.max(Math.floor(wrapW) || max, 108), max);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(size * dpr);
+    canvas.height = Math.round(size * dpr);
+    canvas.style.width = `${size}px`;
+    canvas.style.height = `${size}px`;
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, size };
+}
+
+function observarResizePie() {
     const wrap = byId("pieChart")?.parentElement;
-    if (!wrap || motivosResizeObserver || typeof ResizeObserver === "undefined") return;
+    if (!wrap || pieResizeObserver || typeof ResizeObserver === "undefined") return;
     let timer = null;
-    motivosResizeObserver = new ResizeObserver(() => {
+    pieResizeObserver = new ResizeObserver(() => {
         window.clearTimeout(timer);
         timer = window.setTimeout(() => {
             const rows = getFiltered();
-            desenharGraficoMotivos(groupSum(rows, "motivo"), rows.length);
+            drawPie(groupSum(rows, "motivo"), rows.length);
         }, 120);
     });
-    motivosResizeObserver.observe(wrap);
+    pieResizeObserver.observe(wrap);
+}
+
+function arcoDonut(ctx, cx, cy, rOut, rIn, a0, a1) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, rOut, a0, a1);
+    ctx.arc(cx, cy, rIn, a1, a0, true);
+    ctx.closePath();
+}
+
+function gradienteSegmento3D(ctx, cx, cy, cor, a0, a1, rIn, rOut) {
+    const mid = (a0 + a1) / 2;
+    const gx = cx + Math.cos(mid) * rOut * 0.75;
+    const gy = cy + Math.sin(mid) * rOut * 0.75;
+    const g = ctx.createRadialGradient(gx, gy, rIn * 0.4, cx, cy, rOut);
+    g.addColorStop(0, clarearHex(cor, 0.28));
+    g.addColorStop(0.5, cor);
+    g.addColorStop(1, escurecerHex(cor, 0.32));
+    return g;
+}
+
+function drawPie(items, total) {
+    const canvas = byId("pieChart");
+    if (!canvas) return;
+    const { ctx, size } = prepararCanvasPie(canvas);
+    const cx = size / 2;
+    const cy = size / 2 - size * 0.02;
+    const tilt = PIE_TILT;
+    const depth = size * 0.065;
+    const rOut = size * 0.36;
+    const rIn = size * 0.22;
+    const gap = 0.038;
+    ctx.clearRect(0, 0, size, size);
+
+    if (!total) {
+        ctx.fillStyle = CHART_THEME.muted;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = `700 ${Math.max(12, size * 0.08)}px 'Segoe UI', system-ui, Arial, sans-serif`;
+        ctx.fillText("Sem dados", cx, cy);
+        byId("legend").innerHTML = "";
+        return;
+    }
+
+    ctx.save();
+    const aura = ctx.createRadialGradient(cx, cy - size * 0.04, 0, cx, cy, rOut * 1.35);
+    aura.addColorStop(0, "rgba(0,212,255,.12)");
+    aura.addColorStop(0.55, "rgba(19,89,199,.06)");
+    aura.addColorStop(1, "transparent");
+    ctx.fillStyle = aura;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + depth, rOut * 1.1, rOut * 1.1 * tilt, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    let start = -Math.PI / 2;
+    const slices = items.map(([name, val], i) => {
+        const ang = (val / total) * Math.PI * 2;
+        const slice = {
+            name,
+            val,
+            a0: start + gap,
+            a1: start + ang - gap,
+            ang,
+            cor: COLORS[i % COLORS.length]
+        };
+        start += ang;
+        return slice;
+    }).filter((s) => s.a1 > s.a0);
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(1, tilt);
+    ctx.translate(-cx, -cy);
+
+    for (let layer = 5; layer >= 1; layer--) {
+        const ly = (depth * layer) / tilt / 5;
+        slices.forEach(({ a0, a1, cor }) => {
+            ctx.save();
+            ctx.translate(0, ly);
+            arcoDonut(ctx, cx, cy, rOut, rIn, a0, a1);
+            ctx.fillStyle = escurecerHex(cor, 0.12 + layer * 0.07);
+            ctx.fill();
+            ctx.restore();
+        });
+    }
+
+    ctx.shadowColor = "rgba(0,212,255,.22)";
+    ctx.shadowBlur = size * 0.04;
+    slices.forEach(({ a0, a1, cor }) => {
+        arcoDonut(ctx, cx, cy, rOut, rIn, a0, a1);
+        ctx.fillStyle = gradienteSegmento3D(ctx, cx, cy, cor, a0, a1, rIn, rOut);
+        ctx.fill();
+        ctx.strokeStyle = rgbaHex(cor, 0.45);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, cy, rOut - 1, a0 + 0.015, a1 - 0.015);
+        ctx.strokeStyle = rgbaHex("#ffffff", 0.4);
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+    });
+    ctx.shadowBlur = 0;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, rIn - 1.5, 0, Math.PI * 2);
+    const hub = ctx.createRadialGradient(cx, cy - rIn * 0.35, 0, cx, cy, rIn);
+    hub.addColorStop(0, "#ffffff");
+    hub.addColorStop(0.65, "#eef6ff");
+    hub.addColorStop(1, "#c7ddff");
+    ctx.fillStyle = hub;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,212,255,.4)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle = CHART_THEME.navy;
+    ctx.font = `800 ${Math.max(15, size * 0.12)}px 'Segoe UI', system-ui, Arial, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.shadowColor = "rgba(0,212,255,.35)";
+    ctx.shadowBlur = 8;
+    ctx.fillText(formatInt(total), cx, cy - size * 0.02);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = CHART_THEME.muted;
+    ctx.font = `600 ${Math.max(9, size * 0.052)}px 'Segoe UI', system-ui, Arial, sans-serif`;
+    ctx.fillText("autuações", cx, cy + size * 0.085);
+    ctx.restore();
+
+    byId("legend").innerHTML = items.slice(0, 10).map(([name, val], i) => {
+        const pct = ((val / total) * 100);
+        const cor = COLORS[i % COLORS.length];
+        return `<div class="legend-row">
+            <span class="dot" style="background:${cor};box-shadow:0 0 8px ${rgbaHex(cor, 0.55)}"></span>
+            <span class="legend-name">${escapeHtml(name)}</span>
+            <span class="legend-bar-wrap"><span class="legend-bar" style="width:${pct.toFixed(1)}%;background:linear-gradient(90deg,${cor},${rgbaHex(cor, 0.45)})"></span></span>
+            <b>${pct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</b>
+        </div>`;
+    }).join("");
 }
 
 function sortIcon(key) {
@@ -982,7 +962,7 @@ function render() {
     byId("totalGastoReais").textContent = formatMoeda(totalReais);
 
     renderTable(rows);
-    desenharGraficoMotivos(mot, total);
+    drawPie(mot, total);
     desenharGraficoAgentes(rows);
     desenharGraficoPeriodo(rows);
 }
@@ -996,7 +976,7 @@ function init() {
     if (dates.inicio) byId("dataInicio").value = dates.inicio;
     if (dates.fim) byId("dataFim").value = dates.fim;
     renderTableHead();
-    observarResizeMotivos();
+    observarResizePie();
     ["dataInicio", "dataFim", "motivoFilter", "agenteFilter", "busca"].forEach((id) => {
         byId(id).addEventListener("input", render);
     });
