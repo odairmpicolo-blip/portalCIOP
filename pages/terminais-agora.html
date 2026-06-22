@@ -336,17 +336,29 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
     margin-top:2px;
 }
 .terminal-kpi-registro{color:var(--muted);font-weight:700;font-size:12px}
-.terminal-kpi-person .terminal-phone-link{font-size:11px;font-weight:800}
+.terminal-kpi-person-phone{
+    font-size:14px;
+    font-weight:900;
+    line-height:1.25;
+}
+.terminal-kpi-person-phone .terminal-phone-link{
+    font-size:14px;
+    font-weight:900;
+    gap:6px;
+}
+.terminal-kpi-person-phone .terminal-phone-icon{
+    width:16px;
+    height:16px;
+}
+.terminal-kpi-person-phone .terminal-phone-icon svg{
+    width:11px;
+    height:11px;
+}
 .terminal-kpi-side{
     display:flex;
     flex-direction:column;
     align-items:flex-end;
     gap:4px;
-}
-.terminal-kpi-person-phone{
-    font-size:11px;
-    font-weight:800;
-    line-height:1.2;
 }
 .terminal-kpi-time{
     align-self:start;
@@ -1424,8 +1436,12 @@ function telefoneCabecalhoTerminal(terminal){
     return telefoneTerminalHtml(telefoneTerminal(terminal));
 }
 function tituloTerminal(terminal){
+    return '<div class="terminal-kpi-name">' + escapeHtml(displayTerminal(terminal)) + '</div>';
+}
+function cabecalhoTerminal(terminal, somenteReserva){
     const telefone = telefoneCabecalhoTerminal(terminal);
-    return '<div class="terminal-kpi-title-row"><div class="terminal-kpi-name">' + escapeHtml(displayTerminal(terminal)) + '</div>' +
+    const badge = '<span class="status-badge status-' + (somenteReserva ? 'reserve' : 'now') + '">' + (somenteReserva ? 'Mot. Reserva' : 'Agora') + '</span>';
+    return '<div class="terminal-kpi-head"><div class="terminal-kpi-title-row">' + tituloTerminal(terminal) + badge + '</div>' +
         (telefone ? '<div class="terminal-kpi-phone-inline">' + telefone + '</div>' : '') +
     '</div>';
 }
@@ -1489,7 +1505,7 @@ function renderTerminalKpis(now){
             ? " theme-viatura"
             : (somenteReserva ? " reserve" : (tema >= 1 && tema <= 8 ? " theme-" + tema : " theme-extra"));
         return '<div class="terminal-kpi-card' + temaClasse + '">' +
-            '<div class="terminal-kpi-head"><div>' + tituloTerminal(terminal) + '</div><span class="status-badge status-' + (somenteReserva ? 'reserve' : 'now') + '">' + (somenteReserva ? 'Mot. Reserva' : 'Agora') + '</span></div>' +
+            cabecalhoTerminal(terminal, somenteReserva) +
             pessoas.map(function(item){
                 if (item.reserva) {
                     return '<div class="terminal-kpi-person"><div><b>' + escapeHtml(item.nome) + '</b><small>Sem escala no horário</small></div>' + colunaHorarioTelefone(item, true) + '</div>';
