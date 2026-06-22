@@ -89,6 +89,14 @@ if "$NODE_BIN" "$PORTAL_ROOT/scripts/atualizar-incidentes-local.mjs" >> "$LOG_FI
   mark_success
   log "Atualização concluída com sucesso."
 else
-  log "ERRO: falha na atualização. Próxima tentativa na próxima execução agendada ou ao ligar o Mac."
-  exit 1
+  log "Primeira tentativa falhou. Nova tentativa em 120 segundos..."
+  sleep 120
+  if "$NODE_BIN" "$PORTAL_ROOT/scripts/atualizar-incidentes-local.mjs" >> "$LOG_FILE" 2>&1; then
+    publish_portal_prod
+    mark_success
+    log "Atualização concluída na segunda tentativa."
+  else
+    log "ERRO: falha na atualização após 2 tentativas. Próxima execução amanhã às 16:00 ou manual: bash \"$0\" manual"
+    exit 1
+  fi
 fi

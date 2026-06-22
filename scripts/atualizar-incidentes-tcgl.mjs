@@ -8,6 +8,7 @@ const partialFile = path.join(outputDir, 'incidentes-tcgl.partial.json');
 const cookieFile = '/tmp/incidentes-cookie.txt';
 const baseUrl = 'https://cioplondrina.com.br/CADIncidentManagement';
 const loginUrl = `${baseUrl}/?ReturnUrl=%2fCADIncidentManagement%2fg%2f6ac2842af62b497aa5b0e515ef4b2ce9`;
+const browserUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 const usuario = process.env.CIOP_INCIDENTES_USUARIO;
 const senha = process.env.CIOP_INCIDENTES_SENHA;
 let endpoint = '';
@@ -60,8 +61,20 @@ function guidFrom(html) {
     || '';
 }
 
+function applyBrowserHeaders(headers) {
+  if (!headers.has('User-Agent')) headers.set('User-Agent', browserUserAgent);
+  if (!headers.has('Accept')) headers.set('Accept', 'text/html,application/json,*/*;q=0.8');
+  if (!headers.has('Accept-Language')) headers.set('Accept-Language', 'pt-BR,pt;q=0.9');
+}
+
+function copyJar(from, to) {
+  to.clear();
+  for (const [name, value] of from.entries()) to.set(name, value);
+}
+
 async function request(jar, url, options = {}) {
   const headers = new Headers(options.headers || {});
+  applyBrowserHeaders(headers);
   if (jar.size) headers.set('Cookie', cookieHeader(jar));
   const response = await fetchWithRetry(url, { ...options, headers, redirect: 'manual' });
   storeCookies(jar, response);
@@ -95,6 +108,68 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function absoluteUrl(location) {
+  if (!location) return '';
+  if (location.startsWith('http')) return location;
+  if (location.startsWith('/')) return `https://cioplondrina.com.br${location}`;
+  return `${baseUrl}/${location}`;
+}
+
+function apiHeaders(jar, refererUrl) {
+  return {
+    Cookie: cookieHeader(jar),
+    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+    'X-Requested-With': 'XMLHttpRequest',
+    Referer: refererUrl,
+    Origin: 'https://cioplondrina.com.br',
+    Accept: 'application/json, text/javascript, */*; q=0.01',
+    'User-Agent': browserUserAgent,
+    'Accept-Language': 'pt-BR,pt;q=0.9',
+  };
+}
+
+async function followRedirects(jar, startUrl, referer = '', maxHops = 10) {
+  let url = startUrl;
+  let lastResponse = null;
+  let lastHtml = '';
+  for (let hop = 0; hop < maxHops; hop += 1) {
+    lastResponse = await request(jar, url, {
+      headers: referer ? { Referer: referer } : {},
+    });
+    if (lastResponse.status >= 300 && lastResponse.status < 400) {
+      const location = lastResponse.headers.get('location');
+      if (!location) break;
+      if (hop > 0 && /ReturnUrl=|%2fAccount%2fLogOn/i.test(location)) {
+        throw new Error('Login rejeitado — verifique CIOP_INCIDENTES_USUARIO e CIOP_INCIDENTES_SENHA em ~/.config/ciop-portal/incidentes.env');
+      }
+      referer = url;
+      url = absoluteUrl(location);
+      continue;
+    }
+    lastHtml = await lastResponse.text();
+    return { response: lastResponse, html: lastHtml, url };
+  }
+  if (lastResponse && !lastHtml) lastHtml = await lastResponse.text();
+  return { response: lastResponse, html: lastHtml, url };
+}
+
+async function verifySession(jar, activeGuid) {
+  const refererUrl = `${baseUrl}/g/${activeGuid}`;
+  const response = await fetchWithRetry(`${baseUrl}/g/${activeGuid}/Json/GetDataDictionary`, {
+    method: 'POST',
+    headers: apiHeaders(jar, refererUrl),
+    body: bodyFor(0, 1),
+  });
+  if (!response.ok) {
+    const preview = (await response.text()).slice(0, 120);
+    throw new Error(`API TCGL retornou HTTP ${response.status}${preview ? `: ${preview}` : ''}`);
+  }
+  const json = JSON.parse(await response.text());
+  if (!Array.isArray(json)) {
+    throw new Error('API TCGL retornou resposta inesperada após login.');
+  }
+}
+
 async function login() {
   const jar = new Map();
   const first = await request(jar, loginUrl);
@@ -109,16 +184,44 @@ async function login() {
   body.set('OnLoadActionsGuid', field(loginHtml, 'OnLoadActionsGuid'));
 
   const action = `${baseUrl}/g/${guid}/Account/LogOn`;
-  await request(jar, action, {
+  const logonResponse = await request(jar, action, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Referer: loginUrl,
+      Origin: 'https://cioplondrina.com.br',
+    },
     body,
   });
+  if (logonResponse.status >= 400) {
+    throw new Error(`Login falhou: HTTP ${logonResponse.status}`);
+  }
 
-  const main = await request(jar, `${baseUrl}/g/${guid}`);
-  const mainHtml = await main.text();
-  const activeGuid = guidFrom(mainHtml) || guid;
+  if (logonResponse.status === 200) {
+    const logonHtml = await logonResponse.clone().text();
+    if (/field-validation-error|validation-summary-errors/i.test(logonHtml)) {
+      const msg = logonHtml.match(/field-validation-error[^>]*>([^<]+)/i)?.[1]
+        ?.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+        ?.trim();
+      throw new Error(msg || 'Usuário ou senha incorretos no TCGL.');
+    }
+  }
+
+  let landing;
+  if (logonResponse.status >= 300 && logonResponse.status < 400) {
+    landing = await followRedirects(jar, absoluteUrl(logonResponse.headers.get('location')), action);
+  } else {
+    landing = await followRedirects(jar, `${baseUrl}/g/${guid}`, action);
+  }
+
+  const activeGuid = guidFrom(landing.html) || guidFrom(landing.url) || guid;
   endpoint = `${baseUrl}/g/${activeGuid}/Json/GetDataDictionary`;
+
+  try {
+    await verifySession(jar, activeGuid);
+  } catch (error) {
+    throw new Error(`${error.message} Confira usuário/senha em ~/.config/ciop-portal/incidentes.env e teste o login em https://cioplondrina.com.br/CADIncidentManagement/`);
+  }
 
   fs.writeFileSync(cookieFile, cookieHeader(jar));
   return jar;
@@ -168,19 +271,23 @@ function vehicleNumber(value) {
   return match ? match[1] : text;
 }
 
-async function loadChunk(jar, start, length) {
+async function loadChunk(jar, start, length, allowRelogin = true) {
+  const refererUrl = endpoint.replace(/\/Json\/GetDataDictionary$/, '');
   const response = await fetchWithRetry(endpoint, {
     method: 'POST',
-    headers: {
-      Cookie: cookieHeader(jar),
-      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      'X-Requested-With': 'XMLHttpRequest',
-    },
+    headers: apiHeaders(jar, refererUrl),
     body: bodyFor(start, length),
   });
 
+  if ((response.status === 401 || response.status === 403) && allowRelogin) {
+    console.log(`HTTP ${response.status} ao buscar lote ${start}. Refazendo login...`);
+    copyJar(await login(), jar);
+    return loadChunk(jar, start, length, false);
+  }
+
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status} ao buscar lote iniciado em ${start}`);
+    const preview = (await response.text()).slice(0, 180);
+    throw new Error(`HTTP ${response.status} ao buscar lote iniciado em ${start}${preview ? `: ${preview}` : ''}`);
   }
 
   const text = await response.text();
@@ -267,11 +374,7 @@ async function loadIncidentDetail(jar, incidentId) {
 
   const response = await fetchWithRetry(endpoint, {
     method: 'POST',
-    headers: {
-      Cookie: cookieHeader(jar),
-      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      'X-Requested-With': 'XMLHttpRequest',
-    },
+    headers: apiHeaders(jar, endpoint.replace(/\/Json\/GetDataDictionary$/, '')),
     body,
   });
   if (!response.ok) throw new Error(`HTTP ${response.status} no detalhe do incidente ${incidentId}`);
