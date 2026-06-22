@@ -116,6 +116,78 @@ h1{
     background:var(--azul-hover);
 }
 
+.toolbar-start{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex:0 0 auto;
+}
+
+.portal-visibilidade{
+    position:relative;
+}
+
+.portal-visibilidade summary{
+    list-style:none;
+    cursor:pointer;
+    border:1px solid #dbe4f0;
+    border-radius:8px;
+    background:#f8fbff;
+    color:var(--azul);
+    font-size:13px;
+    font-weight:700;
+    padding:10px 14px;
+    user-select:none;
+}
+
+.portal-visibilidade summary::-webkit-details-marker{
+    display:none;
+}
+
+.portal-visibilidade summary::after{
+    content:"▾";
+    margin-left:6px;
+    font-size:11px;
+}
+
+.portal-visibilidade[open] summary{
+    border-color:rgba(6,36,92,.22);
+    background:#eef4ff;
+}
+
+.portal-visibilidade-menu{
+    position:absolute;
+    top:calc(100% + 6px);
+    left:0;
+    z-index:30;
+    min-width:190px;
+    padding:10px;
+    border:1px solid #dbe4f0;
+    border-radius:8px;
+    background:#fff;
+    box-shadow:0 10px 24px rgba(6,36,92,.12);
+    display:grid;
+    gap:8px;
+}
+
+.portal-visibilidade-menu label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    font-weight:600;
+    color:#344054;
+    cursor:pointer;
+}
+
+.portal-visibilidade-menu input{
+    accent-color:var(--azul);
+}
+
+.card-section.portal-secao-oculta{
+    display:none;
+}
+
 /* MENU LATERAL */
 
 .sidebar{
@@ -1468,9 +1540,24 @@ h1 {
 
 <div class="toolbar">
     <div class="toolbar-inner">
-        <button class="menu-toggle" onclick="toggleMenu()">
-            ☰ Links Operação
-        </button>
+        <div class="toolbar-start">
+            <button class="menu-toggle" onclick="toggleMenu()">
+                ☰ Links Operação
+            </button>
+            <details class="portal-visibilidade" id="portalVisibilidade">
+                <summary>Seções</summary>
+                <div class="portal-visibilidade-menu">
+                    <label for="toggleSecaoOperacao">
+                        <input id="toggleSecaoOperacao" type="checkbox" checked>
+                        Operação
+                    </label>
+                    <label for="toggleSecaoDashboards">
+                        <input id="toggleSecaoDashboards" type="checkbox" checked>
+                        Dashboards
+                    </label>
+                </div>
+            </details>
+        </div>
         <section class="notice-board" aria-label="Quadro de avisos">
             <div class="notice-board-head">
                 <span class="notice-board-icon" aria-hidden="true">
@@ -1592,7 +1679,7 @@ h1 {
         <div id="senhaStatus" class="password-status"></div>
     </section>
 
-    <section class="card-section" aria-label="Operação">
+    <section id="secaoOperacao" class="card-section" aria-label="Operação">
         <h2 class="card-section-title">Operação</h2>
         <div class="grid">
 
@@ -1764,7 +1851,7 @@ h1 {
         </div>
     </section>
 
-    <section class="card-section" aria-label="Dashboards">
+    <section id="secaoDashboards" class="card-section" aria-label="Dashboards">
         <h2 class="card-section-title">Dashboards</h2>
         <div class="grid">
 
@@ -1852,6 +1939,67 @@ function toggleMenu(){
     document.getElementById("sidebar").classList.toggle("active");
     document.getElementById("overlay").classList.toggle("active");
 }
+
+const PORTAL_SECOES_STORAGE_KEY = "portal-secoes-visiveis";
+
+function chaveSecoesPortal() {
+    const email = String(window.portalUsuario?.email || "visitante").trim().toLowerCase();
+    return PORTAL_SECOES_STORAGE_KEY + ":" + (email || "visitante");
+}
+
+function lerPreferenciasSecoesPortal() {
+    try {
+        const salvo = JSON.parse(localStorage.getItem(chaveSecoesPortal()) || "{}");
+        return {
+            operacao: salvo.operacao !== false,
+            dashboards: salvo.dashboards !== false
+        };
+    } catch (_) {
+        return { operacao: true, dashboards: true };
+    }
+}
+
+function salvarPreferenciasSecoesPortal(preferencias) {
+    try {
+        localStorage.setItem(chaveSecoesPortal(), JSON.stringify(preferencias));
+    } catch (_) {}
+}
+
+function aplicarPreferenciasSecoesPortal(preferencias = lerPreferenciasSecoesPortal()) {
+    const secaoOperacao = document.getElementById("secaoOperacao");
+    const secaoDashboards = document.getElementById("secaoDashboards");
+    const toggleOperacao = document.getElementById("toggleSecaoOperacao");
+    const toggleDashboards = document.getElementById("toggleSecaoDashboards");
+
+    if (secaoOperacao) secaoOperacao.classList.toggle("portal-secao-oculta", !preferencias.operacao);
+    if (secaoDashboards) secaoDashboards.classList.toggle("portal-secao-oculta", !preferencias.dashboards);
+    if (toggleOperacao) toggleOperacao.checked = preferencias.operacao;
+    if (toggleDashboards) toggleDashboards.checked = preferencias.dashboards;
+}
+
+function inicializarVisibilidadeSecoesPortal() {
+    const toggleOperacao = document.getElementById("toggleSecaoOperacao");
+    const toggleDashboards = document.getElementById("toggleSecaoDashboards");
+    if (!toggleOperacao || !toggleDashboards) return;
+
+    aplicarPreferenciasSecoesPortal();
+
+    const atualizar = () => {
+        const preferencias = {
+            operacao: toggleOperacao.checked,
+            dashboards: toggleDashboards.checked
+        };
+        salvarPreferenciasSecoesPortal(preferencias);
+        aplicarPreferenciasSecoesPortal(preferencias);
+    };
+
+    toggleOperacao.addEventListener("change", atualizar);
+    toggleDashboards.addEventListener("change", atualizar);
+}
+
+document.addEventListener("DOMContentLoaded", inicializarVisibilidadeSecoesPortal);
+window.addEventListener("portal:usuario-validado", () => aplicarPreferenciasSecoesPortal());
+window.atualizarVisibilidadeSecoesPortal = aplicarPreferenciasSecoesPortal;
 </script>
 
 <script type="module" id="portalAvisosScript">
