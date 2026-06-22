@@ -957,14 +957,14 @@ function normalizarTerminal(texto){
         .trim();
 }
 const TERMINAIS_PADRAO = [
-    {ordem:1, nome:"Terminal Central Superior", aliases:["terminal central superior", "central superior"]},
-    {ordem:2, nome:"Terminal Central Inferior", aliases:["terminal central inferior", "central inferior"]},
-    {ordem:3, nome:"Terminal Vivi Xavier", aliases:["terminal vivi xavier", "vivi xavier"]},
-    {ordem:4, nome:"Estação Catuaí", aliases:["estacao catuai", "terminal shopping catuai", "shopping catuai", "terminal catuai"]},
-    {ordem:5, nome:"Terminal Ouro Verde", aliases:["terminal ouro verde", "ouro verde"]},
-    {ordem:6, nome:"Terminal Milton Gavetti", aliases:["terminal milton gavetti", "milton gavetti"]},
-    {ordem:7, nome:"Terminal Acapulco", aliases:["terminal acapulco", "acapulco"]},
-    {ordem:8, nome:"Terminal Oeste", aliases:["terminal oeste", "terminal regiao oeste", "regiao oeste", "oeste"]}
+    {ordem:1, nome:"Terminal Central Superior", telefone:"9 8817-3595", aliases:["terminal central superior", "central superior"]},
+    {ordem:2, nome:"Terminal Central Inferior", telefone:"9 8817-4766", aliases:["terminal central inferior", "central inferior"]},
+    {ordem:3, nome:"Terminal Vivi Xavier", telefone:"9 8819-6639", aliases:["terminal vivi xavier", "vivi xavier"]},
+    {ordem:4, nome:"Estação Catuaí", telefone:"9 9955-9341", aliases:["estacao catuai", "terminal shopping catuai", "shopping catuai", "terminal catuai"]},
+    {ordem:5, nome:"Terminal Ouro Verde", telefone:"9 8822-0705", aliases:["terminal ouro verde", "ouro verde"]},
+    {ordem:6, nome:"Terminal Milton Gavetti", telefone:"9 8819-1319", aliases:["terminal milton gavetti", "milton gavetti"]},
+    {ordem:7, nome:"Terminal Acapulco", telefone:"9 9182-5735", aliases:["terminal acapulco", "acapulco"]},
+    {ordem:8, nome:"Terminal Oeste", telefone:"9 9955-9369", aliases:["terminal oeste", "terminal regiao oeste", "regiao oeste", "oeste"]}
 ];
 function terminalPadraoInfo(terminal){
     const chave = normalizarTerminal(terminal);
@@ -1054,7 +1054,11 @@ function csvToObjects(text){
     });
     return rows.slice(1).map(function(values){
         const item = {};
-        headers.forEach(function(header, index){item[header] = values[index] || "";});
+        headers.forEach(function(header, index){
+            const value = values[index] || "";
+            item[header] = value;
+            item["COL" + (index + 1)] = value;
+        });
         return item;
     });
 }
@@ -1146,11 +1150,11 @@ function normalizarDados(rows){
     const mapaTerminalTelefone = new Map();
     const lista = rows.map(function(row){
         const clean = normalizarLinha(row);
-        const telefoneFuncionario = pegarColuna(clean, 3) || pegar(clean, CAMPOS.telefone);
-        const telefoneTerminalValor = pegarColuna(clean, 5);
+        const telefoneFuncionario = pegarColuna(clean, 3);
+        const telefoneTerminalValor = pegarColuna(clean, 6);
         const telefone = pareceTelefone(telefoneFuncionario) ? telefoneFuncionario : "";
         const telefoneTerminalLinha = pareceTelefone(telefoneTerminalValor) ? telefoneTerminalValor : "";
-        const terminal = pegar(clean, CAMPOS.terminal) || pegarColuna(clean, 4) || (/^terminal\b/i.test(telefoneFuncionario) ? telefoneFuncionario : "");
+        const terminal = pegar(clean, CAMPOS.terminal) || pegarColuna(clean, 5) || (/^terminal\b/i.test(telefoneFuncionario) ? telefoneFuncionario : "");
         const pessoa = {
             nome: pegar(clean, CAMPOS.nome) || pegarColuna(clean, 2),
             matricula: pegar(clean, CAMPOS.matricula) || pegarColuna(clean, 1),
@@ -1197,7 +1201,7 @@ function normalizarProgramacao(rows, dadosMapa){
             email: email || pessoaDados.email || "",
             cargo: pegar(clean, CAMPOS.cargo) || pessoaDados.cargo || "",
             equipe: pegar(clean, CAMPOS.equipe) || pessoaDados.equipe || "",
-            telefone: pegar(clean, CAMPOS.telefone) || pessoaDados.telefone || "",
+            telefone: pessoaDados.telefone || "",
             terminal: terminal || "Sem terminal",
             observacao: observacao,
             data: data,
@@ -1365,6 +1369,8 @@ function contatoPessoa(item){
 }
 function telefoneTerminal(terminal){
     if (!terminal) return "";
+    const info = terminalPadraoInfo(terminal);
+    if (info && info.telefone && pareceTelefone(info.telefone)) return info.telefone;
     const chave = chaveTerminalComparacao(terminal);
     const doMapa = MAP_TERMINAL_TELEFONE.get(chave);
     if (doMapa && pareceTelefone(doMapa)) return doMapa;
@@ -1374,7 +1380,15 @@ function telefoneTerminal(terminal){
     return item && pareceTelefone(item.telefoneTerminal) ? item.telefoneTerminal : "";
 }
 function telefoneFuncionario(item){
-    const telefone = contatoPessoa(item);
+    let telefone = contatoPessoa(item);
+    if (!telefone || !pareceTelefone(telefone)) {
+        const registro = DADOS.find(function(pessoa){
+            return item.matricula && normalizarTexto(pessoa.matricula) === normalizarTexto(item.matricula);
+        }) || DADOS.find(function(pessoa){
+            return item.nome && normalizarTexto(pessoa.nome) === normalizarTexto(item.nome);
+        });
+        if (registro && pareceTelefone(registro.telefone)) telefone = registro.telefone;
+    }
     return telefone && pareceTelefone(telefone) ? telefone : "";
 }
 function whatsappHref(telefone){
