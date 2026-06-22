@@ -205,7 +205,7 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
 .section-title.compact{margin-bottom:8px}
 .terminal-kpis{
     display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns:repeat(3, minmax(0, 1fr));
     gap:10px;
 }
 .terminal-kpi-card{
@@ -303,6 +303,15 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
 }
 .terminal-kpi-person b{color:var(--text)}
 .terminal-kpi-person small{display:block;color:var(--muted);font-weight:700;margin-top:2px}
+.terminal-kpi-meta{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:4px 10px;
+    margin-top:2px;
+}
+.terminal-kpi-registro{color:var(--muted);font-weight:700;font-size:12px}
+.terminal-kpi-person .terminal-phone-link{font-size:11px;font-weight:800}
 .terminal-kpi-time{
     align-self:start;
     color:var(--terminal-chip-text);
@@ -487,6 +496,9 @@ td{padding:10px;border-bottom:1px solid #eef2f7;border-right:1px solid #eef2f7;f
     .controls{grid-template-columns:1fr}
     .main-grid{grid-template-columns:1fr}
     .terminal-board{max-height:none}
+}
+@media(max-width:1100px){
+    .terminal-kpis{grid-template-columns:repeat(2, minmax(0, 1fr))}
 }
 @media(max-width:560px){
     .terminal-kpis{grid-template-columns:1fr}
@@ -1309,14 +1321,19 @@ function renderListaTrocas(trocas){
         '</div>';
     }).join("");
 }
+function ehViatura(terminal){
+    return normalizarTexto(terminal).includes("viatura");
+}
 function contatoPessoa(item){
-    return item.telefone || item.email || "";
+    const telefone = String(item.telefone || "").trim();
+    if (pareceTelefone(telefone)) return telefone;
+    return String(item.email || "").trim();
 }
 function telefoneTerminal(terminal){
     const item = DADOS.find(function(pessoa){
         return pessoa.telefone && mesmoTerminal(pessoa.terminal, terminal);
     });
-    return item ? item.telefone : "";
+    return item && pareceTelefone(item.telefone) ? item.telefone : "";
 }
 function contatoItem(item){
     return contatoPessoa(item) || telefoneTerminal(item.terminal);
@@ -1329,10 +1346,19 @@ function whatsappHref(telefone){
     return "https://wa.me/5543" + digits;
 }
 function telefoneTerminalHtml(telefone){
-    const href = whatsappHref(telefone);
-    if (!href) return escapeHtml(telefone);
+    const texto = String(telefone || "").trim();
+    if (!texto) return "";
+    const href = whatsappHref(texto);
+    if (!href) return escapeHtml(texto);
     const icon = '<span class="terminal-phone-icon" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><path d="M16.01 3.2c-7.02 0-12.73 5.64-12.73 12.58 0 2.24.6 4.42 1.74 6.34L3.2 28.8l6.89-1.77a12.84 12.84 0 0 0 5.92 1.45c7.02 0 12.73-5.64 12.73-12.58S23.03 3.2 16.01 3.2Zm5.83 15.26c-.32-.16-1.9-.93-2.2-1.03-.29-.11-.5-.16-.72.16-.21.32-.82 1.03-1.01 1.24-.19.21-.37.24-.69.08-.32-.16-1.36-.49-2.59-1.55-.96-.84-1.61-1.88-1.8-2.2-.19-.32-.02-.49.14-.65.14-.14.32-.37.48-.55.16-.19.21-.32.32-.53.11-.21.05-.4-.03-.55-.08-.16-.72-1.71-.98-2.34-.26-.62-.52-.53-.72-.54h-.61c-.21 0-.55.08-.84.4-.29.32-1.11 1.07-1.11 2.61s1.14 3.03 1.3 3.24c.16.21 2.25 3.39 5.45 4.75.76.32 1.35.51 1.82.65.76.24 1.45.2 2 .12.61-.09 1.9-.77 2.17-1.51.27-.75.27-1.39.19-1.52-.08-.13-.29-.21-.61-.37Z"/></svg></span>';
-    return '<a class="terminal-phone-link" href="' + escapeHtml(href) + '" target="_blank" rel="noopener noreferrer" aria-label="Abrir conversa no WhatsApp com ' + escapeHtml(telefone) + '">' + icon + '<span>' + escapeHtml(telefone) + '</span></a>';
+    return '<a class="terminal-phone-link" href="' + escapeHtml(href) + '" target="_blank" rel="noopener noreferrer" aria-label="Abrir conversa no WhatsApp com ' + escapeHtml(texto) + '">' + icon + '<span>' + escapeHtml(texto) + '</span></a>';
+}
+function telefoneCabecalhoTerminal(terminal, pessoas, somenteReserva){
+    if (ehViatura(terminal)) return "";
+    const contatos = [...new Set([telefoneTerminal(terminal)].concat(pessoas.map(contatoPessoa)).filter(Boolean))];
+    const resumo = contatos.length ? contatos[0] : (somenteReserva ? "Reserva" : "Sem telefone");
+    const html = telefoneTerminalHtml(resumo);
+    return html ? '<div class="terminal-kpi-phone">' + html + '</div>' : "";
 }
 function renderKpis(now){
     const trocas = proximasMovimentacoes(now);
@@ -1368,16 +1394,21 @@ function renderTerminalKpis(now){
         const terminal = grupo.terminal;
         const pessoas = grupo.pessoas.sort(function(a, b){return Number(Boolean(a.reserva)) - Number(Boolean(b.reserva)) || a.end - b.end || a.nome.localeCompare(b.nome, "pt-BR");});
         const somenteReserva = pessoas.every(function(item){return item.reserva;});
-        const contatos = [...new Set([telefoneTerminal(terminal)].concat(pessoas.map(contatoPessoa)).filter(Boolean))];
-        const contatoResumo = contatos.length ? contatos[0] : (somenteReserva ? "Reserva" : "Sem telefone");
         const tema = ordemTerminal(terminal);
         const temaClasse = somenteReserva ? " reserve" : (tema >= 1 && tema <= 8 ? " theme-" + tema : " theme-extra");
         return '<div class="terminal-kpi-card' + temaClasse + '">' +
-            '<div class="terminal-kpi-head"><div><div class="terminal-kpi-name">' + escapeHtml(displayTerminal(terminal)) + '</div><div class="terminal-kpi-phone">' + telefoneTerminalHtml(contatoResumo) + '</div></div><span class="status-badge status-' + (somenteReserva ? 'reserve' : 'now') + '">' + (somenteReserva ? 'Mot. Reserva' : 'Agora') + '</span></div>' +
+            '<div class="terminal-kpi-head"><div><div class="terminal-kpi-name">' + escapeHtml(displayTerminal(terminal)) + '</div>' + telefoneCabecalhoTerminal(terminal, pessoas, somenteReserva) + '</div><span class="status-badge status-' + (somenteReserva ? 'reserve' : 'now') + '">' + (somenteReserva ? 'Mot. Reserva' : 'Agora') + '</span></div>' +
             pessoas.map(function(item){
-                const horario = item.reserva ? "Sem escala no horário" : formatHora(item.start) + " - " + formatHora(item.end);
                 const registro = item.matricula ? "Reg. " + item.matricula : "";
-                const detalhe = item.reserva ? horario : (registro || horario);
+                let detalhe;
+                if (item.reserva) {
+                    detalhe = "Sem escala no horário";
+                } else {
+                    const partes = [];
+                    if (registro) partes.push(registro);
+                    partes.push("Início " + formatHora(item.start));
+                    detalhe = partes.join(" · ");
+                }
                 return '<div class="terminal-kpi-person"><div><b>' + escapeHtml(item.nome) + '</b><small>' + escapeHtml(detalhe) + '</small></div><span class="terminal-kpi-time">' + escapeHtml(item.reserva ? 'reserva' : 'até ' + formatHora(item.end)) + '</span></div>';
             }).join("") +
         '</div>';
