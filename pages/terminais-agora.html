@@ -254,9 +254,15 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
 .terminal-kpi-head{
     display:flex;
     justify-content:space-between;
-    align-items:flex-start;
+    align-items:center;
     gap:8px;
     margin-bottom:8px;
+}
+.terminal-kpi-head-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-shrink:0;
 }
 .terminal-kpi-title-row{
     display:flex;
@@ -273,10 +279,11 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
 .terminal-kpi-card.reserve .terminal-kpi-name{color:#92400e}
 .terminal-kpi-phone-inline{
     color:var(--muted);
-    font-size:12px;
+    font-size:13px;
     font-weight:800;
     line-height:1.25;
 }
+.terminal-kpi-head-actions .terminal-phone-link{font-size:13px;font-weight:800}
 .terminal-kpi-phone{
     margin-top:4px;
     color:var(--muted);
@@ -336,29 +343,17 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
     margin-top:2px;
 }
 .terminal-kpi-registro{color:var(--muted);font-weight:700;font-size:12px}
-.terminal-kpi-person-phone{
-    font-size:14px;
-    font-weight:900;
-    line-height:1.25;
-}
-.terminal-kpi-person-phone .terminal-phone-link{
-    font-size:14px;
-    font-weight:900;
-    gap:6px;
-}
-.terminal-kpi-person-phone .terminal-phone-icon{
-    width:16px;
-    height:16px;
-}
-.terminal-kpi-person-phone .terminal-phone-icon svg{
-    width:11px;
-    height:11px;
-}
+.terminal-kpi-person .terminal-phone-link{font-size:12px;font-weight:800}
 .terminal-kpi-side{
     display:flex;
     flex-direction:column;
     align-items:flex-end;
     gap:4px;
+}
+.terminal-kpi-person-phone{
+    font-size:12px;
+    font-weight:800;
+    line-height:1.2;
 }
 .terminal-kpi-time{
     align-self:start;
@@ -1441,9 +1436,10 @@ function tituloTerminal(terminal){
 function cabecalhoTerminal(terminal, somenteReserva){
     const telefone = telefoneCabecalhoTerminal(terminal);
     const badge = '<span class="status-badge status-' + (somenteReserva ? 'reserve' : 'now') + '">' + (somenteReserva ? 'Mot. Reserva' : 'Agora') + '</span>';
-    return '<div class="terminal-kpi-head"><div class="terminal-kpi-title-row">' + tituloTerminal(terminal) + badge + '</div>' +
+    return '<div class="terminal-kpi-head">' + tituloTerminal(terminal) +
+        '<div class="terminal-kpi-head-actions">' + badge +
         (telefone ? '<div class="terminal-kpi-phone-inline">' + telefone + '</div>' : '') +
-    '</div>';
+        '</div></div>';
 }
 function colunaHorarioTelefone(item, reserva){
     if (reserva) {
