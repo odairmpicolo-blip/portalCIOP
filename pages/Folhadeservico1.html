@@ -63,9 +63,9 @@ document.documentElement.classList.add("portal-auth-pending");
         }
 
         .container {
-            max-width: 1400px;
+            max-width: min(100%, 1920px);
             margin: 30px auto;
-            padding: 0 20px;
+            padding: 0 12px;
             width: 100%;
             flex: 1;
         }
@@ -183,9 +183,57 @@ document.documentElement.classList.add("portal-auth-pending");
             background: var(--white);
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 20px;
+            padding: 12px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.01);
             overflow-x: auto;
+        }
+        table.recent-table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            text-align: center;
+            font-size: 10px;
+        }
+        table.recent-table th {
+            background-color: #f8fafc;
+            color: var(--blue);
+            font-weight: 800;
+            padding: 5px 2px;
+            border-bottom: 2px solid var(--border);
+            text-align: center;
+            font-size: 8px;
+            line-height: 1.15;
+            letter-spacing: 0;
+            text-transform: uppercase;
+            white-space: normal;
+            word-break: break-word;
+            vertical-align: bottom;
+        }
+        table.recent-table td {
+            padding: 4px 2px;
+            border-bottom: 1px solid var(--border);
+            color: #333;
+            font-size: 9px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 0;
+            vertical-align: middle;
+        }
+        table.recent-table td.col-local {
+            white-space: normal;
+            word-break: break-word;
+            font-size: 8px;
+            line-height: 1.25;
+        }
+        table.recent-table td.col-acoes {
+            max-width: none;
+            overflow: visible;
+            white-space: normal;
+        }
+        table.recent-table .status-badge {
+            padding: 2px 4px;
+            font-size: 8px;
         }
         table {
             width: 100%;
@@ -986,13 +1034,13 @@ h1 {
         }
         .table-edit-input {
             width: 100%;
-            min-width: 86px;
-            height: 30px;
+            min-width: 0;
+            height: 26px;
             border: 1px solid #cfd8e8;
-            border-radius: 6px;
-            padding: 4px 6px;
+            border-radius: 4px;
+            padding: 2px 4px;
             color: #182230;
-            font-size: 12px;
+            font-size: 9px;
             font-weight: 600;
         }
         .table-edit-actions {
@@ -1210,15 +1258,27 @@ h1 {
         .recent-table tbody tr:hover { background: #eef4ff; }
         .table-edit-input, .table-edit-select {
             width: 100%;
-            min-width: 86px;
-            height: 34px;
+            min-width: 0;
+            height: 26px;
             border: 1px solid #cfd8e8;
-            border-radius: 6px;
-            padding: 4px 8px;
+            border-radius: 4px;
+            padding: 2px 4px;
             color: #182230;
-            font-size: 12px;
+            font-size: 9px;
             font-weight: 600;
             background: #fff;
+        }
+        @media print {
+            body { background: #fff; }
+            .launch-workspace, .portal-return, footer, .launch-toolbar-actions, .header-actions .btn-portal { display: none !important; }
+            .container { max-width: 100%; margin: 0; padding: 0; }
+            .table-card { border: none; box-shadow: none; padding: 0; overflow: visible; }
+            table.recent-table { font-size: 7px; }
+            table.recent-table th { font-size: 6.5px; padding: 3px 1px; }
+            table.recent-table td { font-size: 7px; padding: 2px 1px; }
+            table.recent-table td.col-local { font-size: 6.5px; }
+            table.recent-table .col-acoes { display: none; }
+            table.recent-table th.col-acoes { display: none; }
         }
         @media (max-width: 900px) {
             .form-section-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1500,18 +1560,23 @@ h1 {
                 <tr>
                     <th data-sort="data"><span class="sort-label">Data <span class="sort-icon" aria-hidden="true">↕</span></span></th>
                     <th data-sort="hora"><span class="sort-label">Hora <span class="sort-icon" aria-hidden="true">↕</span></span></th>
-                    <th data-sort="analista"><span class="sort-label">Analista <span class="sort-icon" aria-hidden="true">↕</span></span></th>
                     <th data-sort="ocorrencia"><span class="sort-label">Ocorrência <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                    <th data-sort="analista"><span class="sort-label">Analista <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                    <th data-sort="carro_sai"><span class="sort-label">Carro que sai <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                    <th data-sort="mot_sai"><span class="sort-label">Mot que sai <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                    <th data-sort="carro_entra"><span class="sort-label">Carro que entra <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                    <th data-sort="mot_entra"><span class="sort-label">Mot. que entra <span class="sort-icon" aria-hidden="true">↕</span></span></th>
                     <th data-sort="linha"><span class="sort-label">Linha <span class="sort-icon" aria-hidden="true">↕</span></span></th>
-                    <th data-sort="carro_sai"><span class="sort-label">Carro Sai <span class="sort-icon" aria-hidden="true">↕</span></span></th>
-                    <th data-sort="carro_entra"><span class="sort-label">Carro Entra <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                    <th data-sort="tabela"><span class="sort-label">Tabela <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                    <th data-sort="servico"><span class="sort-label">Serviço <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+                    <th data-sort="local"><span class="sort-label">Local <span class="sort-icon" aria-hidden="true">↕</span></span></th>
                     <th data-sort="situacao"><span class="sort-label">Situação <span class="sort-icon" aria-hidden="true">↕</span></span></th>
-                    <th>Ações</th>
+                    <th class="col-acoes">Ações</th>
                 </tr>
             </thead>
             <tbody id="tabela-corpo">
                 <tr>
-                    <td colspan="9" class="loading">Carregando lançamentos recentes...</td>
+                    <td colspan="14" class="loading">Carregando lançamentos recentes...</td>
                 </tr>
             </tbody>
         </table>
@@ -1531,6 +1596,22 @@ h1 {
     const INTERVALO_ATUALIZACAO_LANCAMENTOS_MS = 30000;
     const CACHE_STORAGE_KEY = "ciop_folha_lancamentos_recentes_v1";
     const LIMITE_LINHAS_RECENTES = 10;
+    const COLSPAN_TABELA_LANCAMENTOS = 14;
+    const COLUNAS_TABELA_LANCAMENTOS = [
+        { key: "data", label: "Data" },
+        { key: "hora", label: "Hora" },
+        { key: "ocorrencia", label: "Ocorrência" },
+        { key: "analista", label: "Analista" },
+        { key: "carro_sai", label: "Carro que sai" },
+        { key: "mot_sai", label: "Mot que sai" },
+        { key: "carro_entra", label: "Carro que entra" },
+        { key: "mot_entra", label: "Mot. que entra" },
+        { key: "linha", label: "Linha" },
+        { key: "tabela", label: "Tabela" },
+        { key: "servico", label: "Serviço" },
+        { key: "local", label: "Local" },
+        { key: "situacao", label: "Situação" }
+    ];
     const CAMPOS_OCORRENCIA_OFICINA = ["novo-motivo-oficina", "novo-mecanico", "novo-tempo-deslocamento"];
     const CAMPOS_OBRIGATORIOS = [
         { id: "novo-data", key: "data", label: "Data" },
@@ -2150,7 +2231,7 @@ h1 {
         const linhas = dados.slice(0, LIMITE_LINHAS_RECENTES);
 
         if (linhas.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--muted);">Nenhum lançamento recente na planilha.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="${COLSPAN_TABELA_LANCAMENTOS}" style="text-align:center; padding:20px; color:var(--muted);">Nenhum lançamento recente na planilha.</td></tr>`;
             return;
         }
         ordenarDadosTabela(linhas).forEach(d => {
@@ -2208,38 +2289,45 @@ h1 {
         return `<input class="table-edit-input" type="${tipo}" data-edit-key="${key}" value="${escaparHtml(valor || "")}">`;
     }
 
+    function celulaLeituraTabela(key, d) {
+        const valor = d[key] || "";
+        if (key === "data") return escaparHtml(dataParaTabela(d.data));
+        if (key === "hora") return escaparHtml(horaParaTabela(d.hora));
+        if (key === "analista") return `<strong>${escaparHtml(valor)}</strong>`;
+        if (key === "linha") return `<span style="background:#e8edf6;padding:1px 4px;border-radius:3px;font-weight:bold;">${escaparHtml(valor)}</span>`;
+        if (key === "local") return escaparHtml(valor);
+        if (key === "situacao") {
+            const situacaoLimpa = String(valor || "Pendente").trim();
+            const badgeClass = situacaoLimpa.toLowerCase() === "concluído" || situacaoLimpa.toLowerCase() === "concluido" ? "status-concluido" : "status-pendente";
+            return `<span class="status-badge ${badgeClass}">${escaparHtml(situacaoLimpa || "Pendente")}</span>`;
+        }
+        return escaparHtml(valor);
+    }
+
+    function celulaEdicaoTabela(key, d) {
+        if (key === "data") return inputTabela("data", dataParaInput(d.data), "date");
+        if (key === "hora") return inputTabela("hora", horaParaTabela(d.hora));
+        return inputTabela(key, d[key] || "");
+    }
+
     function linhaSomenteLeitura(d) {
         const rowKey = chaveLinhaPlanilha(d);
-        const situacaoLimpa = d.situacao ? d.situacao.trim() : "";
-        const badgeClass = situacaoLimpa.toLowerCase() === "concluído" || situacaoLimpa.toLowerCase() === "concluido" ? "status-concluido" : "status-pendente";
         const disabled = rowKey ? "" : " disabled";
         const titulo = rowKey ? "Editar lançamento" : "Atualize o Apps Script para habilitar edição";
-        return `
-            <td>${escaparHtml(dataParaTabela(d.data))}</td>
-            <td>${escaparHtml(horaParaTabela(d.hora))}</td>
-            <td><strong>${escaparHtml(d.analista || "")}</strong></td>
-            <td>${escaparHtml(d.ocorrencia || "")}</td>
-            <td><span style="background:#e8edf6; padding:2px 6px; border-radius:4px; font-weight:bold;">${escaparHtml(d.linha || "")}</span></td>
-            <td>${escaparHtml(d.carro_sai || "")}</td>
-            <td>${escaparHtml(d.carro_entra || "")}</td>
-            <td><span class="status-badge ${badgeClass}">${escaparHtml(d.situacao || "Pendente")}</span></td>
-            <td><div class="table-edit-actions"><button class="btn-table-action" type="button" onclick="editarLancamento('${escaparHtml(rowKey)}')"${disabled} title="${titulo}">Editar</button></div></td>
-        `;
+        const cells = COLUNAS_TABELA_LANCAMENTOS.map(col => {
+            const cls = col.key === "local" ? ' class="col-local"' : "";
+            return `<td${cls}>${celulaLeituraTabela(col.key, d)}</td>`;
+        }).join("");
+        return `${cells}<td class="col-acoes"><div class="table-edit-actions"><button class="btn-table-action" type="button" onclick="editarLancamento('${escaparHtml(rowKey)}')"${disabled} title="${titulo}">Editar</button></div></td>`;
     }
 
     function linhaEditavel(d) {
         const rowKey = chaveLinhaPlanilha(d);
-        return `
-            <td>${inputTabela("data", dataParaInput(d.data), "date")}</td>
-            <td>${inputTabela("hora", horaParaTabela(d.hora))}</td>
-            <td>${inputTabela("analista", d.analista || "")}</td>
-            <td>${inputTabela("ocorrencia", d.ocorrencia || "")}</td>
-            <td>${inputTabela("linha", d.linha || "")}</td>
-            <td>${inputTabela("carro_sai", d.carro_sai || "")}</td>
-            <td>${inputTabela("carro_entra", d.carro_entra || "")}</td>
-            <td>${inputTabela("situacao", d.situacao || "")}</td>
-            <td><div class="table-edit-actions"><button class="btn-table-action primary" type="button" onclick="salvarEdicaoLancamento('${escaparHtml(rowKey)}')">Salvar</button><button class="btn-table-action" type="button" onclick="cancelarEdicaoLancamento()">Cancelar</button></div></td>
-        `;
+        const cells = COLUNAS_TABELA_LANCAMENTOS.map(col => {
+            const cls = col.key === "local" ? ' class="col-local"' : "";
+            return `<td${cls}>${celulaEdicaoTabela(col.key, d)}</td>`;
+        }).join("");
+        return `${cells}<td class="col-acoes"><div class="table-edit-actions"><button class="btn-table-action primary" type="button" onclick="salvarEdicaoLancamento('${escaparHtml(rowKey)}')">Salvar</button><button class="btn-table-action" type="button" onclick="cancelarEdicaoLancamento()">Cancelar</button></div></td>`;
     }
 
     function editarLancamento(rowKey) {
