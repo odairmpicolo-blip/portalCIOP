@@ -1246,6 +1246,10 @@ h1 {
                 <select id="filtro-ano" onchange="trocarAnoDashboard()"></select>
             </div>
             <div class="filter-group">
+                <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="m10 15-2 2 2 2"/><path d="M8 17h7"/></svg></span><span>Data de</span></label>
+                <input type="date" id="filtro-data-de" onchange="filtrarDashboard()">
+            </div>
+            <div class="filter-group">
                 <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="m14 15 2 2-2 2"/><path d="M9 17h7"/></svg></span><span>Data até</span></label>
                 <input type="date" id="filtro-data-ate" onchange="filtrarDashboard()">
             </div>
@@ -1824,7 +1828,7 @@ h1 {
             select.appendChild(opt);
         }
         select.value = String(ANO_ATUAL);
-        atualizarLimiteDataAte(ANO_ATUAL);
+        atualizarLimitesDataFiltro(ANO_ATUAL);
     }
 
     function isoDataRegistro(item) {
@@ -1837,15 +1841,24 @@ h1 {
         return d;
     }
 
-    function atualizarLimiteDataAte(ano) {
-        const input = document.getElementById("filtro-data-ate");
-        if (!input) return;
+    function atualizarLimitesDataFiltro(ano) {
+        const inputDe = document.getElementById("filtro-data-de");
+        const inputAte = document.getElementById("filtro-data-ate");
+        if (!inputDe || !inputAte) return;
+
         const anoNum = parseInt(String(ano || ANO_ATUAL), 10) || ANO_ATUAL;
         const hoje = new Date();
         const hojeIso = hoje.toISOString().slice(0, 10);
-        input.min = anoNum + "-01-01";
-        input.max = anoNum === hoje.getFullYear() ? hojeIso : anoNum + "-12-31";
-        input.value = anoNum === hoje.getFullYear() ? hojeIso : "";
+        const inicioAno = anoNum + "-01-01";
+        const fimAno = anoNum === hoje.getFullYear() ? hojeIso : anoNum + "-12-31";
+
+        inputDe.min = inicioAno;
+        inputDe.max = fimAno;
+        inputDe.value = inicioAno;
+
+        inputAte.min = inicioAno;
+        inputAte.max = fimAno;
+        inputAte.value = anoNum === hoje.getFullYear() ? hojeIso : "";
     }
 
     function limparCachesDashboardAntigos() {
@@ -1991,7 +2004,7 @@ h1 {
     function trocarAnoDashboard() {
         const ano = parseInt(document.getElementById("filtro-ano")?.value || "", 10);
         if (!ano) return;
-        atualizarLimiteDataAte(ano);
+        atualizarLimitesDataFiltro(ano);
         if (ano === anoCarregado) {
             filtrarDashboard();
             return;
@@ -2297,6 +2310,7 @@ h1 {
     }
 
     function filtrarDadosAtuais() {
+        const dDe = document.getElementById("filtro-data-de")?.value || "";
         const dAte = document.getElementById("filtro-data-ate")?.value || "";
         const analista = document.getElementById("filtro-analista").value;
         const ocorrencia = document.getElementById("filtro-ocorrencia").value;
@@ -2304,10 +2318,9 @@ h1 {
         const situacao = document.getElementById("filtro-situacao").value;
 
         return dadosMestres.filter(item => {
-            if (dAte) {
-                const iso = isoDataRegistro(item);
-                if (iso && iso > dAte) return false;
-            }
+            const iso = isoDataRegistro(item);
+            if (dDe && iso && iso < dDe) return false;
+            if (dAte && iso && iso > dAte) return false;
             if (analista && item.analista !== analista) return false;
             if (ocorrencia && item.ocorrencia !== ocorrencia) return false;
             if (linha && item.linha !== linha) return false;
