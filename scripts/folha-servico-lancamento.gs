@@ -15,8 +15,8 @@ const SPREADSHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const ABA_GID = 1013912232;
 const ABA_NOME = "FOLHA DE SERVIÇO";
 const LISTAS_GID = 665133219;
-const SCRIPT_VERSAO = "2026-06-22-perf-dashboard";
-const FOLHA_DASHBOARD_DIAS = 90;
+const SCRIPT_VERSAO = "2026-06-22-dashboard-completo";
+const FOLHA_DASHBOARD_DIAS = 0;
 const FOLHA_CHUNK_LINHAS = 800;
 const FOLHA_CACHE_TTL = 600;
 
@@ -140,12 +140,17 @@ function montarRespostaLeitura_(params) {
   return { ok: true, dados: dados, opcoes: lerOpcoesPadronizadas_() };
 }
 
-/** Leitura enxuta para o dashboard (menos campos, janela recente). */
+/** Leitura enxuta para o dashboard (campos reduzidos; dias=0 = todos os lançamentos). */
 function montarRespostaDashboard_(params) {
   params = params || {};
-  var dias = Math.max(30, Math.min(parseInt(params.dias || String(FOLHA_DASHBOARD_DIAS), 10) || FOLHA_DASHBOARD_DIAS, 730));
-  var dataMinIso = isoDataDiasAtrasFolha_(dias);
-  var cacheKey = "folha-dash-" + SCRIPT_VERSAO + "-" + dias;
+  var diasParam = params.dias !== undefined && params.dias !== null && String(params.dias) !== ""
+    ? parseInt(String(params.dias), 10)
+    : FOLHA_DASHBOARD_DIAS;
+  if (isNaN(diasParam)) diasParam = FOLHA_DASHBOARD_DIAS;
+  var lerTodos = diasParam <= 0 || String(params.completo || "") === "1";
+  var dias = lerTodos ? 0 : Math.max(30, Math.min(diasParam, 730));
+  var dataMinIso = lerTodos ? "" : isoDataDiasAtrasFolha_(dias);
+  var cacheKey = "folha-dash-" + SCRIPT_VERSAO + "-" + (lerTodos ? "all" : String(dias));
   try {
     var emCache = CacheService.getScriptCache().get(cacheKey);
     if (emCache) {
@@ -164,7 +169,7 @@ function montarRespostaDashboard_(params) {
     return {
       ok: true,
       dados: [],
-      meta: { versao: SCRIPT_VERSAO, origem: "dashboard", total: 0, total_planilha: 0, dias: dias, data_de: dataMinIso }
+      meta: { versao: SCRIPT_VERSAO, origem: "dashboard", total: 0, total_planilha: 0, dias: dias, completo: lerTodos, data_de: dataMinIso }
     };
   }
 
@@ -181,10 +186,12 @@ function montarRespostaDashboard_(params) {
 
     for (var i = valores.length - 1; i >= 0; i--) {
       var bruto = linhaParaObjeto_(cabecalho, valores[i], startRow + i);
-      var iso = normalizarDataIso_(bruto.data);
-      if (dataMinIso && iso && iso < dataMinIso) {
-        parar = true;
-        break;
+      if (!lerTodos) {
+        var iso = normalizarDataIso_(bruto.data);
+        if (dataMinIso && iso && iso < dataMinIso) {
+          parar = true;
+          break;
+        }
       }
       dados.push(objetoDashboardSlim_(bruto));
     }
@@ -192,6 +199,8 @@ function montarRespostaDashboard_(params) {
     if (parar) break;
     endRow = startRow - 1;
   }
+
+  dados.reverse();
 
   var payload = {
     ok: true,
@@ -202,12 +211,16 @@ function montarRespostaDashboard_(params) {
       total: dados.length,
       total_planilha: totalPlanilha,
       dias: dias,
+      completo: lerTodos,
       data_de: dataMinIso,
       cache: false
     }
   };
   try {
-    CacheService.getScriptCache().put(cacheKey, JSON.stringify(payload), FOLHA_CACHE_TTL);
+    var jsonPayload = JSON.stringify(payload);
+    if (jsonPayload.length < 95000) {
+      CacheService.getScriptCache().put(cacheKey, jsonPayload, FOLHA_CACHE_TTL);
+    }
   } catch (errPut) {}
   return payload;
 }

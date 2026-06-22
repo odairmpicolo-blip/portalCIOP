@@ -1389,8 +1389,8 @@ h1 {
 
 <script>
     const URL_DO_SCRIPT_GOOGLE = "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
-    const URL_DASHBOARD = URL_DO_SCRIPT_GOOGLE + "?dashboard=1&dias=90";
-    const CACHE_KEY = "folha_dashboard_v4";
+    const URL_DASHBOARD = URL_DO_SCRIPT_GOOGLE + "?dashboard=1&dias=0";
+    const CACHE_KEY = "folha_dashboard_v5";
     const CACHE_TTL_MS = 60 * 60 * 1000;
     const FETCH_TIMEOUT_MS = 120000;
     const CORES_BARRAS = ["#6366f1", "#8b5cf6", "#ec4899", "#f97316", "#14b8a6", "#22c55e", "#eab308", "#3b82f6", "#ef4444", "#64748b"];
@@ -1834,17 +1834,21 @@ h1 {
     async function buscarDadosRemotos() {
         const raw = await fetchComTimeout(URL_DASHBOARD);
         if (raw && raw.ok === false) throw new Error(raw.erro || "dashboard indisponível");
-        return normalizarLista(raw);
+        return { dados: normalizarLista(raw), meta: raw.meta || {} };
     }
 
-    function aplicarDadosDashboard(dados, origem) {
+    function aplicarDadosDashboard(dados, origem, meta) {
         dadosMestres = dados;
         gerarFiltrosDinamicos(dadosMestres);
         const filtrados = filtrarDadosAtuais();
+        const totalPlanilha = meta?.total_planilha;
+        const extra = totalPlanilha && totalPlanilha !== dados.length
+            ? " · planilha: " + totalPlanilha.toLocaleString("pt-BR")
+            : "";
         requestAnimationFrame(() => {
             inicializarGraficos(filtrados);
             setLoadStatus(
-                dados.length.toLocaleString("pt-BR") + " registro(s) · origem: " + origem,
+                dados.length.toLocaleString("pt-BR") + " registro(s) · origem: " + origem + extra,
                 "ok"
             );
         });
@@ -1856,14 +1860,14 @@ h1 {
         setLoadStatus(
             silencioso
                 ? "Atualizando dados em segundo plano..."
-                : "Buscando dados na planilha (pode levar até 1 minuto)...",
+                : "Buscando todos os lançamentos na planilha (pode levar até 1 minuto)...",
             "load"
         );
         if (!silencioso) window.portalMostrarCarregando?.("Carregando folha de serviço");
         try {
-            const dados = await buscarDadosRemotos();
+            const { dados, meta } = await buscarDadosRemotos();
             salvarCacheLocal(dados);
-            aplicarDadosDashboard(dados, origemLabel);
+            aplicarDadosDashboard(dados, origemLabel, meta);
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
             setLoadStatus(
