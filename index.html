@@ -15,6 +15,10 @@ document.documentElement.classList.add("portal-auth-pending");
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portal Operacional - CIOP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous" defer></script>
 
 <style>
 
@@ -686,8 +690,17 @@ footer{
 .notice-manage-item span,
 #avisoTitulo,
 #avisoMensagem{
-    font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji","Segoe UI Symbol",Arial,Helvetica,"Segoe UI",sans-serif;
+    font-family:Arial,Helvetica,"Segoe UI","Noto Color Emoji","Segoe UI Emoji","Apple Color Emoji",emoji,sans-serif;
     font-variant-emoji:emoji;
+}
+
+.notice-item-title img.emoji,
+.notice-item-text img.emoji,
+.notice-manage-item img.emoji{
+    height:1.05em;
+    width:1.05em;
+    margin:0 .05em;
+    vertical-align:-.15em;
 }
 
 .notice-item-title{
@@ -2025,6 +2038,19 @@ function escapeAviso(valor) {
         .replace(/'/g, "&#039;");
 }
 
+const TWEMOJI_BASE = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/";
+
+function aplicarEmojiAviso(elemento) {
+    if (!elemento || !window.twemoji) return;
+    window.twemoji.parse(elemento, { folder: TWEMOJI_BASE, ext: ".svg" });
+}
+
+function preencherTextoAviso(elemento, texto) {
+    if (!elemento) return;
+    elemento.textContent = texto || "";
+    aplicarEmojiAviso(elemento);
+}
+
 function normalizarAvisoTexto(valor) {
     return String(valor || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
@@ -2240,10 +2266,10 @@ function renderAvisos(lista) {
         item.className = "notice-item";
         const titulo = document.createElement("div");
         titulo.className = "notice-item-title";
-        titulo.textContent = aviso.titulo || "";
+        preencherTextoAviso(titulo, aviso.titulo);
         const mensagem = document.createElement("div");
         mensagem.className = "notice-item-text";
-        mensagem.textContent = aviso.mensagem || "";
+        preencherTextoAviso(mensagem, aviso.mensagem);
         item.append(titulo, mensagem);
         avisosLista.appendChild(item);
     });
@@ -2272,6 +2298,7 @@ function renderAvisosGestor(lista) {
             </div>
         </div>
     `).join("");
+    aplicarEmojiAviso(avisosGerenciarLista);
 }
 
 function setAvisoStatus(texto, tipo = "") {
