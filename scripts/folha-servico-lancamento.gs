@@ -201,9 +201,9 @@ function montarRespostaDashboard_(params) {
     var numRowsPagina = Math.min(limit, Math.max(0, linhasRestantes));
 
     if (numRowsPagina > 0) {
-      var valores = sheet.getRange(startRow, 1, numRowsPagina, numCols).getValues();
-      for (var j = 0; j < valores.length; j++) {
-        var brutoPag = linhaParaObjeto_(cabecalho, valores[j], startRow + j);
+      var valoresPagina = sheet.getRange(startRow, 1, numRowsPagina, numCols).getValues();
+      for (var j = 0; j < valoresPagina.length; j++) {
+        var brutoPag = linhaParaObjeto_(cabecalho, valoresPagina[j], startRow + j);
         dados.push(objetoDashboardSlim_(brutoPag));
       }
     }
