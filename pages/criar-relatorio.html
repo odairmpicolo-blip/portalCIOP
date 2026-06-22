@@ -181,7 +181,7 @@ select:disabled{
     color:var(--red);
     font-weight:900;
 }
-.cargo-vinculado{
+.cargo-vinculado,.assinatura-vinculada{
     min-height:38px;
     display:flex;
     align-items:center;
@@ -419,10 +419,8 @@ select:disabled{
                 </div>
             </div>
 
-            <label for="assinaturaSelect">Assinatura</label>
-            <select id="assinaturaSelect">
-                <option value="">Carregando usuários...</option>
-            </select>
+            <label>Assinatura</label>
+            <div id="assinaturaResponsavel" class="assinatura-vinculada">Carregando assinatura...</div>
 
             <label>Cargo da assinatura</label>
             <div id="cargoAssinaturaTexto" class="cargo-vinculado">Cargo não vinculado</div>
@@ -478,7 +476,7 @@ select:disabled{
 <script type="module" src="../assets/js/auth.js"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 <script type="module">
-import { listarUsuariosFirestore, normalizarCadastro } from "../assets/js/portal-firestore.js";
+import { buscarUsuarioFirestore, normalizarCadastro } from "../assets/js/portal-firestore.js";
 import { usuarios as usuariosLocais } from "../assets/js/usuarios.js";
 
 const SHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
@@ -489,7 +487,7 @@ const GID_DADOS = "665133219";
 const PROTOCOLO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGuAS3XN7FQkaqj2n4pjZTcGOt_mIvdMG1rg14bS9F928A-zMUDEI2nZneKm8vUtCcOA/exec";
 const TIPO_DOCUMENTO_PROTOCOLO = "R. OCORRÊNCIA";
 
-const assinaturaSelect = document.getElementById("assinaturaSelect");
+const assinaturaResponsavel = document.getElementById("assinaturaResponsavel");
 const cargoAssinaturaTexto = document.getElementById("cargoAssinaturaTexto");
 const statusRelatorio = document.getElementById("statusRelatorio");
 const corpoRelatorio = document.getElementById("corpoRelatorio");
@@ -518,7 +516,6 @@ const preview = {
 };
 
 let funcionarios = [];
-let usuariosAssinatura = [];
 let protocoloAtual = null;
 let usuarioCriador = null;
 let protocoloRegistrado = false;
@@ -727,12 +724,16 @@ function atualizarPreview() {
     preview.data.textContent = normalizarDataInput(campos.data.value);
     preview.carro.textContent = campos.carro.value || "";
     preview.linha.textContent = campos.linha.value || "";
-    const opcao = assinaturaSelect.selectedOptions[0];
-    preview.assinaturaNome.textContent = opcao?.dataset.nome || "Selecione o usuário para assinatura";
-    const cargo = usuarioCriador?.cargo || "";
-    preview.assinaturaRegistro.textContent = opcao?.dataset.registro ? "Registro " + opcao.dataset.registro : "";
-    preview.assinaturaCargo.textContent = cargo;
-    cargoAssinaturaTexto.textContent = cargo || "Cargo não vinculado";
+    const user = usuarioCriador;
+    preview.assinaturaNome.textContent = user?.nome || "Assinatura não disponível";
+    preview.assinaturaRegistro.textContent = user?.registro ? "Registro " + user.registro : "";
+    preview.assinaturaCargo.textContent = user?.cargo || "";
+    cargoAssinaturaTexto.textContent = user?.cargo || "Cargo não vinculado";
+    if (assinaturaResponsavel) {
+        assinaturaResponsavel.textContent = user
+            ? ((user.registro ? user.registro + " - " : "") + user.nome)
+            : "Assinatura não disponível para este usuário";
+    }
     if (!corpoFoiEditado && campos.registro.value) {
         corpoRelatorio.value = gerarCorpoPadrao();
         autoGrow();
@@ -772,44 +773,36 @@ function normalizarUsuarioAssinatura(cadastro, email) {
     };
 }
 
-async function carregarAssinaturas() {
-    const mapa = new Map();
-    Object.entries(usuariosLocais || {}).forEach(([email, cadastro]) => {
-        const user = normalizarUsuarioAssinatura(cadastro, email);
-        const chave = user.registro || user.email;
-        if (chave) mapa.set(chave, user);
-    });
-    try {
-        const online = await listarUsuariosFirestore();
-        Object.entries(online).forEach(([email, cadastro]) => {
-            const user = normalizarUsuarioAssinatura(cadastro, email);
-            if (!user.ativo) return;
-            const chave = user.registro || user.email;
-            if (chave) mapa.set(chave, user);
-        });
-    } catch (error) {
-        console.warn("Assinaturas online indisponíveis:", error);
-    }
-    const lista = [...mapa.values()]
-        .filter((user) => user.nome)
-        .sort((a, b) => (Number(a.registro) || 999999) - (Number(b.registro) || 999999) || a.nome.localeCompare(b.nome, "pt-BR"));
-    usuariosAssinatura = lista;
-    const emailLogado = String(window.portalUsuario?.email || "").trim().toLowerCase();
-    usuarioCriador = lista.find((user) => String(user.email || "").trim().toLowerCase() === emailLogado) || null;
-    assinaturaSelect.innerHTML = "<option value=\"\">Selecione registro e nome</option>" + lista.map((user) => {
-        const label = (user.registro ? user.registro + " - " : "") + user.nome;
-        return "<option value=\"" + escapeOption(user.registro || user.email) + "\" data-nome=\"" + escapeOption(user.nome) + "\" data-registro=\"" + escapeOption(user.registro) + "\">" + escapeOption(label) + "</option>";
-    }).join("");
-    vincularAssinaturaAoUsuarioLogado();
-}
-
-function vincularAssinaturaAoUsuarioLogado() {
-    if (!usuarioCriador) {
-        assinaturaSelect.disabled = false;
+async function carregarAssinaturaUsuarioLogado() {
+    const email = String(window.portalUsuario?.email || "").trim().toLowerCase();
+    if (!email) {
+        usuarioCriador = null;
+        atualizarPreview();
         return;
     }
-    assinaturaSelect.value = usuarioCriador.registro || usuarioCriador.email;
-    assinaturaSelect.disabled = true;
+
+    let cadastro = null;
+    try {
+        cadastro = await buscarUsuarioFirestore(email);
+    } catch (error) {
+        console.warn("Assinatura online indisponível:", error);
+    }
+
+    if (!cadastro) {
+        const local = usuariosLocais?.[email] || usuariosLocais?.[window.portalUsuario?.email];
+        if (local) cadastro = normalizarCadastro(local, email);
+    }
+
+    if (!cadastro?.nome && window.portalUsuario?.nome) {
+        cadastro = normalizarCadastro({
+            nome: window.portalUsuario.nome,
+            perfil: window.portalUsuario.perfil,
+            email
+        }, email);
+    }
+
+    usuarioCriador = cadastro ? normalizarUsuarioAssinatura(cadastro, email) : null;
+    if (usuarioCriador && !usuarioCriador.nome) usuarioCriador = null;
     atualizarPreview();
 }
 
@@ -825,7 +818,7 @@ async function iniciarRelatorio() {
         carregarFuncionarios(funcionariosCsv);
         carregarDadosGerais(dadosCsv);
         configurarProtocolo(contProtCsv);
-        await carregarAssinaturas();
+        await carregarAssinaturaUsuarioLogado();
         corpoRelatorio.value = gerarCorpoPadrao();
         autoGrow();
         atualizarPreview();
@@ -841,7 +834,6 @@ async function iniciarRelatorio() {
 
 campos.registro.addEventListener("change", preencherFuncionarioPorRegistro);
 campos.registro.addEventListener("blur", preencherFuncionarioPorRegistro);
-assinaturaSelect.addEventListener("change", atualizarPreview);
 Object.values(campos).forEach((campo) => campo.addEventListener("input", atualizarPreview));
 corpoRelatorio.addEventListener("input", () => {
     corpoFoiEditado = true;
@@ -853,7 +845,7 @@ document.getElementById("gerarTextoBtn").addEventListener("click", () => {
     autoGrow();
 });
 function dadosProtocolo() {
-    const analista = usuarioCriador || usuariosAssinatura.find((user) => (user.registro || user.email) === assinaturaSelect.value) || null;
+    const analista = usuarioCriador;
     return {
         protocolo: campos.numero.value,
         linhaPlanilha: protocoloAtual?.linhaPlanilha || "",
@@ -914,7 +906,6 @@ document.getElementById("limparBtn").addEventListener("click", () => {
     campos.funcao.value = "";
     campos.carro.value = "";
     campos.linha.value = "";
-    vincularAssinaturaAoUsuarioLogado();
     corpoFoiEditado = false;
     corpoRelatorio.value = gerarCorpoPadrao();
     autoGrow();
