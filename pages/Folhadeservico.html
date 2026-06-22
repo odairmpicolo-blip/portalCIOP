@@ -799,7 +799,7 @@ document.documentElement.classList.add("portal-auth-pending");
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 20px;
+            margin: 0 0 16px;
             padding: 10px 14px;
             border-radius: 8px;
             border: 1px solid #dbe3ef;
@@ -1249,7 +1249,12 @@ h1 {
     </div>
 </div>
 <div class="container">
-    
+
+    <div class="load-banner load" id="load-banner">
+        <span class="load-dot" id="load-dot"></span>
+        <span id="load-message">Preparando dashboard...</span>
+    </div>
+
     <div class="filter-wrapper">
         <div class="filter-head">
             <a href="../index.html" class="btn-portal">
@@ -1321,11 +1326,6 @@ h1 {
                 <span class="kpi-value" id="kpi-frequente">Carregando...</span>
             </span>
         </div>
-    </div>
-
-    <div class="load-banner load" id="load-banner">
-        <span class="load-dot" id="load-dot"></span>
-        <span id="load-message">Preparando dashboard...</span>
     </div>
 
     <div class="dashboard-grid">
@@ -1832,6 +1832,19 @@ h1 {
         msg.textContent = texto;
     }
 
+    function montarTextoStatus(origem, meta) {
+        const totalPlanilha = meta?.total_planilha;
+        const versao = meta?.versao || "";
+        const extraPlanilha = totalPlanilha
+            ? " · planilha: " + totalPlanilha.toLocaleString("pt-BR")
+            : "";
+        const extraVersao = versao ? " · " + versao : "";
+        const extraAno = meta?.ano
+            ? " · " + (anoEhTodos(meta.ano) ? "todos os anos" : "ano " + meta.ano)
+            : "";
+        return " · origem: " + origem + extraAno + extraPlanilha + extraVersao;
+    }
+
     function cacheKeyParaAno(ano) {
         return CACHE_KEY_PREFIX + "_" + String(ano);
     }
@@ -2131,21 +2144,9 @@ h1 {
         dadosMestres = dados;
         gerarFiltrosDinamicos(dadosMestres);
         const filtrados = filtrarDadosAtuais();
-        const totalPlanilha = meta?.total_planilha;
-        const versao = meta?.versao || "";
-        const extraPlanilha = totalPlanilha && totalPlanilha !== dados.length
-            ? " · planilha: " + totalPlanilha.toLocaleString("pt-BR")
-            : "";
-        const extraVersao = versao ? " · " + versao : "";
-        const extraAno = meta?.ano
-            ? " · " + (anoEhTodos(meta.ano) ? "todos os anos" : "ano " + meta.ano)
-            : "";
         requestAnimationFrame(() => {
             inicializarGraficos(filtrados);
-            setLoadStatus(
-                dados.length.toLocaleString("pt-BR") + " registro(s) · origem: " + origem + extraAno + extraPlanilha + extraVersao,
-                "ok"
-            );
+            setLoadStatus(montarTextoStatus(origem, meta), "ok");
         });
     }
 
@@ -2232,20 +2233,9 @@ h1 {
             anoCarregado = anoInicial;
             aplicarDadosDashboard(snapshot.dados, "arquivo JSON", snapshot.meta || {});
             salvarCacheLocal(snapshot.dados, snapshot.meta || {}, anoInicial);
-            const extraSnapshot = folhaManifest?.atualizadoEm
-                ? " · snapshot: " + new Date(folhaManifest.atualizadoEm).toLocaleString("pt-BR")
-                : "";
-            setLoadStatus(
-                snapshot.dados.length.toLocaleString("pt-BR") + " registro(s) · origem: arquivo JSON" + extraSnapshot,
-                "ok"
-            );
             sincronizarRegistrosRecentes(anoInicial).then((qtd) => {
                 if (!qtd) return;
                 aplicarDadosDashboard(dadosMestres, "JSON + " + qtd + " novos", snapshot.meta || {});
-                setLoadStatus(
-                    dadosMestres.length.toLocaleString("pt-BR") + " registro(s) · JSON + " + qtd + " lançamento(s) recente(s)",
-                    "ok"
-                );
             }).catch(() => {});
             return;
         }
@@ -2559,10 +2549,6 @@ h1 {
         const dadosFiltrados = filtrarDadosAtuais();
         requestAnimationFrame(() => {
             inicializarGraficos(dadosFiltrados);
-            setLoadStatus(
-                dadosFiltrados.length.toLocaleString("pt-BR") + " registro(s) filtrado(s)",
-                "ok"
-            );
         });
     }
 </script>

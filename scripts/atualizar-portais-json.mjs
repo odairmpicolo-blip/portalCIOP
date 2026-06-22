@@ -13,6 +13,7 @@ const PONTUALIDADE = {
 
 const AUTUACOES_URL = process.env.AUTUACOES_API_URL
   || "https://script.google.com/macros/s/AKfycbylz8scwboPQLeOKWUpw9YqKxomjts1aa8KUwodAuq5IE3T9s7RXd6GJcfMnS9qu6DI/exec";
+const AUTUACOES_DATA_DE = process.env.AUTUACOES_DATA_DE || "2015-01-01";
 
 const LIBERACAO_URL = process.env.LIBERACAO_API_URL
   || process.env.FOLHA_SERVICO_API_URL
@@ -72,8 +73,10 @@ async function atualizarPontualidade() {
 
 async function atualizarAutuacoes() {
   const dir = path.join(portalRoot, "assets", "data", "autuacoes");
-  console.log("Baixando autuações (365 dias)...");
-  const payload = await fetchJson(AUTUACOES_URL);
+  const dataAte = isoHoje();
+  const url = `${AUTUACOES_URL}?${new URLSearchParams({ data_de: AUTUACOES_DATA_DE, data_ate: dataAte, completo: "1" })}`;
+  console.log(`Baixando autuações (${AUTUACOES_DATA_DE} a ${dataAte})...`);
+  const payload = await fetchJson(url);
   if (payload.status === "error") throw new Error(payload.message || "Erro na API de autuações");
   const dados = payload.data || payload.dados || [];
   const snapshot = {
@@ -88,8 +91,8 @@ async function atualizarAutuacoes() {
   escreverJson(path.join(dir, "dados.json"), snapshot);
   escreverJson(path.join(dir, "manifest.json"), {
     atualizadoEm: snapshot.atualizadoEm,
-    data_de: snapshot.data_de,
-    data_ate: snapshot.data_ate,
+    data_de: snapshot.data_de || AUTUACOES_DATA_DE,
+    data_ate: snapshot.data_ate || dataAte,
     total: snapshot.total,
     arquivo: "dados.json"
   });

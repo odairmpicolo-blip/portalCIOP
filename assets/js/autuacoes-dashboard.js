@@ -2,8 +2,9 @@ const API_URL = "https://script.google.com/macros/s/AKfycbylz8scwboPQLeOKWUpw9Yq
 const AUTUACOES_DATA_BASE = "../assets/data/autuacoes";
 const AUTUACOES_MANIFEST_URL = AUTUACOES_DATA_BASE + "/manifest.json";
 const AUTUACOES_SNAPSHOT_URL = AUTUACOES_DATA_BASE + "/dados.json";
+const AUTUACOES_DATA_INICIO = "2015-01-01";
 const SYNC_DIAS_RECENTES = 14;
-const CACHE_STORAGE_KEY = "portal_autuacoes_dashboard_v1";
+const CACHE_STORAGE_KEY = "portal_autuacoes_dashboard_v2";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 let DATA = [];
 let periodChart = null;
@@ -306,6 +307,20 @@ function montarUrlSemCache(url) {
     return url + sep + "_=" + Date.now();
 }
 
+function isoHojeAutuacoes() {
+    return new Date().toISOString().slice(0, 10);
+}
+
+function montarUrlAutuacoes(params) {
+    const sep = API_URL.includes("?") ? "&" : "?";
+    const qs = new URLSearchParams(Object.assign({
+        data_de: AUTUACOES_DATA_INICIO,
+        data_ate: isoHojeAutuacoes(),
+        completo: "1"
+    }, params || {}));
+    return API_URL + sep + qs.toString() + "&_=" + Date.now();
+}
+
 function lerCacheAutuacoesLocal() {
     try {
         const raw = localStorage.getItem(CACHE_STORAGE_KEY);
@@ -363,9 +378,7 @@ async function carregarSnapshotAutuacoes() {
 async function sincronizarAutuacoesRecentes() {
     const dataDe = isoDiasAtrasAutuacoes(SYNC_DIAS_RECENTES);
     const dataAte = isoDiasAtrasAutuacoes(0);
-    const sep = API_URL.includes("?") ? "&" : "?";
-    const url = API_URL + sep + "data_de=" + encodeURIComponent(dataDe) + "&data_ate=" + encodeURIComponent(dataAte) + "&_=" + Date.now();
-    const response = await fetch(url, { cache: "no-store" });
+    const response = await fetch(montarUrlAutuacoes({ data_de: dataDe, data_ate: dataAte, completo: "0" }), { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const payload = await response.json();
     if (payload.status === "error") throw new Error(payload.message || "Erro na API");
@@ -933,7 +946,7 @@ async function loadData() {
                 salvarCacheAutuacoesLocal({ status: "ok", data: DATA, data_de: snapshot?.payload?.data_de, data_ate: snapshot?.payload?.data_ate });
                 console.info("Autuações atualizadas: JSON + recentes", DATA.length);
             } else {
-                const response = await fetch(montarUrlSemCache(API_URL), { cache: "no-store" });
+                const response = await fetch(montarUrlAutuacoes(), { cache: "no-store" });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const payload = await response.json();
                 if (payload.status === "error") throw new Error(payload.message || "Erro na API");
@@ -941,7 +954,7 @@ async function loadData() {
                 aplicarPayloadAutuacoes(payload, payload.cache ? "servidor (cache)" : "planilha");
             }
         } else if (!mostrouDados) {
-            const response = await fetch(montarUrlSemCache(API_URL), { cache: "no-store" });
+            const response = await fetch(montarUrlAutuacoes(), { cache: "no-store" });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const payload = await response.json();
             if (payload.status === "error") throw new Error(payload.message || "Erro na API");
