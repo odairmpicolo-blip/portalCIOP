@@ -231,6 +231,19 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
 .terminal-kpi-card.theme-7{--terminal-accent:#be123c;--terminal-bg:#fff1f2;--terminal-border:#fecdd3;--terminal-chip:#ffe4e6;--terminal-chip-text:#9f1239}
 .terminal-kpi-card.theme-8{--terminal-accent:#475569;--terminal-bg:#f8fafc;--terminal-border:#cbd5e1;--terminal-chip:#e2e8f0;--terminal-chip-text:#334155}
 .terminal-kpi-card.theme-extra{--terminal-accent:#0f172a;--terminal-bg:#f8fafc;--terminal-border:#d8e2f1;--terminal-chip:#e2e8f0;--terminal-chip-text:#334155}
+.terminal-kpi-card.theme-viatura{
+    --terminal-accent:#c2410c;
+    --terminal-bg:#ffedd5;
+    --terminal-border:#fb923c;
+    --terminal-chip:#ea580c;
+    --terminal-chip-text:#fff;
+    border-left-width:6px;
+    box-shadow:0 8px 22px rgba(194,65,12,.28);
+}
+.terminal-kpi-card.theme-viatura .terminal-kpi-name{color:#9a3412;font-size:15px}
+.terminal-kpi-card.theme-viatura .status-now{background:#ea580c;color:#fff;border:1px solid #c2410c}
+.terminal-kpi-card.theme-viatura .terminal-kpi-time{background:#fff;border-color:#fb923c;color:#c2410c}
+.terminal-kpi-card.theme-viatura .terminal-kpi-person{border-top-color:#fdba74}
 .terminal-kpi-card.reserve{
     --terminal-accent:#b45309;
     --terminal-bg:#fffbeb;
@@ -1472,7 +1485,9 @@ function renderTerminalKpis(now){
         const pessoas = grupo.pessoas.sort(function(a, b){return Number(Boolean(a.reserva)) - Number(Boolean(b.reserva)) || a.end - b.end || a.nome.localeCompare(b.nome, "pt-BR");});
         const somenteReserva = pessoas.every(function(item){return item.reserva;});
         const tema = ordemTerminal(terminal);
-        const temaClasse = somenteReserva ? " reserve" : (tema >= 1 && tema <= 8 ? " theme-" + tema : " theme-extra");
+        const temaClasse = ehViatura(terminal)
+            ? " theme-viatura"
+            : (somenteReserva ? " reserve" : (tema >= 1 && tema <= 8 ? " theme-" + tema : " theme-extra"));
         return '<div class="terminal-kpi-card' + temaClasse + '">' +
             '<div class="terminal-kpi-head"><div>' + tituloTerminal(terminal) + '</div><span class="status-badge status-' + (somenteReserva ? 'reserve' : 'now') + '">' + (somenteReserva ? 'Mot. Reserva' : 'Agora') + '</span></div>' +
             pessoas.map(function(item){
