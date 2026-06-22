@@ -1242,12 +1242,8 @@ h1 {
         </div>
         <div class="filter-grid">
             <div class="filter-group">
-                <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="m10 15-2 2 2 2"/><path d="M8 17h7"/></svg></span><span>Data Início</span></label>
-                <input type="date" id="filtro-data-inicio" onchange="filtrarDashboard()">
-            </div>
-            <div class="filter-group">
-                <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="m14 15 2 2-2 2"/><path d="M9 17h7"/></svg></span><span>Data Fim</span></label>
-                <input type="date" id="filtro-data-fim" onchange="filtrarDashboard()">
+                <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="5" width="18" height="16" rx="2"/></svg></span><span>Ano</span></label>
+                <select id="filtro-ano" onchange="trocarAnoDashboard()"></select>
             </div>
             <div class="filter-group">
                 <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.7-4 4.3-6 8-6s6.3 2 8 6"/></svg></span><span>Analista</span></label>
@@ -1389,10 +1385,10 @@ h1 {
 
 <script>
     const URL_DO_SCRIPT_GOOGLE = "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
-    const DASHBOARD_VERSAO = "2026-06-23-dashboard-paginado";
+    const DASHBOARD_VERSAO = "2026-06-23-dashboard-ano";
     const DASHBOARD_POR_PAGINA = 3500;
-    const URL_DASHBOARD_BASE = URL_DO_SCRIPT_GOOGLE + "?dashboard=1&completo=1&dias=0";
-    const CACHE_KEY = "folha_dashboard_v7";
+    const ANO_ATUAL = new Date().getFullYear();
+    const CACHE_KEY_PREFIX = "folha_dashboard_v8";
     const CACHE_TTL_MS = 60 * 60 * 1000;
     const FETCH_TIMEOUT_MS = 120000;
     const CORES_BARRAS = ["#6366f1", "#8b5cf6", "#ec4899", "#f97316", "#14b8a6", "#22c55e", "#eab308", "#3b82f6", "#ef4444", "#64748b"];
@@ -1443,6 +1439,7 @@ h1 {
     ];
 
     let dadosMestres = [];
+    let anoCarregado = null;
     let chartAnalistasInstance = null;
     const chartAnalyticsInstances = {};
     let carregamentoEmAndamento = false;
@@ -1802,21 +1799,44 @@ h1 {
         msg.textContent = texto;
     }
 
+    function cacheKeyParaAno(ano) {
+        return CACHE_KEY_PREFIX + "_" + String(ano);
+    }
+
+    function montarUrlDashboard(ano, fromRow) {
+        let url = URL_DO_SCRIPT_GOOGLE + "?dashboard=1&ano=" + encodeURIComponent(String(ano)) + "&limit=" + DASHBOARD_POR_PAGINA;
+        if (fromRow > 0) url += "&from_row=" + fromRow;
+        return url;
+    }
+
+    function preencherSelectAnos() {
+        const select = document.getElementById("filtro-ano");
+        if (!select) return;
+        select.innerHTML = "";
+        for (let ano = ANO_ATUAL; ano >= 2020; ano--) {
+            const opt = document.createElement("option");
+            opt.value = String(ano);
+            opt.textContent = String(ano);
+            select.appendChild(opt);
+        }
+        select.value = String(ANO_ATUAL);
+    }
+
     function limparCachesDashboardAntigos() {
-        ["folha_dashboard_v3", "folha_dashboard_v4", "folha_dashboard_v5", "folha_dashboard_v6"].forEach((key) => {
+        ["folha_dashboard_v3", "folha_dashboard_v4", "folha_dashboard_v5", "folha_dashboard_v6", "folha_dashboard_v7"].forEach((key) => {
             try { localStorage.removeItem(key); } catch (_) {}
             try { sessionStorage.removeItem(key); } catch (_) {}
         });
     }
 
-    function lerCacheLocal() {
+    function lerCacheLocal(ano) {
         try {
-            const raw = localStorage.getItem(CACHE_KEY);
+            const raw = localStorage.getItem(cacheKeyParaAno(ano));
             if (!raw) return null;
             const parsed = JSON.parse(raw);
             if (!parsed?.dados || !parsed?.ts) return null;
             if (parsed.versao !== DASHBOARD_VERSAO) return null;
-            if (parsed.meta && parsed.meta.completo === false) return null;
+            if (String(parsed.ano || parsed.meta?.ano || "") !== String(ano)) return null;
             if (Date.now() - parsed.ts > CACHE_TTL_MS) return null;
             return parsed;
         } catch (_) {
@@ -1824,11 +1844,12 @@ h1 {
         }
     }
 
-    function salvarCacheLocal(dados, meta) {
+    function salvarCacheLocal(dados, meta, ano) {
         try {
-            localStorage.setItem(CACHE_KEY, JSON.stringify({
+            localStorage.setItem(cacheKeyParaAno(ano), JSON.stringify({
                 ts: Date.now(),
                 versao: DASHBOARD_VERSAO,
+                ano: String(ano),
                 meta: meta || {},
                 dados
             }));
@@ -1851,13 +1872,13 @@ h1 {
         }
     }
 
-    async function buscarDadosRemotos(atualizarStatus) {
-        let offset = 0;
+    async function buscarDadosRemotos(ano, atualizarStatus) {
+        let fromRow = 0;
         let todos = [];
         let metaFinal = {};
 
         while (true) {
-            const url = URL_DASHBOARD_BASE + "&offset=" + offset + "&limit=" + DASHBOARD_POR_PAGINA;
+            const url = montarUrlDashboard(ano, fromRow);
             const raw = await fetchComTimeout(url);
             if (raw && raw.ok === false) throw new Error(raw.erro || "dashboard indisponível");
 
@@ -1868,20 +1889,21 @@ h1 {
             if (typeof atualizarStatus === "function") {
                 const total = metaFinal.total_planilha || todos.length;
                 atualizarStatus(
-                    "Carregando " + todos.length.toLocaleString("pt-BR") + " / " + total.toLocaleString("pt-BR") + " lançamentos..."
+                    "Carregando " + ano + ": " + todos.length.toLocaleString("pt-BR") + " registro(s)..."
+                    + (total ? " (planilha: " + total.toLocaleString("pt-BR") + ")" : "")
                 );
             }
 
             if (!metaFinal.has_more) break;
-            offset = metaFinal.next_offset != null ? metaFinal.next_offset : offset + lote.length;
-            if (!lote.length) break;
+            fromRow = metaFinal.next_from_row != null ? metaFinal.next_from_row : 0;
+            if (!fromRow || !lote.length) break;
         }
 
         return {
             dados: todos,
             meta: Object.assign({}, metaFinal, {
+                ano: ano,
                 total: todos.length,
-                completo: true,
                 versao: metaFinal.versao || DASHBOARD_VERSAO
             })
         };
@@ -1897,33 +1919,37 @@ h1 {
             ? " · planilha: " + totalPlanilha.toLocaleString("pt-BR")
             : "";
         const extraVersao = versao ? " · " + versao : "";
+        const extraAno = meta?.ano ? " · ano " + meta.ano : "";
         requestAnimationFrame(() => {
             inicializarGraficos(filtrados);
             setLoadStatus(
-                dados.length.toLocaleString("pt-BR") + " registro(s) · origem: " + origem + extraPlanilha + extraVersao,
+                dados.length.toLocaleString("pt-BR") + " registro(s) · origem: " + origem + extraAno + extraPlanilha + extraVersao,
                 "ok"
             );
         });
     }
 
-    async function atualizarDadosRemotos(origemLabel, silencioso) {
+    async function atualizarDadosRemotos(origemLabel, silencioso, ano) {
         if (carregamentoEmAndamento) return;
+        const anoAlvo = parseInt(String(ano || document.getElementById("filtro-ano")?.value || ANO_ATUAL), 10) || ANO_ATUAL;
         carregamentoEmAndamento = true;
         setLoadStatus(
             silencioso
-                ? "Atualizando dados em segundo plano..."
-                : "Buscando todos os lançamentos na planilha (pode levar até 1 minuto)...",
+                ? "Atualizando dados de " + anoAlvo + " em segundo plano..."
+                : "Buscando lançamentos de " + anoAlvo + " na planilha...",
             "load"
         );
-        if (!silencioso) window.portalMostrarCarregando?.("Carregando folha de serviço");
+        if (!silencioso) window.portalMostrarCarregando?.("Carregando folha de serviço (" + anoAlvo + ")");
         try {
-            const { dados, meta } = await buscarDadosRemotos((texto) => setLoadStatus(texto, "load"));
-            salvarCacheLocal(dados, meta);
+            const { dados, meta } = await buscarDadosRemotos(anoAlvo, (texto) => setLoadStatus(texto, "load"));
+            anoCarregado = anoAlvo;
+            salvarCacheLocal(dados, meta, anoAlvo);
             aplicarDadosDashboard(dados, origemLabel, meta);
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
-            const cache = lerCacheLocal();
+            const cache = lerCacheLocal(anoAlvo);
             if (cache?.dados?.length) {
+                anoCarregado = anoAlvo;
                 aplicarDadosDashboard(cache.dados, "cache local (falha na atualização)", cache.meta || {});
             }
             setLoadStatus(
@@ -1936,15 +1962,31 @@ h1 {
         }
     }
 
-    function carregarFolhaServico() {
-        limparCachesDashboardAntigos();
-        const cache = lerCacheLocal();
+    function trocarAnoDashboard() {
+        const ano = parseInt(document.getElementById("filtro-ano")?.value || "", 10);
+        if (!ano || ano === anoCarregado) return;
+        const cache = lerCacheLocal(ano);
         if (cache?.dados?.length) {
+            anoCarregado = ano;
             aplicarDadosDashboard(cache.dados, "cache local", cache.meta || {});
-            atualizarDadosRemotos("planilha", true);
+            atualizarDadosRemotos("planilha", true, ano);
             return;
         }
-        atualizarDadosRemotos("planilha", false);
+        atualizarDadosRemotos("planilha", false, ano);
+    }
+
+    function carregarFolhaServico() {
+        limparCachesDashboardAntigos();
+        preencherSelectAnos();
+        const anoInicial = ANO_ATUAL;
+        const cache = lerCacheLocal(anoInicial);
+        if (cache?.dados?.length) {
+            anoCarregado = anoInicial;
+            aplicarDadosDashboard(cache.dados, "cache local", cache.meta || {});
+            atualizarDadosRemotos("planilha", true, anoInicial);
+            return;
+        }
+        atualizarDadosRemotos("planilha", false, anoInicial);
     }
 
     window.onload = () => window.portalAguardarUsuario?.(carregarFolhaServico);
@@ -2224,16 +2266,12 @@ h1 {
     }
 
     function filtrarDadosAtuais() {
-        const dInicio = document.getElementById("filtro-data-inicio").value;
-        const dFim = document.getElementById("filtro-data-fim").value;
         const analista = document.getElementById("filtro-analista").value;
         const ocorrencia = document.getElementById("filtro-ocorrencia").value;
         const linha = document.getElementById("filtro-linha").value;
         const situacao = document.getElementById("filtro-situacao").value;
 
         return dadosMestres.filter(item => {
-            if (dInicio && item.data < dInicio) return false;
-            if (dFim && item.data > dFim) return false;
             if (analista && item.analista !== analista) return false;
             if (ocorrencia && item.ocorrencia !== ocorrencia) return false;
             if (linha && item.linha !== linha) return false;

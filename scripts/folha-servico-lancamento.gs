@@ -15,7 +15,7 @@ const SPREADSHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const ABA_GID = 1013912232;
 const ABA_NOME = "FOLHA DE SERVIÇO";
 const LISTAS_GID = 665133219;
-const SCRIPT_VERSAO = "2026-06-23-dashboard-paginado";
+const SCRIPT_VERSAO = "2026-06-23-dashboard-ano";
 const FOLHA_DASHBOARD_DIAS = 0;
 const FOLHA_DASHBOARD_PAGINA = 3500;
 const FOLHA_CHUNK_LINHAS = 800;
@@ -141,9 +141,14 @@ function montarRespostaLeitura_(params) {
   return { ok: true, dados: dados, opcoes: lerOpcoesPadronizadas_() };
 }
 
-/** Leitura enxuta para o dashboard (campos reduzidos; completo=1 ou dias=0 = todos). */
+/** Leitura enxuta para o dashboard (campos reduzidos; ano=YYYY ou completo=1). */
 function montarRespostaDashboard_(params) {
   params = params || {};
+  var anoFiltro = parseInt(String(params.ano || ""), 10);
+  if (!isNaN(anoFiltro) && anoFiltro >= 2000 && anoFiltro <= 2100) {
+    return montarRespostaDashboardAno_(params, anoFiltro);
+  }
+
   var diasParam = params.dias !== undefined && params.dias !== null && String(params.dias) !== ""
     ? parseInt(String(params.dias), 10)
     : FOLHA_DASHBOARD_DIAS;
@@ -156,23 +161,23 @@ function montarRespostaDashboard_(params) {
   var dataMinIso = lerTodos ? "" : isoDataDiasAtrasFolha_(dias);
 
   if (!lerTodos) {
-    var cacheKey = "folha-dash-" + SCRIPT_VERSAO + "-" + String(dias);
+    var cacheKeyDias = "folha-dash-" + SCRIPT_VERSAO + "-" + String(dias);
     try {
-      var emCache = CacheService.getScriptCache().get(cacheKey);
-      if (emCache) {
-        var parsed = JSON.parse(emCache);
-        parsed.meta = parsed.meta || {};
-        parsed.meta.cache = true;
-        return parsed;
+      var emCacheDias = CacheService.getScriptCache().get(cacheKeyDias);
+      if (emCacheDias) {
+        var parsedDias = JSON.parse(emCacheDias);
+        parsedDias.meta = parsedDias.meta || {};
+        parsedDias.meta.cache = true;
+        return parsedDias;
       }
-    } catch (errCache) {}
+    } catch (errCacheDias) {}
   }
 
-  const sheet = abrirAba_();
-  const lastRow = sheet.getLastRow();
-  const numCols = sheet.getLastColumn();
-  const totalPlanilha = Math.max(0, lastRow - 1);
-  if (lastRow < 2 || numCols < 1) {
+  var sheetGeral = abrirAba_();
+  var lastRowGeral = sheetGeral.getLastRow();
+  var numColsGeral = sheetGeral.getLastColumn();
+  var totalPlanilhaGeral = Math.max(0, lastRowGeral - 1);
+  if (lastRowGeral < 2 || numColsGeral < 1) {
     return {
       ok: true,
       dados: [],
@@ -188,42 +193,42 @@ function montarRespostaDashboard_(params) {
     };
   }
 
-  const titulos = sheet.getRange(1, 1, 1, numCols).getValues()[0];
-  const cabecalho = titulos.map(normalizarChave_);
-  const dados = [];
+  var titulosGeral = sheetGeral.getRange(1, 1, 1, numColsGeral).getValues()[0];
+  var cabecalhoGeral = titulosGeral.map(normalizarChave_);
+  var dadosGeral = [];
 
   if (lerTodos) {
-    var offset = Math.max(0, parseInt(String(params.offset || "0"), 10) || 0);
-    var limit = parseInt(String(params.limit || String(FOLHA_DASHBOARD_PAGINA)), 10) || FOLHA_DASHBOARD_PAGINA;
-    limit = Math.max(100, Math.min(limit, 5000));
-    var startRow = 2 + offset;
-    var linhasRestantes = lastRow - startRow + 1;
-    var numRowsPagina = Math.min(limit, Math.max(0, linhasRestantes));
+    var offsetGeral = Math.max(0, parseInt(String(params.offset || "0"), 10) || 0);
+    var limitGeral = parseInt(String(params.limit || String(FOLHA_DASHBOARD_PAGINA)), 10) || FOLHA_DASHBOARD_PAGINA;
+    limitGeral = Math.max(100, Math.min(limitGeral, 5000));
+    var startRowGeral = 2 + offsetGeral;
+    var linhasRestantesGeral = lastRowGeral - startRowGeral + 1;
+    var numRowsPaginaGeral = Math.min(limitGeral, Math.max(0, linhasRestantesGeral));
 
-    if (numRowsPagina > 0) {
-      var valoresPagina = sheet.getRange(startRow, 1, numRowsPagina, numCols).getValues();
-      for (var j = 0; j < valoresPagina.length; j++) {
-        var brutoPag = linhaParaObjeto_(cabecalho, valoresPagina[j], startRow + j);
-        dados.push(objetoDashboardSlim_(brutoPag));
+    if (numRowsPaginaGeral > 0) {
+      var valoresPaginaGeral = sheetGeral.getRange(startRowGeral, 1, numRowsPaginaGeral, numColsGeral).getValues();
+      for (var jG = 0; jG < valoresPaginaGeral.length; jG++) {
+        var brutoGeral = linhaParaObjeto_(cabecalhoGeral, valoresPaginaGeral[jG], startRowGeral + jG);
+        dadosGeral.push(objetoDashboardSlim_(brutoGeral));
       }
     }
 
-    var nextOffset = offset + dados.length;
-    var hasMore = nextOffset < totalPlanilha;
+    var nextOffsetGeral = offsetGeral + dadosGeral.length;
+    var hasMoreGeral = nextOffsetGeral < totalPlanilhaGeral;
 
     return {
       ok: true,
-      dados: dados,
+      dados: dadosGeral,
       meta: {
         versao: SCRIPT_VERSAO,
         origem: "dashboard",
-        total: dados.length,
-        total_planilha: totalPlanilha,
-        total_carregado: nextOffset,
-        offset: offset,
-        limit: limit,
-        next_offset: hasMore ? nextOffset : null,
-        has_more: hasMore,
+        total: dadosGeral.length,
+        total_planilha: totalPlanilhaGeral,
+        total_carregado: nextOffsetGeral,
+        offset: offsetGeral,
+        limit: limitGeral,
+        next_offset: hasMoreGeral ? nextOffsetGeral : null,
+        has_more: hasMoreGeral,
         dias: 0,
         completo: true,
         data_de: "",
@@ -232,24 +237,24 @@ function montarRespostaDashboard_(params) {
     };
   }
 
-  const numRows = totalPlanilha;
-  const valores = sheet.getRange(2, 1, numRows, numCols).getValues();
+  var numRowsGeral = totalPlanilhaGeral;
+  var valoresGeral = sheetGeral.getRange(2, 1, numRowsGeral, numColsGeral).getValues();
 
-  for (var i = 0; i < valores.length; i++) {
-    var bruto = linhaParaObjeto_(cabecalho, valores[i], i + 2);
-    var iso = normalizarDataIso_(bruto.data);
-    if (dataMinIso && iso && iso < dataMinIso) continue;
-    dados.push(objetoDashboardSlim_(bruto));
+  for (var iG = 0; iG < valoresGeral.length; iG++) {
+    var brutoDia = linhaParaObjeto_(cabecalhoGeral, valoresGeral[iG], iG + 2);
+    var isoDia = normalizarDataIso_(brutoDia.data);
+    if (dataMinIso && isoDia && isoDia < dataMinIso) continue;
+    dadosGeral.push(objetoDashboardSlim_(brutoDia));
   }
 
-  var payload = {
+  var payloadGeral = {
     ok: true,
-    dados: dados,
+    dados: dadosGeral,
     meta: {
       versao: SCRIPT_VERSAO,
       origem: "dashboard",
-      total: dados.length,
-      total_planilha: totalPlanilha,
+      total: dadosGeral.length,
+      total_planilha: totalPlanilhaGeral,
       dias: dias,
       completo: lerTodos,
       data_de: dataMinIso,
@@ -257,16 +262,87 @@ function montarRespostaDashboard_(params) {
     }
   };
 
-  if (!lerTodos) {
-    try {
-      var jsonPayload = JSON.stringify(payload);
-      if (jsonPayload.length < 95000) {
-        CacheService.getScriptCache().put("folha-dash-" + SCRIPT_VERSAO + "-" + String(dias), jsonPayload, FOLHA_CACHE_TTL);
+  try {
+    var jsonPayloadGeral = JSON.stringify(payloadGeral);
+    if (jsonPayloadGeral.length < 95000) {
+      CacheService.getScriptCache().put("folha-dash-" + SCRIPT_VERSAO + "-" + String(dias), jsonPayloadGeral, FOLHA_CACHE_TTL);
+    }
+  } catch (errPutGeral) {}
+
+  return payloadGeral;
+}
+
+/** Dashboard filtrado por ano — leitura reversa em lotes. */
+function montarRespostaDashboardAno_(params, ano) {
+  var limitAno = Math.max(100, Math.min(parseInt(String(params.limit || FOLHA_DASHBOARD_PAGINA), 10) || FOLHA_DASHBOARD_PAGINA, 5000));
+  var fromRowParam = parseInt(String(params.from_row || "0"), 10) || 0;
+
+  var sheetAno = abrirAba_();
+  var lastRowAno = sheetAno.getLastRow();
+  var numColsAno = sheetAno.getLastColumn();
+  var totalPlanilhaAno = Math.max(0, lastRowAno - 1);
+  if (lastRowAno < 2 || numColsAno < 1) {
+    return {
+      ok: true,
+      dados: [],
+      meta: {
+        versao: SCRIPT_VERSAO,
+        origem: "dashboard",
+        ano: ano,
+        total: 0,
+        total_planilha: 0,
+        has_more: false,
+        cache: false
       }
-    } catch (errPut) {}
+    };
   }
 
-  return payload;
+  var titulosAno = sheetAno.getRange(1, 1, 1, numColsAno).getValues()[0];
+  var cabecalhoAno = titulosAno.map(normalizarChave_);
+  var dataMinIsoAno = ano + "-01-01";
+  var anoTexto = String(ano);
+  var endRowAno = fromRowParam > 0 ? fromRowParam : lastRowAno;
+  var dadosAno = [];
+  var pararTotalAno = false;
+
+  while (endRowAno >= 2 && dadosAno.length < limitAno && !pararTotalAno) {
+    var startRowAno = Math.max(2, endRowAno - FOLHA_CHUNK_LINHAS + 1);
+    var numRowsPaginaAno = endRowAno - startRowAno + 1;
+    var valoresPaginaAno = sheetAno.getRange(startRowAno, 1, numRowsPaginaAno, numColsAno).getValues();
+
+    for (var jAno = valoresPaginaAno.length - 1; jAno >= 0 && dadosAno.length < limitAno; jAno--) {
+      var brutoAno = linhaParaObjeto_(cabecalhoAno, valoresPaginaAno[jAno], startRowAno + jAno);
+      var isoAno = normalizarDataIso_(brutoAno.data);
+      if (isoAno && isoAno < dataMinIsoAno) {
+        pararTotalAno = true;
+        break;
+      }
+      if (!isoAno || isoAno.substring(0, 4) !== anoTexto) continue;
+      dadosAno.push(objetoDashboardSlim_(brutoAno));
+    }
+
+    endRowAno = startRowAno - 1;
+  }
+
+  dadosAno.reverse();
+
+  var hasMoreAno = !pararTotalAno && endRowAno >= 2;
+
+  return {
+    ok: true,
+    dados: dadosAno,
+    meta: {
+      versao: SCRIPT_VERSAO,
+      origem: "dashboard",
+      ano: ano,
+      total: dadosAno.length,
+      total_planilha: totalPlanilhaAno,
+      has_more: hasMoreAno,
+      next_from_row: hasMoreAno ? endRowAno : null,
+      from_row: fromRowParam > 0 ? fromRowParam : lastRowAno,
+      cache: false
+    }
+  };
 }
 
 function isoDataDiasAtrasFolha_(dias) {
