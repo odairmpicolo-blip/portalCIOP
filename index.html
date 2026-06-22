@@ -699,16 +699,18 @@ footer{
 .notice-item-title-inner,
 .notice-item-text-inner{
     display:inline;
+    font-family:Arial,Helvetica,"Segoe UI","Noto Color Emoji","Segoe UI Emoji",sans-serif;
 }
 
 .notice-item-title img.emoji,
 .notice-item-text img.emoji,
 .notice-manage-item img.emoji{
-    height:1.05em;
-    width:1.05em;
+    height:1.1em;
+    width:1.1em;
+    min-width:1.1em;
     margin:0 .05em;
     vertical-align:-.15em;
-    display:inline;
+    display:inline-block;
 }
 
 .notice-item-title{
@@ -2048,9 +2050,19 @@ function escapeAviso(valor) {
 
 const TWEMOJI_BASE = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/";
 
+function renderizarEmojiAviso(texto) {
+    const safe = escapeAviso(texto || "");
+    if (!window.twemoji) return safe;
+    return window.twemoji.parse(safe, {
+        folder: TWEMOJI_BASE,
+        ext: ".svg",
+        className: "emoji"
+    });
+}
+
 function aplicarEmojiAviso(elemento) {
     if (!elemento || !window.twemoji) return;
-    window.twemoji.parse(elemento, { folder: TWEMOJI_BASE, ext: ".svg" });
+    window.twemoji.parse(elemento, { folder: TWEMOJI_BASE, ext: ".svg", className: "emoji" });
 }
 
 function preencherTextoAviso(elemento, texto) {
@@ -2060,10 +2072,27 @@ function preencherTextoAviso(elemento, texto) {
     inner.className = elemento.classList.contains("notice-item-title")
         ? "notice-item-title-inner"
         : "notice-item-text-inner";
-    inner.textContent = texto || "";
+    inner.innerHTML = renderizarEmojiAviso(texto);
     elemento.appendChild(inner);
-    aplicarEmojiAviso(inner);
 }
+
+function reaplicarEmojisAvisos() {
+    if (!window.twemoji) return;
+    document.querySelectorAll(".notice-item-title-inner, .notice-item-text-inner").forEach((inner) => {
+        if (inner.querySelector("img.emoji")) return;
+        const bruto = inner.textContent || "";
+        if (!bruto) return;
+        inner.innerHTML = renderizarEmojiAviso(bruto);
+    });
+    document.querySelectorAll(".notice-manage-title-inner").forEach((inner) => {
+        if (inner.querySelector("img.emoji")) return;
+        const bruto = inner.textContent || "";
+        if (!bruto) return;
+        inner.innerHTML = renderizarEmojiAviso(bruto);
+    });
+}
+
+window.addEventListener("load", reaplicarEmojisAvisos);
 
 function normalizarAvisoTexto(valor) {
     return String(valor || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -2287,6 +2316,7 @@ function renderAvisos(lista) {
         item.append(titulo, mensagem);
         avisosLista.appendChild(item);
     });
+    reaplicarEmojisAvisos();
 }
 
 function renderAvisosGestor(lista) {
@@ -2299,7 +2329,7 @@ function renderAvisosGestor(lista) {
     avisosGerenciarLista.innerHTML = lista.map((aviso) => `
         <div class="notice-manage-item">
             <div>
-                <strong>${escapeAviso(aviso.titulo)}</strong>
+                <strong><span class="notice-manage-title-inner">${renderizarEmojiAviso(aviso.titulo)}</span></strong>
                 <span>${escapeAviso(destinatariosAviso(aviso))}</span>
             </div>
             <div class="notice-manage-actions">
@@ -2312,7 +2342,7 @@ function renderAvisosGestor(lista) {
             </div>
         </div>
     `).join("");
-    aplicarEmojiAviso(avisosGerenciarLista);
+    reaplicarEmojisAvisos();
 }
 
 function setAvisoStatus(texto, tipo = "") {
