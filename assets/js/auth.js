@@ -215,6 +215,13 @@ function listaAtributo(valor) {
     .filter(Boolean);
 }
 
+function listaEmails(valor) {
+  return String(valor || "")
+    .split(",")
+    .map((item) => String(item || "").trim().toLowerCase())
+    .filter(Boolean);
+}
+
 function usuarioPodeVer(el, cadastro) {
   const perfil = normalizarPerfil(cadastro.perfil || "Usuario");
   const email = String(cadastro.email || "").toLowerCase();
@@ -224,7 +231,7 @@ function usuarioPodeVer(el, cadastro) {
   if (isAdministrador(cadastro)) return true;
 
   const perfisPermitidos = listaAtributo(el.dataset.perfis);
-  const usuariosPermitidos = listaAtributo(el.dataset.usuarios);
+  const usuariosPermitidos = listaEmails(el.dataset.usuarios);
 
   const temRegraPerfil = perfisPermitidos.length > 0;
   const temRegraUsuario = usuariosPermitidos.length > 0;
@@ -276,8 +283,11 @@ function aplicarPermissoes(cadastro) {
   }
 
   const perfisObrigatorios = listaAtributo(document.body?.dataset.requirePerfis);
-  if (perfisObrigatorios.length && !isAdministrador(cadastro)) {
-    if (!perfisObrigatorios.includes(perfilAtual)) {
+  const usuariosObrigatorios = listaEmails(document.body?.dataset.requireUsuarios);
+  if ((perfisObrigatorios.length || usuariosObrigatorios.length) && !isAdministrador(cadastro)) {
+    const email = String(cadastro.email || "").toLowerCase();
+    const permitido = perfisObrigatorios.includes(perfilAtual) || usuariosObrigatorios.includes(email);
+    if (!permitido) {
       window.location.href = portalPath("index.html");
       return false;
     }
