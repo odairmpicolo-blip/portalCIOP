@@ -17,6 +17,7 @@ document.documentElement.classList.add("portal-auth-pending");
     <title>Dashboard Folha de Serviços - CIOP / TCGL</title>
     <script src="../assets/js/loading.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <link rel="stylesheet" href="../assets/css/portal-senha.css">
 <link rel="stylesheet" href="../assets/css/portal-titulos.css">
 <script type="module" src="../assets/js/auth.js"></script>
@@ -161,7 +162,12 @@ document.documentElement.classList.add("portal-auth-pending");
             flex-direction: column;
         }
         .chart-card.main-chart {
-            min-height: auto;
+            min-height: 380px;
+        }
+        .chart-card.main-chart .chart-container {
+            min-height: 340px;
+            background: linear-gradient(180deg, rgba(6,36,92,.02), transparent 45%);
+            border-radius: 10px;
         }
         .chart-card.secondary-chart {
             min-height: 320px;
@@ -1266,10 +1272,6 @@ h1 {
         </div>
         <div class="filter-grid">
             <div class="filter-group">
-                <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="5" width="18" height="16" rx="2"/></svg></span><span>Ano</span></label>
-                <select id="filtro-ano" onchange="trocarAnoDashboard()"></select>
-            </div>
-            <div class="filter-group">
                 <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="m10 15-2 2 2 2"/><path d="M8 17h7"/></svg></span><span>Data de</span></label>
                 <input type="date" id="filtro-data-de" onchange="filtrarDashboard()">
             </div>
@@ -1717,6 +1719,102 @@ h1 {
         return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
     }
 
+    const ANALISTAS_CHART_THEME = {
+        navy: "#071f57",
+        muted: "#667085",
+        cyan: "#00d4ff",
+        blue: "#1359c7",
+        grid: "rgba(6,36,92,.06)",
+        tooltipBg: "rgba(7,31,87,.94)",
+        tooltipBorder: "rgba(0,212,255,.35)"
+    };
+
+    function rgbaHexAnalistas(hex, alpha) {
+        const h = String(hex || "").replace("#", "");
+        if (h.length !== 6) return "rgba(19,89,199," + alpha + ")";
+        const r = parseInt(h.slice(0, 2), 16);
+        const g = parseInt(h.slice(2, 4), 16);
+        const b = parseInt(h.slice(4, 6), 16);
+        return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+    }
+
+    function gradienteNeonColunaAnalista(chart, idx, total) {
+        const ctx = chart.ctx;
+        const chartArea = chart.chartArea;
+        if (!chartArea) return ANALISTAS_CHART_THEME.blue;
+        const t = total > 1 ? idx / (total - 1) : 0;
+        const corA = "hsl(" + (210 + t * 40) + ", 88%, 52%)";
+        const corB = "hsl(" + (195 + t * 30) + ", 95%, 62%)";
+        const g = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+        g.addColorStop(0, rgbaHexAnalistas(ANALISTAS_CHART_THEME.navy, 0.35));
+        g.addColorStop(0.35, corA);
+        g.addColorStop(1, corB);
+        return g;
+    }
+
+    function arredondarRetanguloAnalistas(ctx, x, y, w, h, r) {
+        if (typeof ctx.roundRect === "function") {
+            ctx.roundRect(x, y, w, h, r);
+            return;
+        }
+        ctx.rect(x, y, w, h);
+    }
+
+    const pluginTrilhaColunasAnalistas = {
+        id: "trilhaColunasAnalistas",
+        beforeDatasetsDraw(chart) {
+            const meta = chart.getDatasetMeta(0);
+            if (!meta?.data?.length || chart.config.options.indexAxis === "y") return;
+            const ctx = chart.ctx;
+            const chartArea = chart.chartArea;
+            ctx.save();
+            meta.data.forEach((bar) => {
+                const w = Math.abs(bar.width || 0);
+                const x = bar.x - w / 2;
+                const h = chartArea.bottom - chartArea.top;
+                ctx.fillStyle = "rgba(6,36,92,.05)";
+                ctx.beginPath();
+                arredondarRetanguloAnalistas(ctx, x, chartArea.top, w, h, 6);
+                ctx.fill();
+            });
+            ctx.restore();
+        }
+    };
+
+    const pluginBrilhoColunasAnalistas = {
+        id: "brilhoColunasAnalistas",
+        afterDatasetsDraw(chart) {
+            const meta = chart.getDatasetMeta(0);
+            if (!meta?.data?.length || chart.config.options.indexAxis === "y") return;
+            const ctx = chart.ctx;
+            ctx.save();
+            ctx.globalCompositeOperation = "lighter";
+            meta.data.forEach((bar) => {
+                const top = Math.min(bar.y, bar.base);
+                const h = Math.abs(bar.y - bar.base);
+                const w = Math.abs(bar.width || 0);
+                if (h < 8) return;
+                ctx.fillStyle = "rgba(255,255,255,.2)";
+                ctx.beginPath();
+                arredondarRetanguloAnalistas(ctx, bar.x - w / 2 + 2, top + 2, Math.max(w - 4, 0), Math.max(h * 0.25, 2), 4);
+                ctx.fill();
+            });
+            ctx.restore();
+        }
+    };
+
+    function nomeAnalistaCurto(nome) {
+        const partes = String(nome || "").trim().split(/\s+/).filter(Boolean);
+        if (partes.length <= 2) return partes.join(" ");
+        return partes[0] + " " + partes[partes.length - 1];
+    }
+
+    function pluginsAnalistasChart() {
+        const list = [pluginTrilhaColunasAnalistas, pluginBrilhoColunasAnalistas];
+        if (typeof ChartDataLabels !== "undefined") list.unshift(ChartDataLabels);
+        return list;
+    }
+
     function destruirGrafico(id) {
         if (chartAnalyticsInstances[id]) {
             chartAnalyticsInstances[id].destroy();
@@ -1974,37 +2072,25 @@ h1 {
         return anosDisponiveis;
     }
 
-    function anoInicialPadrao() {
-        if (anosDisponiveis.includes(ANO_ATUAL)) return String(ANO_ATUAL);
-        if (anosDisponiveis.length) return String(anosDisponiveis[0]);
-        return String(ANO_ATUAL);
-    }
+    function configurarLimitesDatasGlobais() {
+        const inputDe = document.getElementById("filtro-data-de");
+        const inputAte = document.getElementById("filtro-data-ate");
+        if (!inputDe || !inputAte) return;
 
-    function preencherSelectAnos() {
-        const select = document.getElementById("filtro-ano");
-        if (!select) return;
-        const valorAtual = select.value;
-        select.innerHTML = "";
+        const hoje = new Date();
+        const hojeIso = hoje.toISOString().slice(0, 10);
+        const anos = anosDisponiveis.length ? anosDisponiveis : [ANO_ATUAL];
+        const minAno = Math.min(...anos);
+        const maxAno = Math.max(...anos);
+        const inicio = minAno + "-01-01";
+        const fim = maxAno === hoje.getFullYear() ? hojeIso : maxAno + "-12-31";
 
-        const optTodos = document.createElement("option");
-        optTodos.value = ANO_TODOS;
-        optTodos.textContent = "Todos os anos";
-        select.appendChild(optTodos);
-
-        anosDisponiveis.forEach((ano) => {
-            const opt = document.createElement("option");
-            opt.value = String(ano);
-            opt.textContent = String(ano);
-            select.appendChild(opt);
-        });
-
-        const opcoesValidas = [ANO_TODOS, ...anosDisponiveis.map(String)];
-        if (valorAtual && opcoesValidas.includes(valorAtual)) {
-            select.value = valorAtual;
-        } else {
-            select.value = anoInicialPadrao();
-        }
-        atualizarLimitesDataFiltro(select.value);
+        inputDe.min = inicio;
+        inputDe.max = fim;
+        inputDe.value = "";
+        inputAte.min = inicio;
+        inputAte.max = fim;
+        inputAte.value = "";
     }
 
     function isoDataRegistro(item) {
@@ -2015,42 +2101,6 @@ h1 {
             return m[3] + "-" + String(m[2]).padStart(2, "0") + "-" + String(m[1]).padStart(2, "0");
         }
         return d;
-    }
-
-    function atualizarLimitesDataFiltro(ano) {
-        const inputDe = document.getElementById("filtro-data-de");
-        const inputAte = document.getElementById("filtro-data-ate");
-        if (!inputDe || !inputAte) return;
-
-        const hoje = new Date();
-        const hojeIso = hoje.toISOString().slice(0, 10);
-
-        if (anoEhTodos(ano)) {
-            const anos = anosDisponiveis.length ? anosDisponiveis : [ANO_ATUAL];
-            const minAno = Math.min(...anos);
-            const maxAno = Math.max(...anos);
-            const inicio = minAno + "-01-01";
-            const fim = maxAno === hoje.getFullYear() ? hojeIso : maxAno + "-12-31";
-            inputDe.min = inicio;
-            inputDe.max = fim;
-            inputDe.value = inicio;
-            inputAte.min = inicio;
-            inputAte.max = fim;
-            inputAte.value = maxAno === hoje.getFullYear() ? hojeIso : "";
-            return;
-        }
-
-        const anoNum = parseInt(String(ano || ANO_ATUAL), 10) || ANO_ATUAL;
-        const inicioAno = anoNum + "-01-01";
-        const fimAno = anoNum === hoje.getFullYear() ? hojeIso : anoNum + "-12-31";
-
-        inputDe.min = inicioAno;
-        inputDe.max = fimAno;
-        inputDe.value = inicioAno;
-
-        inputAte.min = inicioAno;
-        inputAte.max = fimAno;
-        inputAte.value = anoNum === hoje.getFullYear() ? hojeIso : "";
     }
 
     function limparCachesDashboardAntigos() {
@@ -2158,8 +2208,7 @@ h1 {
 
     async function atualizarDadosRemotos(origemLabel, silencioso, ano) {
         if (carregamentoEmAndamento) return;
-        const selectAno = document.getElementById("filtro-ano")?.value;
-        const anoAlvo = ano != null ? String(ano) : (selectAno || anoInicialPadrao());
+        const anoAlvo = ano != null ? String(ano) : ANO_TODOS;
         carregamentoEmAndamento = true;
         setLoadStatus(
             silencioso
@@ -2190,37 +2239,6 @@ h1 {
         }
     }
 
-    async function trocarAnoDashboard() {
-        const ano = document.getElementById("filtro-ano")?.value || "";
-        if (!ano) return;
-        atualizarLimitesDataFiltro(ano);
-        if (ano === String(anoCarregado)) {
-            filtrarDashboard();
-            return;
-        }
-
-        const snapshot = await carregarSnapshotAno(ano, false);
-        if (snapshot?.dados?.length) {
-            anoCarregado = ano;
-            aplicarDadosDashboard(snapshot.dados, "arquivo JSON", snapshot.meta || {});
-            salvarCacheLocal(snapshot.dados, snapshot.meta || {}, ano);
-            sincronizarRegistrosRecentes(ano).then((qtd) => {
-                if (!qtd) return;
-                aplicarDadosDashboard(dadosMestres, "JSON + " + qtd + " novos", snapshot.meta || {});
-            }).catch(() => {});
-            return;
-        }
-
-        const cache = lerCacheLocal(ano);
-        if (cache?.dados?.length) {
-            anoCarregado = ano;
-            aplicarDadosDashboard(cache.dados, "cache local", cache.meta || {});
-            atualizarDadosRemotos("planilha", true, ano);
-            return;
-        }
-        atualizarDadosRemotos("planilha", false, ano);
-    }
-
     async function carregarFolhaServico() {
         limparCachesDashboardAntigos();
         setLoadStatus("Carregando dados locais...", "load");
@@ -2230,8 +2248,8 @@ h1 {
             console.warn("Falha ao listar anos:", error);
             anosDisponiveis = [ANO_ATUAL];
         }
-        preencherSelectAnos();
-        const anoInicial = document.getElementById("filtro-ano")?.value || anoInicialPadrao();
+        configurarLimitesDatasGlobais();
+        const anoInicial = ANO_TODOS;
         const cache = lerCacheLocal(anoInicial);
         const snapshot = await carregarSnapshotAno(anoInicial, false);
 
@@ -2346,45 +2364,96 @@ h1 {
     function criarGraficoAnalistasClassico(labels, values) {
         const canvas = document.getElementById("chartAnalistas");
         if (!canvas) return;
-        ajustarAlturaGrafico(canvas, labels, true);
+        const wrap = canvas.closest(".chart-container");
+        if (wrap) wrap.style.minHeight = "340px";
         if (chartAnalistasInstance) chartAnalistasInstance.destroy();
+
+        const total = labels.length;
+        const labelsCurto = labels.map(nomeAnalistaCurto);
+        const nomesCompletos = labels.slice();
+        const fonteGrafico = (peso, tamanho) => ({
+            family: "'Segoe UI', system-ui, Arial, sans-serif",
+            weight: peso,
+            size: tamanho
+        });
+
         chartAnalistasInstance = new Chart(canvas.getContext("2d"), {
             type: "bar",
             data: {
-                labels,
+                labels: labelsCurto,
                 datasets: [{
                     label: "Quantidade de Ocorrências",
                     data: values,
-                    backgroundColor: "#0b3a8a",
-                    borderRadius: { topRight: 8, bottomRight: 8 },
+                    backgroundColor(ctx) {
+                        return gradienteNeonColunaAnalista(ctx.chart, ctx.dataIndex, total);
+                    },
+                    borderRadius: { topLeft: 10, topRight: 10, bottomLeft: 4, bottomRight: 4 },
                     borderSkipped: false,
-                    barThickness: 16,
-                    maxBarThickness: 20
+                    maxBarThickness: 48
                 }]
             },
             options: {
-                indexAxis: "y",
                 responsive: true,
                 maintainAspectRatio: false,
-                layout: { padding: { right: 48, left: 4, top: 4, bottom: 4 } },
+                animation: { duration: 900, easing: "easeOutQuart" },
+                layout: { padding: { top: 8, right: 8, left: 4, bottom: 4 } },
                 plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: { label: c => " Ocorrências: " + c.raw } }
+                    tooltip: {
+                        backgroundColor: ANALISTAS_CHART_THEME.tooltipBg,
+                        titleColor: "#fff",
+                        bodyColor: "#e2e8f0",
+                        borderColor: ANALISTAS_CHART_THEME.tooltipBorder,
+                        borderWidth: 1,
+                        padding: 12,
+                        cornerRadius: 10,
+                        displayColors: false,
+                        titleFont: fonteGrafico("700", 12),
+                        bodyFont: fonteGrafico("600", 11),
+                        callbacks: {
+                            title(items) { return nomesCompletos[items[0]?.dataIndex] || ""; },
+                            label(ctx) { return " Ocorrências: " + ctx.raw; }
+                        }
+                    },
+                    datalabels: {
+                        anchor: "end",
+                        align: "top",
+                        offset: 4,
+                        color: ANALISTAS_CHART_THEME.navy,
+                        backgroundColor: "rgba(255,255,255,.88)",
+                        borderRadius: 6,
+                        padding: { top: 3, bottom: 3, left: 6, right: 6 },
+                        font: fonteGrafico("800", 10),
+                        formatter(value) { return value; }
+                    }
                 },
                 scales: {
                     x: {
-                        beginAtZero: true,
-                        grid: { color: "#eef2f7", drawBorder: false },
                         border: { display: false },
-                        ticks: { stepSize: 1, font: { size: 10, weight: "600" }, color: "#667085" }
+                        grid: { display: false },
+                        ticks: {
+                            font: fonteGrafico("700", 10),
+                            color: ANALISTAS_CHART_THEME.navy,
+                            maxRotation: 45,
+                            minRotation: 45,
+                            autoSkip: total > 20,
+                            maxTicksLimit: total > 20 ? 20 : undefined
+                        }
                     },
                     y: {
-                        grid: { display: false },
+                        beginAtZero: true,
                         border: { display: false },
-                        ticks: { autoSkip: false, font: { size: 11, weight: "700" }, color: "#344054" }
+                        grid: { color: ANALISTAS_CHART_THEME.grid, drawTicks: false },
+                        ticks: {
+                            stepSize: 1,
+                            font: fonteGrafico("600", 10),
+                            color: ANALISTAS_CHART_THEME.muted,
+                            padding: 6
+                        }
                     }
                 }
-            }
+            },
+            plugins: pluginsAnalistasChart()
         });
     }
 
