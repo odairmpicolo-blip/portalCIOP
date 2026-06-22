@@ -15,7 +15,7 @@ const SPREADSHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const ABA_GID = 1013912232;
 const ABA_NOME = "FOLHA DE SERVIÇO";
 const LISTAS_GID = 665133219;
-const SCRIPT_VERSAO = "2026-06-23-dashboard-ano";
+const SCRIPT_VERSAO = "2026-06-23-dashboard-anos-planilha";
 const FOLHA_DASHBOARD_DIAS = 0;
 const FOLHA_DASHBOARD_PAGINA = 3500;
 const FOLHA_CHUNK_LINHAS = 800;
@@ -141,12 +141,33 @@ function montarRespostaLeitura_(params) {
   return { ok: true, dados: dados, opcoes: lerOpcoesPadronizadas_() };
 }
 
-/** Leitura enxuta para o dashboard (campos reduzidos; ano=YYYY ou completo=1). */
+/** Leitura enxuta para o dashboard (campos reduzidos; ano=YYYY, ano=todos ou completo=1). */
 function montarRespostaDashboard_(params) {
   params = params || {};
-  var anoFiltro = parseInt(String(params.ano || ""), 10);
-  if (!isNaN(anoFiltro) && anoFiltro >= 2000 && anoFiltro <= 2100) {
-    return montarRespostaDashboardAno_(params, anoFiltro);
+
+  if (String(params.anos || "") === "1") {
+    var anosLista = listarAnosDashboard_();
+    return {
+      ok: true,
+      anos: anosLista,
+      meta: {
+        versao: SCRIPT_VERSAO,
+        origem: "dashboard_anos",
+        total: anosLista.length,
+        cache: false
+      }
+    };
+  }
+
+  var anoParamStr = String(params.ano || "").toLowerCase();
+  if (anoParamStr === "todos") {
+    params.completo = "1";
+    params.dias = "0";
+  } else {
+    var anoFiltro = parseInt(String(params.ano || ""), 10);
+    if (!isNaN(anoFiltro) && anoFiltro >= 2000 && anoFiltro <= 2100) {
+      return montarRespostaDashboardAno_(params, anoFiltro);
+    }
   }
 
   var diasParam = params.dias !== undefined && params.dias !== null && String(params.dias) !== ""
@@ -270,6 +291,54 @@ function montarRespostaDashboard_(params) {
   } catch (errPutGeral) {}
 
   return payloadGeral;
+}
+
+/** Anos distintos presentes na coluna data da planilha (decrescente). */
+function listarAnosDashboard_() {
+  var cacheKeyAnos = "folha-anos-" + SCRIPT_VERSAO;
+  try {
+    var emCacheAnos = CacheService.getScriptCache().get(cacheKeyAnos);
+    if (emCacheAnos) return JSON.parse(emCacheAnos);
+  } catch (errCacheAnos) {}
+
+  var sheetAnos = abrirAba_();
+  var lastRowAnos = sheetAnos.getLastRow();
+  var numColsAnos = sheetAnos.getLastColumn();
+  if (lastRowAnos < 2 || numColsAnos < 1) return [];
+
+  var titulosAnos = sheetAnos.getRange(1, 1, 1, numColsAnos).getValues()[0];
+  var cabecalhoAnos = titulosAnos.map(normalizarChave_);
+  var colDataAnos = -1;
+  for (var iAnos = 0; iAnos < cabecalhoAnos.length; iAnos++) {
+    if (cabecalhoAnos[iAnos] === "data") {
+      colDataAnos = iAnos + 1;
+      break;
+    }
+  }
+  if (colDataAnos < 1) return [];
+
+  var numRowsAnos = lastRowAnos - 1;
+  var valoresDataAnos = sheetAnos.getRange(2, colDataAnos, numRowsAnos, 1).getValues();
+  var mapaAnos = {};
+
+  for (var jAnos = 0; jAnos < valoresDataAnos.length; jAnos++) {
+    var isoAnos = normalizarDataIso_(valoresDataAnos[jAnos][0]);
+    if (!isoAnos || isoAnos.length < 4) continue;
+    var anoNum = parseInt(isoAnos.substring(0, 4), 10);
+    if (!isNaN(anoNum) && anoNum >= 2000 && anoNum <= 2100) mapaAnos[anoNum] = true;
+  }
+
+  var anosOrdenados = Object.keys(mapaAnos).map(function (k) {
+    return parseInt(k, 10);
+  }).sort(function (a, b) {
+    return b - a;
+  });
+
+  try {
+    CacheService.getScriptCache().put(cacheKeyAnos, JSON.stringify(anosOrdenados), FOLHA_CACHE_TTL);
+  } catch (errPutAnos) {}
+
+  return anosOrdenados;
 }
 
 /** Dashboard filtrado por ano — leitura reversa em lotes. */
