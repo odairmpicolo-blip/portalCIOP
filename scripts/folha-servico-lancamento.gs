@@ -15,7 +15,7 @@ const SPREADSHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const ABA_GID = 1013912232;
 const ABA_NOME = "FOLHA DE SERVIÇO";
 const LISTAS_GID = 665133219;
-const SCRIPT_VERSAO = "2026-06-21-liberacao-v1";
+const SCRIPT_VERSAO = "2026-06-21-dashboard-full";
 
 /** Colunas da aba DADOS (gid 665133219) — listas verticais por coluna */
 const COLUNAS_LISTAS = {
@@ -137,25 +137,28 @@ function montarRespostaLeitura_(params) {
   return { ok: true, dados: dados, opcoes: lerOpcoesPadronizadas_() };
 }
 
-/** Leitura enxuta para o dashboard (menos campos, leitura parcial da planilha). */
+/** Leitura enxuta para o dashboard (menos campos, todos os lançamentos). */
 function montarRespostaDashboard_() {
-  const maxRows = 10000;
   const sheet = abrirAba_();
   const lastRow = sheet.getLastRow();
   const numCols = sheet.getLastColumn();
+  const totalPlanilha = Math.max(0, lastRow - 1);
   if (lastRow < 2 || numCols < 1) {
-    return { ok: true, dados: [], meta: { versao: SCRIPT_VERSAO, origem: "dashboard", total: 0 } };
+    return {
+      ok: true,
+      dados: [],
+      meta: { versao: SCRIPT_VERSAO, origem: "dashboard", total: 0, total_planilha: 0 }
+    };
   }
 
   const titulos = sheet.getRange(1, 1, 1, numCols).getValues()[0];
   const cabecalho = titulos.map(normalizarChave_);
-  const qtd = Math.min(maxRows, lastRow - 1);
-  const startRow = Math.max(2, lastRow - qtd + 1);
-  const valores = sheet.getRange(startRow, 1, qtd, numCols).getValues();
+  const numRows = totalPlanilha;
+  const valores = sheet.getRange(2, 1, numRows, numCols).getValues();
   const dados = [];
 
   for (let i = 0; i < valores.length; i++) {
-    const bruto = linhaParaObjeto_(cabecalho, valores[i], startRow + i);
+    const bruto = linhaParaObjeto_(cabecalho, valores[i], i + 2);
     dados.push(objetoDashboardSlim_(bruto));
   }
 
@@ -166,7 +169,8 @@ function montarRespostaDashboard_() {
       versao: SCRIPT_VERSAO,
       origem: "dashboard",
       total: dados.length,
-      linha_inicial: startRow,
+      total_planilha: totalPlanilha,
+      linha_inicial: 2,
       linha_final: lastRow
     }
   };
