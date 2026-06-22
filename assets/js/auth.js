@@ -258,7 +258,7 @@ function aplicarPermissoes(cadastro) {
   });
 
   document.querySelectorAll("[data-perfis], [data-usuarios]").forEach((el) => {
-    el.style.display = usuarioPodeVer(el, cadastro) ? "" : "none";
+    el.style.display = usuarioPodeVer(el, cadastro) ? "flex" : "none";
   });
 
   if (document.body?.dataset.requireAdmin === "true" && !admin) {
