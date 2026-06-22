@@ -161,7 +161,7 @@ document.documentElement.classList.add("portal-auth-pending");
             flex-direction: column;
         }
         .chart-card.main-chart {
-            min-height: 350px;
+            min-height: auto;
         }
         .chart-card.secondary-chart {
             min-height: 320px;
@@ -1832,17 +1832,23 @@ h1 {
         msg.textContent = texto;
     }
 
-    function montarTextoStatus(origem, meta) {
-        const totalPlanilha = meta?.total_planilha;
-        const versao = meta?.versao || "";
-        const extraPlanilha = totalPlanilha
-            ? " · planilha: " + totalPlanilha.toLocaleString("pt-BR")
-            : "";
-        const extraVersao = versao ? " · " + versao : "";
-        const extraAno = meta?.ano
-            ? " · " + (anoEhTodos(meta.ano) ? "todos os anos" : "ano " + meta.ano)
-            : "";
-        return " · origem: " + origem + extraAno + extraPlanilha + extraVersao;
+    function montarTextoRegistros(qtd, filtrado) {
+        const n = Number(qtd || 0).toLocaleString("pt-BR");
+        return filtrado ? n + " registro(s) filtrado(s)" : n + " registro(s)";
+    }
+
+    function filtrosAtivos() {
+        const dDe = document.getElementById("filtro-data-de")?.value || "";
+        const dAte = document.getElementById("filtro-data-ate")?.value || "";
+        const analista = document.getElementById("filtro-analista")?.value || "";
+        const ocorrencia = document.getElementById("filtro-ocorrencia")?.value || "";
+        const linha = document.getElementById("filtro-linha")?.value || "";
+        const situacao = document.getElementById("filtro-situacao")?.value || "";
+        return !!(dDe || dAte || analista || ocorrencia || linha || situacao);
+    }
+
+    function atualizarBannerRegistros(qtd) {
+        setLoadStatus(montarTextoRegistros(qtd, filtrosAtivos()), "ok");
     }
 
     function cacheKeyParaAno(ano) {
@@ -2146,7 +2152,7 @@ h1 {
         const filtrados = filtrarDadosAtuais();
         requestAnimationFrame(() => {
             inicializarGraficos(filtrados);
-            setLoadStatus(montarTextoStatus(origem, meta), "ok");
+            atualizarBannerRegistros(filtrados.length);
         });
     }
 
@@ -2340,8 +2346,7 @@ h1 {
     function criarGraficoAnalistasClassico(labels, values) {
         const canvas = document.getElementById("chartAnalistas");
         if (!canvas) return;
-        const wrap = canvas.closest(".chart-container");
-        if (wrap) wrap.style.minHeight = "";
+        ajustarAlturaGrafico(canvas, labels, true);
         if (chartAnalistasInstance) chartAnalistasInstance.destroy();
         chartAnalistasInstance = new Chart(canvas.getContext("2d"), {
             type: "bar",
@@ -2351,19 +2356,33 @@ h1 {
                     label: "Quantidade de Ocorrências",
                     data: values,
                     backgroundColor: "#0b3a8a",
-                    borderRadius: 4
+                    borderRadius: { topRight: 8, bottomRight: 8 },
+                    borderSkipped: false,
+                    barThickness: 16,
+                    maxBarThickness: 20
                 }]
             },
             options: {
+                indexAxis: "y",
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: { padding: { right: 48, left: 4, top: 4, bottom: 4 } },
                 plugins: {
                     legend: { display: false },
                     tooltip: { callbacks: { label: c => " Ocorrências: " + c.raw } }
                 },
                 scales: {
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } },
-                    x: { ticks: { autoSkip: false } }
+                    x: {
+                        beginAtZero: true,
+                        grid: { color: "#eef2f7", drawBorder: false },
+                        border: { display: false },
+                        ticks: { stepSize: 1, font: { size: 10, weight: "600" }, color: "#667085" }
+                    },
+                    y: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { autoSkip: false, font: { size: 11, weight: "700" }, color: "#344054" }
+                    }
                 }
             }
         });
@@ -2549,6 +2568,7 @@ h1 {
         const dadosFiltrados = filtrarDadosAtuais();
         requestAnimationFrame(() => {
             inicializarGraficos(dadosFiltrados);
+            atualizarBannerRegistros(dadosFiltrados.length);
         });
     }
 </script>
