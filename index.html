@@ -687,11 +687,18 @@ footer{
 .notice-item-title,
 .notice-item-text,
 .notice-manage-item strong,
-.notice-manage-item span,
+.notice-manage-item span{
+    font-family:Arial,Helvetica,"Segoe UI",sans-serif;
+}
+
 #avisoTitulo,
 #avisoMensagem{
-    font-family:Arial,Helvetica,"Segoe UI","Noto Color Emoji","Segoe UI Emoji","Apple Color Emoji",emoji,sans-serif;
-    font-variant-emoji:emoji;
+    font-family:Arial,Helvetica,"Segoe UI","Noto Color Emoji","Segoe UI Emoji",sans-serif;
+}
+
+.notice-item-title-inner,
+.notice-item-text-inner{
+    display:inline;
 }
 
 .notice-item-title img.emoji,
@@ -701,6 +708,7 @@ footer{
     width:1.05em;
     margin:0 .05em;
     vertical-align:-.15em;
+    display:inline;
 }
 
 .notice-item-title{
@@ -2047,8 +2055,14 @@ function aplicarEmojiAviso(elemento) {
 
 function preencherTextoAviso(elemento, texto) {
     if (!elemento) return;
-    elemento.textContent = texto || "";
-    aplicarEmojiAviso(elemento);
+    elemento.replaceChildren();
+    const inner = document.createElement("span");
+    inner.className = elemento.classList.contains("notice-item-title")
+        ? "notice-item-title-inner"
+        : "notice-item-text-inner";
+    inner.textContent = texto || "";
+    elemento.appendChild(inner);
+    aplicarEmojiAviso(inner);
 }
 
 function normalizarAvisoTexto(valor) {
