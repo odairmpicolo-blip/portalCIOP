@@ -523,6 +523,52 @@ let protocoloAtual = null;
 let usuarioCriador = null;
 let protocoloRegistrado = false;
 let corpoFoiEditado = false;
+let dadosGeraisLinhas = [];
+let colunasDadosGerais = { carro: 6, linha: 7, motorista: 5 };
+
+function normalizarCabecalho(valor) {
+    return String(valor || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toUpperCase();
+}
+
+function indiceColunaPlanilha(linhas, nomes) {
+    const cabecalho = (linhas[0] || []).map(normalizarCabecalho);
+    const candidatos = Array.isArray(nomes) ? nomes : [nomes];
+    for (const nome of candidatos) {
+        const idx = cabecalho.indexOf(normalizarCabecalho(nome));
+        if (idx >= 0) return idx;
+    }
+    return -1;
+}
+
+function valorDadoPlanilha(valor) {
+    const texto = String(valor || "").trim();
+    return texto && texto !== "-" ? texto : "";
+}
+
+function mapearColunasDadosGerais(linhas) {
+    colunasDadosGerais = {
+        motorista: indiceColunaPlanilha(linhas, "MOTORISTA"),
+        carro: indiceColunaPlanilha(linhas, "CARRO"),
+        linha: indiceColunaPlanilha(linhas, ["LINHA", "LINHA/ROTA", "ROTA"])
+    };
+}
+
+function buscarCarroLinhaPorRegistro(registro) {
+    const registroNorm = String(registro || "").trim();
+    if (!registroNorm || colunasDadosGerais.motorista < 0) return null;
+    const linha = dadosGeraisLinhas.slice(1).find((item) => {
+        return String(item[colunasDadosGerais.motorista] || "").trim() === registroNorm;
+    });
+    if (!linha) return null;
+    return {
+        carro: valorDadoPlanilha(linha[colunasDadosGerais.carro]),
+        linha: valorDadoPlanilha(linha[colunasDadosGerais.linha])
+    };
+}
 
 function setStatus(texto, tipo) {
     statusRelatorio.textContent = texto;
@@ -618,8 +664,12 @@ function carregarFuncionarios(linhas) {
 }
 
 function carregarDadosGerais(linhas) {
-    preencherDatalist("listaCarros", linhas.slice(1).map((linha) => linha[4]));
-    preencherDatalist("listaLinhas", linhas.slice(1).map((linha) => linha[5]));
+    dadosGeraisLinhas = linhas;
+    mapearColunasDadosGerais(linhas);
+    const idxCarro = colunasDadosGerais.carro;
+    const idxLinha = colunasDadosGerais.linha;
+    preencherDatalist("listaCarros", linhas.slice(1).map((linha) => valorDadoPlanilha(linha[idxCarro])));
+    preencherDatalist("listaLinhas", linhas.slice(1).map((linha) => valorDadoPlanilha(linha[idxLinha])));
 }
 
 function protocoloDisponivel(linhas) {
@@ -694,10 +744,18 @@ function preencherFuncionarioPorRegistro() {
     const funcionario = funcionarios.find((item) => item.registro === registro);
     campos.nome.value = funcionario?.nome || "";
     campos.funcao.value = funcionario?.funcao || "";
+    const vinculo = buscarCarroLinhaPorRegistro(registro);
+    if (vinculo) {
+        campos.carro.value = vinculo.carro || "";
+        campos.linha.value = vinculo.linha || "";
+    }
     if (!funcionario && registro) {
         setStatus("Registro " + registro + " não encontrado na base de funcionários.", "erro");
     } else if (funcionario) {
-        setStatus("Funcionário carregado: " + funcionario.registro + " - " + funcionario.nome + ".", "ok");
+        const extra = vinculo?.carro || vinculo?.linha
+            ? " Carro/linha preenchidos conforme a base."
+            : "";
+        setStatus("Funcionário carregado: " + funcionario.registro + " - " + funcionario.nome + "." + extra, "ok");
     }
     if (!corpoFoiEditado) corpoRelatorio.value = gerarCorpoPadrao();
     atualizarPreview();
