@@ -10,21 +10,80 @@ document.documentElement.classList.add("portal-auth-pending");
 }
 
 /* Dashboard autuações — KPIs e gráficos */
-.cards{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.cards{grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
 .card-highlight{background:linear-gradient(145deg,#fff7ed 0%,#fff 55%,#fff4e6 100%);border:2px solid #ff6b00;box-shadow:0 10px 24px rgba(255,107,0,.18)}
 .card-highlight .icon{background:linear-gradient(135deg,#d94b00,#ff7a18)!important}
 .card-highlight .card-title{color:#9a3412}
 .card-highlight .card-value{font-size:24px;line-height:1.05;color:#c2410c}
 .card-highlight .card-sub{color:#9a3412;font-weight:700}
-.charts-grid-3{display:grid;grid-template-columns:1.15fr 1fr .85fr;gap:10px;margin-bottom:10px;flex:0 0 260px;min-height:260px}
-.chart-box{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;box-shadow:0 2px 8px #0b1f3a0a;display:flex;flex-direction:column;min-height:250px}
-.chart-box h3{margin:0 0 8px;color:#071f57;font-size:15px}
-.chart-canvas-wrap{position:relative;flex:1;min-height:210px}
+.charts-layout{
+  display:grid;grid-template-columns:1.25fr .9fr 1fr;gap:14px;
+  margin-bottom:12px;order:3;min-height:320px;align-items:stretch;
+}
+.chart-box-wide{min-height:0}
+.chart-box-agent .chart-canvas-wrap{min-height:300px;background:linear-gradient(180deg,rgba(6,36,92,.02),transparent 40%);border-radius:10px}
+.chart-box-period .chart-canvas-wrap{background:linear-gradient(180deg,rgba(255,107,0,.03),transparent 45%);border-radius:10px}
+.chart-box-motivos{display:flex;flex-direction:column;min-height:0}
+.chart-box-motivos .chart-area-motivos{display:flex;flex:1;min-height:0;flex-direction:column;gap:10px;align-items:stretch}
+.chart-box-motivos .pie-wrap{
+  flex:0 0 auto;width:100%;max-width:100%;height:auto;max-height:140px;min-height:100px;
+  aspect-ratio:1;align-self:center;display:flex;align-items:center;justify-content:center;
+  filter:drop-shadow(0 8px 20px rgba(0,212,255,.12));
+}
+.chart-box-motivos .pie-wrap canvas{width:100%!important;height:100%!important;display:block;max-height:140px}
+.chart-box-motivos .legend{flex:1;min-width:0;min-height:100px;max-height:170px;overflow:auto;padding-right:2px}
+.chart-box{
+  background:linear-gradient(145deg,#fff 0%,#f8fbff 48%,#f3f7ff 100%);
+  border:1px solid rgba(6,36,92,.1);
+  border-radius:14px;
+  padding:14px 16px 12px;
+  box-shadow:0 12px 32px rgba(6,36,92,.08), inset 0 1px 0 rgba(255,255,255,.9);
+  display:flex;flex-direction:column;min-height:260px;
+  position:relative;overflow:hidden;
+}
+.chart-box::before{
+  content:"";position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,#00d4ff,#1359c7 45%,#ff6b00);
+  opacity:.85;
+}
+.chart-box h3{
+  margin:0 0 10px;padding-bottom:8px;
+  color:#071f57;font-size:14px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;
+  border-bottom:1px solid rgba(6,36,92,.08);
+}
+.period-years-row{display:flex;gap:6px;justify-content:space-between;flex-wrap:wrap;margin:-2px 0 8px;padding:0 2px}
+.period-years-row[hidden]{display:none!important}
+.year-chip{
+  flex:1 1 0;text-align:center;min-width:36px;padding:4px 6px;border-radius:999px;
+  background:linear-gradient(135deg,rgba(0,212,255,.12),rgba(19,89,199,.1));
+  border:1px solid rgba(0,212,255,.22);color:#071f57;font-size:10px;font-weight:800;
+  box-shadow:0 2px 8px rgba(0,212,255,.08);
+}
+.chart-box-motivos .legend-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#253047;font-weight:600}
+.chart-box-motivos .legend-row{
+  display:grid;grid-template-columns:10px 1fr 40px;gap:6px;align-items:center;
+  font-size:10px;margin-bottom:6px;padding:5px 6px;border-radius:8px;
+  background:rgba(255,255,255,.72);border:1px solid rgba(6,36,92,.06);
+}
+.chart-box-motivos .legend-bar-wrap{display:none}
+.chart-box-motivos .legend-row b{color:#071f57;font-size:10px;text-align:right}
+.chart-box-motivos .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.chart-canvas-wrap{position:relative;flex:1;min-height:220px}
 .chart-canvas-wrap canvas{width:100%!important;height:100%!important}
-.chart-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#667085;font-size:12px;font-weight:700;background:rgba(255,255,255,.72)}
+.chart-empty{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:#667085;font-size:12px;font-weight:700;
+  background:linear-gradient(180deg,rgba(255,255,255,.82),rgba(248,251,255,.9));
+  border-radius:10px;
+}
 .chart-empty[hidden]{display:none!important}
+.card-sub-money{font-size:12px;color:#9a3412;font-weight:800;margin-top:2px}
 td.money{font-weight:800;color:#9a3412;white-space:nowrap}
-@media(max-width:1300px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}.charts-grid-3{grid-template-columns:1fr;flex:auto}}
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+th.sortable:hover{background:#0a2a6e}
+.sort-indicator{display:inline-block;margin-left:4px;font-size:11px;opacity:.85}
+.charts-layout{order:3}
+@media(max-width:1300px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}.charts-layout{grid-template-columns:1fr}}
 @media(max-width:700px){.cards{grid-template-columns:1fr 1fr}}
 
 </style>
@@ -535,27 +594,21 @@ h1 {
 <div class="filter-field filter-action"><button onclick="limparFiltros()" class="filter-clear" type="button"><span class="button-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5"/><path d="M14 11v5"/><path d="M9 7V4h6v3"/></svg></span><span>Limpar</span></button></div>
 </div>
 </section>
-<section class="cards">
+<section class="cards cards-kpi">
 <div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/><path d="m16 16 2 2 3-4"/></svg></div><div><div class="card-title">Total de Autuações</div><div class="card-value" id="totalAutuacoes">0</div><div class="card-sub">conforme filtros</div></div></div>
-<div class="card card-highlight"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg></div><div><div class="card-title">Total Gasto (R$)</div><div class="card-value" id="totalGastoReais">R$ 0,00</div><div class="card-sub">soma dos valores em reais</div></div></div>
-<div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l3-3 3 2 4-6"/></svg></div><div><div class="card-title">Total Tarifas</div><div class="card-value" id="totalTarifas">0</div><div class="card-sub">soma das tarifas</div></div></div>
-<div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20"/><path d="M8 7h8"/><path d="M8 12h5"/></svg></div><div><div class="card-title">Ticket Médio</div><div class="card-value" id="ticketMedioReais">R$ 0,00</div><div class="card-sub">média por autuação</div></div></div>
-<div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c1.2-3.3 3.2-5 6-5s4.8 1.7 6 5"/><path d="M16 11a3 3 0 1 0-.8-5.9"/><path d="M17 20h4c-.5-2.4-1.8-4-4-4.8"/></svg></div><div><div class="card-title">Agentes</div><div class="card-value" id="totalAgentes">0</div><div class="card-sub">com autuações</div></div></div>
-<div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg></div><div><div class="card-title">Motivos</div><div class="card-value" id="totalMotivos">0</div><div class="card-sub">situações registradas</div></div></div>
-</section>
-
-<section class="charts-grid-3">
-<div class="chart-box"><h3>Total gasto mês a mês (R$)</h3><div class="chart-canvas-wrap"><canvas id="monthChart" aria-label="Gráfico mês a mês"></canvas><div class="chart-empty" id="monthChartEmpty" hidden>Sem dados no período</div></div></div>
-<div class="chart-box"><h3>Total por agente</h3><div class="chart-canvas-wrap"><canvas id="agentChart" aria-label="Gráfico por agente"></canvas><div class="chart-empty" id="agentChartEmpty" hidden>Sem dados no período</div></div></div>
-<div class="chart-box comp"><h3>Situações em porcentagem</h3><div class="chart-area"><canvas id="pieChart" width="160" height="160"></canvas><div class="legend" id="legend"></div></div></div>
-</section>
-
-<section class="cards" style="margin-bottom:10px">
-<div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7L6.8 19l1-5.8-4.2-4.1 5.8-.8L12 3Z"/></svg></div><div><div class="card-title">Maior Agente</div><div class="card-value" id="topAgenteValor">0</div><div class="card-sub" id="topAgenteNome">Sem dados</div></div></div>
+<div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7L6.8 19l1-5.8-4.2-4.1 5.8-.8L12 3Z"/></svg></div><div><div class="card-title">Maior Agente</div><div class="card-value" id="topAgenteValor">0</div><div class="card-sub" id="topAgenteNome">Sem dados</div><div class="card-sub card-sub-money" id="topAgenteReais">R$ 0,00</div></div></div>
 <div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 4-4 3 3 5-7"/></svg></div><div><div class="card-title">Maior Motivo</div><div class="card-value" id="topMotivoValor">0</div><div class="card-sub" id="topMotivoNome">Sem dados</div></div></div>
+<div class="card"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l3-3 3 2 4-6"/></svg></div><div><div class="card-title">Total Tarifas</div><div class="card-value" id="totalTarifas">0</div><div class="card-sub">soma das tarifas</div></div></div>
+<div class="card card-highlight"><div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg></div><div><div class="card-title">Total Gasto (R$)</div><div class="card-value" id="totalGastoReais">R$ 0,00</div><div class="card-sub">soma dos valores em reais</div></div></div>
 </section>
 
-<section class="table-wrap"><table><thead><tr><th>Ordem</th><th>Data</th><th>Notificação Nº</th><th>Auto Nº</th><th>Grupo</th><th>Artigo</th><th>Motivo</th><th>Agente</th><th>Tarifas</th><th>Valor R$</th></tr></thead><tbody id="tableBody"></tbody></table></section>
+<section class="charts-layout">
+<div class="chart-box chart-box-agent"><h3>Total por agente</h3><div class="chart-canvas-wrap"><canvas id="agentChart" aria-label="Gráfico por agente"></canvas><div class="chart-empty" id="agentChartEmpty" hidden>Sem dados no período</div></div></div>
+<div class="chart-box chart-box-motivos comp"><h3>Motivos</h3><div class="chart-area chart-area-motivos"><div class="pie-wrap"><canvas id="pieChart" aria-label="Gráfico de motivos"></canvas></div><div class="legend" id="legend"></div></div></div>
+<div class="chart-box chart-box-period"><h3 id="periodChartTitle">Autuações ano a ano</h3><div class="period-years-row" id="periodChartYears" hidden></div><div class="chart-canvas-wrap"><canvas id="periodChart" aria-label="Gráfico temporal de autuações"></canvas><div class="chart-empty" id="periodChartEmpty" hidden>Sem dados no período</div></div></div>
+</section>
+
+<section class="table-wrap"><table><thead id="tableHead"><tr></tr></thead><tbody id="tableBody"></tbody></table></section>
 </main>
 <script src="../assets/js/autuacoes-dashboard.js"></script>
 </body>

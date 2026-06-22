@@ -1,9 +1,202 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbylz8scwboPQLeOKWUpw9YqKxomjts1aa8KUwodAuq5IE3T9s7RXd6GJcfMnS9qu6DI/exec";
 let DATA = [];
-let monthChart = null;
+let periodChart = null;
 let agentChart = null;
+let sortState = { key: "data_iso", dir: "desc" };
 
-const COLORS = ["#1359c7", "#28a64a", "#ff6b00", "#7045b8", "#de1b1b", "#f6bf26", "#00a6a6", "#7a8b99", "#9b59b6", "#2c3e50", "#e67e22", "#16a085"];
+const COLORS = ["#00d4ff", "#1359c7", "#ff6b00", "#7045b8", "#28a64a", "#f6bf26", "#00a6a6", "#de1b1b", "#9b59b6", "#16a085", "#e67e22", "#4d7cff"];
+const CHART_THEME = {
+    navy: "#071f57",
+    muted: "#667085",
+    cyan: "#00d4ff",
+    blue: "#1359c7",
+    orange: "#ff6b00",
+    grid: "rgba(6,36,92,.06)",
+    tooltipBg: "rgba(7,31,87,.94)",
+    tooltipBorder: "rgba(0,212,255,.35)"
+};
+
+const TOOLTIP_FUTURO = {
+    backgroundColor: CHART_THEME.tooltipBg,
+    titleColor: "#fff",
+    bodyColor: "#e2e8f0",
+    borderColor: CHART_THEME.tooltipBorder,
+    borderWidth: 1,
+    padding: 12,
+    cornerRadius: 10,
+    displayColors: false,
+    titleFont: { weight: "700", size: 12 },
+    bodyFont: { weight: "600", size: 11 }
+};
+
+const ANIMACAO_FUTURO = { duration: 900, easing: "easeOutQuart" };
+
+function fonteGrafico(peso, tamanho) {
+    return { family: "'Segoe UI', system-ui, Arial, sans-serif", weight: peso, size: tamanho };
+}
+
+function configurarChartDefaults() {
+    if (typeof Chart === "undefined" || Chart._autuacoesTheme) return;
+    Chart.defaults.font.family = "'Segoe UI', system-ui, Arial, sans-serif";
+    Chart.defaults.color = CHART_THEME.muted;
+    Chart._autuacoesTheme = true;
+}
+
+function escalaLinearFuturo(eixo = "y") {
+    return {
+        beginAtZero: true,
+        border: { display: false },
+        grid: {
+            color: CHART_THEME.grid,
+            drawTicks: false,
+            ...(eixo === "x" ? {} : { lineWidth: 1 })
+        },
+        ticks: {
+            color: CHART_THEME.muted,
+            font: fonteGrafico("600", 10),
+            padding: 6
+        }
+    };
+}
+
+function gradienteNeonVertical(chart, corInicio, corFim) {
+    const { ctx, chartArea } = chart;
+    if (!chartArea) return corInicio;
+    const g = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+    g.addColorStop(0, rgbaHex(corInicio, 0.25));
+    g.addColorStop(0.45, rgbaHex(corInicio, 0.75));
+    g.addColorStop(1, corFim);
+    return g;
+}
+
+function gradienteNeonHorizontal(chart, idx, total) {
+    const { ctx, chartArea } = chart;
+    if (!chartArea) return CHART_THEME.blue;
+    const t = total > 1 ? idx / (total - 1) : 0;
+    const corA = `hsl(${210 + t * 40}, 88%, 52%)`;
+    const corB = `hsl(${195 + t * 30}, 95%, 62%)`;
+    const g = ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
+    g.addColorStop(0, rgbaHex(CHART_THEME.navy, 0.55));
+    g.addColorStop(0.35, corA);
+    g.addColorStop(1, corB);
+    return g;
+}
+
+function arredondarRetangulo(ctx, x, y, w, h, r) {
+    if (typeof ctx.roundRect === "function") {
+        ctx.roundRect(x, y, w, h, r);
+        return;
+    }
+    ctx.rect(x, y, w, h);
+}
+
+const pluginTrilhaBarras = {
+    id: "trilhaBarras",
+    beforeDatasetsDraw(chart) {
+        const meta = chart.getDatasetMeta(0);
+        if (!meta?.data?.length || chart.config.options.indexAxis !== "y") return;
+        const { ctx, chartArea } = chart;
+        ctx.save();
+        meta.data.forEach((bar) => {
+            const h = Math.abs(bar.height || 0);
+            const y = bar.y - h / 2;
+            ctx.fillStyle = "rgba(6,36,92,.05)";
+            ctx.beginPath();
+            arredondarRetangulo(ctx, chartArea.left, y, chartArea.right - chartArea.left, h, 6);
+            ctx.fill();
+        });
+        ctx.restore();
+    }
+};
+
+const pluginBrilhoBarras = {
+    id: "brilhoBarras",
+    afterDatasetsDraw(chart) {
+        const meta = chart.getDatasetMeta(0);
+        if (!meta?.data?.length) return;
+        const { ctx } = chart;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        meta.data.forEach((bar) => {
+            const isHorizontal = chart.config.options.indexAxis === "y";
+            if (isHorizontal) {
+                const left = Math.min(bar.x, bar.base);
+                const w = Math.abs(bar.x - bar.base);
+                const h = Math.abs(bar.height || 0);
+                if (w < 8) return;
+                ctx.fillStyle = "rgba(255,255,255,.18)";
+                ctx.beginPath();
+                arredondarRetangulo(ctx, left + 2, bar.y - h / 2 + 2, Math.max(w - 4, 0), Math.max(h * 0.35, 2), 4);
+                ctx.fill();
+            } else {
+                const top = Math.min(bar.y, bar.base);
+                const h = Math.abs(bar.y - bar.base);
+                const w = Math.abs(bar.width || 0);
+                if (h < 8) return;
+                ctx.fillStyle = "rgba(255,255,255,.2)";
+                ctx.beginPath();
+                arredondarRetangulo(ctx, bar.x - w / 2 + 2, top + 2, Math.max(w - 4, 0), Math.max(h * 0.25, 2), 4);
+                ctx.fill();
+            }
+        });
+        ctx.restore();
+    }
+};
+
+function truncarTexto(ctx, texto, maxWidth) {
+    const t = String(texto || "");
+    if (!maxWidth || maxWidth <= 0 || ctx.measureText(t).width <= maxWidth) return t;
+    let curto = t;
+    while (curto.length > 3 && ctx.measureText(`${curto}…`).width > maxWidth) curto = curto.slice(0, -1);
+    return `${curto}…`;
+}
+
+const pluginNomeAgenteNaBarra = {
+    id: "nomeAgenteNaBarra",
+    afterDatasetsDraw(chart) {
+        const meta = chart.getDatasetMeta(0);
+        if (!meta?.data?.length) return;
+        const { ctx, data } = chart;
+        ctx.save();
+        ctx.font = "700 10px 'Segoe UI', system-ui, Arial, sans-serif";
+        ctx.textBaseline = "middle";
+        meta.data.forEach((bar, i) => {
+            const label = String(data.labels[i] || "");
+            if (!label) return;
+            const barLeft = Math.min(bar.x, bar.base);
+            const barRight = Math.max(bar.x, bar.base);
+            const barWidth = Math.max(barRight - barLeft, 0);
+            const pad = 10;
+            const texto = truncarTexto(ctx, label, Math.max(barWidth - pad * 2 - 28, 0));
+            ctx.textAlign = "left";
+            ctx.shadowColor = "rgba(7,31,87,.45)";
+            ctx.shadowBlur = 4;
+            ctx.fillStyle = "#fff";
+            ctx.fillText(texto, barLeft + pad, bar.y);
+        });
+        ctx.restore();
+    }
+};
+
+function pluginsChartJs() {
+    const list = [];
+    if (typeof ChartDataLabels !== "undefined") list.push(ChartDataLabels);
+    list.push(pluginTrilhaBarras, pluginBrilhoBarras);
+    return list;
+}
+
+const TABLE_COLUMNS = [
+    { key: "ordem", label: "Ordem", type: "number" },
+    { key: "data_iso", label: "Data", type: "date", display: "data_br" },
+    { key: "notificacao", label: "Notificação Nº", type: "text" },
+    { key: "auto", label: "Auto Nº", type: "text" },
+    { key: "grupo", label: "Grupo", type: "text" },
+    { key: "artigo", label: "Artigo", type: "text" },
+    { key: "motivo", label: "Motivo", type: "text" },
+    { key: "agente", label: "Agente", type: "text" },
+    { key: "valor_tarifas", label: "Tarifas", type: "number" },
+    { key: "valor_reais", label: "Valor R$", type: "number", money: true }
+];
 
 function byId(id) { return document.getElementById(id); }
 
@@ -13,23 +206,6 @@ function pickValue(row, keys) {
         if (row && row[key] !== undefined && row[key] !== null && row[key] !== "") return row[key];
     }
     return "";
-}
-
-function normalizarCabecalho(valor) {
-    return String(valor || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim()
-        .toLowerCase();
-}
-
-function indicePorCabecalho(headers, candidatos) {
-    const mapa = headers.map(normalizarCabecalho);
-    for (const nome of candidatos) {
-        const idx = mapa.indexOf(normalizarCabecalho(nome));
-        if (idx >= 0) return idx;
-    }
-    return -1;
 }
 
 function parseNumero(valor) {
@@ -87,10 +263,8 @@ function normalizeRows(payload) {
         let date = parseDateValue(pickValue(row, ["data_iso", "DATA_ISO", "Data ISO", "date", "data", "DATA", "Data"]));
         if (!date.iso) date = parseDateValue(pickValue(row, ["data_br", "DATA_BR", "Data BR"]));
         const dataBr = date.br || pickValue(row, ["data_br", "DATA_BR", "Data BR"]);
-        const valorTarifas = parseNumero(pickValue(row, ["valor_tarifas", "valorTarifas", "tarifas", "Valor do auto em tarifas", "valor do auto em tarifas", "TARIFAS"]));
-        const valorReais = parseNumero(pickValue(row, ["valor_reais", "valorReais", "valor em R$", "Valor em R$", "VALOR R$", "valor_r$"]));
         return {
-            ordem: pickValue(row, ["ordem", "Ordem", "ORDEM"]) || index + 1,
+            ordem: Number(pickValue(row, ["ordem", "Ordem", "ORDEM"]) || index + 1),
             data_iso: date.iso,
             data_br: dataBr,
             notificacao: pickValue(row, ["notificacao", "Notificação", "Notificacao", "NOTIFICAÇÃO", "NOTIFICACAO", "Notificação Nº", "Notificacao Nº"]),
@@ -99,8 +273,8 @@ function normalizeRows(payload) {
             agente: pickValue(row, ["agente", "Agente", "AGENTE"]),
             grupo: pickValue(row, ["grupo", "Grupo", "GRUPO"]),
             artigo: pickValue(row, ["artigo", "Artigo", "ARTIGO"]),
-            valor_tarifas: valorTarifas,
-            valor_reais: valorReais
+            valor_tarifas: parseNumero(pickValue(row, ["valor_tarifas", "valorTarifas", "tarifas", "Valor do auto em tarifas", "valor do auto em tarifas", "TARIFAS"])),
+            valor_reais: parseNumero(pickValue(row, ["valor_reais", "valorReais", "valor em R$", "Valor em R$", "VALOR R$", "valor_r$"]))
         };
     }).filter((d) => d.data_iso || d.data_br || d.notificacao || d.auto || d.motivo || d.agente);
 }
@@ -140,6 +314,11 @@ function fillSelect(id, values) {
     });
 }
 
+function intervaloDatasBase() {
+    const dates = DATA.map((d) => d.data_iso).filter(Boolean).sort();
+    return { inicio: dates[0] || "", fim: dates[dates.length - 1] || "" };
+}
+
 function getFiltered() {
     const di = byId("dataInicio").value;
     const df = byId("dataFim").value;
@@ -152,9 +331,7 @@ function getFiltered() {
         if (motivo && d.motivo !== motivo) return false;
         if (agente && d.agente !== agente) return false;
         if (busca) {
-            const s = [
-                d.notificacao, d.auto, d.motivo, d.agente, d.data_br, d.grupo, d.artigo
-            ].join(" ").toLowerCase();
+            const s = [d.notificacao, d.auto, d.motivo, d.agente, d.data_br, d.grupo, d.artigo].join(" ").toLowerCase();
             if (!s.includes(busca)) return false;
         }
         return true;
@@ -174,25 +351,58 @@ function somaCampo(rows, key) {
     return rows.reduce((acc, row) => acc + Number(row[key] || 0), 0);
 }
 
-function labelMes(iso) {
-    if (!iso || iso.length < 7) return "Sem data";
-    const [y, m] = iso.split("-");
-    const dt = new Date(Number(y), Number(m) - 1, 1);
-    return dt.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }).replace(".", "");
+function somaReaisPorAgente(rows, agente) {
+    if (!agente) return 0;
+    return rows.reduce((acc, row) => acc + (row.agente === agente ? Number(row.valor_reais || 0) : 0), 0);
 }
 
-function agruparPorMes(rows) {
+function nivelAgrupamentoTemporal() {
+    const base = intervaloDatasBase();
+    const inicio = byId("dataInicio").value || base.inicio;
+    const fim = byId("dataFim").value || base.fim;
+    const filtroPadrao = base.inicio && base.fim && inicio === base.inicio && fim === base.fim;
+
+    if (filtroPadrao) {
+        return { nivel: "year", titulo: "Autuações ano a ano" };
+    }
+    if (inicio.slice(0, 7) === fim.slice(0, 7)) {
+        return { nivel: "day", titulo: "Autuações dia a dia" };
+    }
+    if (inicio.slice(0, 4) === fim.slice(0, 4)) {
+        return { nivel: "month", titulo: "Autuações mês a mês" };
+    }
+    return { nivel: "year", titulo: "Autuações ano a ano" };
+}
+
+function chavePeriodo(dataIso, nivel) {
+    if (!dataIso) return "";
+    if (nivel === "year") return dataIso.slice(0, 4);
+    if (nivel === "month") return dataIso.slice(0, 7);
+    return dataIso;
+}
+
+function labelPeriodo(chave, nivel) {
+    if (!chave) return "Sem data";
+    if (nivel === "year") return chave;
+    if (nivel === "month") {
+        const [y, m] = chave.split("-");
+        const dt = new Date(Number(y), Number(m) - 1, 1);
+        return dt.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }).replace(".", "");
+    }
+    const [y, m, d] = chave.split("-");
+    return `${d}/${m}/${y.slice(2)}`;
+}
+
+function agruparPorPeriodo(rows, nivel) {
     const mapa = new Map();
     rows.forEach((row) => {
-        const chave = row.data_iso ? row.data_iso.slice(0, 7) : "0000-00";
-        if (!mapa.has(chave)) mapa.set(chave, { mes: chave, total: 0, valor: 0 });
-        const item = mapa.get(chave);
-        item.total += 1;
-        item.valor += Number(row.valor_reais || 0);
+        const chave = chavePeriodo(row.data_iso, nivel);
+        if (!chave) return;
+        mapa.set(chave, (mapa.get(chave) || 0) + 1);
     });
-    return [...mapa.values()]
-        .filter((item) => item.mes !== "0000-00")
-        .sort((a, b) => a.mes.localeCompare(b.mes));
+    return [...mapa.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([chave, total]) => ({ chave, total }));
 }
 
 function hexToRgb(hex) {
@@ -206,80 +416,100 @@ function rgbaHex(hex, alpha) {
     return `rgba(${c.r},${c.g},${c.b},${alpha})`;
 }
 
-function gradienteColunas(chart, corBase) {
-    const { ctx, chartArea } = chart;
-    if (!chartArea) return corBase;
-    const g = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-    g.addColorStop(0, rgbaHex(corBase, 0.35));
-    g.addColorStop(0.55, rgbaHex(corBase, 0.72));
-    g.addColorStop(1, corBase);
-    return g;
+function nomeAgenteCurto(nome) {
+    const partes = String(nome || "").trim().split(/\s+/).filter(Boolean);
+    if (partes.length <= 2) return partes.join(" ");
+    return `${partes[0]} ${partes[partes.length - 1]}`;
 }
 
-function destruirGraficos() {
-    if (monthChart) { monthChart.destroy(); monthChart = null; }
-    if (agentChart) { agentChart.destroy(); agentChart = null; }
+function atualizarRotulosAno(dados, cfg) {
+    const el = byId("periodChartYears");
+    if (!el) return;
+    if (cfg.nivel === "year" && dados.length) {
+        el.hidden = false;
+        el.innerHTML = dados.map((d) =>
+            `<span class="year-chip">${escapeHtml(labelPeriodo(d.chave, cfg.nivel))}</span>`
+        ).join("");
+    } else {
+        el.hidden = true;
+        el.innerHTML = "";
+    }
 }
 
-function desenharGraficoMes(rows) {
-    const canvas = byId("monthChart");
-    const empty = byId("monthChartEmpty");
+function desenharGraficoPeriodo(rows) {
+    const canvas = byId("periodChart");
+    const empty = byId("periodChartEmpty");
+    const titulo = byId("periodChartTitle");
     if (!canvas || typeof Chart === "undefined") return;
-    const dados = agruparPorMes(rows);
+    configurarChartDefaults();
+
+    const cfg = nivelAgrupamentoTemporal();
+    if (titulo) titulo.textContent = cfg.titulo;
+
+    const dados = agruparPorPeriodo(rows, cfg.nivel);
+    atualizarRotulosAno(dados, cfg);
+
     if (!dados.length) {
         empty.hidden = false;
         canvas.style.display = "none";
-        if (monthChart) { monthChart.destroy(); monthChart = null; }
+        if (periodChart) { periodChart.destroy(); periodChart = null; }
         return;
     }
+
     empty.hidden = true;
     canvas.style.display = "block";
-    const labels = dados.map((d) => labelMes(d.mes));
-    const valores = dados.map((d) => d.valor);
-    const cor = "#ff6b00";
-    if (monthChart) monthChart.destroy();
-    monthChart = new Chart(canvas.getContext("2d"), {
+    const labels = dados.map((d) => labelPeriodo(d.chave, cfg.nivel));
+    const valores = dados.map((d) => d.total);
+    const eAno = cfg.nivel === "year";
+
+    if (periodChart) periodChart.destroy();
+    periodChart = new Chart(canvas.getContext("2d"), {
         type: "bar",
         data: {
             labels,
             datasets: [{
-                label: "Total R$",
+                label: "Autuações",
                 data: valores,
-                backgroundColor(ctx) { return gradienteColunas(ctx.chart, cor); },
-                borderRadius: 10,
-                maxBarThickness: 42
+                backgroundColor(ctx) { return gradienteNeonVertical(ctx.chart, CHART_THEME.orange, "#ffb347"); },
+                borderRadius: { topLeft: 10, topRight: 10, bottomLeft: 4, bottomRight: 4 },
+                borderSkipped: false,
+                maxBarThickness: 48
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: ANIMACAO_FUTURO,
+            layout: { padding: { top: eAno ? 10 : 32, left: 4, right: 8 } },
             plugins: {
                 legend: { display: false },
                 tooltip: {
+                    ...TOOLTIP_FUTURO,
                     callbacks: {
-                        label(ctx) { return formatMoeda(ctx.raw); }
+                        title(items) { return items[0]?.label || ""; },
+                        label(ctx) { return `${formatInt(ctx.raw)} autuação(ões)`; }
                     }
                 },
                 datalabels: {
                     anchor: "end",
                     align: "top",
-                    color: "#071f57",
-                    font: { weight: "800", size: 10 },
-                    formatter(value) { return value > 0 ? formatMoeda(value).replace(/\s/g, "") : ""; }
+                    offset: 4,
+                    color: CHART_THEME.navy,
+                    font: fonteGrafico("800", 11),
+                    formatter(value) { return formatInt(value); }
                 }
             },
             scales: {
-                x: { grid: { display: false }, ticks: { font: { weight: "700", size: 10 } } },
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback(value) { return formatMoeda(value).replace(/\s/g, ""); },
-                        font: { size: 10 }
-                    }
-                }
+                x: {
+                    ...escalaLinearFuturo("x"),
+                    display: !eAno,
+                    grid: { display: false },
+                    ticks: { ...escalaLinearFuturo("x").ticks, font: fonteGrafico("700", 10), color: CHART_THEME.navy }
+                },
+                y: escalaLinearFuturo("y")
             }
         },
-        plugins: typeof ChartDataLabels !== "undefined" ? [ChartDataLabels] : []
+        plugins: pluginsChartJs()
     });
 }
 
@@ -287,18 +517,22 @@ function desenharGraficoAgentes(rows) {
     const canvas = byId("agentChart");
     const empty = byId("agentChartEmpty");
     if (!canvas || typeof Chart === "undefined") return;
-    const agentes = groupSum(rows, "agente").slice(0, 12);
+    configurarChartDefaults();
+
+    const agentes = groupSum(rows, "agente").slice(0, 10);
     if (!agentes.length) {
         empty.hidden = false;
         canvas.style.display = "none";
         if (agentChart) { agentChart.destroy(); agentChart = null; }
         return;
     }
+
     empty.hidden = true;
     canvas.style.display = "block";
-    const labels = agentes.map(([nome]) => nome.split(" ").slice(0, 2).join(" "));
+    const labels = agentes.map(([nome]) => nomeAgenteCurto(nome));
     const valores = agentes.map(([, qtd]) => qtd);
-    const cor = "#1359c7";
+    const totalAgentes = labels.length;
+
     if (agentChart) agentChart.destroy();
     agentChart = new Chart(canvas.getContext("2d"), {
         type: "bar",
@@ -307,17 +541,22 @@ function desenharGraficoAgentes(rows) {
             datasets: [{
                 label: "Autuações",
                 data: valores,
-                backgroundColor(ctx) { return gradienteColunas(ctx.chart, cor); },
-                borderRadius: 10,
-                maxBarThickness: 46
+                backgroundColor(ctx) { return gradienteNeonHorizontal(ctx.chart, ctx.dataIndex, totalAgentes); },
+                borderRadius: { topRight: 10, bottomRight: 10, topLeft: 4, bottomLeft: 4 },
+                borderSkipped: false,
+                barThickness: 20
             }]
         },
         options: {
+            indexAxis: "y",
             responsive: true,
             maintainAspectRatio: false,
+            animation: ANIMACAO_FUTURO,
+            layout: { padding: { top: 4, right: 48, left: 4, bottom: 4 } },
             plugins: {
                 legend: { display: false },
                 tooltip: {
+                    ...TOOLTIP_FUTURO,
                     callbacks: {
                         title(items) { return agentes[items[0].dataIndex]?.[0] || ""; },
                         label(ctx) { return `${formatInt(ctx.raw)} autuação(ões)`; }
@@ -325,64 +564,202 @@ function desenharGraficoAgentes(rows) {
                 },
                 datalabels: {
                     anchor: "end",
-                    align: "top",
-                    color: "#071f57",
-                    font: { weight: "900", size: 11 },
+                    align: "end",
+                    offset: 6,
+                    color: CHART_THEME.navy,
+                    backgroundColor: "rgba(255,255,255,.88)",
+                    borderRadius: 6,
+                    padding: { top: 3, bottom: 3, left: 6, right: 6 },
+                    font: fonteGrafico("800", 10),
                     formatter(value) { return formatInt(value); }
                 }
             },
             scales: {
-                x: { grid: { display: false }, ticks: { font: { weight: "700", size: 10 }, maxRotation: 45, minRotation: 0 } },
-                y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } }
+                x: {
+                    ...escalaLinearFuturo("x"),
+                    ticks: { ...escalaLinearFuturo("x").ticks, stepSize: 1 }
+                },
+                y: {
+                    ...escalaLinearFuturo("y"),
+                    grid: { display: false },
+                    ticks: { display: false }
+                }
             }
         },
-        plugins: typeof ChartDataLabels !== "undefined" ? [ChartDataLabels] : []
+        plugins: [...pluginsChartJs(), pluginNomeAgenteNaBarra]
     });
+}
+
+let pieResizeObserver = null;
+
+function prepararCanvasPie(canvas) {
+    const wrap = canvas?.parentElement;
+    const base = wrap ? Math.floor(Math.min(wrap.clientWidth, wrap.clientHeight)) : 160;
+    const size = Math.max(base, 96);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(size * dpr);
+    canvas.height = Math.round(size * dpr);
+    canvas.style.width = `${size}px`;
+    canvas.style.height = `${size}px`;
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, size };
+}
+
+function observarResizePie() {
+    const wrap = byId("pieChart")?.parentElement;
+    if (!wrap || pieResizeObserver || typeof ResizeObserver === "undefined") return;
+    let timer = null;
+    pieResizeObserver = new ResizeObserver(() => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => {
+            const rows = getFiltered();
+            drawPie(groupSum(rows, "motivo"), rows.length);
+        }, 120);
+    });
+    pieResizeObserver.observe(wrap);
+}
+
+function corSegmentoPie(ctx, cx, cy, cor, angInicio, angFim, rIn, rOut) {
+    const mid = (angInicio + angFim) / 2;
+    const gx = cx + Math.cos(mid) * (rOut * 0.5);
+    const gy = cy + Math.sin(mid) * (rOut * 0.5);
+    const g = ctx.createRadialGradient(gx, gy, rIn, cx, cy, rOut);
+    g.addColorStop(0, "#fff");
+    g.addColorStop(0.15, cor);
+    g.addColorStop(1, cor);
+    return g;
 }
 
 function drawPie(items, total) {
     const canvas = byId("pieChart");
-    const ctx = canvas.getContext("2d");
-    const w = canvas.width;
-    const h = canvas.height;
-    const cx = w / 2;
-    const cy = h / 2;
-    const r = 62;
-    ctx.clearRect(0, 0, w, h);
+    if (!canvas) return;
+    const { ctx, size } = prepararCanvasPie(canvas);
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = size * 0.4;
+    const rInner = size * 0.26;
+    const gap = 0.035;
+    ctx.clearRect(0, 0, size, size);
+
     if (!total) {
-        ctx.fillStyle = "#667085";
+        ctx.fillStyle = CHART_THEME.muted;
         ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = `700 ${Math.max(12, size * 0.08)}px 'Segoe UI', system-ui, Arial, sans-serif`;
         ctx.fillText("Sem dados", cx, cy);
         byId("legend").innerHTML = "";
         return;
     }
+
+    ctx.save();
+    ctx.shadowColor = "rgba(0,212,255,.25)";
+    ctx.shadowBlur = size * 0.06;
     let start = -Math.PI / 2;
     items.forEach(([name, val], i) => {
         const ang = (val / total) * Math.PI * 2;
+        if (ang <= 0) return;
+        const a0 = start + gap;
+        const a1 = start + ang - gap;
+        if (a1 <= a0) { start += ang; return; }
         ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, r, start, start + ang);
+        ctx.arc(cx, cy, r, a0, a1);
+        ctx.arc(cx, cy, rInner, a1, a0, true);
         ctx.closePath();
-        ctx.fillStyle = COLORS[i % COLORS.length];
+        ctx.fillStyle = corSegmentoPie(ctx, cx, cy, COLORS[i % COLORS.length], a0, a1, rInner, r);
         ctx.fill();
         start += ang;
     });
+    ctx.restore();
+
     ctx.beginPath();
-    ctx.arc(cx, cy, 34, 0, Math.PI * 2);
-    ctx.fillStyle = "#fff";
+    ctx.arc(cx, cy, rInner - 1, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255,255,255,.96)";
     ctx.fill();
-    ctx.fillStyle = "#071f57";
-    ctx.font = "bold 16px Arial";
+    ctx.strokeStyle = "rgba(0,212,255,.2)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = CHART_THEME.navy;
+    ctx.font = `800 ${Math.max(14, size * 0.11)}px 'Segoe UI', system-ui, Arial, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("100%", cx, cy);
-    byId("legend").innerHTML = items.map(([name, val], i) =>
-        `<div class="legend-row"><span class="dot" style="background:${COLORS[i % COLORS.length]}"></span><span>${escapeHtml(name)}</span><b>${((val / total) * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</b></div>`
-    ).join("");
+    ctx.fillText(formatInt(total), cx, cy - size * 0.02);
+    ctx.fillStyle = CHART_THEME.muted;
+    ctx.font = `600 ${Math.max(9, size * 0.055)}px 'Segoe UI', system-ui, Arial, sans-serif`;
+    ctx.fillText("autuações", cx, cy + size * 0.09);
+
+    byId("legend").innerHTML = items.slice(0, 10).map(([name, val], i) => {
+        const pct = ((val / total) * 100);
+        const cor = COLORS[i % COLORS.length];
+        return `<div class="legend-row">
+            <span class="dot" style="background:${cor};box-shadow:0 0 8px ${rgbaHex(cor, 0.55)}"></span>
+            <span class="legend-name">${escapeHtml(name)}</span>
+            <span class="legend-bar-wrap"><span class="legend-bar" style="width:${pct.toFixed(1)}%;background:linear-gradient(90deg,${cor},${rgbaHex(cor, 0.45)})"></span></span>
+            <b>${pct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</b>
+        </div>`;
+    }).join("");
+}
+
+function sortIcon(key) {
+    if (sortState.key !== key) return "↕";
+    return sortState.dir === "asc" ? "↑" : "↓";
+}
+
+function renderTableHead() {
+    const head = byId("tableHead");
+    if (!head) return;
+    head.innerHTML = `<tr>${TABLE_COLUMNS.map((col) =>
+        `<th class="sortable" data-sort="${col.key}" scope="col">${escapeHtml(col.label)} <span class="sort-indicator">${sortIcon(col.key)}</span></th>`
+    ).join("")}</tr>`;
+    head.querySelectorAll("th.sortable").forEach((th) => {
+        th.addEventListener("click", () => {
+            const key = th.dataset.sort;
+            if (sortState.key === key) {
+                sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+            } else {
+                sortState.key = key;
+                sortState.dir = colDefaultDir(key);
+            }
+            render();
+        });
+    });
+}
+
+function colDefaultDir(key) {
+    const col = TABLE_COLUMNS.find((c) => c.key === key);
+    if (!col) return "asc";
+    if (col.type === "number" || col.type === "date") return "desc";
+    return "asc";
+}
+
+function compareRows(a, b, col) {
+    const dir = sortState.dir === "asc" ? 1 : -1;
+    let va = a[col.key];
+    let vb = b[col.key];
+    if (col.type === "number") {
+        va = Number(va || 0);
+        vb = Number(vb || 0);
+        return (va - vb) * dir;
+    }
+    if (col.type === "date") {
+        va = String(va || "");
+        vb = String(vb || "");
+        return va.localeCompare(vb) * dir;
+    }
+    va = String(va || "").toLocaleLowerCase("pt-BR");
+    vb = String(vb || "").toLocaleLowerCase("pt-BR");
+    return va.localeCompare(vb, "pt-BR") * dir;
+}
+
+function sortRows(rows) {
+    const col = TABLE_COLUMNS.find((c) => c.key === sortState.key) || TABLE_COLUMNS[1];
+    return [...rows].sort((a, b) => compareRows(a, b, col));
 }
 
 function renderTable(rows) {
-    const htmlRows = rows.map((d) =>
+    const sorted = sortRows(rows);
+    const htmlRows = sorted.map((d) =>
         `<tr>
             <td>${d.ordem}</td>
             <td>${escapeHtml(d.data_br)}</td>
@@ -397,7 +774,12 @@ function renderTable(rows) {
         </tr>`
     ).join("");
     byId("tableBody").innerHTML = htmlRows ||
-        '<tr><td colspan="10" class="no-data">Sem dados para os filtros selecionados.</td></tr>';
+        `<tr><td colspan="${TABLE_COLUMNS.length}" class="no-data">Sem dados para os filtros selecionados.</td></tr>`;
+
+    byId("tableHead")?.querySelectorAll(".sort-indicator").forEach((el) => {
+        const th = el.closest("th");
+        if (th) el.textContent = sortIcon(th.dataset.sort);
+    });
 }
 
 function render() {
@@ -407,23 +789,20 @@ function render() {
     const mot = groupSum(rows, "motivo");
     const totalReais = somaCampo(rows, "valor_reais");
     const totalTarifas = somaCampo(rows, "valor_tarifas");
-    const ticketMedio = total ? totalReais / total : 0;
 
     byId("totalAutuacoes").textContent = formatInt(total);
-    byId("totalGastoReais").textContent = formatMoeda(totalReais);
-    byId("totalTarifas").textContent = formatTarifas(totalTarifas);
-    byId("ticketMedioReais").textContent = formatMoeda(ticketMedio);
-    byId("totalAgentes").textContent = formatInt(ag.length);
-    byId("totalMotivos").textContent = formatInt(mot.length);
-    byId("topMotivoValor").textContent = mot[0] ? formatInt(mot[0][1]) : "0";
-    byId("topMotivoNome").textContent = mot[0] ? mot[0][0] : "Sem dados";
     byId("topAgenteValor").textContent = ag[0] ? formatInt(ag[0][1]) : "0";
     byId("topAgenteNome").textContent = ag[0] ? ag[0][0] : "Sem dados";
+    byId("topAgenteReais").textContent = ag[0] ? formatMoeda(somaReaisPorAgente(rows, ag[0][0])) : formatMoeda(0);
+    byId("topMotivoValor").textContent = mot[0] ? formatInt(mot[0][1]) : "0";
+    byId("topMotivoNome").textContent = mot[0] ? mot[0][0] : "Sem dados";
+    byId("totalTarifas").textContent = formatTarifas(totalTarifas);
+    byId("totalGastoReais").textContent = formatMoeda(totalReais);
 
     renderTable(rows);
     drawPie(mot, total);
-    desenharGraficoMes(rows);
     desenharGraficoAgentes(rows);
+    desenharGraficoPeriodo(rows);
 }
 
 function init() {
@@ -431,11 +810,11 @@ function init() {
     byId("agenteFilter").innerHTML = '<option value="">Todos os agentes</option>';
     fillSelect("motivoFilter", uniqueSorted("motivo"));
     fillSelect("agenteFilter", uniqueSorted("agente"));
-    const dates = DATA.map((d) => d.data_iso).filter(Boolean).sort();
-    if (dates.length) {
-        byId("dataInicio").value = dates[0];
-        byId("dataFim").value = dates[dates.length - 1];
-    }
+    const dates = intervaloDatasBase();
+    if (dates.inicio) byId("dataInicio").value = dates.inicio;
+    if (dates.fim) byId("dataFim").value = dates.fim;
+    renderTableHead();
+    observarResizePie();
     ["dataInicio", "dataFim", "motivoFilter", "agenteFilter", "busca"].forEach((id) => {
         byId(id).addEventListener("input", render);
     });
@@ -443,7 +822,7 @@ function init() {
 }
 
 async function loadData() {
-    window.portalMostrarCarregando?.("Carregando autuações");
+    window.portalMostrarCarregando?.("Carregando autuações (pode levar até 1 minuto)");
     if (!API_URL) {
         init();
         window.portalOcultarCarregando?.();
@@ -455,17 +834,24 @@ async function loadData() {
         const payload = await response.json();
         if (payload.status === "error") throw new Error(payload.message || "Erro na API");
         DATA = normalizeRows(payload);
+        if (!DATA.length) {
+            console.warn("API de autuações retornou vazio.", payload);
+        }
     } catch (error) {
         console.error("Erro ao carregar dados do Google Sheets:", error);
+        const tbody = byId("tableBody");
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="${TABLE_COLUMNS.length}" class="no-data">Não foi possível carregar as autuações. Confira se o Apps Script está publicado. (${escapeHtml(error.message)})</td></tr>`;
+        }
     }
     init();
     window.portalOcultarCarregando?.();
 }
 
 function limparFiltros() {
-    const dates = DATA.map((d) => d.data_iso).filter(Boolean).sort();
-    byId("dataInicio").value = dates[0] || "";
-    byId("dataFim").value = dates[dates.length - 1] || "";
+    const dates = intervaloDatasBase();
+    byId("dataInicio").value = dates.inicio || "";
+    byId("dataFim").value = dates.fim || "";
     byId("motivoFilter").value = "";
     byId("agenteFilter").value = "";
     byId("busca").value = "";
