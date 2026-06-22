@@ -133,8 +133,11 @@ async function getCadastro(user) {
     const cadastroOnline = await comTempoLimite(buscarUsuarioFirestore(email), 8000, "Tempo esgotado ao buscar perfil no Firestore.");
     if (cadastroOnline) {
       return {
+        email,
         nome: cadastroOnline.nome || user.displayName || email,
         perfil: cadastroOnline.perfil || "Usuario",
+        registro: cadastroOnline.registro || "",
+        cargo: cadastroOnline.cargo || "",
         ativo: cadastroOnline.ativo !== false
       };
     }
@@ -145,16 +148,22 @@ async function getCadastro(user) {
   const cadastroLocal = usuarios[email] || usuarios[user.email];
   if (!cadastroLocal) {
     return {
+      email,
       nome: user.displayName || user.email,
       perfil: "Usuario",
+      registro: "",
+      cargo: "",
       ativo: true
     };
   }
 
   const cadastro = normalizarCadastro(cadastroLocal, email);
   return {
+    email: cadastro.email || email,
     nome: cadastro.nome || user.displayName || email,
     perfil: cadastro.perfil || "Usuario",
+    registro: cadastro.registro || "",
+    cargo: cadastro.cargo || "",
     ativo: cadastro.ativo !== false
   };
 }
@@ -257,6 +266,8 @@ function aplicarPermissoes(cadastro) {
     nome: cadastro.nome,
     perfil: cadastro.perfil,
     email: cadastro.email,
+    registro: cadastro.registro || "",
+    cargo: cadastro.cargo || "",
     isAdmin: admin
   };
 

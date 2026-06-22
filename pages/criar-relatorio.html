@@ -716,6 +716,24 @@ function autoGrow() {
     atualizarCorpoPDF();
 }
 
+function textoCargoAssinatura(user) {
+    if (!user) return "Cargo não vinculado";
+    return String(user.cargo || user.perfil || "").trim() || "Cargo não vinculado";
+}
+
+function montarUsuarioAssinaturaLogado(cadastro, email) {
+    const base = normalizarCadastro(cadastro || {}, email);
+    const sessao = window.portalUsuario || {};
+    return normalizarUsuarioAssinatura({
+        email: base.email || email,
+        nome: base.nome || sessao.nome || email,
+        perfil: base.perfil || sessao.perfil || "Usuario",
+        registro: base.registro || sessao.registro || "",
+        cargo: base.cargo || sessao.cargo || "",
+        ativo: base.ativo !== false
+    }, email);
+}
+
 function atualizarPreview() {
     preview.numero.textContent = formatarNumero(campos.numero.value);
     preview.registro.textContent = campos.registro.value || "";
@@ -727,8 +745,8 @@ function atualizarPreview() {
     const user = usuarioCriador;
     preview.assinaturaNome.textContent = user?.nome || "Assinatura não disponível";
     preview.assinaturaRegistro.textContent = user?.registro ? "Registro " + user.registro : "";
-    preview.assinaturaCargo.textContent = user?.cargo || "";
-    cargoAssinaturaTexto.textContent = user?.cargo || "Cargo não vinculado";
+    preview.assinaturaCargo.textContent = textoCargoAssinatura(user);
+    cargoAssinaturaTexto.textContent = textoCargoAssinatura(user);
     if (assinaturaResponsavel) {
         assinaturaResponsavel.textContent = user
             ? ((user.registro ? user.registro + " - " : "") + user.nome)
@@ -769,6 +787,7 @@ function normalizarUsuarioAssinatura(cadastro, email) {
         nome: String(user.nome || email || "").trim(),
         registro: String(user.registro || "").trim(),
         cargo: String(user.cargo || "").trim(),
+        perfil: String(user.perfil || "").trim(),
         ativo: user.ativo !== false
     };
 }
@@ -781,28 +800,42 @@ async function carregarAssinaturaUsuarioLogado() {
         return;
     }
 
-    let cadastro = null;
+    let cadastro = {
+        email,
+        nome: window.portalUsuario?.nome || "",
+        perfil: window.portalUsuario?.perfil || "Usuario",
+        registro: window.portalUsuario?.registro || "",
+        cargo: window.portalUsuario?.cargo || ""
+    };
+
     try {
-        cadastro = await buscarUsuarioFirestore(email);
+        const online = await buscarUsuarioFirestore(email);
+        if (online) {
+            cadastro = {
+                email,
+                nome: online.nome || cadastro.nome,
+                perfil: online.perfil || cadastro.perfil,
+                registro: online.registro || cadastro.registro,
+                cargo: online.cargo || cadastro.cargo,
+                ativo: online.ativo !== false
+            };
+        }
     } catch (error) {
         console.warn("Assinatura online indisponível:", error);
     }
 
-    if (!cadastro) {
+    if (!cadastro.registro && !cadastro.cargo) {
         const local = usuariosLocais?.[email] || usuariosLocais?.[window.portalUsuario?.email];
-        if (local) cadastro = normalizarCadastro(local, email);
+        if (local) {
+            const loc = normalizarCadastro(local, email);
+            cadastro.registro = loc.registro || cadastro.registro;
+            cadastro.cargo = loc.cargo || cadastro.cargo;
+            cadastro.nome = loc.nome || cadastro.nome;
+        }
     }
 
-    if (!cadastro?.nome && window.portalUsuario?.nome) {
-        cadastro = normalizarCadastro({
-            nome: window.portalUsuario.nome,
-            perfil: window.portalUsuario.perfil,
-            email
-        }, email);
-    }
-
-    usuarioCriador = cadastro ? normalizarUsuarioAssinatura(cadastro, email) : null;
-    if (usuarioCriador && !usuarioCriador.nome) usuarioCriador = null;
+    usuarioCriador = montarUsuarioAssinaturaLogado(cadastro, email);
+    if (!usuarioCriador?.nome) usuarioCriador = null;
     atualizarPreview();
 }
 
@@ -853,7 +886,7 @@ function dadosProtocolo() {
         funcionario: String(campos.registro.value || "").trim(),
         dataDocumento: normalizarDataInput(campos.data.value),
         analista: analista ? ((analista.registro ? analista.registro + " - " : "") + analista.nome).toUpperCase() : "",
-        cargoAnalista: analista?.cargo || ""
+        cargoAnalista: textoCargoAssinatura(analista)
     };
 }
 
