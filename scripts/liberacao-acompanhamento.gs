@@ -15,7 +15,7 @@
  * POST ?liberacao=1  action=create|update|upsert  (+ campos da aba acompanhamento)
  */
 
-const LIBERACAO_VERSAO = "2026-06-21-liberacao-v8";
+const LIBERACAO_VERSAO = "2026-06-22-liberacao-janela7";
 const LIBERACAO_DIAS_JANELA = 7;
 const LIBERACAO_CHUNK_LINHAS = 800;
 const LIBERACAO_CACHE_TTL = 600;
@@ -56,20 +56,23 @@ function gravarCacheLiberacao_(chave, obj) {
 function montarJanelaLeituraLiberacao_(dataFiltro, dataDe, dataAte, ultimaSemanaFlag) {
   var dataDeNorm = normalizarDataIsoLiberacao_(dataDe || "");
   var dataAteNorm = normalizarDataIsoLiberacao_(dataAte || "");
-  var ultimaSemana = ultimaSemanaFlag;
+  var hojeIso = isoDataDiasAtrasLiberacao_(0);
 
-  if (dataFiltro && !dataDeNorm && !dataAteNorm) {
-    dataDeNorm = dataFiltro;
-    dataAteNorm = dataFiltro;
-    ultimaSemana = false;
-  }
-  if (!dataDeNorm && !dataAteNorm && ultimaSemana) {
+  if (!dataAteNorm) dataAteNorm = hojeIso;
+  if (!dataDeNorm) {
     dataDeNorm = isoDataDiasAtrasLiberacao_(LIBERACAO_DIAS_JANELA);
   }
+  if (dataDeNorm > dataAteNorm) {
+    var tmp = dataDeNorm;
+    dataDeNorm = dataAteNorm;
+    dataAteNorm = tmp;
+  }
+
   return {
-    ultimaSemanaOnly: ultimaSemana && !dataDeNorm && !dataAteNorm,
+    ultimaSemanaOnly: false,
     dataDe: dataDeNorm,
-    dataAte: dataAteNorm
+    dataAte: dataAteNorm,
+    dataFiltro: dataFiltro || ""
   };
 }
 
@@ -659,7 +662,8 @@ function calcularBaseDadosLiberacao_(dados) {
 }
 
 function montarResumoDashboardLiberacao_(dataFiltro, incluirColunas) {
-  const todos = lerAcompanhamentoLiberacao_("", 0);
+  const janela = montarJanelaLeituraLiberacao_("", "", "", true);
+  const todos = lerAcompanhamentoLiberacao_("", 0, "", janela);
   const dadosDia = dataFiltro
     ? todos.filter(function (row) { return normalizarDataIsoLiberacao_(row.data) === dataFiltro; })
     : todos;

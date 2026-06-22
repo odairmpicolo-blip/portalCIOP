@@ -208,11 +208,64 @@ const CAMPOS_SELECT = {
 const CAMPOS_DISPARO_FORMULA = new Set(["saida_real","inicio_real","horario_saida_da_garagem","horario_de_inicio"]);
 const TOLERANCIA_MIN = 5;
 const CAMPOS_HORA = new Set(["horario_saida_da_garagem","horario_de_inicio","saida_real","inicio_real"]);
-const state = { colunas: COLUNAS_EXIBICAO, todos: [], dados: [], saveTimers: {}, saving: {}, sortKey: "horario_saida_da_garagem", sortDir: "asc" };
+const DIAS_JANELA = 7;
+const CACHE_STORAGE_KEY = "portal_liberacao_lancamento_v1";
+const state = {
+    colunas: COLUNAS_EXIBICAO,
+    semana: [],
+    semanaDataDe: "",
+    semanaDataAte: "",
+    todos: [],
+    dados: [],
+    saveTimers: {},
+    saving: {},
+    sortKey: "horario_saida_da_garagem",
+    sortDir: "asc"
+};
 
 function $(id){return document.getElementById(id)}
 function escapeHtml(v){return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function brDate(iso){if(!iso)return "—";const p=iso.split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:iso}
+function isoHoje(){return new Date().toISOString().slice(0,10)}
+function isoDiasAtras(dias){
+    const d=new Date();
+    d.setDate(d.getDate()-dias);
+    return d.toISOString().slice(0,10);
+}
+function normalizarDataIsoRow(row){
+    if(row?.data_iso) return row.data_iso;
+    const br=String(row?.data||"").trim();
+    const p=br.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(p) return p[3]+"-"+p[1].padStart(2,"0")+"-"+p[2].padStart(2,"0");
+    return /^\d{4}-\d{2}-\d{2}$/.test(br)?br:"";
+}
+function lerCacheLiberacao(){
+    try{
+        const raw=localStorage.getItem(CACHE_STORAGE_KEY);
+        if(!raw) return null;
+        const parsed=JSON.parse(raw);
+        if(!Array.isArray(parsed.dados)) return null;
+        return parsed;
+    }catch(err){
+        console.warn("Cache local inválido:",err);
+        return null;
+    }
+}
+function salvarCacheLiberacao(dados,meta){
+    try{
+        localStorage.setItem(CACHE_STORAGE_KEY,JSON.stringify({
+            dados,
+            data_de:meta?.data_de||"",
+            data_ate:meta?.data_ate||"",
+            atualizadoEm:Date.now()
+        }));
+    }catch(err){
+        console.warn("Não foi possível gravar cache local:",err);
+    }
+}
+function dataDentroDaJanela(data,dataDe,dataAte){
+    return data&&dataDe&&dataAte&&data>=dataDe&&data<=dataAte;
+}
 function formatNumber(v){return Number(v||0).toLocaleString("pt-BR")}
 function normalizarMaquina(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/\s+/g," ").trim()}
 function numeroMaquina(v){
@@ -565,6 +618,9 @@ async function salvarLinha(i){
         await apiPost(payload);
         row._dirty=false;
         row._syncErro=false;
+        const idxSem=state.semana.findIndex(r=>r._row===row._row);
+        if(idxSem>=0) state.semana[idxSem]=row;
+        if(state.semana.length) salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte});
         document.querySelectorAll('[data-i="'+i+'"]').forEach(el=>{el.classList.remove("saving","erro");el.classList.add("saved");});
     }catch(err){
         row._syncErro=true;
@@ -584,30 +640,80 @@ function popularMaquinas(lista){
     if(items.includes(prev)) sel.value=prev;
 }
 
-async function carregar(){
+function aplicarSemanaCarregada(dados,dataDe,dataAte){
+    state.semana=dados;
+    state.semanaDataDe=dataDe;
+    state.semanaDataAte=dataAte;
+}
+
+function aplicarFiltroData(data,origem){
+    state.colunas=COLUNAS_EXIBICAO;
+    state.todos=state.semana.filter(r=>normalizarDataIsoRow(r)===data);
+    popularMaquinas([...new Set(state.todos.map(d=>String(d.maquina||"").trim()).filter(Boolean))]);
+    aplicarFiltroMaquina();
+    renderTabela();
+    const agora=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+    setStatus(formatNumber(state.dados.length)+" registro(s) · "+brDate(data)+" · "+origem+" · "+agora,"ok");
+}
+
+async function carregar(forceRefresh=false){
     const data=$("dataFiltro").value;
     if(!data){setStatus("Informe a data.","erro");return;}
-    setStatus("Carregando planilha...","load");
-    window.portalMostrarCarregando?.("Carregando liberação");
+
+    const hoje=isoHoje();
+    const dataDe=isoDiasAtras(DIAS_JANELA);
+
+    if(!forceRefresh&&state.semana.length&&state.semanaDataDe===dataDe&&state.semanaDataAte===hoje){
+        aplicarFiltroData(data,"memória");
+        return;
+    }
+
+    const cache=!forceRefresh?lerCacheLiberacao():null;
+    const cacheValido=cache&&cache.data_ate===hoje&&cache.data_de===dataDe&&cache.dados?.length;
+    let mostrouCache=false;
+
+    if(cacheValido){
+        aplicarSemanaCarregada(cache.dados.map(r=>capturarValoresIniciais(Object.assign({},r))),dataDe,hoje);
+        if(dataDentroDaJanela(data,dataDe,hoje)){
+            aplicarFiltroData(data,"cache local");
+            mostrouCache=true;
+        }
+    }
+
+    if(!mostrouCache){
+        setStatus("Carregando planilha...","load");
+        window.portalMostrarCarregando?.("Carregando liberação");
+    }
+
     try {
-        const res=await apiGet({recurso:"acompanhamento",data,ultima_semana:"0"});
-        state.colunas=COLUNAS_EXIBICAO;
-        state.todos=(res.dados||[]).map(r=>capturarValoresIniciais(Object.assign({},r)));
-        popularMaquinas([...new Set(state.todos.map(d=>String(d.maquina||"").trim()).filter(Boolean))]);
-        aplicarFiltroMaquina();
-        renderTabela();
-        const cacheTxt=res.meta&&res.meta.cache?" · cache":"";
-        setStatus(formatNumber(state.dados.length)+" registro(s) · "+brDate(data)+cacheTxt,"ok");
+        const res=await apiGet({recurso:"acompanhamento",data_de:dataDe,data_ate:hoje,ultima_semana:"0"});
+        const dados=(res.dados||[]).map(r=>capturarValoresIniciais(Object.assign({},r)));
+        aplicarSemanaCarregada(dados,dataDe,hoje);
+        salvarCacheLiberacao(dados,{data_de:dataDe,data_ate:hoje});
+        const origem=(res.meta&&res.meta.cache?"servidor (cache)":"planilha")+(mostrouCache?" · atualizado":"");
+        aplicarFiltroData(data,origem);
     } finally {
         window.portalOcultarCarregando?.();
     }
 }
 
-$("dataFiltro").addEventListener("change",()=>carregar().catch(e=>setStatus(e.message,"erro")));
+$("dataFiltro").addEventListener("change",()=>{
+    const data=$("dataFiltro").value;
+    const hoje=isoHoje();
+    const dataDe=isoDiasAtras(DIAS_JANELA);
+    if(state.semana.length&&state.semanaDataDe===dataDe&&state.semanaDataAte===hoje&&dataDentroDaJanela(data,dataDe,hoje)){
+        aplicarFiltroData(data,"memória");
+        return;
+    }
+    carregar().catch(e=>setStatus(e.message,"erro"));
+});
 $("maquinaFiltro").addEventListener("change",()=>{aplicarFiltroMaquina();renderTabela();setStatus(formatNumber(state.dados.length)+" registro(s) · "+brDate($("dataFiltro").value),"ok");});
 
 function iniciar(){
-    $("dataFiltro").value=new Date().toISOString().slice(0,10);
+    const hoje=isoHoje();
+    $("dataFiltro").value=hoje;
+    $("dataFiltro").min=isoDiasAtras(DIAS_JANELA);
+    $("dataFiltro").max=hoje;
     carregar().catch(e=>setStatus(e.message,"erro"));
 }
 if(window.portalUsuarioValidado) iniciar();
