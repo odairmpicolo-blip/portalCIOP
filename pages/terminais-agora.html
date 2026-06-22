@@ -234,10 +234,11 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
     font-size:12px;
     font-weight:700;
 }
-.fiscal-lead-card .terminal-phone-link{
+.fiscal-lead-meta .terminal-kpi-phone-inline{
     color:var(--muted);
-    font-size:12px;
+    font-size:13px;
     font-weight:800;
+    line-height:1.25;
 }
 .terminal-kpis{
     display:grid;
@@ -358,7 +359,7 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
     width:9px;
     height:9px;
     display:block;
-    fill:currentColor;
+    fill:#fff;
 }
 .terminal-kpi-person{
     display:grid;
@@ -466,7 +467,6 @@ input:focus,select:focus{outline:2px solid rgba(11,58,138,.14);border-color:var(
 }
 .section-title h2{margin:0;color:var(--blue);font-size:17px}
 .section-title > span{color:var(--muted);font-size:12px;font-weight:700}
-.section-title .terminal-phone-icon{color:#fff}
 .terminal-board{
     display:grid;
     gap:10px;
@@ -914,7 +914,7 @@ h1 {
                     <div class="fiscal-lead-name">Marcelo Selhost</div>
                     <div class="fiscal-lead-meta">
                         <span class="fiscal-lead-reg">Reg. 9825</span>
-                        <span id="fiscalLeadPhone"></span>
+                        <div class="terminal-kpi-phone-inline" id="fiscalLeadPhone"></div>
                     </div>
                 </div>
             </div>
@@ -1653,11 +1653,15 @@ function limparFiltros(){
     byId("terminalFiltro").value = "";
     setModo("agora");
 }
+function renderFiscalLeadPhone(){
+    const fiscalPhone = byId("fiscalLeadPhone");
+    if (fiscalPhone) fiscalPhone.innerHTML = telefoneTerminalHtml("43 999780263");
+}
+
 function iniciarUmaVez(){
     if (planilhaIniciada) return;
     planilhaIniciada = true;
-    const fiscalPhone = byId("fiscalLeadPhone");
-    if (fiscalPhone) fiscalPhone.innerHTML = telefoneTerminalHtml("43 999780263");
+    renderFiscalLeadPhone();
     byId("busca").addEventListener("input", render);
     byId("terminalFiltro").addEventListener("change", render);
     window.carregarPlanilha = carregarPlanilha;
@@ -1681,6 +1685,7 @@ if (typeof window.portalAguardarUsuario === "function") {
 } else {
     window.addEventListener("portal:usuario-validado", iniciarUmaVez, { once: true });
 }
+renderFiscalLeadPhone();
 </script>
 </body>
 </html>
