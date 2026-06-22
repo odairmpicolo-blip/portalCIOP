@@ -15,7 +15,7 @@ const SPREADSHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const ABA_GID = 1013912232;
 const ABA_NOME = "FOLHA DE SERVIÇO";
 const LISTAS_GID = 665133219;
-const SCRIPT_VERSAO = "2026-06-22-dashboard-completo";
+const SCRIPT_VERSAO = "2026-06-23-dashboard-total";
 const FOLHA_DASHBOARD_DIAS = 0;
 const FOLHA_CHUNK_LINHAS = 800;
 const FOLHA_CACHE_TTL = 600;
@@ -140,26 +140,32 @@ function montarRespostaLeitura_(params) {
   return { ok: true, dados: dados, opcoes: lerOpcoesPadronizadas_() };
 }
 
-/** Leitura enxuta para o dashboard (campos reduzidos; dias=0 = todos os lançamentos). */
+/** Leitura enxuta para o dashboard (campos reduzidos; completo=1 ou dias=0 = todos). */
 function montarRespostaDashboard_(params) {
   params = params || {};
   var diasParam = params.dias !== undefined && params.dias !== null && String(params.dias) !== ""
     ? parseInt(String(params.dias), 10)
     : FOLHA_DASHBOARD_DIAS;
   if (isNaN(diasParam)) diasParam = FOLHA_DASHBOARD_DIAS;
-  var lerTodos = diasParam <= 0 || String(params.completo || "") === "1";
+  var lerTodos = diasParam <= 0
+    || String(params.completo || "") === "1"
+    || String(params.todos || "") === "1";
+
   var dias = lerTodos ? 0 : Math.max(30, Math.min(diasParam, 730));
   var dataMinIso = lerTodos ? "" : isoDataDiasAtrasFolha_(dias);
-  var cacheKey = "folha-dash-" + SCRIPT_VERSAO + "-" + (lerTodos ? "all" : String(dias));
-  try {
-    var emCache = CacheService.getScriptCache().get(cacheKey);
-    if (emCache) {
-      var parsed = JSON.parse(emCache);
-      parsed.meta = parsed.meta || {};
-      parsed.meta.cache = true;
-      return parsed;
-    }
-  } catch (errCache) {}
+
+  if (!lerTodos) {
+    var cacheKey = "folha-dash-" + SCRIPT_VERSAO + "-" + String(dias);
+    try {
+      var emCache = CacheService.getScriptCache().get(cacheKey);
+      if (emCache) {
+        var parsed = JSON.parse(emCache);
+        parsed.meta = parsed.meta || {};
+        parsed.meta.cache = true;
+        return parsed;
+      }
+    } catch (errCache) {}
+  }
 
   const sheet = abrirAba_();
   const lastRow = sheet.getLastRow();
@@ -169,38 +175,32 @@ function montarRespostaDashboard_(params) {
     return {
       ok: true,
       dados: [],
-      meta: { versao: SCRIPT_VERSAO, origem: "dashboard", total: 0, total_planilha: 0, dias: dias, completo: lerTodos, data_de: dataMinIso }
+      meta: {
+        versao: SCRIPT_VERSAO,
+        origem: "dashboard",
+        total: 0,
+        total_planilha: 0,
+        dias: dias,
+        completo: lerTodos,
+        data_de: dataMinIso
+      }
     };
   }
 
   const titulos = sheet.getRange(1, 1, 1, numCols).getValues()[0];
   const cabecalho = titulos.map(normalizarChave_);
+  const numRows = totalPlanilha;
+  const valores = sheet.getRange(2, 1, numRows, numCols).getValues();
   const dados = [];
-  var endRow = lastRow;
 
-  while (endRow >= 2) {
-    var startRow = Math.max(2, endRow - FOLHA_CHUNK_LINHAS + 1);
-    var numRows = endRow - startRow + 1;
-    var valores = sheet.getRange(startRow, 1, numRows, numCols).getValues();
-    var parar = false;
-
-    for (var i = valores.length - 1; i >= 0; i--) {
-      var bruto = linhaParaObjeto_(cabecalho, valores[i], startRow + i);
-      if (!lerTodos) {
-        var iso = normalizarDataIso_(bruto.data);
-        if (dataMinIso && iso && iso < dataMinIso) {
-          parar = true;
-          break;
-        }
-      }
-      dados.push(objetoDashboardSlim_(bruto));
+  for (var i = 0; i < valores.length; i++) {
+    var bruto = linhaParaObjeto_(cabecalho, valores[i], i + 2);
+    if (!lerTodos) {
+      var iso = normalizarDataIso_(bruto.data);
+      if (dataMinIso && iso && iso < dataMinIso) continue;
     }
-
-    if (parar) break;
-    endRow = startRow - 1;
+    dados.push(objetoDashboardSlim_(bruto));
   }
-
-  dados.reverse();
 
   var payload = {
     ok: true,
@@ -216,12 +216,16 @@ function montarRespostaDashboard_(params) {
       cache: false
     }
   };
-  try {
-    var jsonPayload = JSON.stringify(payload);
-    if (jsonPayload.length < 95000) {
-      CacheService.getScriptCache().put(cacheKey, jsonPayload, FOLHA_CACHE_TTL);
-    }
-  } catch (errPut) {}
+
+  if (!lerTodos) {
+    try {
+      var jsonPayload = JSON.stringify(payload);
+      if (jsonPayload.length < 95000) {
+        CacheService.getScriptCache().put("folha-dash-" + SCRIPT_VERSAO + "-" + String(dias), jsonPayload, FOLHA_CACHE_TTL);
+      }
+    } catch (errPut) {}
+  }
+
   return payload;
 }
 

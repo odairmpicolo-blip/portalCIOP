@@ -1389,8 +1389,9 @@ h1 {
 
 <script>
     const URL_DO_SCRIPT_GOOGLE = "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
-    const URL_DASHBOARD = URL_DO_SCRIPT_GOOGLE + "?dashboard=1&dias=0";
-    const CACHE_KEY = "folha_dashboard_v5";
+    const DASHBOARD_VERSAO = "2026-06-23-dashboard-total";
+    const URL_DASHBOARD = URL_DO_SCRIPT_GOOGLE + "?dashboard=1&completo=1&dias=0";
+    const CACHE_KEY = "folha_dashboard_v6";
     const CACHE_TTL_MS = 60 * 60 * 1000;
     const FETCH_TIMEOUT_MS = 120000;
     const CORES_BARRAS = ["#6366f1", "#8b5cf6", "#ec4899", "#f97316", "#14b8a6", "#22c55e", "#eab308", "#3b82f6", "#ef4444", "#64748b"];
@@ -1800,22 +1801,36 @@ h1 {
         msg.textContent = texto;
     }
 
+    function limparCachesDashboardAntigos() {
+        ["folha_dashboard_v3", "folha_dashboard_v4", "folha_dashboard_v5"].forEach((key) => {
+            try { localStorage.removeItem(key); } catch (_) {}
+            try { sessionStorage.removeItem(key); } catch (_) {}
+        });
+    }
+
     function lerCacheLocal() {
         try {
             const raw = localStorage.getItem(CACHE_KEY);
             if (!raw) return null;
             const parsed = JSON.parse(raw);
             if (!parsed?.dados || !parsed?.ts) return null;
+            if (parsed.versao !== DASHBOARD_VERSAO) return null;
+            if (parsed.meta && parsed.meta.completo === false) return null;
             if (Date.now() - parsed.ts > CACHE_TTL_MS) return null;
-            return parsed.dados;
+            return parsed;
         } catch (_) {
             return null;
         }
     }
 
-    function salvarCacheLocal(dados) {
+    function salvarCacheLocal(dados, meta) {
         try {
-            localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), dados }));
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                ts: Date.now(),
+                versao: DASHBOARD_VERSAO,
+                meta: meta || {},
+                dados
+            }));
         } catch (_) { /* quota */ }
     }
 
@@ -1842,13 +1857,15 @@ h1 {
         gerarFiltrosDinamicos(dadosMestres);
         const filtrados = filtrarDadosAtuais();
         const totalPlanilha = meta?.total_planilha;
-        const extra = totalPlanilha && totalPlanilha !== dados.length
+        const versao = meta?.versao || "";
+        const extraPlanilha = totalPlanilha && totalPlanilha !== dados.length
             ? " · planilha: " + totalPlanilha.toLocaleString("pt-BR")
             : "";
+        const extraVersao = versao ? " · " + versao : "";
         requestAnimationFrame(() => {
             inicializarGraficos(filtrados);
             setLoadStatus(
-                dados.length.toLocaleString("pt-BR") + " registro(s) · origem: " + origem + extra,
+                dados.length.toLocaleString("pt-BR") + " registro(s) · origem: " + origem + extraPlanilha + extraVersao,
                 "ok"
             );
         });
@@ -1866,7 +1883,10 @@ h1 {
         if (!silencioso) window.portalMostrarCarregando?.("Carregando folha de serviço");
         try {
             const { dados, meta } = await buscarDadosRemotos();
-            salvarCacheLocal(dados);
+            if (meta?.completo === false) {
+                throw new Error("API ainda limitada (completo=false). Reimplante o Apps Script folha-servico-lancamento.gs.");
+            }
+            salvarCacheLocal(dados, meta);
             aplicarDadosDashboard(dados, origemLabel, meta);
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
@@ -1881,9 +1901,10 @@ h1 {
     }
 
     function carregarFolhaServico() {
+        limparCachesDashboardAntigos();
         const cache = lerCacheLocal();
-        if (cache && cache.length) {
-            aplicarDadosDashboard(cache, "cache local");
+        if (cache?.dados?.length) {
+            aplicarDadosDashboard(cache.dados, "cache local", cache.meta || {});
             atualizarDadosRemotos("planilha", true);
             return;
         }
