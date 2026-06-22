@@ -171,6 +171,7 @@ th{color:var(--blue);background:#f8fafc}
 }
 .table-actions{display:flex;gap:8px;align-items:center}
 .table-actions .btn{white-space:nowrap;padding:9px 12px}
+.btn-excluir{min-width:88px}
 .status{font-size:12px;font-weight:700;margin-top:10px}
 .ok{color:var(--green)}
 .erro{color:var(--red)}
@@ -362,14 +363,25 @@ body.modal-open{overflow:hidden}
     box-shadow:0 12px 24px rgba(21,128,61,.24);
     filter:brightness(1.04);
 }
-.btn-new-user svg{
-    width:17px;
-    height:17px;
-    fill:none;
-    stroke:currentColor;
-    stroke-width:2.2;
-    stroke-linecap:round;
-    stroke-linejoin:round;
+.btn-new-user-secondary{
+    background:linear-gradient(135deg,var(--blue),var(--blue2));
+    box-shadow:0 8px 16px rgba(6,36,92,.16);
+}
+.btn-new-user-secondary:hover{
+    box-shadow:0 10px 20px rgba(6,36,92,.22);
+}
+.auth-option{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:4px 0 0;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:700;
+}
+.auth-option input{
+    width:auto;
+    margin:0;
 }
 @media(max-width:760px){
     .user-panel-head{
@@ -558,12 +570,11 @@ h1 {
                 </div>
                 <div class="user-panel-center">
                     <h2 class="panel-title">Gerenciar Usuários</h2>
-                    <span class="panel-title-note">Depois de criar o login no Firebase, informe o e-mail aqui para classificar o perfil no portal.</span>
+                    <span class="panel-title-note">Ao salvar, cria o login no Firebase e envia e-mail de senha. Ao excluir (admin), remove o perfil do portal; remova o login no Console Firebase.</span>
                 </div>
                 <div class="user-panel-actions">
-                    <a class="btn-new-user" href="https://console.firebase.google.com/project/portal-ciop/authentication/users" target="_blank" rel="noopener">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/><circle cx="12" cy="12" r="9"/></svg>
-                        <span>Cadastrar novo usuário</span>
+                    <a class="btn-new-user btn-new-user-secondary" href="https://console.firebase.google.com/project/portal-ciop/authentication/users" target="_blank" rel="noopener">
+                        <span>Console Firebase</span>
                     </a>
                 </div>
             </div>
@@ -603,6 +614,10 @@ h1 {
                 <button class="btn btn-primary" type="button" onclick="classificarUsuario()">Salvar usuário</button>
                 <button class="btn btn-secondary" type="button" onclick="recarregarUsuarios()">Atualizar lista</button>
             </div>
+            <label class="auth-option full" for="classificarEnviarSenha">
+                <input id="classificarEnviarSenha" type="checkbox" checked>
+                Enviar e-mail para o usuário definir a senha (somente no primeiro cadastro no Firebase)
+            </label>
             <div class="user-search">
                 <label for="buscaUsuarios">Buscar usuários</label>
                 <input id="buscaUsuarios" type="search" placeholder="Buscar por nome, registro, e-mail, perfil ou cargo" oninput="filtrarUsuarios()" autocomplete="off">
@@ -618,9 +633,10 @@ h1 {
                         <th aria-sort="none"><button class="sort-btn" type="button" data-sort-btn="status" onclick="ordenarUsuarios('status')" aria-label="Ordenar por status"><span class="sort-label">Status</span><span class="sort-arrow" id="sort_status">↕</span></button></th>
                         <th>Editar</th>
                         <th>Acesso</th>
+                        <th id="colExcluirHeader" hidden>Excluir</th>
                     </tr>
                 </thead>
-                <tbody id="usuariosTabela"><tr><td colspan="8" class="no-data">Carregando usuários...</td></tr></tbody>
+                <tbody id="usuariosTabela"><tr><td colspan="9" class="no-data">Carregando usuários...</td></tr></tbody>
             </table>
         </section>
 
@@ -629,7 +645,7 @@ h1 {
                 <div class="modal-header">
                     <div>
                         <h2 id="editarUsuarioTitulo">Editar usuário</h2>
-                        <p>Use o mesmo e-mail cadastrado no Firebase Authentication.</p>
+                        <p>Use o mesmo e-mail do login Firebase. Novos e-mails criam o acesso automaticamente.</p>
                     </div>
                     <button class="modal-close" type="button" onclick="fecharEditorUsuario()" aria-label="Fechar">×</button>
                 </div>
@@ -677,6 +693,7 @@ import {
     excluirUsuarioFirestore,
     normalizarCadastro
 } from "../assets/js/portal-firestore.js";
+import { garantirUsuarioFirebaseAuth, excluirUsuarioPortalCompleto } from "../assets/js/portal-auth-admin.js";
 
 const perfisDisponiveis = ["Administrador", "Supervisor", "Gerência", "Analista", "SAC", "Secretária"];
 const cargosDisponiveis = [
@@ -912,6 +929,16 @@ function atualizarCabecalhoOrdenacao() {
     });
 }
 
+function usuarioPodeExcluirUsuarios() {
+    return usuarioLogadoEhAdministrador() || usuarioLogadoEhDonoPerfil();
+}
+
+function aplicarColunaExclusaoAdmin() {
+    const pode = usuarioPodeExcluirUsuarios();
+    const col = document.getElementById("colExcluirHeader");
+    if (col) col.hidden = !pode;
+}
+
 function renderUsuarios() {
     const tbody = document.getElementById("usuariosTabela");
     atualizarPerfilCadastroDisponivel();
@@ -919,11 +946,14 @@ function renderUsuarios() {
     const ordenados = Object.entries(usuariosEditados)
         .filter(([email, user]) => usuarioCombinaComBusca(email, user))
         .sort(compararUsuarios);
+    aplicarColunaExclusaoAdmin();
+    const podeExcluir = usuarioPodeExcluirUsuarios();
+    const colspanVazio = podeExcluir ? 9 : 8;
     if (!ordenados.length) {
         const mensagem = filtroUsuarios
             ? "Nenhum usuário encontrado para a busca informada."
             : "Nenhum usuário cadastrado no portal.";
-        tbody.innerHTML = '<tr><td colspan="8" class="no-data">' + mensagem + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="' + colspanVazio + '" class="no-data">' + mensagem + '</td></tr>';
         return;
     }
     tbody.innerHTML = ordenados.map(([email, user]) => {
@@ -945,6 +975,18 @@ function renderUsuarios() {
         const botaoAcesso = cadastroProtegidoDoDono
             ? "<button class=\"btn btn-secondary\" type=\"button\" disabled title=\"Cadastro protegido. Apenas odair.marin@icloud.com pode alterar este usuário.\">" + acaoLabel + "</button>"
             : "<button class=\"btn " + acaoClass + "\" type=\"button\" onclick=\"alternarAcesso('" + emailParam + "')\">" + acaoLabel + "</button>";
+        let colunaExcluir = "";
+        if (podeExcluir) {
+            const bloqueado = ehProprioUsuario || cadastroProtegidoDoDono;
+            const titulo = ehProprioUsuario
+                ? "Você não pode excluir o próprio usuário."
+                : (cadastroProtegidoDoDono
+                    ? "Cadastro protegido. Apenas odair.marin@icloud.com pode excluir este usuário."
+                    : "Excluir perfil do portal (login Firebase no Console)");
+            colunaExcluir = bloqueado
+                ? "<td><div class=\"table-actions\"><button class=\"btn btn-secondary btn-excluir\" type=\"button\" disabled title=\"" + escapeAttr(titulo) + "\">Excluir</button></div></td>"
+                : "<td><div class=\"table-actions\"><button class=\"btn btn-danger btn-excluir\" type=\"button\" onclick=\"excluirUsuario('" + emailParam + "')\" title=\"" + escapeAttr(titulo) + "\">Excluir</button></div></td>";
+        }
         return "<tr>" +
             "<td>" + escapeHtml(registro || "-") + "</td>" +
             "<td>" + escapeHtml(user.nome) + "</td>" +
@@ -954,6 +996,7 @@ function renderUsuarios() {
             "<td><span class=\"status " + statusClass + "\">" + statusLabel + "</span></td>" +
             "<td><div class=\"table-actions\">" + botaoEditar + "</div></td>" +
             "<td><div class=\"table-actions\">" + botaoAcesso + "</div></td>" +
+            colunaExcluir +
             "</tr>";
     }).join("");
 }
@@ -1125,6 +1168,11 @@ window.salvarEditorUsuario = async function () {
     status.textContent = "Salvando alterações...";
 
     try {
+        if (novoEmail !== emailAntigo) {
+            status.textContent = "Criando login no Firebase para o novo e-mail...";
+            await garantirUsuarioFirebaseAuth(novoEmail, { enviarLinkSenha: true });
+        }
+
         const ativo = user.ativo !== false;
         const usuario = await salvarUsuarioFirestore(novoEmail, { nome, perfil, registro, cargo, ativo });
         if (novoEmail !== emailAntigo) {
@@ -1134,7 +1182,9 @@ window.salvarEditorUsuario = async function () {
         usuariosEditados[usuario.email] = { ...usuario, ativo };
         renderUsuarios();
         window.fecharEditorUsuario();
-        atualizarStatus(novoEmail !== emailAntigo ? "Usuário atualizado com novo e-mail." : "Usuário atualizado no Firestore.");
+        atualizarStatus(novoEmail !== emailAntigo
+            ? "Usuário atualizado. Novo login criado no Firebase e e-mail de senha enviado, se necessário."
+            : "Usuário atualizado no portal.");
     } catch (error) {
         console.error(error);
         status.className = "status erro";
@@ -1153,6 +1203,60 @@ document.addEventListener("keydown", (event) => {
         window.fecharEditorUsuario();
     }
 });
+
+window.excluirUsuario = async function (emailParam) {
+    if (!usuarioPodeExcluirUsuarios()) {
+        atualizarStatus("Somente administradores podem excluir usuários.", "erro");
+        return;
+    }
+
+    const email = normalizarEmailLocal(decodificarEmailParam(emailParam));
+    const user = usuariosEditados[email];
+    if (!user) {
+        atualizarStatus("Usuário não encontrado para exclusão.", "erro");
+        return;
+    }
+
+    if (usuarioEhLogado(email)) {
+        atualizarStatus("Você não pode excluir o próprio usuário.", "erro");
+        return;
+    }
+
+    if (usuarioEhDonoPerfil(email) && !usuarioEhLogado(email)) {
+        atualizarStatus("Cadastro protegido. Apenas odair.marin@icloud.com pode excluir este usuário.", "erro");
+        return;
+    }
+
+    const rotulo = user.nome ? user.nome + " (" + email + ")" : email;
+    if (!confirm(
+        "Deseja realmente excluir " + rotulo + "?\n\n" +
+        "• Remove o perfil do portal (Firestore)\n" +
+        "• O login no Firebase Authentication deve ser removido manualmente no Console"
+    )) {
+        return;
+    }
+
+    const status = document.getElementById("cadastroStatus");
+    status.className = "status";
+    status.textContent = "Excluindo usuário...";
+
+    try {
+        const resultado = await excluirUsuarioPortalCompleto(email);
+        delete usuariosEditados[email];
+        if (usuarioEmEdicao === email) {
+            window.fecharEditorUsuario();
+        }
+        renderUsuarios();
+        atualizarStatus(
+            "Perfil removido do portal. Remova o login de " + email + " no Console Firebase: " +
+            (resultado.consoleAuthUrl || "https://console.firebase.google.com/project/portal-ciop/authentication/users")
+        );
+    } catch (error) {
+        console.error(error);
+        status.className = "status erro";
+        status.textContent = error.message || "Não foi possível excluir o usuário.";
+    }
+};
 
 window.alternarAcesso = async function (emailParam) {
     const id = normalizarEmailLocal(decodificarEmailParam(emailParam));
@@ -1189,7 +1293,20 @@ window.alternarAcesso = async function (emailParam) {
     }
 };
 
-window.classificarUsuario = function () {
+async function mensagemSalvamentoFirebaseAuth(email, criado, linkSenhaEnviado, atualizacao = false) {
+    if (criado && linkSenhaEnviado) {
+        return "Login criado no Firebase, perfil salvo no portal e e-mail de senha enviado.";
+    }
+    if (criado) {
+        return "Login criado no Firebase e perfil salvo no portal.";
+    }
+    if (atualizacao) {
+        return "Usuário atualizado no portal. O login já existia no Firebase.";
+    }
+    return "Perfil salvo no portal. O login já existia no Firebase.";
+}
+
+window.classificarUsuario = async function () {
     const email = document.getElementById("classificarEmail").value.trim().toLowerCase();
     const nome = document.getElementById("classificarNome").value.trim();
     const registro = document.getElementById("classificarRegistro").value.trim();
@@ -1227,12 +1344,29 @@ window.classificarUsuario = function () {
         }
     }
 
-    salvarUsuario(email, nome, perfil, registro, cargo, "Usuário salvo no Firestore.", usuarioExistente?.ativo !== false);
-    document.getElementById("classificarEmail").value = "";
-    document.getElementById("classificarNome").value = "";
-    document.getElementById("classificarRegistro").value = "";
-    document.getElementById("classificarCargo").value = "";
-    atualizarPerfilCadastroDisponivel();
+    status.className = "status";
+    status.textContent = "Criando login no Firebase...";
+
+    try {
+        const enviarLinkSenha = document.getElementById("classificarEnviarSenha")?.checked !== false;
+        const auth = await garantirUsuarioFirebaseAuth(email, { enviarLinkSenha });
+        const mensagem = await mensagemSalvamentoFirebaseAuth(
+            email,
+            auth.criado,
+            auth.linkSenhaEnviado,
+            Boolean(usuarioExistente)
+        );
+        await salvarUsuario(email, nome, perfil, registro, cargo, mensagem, usuarioExistente?.ativo !== false);
+        document.getElementById("classificarEmail").value = "";
+        document.getElementById("classificarNome").value = "";
+        document.getElementById("classificarRegistro").value = "";
+        document.getElementById("classificarCargo").value = "";
+        atualizarPerfilCadastroDisponivel();
+    } catch (error) {
+        console.error(error);
+        status.className = "status erro";
+        status.textContent = error.message || "Não foi possível criar o login no Firebase.";
+    }
 };
 
 
