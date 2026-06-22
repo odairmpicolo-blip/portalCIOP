@@ -1417,8 +1417,11 @@ h1 {
     const ANO_ATUAL = new Date().getFullYear();
     const ANO_TODOS = "todos";
     const CACHE_KEY_PREFIX = "folha_dashboard_v9";
-    const CACHE_TTL_MS = 60 * 60 * 1000;
+    const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
     const FETCH_TIMEOUT_MS = 120000;
+    const FOLHA_DATA_BASE = "../assets/data/folha-servico";
+    const FOLHA_MANIFEST_URL = FOLHA_DATA_BASE + "/manifest.json";
+    const SYNC_RECENTES_LIMIT = 500;
     const CORES_BARRAS = ["#6366f1", "#8b5cf6", "#ec4899", "#f97316", "#14b8a6", "#22c55e", "#eab308", "#3b82f6", "#ef4444", "#64748b"];
     const PALETA_OCORRENCIA = {
         "ATRASADO": "#2563eb",
@@ -1473,6 +1476,7 @@ h1 {
     const chartAnalyticsInstances = {};
     let carregamentoEmAndamento = false;
     let mapaCorPorOcorrencia = {};
+    let folhaManifest = null;
 
     const pluginValoresLaterais = {
         id: "valoresLaterais",
@@ -1832,6 +1836,99 @@ h1 {
         return CACHE_KEY_PREFIX + "_" + String(ano);
     }
 
+    function chaveRegistroUnica(item) {
+        return [
+            item?.data || "",
+            item?.hora || "",
+            item?.analista || "",
+            item?.ocorrencia || "",
+            item?.carro || item?.carro_sai || "",
+            item?.linha || "",
+            item?.situacao || ""
+        ].join("|");
+    }
+
+    function mesclarRegistros(base, novos) {
+        const mapa = new Map();
+        (base || []).forEach((item) => mapa.set(chaveRegistroUnica(item), item));
+        (novos || []).forEach((item) => {
+            const registro = normalizarRegistro(item);
+            mapa.set(chaveRegistroUnica(registro), registro);
+        });
+        return [...mapa.values()];
+    }
+
+    function anoDoRegistro(item) {
+        const iso = isoDataRegistro(item);
+        return iso ? parseInt(iso.slice(0, 4), 10) : null;
+    }
+
+    function urlSnapshotAno(ano, bust) {
+        const sufixo = bust ? "?ts=" + Date.now() : "";
+        if (anoEhTodos(ano)) return FOLHA_DATA_BASE + "/todos.json" + sufixo;
+        return FOLHA_DATA_BASE + "/ano-" + encodeURIComponent(String(ano)) + ".json" + sufixo;
+    }
+
+    async function carregarManifestFolha() {
+        try {
+            const res = await fetch(FOLHA_MANIFEST_URL, { cache: "no-store" });
+            if (!res.ok) return null;
+            return await res.json();
+        } catch (_) {
+            return null;
+        }
+    }
+
+    async function carregarSnapshotAno(ano, bust) {
+        try {
+            const res = await fetch(urlSnapshotAno(ano, bust));
+            if (!res.ok) return null;
+            const payload = await res.json();
+            const dados = normalizarLista(payload.dados || payload);
+            if (!dados.length) return null;
+            return {
+                dados,
+                meta: {
+                    ano: payload.ano != null ? payload.ano : ano,
+                    total: payload.total || dados.length,
+                    total_planilha: payload.total_planilha || payload.total || dados.length,
+                    versao: payload.versao || folhaManifest?.versao || DASHBOARD_VERSAO,
+                    snapshotEm: payload.atualizadoEm || folhaManifest?.atualizadoEm || ""
+                }
+            };
+        } catch (_) {
+            return null;
+        }
+    }
+
+    async function sincronizarRegistrosRecentes(ano) {
+        const raw = await fetchComTimeout(URL_DO_SCRIPT_GOOGLE + "?somente_recentes=1&limit=" + SYNC_RECENTES_LIMIT);
+        const novos = normalizarLista(raw).filter((item) => {
+            const anoRegistro = anoDoRegistro(item);
+            return anoEhTodos(ano) || String(anoRegistro) === String(ano);
+        });
+        if (!novos.length) return 0;
+        dadosMestres = mesclarRegistros(dadosMestres, novos);
+        salvarCacheLocal(dadosMestres, {
+            ano,
+            total: dadosMestres.length,
+            versao: DASHBOARD_VERSAO,
+            origem: "json_incremental"
+        }, ano);
+        return novos.length;
+    }
+
+    async function carregarAnosDisponiveisPreferindoJson() {
+        folhaManifest = await carregarManifestFolha();
+        if (folhaManifest?.anos?.length) {
+            anosDisponiveis = folhaManifest.anos
+                .map((item) => parseInt(String(item), 10))
+                .filter((item) => !Number.isNaN(item) && item >= 2000);
+            return;
+        }
+        await buscarAnosDisponiveis();
+    }
+
     function anoEhTodos(ano) {
         return String(ano || "") === ANO_TODOS;
     }
@@ -2086,7 +2183,7 @@ h1 {
         }
     }
 
-    function trocarAnoDashboard() {
+    async function trocarAnoDashboard() {
         const ano = document.getElementById("filtro-ano")?.value || "";
         if (!ano) return;
         atualizarLimitesDataFiltro(ano);
@@ -2094,6 +2191,19 @@ h1 {
             filtrarDashboard();
             return;
         }
+
+        const snapshot = await carregarSnapshotAno(ano, false);
+        if (snapshot?.dados?.length) {
+            anoCarregado = ano;
+            aplicarDadosDashboard(snapshot.dados, "arquivo JSON", snapshot.meta || {});
+            salvarCacheLocal(snapshot.dados, snapshot.meta || {}, ano);
+            sincronizarRegistrosRecentes(ano).then((qtd) => {
+                if (!qtd) return;
+                aplicarDadosDashboard(dadosMestres, "JSON + " + qtd + " novos", snapshot.meta || {});
+            }).catch(() => {});
+            return;
+        }
+
         const cache = lerCacheLocal(ano);
         if (cache?.dados?.length) {
             anoCarregado = ano;
@@ -2106,16 +2216,40 @@ h1 {
 
     async function carregarFolhaServico() {
         limparCachesDashboardAntigos();
-        setLoadStatus("Carregando anos disponíveis...", "load");
+        setLoadStatus("Carregando dados locais...", "load");
         try {
-            await buscarAnosDisponiveis();
+            await carregarAnosDisponiveisPreferindoJson();
         } catch (error) {
-            console.warn("Falha ao listar anos da planilha:", error);
+            console.warn("Falha ao listar anos:", error);
             anosDisponiveis = [ANO_ATUAL];
         }
         preencherSelectAnos();
         const anoInicial = document.getElementById("filtro-ano")?.value || anoInicialPadrao();
         const cache = lerCacheLocal(anoInicial);
+        const snapshot = await carregarSnapshotAno(anoInicial, false);
+
+        if (snapshot?.dados?.length) {
+            anoCarregado = anoInicial;
+            aplicarDadosDashboard(snapshot.dados, "arquivo JSON", snapshot.meta || {});
+            salvarCacheLocal(snapshot.dados, snapshot.meta || {}, anoInicial);
+            const extraSnapshot = folhaManifest?.atualizadoEm
+                ? " · snapshot: " + new Date(folhaManifest.atualizadoEm).toLocaleString("pt-BR")
+                : "";
+            setLoadStatus(
+                snapshot.dados.length.toLocaleString("pt-BR") + " registro(s) · origem: arquivo JSON" + extraSnapshot,
+                "ok"
+            );
+            sincronizarRegistrosRecentes(anoInicial).then((qtd) => {
+                if (!qtd) return;
+                aplicarDadosDashboard(dadosMestres, "JSON + " + qtd + " novos", snapshot.meta || {});
+                setLoadStatus(
+                    dadosMestres.length.toLocaleString("pt-BR") + " registro(s) · JSON + " + qtd + " lançamento(s) recente(s)",
+                    "ok"
+                );
+            }).catch(() => {});
+            return;
+        }
+
         if (cache?.dados?.length) {
             anoCarregado = anoInicial;
             aplicarDadosDashboard(cache.dados, "cache local", cache.meta || {});

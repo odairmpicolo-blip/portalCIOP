@@ -1,0 +1,35 @@
+name: Atualizar folha de serviço JSON
+
+on:
+  schedule:
+    # A cada 3 horas (UTC)
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Baixar portal
+        uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Gerar JSON da folha de serviço
+        env:
+          PORTAL_ROOT: ${{ github.workspace }}
+        run: node scripts/atualizar-folha-servico-json.mjs
+
+      - name: Publicar dados atualizados
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Atualiza snapshots JSON da folha de serviço"
+          file_pattern: assets/data/folha-servico/*.json
