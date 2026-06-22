@@ -98,7 +98,7 @@ if (-not (Test-Path $EnvFile)) {
     exit 1
 }
 
-Write-Log "Iniciando atualizacao ($Mode) — portal: $PortalRoot"
+Write-Log "Iniciando atualizacao ($Mode) - portal: $PortalRoot"
 Import-EnvFile -Path $EnvFile
 
 $env:PORTAL_ROOT = $PortalRoot
@@ -128,5 +128,5 @@ if (Invoke-Update) {
     exit 0
 }
 
-Write-Log "ERRO: falha na atualizacao apos 2 tentativas. Proxima execucao amanha as 03:00 ou manual: powershell -File `"$PSCommandPath`" manual"
+Write-Log 'ERRO: falha na atualizacao apos 2 tentativas. Proxima execucao amanha as 03:00.'
 exit 1
