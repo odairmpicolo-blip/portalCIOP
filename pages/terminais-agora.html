@@ -936,6 +936,7 @@ const GID_DADOS = "960902644";
 const GID_PROGRAMACAO = "1037933022";
 const BASE_CSV = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=csv&gid=";
 const AUTO_FETCH_MS = 120000;
+const CACHE_TERMINAIS_KEY = "portal_terminais_v1";
 const AUTO_RENDER_MS = 30000;
 
 let REGISTROS = [];
@@ -1329,9 +1330,48 @@ function setErroFonte(mensagem){
     box.classList.add("active");
     box.textContent = mensagem;
 }
+function lerCacheTerminais() {
+    try {
+        const raw = localStorage.getItem(CACHE_TERMINAIS_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed?.DADOS || !parsed?.REGISTROS) return null;
+        return parsed;
+    } catch (error) {
+        return null;
+    }
+}
+
+function salvarCacheTerminais(payload) {
+    try {
+        localStorage.setItem(CACHE_TERMINAIS_KEY, JSON.stringify(Object.assign({ ts: Date.now() }, payload)));
+    } catch (error) {}
+}
+
+function aplicarCacheTerminais(cache) {
+    DADOS = cache.DADOS || [];
+    MAP_TERMINAL_TELEFONE = cache.MAP_TERMINAL_TELEFONE || {};
+    REGISTROS = cache.REGISTROS || [];
+    atualizarSelectTerminais();
+    render();
+}
+
 async function carregarPlanilha(manual){
-    window.portalMostrarCarregando?.("Carregando terminais");
-    setStatusFonte("", "Lendo planilha...");
+    if (!manual && document.hidden) return;
+
+    const cacheLocal = !manual ? lerCacheTerminais() : null;
+    let mostrouCache = false;
+    if (cacheLocal) {
+        aplicarCacheTerminais(cacheLocal);
+        const agora = new Date();
+        setStatusFonte("ok", "Cache local · " + agora.toLocaleString("pt-BR", {dateStyle:"short", timeStyle:"short"}) + " | Registros: " + formatInt(REGISTROS.length));
+        mostrouCache = true;
+    }
+
+    if (!mostrouCache) {
+        window.portalMostrarCarregando?.("Carregando terminais");
+        setStatusFonte("", "Lendo planilha...");
+    }
     setErroFonte("");
     try {
         const resultado = await Promise.allSettled([buscarAba(GID_DADOS), buscarAba(GID_PROGRAMACAO)]);
@@ -1341,16 +1381,24 @@ async function carregarPlanilha(manual){
         DADOS = dados.lista;
         MAP_TERMINAL_TELEFONE = dados.mapaTerminalTelefone;
         REGISTROS = normalizarProgramacao(resultado[1].value, dados.mapa);
+        salvarCacheTerminais({
+            DADOS,
+            MAP_TERMINAL_TELEFONE,
+            REGISTROS
+        });
         atualizarSelectTerminais();
         render();
         const agora = new Date();
-        const texto = "Atualizado " + agora.toLocaleString("pt-BR", {dateStyle:"short", timeStyle:"short"}) + " | Registros: " + formatInt(REGISTROS.length);
+        const prefixo = mostrouCache ? "Atualizado" : "Atualizado";
+        const texto = prefixo + " " + agora.toLocaleString("pt-BR", {dateStyle:"short", timeStyle:"short"}) + " | Registros: " + formatInt(REGISTROS.length);
         setStatusFonte("ok", texto);
     } catch (error) {
         console.error("Erro ao carregar planilha:", error);
-        setStatusFonte("erro", "Falha ao ler a planilha");
-        setErroFonte("Não consegui ler a planilha. Para funcionar automaticamente, compartilhe a planilha como visualização para quem tiver o link ou publique as abas usadas. Aba Escala configurada: gid " + GID_PROGRAMACAO + ". Aba Base de Dados configurada: gid " + GID_DADOS + ".");
-        render();
+        if (!mostrouCache) {
+            setStatusFonte("erro", "Falha ao ler a planilha");
+            setErroFonte("Não consegui ler a planilha. Para funcionar automaticamente, compartilhe a planilha como visualização para quem tiver o link ou publique as abas usadas. Aba Escala configurada: gid " + GID_PROGRAMACAO + ". Aba Base de Dados configurada: gid " + GID_DADOS + ".");
+            render();
+        }
     } finally {
         window.portalOcultarCarregando?.();
     }
@@ -1572,7 +1620,10 @@ function iniciarUmaVez(){
     window.setModo = setModo;
     window.limparFiltros = limparFiltros;
     carregarPlanilha(false);
-    fetchTimer = window.setInterval(function(){carregarPlanilha(false);}, AUTO_FETCH_MS);
+    fetchTimer = window.setInterval(function(){
+        if (document.hidden) return;
+        carregarPlanilha(false);
+    }, AUTO_FETCH_MS);
     renderTimer = window.setInterval(render, AUTO_RENDER_MS);
 }
 window.addEventListener("beforeunload", function(){

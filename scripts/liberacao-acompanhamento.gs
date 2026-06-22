@@ -15,7 +15,7 @@
  * POST ?liberacao=1  action=create|update|upsert  (+ campos da aba acompanhamento)
  */
 
-const LIBERACAO_VERSAO = "2026-06-22-liberacao-janela7";
+const LIBERACAO_VERSAO = "2026-06-22-liberacao-perf";
 const LIBERACAO_DIAS_JANELA = 7;
 const LIBERACAO_CHUNK_LINHAS = 800;
 const LIBERACAO_CACHE_TTL = 600;
@@ -291,7 +291,8 @@ function chaveRegistroLiberacao_(item) {
 
 function montarComparacaoLiberacao_(dataFiltro, maquinaFiltro) {
   const colunas = lerColunasAcompanhamento_();
-  const planilha = lerAcompanhamentoLiberacao_(dataFiltro, 0, maquinaFiltro);
+  const janela = montarJanelaLeituraLiberacao_(dataFiltro, "", "", false);
+  const planilha = lerAcompanhamentoLiberacao_(dataFiltro, 0, maquinaFiltro, janela);
   const saida = lerSaidaCarrosLiberacao_(dataFiltro, maquinaFiltro);
   const mapPlanilha = {};
   const usados = {};
@@ -614,7 +615,8 @@ function calcularResumoDiaLiberacao_(dados, dataIso) {
 }
 
 function calcularHistoricoResumoLiberacao_() {
-  const todos = lerAcompanhamentoLiberacao_("", 0);
+  const janela = montarJanelaLeituraLiberacao_("", "", "", true);
+  const todos = lerAcompanhamentoLiberacao_("", 0, "", janela);
   const porData = {};
   todos.forEach(function (row) {
     const iso = normalizarDataIsoLiberacao_(row.data);

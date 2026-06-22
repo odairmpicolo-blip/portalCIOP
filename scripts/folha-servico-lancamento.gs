@@ -15,7 +15,10 @@ const SPREADSHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const ABA_GID = 1013912232;
 const ABA_NOME = "FOLHA DE SERVIÇO";
 const LISTAS_GID = 665133219;
-const SCRIPT_VERSAO = "2026-06-21-dashboard-full";
+const SCRIPT_VERSAO = "2026-06-22-perf-dashboard";
+const FOLHA_DASHBOARD_DIAS = 90;
+const FOLHA_CHUNK_LINHAS = 800;
+const FOLHA_CACHE_TTL = 600;
 
 /** Colunas da aba DADOS (gid 665133219) — listas verticais por coluna */
 const COLUNAS_LISTAS = {
@@ -90,7 +93,7 @@ function doGet(e) {
     });
   }
   if (String(params.dashboard || "") === "1") {
-    return json_(montarRespostaDashboard_());
+    return json_(montarRespostaDashboard_(params));
   }
   return json_(montarRespostaLeitura_(params));
   } catch (err) {
@@ -137,8 +140,22 @@ function montarRespostaLeitura_(params) {
   return { ok: true, dados: dados, opcoes: lerOpcoesPadronizadas_() };
 }
 
-/** Leitura enxuta para o dashboard (menos campos, todos os lançamentos). */
-function montarRespostaDashboard_() {
+/** Leitura enxuta para o dashboard (menos campos, janela recente). */
+function montarRespostaDashboard_(params) {
+  params = params || {};
+  var dias = Math.max(30, Math.min(parseInt(params.dias || String(FOLHA_DASHBOARD_DIAS), 10) || FOLHA_DASHBOARD_DIAS, 730));
+  var dataMinIso = isoDataDiasAtrasFolha_(dias);
+  var cacheKey = "folha-dash-" + SCRIPT_VERSAO + "-" + dias;
+  try {
+    var emCache = CacheService.getScriptCache().get(cacheKey);
+    if (emCache) {
+      var parsed = JSON.parse(emCache);
+      parsed.meta = parsed.meta || {};
+      parsed.meta.cache = true;
+      return parsed;
+    }
+  } catch (errCache) {}
+
   const sheet = abrirAba_();
   const lastRow = sheet.getLastRow();
   const numCols = sheet.getLastColumn();
@@ -147,22 +164,36 @@ function montarRespostaDashboard_() {
     return {
       ok: true,
       dados: [],
-      meta: { versao: SCRIPT_VERSAO, origem: "dashboard", total: 0, total_planilha: 0 }
+      meta: { versao: SCRIPT_VERSAO, origem: "dashboard", total: 0, total_planilha: 0, dias: dias, data_de: dataMinIso }
     };
   }
 
   const titulos = sheet.getRange(1, 1, 1, numCols).getValues()[0];
   const cabecalho = titulos.map(normalizarChave_);
-  const numRows = totalPlanilha;
-  const valores = sheet.getRange(2, 1, numRows, numCols).getValues();
   const dados = [];
+  var endRow = lastRow;
 
-  for (let i = 0; i < valores.length; i++) {
-    const bruto = linhaParaObjeto_(cabecalho, valores[i], i + 2);
-    dados.push(objetoDashboardSlim_(bruto));
+  while (endRow >= 2) {
+    var startRow = Math.max(2, endRow - FOLHA_CHUNK_LINHAS + 1);
+    var numRows = endRow - startRow + 1;
+    var valores = sheet.getRange(startRow, 1, numRows, numCols).getValues();
+    var parar = false;
+
+    for (var i = valores.length - 1; i >= 0; i--) {
+      var bruto = linhaParaObjeto_(cabecalho, valores[i], startRow + i);
+      var iso = normalizarDataIso_(bruto.data);
+      if (dataMinIso && iso && iso < dataMinIso) {
+        parar = true;
+        break;
+      }
+      dados.push(objetoDashboardSlim_(bruto));
+    }
+
+    if (parar) break;
+    endRow = startRow - 1;
   }
 
-  return {
+  var payload = {
     ok: true,
     dados: dados,
     meta: {
@@ -170,10 +201,21 @@ function montarRespostaDashboard_() {
       origem: "dashboard",
       total: dados.length,
       total_planilha: totalPlanilha,
-      linha_inicial: 2,
-      linha_final: lastRow
+      dias: dias,
+      data_de: dataMinIso,
+      cache: false
     }
   };
+  try {
+    CacheService.getScriptCache().put(cacheKey, JSON.stringify(payload), FOLHA_CACHE_TTL);
+  } catch (errPut) {}
+  return payload;
+}
+
+function isoDataDiasAtrasFolha_(dias) {
+  var d = new Date();
+  d.setDate(d.getDate() - dias);
+  return Utilities.formatDate(d, Session.getScriptTimeZone(), "yyyy-MM-dd");
 }
 
 function objetoDashboardSlim_(item) {

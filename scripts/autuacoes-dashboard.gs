@@ -10,7 +10,10 @@
  */
 
 const ABA_NOME = "AUTUAÇÕES";
-const SCRIPT_VERSAO = "2026-06-22-mapeamento-valores";
+const SCRIPT_VERSAO = "2026-06-22-perf-janela";
+const AUTUACOES_DIAS_JANELA = 365;
+const AUTUACOES_CHUNK_LINHAS = 800;
+const AUTUACOES_CACHE_TTL = 900;
 
 const MAPA_COLUNAS = {
   ordem: ["ordem", "Ordem", "ORDEM"],
@@ -50,7 +53,7 @@ function doGet(e) {
     if (String(params.debug || "") === "1") {
       return respostaJson_(montarDebugAutuacoes_());
     }
-    return respostaJson_(montarPayloadAutuacoes_());
+    return respostaJson_(montarPayloadAutuacoes_(params));
   } catch (error) {
     return respostaJson_({
       status: "error",
@@ -97,47 +100,142 @@ function linhaResumo_(linha, idx) {
   };
 }
 
-function montarPayloadAutuacoes_() {
-  var sheet = obterAbaAutuacoes_();
-  var display = sheet.getDataRange().getDisplayValues();
-  var bruto = sheet.getDataRange().getValues();
+function cacheChaveAutuacoes_(dataDe, dataAte) {
+  return "aut-" + SCRIPT_VERSAO + "-" + dataDe + "-" + dataAte;
+}
 
-  if (!display.length) {
-    return { status: "ok", total: 0, data: [], script_versao: SCRIPT_VERSAO };
+function lerCacheAutuacoes_(chave) {
+  try {
+    var raw = CacheService.getScriptCache().get(chave);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (err) {
+    return null;
+  }
+}
+
+function gravarCacheAutuacoes_(chave, obj) {
+  try {
+    CacheService.getScriptCache().put(chave, JSON.stringify(obj), AUTUACOES_CACHE_TTL);
+  } catch (err) {}
+}
+
+function isoDataDiasAtrasAutuacoes_(dias) {
+  var d = new Date();
+  d.setDate(d.getDate() - dias);
+  return Utilities.formatDate(d, Session.getScriptTimeZone(), "yyyy-MM-dd");
+}
+
+function normalizarDataParamAutuacoes_(valor) {
+  if (!valor) return "";
+  var bruto = String(valor).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(bruto)) return bruto;
+  var br = bruto.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (br) {
+    return br[3] + "-" + ("0" + br[2]).slice(-2) + "-" + ("0" + br[1]).slice(-2);
+  }
+  return "";
+}
+
+function montarPayloadAutuacoes_(params) {
+  params = params || {};
+  var dataDe = normalizarDataParamAutuacoes_(params.data_de) || isoDataDiasAtrasAutuacoes_(AUTUACOES_DIAS_JANELA);
+  var dataAte = normalizarDataParamAutuacoes_(params.data_ate) || isoDataDiasAtrasAutuacoes_(0);
+  var cacheKey = cacheChaveAutuacoes_(dataDe, dataAte);
+  var emCache = lerCacheAutuacoes_(cacheKey);
+  if (emCache) {
+    emCache.cache = true;
+    return emCache;
   }
 
-  var headers = display[0].map(function (h) { return String(h || "").trim(); });
-  var idx = mapearIndices_(headers);
-  var data = [];
-
-  for (var i = 1; i < display.length; i++) {
-    var linhaDisplay = display[i];
-    var linhaBruto = bruto[i];
-    if (!linhaTemConteudo_(linhaDisplay)) continue;
-
-    var dataObj = parseDataLinha_(linhaBruto, linhaDisplay, idx.data);
-
-    data.push({
-      ordem: idx.ordem >= 0 ? linhaDisplay[idx.ordem] : i,
-      data_iso: dataObj.iso,
-      data_br: dataObj.br,
-      notificacao: textoCelula_(linhaDisplay, idx.notificacao),
-      auto: textoCelula_(linhaDisplay, idx.auto),
-      motivo: textoCelula_(linhaDisplay, idx.motivo),
-      agente: textoCelula_(linhaDisplay, idx.agente),
-      grupo: textoCelula_(linhaDisplay, idx.grupo),
-      artigo: textoCelula_(linhaDisplay, idx.artigo),
-      valor_tarifas: numeroCelula_(linhaBruto, linhaDisplay, idx.valor_tarifas),
-      valor_reais: numeroCelula_(linhaBruto, linhaDisplay, idx.valor_reais)
-    });
-  }
-
-  return {
+  var dados = lerAutuacoesJanela_(dataDe, dataAte);
+  var payload = {
     status: "ok",
-    total: data.length,
+    total: dados.length,
     script_versao: SCRIPT_VERSAO,
-    data: data
+    data_de: dataDe,
+    data_ate: dataAte,
+    data: dados,
+    cache: false
   };
+  gravarCacheAutuacoes_(cacheKey, payload);
+  return payload;
+}
+
+function lerAutuacoesJanela_(dataMinIso, dataMaxIso) {
+  var sheet = obterAbaAutuacoes_();
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow < 2) return [];
+
+  var cabecalhoRow = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var headers = cabecalhoRow.map(function (h) { return String(h || "").trim(); });
+  var idx = mapearIndices_(headers);
+  var dados = [];
+  var endRow = lastRow;
+
+  while (endRow >= 2) {
+    var startRow = Math.max(2, endRow - AUTUACOES_CHUNK_LINHAS + 1);
+    var numRows = endRow - startRow + 1;
+    var valores = sheet.getRange(startRow, 1, numRows, lastCol).getValues();
+    var parar = false;
+
+    for (var i = valores.length - 1; i >= 0; i--) {
+      var linhaBruto = valores[i];
+      if (!linhaTemConteudoBruto_(linhaBruto)) continue;
+
+      var dataObj = parseDataLinha_(linhaBruto, null, idx.data);
+      var iso = dataObj.iso;
+
+      if (dataMinIso && iso && iso < dataMinIso) {
+        parar = true;
+        break;
+      }
+      if (dataMaxIso && iso && iso > dataMaxIso) continue;
+
+      dados.push(montarRegistroAutuacao_(linhaBruto, idx, startRow + i, dataObj));
+    }
+
+    if (parar) break;
+    endRow = startRow - 1;
+  }
+
+  return dados;
+}
+
+function linhaTemConteudoBruto_(linha) {
+  if (!linha) return false;
+  for (var i = 0; i < linha.length; i++) {
+    var val = linha[i];
+    if (val instanceof Date) return true;
+    if (String(val || "").trim()) return true;
+  }
+  return false;
+}
+
+function montarRegistroAutuacao_(linhaBruto, idx, ordemFallback, dataObj) {
+  return {
+    ordem: idx.ordem >= 0 ? textoCelulaBruto_(linhaBruto, idx.ordem) : ordemFallback,
+    data_iso: dataObj.iso,
+    data_br: dataObj.br,
+    notificacao: textoCelulaBruto_(linhaBruto, idx.notificacao),
+    auto: textoCelulaBruto_(linhaBruto, idx.auto),
+    motivo: textoCelulaBruto_(linhaBruto, idx.motivo),
+    agente: textoCelulaBruto_(linhaBruto, idx.agente),
+    grupo: textoCelulaBruto_(linhaBruto, idx.grupo),
+    artigo: textoCelulaBruto_(linhaBruto, idx.artigo),
+    valor_tarifas: numeroCelula_(linhaBruto, linhaBruto, idx.valor_tarifas),
+    valor_reais: numeroCelula_(linhaBruto, linhaBruto, idx.valor_reais)
+  };
+}
+
+function textoCelulaBruto_(linha, idx) {
+  if (idx < 0 || !linha) return "";
+  var val = linha[idx];
+  if (val instanceof Date) {
+    return Utilities.formatDate(val, Session.getScriptTimeZone(), "dd/MM/yyyy");
+  }
+  return String(val == null ? "" : val).trim();
 }
 
 function obterAbaAutuacoes_() {

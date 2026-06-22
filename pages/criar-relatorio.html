@@ -484,6 +484,8 @@ const GID_RO = "665320337";
 const GID_CONT_PROT = "1001265560";
 const GID_FUNCIONARIOS = "1931884858";
 const GID_DADOS = "665133219";
+const CACHE_RELATORIO_KEY = "portal_criar_relatorio_csv_v1";
+const CACHE_RELATORIO_TTL_MS = 60 * 60 * 1000;
 const PROTOCOLO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGuAS3XN7FQkaqj2n4pjZTcGOt_mIvdMG1rg14bS9F928A-zMUDEI2nZneKm8vUtCcOA/exec";
 const TIPO_DOCUMENTO_PROTOCOLO = "R. OCORRÊNCIA";
 
@@ -606,6 +608,35 @@ function parseCsv(texto) {
     }
     linha.push(campo);
     if (linha.some((item) => String(item).trim())) linhas.push(linha);
+    return linhas;
+}
+
+function lerCacheRelatorioCsv() {
+    try {
+        const raw = localStorage.getItem(CACHE_RELATORIO_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed?.gids || !parsed?.ts) return null;
+        if (Date.now() - parsed.ts > CACHE_RELATORIO_TTL_MS) return null;
+        return parsed.gids;
+    } catch (error) {
+        return null;
+    }
+}
+
+function salvarCacheRelatorioCsv(gids) {
+    try {
+        localStorage.setItem(CACHE_RELATORIO_KEY, JSON.stringify({ ts: Date.now(), gids: gids || {} }));
+    } catch (error) {}
+}
+
+async function carregarCsvComCache(gid) {
+    const cache = lerCacheRelatorioCsv();
+    if (cache && cache[gid]) return cache[gid];
+    const linhas = await carregarCsv(gid);
+    const gids = cache || {};
+    gids[gid] = linhas;
+    salvarCacheRelatorioCsv(gids);
     return linhas;
 }
 
@@ -840,13 +871,28 @@ async function carregarAssinaturaUsuarioLogado() {
 }
 
 async function iniciarRelatorio() {
-    window.portalMostrarCarregando?.("Carregando relatório");
+    const cacheGids = lerCacheRelatorioCsv();
+    let mostrouCache = false;
+    if (cacheGids?.[GID_FUNCIONARIOS] && cacheGids?.[GID_DADOS] && cacheGids?.[GID_CONT_PROT]) {
+        campos.data.value = hojeISO();
+        carregarFuncionarios(cacheGids[GID_FUNCIONARIOS]);
+        carregarDadosGerais(cacheGids[GID_DADOS]);
+        configurarProtocolo(cacheGids[GID_CONT_PROT]);
+        await carregarAssinaturaUsuarioLogado();
+        corpoRelatorio.value = gerarCorpoPadrao();
+        autoGrow();
+        atualizarPreview();
+        setStatus("Base em cache local · atualizando...", "ok");
+        mostrouCache = true;
+    }
+
+    if (!mostrouCache) window.portalMostrarCarregando?.("Carregando relatório");
     campos.data.value = hojeISO();
     try {
         const [funcionariosCsv, dadosCsv, contProtCsv] = await Promise.all([
-            carregarCsv(GID_FUNCIONARIOS),
-            carregarCsv(GID_DADOS),
-            carregarCsv(GID_CONT_PROT)
+            carregarCsvComCache(GID_FUNCIONARIOS),
+            carregarCsvComCache(GID_DADOS),
+            carregarCsvComCache(GID_CONT_PROT)
         ]);
         carregarFuncionarios(funcionariosCsv);
         carregarDadosGerais(dadosCsv);
@@ -859,9 +905,9 @@ async function iniciarRelatorio() {
         setStatus("Base carregada." + protocoloTexto + " Digite o registro do funcionário e edite o corpo do relatório.", "ok");
     } catch (error) {
         console.error(error);
-        setStatus("Não foi possível carregar a base da planilha: " + error.message, "erro");
+        if (!mostrouCache) setStatus("Não foi possível carregar a base da planilha: " + error.message, "erro");
     } finally {
-        window.portalOcultarCarregando?.();
+        if (!mostrouCache) window.portalOcultarCarregando?.();
     }
 }
 

@@ -128,11 +128,16 @@ function portalPath(file) {
 
 async function getCadastro(user) {
   const email = String(user.email || "").toLowerCase();
+  const cached = lerCadastroCache(email);
+  if (cached) {
+    atualizarCadastroCache(email, user).catch(() => {});
+    return cached;
+  }
 
   try {
     const cadastroOnline = await comTempoLimite(buscarUsuarioFirestore(email), 8000, "Tempo esgotado ao buscar perfil no Firestore.");
     if (cadastroOnline) {
-      return {
+      const cadastro = {
         email,
         nome: cadastroOnline.nome || user.displayName || email,
         perfil: cadastroOnline.perfil || "Usuario",
@@ -140,6 +145,8 @@ async function getCadastro(user) {
         cargo: cadastroOnline.cargo || "",
         ativo: cadastroOnline.ativo !== false
       };
+      salvarCadastroCache(email, cadastro);
+      return cadastro;
     }
   } catch (error) {
     console.warn("Nao foi possivel buscar usuario no Firestore:", error);
@@ -147,7 +154,7 @@ async function getCadastro(user) {
 
   const cadastroLocal = usuarios[email] || usuarios[user.email];
   if (!cadastroLocal) {
-    return {
+    const padrao = {
       email,
       nome: user.displayName || user.email,
       perfil: "Usuario",
@@ -155,10 +162,12 @@ async function getCadastro(user) {
       cargo: "",
       ativo: true
     };
+    salvarCadastroCache(email, padrao);
+    return padrao;
   }
 
   const cadastro = normalizarCadastro(cadastroLocal, email);
-  return {
+  const resultado = {
     email: cadastro.email || email,
     nome: cadastro.nome || user.displayName || email,
     perfil: cadastro.perfil || "Usuario",
@@ -166,9 +175,54 @@ async function getCadastro(user) {
     cargo: cadastro.cargo || "",
     ativo: cadastro.ativo !== false
   };
+  salvarCadastroCache(email, resultado);
+  return resultado;
+}
+
+const CADASTRO_CACHE_KEY = "portal_cadastro_v1";
+const CADASTRO_CACHE_TTL_MS = 8 * 60 * 60 * 1000;
+
+function lerCadastroCache(email) {
+  try {
+    const raw = sessionStorage.getItem(CADASTRO_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.email || parsed.email !== email || !parsed?.cadastro || !parsed?.ts) return null;
+    if (Date.now() - parsed.ts > CADASTRO_CACHE_TTL_MS) return null;
+    return parsed.cadastro;
+  } catch (_) {
+    return null;
+  }
+}
+
+function salvarCadastroCache(email, cadastro) {
+  try {
+    sessionStorage.setItem(CADASTRO_CACHE_KEY, JSON.stringify({
+      email,
+      cadastro,
+      ts: Date.now()
+    }));
+  } catch (_) {}
+}
+
+async function atualizarCadastroCache(email, user) {
+  try {
+    const cadastroOnline = await comTempoLimite(buscarUsuarioFirestore(email), 8000, "Tempo esgotado ao buscar perfil no Firestore.");
+    if (cadastroOnline) {
+      salvarCadastroCache(email, {
+        email,
+        nome: cadastroOnline.nome || user.displayName || email,
+        perfil: cadastroOnline.perfil || "Usuario",
+        registro: cadastroOnline.registro || "",
+        cargo: cadastroOnline.cargo || "",
+        ativo: cadastroOnline.ativo !== false
+      });
+    }
+  } catch (_) {}
 }
 
 window.logout = function () {
+  try { sessionStorage.removeItem(CADASTRO_CACHE_KEY); } catch (_) {}
   signOut(auth).finally(() => {
     window.location.href = portalPath("login.html");
   });

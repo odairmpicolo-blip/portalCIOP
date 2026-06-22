@@ -1602,6 +1602,8 @@ h1 {
     const TEMPO_LIMITE_RECENTES_MS = 25000;
     const INTERVALO_ATUALIZACAO_LANCAMENTOS_MS = 30000;
     const CACHE_STORAGE_KEY = "ciop_folha_lancamentos_recentes_v1";
+    const CACHE_OPCOES_KEY = "ciop_folha_opcoes_v1";
+    const CACHE_OPCOES_TTL_MS = 24 * 60 * 60 * 1000;
     const LIMITE_LINHAS_RECENTES = 10;
     const COLSPAN_TABELA_LANCAMENTOS = 14;
     const COLUNAS_TABELA_LANCAMENTOS = [
@@ -1740,6 +1742,25 @@ h1 {
         }
     };
 
+    function lerCacheOpcoes() {
+        try {
+            const raw = localStorage.getItem(CACHE_OPCOES_KEY);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            if (!parsed?.opcoes || !parsed?.ts) return null;
+            if (Date.now() - parsed.ts > CACHE_OPCOES_TTL_MS) return null;
+            return parsed.opcoes;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function salvarCacheOpcoes(opcoes) {
+        try {
+            localStorage.setItem(CACHE_OPCOES_KEY, JSON.stringify({ ts: Date.now(), opcoes: opcoes || {} }));
+        } catch (error) {}
+    }
+
     function lerCacheLancamentos() {
         try {
             const raw = localStorage.getItem(CACHE_STORAGE_KEY);
@@ -1826,6 +1847,7 @@ h1 {
 
     function aplicarOpcoesPlanilha(opcoes, origem) {
         opcoesPlanilha = normalizarOpcoes(opcoes);
+        salvarCacheOpcoes(opcoesPlanilha);
         const cache = lerCacheLancamentos();
         salvarCacheLancamentos(cache.lancamentos, opcoesPlanilha);
         preencherSelectsDoFormulario(dadosMestres);
@@ -1840,14 +1862,12 @@ h1 {
             if (!response.ok || retorno.ok === false) throw new Error(retorno.erro || "Resposta inválida");
             if (retorno.opcoes) return normalizarOpcoes(retorno.opcoes);
         } catch (error) {
-            console.warn("Sync rápido indisponível, tentando leitura completa:", error);
+            console.warn("Sync rápido indisponível:", error);
         }
 
-        const response = await fetchComTimeout(URL_DO_SCRIPT_GOOGLE, {}, TEMPO_LIMITE_OPCOES_MS);
-        const retorno = JSON.parse(await response.text());
-        if (Array.isArray(retorno)) return normalizarOpcoes({});
-        if (!response.ok || retorno.ok === false) throw new Error(retorno.erro || "Erro ao buscar listas da planilha");
-        return normalizarOpcoes(retorno.opcoes || {});
+        const cache = lerCacheOpcoes();
+        if (cache) return cache;
+        throw new Error("Não foi possível carregar listas da planilha.");
     }
 
     async function sincronizarOpcoesPlanilha(mostrarFeedback = false) {
@@ -1869,14 +1889,16 @@ h1 {
 
     function inicializarPaginaLancamento() {
         aplicarCacheLocal();
+        const opcoesCache = lerCacheOpcoes();
+        if (opcoesCache) aplicarOpcoesPlanilha(opcoesCache, "cache local");
         configurarToggleOficina();
         sincronizarOpcoesPlanilha(false);
         carregarLancamentosRecentes(false);
         if (intervaloLancamentosId) window.clearInterval(intervaloLancamentosId);
-        intervaloLancamentosId = window.setInterval(
-            () => carregarLancamentosRecentes(false),
-            INTERVALO_ATUALIZACAO_LANCAMENTOS_MS
-        );
+        intervaloLancamentosId = window.setInterval(() => {
+            if (document.hidden) return;
+            carregarLancamentosRecentes(false);
+        }, INTERVALO_ATUALIZACAO_LANCAMENTOS_MS);
     }
 
     function normalizarTextoOcorrencia(valor) {

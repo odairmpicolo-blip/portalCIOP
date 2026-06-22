@@ -707,6 +707,39 @@ function downloadBlob(blob, filename) {
 }
 
 let carregandoIncidentes = false;
+const CACHE_INCIDENTES_KEY = "portal_incidentes_tcgl_v1";
+const CACHE_INCIDENTES_TTL_MS = 60 * 60 * 1000;
+
+function lerCacheIncidentes() {
+    try {
+        const raw = localStorage.getItem(CACHE_INCIDENTES_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed?.payload || !parsed?.ts) return null;
+        if (Date.now() - parsed.ts > CACHE_INCIDENTES_TTL_MS) return null;
+        return parsed.payload;
+    } catch (error) {
+        return null;
+    }
+}
+
+function salvarCacheIncidentes(payload) {
+    try {
+        localStorage.setItem(CACHE_INCIDENTES_KEY, JSON.stringify({ ts: Date.now(), payload }));
+    } catch (error) {}
+}
+
+function aplicarPayloadIncidentes(payload) {
+    state.all = (payload.incidentes || []).filter((row) => String(row.empresa || "").toUpperCase() === "TCGL" && (String(row.natureOfProblem || "").trim() || String(row.instructions || "").trim()));
+    populateSelect(fields.estado, state.all, "estado");
+    populateSelect(fields.tipo, state.all, "tipo");
+    populateSelect(fields.linha, state.all, "linha");
+    populateSelect(fields.veiculo, state.all, "veiculo");
+    populateSelect(fields.criado, state.all, "criadoPor");
+    populateSelect(fields.proprietario, state.all, "proprietario");
+    applyFilters();
+    atualizarStatusLinha(payload, state.all.length);
+}
 
 function atualizarStatusLinha(payload, total) {
     const quando = payload?.atualizadoEm
@@ -721,23 +754,30 @@ async function carregarIncidentes(forcar) {
     const btn = document.getElementById("btnAtualizar");
     const status = document.getElementById("statusLine");
     btn.disabled = true;
-    status.textContent = forcar ? "Atualizando tabela..." : "Carregando incidentes TCGL...";
+
+    const cacheLocal = !forcar ? lerCacheIncidentes() : null;
+    if (cacheLocal) {
+        aplicarPayloadIncidentes(cacheLocal);
+        status.textContent = "Cache local · atualizando em segundo plano...";
+    } else {
+        status.textContent = forcar ? "Atualizando tabela..." : "Carregando incidentes TCGL...";
+    }
+
     try {
-        const response = await fetch("../assets/data/incidentes-tcgl.json?ts=" + Date.now(), { cache: "no-store" });
+        const url = forcar || !cacheLocal
+            ? "../assets/data/incidentes-tcgl.json?ts=" + Date.now()
+            : "../assets/data/incidentes-tcgl.json";
+        const response = await fetch(url, cacheLocal && !forcar ? {} : { cache: "no-store" });
         if (!response.ok) throw new Error("Não foi possível carregar o arquivo de incidentes.");
         const payload = await response.json();
-        state.all = (payload.incidentes || []).filter((row) => String(row.empresa || "").toUpperCase() === "TCGL" && (String(row.natureOfProblem || "").trim() || String(row.instructions || "").trim()));
-        populateSelect(fields.estado, state.all, "estado");
-        populateSelect(fields.tipo, state.all, "tipo");
-        populateSelect(fields.linha, state.all, "linha");
-        populateSelect(fields.veiculo, state.all, "veiculo");
-        populateSelect(fields.criado, state.all, "criadoPor");
-        populateSelect(fields.proprietario, state.all, "proprietario");
-        applyFilters();
-        atualizarStatusLinha(payload, state.all.length);
+        salvarCacheIncidentes(payload);
+        aplicarPayloadIncidentes(payload);
     } catch (error) {
-        status.textContent = error.message || "Erro ao atualizar incidentes.";
-        throw error;
+        if (!cacheLocal) {
+            status.textContent = error.message || "Erro ao atualizar incidentes.";
+            throw error;
+        }
+        status.textContent = "Cache local · falha ao atualizar (" + (error.message || "erro") + ")";
     } finally {
         carregandoIncidentes = false;
         btn.disabled = false;

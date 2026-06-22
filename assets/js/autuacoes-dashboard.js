@@ -1,4 +1,6 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbylz8scwboPQLeOKWUpw9YqKxomjts1aa8KUwodAuq5IE3T9s7RXd6GJcfMnS9qu6DI/exec";
+const CACHE_STORAGE_KEY = "portal_autuacoes_dashboard_v1";
+const CACHE_TTL_MS = 30 * 60 * 1000;
 let DATA = [];
 let periodChart = null;
 let agentChart = null;
@@ -297,7 +299,32 @@ function escapeHtml(s) {
 
 function montarUrlSemCache(url) {
     const sep = url.includes("?") ? "&" : "?";
-    return `${url}${sep}atualizado=${Date.now()}`;
+    return url + sep + "_=" + Date.now();
+}
+
+function lerCacheAutuacoesLocal() {
+    try {
+        const raw = localStorage.getItem(CACHE_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed?.payload || !parsed?.ts) return null;
+        if (Date.now() - parsed.ts > CACHE_TTL_MS) return null;
+        return parsed.payload;
+    } catch (_) {
+        return null;
+    }
+}
+
+function salvarCacheAutuacoesLocal(payload) {
+    try {
+        localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify({ ts: Date.now(), payload }));
+    } catch (_) {}
+}
+
+function aplicarPayloadAutuacoes(payload, origem) {
+    DATA = normalizeRows(payload);
+    init();
+    if (origem) console.info("Autuações carregadas:", origem, DATA.length);
 }
 
 function uniqueSorted(key) {
@@ -822,30 +849,45 @@ function init() {
 }
 
 async function loadData() {
-    window.portalMostrarCarregando?.("Carregando autuações (pode levar até 1 minuto)");
+    const cacheLocal = lerCacheAutuacoesLocal();
+    let mostrouCache = false;
+
+    if (cacheLocal) {
+        aplicarPayloadAutuacoes(cacheLocal, "cache local");
+        mostrouCache = true;
+    }
+
     if (!API_URL) {
-        init();
-        window.portalOcultarCarregando?.();
+        if (!mostrouCache) init();
         return;
     }
+
+    if (!mostrouCache) {
+        window.portalMostrarCarregando?.("Carregando autuações");
+    }
+
     try {
         const response = await fetch(montarUrlSemCache(API_URL), { cache: "no-store" });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const payload = await response.json();
         if (payload.status === "error") throw new Error(payload.message || "Erro na API");
-        DATA = normalizeRows(payload);
+        salvarCacheAutuacoesLocal(payload);
+        aplicarPayloadAutuacoes(payload, payload.cache ? "servidor (cache)" : "planilha");
         if (!DATA.length) {
             console.warn("API de autuações retornou vazio.", payload);
         }
     } catch (error) {
         console.error("Erro ao carregar dados do Google Sheets:", error);
-        const tbody = byId("tableBody");
-        if (tbody) {
-            tbody.innerHTML = `<tr><td colspan="${TABLE_COLUMNS.length}" class="no-data">Não foi possível carregar as autuações. Confira se o Apps Script está publicado. (${escapeHtml(error.message)})</td></tr>`;
+        if (!mostrouCache) {
+            const tbody = byId("tableBody");
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="${TABLE_COLUMNS.length}" class="no-data">Não foi possível carregar as autuações. Confira se o Apps Script está publicado. (${escapeHtml(error.message)})</td></tr>`;
+            }
+            init();
         }
+    } finally {
+        window.portalOcultarCarregando?.();
     }
-    init();
-    window.portalOcultarCarregando?.();
 }
 
 function limparFiltros() {

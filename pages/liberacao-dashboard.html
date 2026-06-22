@@ -167,6 +167,7 @@ const SECOES = [
 
 const CATEGORIAS = SECOES.flatMap(s => s.categorias.map(c => Object.assign({ grupo: s.id }, c)));
 const state = { mapaGraficos: {}, totalLinhas: 0, cacheChave: "", charts: {}, reloadTimer: null };
+const CACHE_DASHBOARD_KEY = "portal_liberacao_dashboard_v1";
 
 function $(id){ return document.getElementById(id); }
 function idGrafico(chave){ return String(chave).replace(/\|/g, "-"); }
@@ -201,6 +202,29 @@ function situacaoInicio(row){ return normalizarSituacao(val(row,"inicio_no_horar
 function setStatus(texto, tipo){
     $("statusLine").textContent = texto;
     $("statusDot").className = "status-dot" + (tipo ? " "+tipo : "");
+}
+
+function lerCacheDashboardLiberacao(chave) {
+    try {
+        const raw = localStorage.getItem(CACHE_DASHBOARD_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed?.chave || parsed.chave !== chave || !parsed?.mapaGraficos) return null;
+        return parsed;
+    } catch (_) {
+        return null;
+    }
+}
+
+function salvarCacheDashboardLiberacao(chave, mapaGraficos, totalLinhas) {
+    try {
+        localStorage.setItem(CACHE_DASHBOARD_KEY, JSON.stringify({
+            chave,
+            mapaGraficos,
+            totalLinhas,
+            atualizadoEm: Date.now()
+        }));
+    } catch (_) {}
 }
 
 async function apiGet(params){
@@ -393,8 +417,22 @@ async function carregar(){
         return;
     }
 
-    setStatus("Carregando planilha...","load");
-    window.portalMostrarCarregando?.("Carregando liberação");
+    const cacheLocal = lerCacheDashboardLiberacao(chave);
+    let mostrouCache = false;
+    if (cacheLocal) {
+        state.mapaGraficos = cacheLocal.mapaGraficos || {};
+        state.totalLinhas = cacheLocal.totalLinhas || 0;
+        state.cacheChave = chave;
+        renderGraficos();
+        setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · cache local", "ok");
+        mostrouCache = true;
+    }
+
+    if (!mostrouCache) {
+        setStatus("Carregando planilha...","load");
+        window.portalMostrarCarregando?.("Carregando liberação");
+    }
+
     try {
         const res = await apiGet({
             recurso: "graficos",
@@ -404,9 +442,11 @@ async function carregar(){
         state.mapaGraficos = res.categorias || {};
         state.totalLinhas = res.total_linhas || 0;
         state.cacheChave = chave;
+        salvarCacheDashboardLiberacao(chave, state.mapaGraficos, state.totalLinhas);
         renderGraficos();
-        const cacheTxt = res.meta && res.meta.cache ? " · cache" : "";
-        setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + cacheTxt, "ok");
+        const cacheTxt = res.meta && res.meta.cache ? " · cache servidor" : "";
+        const origem = mostrouCache ? " · atualizado" : "";
+        setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + cacheTxt + origem, "ok");
     } finally {
         window.portalOcultarCarregando?.();
     }
