@@ -1972,30 +1972,95 @@ h1 {
         }
     }
 
-    function urlSnapshotAno(ano, bust) {
+    function sufixoCacheJson(bust) {
         const versao = folhaManifest?.atualizadoEm || folhaManifest?.versao || "";
-        const sufixo = versao
-            ? "?v=" + encodeURIComponent(versao)
-            : (bust ? "?ts=" + Date.now() : "");
-        if (anoEhTodos(ano)) return FOLHA_DATA_BASE + "/todos.json" + sufixo;
-        return FOLHA_DATA_BASE + "/ano-" + encodeURIComponent(String(ano)) + ".json" + sufixo;
+        if (versao) return "?v=" + encodeURIComponent(versao);
+        return bust ? "?ts=" + Date.now() : "";
+    }
+
+    function urlsManifestFolha(bust) {
+        const sufixo = sufixoCacheJson(bust);
+        const abs = resolverBasePortal() + "/assets/data/folha-servico/manifest.json" + sufixo;
+        const rel = "../assets/data/folha-servico/manifest.json" + sufixo;
+        return abs === rel ? [abs] : [abs, rel];
+    }
+
+    function urlsSnapshotAno(ano, bust) {
+        const sufixo = sufixoCacheJson(bust);
+        const arquivo = anoEhTodos(ano)
+            ? "todos.json"
+            : "ano-" + encodeURIComponent(String(ano)) + ".json";
+        const abs = resolverBasePortal() + "/assets/data/folha-servico/" + arquivo + sufixo;
+        const rel = "../assets/data/folha-servico/" + arquivo + sufixo;
+        return abs === rel ? [abs] : [abs, rel];
+    }
+
+    async function fetchJsonAsset(urls) {
+        for (const url of urls) {
+            try {
+                const res = await fetch(url);
+                if (!res.ok) continue;
+                return await res.json();
+            } catch (_) { /* tenta próximo */ }
+        }
+        return null;
+    }
+
+    function listarAnosOrdenados() {
+        const bruto = folhaManifest?.anos?.length ? folhaManifest.anos : anosDisponiveis;
+        return [...bruto]
+            .map((item) => parseInt(String(item), 10))
+            .filter((item) => !Number.isNaN(item) && item >= 2000)
+            .sort((a, b) => b - a);
+    }
+
+    let preloadFolhaServicoPromise = null;
+
+    async function executarPreloadFolhaServico() {
+        const resultado = { manifest: null, cache: null, snapshot: null };
+        try {
+            resultado.manifest = await carregarManifestFolha();
+            if (resultado.manifest?.anos?.length) {
+                folhaManifest = resultado.manifest;
+                anosDisponiveis = resultado.manifest.anos
+                    .map((item) => parseInt(String(item), 10))
+                    .filter((item) => !Number.isNaN(item) && item >= 2000);
+            }
+            resultado.cache = await obterCacheLocal(ANO_TODOS);
+            if (resultado.cache?.dados?.length) return resultado;
+            resultado.snapshot = await carregarSnapshotTodos(ANO_TODOS);
+        } catch (error) {
+            console.warn("Preload folha de serviço:", error);
+        }
+        return resultado;
+    }
+
+    function iniciarPreloadFolhaServico() {
+        if (!preloadFolhaServicoPromise) {
+            preloadFolhaServicoPromise = executarPreloadFolhaServico();
+        }
+        return preloadFolhaServicoPromise;
+    }
+
+    function finalizarCargaFolhaServico(ano) {
+        sincronizarIncremental(ano).then(async (resultado) => {
+            if (resultado.alterou) {
+                const cacheAtual = await obterCacheLocal(ano);
+                aplicarDadosDashboard(dadosMestres, "dados atualizados", cacheAtual?.meta || {});
+            }
+        }).catch(() => {});
+        iniciarSincronizacaoAutomatica();
     }
 
     async function carregarManifestFolha() {
-        try {
-            const res = await fetch(FOLHA_MANIFEST_URL);
-            if (!res.ok) return null;
-            return await res.json();
-        } catch (_) {
-            return null;
-        }
+        const payload = await fetchJsonAsset(urlsManifestFolha(false));
+        return payload || null;
     }
 
     async function carregarSnapshotAno(ano, bust) {
         try {
-            const res = await fetch(urlSnapshotAno(ano, bust));
-            if (!res.ok) return null;
-            const payload = await res.json();
+            const payload = await fetchJsonAsset(urlsSnapshotAno(ano, bust));
+            if (!payload) return null;
             const dados = normalizarLista(payload.dados || payload);
             if (!dados.length) return null;
             return {
@@ -2016,12 +2081,7 @@ h1 {
     async function carregarSnapshotTodos(ano) {
         if (!anoEhTodos(ano)) return await carregarSnapshotAno(ano, false);
 
-        const snapshotTodos = await carregarSnapshotAno(ANO_TODOS, false);
-        if (snapshotTodos) return snapshotTodos;
-
-        const anos = (folhaManifest?.anos?.length ? folhaManifest.anos : anosDisponiveis)
-            .map((item) => parseInt(String(item), 10))
-            .filter((item) => !Number.isNaN(item) && item >= 2000);
+        const anos = listarAnosOrdenados();
         if (!anos.length) return null;
 
         const partes = await Promise.all(anos.map((item) => carregarSnapshotAno(item, false)));
@@ -2384,10 +2444,17 @@ h1 {
         dadosMestres = deduplicarRegistros(dados);
         gerarFiltrosDinamicos(dadosMestres);
         const filtrados = filtrarDadosAtuais();
-        requestAnimationFrame(() => {
-            inicializarGraficos(filtrados);
-            atualizarBannerRegistros(filtrados.length);
-        });
+        atualizarBannerRegistros(filtrados.length);
+        agendarGraficosDashboard(filtrados);
+    }
+
+    function agendarGraficosDashboard(filtrados) {
+        const executar = () => inicializarGraficos(filtrados);
+        if (typeof requestIdleCallback === "function") {
+            requestIdleCallback(executar, { timeout: 600 });
+        } else {
+            setTimeout(executar, 0);
+        }
     }
 
     async function atualizarDadosRemotos(origemLabel, silencioso, ano) {
@@ -2427,30 +2494,55 @@ h1 {
     async function carregarFolhaServico() {
         limparCachesDashboardAntigos();
         setLoadStatus("Carregando dados locais...", "load");
-        try {
-            await carregarAnosDisponiveisPreferindoJson();
-        } catch (error) {
-            console.warn("Falha ao listar anos:", error);
-            anosDisponiveis = [ANO_ATUAL];
+
+        const preload = await iniciarPreloadFolhaServico();
+        if (preload.manifest) {
+            folhaManifest = preload.manifest;
+            if (folhaManifest.anos?.length) {
+                anosDisponiveis = folhaManifest.anos
+                    .map((item) => parseInt(String(item), 10))
+                    .filter((item) => !Number.isNaN(item) && item >= 2000);
+            }
         }
+        if (!anosDisponiveis.length) {
+            try {
+                await buscarAnosDisponiveis();
+            } catch (error) {
+                console.warn("Falha ao listar anos:", error);
+                anosDisponiveis = [ANO_ATUAL];
+            }
+        }
+
         configurarLimitesDatasGlobais();
         const anoInicial = ANO_TODOS;
 
         const metaInstante = lerCacheMeta(anoInicial);
-        const totalManifest = folhaManifest?.totais?.todos;
-        const totalExibir = metaInstante?.total || metaInstante?.total_planilha || totalManifest;
+        const totalExibir = metaInstante?.total || metaInstante?.total_planilha || folhaManifest?.totais?.todos;
         if (totalExibir) {
             setLoadStatus(montarTextoRegistros(totalExibir) + " · preparando...", "load");
         }
 
-        const cacheInstante = await obterCacheLocal(anoInicial);
-        if (cacheInstante?.dados?.length) {
+        if (preload.cache?.dados?.length) {
             anoCarregado = anoInicial;
-            aplicarDadosDashboard(cacheInstante.dados, "cache local", cacheInstante.meta || {});
+            aplicarDadosDashboard(preload.cache.dados, "cache local", preload.cache.meta || {});
+            finalizarCargaFolhaServico(anoInicial);
+            return;
         }
 
-        const snapshot = await carregarSnapshotTodos(anoInicial);
+        if (preload.snapshot?.dados?.length) {
+            anoCarregado = anoInicial;
+            const snap = preload.snapshot;
+            const extra = snap.meta?.snapshotEm
+                ? " · snapshot: " + new Date(snap.meta.snapshotEm).toLocaleString("pt-BR")
+                : "";
+            aplicarDadosDashboard(snap.dados, "arquivo JSON" + extra, snap.meta || {});
+            await salvarCacheLocal(snap.dados, snap.meta || {}, anoInicial);
+            finalizarCargaFolhaServico(anoInicial);
+            return;
+        }
+
         const cache = await obterCacheLocal(anoInicial);
+        const snapshot = await carregarSnapshotTodos(anoInicial);
         const fonte = escolherFonteLocal(cache, snapshot);
 
         if (fonte) {
@@ -2459,13 +2551,7 @@ h1 {
             if (fonte.origem === "json" && devePersistirSnapshotNoCache(cache, snapshot)) {
                 await salvarCacheLocal(snapshot.dados, snapshot.meta || {}, anoInicial);
             }
-            sincronizarIncremental(anoInicial).then(async (resultado) => {
-                if (resultado.alterou) {
-                    const cacheAtual = await obterCacheLocal(anoInicial);
-                    aplicarDadosDashboard(dadosMestres, "dados atualizados", cacheAtual?.meta || {});
-                }
-            }).catch(() => {});
-            iniciarSincronizacaoAutomatica();
+            finalizarCargaFolhaServico(anoInicial);
             return;
         }
 
@@ -2473,6 +2559,7 @@ h1 {
         iniciarSincronizacaoAutomatica();
     }
 
+    iniciarPreloadFolhaServico();
     window.onload = () => window.portalAguardarUsuario?.(carregarFolhaServico);
 
     function gerarFiltrosDinamicos(dados) {
