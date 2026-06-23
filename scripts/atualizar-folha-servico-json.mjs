@@ -22,7 +22,9 @@ function slimRegistro(item) {
     }
     return "";
   };
+  const row = item?._row != null ? Number(item._row) : null;
   return {
+    _row: row && row >= 2 ? row : null,
     data: pick("data"),
     hora: pick("hora"),
     ocorrencia: pick("ocorrencia"),

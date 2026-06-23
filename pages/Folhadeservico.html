@@ -1366,7 +1366,9 @@ h1 {
     }
 
     function normalizarRegistro(item) {
+        const row = item?._row != null ? Number(item._row) : null;
         return {
+            _row: row && row >= 2 ? row : null,
             data: pickCampo(item, "data"),
             hora: pickCampo(item, "hora"),
             ocorrencia: pickCampo(item, "ocorrencia"),
@@ -1841,7 +1843,9 @@ h1 {
     }
 
     function chaveRegistroUnica(item) {
-        return [
+        const row = item?._row != null ? Number(item._row) : 0;
+        if (row >= 2) return "row:" + row;
+        return "sig:" + [
             item?.data || "",
             item?.hora || "",
             item?.analista || "",
@@ -1853,13 +1857,52 @@ h1 {
     }
 
     function mesclarRegistros(base, novos) {
-        const mapa = new Map();
-        (base || []).forEach((item) => mapa.set(chaveRegistroUnica(item), item));
+        const resultado = [...(base || [])];
+        const indicePorRow = new Map();
+        const indicePorChave = new Map();
+        resultado.forEach((item, idx) => {
+            if (item?._row >= 2) indicePorRow.set(Number(item._row), idx);
+            indicePorChave.set(chaveRegistroUnica(item), idx);
+        });
         (novos || []).forEach((item) => {
             const registro = normalizarRegistro(item);
-            mapa.set(chaveRegistroUnica(registro), registro);
+            if (registro._row >= 2) {
+                const row = Number(registro._row);
+                if (indicePorRow.has(row)) {
+                    resultado[indicePorRow.get(row)] = registro;
+                } else {
+                    indicePorRow.set(row, resultado.length);
+                    indicePorChave.set(chaveRegistroUnica(registro), resultado.length);
+                    resultado.push(registro);
+                }
+                return;
+            }
+            const chave = chaveRegistroUnica(registro);
+            if (indicePorChave.has(chave)) {
+                resultado[indicePorChave.get(chave)] = registro;
+            } else {
+                indicePorChave.set(chave, resultado.length);
+                resultado.push(registro);
+            }
         });
-        return [...mapa.values()];
+        return resultado;
+    }
+
+    async function buscarTotalPlanilha(ano) {
+        try {
+            const url = montarUrlDashboard(ano, 0).replace("limit=" + DASHBOARD_POR_PAGINA, "limit=1");
+            const raw = await fetchComTimeout(url);
+            return Number(raw?.meta?.total_planilha || 0) || 0;
+        } catch (_) {
+            return 0;
+        }
+    }
+
+    async function reconciliarContagemPlanilha(ano) {
+        const totalPlanilha = await buscarTotalPlanilha(ano);
+        if (!totalPlanilha || dadosMestres.length >= totalPlanilha) return false;
+        await atualizarDadosRemotos("planilha (contagem)", true, ano);
+        return true;
     }
 
     function anoDoRegistro(item) {
@@ -1911,14 +1954,16 @@ h1 {
             const anoRegistro = anoDoRegistro(item);
             return anoEhTodos(ano) || String(anoRegistro) === String(ano);
         });
-        if (!novos.length) return 0;
-        dadosMestres = mesclarRegistros(dadosMestres, novos);
-        salvarCacheLocal(dadosMestres, {
-            ano,
-            total: dadosMestres.length,
-            versao: DASHBOARD_VERSAO,
-            origem: "json_incremental"
-        }, ano);
+        if (novos.length) {
+            dadosMestres = mesclarRegistros(dadosMestres, novos);
+            salvarCacheLocal(dadosMestres, {
+                ano,
+                total: dadosMestres.length,
+                versao: DASHBOARD_VERSAO,
+                origem: "json_incremental"
+            }, ano);
+        }
+        await reconciliarContagemPlanilha(ano);
         return novos.length;
     }
 
@@ -2146,8 +2191,10 @@ h1 {
             aplicarDadosDashboard(snapshot.dados, "arquivo JSON", snapshot.meta || {});
             salvarCacheLocal(snapshot.dados, snapshot.meta || {}, anoInicial);
             sincronizarRegistrosRecentes(anoInicial).then((qtd) => {
-                if (!qtd) return;
-                aplicarDadosDashboard(dadosMestres, "JSON + " + qtd + " novos", snapshot.meta || {});
+                if (qtd) aplicarDadosDashboard(dadosMestres, "JSON + " + qtd + " novos", snapshot.meta || {});
+                else if (dadosMestres.length !== snapshot.dados.length) {
+                    aplicarDadosDashboard(dadosMestres, "JSON atualizado", snapshot.meta || {});
+                }
             }).catch(() => {});
             return;
         }

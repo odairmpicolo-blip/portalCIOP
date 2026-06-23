@@ -422,6 +422,7 @@ function isoDataDiasAtrasFolha_(dias) {
 
 function objetoDashboardSlim_(item) {
   return {
+    _row: item._row || null,
     data: item.data || "",
     hora: item.hora || "",
     ocorrencia: item.ocorrencia || "",
