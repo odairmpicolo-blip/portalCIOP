@@ -8,7 +8,7 @@
  *
  * GET  ?liberacao=1&recurso=operacionais[&data=YYYY-MM-DD]
  * GET  ?liberacao=1&recurso=graficos&data_de=...&data_ate=...
- * GET  ?liberacao=1&recurso=acompanhamento[&data=YYYY-MM-DD][&data_de=...][&data_ate=...][&maquina=...][&limit=N][&incluir_colunas=1][&ultima_semana=0|1]
+ * GET  ?liberacao=1&recurso=acompanhamento[&data=YYYY-MM-DD][&data_de=...][&data_ate=...][&maquina=...][&limit=N][&incluir_colunas=1][&ultima_semana=0|1][&vivo=1]
  * GET  ?liberacao=1&recurso=saida_carros[&data=YYYY-MM-DD][&maquina=...]
  * GET  ?liberacao=1&recurso=comparacao&data=YYYY-MM-DD[&maquina=...]
  * GET  ?liberacao=1&recurso=resumo[&data=YYYY-MM-DD][&incluir_colunas=1]
@@ -84,6 +84,7 @@ function montarRespostaLiberacaoGet_(params) {
   if (recurso === "acompanhamento") {
     const limit = parseInt(params.limit || "0", 10);
     const incluirColunas = String(params.incluir_colunas || "") === "1";
+    const vivo = String(params.vivo || "") === "1";
     const dataDe = normalizarDataIsoLiberacao_(params.data_de || "");
     const dataAte = normalizarDataIsoLiberacao_(params.data_ate || "");
     const ultimaSemana = String(params.ultima_semana || "1") !== "0" && !dataDe && !dataAte && !dataFiltro;
@@ -91,11 +92,13 @@ function montarRespostaLiberacaoGet_(params) {
     const cacheKey = cacheChaveLiberacao_("acomp", [
       dataFiltro, janela.dataDe, janela.dataAte, maquinaFiltro, String(limit), incluirColunas ? "1" : "0"
     ]);
-    const emCache = lerCacheLiberacao_(cacheKey);
-    if (emCache) {
-      emCache.meta = emCache.meta || {};
-      emCache.meta.cache = true;
-      return emCache;
+    if (!vivo) {
+      const emCache = lerCacheLiberacao_(cacheKey);
+      if (emCache) {
+        emCache.meta = emCache.meta || {};
+        emCache.meta.cache = true;
+        return emCache;
+      }
     }
 
     const dados = lerAcompanhamentoLiberacao_(dataFiltro, limit, maquinaFiltro, janela);
