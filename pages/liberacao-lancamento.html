@@ -232,11 +232,12 @@ const CAMPOS_HORA = new Set(["horario_saida_da_garagem","horario_de_inicio","sai
 const DIAS_JANELA = 7;
 const CACHE_STORAGE_KEY = "portal_liberacao_lancamento_v2";
 const LIBERACAO_MODO_JSON_HIBRIDO = true;
-const INTERVALO_SYNC_HOJE_MS = 30000;
+const INTERVALO_SYNC_HOJE_MS = 10000;
 const LIBERACAO_DATA_BASE = "../assets/data/liberacao";
 const LIBERACAO_MANIFEST_URL = LIBERACAO_DATA_BASE + "/manifest.json";
 const LIBERACAO_ACOMPANHAMENTO_URL = LIBERACAO_DATA_BASE + "/acompanhamento-semana.json";
 let liberacaoManifest = null;
+let planilhaHojeEmFlight = null;
 let carregamentoEmAndamento = false;
 let atualizacaoPlanilhaEmAndamento = false;
 let intervaloSyncHojeId = null;
@@ -341,6 +342,23 @@ function assinaturaDia(dados,data){
     return (dados||[]).filter(r=>normalizarDataIsoRow(r)===data).map(r=>{
         return String(r._row||"")+":"+String(r.carro||"")+":"+String(r.motorista||"")+":"+String(r.saida_real||"")+":"+String(r.inicio_real||"");
     }).join("|");
+}
+function usuarioEditando(){
+    if(Object.keys(state.saveTimers).length) return true;
+    if(Object.values(state.saving).some(Boolean)) return true;
+    if(state.dados.some(r=>r._dirty)) return true;
+    const ativo=document.activeElement;
+    return !!(ativo&&ativo.matches(".cell-input,.cell-select"));
+}
+function aplicarSyncHojeSeAlterou(alterou,origem){
+    if(!alterou||$("dataFiltro").value!==isoHoje()||usuarioEditando()) return;
+    aplicarFiltroData(isoHoje(),origem||"planilha · hoje");
+}
+function rodarSyncHojeSilencioso(origem){
+    if(document.hidden||!ehDiaAtual($("dataFiltro").value)||usuarioEditando()) return;
+    sincronizarDiaAtualPlanilha(true).then(alterou=>{
+        aplicarSyncHojeSeAlterou(alterou,origem);
+    }).catch(()=>{});
 }
 function formatNumber(v){return Number(v||0).toLocaleString("pt-BR")}
 function normalizarMaquina(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/\s+/g," ").trim()}
@@ -722,6 +740,7 @@ async function salvarLinha(i){
     }finally{
         state.saving[i]=false;
         document.querySelector(".sync-"+i).innerHTML=syncBadge(row,i);
+        if(ehDiaAtual($("dataFiltro").value)) setTimeout(()=>rodarSyncHojeSilencioso("planilha · hoje"),600);
     }
 }
 
@@ -882,14 +901,15 @@ async function carregarSnapshotSemana(dataDe,dataAteJanela,data){
 
 async function sincronizarDiaAtualPlanilha(silencioso){
     const hoje=isoHoje();
-    const novos=await carregarDiaRemoto(hoje,true);
+    const assinaturaAntes=assinaturaDia(state.semana,hoje);
+    const novos=await obterPlanilhaHoje();
     if(!novos.length) return false;
     const {dataDe,amanha}=intervaloJanela();
     state.semana=mesclarSemana(state.semana,novos);
     state.semanaDataDe=state.semanaDataDe||dataDe;
     state.semanaDataAte=amanha;
     salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte},!!silencioso);
-    return true;
+    return assinaturaAntes!==assinaturaDia(state.semana,hoje);
 }
 
 function syncDiaAtualEmBackground(origemBase){
@@ -910,8 +930,38 @@ async function carregarDiaRemoto(data,vivo){
     return res.dados||[];
 }
 
+function obterPlanilhaHoje(){
+    if(!planilhaHojeEmFlight){
+        planilhaHojeEmFlight=carregarDiaRemoto(isoHoje(),true).finally(()=>{planilhaHojeEmFlight=null;});
+    }
+    return planilhaHojeEmFlight;
+}
+
 async function carregarHojeVivo(){
-    return await carregarDiaRemoto(isoHoje(),true);
+    return await obterPlanilhaHoje();
+}
+
+function precisaSnapshotSemana(cache,snapDia,data){
+    if(snapDia?.dados?.length) return false;
+    if(cache?.dados?.length&&dataDentroDaJanela(data,cache.data_de,cache.data_ate)) return false;
+    return true;
+}
+
+function carregarSemanaEmBackground(dataDe,amanha,data,snapDia,cache){
+    carregarSnapshotSemana(dataDe,amanha,data).then(snapSemana=>{
+        if(!snapSemana?.dados?.length) return;
+        const fonte=escolherFonteJanela(cache||lerCacheLiberacao(),snapSemana,snapDia,data);
+        if(!fonte?.dados?.length) return;
+        aplicarSemanaCarregada(fonte.dados,fonte.dataDe,fonte.dataAte);
+        salvarCacheLiberacao(fonte.dados,{data_de:fonte.dataDe,data_ate:fonte.dataAte},true);
+    }).catch(()=>{});
+}
+
+function sincronizarPlanilhaHojeEmBackground(origemBase){
+    if(!ehDiaAtual($("dataFiltro").value)) return;
+    obterPlanilhaHoje().then(dados=>{
+        if(dados?.length) aplicarPlanilhaHoje(dados,origemBase);
+    }).catch(err=>console.warn("Planilha ao vivo:",err));
 }
 
 function aplicarPlanilhaHoje(dadosPlanilha,origemBase){
@@ -985,7 +1035,6 @@ async function iniciarCarregamento(forceRefresh=false){
     if(!data){setStatus("Informe a data.","erro");return;}
 
     const {dataDe,amanha}=intervaloJanela();
-    const hoje=isoHoje();
 
     if(!forceRefresh&&LIBERACAO_MODO_JSON_HIBRIDO){
         if(!state.semana.length) setStatus("Carregando dados locais...","load");
@@ -994,34 +1043,30 @@ async function iniciarCarregamento(forceRefresh=false){
             ?Promise.resolve(liberacaoManifest)
             :carregarManifestLiberacao().then(m=>{if(m)liberacaoManifest=m;return m;});
 
-        const planilhaHojePromise=ehDiaAtual(data)?carregarHojeVivo().catch(err=>{
-            console.warn("Planilha ao vivo:",err);
-            return [];
-        }):Promise.resolve([]);
-
-        const [snapDia,snapSemana,cache,dadosPlanilha]=await Promise.all([
-            carregarSnapshotDia(hoje),
-            manifestPromise.then(()=>carregarSnapshotSemana(dataDe,amanha,data)),
+        const [snapDia,cache]=await Promise.all([
+            carregarSnapshotDia(data),
             Promise.resolve(lerCacheLiberacao()),
-            planilhaHojePromise
+            manifestPromise
         ]);
 
-        const fonte=escolherFonteJanela(cache,snapSemana,snapDia,data);
-        let semanaDados=fonte?.dados||[];
-        let metaDe=fonte?.dataDe||dataDe;
-        let metaAte=fonte?.dataAte||amanha;
-        let rotulo=fonte?.rotulo||"";
-
-        if(ehDiaAtual(data)&&dadosPlanilha.length){
-            semanaDados=mesclarSemana(semanaDados,dadosPlanilha);
-            rotulo=rotulo?rotulo+" · planilha":"planilha · hoje";
+        let snapSemana=null;
+        if(precisaSnapshotSemana(cache,snapDia,data)){
+            snapSemana=await carregarSnapshotSemana(dataDe,amanha,data);
+        }else{
+            carregarSemanaEmBackground(dataDe,amanha,data,snapDia,cache);
         }
+
+        const fonte=escolherFonteJanela(cache,snapSemana,snapDia,data);
+        const semanaDados=fonte?.dados||[];
+        const metaDe=fonte?.dataDe||dataDe;
+        const metaAte=fonte?.dataAte||amanha;
+        const rotulo=fonte?.rotulo||"";
 
         if(semanaDados.length){
             aplicarSemanaCarregada(semanaDados,metaDe,metaAte);
             salvarCacheLiberacao(semanaDados,{data_de:metaDe,data_ate:metaAte});
             aplicarFiltroData(data,rotulo);
-            syncDiaAtualEmBackground(rotulo.split(" ·")[0]||rotulo);
+            sincronizarPlanilhaHojeEmBackground(rotulo.split(" ·")[0]||rotulo);
             return;
         }
     }
@@ -1141,14 +1186,10 @@ $("btn-atualizar-planilha").addEventListener("click",()=>{atualizarPlanilhaRemot
 
 function iniciarPollingHoje(){
     if(intervaloSyncHojeId) clearInterval(intervaloSyncHojeId);
-    intervaloSyncHojeId=setInterval(()=>{
-        if(document.hidden||!ehDiaAtual($("dataFiltro").value)) return;
-        sincronizarDiaAtualPlanilha(true).then(alterou=>{
-            if(alterou&&$("dataFiltro").value===isoHoje()){
-                aplicarFiltroData(isoHoje(),"planilha · hoje");
-            }
-        }).catch(()=>{});
-    },INTERVALO_SYNC_HOJE_MS);
+    intervaloSyncHojeId=setInterval(()=>rodarSyncHojeSilencioso("planilha · hoje"),INTERVALO_SYNC_HOJE_MS);
+    document.addEventListener("visibilitychange",()=>{
+        if(!document.hidden) rodarSyncHojeSilencioso("planilha · hoje");
+    });
 }
 
 function iniciar(){
@@ -1157,9 +1198,6 @@ function iniciar(){
     definirDataFiltroHoje();
     carregarManifestLiberacao().then(m=>{if(m)liberacaoManifest=m;});
     aplicarCacheLocalLiberacao();
-    carregarHojeVivo().then(dados=>{
-        if(dados?.length) aplicarPlanilhaHoje(dados,"cache local");
-    }).catch(err=>console.warn("Planilha ao vivo (início):",err));
     iniciarCarregamento().catch(e=>setStatus(e.message,"erro"));
     iniciarPollingHoje();
 }
