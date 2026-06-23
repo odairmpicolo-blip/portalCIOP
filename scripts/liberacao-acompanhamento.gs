@@ -15,7 +15,7 @@
  * POST ?liberacao=1  action=create|update|upsert  (+ campos da aba acompanhamento)
  */
 
-const LIBERACAO_VERSAO = "2026-06-23-liberacao-perf";
+const LIBERACAO_VERSAO = "2026-06-22-liberacao-perf";
 const LIBERACAO_DIAS_JANELA = 7;
 const LIBERACAO_CHUNK_LINHAS = 800;
 const LIBERACAO_CACHE_TTL = 600;
@@ -414,32 +414,23 @@ function lerAcompanhamentoDiaCompleto_(dataIso, limit, maquinaFiltro) {
 
   const cabecalho = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(normalizarChaveLiberacao_);
   const dados = [];
-  var endRow = lastRow;
+  var row = 2;
 
-  while (endRow >= 2) {
-    const startRow = Math.max(2, endRow - LIBERACAO_CHUNK_LINHAS + 1);
-    const numRows = endRow - startRow + 1;
-    const valores = sheet.getRange(startRow, 1, numRows, lastCol).getValues();
-    var parar = false;
-
-    for (var i = valores.length - 1; i >= 0; i--) {
-      const rowNum = startRow + i;
+  while (row <= lastRow) {
+    const endRow = Math.min(lastRow, row + LIBERACAO_CHUNK_LINHAS - 1);
+    const numRows = endRow - row + 1;
+    const valores = sheet.getRange(row, 1, numRows, lastCol).getValues();
+    for (var i = 0; i < valores.length; i++) {
+      const rowNum = row + i;
       const item = linhaAcompanhamentoParaObjeto_(cabecalho, valores[i], rowNum);
       const iso = item.data_iso || normalizarDataIsoLiberacao_(item.data);
-      if (iso && iso < dataIso) {
-        parar = true;
-        break;
-      }
       if (iso !== dataIso) continue;
       if (!filtrarMaquinaLiberacao_(item, maquinaFiltro)) continue;
       dados.push(item);
     }
-
-    if (parar) break;
-    endRow = startRow - 1;
+    row = endRow + 1;
   }
 
-  dados.reverse();
   if (limit > 0 && dados.length > limit) dados.splice(limit);
   return dados;
 }
