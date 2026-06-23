@@ -32,9 +32,8 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
 .btn-secondary{background:#e8edf6;color:var(--blue)}
 .btn-secondary:hover{background:#dbe4f2}
 .btn-secondary:disabled{opacity:.55;cursor:not-allowed;transform:none}
-.btn-atualizar-filtro{min-width:118px}
-.btn-salvar-liberacao{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:8px 18px;border-radius:10px;font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;color:#fff;background:var(--orange);border:2px solid var(--blue);box-shadow:0 2px 8px rgba(255,107,0,.22);transition:background .15s,transform .15s}
-.btn-salvar-liberacao:hover:not(:disabled){background:#e55f00;transform:translateY(-1px)}
+.btn-salvar-liberacao{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:8px 18px;border-radius:10px;font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;color:#fff;background:var(--blue);border:0;box-shadow:0 1px 2px rgba(16,24,40,.08);transition:background .15s,transform .15s}
+.btn-salvar-liberacao:hover:not(:disabled){background:var(--blue2)}
 .btn-salvar-liberacao:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
 .filter-actions{align-items:flex-end}
 .btn-icon{display:inline-flex;width:16px;height:16px}.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -64,7 +63,6 @@ thead th.col-sort:hover{background:#e8eef6}
 thead th[aria-sort="ascending"] .sort-icon,thead th[aria-sort="descending"] .sort-icon{color:var(--orange)}
 thead th.col-fix{z-index:5;background:#e8eef6}
 thead th.col-sync{width:88px;min-width:88px}
-thead th.col-acoes{width:72px;min-width:72px}
 thead th.col-maquina{width:96px;min-width:96px}
 tbody td{border-bottom:1px solid #edf2f7;padding:0;text-align:center;vertical-align:middle;background:var(--white)}
 tbody tr:nth-child(even) td{background:#fafbfd}
@@ -108,13 +106,6 @@ tbody td.col-maquina .cell-readonly{background:transparent;color:inherit;padding
 .sync-badge.saving{background:#ffedd5;color:var(--amber)}
 .sync-badge.dirty{background:#e0e7ff;color:#3730a3}
 .sync-badge.erro{background:#fee2e2;color:var(--red)}
-.btn-row-edit,.btn-row-cancel{display:inline-flex;align-items:center;justify-content:center;min-width:58px;padding:4px 7px;border-radius:6px;font-size:9px;font-weight:800;font-family:inherit;cursor:pointer;line-height:1.2}
-.btn-row-edit{color:var(--blue);background:#eef4ff;border:1px solid rgba(6,36,92,.18)}
-.btn-row-edit:hover{background:#dbeafe}
-.btn-row-cancel{color:#991b1b;background:#fef2f2;border:1px solid #fecaca}
-.btn-row-cancel:hover{background:#fee2e2}
-tbody tr.row-editing td{background:#fffbeb!important}
-tbody tr.row-editing:hover td{background:#fffbeb!important}
 .empty{padding:48px 24px;color:var(--muted);text-align:center}
 .empty-title{font-size:15px;font-weight:900;color:var(--blue);margin-bottom:6px}
 .empty-text{font-size:12px;font-weight:600;line-height:1.5}
@@ -157,23 +148,20 @@ tbody tr.row-editing:hover td{background:#fffbeb!important}
             </div>
             <div class="filters-inline" aria-label="Filtros">
                 <div class="filter-field"><label for="dataFiltro">Data</label><input id="dataFiltro" type="date"></div>
-                <div class="filter-field"><label for="maquinaFiltro">Máquina</label><select id="maquinaFiltro" required><option value="">Selecione</option></select></div>
+                <div class="filter-field"><label for="maquinaFiltro">Máquina</label><select id="maquinaFiltro"><option value="">Selecione</option></select></div>
                 <div class="filter-actions">
-                    <button type="button" class="btn-primary btn-atualizar-filtro" id="btn-atualizar" title="Carregar dados da planilha para a data e máquina selecionadas">
-                        <span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></span>Atualizar
-                    </button>
                     <button type="button" class="btn-salvar-liberacao" id="btn-salvar" disabled title="Gravar alterações na planilha">Salvar</button>
                 </div>
             </div>
         </div>
-        <div class="status-pill" id="statusPill"><span class="status-dot" id="statusDot"></span><span id="statusLine">Selecione data e máquina · clique em Atualizar</span></div>
+        <div class="status-pill" id="statusPill"><span class="status-dot" id="statusDot"></span><span id="statusLine">Selecione a máquina para carregar</span></div>
     </div>
 
     <section class="table-card" aria-label="Planilha de acompanhamento">
         <div class="table-head">
             <div>
                 <h2 class="card-title">Planilha de acompanhamento</h2>
-                <div class="table-sub">Clique em Editar na linha · altere os campos · Salvar grava na planilha</div>
+                <div class="table-sub">Edite as células · Salvar grava na planilha · setas / Tab para navegar</div>
             </div>
             <span class="status-pill" style="padding:6px 10px"><span id="tableInfo">0 linhas</span></span>
         </div>
@@ -184,13 +172,13 @@ tbody tr.row-editing:hover td{background:#fffbeb!important}
             </table>
             <div class="empty" id="emptyState">
                 <div class="empty-title">Planilha não carregada</div>
-                <div class="empty-text">Selecione a <strong>data</strong> e a <strong>máquina</strong>, depois clique em <strong>Atualizar</strong>.<br>Após editar, use <strong>Salvar</strong> para gravar na planilha.</div>
+                <div class="empty-text">Selecione a <strong>máquina</strong> para carregar os dados do dia.<br>Após editar, use <strong>Salvar</strong> para gravar na planilha.</div>
             </div>
         </div>
         <div class="legend" aria-hidden="true">
             <span class="legend-item"><span class="legend-swatch ok"></span>Salvo</span>
             <span class="legend-item"><span class="legend-swatch dirty"></span>Alterado (pendente)</span>
-            <span class="legend-item">Editar — uma linha por vez</span>
+            <span class="legend-item"><span class="legend-swatch saving"></span>Salvando</span>
             <span class="legend-item"><span class="legend-swatch erro"></span>Erro ao salvar</span>
             <span class="legend-item"><span class="legend-swatch formula"></span>Calculado automaticamente</span>
             <span class="legend-item">Setas / Tab / Enter — navegar células editáveis</span>
@@ -248,7 +236,10 @@ const INICIO_NO_HORARIO_MAX = 3;
 const CAMPOS_HORA = new Set(["horario_saida_da_garagem","horario_de_inicio","saida_real","inicio_real"]);
 const DIAS_JANELA = 7;
 const CACHE_SESSAO_PREFIX = "portal_liberacao_sessao_v1";
+const LIBERACAO_DATA_BASE = "../assets/data/liberacao";
 const MAQUINAS_PADRAO = ["MAQUINA 01","MAQUINA 02","MAQUINA 03","MAQUINA 04"];
+const MAQUINA_TODAS = "__TODAS__";
+let carregamentoRemotoId = 0;
 let carregamentoEmAndamento = false;
 let salvamentoEmAndamento = false;
 let eventosTabelaIniciados = false;
@@ -259,7 +250,6 @@ const state = {
     saving: {},
     sessaoData: "",
     sessaoMaquina: "",
-    linhaEditando: null,
     sortKey: "horario_saida_da_garagem",
     sortDir: "asc"
 };
@@ -303,7 +293,8 @@ function normalizarDataIsoRow(row){
     return /^\d{4}-\d{2}-\d{2}$/.test(br)?br:"";
 }
 function chaveCacheSessao(data,maquina){
-    return CACHE_SESSAO_PREFIX+"|"+data+"|"+normalizarMaquina(maquina);
+    const chaveMaquina=maquina===MAQUINA_TODAS?"TODAS":normalizarMaquina(maquina);
+    return CACHE_SESSAO_PREFIX+"|"+data+"|"+chaveMaquina;
 }
 function lerCacheSessao(data,maquina){
     if(!data||!maquina) return null;
@@ -420,6 +411,10 @@ function ensureRowInit(row){
 function filtrosSessao(){
     return {data:$("dataFiltro").value,maquina:$("maquinaFiltro").value};
 }
+function rotuloMaquinaFiltro(maquina){
+    if(maquina===MAQUINA_TODAS) return "Todas as máquinas";
+    return maquina||"";
+}
 function validarFiltrosSessao(){
     const {data,maquina}=filtrosSessao();
     if(!data){setStatus("Informe a data.","erro");return null;}
@@ -436,7 +431,6 @@ function limparSessao(mensagem){
     state.dados=[];
     state.sessaoData="";
     state.sessaoMaquina="";
-    state.linhaEditando=null;
     renderTabela();
     atualizarBotaoSalvar();
     if(mensagem) setStatus(mensagem,"");
@@ -453,61 +447,29 @@ function aplicarDadosCarregados(dados,origem){
     renderTabela();
     atualizarBotaoSalvar();
     const agora=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
-    const texto=formatNumber(state.dados.length)+" registro(s) · "+rotuloData(state.sessaoData)+" · "+origem+" · "+agora;
+    const texto=formatNumber(state.dados.length)+" registro(s) · "+rotuloData(state.sessaoData)+" · "+rotuloMaquinaFiltro(state.sessaoMaquina)+" · "+origem+" · "+agora;
     setStatus(texto,state.dados.length?"ok":"");
 }
 function sessaoTemPendencias(){
     return state.dados.some(r=>r._dirty);
 }
 
-function linhaEmEdicao(rowIdx){
-    return state.linhaEditando===rowIdx;
+function filtrarPorMaquina(dados,maquina){
+    if(maquina===MAQUINA_TODAS) return dados||[];
+    const alvo=normalizarMaquina(maquina);
+    return (dados||[]).filter(r=>normalizarMaquina(r.maquina)===alvo);
 }
 
-function iniciarEdicaoLinha(rowIdx){
-    if(rowIdx<0||rowIdx>=state.dados.length) return;
-    if(state.linhaEditando!==null&&state.linhaEditando!==rowIdx){
-        const atual=state.dados[state.linhaEditando];
-        if(atual?._dirty){
-            if(!confirm("Há alterações não salvas na linha em edição. Descartar?")) return;
-            cancelarEdicaoLinha(state.linhaEditando);
-        }else{
-            encerrarEdicaoLinha(state.linhaEditando,false);
-        }
+async function carregarSnapshotDia(data){
+    if(!data) return [];
+    try{
+        const res=await fetch(LIBERACAO_DATA_BASE+"/acompanhamento-dia-"+data+".json");
+        if(!res.ok) return [];
+        const payload=await res.json();
+        return Array.isArray(payload?.dados)?payload.dados:[];
+    }catch(_){
+        return [];
     }
-    state.linhaEditando=rowIdx;
-    const row=state.dados[rowIdx];
-    row._backup=Object.assign({},row);
-    renderCorpoTabela();
-    requestAnimationFrame(()=>{
-        const el=document.querySelector('#tabelaCorpo [data-i="'+rowIdx+'"].cell-input,#tabelaCorpo [data-i="'+rowIdx+'"].cell-select');
-        if(el){el.focus();if(el.tagName==="INPUT") el.select();}
-    });
-}
-
-function encerrarEdicaoLinha(rowIdx,restaurar){
-    const row=state.dados[rowIdx];
-    if(!row) return;
-    if(restaurar&&row._backup){
-        Object.assign(row,row._backup);
-        row._dirty=false;
-        row._syncErro=false;
-    }
-    delete row._backup;
-    if(state.linhaEditando===rowIdx) state.linhaEditando=null;
-}
-
-function cancelarEdicaoLinha(rowIdx){
-    encerrarEdicaoLinha(rowIdx,true);
-    renderCorpoTabela();
-    atualizarBotaoSalvar();
-}
-
-function renderAcoesLinha(rowIdx){
-    if(linhaEmEdicao(rowIdx)){
-        return '<button type="button" class="btn-row-cancel" data-acao="cancelar" data-i="'+rowIdx+'">Cancelar</button>';
-    }
-    return '<button type="button" class="btn-row-edit" data-acao="editar" data-i="'+rowIdx+'">Editar</button>';
 }
 
 function celulaEditavelPorChave(chave){
@@ -515,7 +477,6 @@ function celulaEditavelPorChave(chave){
 }
 
 function celulaEditavel(rowIdx,colIdx){
-    if(!linhaEmEdicao(rowIdx)) return false;
     if(rowIdx<0||rowIdx>=state.dados.length||colIdx<0||colIdx>=state.colunas.length) return false;
     return celulaEditavelPorChave(state.colunas[colIdx].chave);
 }
@@ -579,10 +540,6 @@ function atualizarIndicadoresSort(){
 }
 
 function onSortHeader(e){
-    if(state.linhaEditando!==null){
-        setStatus("Finalize ou cancele a edição da linha antes de ordenar.","erro");
-        return;
-    }
     const key=e.currentTarget.dataset.sort;
     if(!key) return;
     if(state.sortKey===key) state.sortDir=state.sortDir==="asc"?"desc":"asc";
@@ -670,14 +627,6 @@ function onCellKeydown(e){
 function initEventosTabela(){
     if(eventosTabelaIniciados) return;
     const corpo=$("tabelaCorpo");
-    corpo.addEventListener("click",(e)=>{
-        const btn=e.target.closest("[data-acao]");
-        if(!btn||!corpo.contains(btn)) return;
-        const i=Number(btn.dataset.i);
-        if(isNaN(i)) return;
-        if(btn.dataset.acao==="editar") iniciarEdicaoLinha(i);
-        if(btn.dataset.acao==="cancelar") cancelarEdicaoLinha(i);
-    });
     corpo.addEventListener("change",onCellChange);
     corpo.addEventListener("blur",onCellChange,true);
     corpo.addEventListener("focusin",(e)=>{
@@ -699,8 +648,7 @@ function renderCelula(row, rowIdx, col){
         return '<span class="cell-readonly cell-formula cell-locked" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" aria-readonly="true" tabindex="-1" title="Calculado automaticamente — não editável">'+escapeHtml(v||"—")+'</span>';
     }
     const clsExtra=(col.texto?" cell-texto":"")+clsMaquina;
-    const editavel=celulaEditavelPorChave(chave)&&linhaEmEdicao(rowIdx);
-    if(!editavel){
+    if(!celulaEditavelPorChave(chave)){
         const exibir=chave==="maquina"?textoMaquina:v;
         return '<span class="cell-readonly'+clsExtra+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" aria-readonly="true" tabindex="-1" title="Não editável">'+escapeHtml(exibir||"—")+'</span>';
     }
@@ -724,7 +672,7 @@ function atualizarCelulasFormula(i){
 
 function renderCabecalho(){
     const cols=state.colunas;
-    $("tabelaHead").innerHTML='<tr><th class="col-fix col-acoes">Ações</th><th class="col-fix col-sync">Status</th>'+
+    $("tabelaHead").innerHTML='<tr><th class="col-fix col-sync">Status</th>'+
         cols.map(c=>{
             const clsMaquina=c.chave==="maquina"?" col-maquina":"";
             return '<th class="col-sort'+clsMaquina+'" data-sort="'+escapeHtml(c.chave)+'" style="width:'+c.largura+'px;min-width:'+c.largura+'px" title="Ordenar por '+escapeHtml(c.rotulo)+'"><span class="sort-label">'+escapeHtml(c.rotulo)+' <span class="sort-icon" aria-hidden="true">↕</span></span></th>';
@@ -738,8 +686,7 @@ function renderCorpoTabela(){
     $("tabelaCorpo").innerHTML=state.dados.map((row,i)=>{
         ensureRowInit(row);
         aplicarFormulasLinha(row);
-        return '<tr data-i="'+i+'"'+(linhaEmEdicao(i)?' class="row-editing"':'')+'>'+
-        '<td class="col-fix col-acoes">'+renderAcoesLinha(i)+'</td>'+
+        return '<tr data-i="'+i+'">'+
         '<td class="col-fix col-sync sync-'+i+'">'+syncBadge(row,i)+'</td>'+
         cols.map(c=>{
             const cls=(c.formula?" cell-formula":"");
@@ -753,10 +700,10 @@ function renderCorpoTabela(){
         const texto=$("emptyState").querySelector(".empty-text");
         if(state.sessaoData){
             titulo.textContent="Nenhum registro encontrado";
-            texto.innerHTML="Não há lançamentos para "+escapeHtml(rotuloData(state.sessaoData))+" · "+escapeHtml(state.sessaoMaquina)+".";
+            texto.innerHTML="Não há lançamentos para "+escapeHtml(rotuloData(state.sessaoData))+" · "+escapeHtml(rotuloMaquinaFiltro(state.sessaoMaquina))+".";
         }else{
             titulo.textContent="Planilha não carregada";
-            texto.innerHTML="Selecione a <strong>data</strong> e a <strong>máquina</strong>, depois clique em <strong>Atualizar</strong>.<br>Após editar, use <strong>Salvar</strong> para gravar na planilha.";
+            texto.innerHTML="Selecione a <strong>máquina</strong> para carregar os dados do dia.<br>Após editar, use <strong>Salvar</strong> para gravar na planilha.";
         }
     }
     $("tableInfo").textContent=formatNumber(state.dados.length)+" linha(s)";
@@ -775,7 +722,7 @@ function onCellChange(e){
     if(!el.matches(".cell-input,.cell-select")) return;
     const i=Number(el.dataset.i);
     const k=el.dataset.k;
-    if(isNaN(i)||!k||!linhaEmEdicao(i)) return;
+    if(isNaN(i)||!k) return;
     if(!celulaEditavelPorChave(k)||isColunaFormula(k)) return;
     state.dados[i][k]=el.value.trim();
     if(CAMPOS_DISPARO_FORMULA.has(k)) atualizarCelulasFormula(i);
@@ -819,69 +766,74 @@ async function salvarLinha(i){
 function configurarMaquinasPadrao(){
     const sel=$("maquinaFiltro");
     const prev=sel.value;
-    sel.innerHTML='<option value="">Selecione</option>'+MAQUINAS_PADRAO.map(m=>'<option value="'+escapeHtml(m)+'">'+escapeHtml(m)+'</option>').join("");
-    if(MAQUINAS_PADRAO.includes(prev)) sel.value=prev;
+    sel.innerHTML='<option value="">Selecione</option><option value="'+MAQUINA_TODAS+'">Todas as máquinas</option>'+MAQUINAS_PADRAO.map(m=>'<option value="'+escapeHtml(m)+'">'+escapeHtml(m)+'</option>').join("");
+    if(prev===MAQUINA_TODAS||MAQUINAS_PADRAO.includes(prev)) sel.value=prev;
 }
 
 async function carregarPlanilha(data,maquina){
-    const res=await apiGet({
-        recurso:"acompanhamento",
-        data,
-        maquina,
-        limit:"0",
-        vivo:"1"
-    });
+    const params={recurso:"acompanhamento",data,limit:"0",vivo:"1"};
+    if(maquina&&maquina!==MAQUINA_TODAS) params.maquina=maquina;
+    const res=await apiGet(params);
     return res.dados||[];
 }
 
-async function atualizarSessao(){
-    if(carregamentoEmAndamento) return;
-    if(sessaoTemPendencias()&&!confirm("Há alterações não salvas. Descartar e recarregar?")) return;
-
+async function carregarSessao(){
     const filtros=validarFiltrosSessao();
     if(!filtros) return;
     const {data,maquina}=filtros;
 
-    state.linhaEditando=null;
-    carregamentoEmAndamento=true;
-    const btn=$("btn-atualizar");
-    if(btn) btn.disabled=true;
-    atualizarBotaoSalvar();
+    if(state.sessaoData===data&&state.sessaoMaquina===maquina&&state.dados.length) return;
+
+    if(sessaoTemPendencias()&&!confirm("Há alterações não salvas. Descartar e recarregar?")){
+        if(state.sessaoData) $("dataFiltro").value=state.sessaoData;
+        if(state.sessaoMaquina) $("maquinaFiltro").value=state.sessaoMaquina;
+        return;
+    }
+
+    const reqId=++carregamentoRemotoId;
+    state.sessaoData=data;
+    state.sessaoMaquina=maquina;
 
     const cache=lerCacheSessao(data,maquina);
     if(cache?.dados?.length){
-        state.sessaoData=data;
-        state.sessaoMaquina=maquina;
-        aplicarDadosCarregados(cache.dados,"cache local");
-        setStatus(formatNumber(state.dados.length)+" registro(s) · cache · atualizando planilha...","load");
+        aplicarDadosCarregados(cache.dados,"cache");
     }else{
         limparSessao("");
-        setStatus("Carregando planilha...","load");
-        window.portalMostrarCarregando?.("Carregando liberação");
+        setStatus("Carregando...","load");
     }
 
+    carregamentoEmAndamento=true;
+    atualizarBotaoSalvar();
+
+    const tinhaDados=state.dados.length>0;
+
+    carregarSnapshotDia(data).then(todos=>{
+        if(reqId!==carregamentoRemotoId||sessaoTemPendencias()) return;
+        const jsonDados=filtrarPorMaquina(todos,maquina);
+        if(!jsonDados.length) return;
+        aplicarDadosCarregados(jsonDados,tinhaDados||cache?.dados?.length?"JSON · cache":"JSON");
+    }).catch(()=>{});
+
     try{
-        const dados=await carregarPlanilha(data,maquina);
-        state.sessaoData=data;
-        state.sessaoMaquina=maquina;
-        const origem=cache?.dados?.length?"planilha · cache":"planilha";
-        aplicarDadosCarregados(dados,origem);
-        if(!dados.length){
-            setStatus("Nenhum registro para "+rotuloData(data)+" · "+maquina+".","ok");
+        const apiDados=await carregarPlanilha(data,maquina);
+        if(reqId!==carregamentoRemotoId||sessaoTemPendencias()) return;
+        aplicarDadosCarregados(apiDados,"planilha");
+        if(!apiDados.length&&!state.dados.length){
+            setStatus("Nenhum registro para "+rotuloData(data)+" · "+rotuloMaquinaFiltro(maquina)+".","ok");
         }
     }catch(error){
         console.error("Erro ao carregar liberação:",error);
-        if(!cache?.dados?.length){
-            limparSessao("Falha ao carregar. Tente novamente.");
-            setStatus(error.message||"Erro ao carregar planilha.","erro");
+        if(reqId!==carregamentoRemotoId) return;
+        if(!state.dados.length){
+            setStatus(error.message||"Erro ao carregar.","erro");
         }else{
-            setStatus(formatNumber(state.dados.length)+" registro(s) · cache (falha na planilha)","erro");
+            setStatus(formatNumber(state.dados.length)+" registro(s) · cache/JSON (planilha indisponível)","erro");
         }
     }finally{
-        carregamentoEmAndamento=false;
-        if(btn) btn.disabled=false;
-        atualizarBotaoSalvar();
-        window.portalOcultarCarregando?.();
+        if(reqId===carregamentoRemotoId){
+            carregamentoEmAndamento=false;
+            atualizarBotaoSalvar();
+        }
     }
 }
 
@@ -912,8 +864,6 @@ async function salvarAlteracoes(){
         }
         if(!erros){
             salvarCacheSessao(state.sessaoData,state.sessaoMaquina,state.dados);
-            state.linhaEditando=null;
-            state.dados.forEach(r=>{delete r._backup;});
             renderCorpoTabela();
             setStatus(formatNumber(state.dados.length)+" registro(s) · salvo · cache atualizado","ok");
         }else{
@@ -926,21 +876,39 @@ async function salvarAlteracoes(){
     }
 }
 
-function aoMudarFiltro(){
-    if(!state.sessaoData&&!state.dados.length) return;
-    if(sessaoTemPendencias()){
-        if(!confirm("Há alterações não salvas. Descartar?")) {
-            if(state.sessaoData) $("dataFiltro").value=state.sessaoData;
-            if(state.sessaoMaquina) $("maquinaFiltro").value=state.sessaoMaquina;
-            return;
-        }
-    }
-    limparSessao("Selecione data e máquina · clique em Atualizar");
+function tentarCarregarSessao(){
+    if(!$("maquinaFiltro").value) return;
+    carregarSessao().catch(e=>setStatus(e.message,"erro"));
 }
 
-$("dataFiltro").addEventListener("change",aoMudarFiltro);
-$("maquinaFiltro").addEventListener("change",aoMudarFiltro);
-$("btn-atualizar").addEventListener("click",()=>{atualizarSessao().catch(e=>setStatus(e.message,"erro"));});
+function aoMudarMaquina(){
+    const maquina=$("maquinaFiltro").value;
+    if(!maquina){
+        if(sessaoTemPendencias()&&!confirm("Há alterações não salvas. Descartar?")){
+            $("maquinaFiltro").value=state.sessaoMaquina||"";
+            return;
+        }
+        limparSessao("Selecione a máquina para carregar");
+        return;
+    }
+    if(sessaoTemPendencias()&&state.sessaoMaquina&&state.sessaoMaquina!==maquina&&!confirm("Há alterações não salvas. Descartar?")){
+        $("maquinaFiltro").value=state.sessaoMaquina;
+        return;
+    }
+    tentarCarregarSessao();
+}
+
+function aoMudarData(){
+    if(!$("maquinaFiltro").value) return;
+    if(sessaoTemPendencias()&&state.sessaoData&&state.sessaoData!==$("dataFiltro").value&&!confirm("Há alterações não salvas. Descartar?")){
+        $("dataFiltro").value=state.sessaoData;
+        return;
+    }
+    tentarCarregarSessao();
+}
+
+$("dataFiltro").addEventListener("change",aoMudarData);
+$("maquinaFiltro").addEventListener("change",aoMudarMaquina);
 $("btn-salvar").addEventListener("click",()=>{salvarAlteracoes().catch(e=>setStatus(e.message,"erro"));});
 
 function iniciar(){
@@ -948,7 +916,7 @@ function iniciar(){
     configurarLimitesFiltroData();
     definirDataFiltroHoje();
     configurarMaquinasPadrao();
-    limparSessao("Selecione data e máquina · clique em Atualizar");
+    limparSessao("Selecione a máquina para carregar");
 }
 
 if(window.portalUsuarioValidado) iniciar();
