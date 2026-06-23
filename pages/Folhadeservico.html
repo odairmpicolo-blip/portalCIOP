@@ -1344,6 +1344,7 @@ h1 {
     const FOLHA_DATA_BASE = resolverBasePortal() + "/assets/data/folha-servico";
     const FOLHA_MANIFEST_URL = FOLHA_DATA_BASE + "/manifest.json";
     const AUTO_SYNC_INTERVAL_MS = 5 * 60 * 1000;
+    const SYNC_MARGEM_ANTERIORES = 10;
     const JSON_UPDATE_COOLDOWN_MS = 15 * 60 * 1000;
     const CORES_BARRAS = ["#6366f1", "#8b5cf6", "#ec4899", "#f97316", "#14b8a6", "#22c55e", "#eab308", "#3b82f6", "#ef4444", "#64748b"];
     const PALETA_OCORRENCIA = {
@@ -1985,6 +1986,14 @@ h1 {
         return deduplicarRegistros(dadosMestres).length;
     }
 
+    function offsetComMargemAnteriores(qtd) {
+        return Math.max(0, qtd - SYNC_MARGEM_ANTERIORES);
+    }
+
+    function snapshotAssinaturas(lista) {
+        return (lista || []).map((item) => assinaturaRegistro(normalizarRegistro(item))).join("\n");
+    }
+
     function montarStatusCompletando(totalPlanilha) {
         const qtd = deduplicarRegistros(dadosMestres).length;
         return "Completando dados: " + qtd.toLocaleString("pt-BR")
@@ -2021,14 +2030,12 @@ h1 {
 
             dadosMestres = deduplicarRegistros(dadosMestres);
             const qtdInicial = dadosMestres.length;
-
-            if (qtdInicial >= totalPlanilha) {
-                return { alterou: false, novos: 0, completo: true };
-            }
+            const assinaturasAntes = snapshotAssinaturas(dadosMestres);
+            const offsetTail = offsetComMargemAnteriores(qtdInicial);
 
             if (typeof onProgress === "function") onProgress(qtdInicial, totalPlanilha);
 
-            await buscarLotesPlanilha(ano, qtdInicial, totalPlanilha, onProgress);
+            await buscarLotesPlanilha(ano, offsetTail, totalPlanilha, onProgress);
 
             if (dadosMestres.length < totalPlanilha) {
                 setLoadStatus(
@@ -2042,23 +2049,25 @@ h1 {
             dadosMestres = deduplicarRegistros(dadosMestres);
             const completo = dadosMestres.length >= totalPlanilha;
             const novos = dadosMestres.length - qtdInicial;
+            const alterouConteudo = snapshotAssinaturas(dadosMestres) !== assinaturasAntes;
+            const alterou = novos > 0 || alterouConteudo;
 
-            if (novos > 0) {
+            if (alterou) {
                 await salvarCacheLocal(dadosMestres, {
                     ano,
                     total: dadosMestres.length,
                     total_planilha: completo ? totalPlanilha : dadosMestres.length,
                     versao: DASHBOARD_VERSAO,
-                    origem: "incremental"
+                    origem: novos > 0 ? "incremental" : "refresh_recentes"
                 }, ano);
-                solicitarAtualizacaoJson("sync_incremental");
+                solicitarAtualizacaoJson(novos > 0 ? "sync_incremental" : "sync_refresh_recentes");
             }
 
             return {
-                alterou: novos > 0,
+                alterou,
                 novos,
                 completo,
-                incompleto: !completo && novos === 0
+                incompleto: !completo && !alterou
             };
         } catch (error) {
             console.warn("Sincronização incremental:", error);
