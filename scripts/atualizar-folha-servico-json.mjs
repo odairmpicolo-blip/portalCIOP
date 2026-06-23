@@ -6,6 +6,8 @@ const APPS_SCRIPT_URL = process.env.FOLHA_SERVICO_API_URL
 const DASHBOARD_VERSAO = process.env.FOLHA_SERVICO_VERSAO || "2026-06-23-dashboard-anos-planilha";
 const PAGE_SIZE = Number(process.env.FOLHA_SERVICO_PAGINA || 3500);
 const TIMEOUT_MS = Number(process.env.FOLHA_SERVICO_TIMEOUT_MS || 120000);
+const FETCH_RETRIES = Number(process.env.FOLHA_SERVICO_RETRIES || 5);
+const RETRY_DELAY_MS = Number(process.env.FOLHA_SERVICO_RETRY_DELAY_MS || 8000);
 const ANOS_EXTRA = String(process.env.FOLHA_SERVICO_ANOS || "")
   .split(",")
   .map((item) => parseInt(item.trim(), 10))
@@ -38,15 +40,29 @@ function slimRegistro(item) {
 }
 
 async function fetchJson(url) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
-  if (!response.ok) throw new Error(`HTTP ${response.status} ao acessar ${url}`);
-  const text = await response.text();
-  if (/^\s*</.test(text)) {
-    throw new Error("Apps Script retornou HTML. Verifique o deploy do Web App da folha de serviço.");
+  let lastError;
+  for (let tentativa = 1; tentativa <= FETCH_RETRIES; tentativa++) {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} ao acessar ${url}`);
+      }
+      const text = await response.text();
+      if (/^\s*</.test(text)) {
+        throw new Error("Apps Script retornou HTML. Verifique o deploy do Web App da folha de serviço.");
+      }
+      const payload = JSON.parse(text);
+      if (payload?.ok === false) throw new Error(payload.erro || "Resposta inválida da API");
+      return payload;
+    } catch (error) {
+      lastError = error;
+      if (tentativa < FETCH_RETRIES) {
+        console.warn(`  tentativa ${tentativa}/${FETCH_RETRIES} falhou: ${error.message || error}`);
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+      }
+    }
   }
-  const payload = JSON.parse(text);
-  if (payload?.ok === false) throw new Error(payload.erro || "Resposta inválida da API");
-  return payload;
+  throw lastError;
 }
 
 async function buscarAnos() {
