@@ -2438,8 +2438,15 @@ h1 {
             try {
                 const marcaInicial = obterMarcaManifesto()
                     || String(lerCacheMeta(ANO_TODOS)?.snapshotEm || lerCacheMeta(ANO_TODOS)?.atualizadoEm || "");
-                await solicitarAtualizacaoJson("dashboard_manual", true);
+                const disparo = await solicitarAtualizacaoJson("dashboard_manual", true);
                 await reconciliarUltimosLancamentosPlanilha(false);
+                if (disparo?.status === "erro_github" || disparo?.ok === false && disparo?.status !== "debounced") {
+                    setLoadStatus(
+                        "Falha ao disparar atualização JSON: "
+                        + (disparo?.detalhe || disparo?.erro || disparo?.mensagem || "verifique GITHUB_PAT no Apps Script"),
+                        "erro"
+                    );
+                }
                 await aguardarNovoSnapshotJson(marcaInicial);
                 await refrescarJsonFolhaEmBackground(false);
             } catch (error) {
@@ -2563,13 +2570,18 @@ h1 {
     }
 
     async function solicitarAtualizacaoJson(origem, forcar) {
-        if (!forcar && Date.now() - ultimaSolicitacaoJson < JSON_UPDATE_COOLDOWN_MS) return;
+        if (!forcar && Date.now() - ultimaSolicitacaoJson < JSON_UPDATE_COOLDOWN_MS) return null;
         ultimaSolicitacaoJson = Date.now();
         try {
             const url = URL_DO_SCRIPT_GOOGLE + "?atualizar_json=1&origem=" + encodeURIComponent(origem || "dashboard");
-            await fetchComTimeout(url);
+            const res = await fetchComTimeout(url);
+            if (res?.ok === false) {
+                console.warn("Atualização JSON:", res.erro || res.detalhe || res);
+            }
+            return res;
         } catch (error) {
             console.warn("Falha ao solicitar atualização do JSON:", error);
+            return { ok: false, erro: error.message || String(error) };
         }
     }
 
@@ -3536,7 +3548,7 @@ h1 {
             if (dDe && iso && iso < dDe) return false;
             if (dAte && iso && iso > dAte) return false;
             if (analista && item.analista !== analista) return false;
-            if (motSai && motoristaQueSai(item) !== motSai) return false;
+            if (motSai && normTexto(motoristaQueSai(item)) !== normTexto(motSai)) return false;
             if (ocorrencia && item.ocorrencia !== ocorrencia) return false;
             if (linha && item.linha !== linha) return false;
             if (situacao && item.situacao !== situacao) return false;

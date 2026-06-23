@@ -42,8 +42,8 @@ function isoDiasAtras(dias) {
   return isoDataLocal(-dias);
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+async function fetchJson(url, timeoutMs = TIMEOUT_MS) {
+  const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
   if (!response.ok) throw new Error(`HTTP ${response.status} ao acessar ${url}`);
   return response.json();
 }
@@ -109,14 +109,14 @@ async function atualizarAutuacoes() {
   });
 }
 
-async function buscarLiberacaoGraficos(dataDe, dataAte) {
+async function buscarLiberacaoGraficos(dataDe, dataAte, timeoutMs = TIMEOUT_MS) {
   const url = `${LIBERACAO_URL}?${new URLSearchParams({
     liberacao: "1",
     recurso: "graficos",
     data_de: dataDe,
     data_ate: dataAte
   })}`;
-  const res = await fetchJson(url);
+  const res = await fetchJson(url, timeoutMs);
   if (!res.ok) throw new Error(res.erro || "Falha nos gráficos de liberação");
   return {
     ok: true,
@@ -158,9 +158,12 @@ async function atualizarLiberacao() {
   ];
 
   const graficosManifest = {};
+  const timeoutGraficos = Number(process.env.LIBERACAO_GRAFICOS_TIMEOUT_MS || 0) || Math.max(TIMEOUT_MS, 300000);
+
   for (const preset of presetsGraficos) {
     console.log(`Baixando liberação gráficos (${preset.id}: ${preset.data_de} a ${preset.data_ate})...`);
-    const payload = await buscarLiberacaoGraficos(preset.data_de, preset.data_ate);
+    const timeout = preset.id === "30d" ? timeoutGraficos : TIMEOUT_MS;
+    const payload = await buscarLiberacaoGraficos(preset.data_de, preset.data_ate, timeout);
     escreverJson(path.join(dir, preset.arquivo), {
       ...payload,
       atualizadoEm

@@ -28,19 +28,27 @@ jobs:
       - name: Gerar JSON da folha de serviço
         env:
           PORTAL_ROOT: ${{ github.workspace }}
+          FOLHA_SERVICO_TIMEOUT_MS: 180000
         run: node scripts/atualizar-folha-servico-json.mjs
+
+      - name: Publicar JSON da folha de serviço
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Atualiza JSON da folha de serviço"
+          file_pattern: assets/data/folha-servico/*.json
 
       - name: Gerar JSON (pontualidade, autuações, liberação)
         env:
           PORTAL_ROOT: ${{ github.workspace }}
+          PORTAL_JSON_TIMEOUT_MS: 300000
         run: node scripts/atualizar-portais-json.mjs
+        continue-on-error: true
 
-      - name: Publicar dados atualizados
+      - name: Publicar outros snapshots JSON
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Atualiza snapshots JSON do portal"
+          commit_message: "Atualiza snapshots JSON (pontualidade, autuações, liberação)"
           file_pattern: |
-            assets/data/folha-servico/*.json
             assets/data/pontualidade/*.json
             assets/data/autuacoes/*.json
             assets/data/liberacao/*.json
