@@ -147,6 +147,52 @@ async function buscarLiberacaoAcompanhamento(dataDe, dataAte) {
   };
 }
 
+async function buscarLiberacaoDia(data, timeoutMs = TIMEOUT_MS) {
+  const url = `${LIBERACAO_URL}?${new URLSearchParams({
+    liberacao: "1",
+    recurso: "acompanhamento",
+    data,
+    limit: "0"
+  })}`;
+  const res = await fetchJson(url, timeoutMs);
+  if (!res.ok) throw new Error(res.erro || "Falha no acompanhamento do dia");
+  return {
+    ok: true,
+    data,
+    data_de: data,
+    data_ate: data,
+    dados: res.dados || [],
+    meta: res.meta || {}
+  };
+}
+
+async function atualizarLiberacaoSomenteHoje() {
+  const dir = path.join(portalRoot, "assets", "data", "liberacao");
+  const hoje = isoHoje();
+  const atualizadoEm = new Date().toISOString();
+  const arquivo = `acompanhamento-dia-${hoje}.json`;
+
+  console.log(`Baixando liberação hoje (${hoje})...`);
+  const payload = await buscarLiberacaoDia(hoje);
+  escreverJson(path.join(dir, arquivo), {
+    ...payload,
+    total: payload.dados.length,
+    atualizadoEm
+  });
+
+  const manifestPath = path.join(dir, "manifest.json");
+  let manifest = {};
+  try {
+    manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  } catch (_) {
+    /* manifest ausente — recriado abaixo */
+  }
+  manifest.atualizadoEm = atualizadoEm;
+  manifest.dias = manifest.dias || {};
+  manifest.dias[hoje] = arquivo;
+  escreverJson(manifestPath, manifest);
+}
+
 async function atualizarLiberacao() {
   const dir = path.join(portalRoot, "assets", "data", "liberacao");
   const hoje = isoHoje();
@@ -227,6 +273,13 @@ async function atualizarLiberacao() {
 }
 
 async function main() {
+  const modo = process.argv[2];
+  if (modo === "--liberacao-hoje") {
+    console.log("Atualizando JSON de liberação (hoje)...");
+    await atualizarLiberacaoSomenteHoje();
+    console.log("Concluído.");
+    return;
+  }
   console.log("Atualizando snapshots JSON (pontualidade, autuações, liberação)...");
   await atualizarPontualidade();
   await atualizarAutuacoes();

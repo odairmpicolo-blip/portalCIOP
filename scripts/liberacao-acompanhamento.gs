@@ -33,6 +33,34 @@ function invalidarCacheLiberacao_() {
   PropertiesService.getScriptProperties().setProperty("liberacao_cache_v", String(Date.now()));
 }
 
+function solicitarAtualizacaoJsonLiberacaoHoje_(origem) {
+  origem = origem || "liberacao";
+  try {
+    if (typeof solicitarAtualizacaoJsonPortal_ === "function") {
+      solicitarAtualizacaoJsonPortal_(origem);
+    }
+  } catch (errPortal) {}
+  var token = PropertiesService.getScriptProperties().getProperty("GITHUB_PAT");
+  if (!token) return;
+  var repo = PropertiesService.getScriptProperties().getProperty("GITHUB_REPO") || "odairmpicolo-blip/portalCIOP";
+  try {
+    UrlFetchApp.fetch("https://api.github.com/repos/" + repo + "/dispatches", {
+      method: "post",
+      contentType: "application/json",
+      headers: {
+        Authorization: "Bearer " + token,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28"
+      },
+      payload: JSON.stringify({
+        event_type: "liberacao",
+        client_payload: { origem: origem, ts: new Date().toISOString() }
+      }),
+      muteHttpExceptions: true
+    });
+  } catch (errFetch) {}
+}
+
 function cacheChaveLiberacao_(recurso, partes) {
   return "lib-" + LIBERACAO_VERSAO + "-" + versaoCacheLiberacao_() + "-" + recurso + "-" + partes.join("|");
 }
@@ -414,21 +442,31 @@ function lerAcompanhamentoDiaCompleto_(dataIso, limit, maquinaFiltro) {
 
   const cabecalho = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(normalizarChaveLiberacao_);
   const dados = [];
-  var row = 2;
+  var endRow = lastRow;
 
-  while (row <= lastRow) {
-    const endRow = Math.min(lastRow, row + LIBERACAO_CHUNK_LINHAS - 1);
-    const numRows = endRow - row + 1;
-    const valores = sheet.getRange(row, 1, numRows, lastCol).getValues();
-    for (var i = 0; i < valores.length; i++) {
-      const rowNum = row + i;
+  while (endRow >= 2) {
+    const startRow = Math.max(2, endRow - LIBERACAO_CHUNK_LINHAS + 1);
+    const numRows = endRow - startRow + 1;
+    const valores = sheet.getRange(startRow, 1, numRows, lastCol).getValues();
+    var parar = false;
+
+    for (var i = valores.length - 1; i >= 0; i--) {
+      const rowNum = startRow + i;
       const item = linhaAcompanhamentoParaObjeto_(cabecalho, valores[i], rowNum);
       const iso = item.data_iso || normalizarDataIsoLiberacao_(item.data);
+
+      if (iso && iso < dataIso) {
+        parar = true;
+        break;
+      }
       if (iso !== dataIso) continue;
       if (!filtrarMaquinaLiberacao_(item, maquinaFiltro)) continue;
       dados.push(item);
+      if (limit > 0 && dados.length >= limit) return dados;
     }
-    row = endRow + 1;
+
+    if (parar) break;
+    endRow = startRow - 1;
   }
 
   if (limit > 0 && dados.length > limit) dados.splice(limit);
@@ -797,6 +835,7 @@ function criarAcompanhamentoLiberacao_(params) {
   });
   sheet.appendRow(linha);
   invalidarCacheLiberacao_();
+  try { solicitarAtualizacaoJsonLiberacaoHoje_("liberacao-create"); } catch (_) {}
   return { ok: true, linha: sheet.getLastRow(), acao: "create" };
 }
 
@@ -813,6 +852,7 @@ function atualizarAcompanhamentoLiberacao_(params) {
     sheet.getRange(row, idx + 1).setValue(valoresParams[chave]);
   });
   invalidarCacheLiberacao_();
+  try { solicitarAtualizacaoJsonLiberacaoHoje_("liberacao-update"); } catch (_) {}
   return { ok: true, linha: row, acao: "update" };
 }
 

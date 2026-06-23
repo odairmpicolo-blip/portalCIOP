@@ -1,0 +1,38 @@
+name: Atualizar JSON liberação hoje
+
+on:
+  schedule:
+    # A cada 3 minutos (UTC) — API → JSON centralizado para todos os usuários
+    - cron: "*/3 * * * *"
+  workflow_dispatch:
+  repository_dispatch:
+    types: [folha-servico, liberacao]
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Baixar portal
+        uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Gerar JSON de liberação (hoje)
+        env:
+          PORTAL_ROOT: ${{ github.workspace }}
+          PORTAL_JSON_TIMEOUT_MS: 180000
+        run: node scripts/atualizar-portais-json.mjs --liberacao-hoje
+
+      - name: Publicar JSON de liberação (hoje)
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Atualiza JSON liberação hoje"
+          file_pattern: assets/data/liberacao/*.json
