@@ -1187,7 +1187,7 @@ h1 {
                 </select>
             </div>
             <div class="filter-group filter-group--select">
-                <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c1.2-3.3 3.2-5 6-5s4.8 1.7 6 5"/><path d="M16 11a3 3 0 1 0-.8-5.9"/><path d="M17 20h4c-.5-2.4-1.8-4-4-4.8"/></svg></span><span>Mot. que sai</span></label>
+                <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c1.2-3.3 3.2-5 6-5s4.8 1.7 6 5"/><path d="M16 11a3 3 0 1 0-.8-5.9"/><path d="M17 20h4c-.5-2.4-1.8-4-4-4.8"/></svg></span><span>Motorista</span></label>
                 <select id="filtro-mot-sai" onchange="filtrarDashboard()">
                     <option value="">Todos os Motoristas</option>
                 </select>
@@ -3120,24 +3120,40 @@ h1 {
         return pickCampo(item, "mot_que_sai", "mot_sai", "motorista");
     }
 
+    function ordenarOpcoesFiltro(valores) {
+        return [...valores]
+            .map((item) => String(item || "").trim())
+            .filter(Boolean)
+            .sort((a, b) => a.localeCompare(b, "pt-BR", { sensitivity: "base" }));
+    }
+
+    function coletarMotoristasUnicos(dados) {
+        const mapa = new Map();
+        (dados || []).forEach((item) => {
+            const mot = motoristaQueSai(item);
+            if (!mot) return;
+            const limpo = mot.trim();
+            const chave = normTexto(limpo);
+            if (!mapa.has(chave)) mapa.set(chave, limpo);
+        });
+        return ordenarOpcoesFiltro([...mapa.values()]);
+    }
+
     function gerarFiltrosDinamicos(dados) {
         const analistas = new Set();
-        const motoristas = new Set();
         const ocorrencias = new Set();
         const linhas = new Set();
         const situacoes = new Set();
 
         dados.forEach(item => {
             if(item.analista) analistas.add(item.analista);
-            const mot = motoristaQueSai(item);
-            if (mot) motoristas.add(mot);
             if(item.ocorrencia) ocorrencias.add(item.ocorrencia);
             if(item.linha) linhas.add(item.linha);
             if(item.situacao) situacoes.add(item.situacao);
         });
 
         populateSelect('filtro-analista', analistas);
-        populateSelect('filtro-mot-sai', motoristas);
+        populateSelect('filtro-mot-sai', coletarMotoristasUnicos(dados));
         populateSelect('filtro-ocorrencia', ocorrencias);
         populateSelect('filtro-linha', linhas);
         populateSelect('filtro-situacao', situacoes);
@@ -3187,7 +3203,10 @@ h1 {
         const select = document.getElementById(id);
         const valorSelecionado = select.value;
         select.innerHTML = select.options[0].outerHTML;
-        Array.from(set).sort().forEach(val => {
+        const valores = set instanceof Set
+            ? ordenarOpcoesFiltro([...set])
+            : ordenarOpcoesFiltro(set);
+        valores.forEach(val => {
             const opt = document.createElement('option');
             opt.value = val;
             opt.innerText = val;
