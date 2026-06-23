@@ -1982,16 +1982,20 @@ h1 {
     }
 
     function calcularOffsetPlanilhaLocal(ano) {
-        const meta = lerCacheMeta(ano);
         let maxRow = 0;
         dadosMestres.forEach((item) => {
             const row = chaveLinhaPlanilha(item);
             if (row > maxRow) maxRow = row;
         });
         const porRow = maxRow >= 2 ? maxRow - 1 : 0;
-        const porMeta = Number(meta?.total_planilha || 0);
         const porQtd = dadosMestres.length;
-        return Math.max(porRow, porMeta, porQtd);
+        return Math.max(porRow, porQtd);
+    }
+
+    function cacheLocalIncompleto(totalPlanilha) {
+        if (!totalPlanilha) return false;
+        const qtd = deduplicarRegistros(dadosMestres).length;
+        return qtd < totalPlanilha;
     }
 
     async function sincronizarIncremental(ano) {
@@ -2022,7 +2026,7 @@ h1 {
             await salvarCacheLocal(dadosMestres, {
                 ano,
                 total: dadosMestres.length,
-                total_planilha: totalPlanilha,
+                total_planilha: dadosMestres.length,
                 versao: DASHBOARD_VERSAO,
                 origem: "incremental"
             }, ano);
@@ -2127,14 +2131,37 @@ h1 {
         return preloadFolhaServicoPromise;
     }
 
-    function finalizarCargaFolhaServico(ano) {
-        sincronizarIncremental(ano).then(async (resultado) => {
+    async function reconciliarSeAtrasado(ano) {
+        try {
+            const totalPlanilha = await buscarTotalPlanilha(ano);
+            if (!totalPlanilha) return;
+            dadosMestres = deduplicarRegistros(dadosMestres);
+            if (!cacheLocalIncompleto(totalPlanilha)) return;
+            setLoadStatus(
+                "Completando dados: " + dadosMestres.length.toLocaleString("pt-BR")
+                + " de " + totalPlanilha.toLocaleString("pt-BR") + " registro(s)...",
+                "load"
+            );
+            const resultado = await sincronizarIncremental(ano);
             if (resultado.alterou) {
                 const cacheAtual = await obterCacheLocal(ano);
                 aplicarDadosDashboard(dadosMestres, "dados atualizados", cacheAtual?.meta || {});
             }
-        }).catch(() => {});
-        iniciarSincronizacaoAutomatica();
+        } catch (error) {
+            console.warn("Reconciliação com planilha:", error);
+        }
+    }
+
+    function finalizarCargaFolhaServico(ano) {
+        reconciliarSeAtrasado(ano).then(() => {
+            sincronizarIncremental(ano).then(async (resultado) => {
+                if (resultado.alterou) {
+                    const cacheAtual = await obterCacheLocal(ano);
+                    aplicarDadosDashboard(dadosMestres, "dados atualizados", cacheAtual?.meta || {});
+                }
+            }).catch(() => {});
+            iniciarSincronizacaoAutomatica();
+        });
     }
 
     async function atualizarServicosNaoExibidos() {
@@ -2409,18 +2436,22 @@ h1 {
             return { origem: "json", rotulo: "arquivo JSON" + extra, dados: snapshot.dados, meta: snapshot.meta || {} };
         }
 
-        const cacheTs = cache.ts || 0;
-        const snapTs = parseTimestamp(snapshot.meta?.snapshotEm);
         const cacheQtd = cache.dados.length;
         const snapQtd = snapshot.dados.length;
-        const cacheTotalPlanilha = cache.meta?.total_planilha || cacheQtd;
-        const snapTotalPlanilha = snapshot.meta?.total_planilha || snapQtd;
 
+        if (snapQtd > cacheQtd) {
+            const extra = snapshot.meta?.snapshotEm
+                ? " · snapshot: " + new Date(snapshot.meta.snapshotEm).toLocaleString("pt-BR")
+                : "";
+            return { origem: "json", rotulo: "arquivo JSON" + extra, dados: snapshot.dados, meta: snapshot.meta || {} };
+        }
+
+        const cacheTs = cache.ts || 0;
+        const snapTs = parseTimestamp(snapshot.meta?.snapshotEm);
         const cacheMaisCompleto = cacheQtd > snapQtd;
         const cacheMaisRecente = cacheTs > snapTs && cacheQtd >= snapQtd;
-        const cacheAlinhadoPlanilha = cacheTotalPlanilha > snapTotalPlanilha;
 
-        if (cacheMaisCompleto || cacheMaisRecente || cacheAlinhadoPlanilha) {
+        if (cacheMaisCompleto || cacheMaisRecente || cacheQtd > snapQtd) {
             return { origem: "cache", rotulo: "cache local (sincronizado)", dados: cache.dados, meta: cache.meta || {} };
         }
 
