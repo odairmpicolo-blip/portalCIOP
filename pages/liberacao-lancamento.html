@@ -141,7 +141,7 @@ tbody td.col-maquina .cell-readonly{background:transparent;color:inherit;padding
                 <a class="btn-secondary" href="liberacao-dashboard.html"><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5"/><path d="M12 16V8"/><path d="M16 16v-7"/><path d="M20 16v-3"/></svg></span>Dashboard</a>
             </div>
             <div class="filters-inline" aria-label="Filtros">
-                <div class="filter-field"><label for="dataFiltro">Data</label><input id="dataFiltro" type="date"></div>
+                <div class="filter-field"><label for="dataFiltro">Data</label><input id="dataFiltro" type="date" readonly title="Sempre o dia de hoje"></div>
                 <div class="filter-field"><label for="maquinaFiltro">Máquina</label><select id="maquinaFiltro"><option value="">Todas as máquinas</option></select></div>
             </div>
         </div>
@@ -249,6 +249,13 @@ function rotuloData(iso){
 }
 function intervaloJanela(){
     return {dataDe:isoDiasAtras(DIAS_JANELA),hoje:isoHoje(),amanha:isoAmanha()};
+}
+function configurarFiltroDataHoje(){
+    const hoje=isoHoje();
+    const input=$("dataFiltro");
+    input.value=hoje;
+    input.min=hoje;
+    input.max=hoje;
 }
 function normalizarDataIsoRow(row){
     if(row?.data_iso) return row.data_iso;
@@ -853,8 +860,7 @@ function iniciarSyncDia(data,origemBase){
 }
 
 async function iniciarCarregamento(forceRefresh=false){
-    const hoje=isoHoje();
-    $("dataFiltro").value=hoje;
+    configurarFiltroDataHoje();
     const data=$("dataFiltro").value;
     if(!data){setStatus("Informe a data.","erro");return;}
 
@@ -915,6 +921,7 @@ async function carregar(forceRefresh=false){
 }
 
 $("dataFiltro").addEventListener("change",()=>{
+    configurarFiltroDataHoje();
     const data=$("dataFiltro").value;
     const {dataDe,amanha}=intervaloJanela();
     if(state.semana.length&&state.semanaDataDe===dataDe&&state.semanaDataAte===amanha&&dataDentroDaJanela(data,dataDe,amanha)){
@@ -927,10 +934,7 @@ $("maquinaFiltro").addEventListener("change",()=>{aplicarFiltroMaquina();renderT
 
 function iniciar(){
     initEventosTabela();
-    const {dataDe,hoje,amanha}=intervaloJanela();
-    $("dataFiltro").value=hoje;
-    $("dataFiltro").min=dataDe;
-    $("dataFiltro").max=amanha;
+    configurarFiltroDataHoje();
     iniciarCarregamento().catch(e=>setStatus(e.message,"erro"));
 }
 if(window.portalUsuarioValidado) iniciar();
