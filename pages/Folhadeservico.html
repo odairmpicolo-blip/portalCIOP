@@ -1982,14 +1982,13 @@ h1 {
     }
 
     function calcularOffsetPlanilhaLocal(ano) {
-        let maxRow = 0;
-        dadosMestres.forEach((item) => {
-            const row = chaveLinhaPlanilha(item);
-            if (row > maxRow) maxRow = row;
-        });
-        const porRow = maxRow >= 2 ? maxRow - 1 : 0;
-        const porQtd = dadosMestres.length;
-        return Math.max(porRow, porQtd);
+        return deduplicarRegistros(dadosMestres).length;
+    }
+
+    function montarStatusCompletando(totalPlanilha) {
+        const qtd = deduplicarRegistros(dadosMestres).length;
+        return "Completando dados: " + qtd.toLocaleString("pt-BR")
+            + " de " + totalPlanilha.toLocaleString("pt-BR") + " registro(s)...";
     }
 
     function cacheLocalIncompleto(totalPlanilha) {
@@ -1998,13 +1997,18 @@ h1 {
         return qtd < totalPlanilha;
     }
 
-    async function sincronizarIncremental(ano) {
+    async function sincronizarIncremental(ano, onProgress) {
         try {
             const totalPlanilha = await buscarTotalPlanilha(ano);
-            if (!totalPlanilha) return { alterou: false, novos: 0 };
+            if (!totalPlanilha) return { alterou: false, novos: 0, completo: true };
 
+            dadosMestres = deduplicarRegistros(dadosMestres);
             const offsetLocal = calcularOffsetPlanilhaLocal(ano);
-            if (totalPlanilha <= offsetLocal) return { alterou: false, novos: 0 };
+            if (totalPlanilha <= offsetLocal) {
+                return { alterou: false, novos: 0, completo: true };
+            }
+
+            if (typeof onProgress === "function") onProgress(dadosMestres.length, totalPlanilha);
 
             let offset = offsetLocal;
             let acumulado = [];
@@ -2014,30 +2018,37 @@ h1 {
                 const lote = normalizarLista(raw);
                 if (!lote.length) break;
                 acumulado = acumulado.concat(lote);
+                dadosMestres = mesclarRegistros(dadosMestres, lote);
+                if (typeof onProgress === "function") onProgress(dadosMestres.length, totalPlanilha);
                 const meta = raw.meta || {};
                 if (!meta.has_more) break;
                 offset = meta.next_offset != null ? meta.next_offset : offset + lote.length;
             }
 
-            if (!acumulado.length) return { alterou: false, novos: 0 };
+            dadosMestres = deduplicarRegistros(dadosMestres);
+            const completo = dadosMestres.length >= totalPlanilha;
+            const novos = acumulado.length;
 
-            const totalAntes = dadosMestres.length;
-            dadosMestres = mesclarRegistros(dadosMestres, acumulado);
-            await salvarCacheLocal(dadosMestres, {
-                ano,
-                total: dadosMestres.length,
-                total_planilha: dadosMestres.length,
-                versao: DASHBOARD_VERSAO,
-                origem: "incremental"
-            }, ano);
-            solicitarAtualizacaoJson("sync_incremental");
+            if (novos > 0) {
+                await salvarCacheLocal(dadosMestres, {
+                    ano,
+                    total: dadosMestres.length,
+                    total_planilha: completo ? totalPlanilha : dadosMestres.length,
+                    versao: DASHBOARD_VERSAO,
+                    origem: "incremental"
+                }, ano);
+                solicitarAtualizacaoJson("sync_incremental");
+            }
+
             return {
-                alterou: dadosMestres.length !== totalAntes || acumulado.length > 0,
-                novos: acumulado.length
+                alterou: novos > 0,
+                novos,
+                completo,
+                incompleto: !completo && novos === 0
             };
         } catch (error) {
             console.warn("Sincronização incremental:", error);
-            return { alterou: false, novos: 0 };
+            return { alterou: false, novos: 0, completo: false, erro: error };
         }
     }
 
@@ -2136,30 +2147,55 @@ h1 {
             const totalPlanilha = await buscarTotalPlanilha(ano);
             if (!totalPlanilha) return;
             dadosMestres = deduplicarRegistros(dadosMestres);
-            if (!cacheLocalIncompleto(totalPlanilha)) return;
-            setLoadStatus(
-                "Completando dados: " + dadosMestres.length.toLocaleString("pt-BR")
-                + " de " + totalPlanilha.toLocaleString("pt-BR") + " registro(s)...",
-                "load"
-            );
-            const resultado = await sincronizarIncremental(ano);
+            if (!cacheLocalIncompleto(totalPlanilha)) {
+                atualizarBannerRegistros(filtrarDadosAtuais().length);
+                return;
+            }
+
+            const onProgress = (qtd, total) => setLoadStatus(montarStatusCompletando(total), "load");
+            let tentativas = 0;
+            let resultado = await sincronizarIncremental(ano, onProgress);
+
+            while (
+                !resultado.completo
+                && !resultado.erro
+                && cacheLocalIncompleto(totalPlanilha)
+                && tentativas < 4
+            ) {
+                if (!resultado.alterou && resultado.incompleto) break;
+                tentativas++;
+                resultado = await sincronizarIncremental(ano, onProgress);
+            }
+
             if (resultado.alterou) {
                 const cacheAtual = await obterCacheLocal(ano);
                 aplicarDadosDashboard(dadosMestres, "dados atualizados", cacheAtual?.meta || {});
             }
+
+            dadosMestres = deduplicarRegistros(dadosMestres);
+            if (dadosMestres.length >= totalPlanilha) {
+                atualizarBannerRegistros(filtrarDadosAtuais().length);
+            } else if (resultado.erro) {
+                setLoadStatus(
+                    dadosMestres.length.toLocaleString("pt-BR") + " de " + totalPlanilha.toLocaleString("pt-BR")
+                    + " registro(s) · falha na sincronização. Toque em Atualizar.",
+                    "erro"
+                );
+            } else {
+                setLoadStatus(
+                    dadosMestres.length.toLocaleString("pt-BR") + " de " + totalPlanilha.toLocaleString("pt-BR")
+                    + " registro(s) · toque em Atualizar para completar",
+                    "load"
+                );
+            }
         } catch (error) {
             console.warn("Reconciliação com planilha:", error);
+            atualizarBannerRegistros(filtrarDadosAtuais().length);
         }
     }
 
     function finalizarCargaFolhaServico(ano) {
-        reconciliarSeAtrasado(ano).then(() => {
-            sincronizarIncremental(ano).then(async (resultado) => {
-                if (resultado.alterou) {
-                    const cacheAtual = await obterCacheLocal(ano);
-                    aplicarDadosDashboard(dadosMestres, "dados atualizados", cacheAtual?.meta || {});
-                }
-            }).catch(() => {});
+        reconciliarSeAtrasado(ano).finally(() => {
             iniciarSincronizacaoAutomatica();
         });
     }
@@ -2171,24 +2207,39 @@ h1 {
         if (btn) btn.disabled = true;
         setLoadStatus("Buscando novos serviços na planilha...", "load");
         try {
-            const resultado = await sincronizarIncremental(anoCarregado);
-            if (resultado.alterou && resultado.novos > 0) {
+            const totalPlanilha = await buscarTotalPlanilha(anoCarregado);
+            const onProgress = (qtd, total) => setLoadStatus(montarStatusCompletando(total), "load");
+            const resultado = await sincronizarIncremental(anoCarregado, onProgress);
+            const qtdFinal = deduplicarRegistros(dadosMestres).length;
+            const completo = totalPlanilha && qtdFinal >= totalPlanilha;
+
+            if (resultado.alterou) {
                 const cacheAtual = await obterCacheLocal(anoCarregado);
                 aplicarDadosDashboard(dadosMestres, "atualizado", cacheAtual?.meta || {});
+            }
+
+            if (completo) {
                 setLoadStatus(
-                    resultado.novos.toLocaleString("pt-BR") + " novo(s) serviço(s) adicionado(s) · "
-                    + montarTextoRegistros(dadosMestres.length, filtrosAtivos()),
+                    montarTextoRegistros(qtdFinal, filtrosAtivos()) + " · planilha atualizada",
                     "ok"
                 );
-            } else if (resultado.alterou) {
-                const cacheAtual = await obterCacheLocal(anoCarregado);
-                aplicarDadosDashboard(dadosMestres, "atualizado", cacheAtual?.meta || {});
-                atualizarBannerRegistros(filtrarDadosAtuais().length);
-            } else {
-                atualizarBannerRegistros(filtrarDadosAtuais().length);
+            } else if (resultado.erro) {
                 setLoadStatus(
-                    montarTextoRegistros(dadosMestres.length, filtrosAtivos()) + " · planilha já atualizada",
-                    "ok"
+                    qtdFinal.toLocaleString("pt-BR") + " de " + (totalPlanilha || qtdFinal).toLocaleString("pt-BR")
+                    + " registro(s) · falha na sincronização",
+                    "erro"
+                );
+            } else if (resultado.novos > 0) {
+                setLoadStatus(
+                    resultado.novos.toLocaleString("pt-BR") + " novo(s) · "
+                    + qtdFinal.toLocaleString("pt-BR") + " de " + totalPlanilha.toLocaleString("pt-BR") + " registro(s)",
+                    "load"
+                );
+            } else {
+                setLoadStatus(
+                    qtdFinal.toLocaleString("pt-BR") + " de " + totalPlanilha.toLocaleString("pt-BR")
+                    + " registro(s) · ainda incompleto, tente novamente",
+                    "load"
                 );
             }
         } catch (error) {
