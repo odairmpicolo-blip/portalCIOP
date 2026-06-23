@@ -1267,10 +1267,18 @@ h1 {
     const DASHBOARD_POR_PAGINA = 3500;
     const ANO_ATUAL = new Date().getFullYear();
     const ANO_TODOS = "todos";
-    const CACHE_KEY_PREFIX = "folha_dashboard_v12";
-    const CACHE_IDB_NAME = "folha_dashboard_cache_v12";
+    const CACHE_STORAGE_SLOT = "v12";
+    const CACHE_KEY_PREFIX = "folha_dashboard_" + CACHE_STORAGE_SLOT;
+    const CACHE_IDB_NAME = "folha_dashboard_shared";
     const CACHE_IDB_STORE = "snapshots";
+    const CACHE_STATIC_NAME = "folha-dashboard-json-v1";
     const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+    const LEGACY_IDB_NAMES = [
+        "folha_dashboard_cache_v12",
+        "folha_dashboard_cache_v11",
+        "folha_dashboard_cache_v10"
+    ];
+    const LEGACY_CACHE_SLOTS = ["v12", "v11", "v10", "v9", "v8", "v7", "v6", "v5", "v4", "v3"];
     const FETCH_TIMEOUT_MS = 120000;
 
     function resolverBasePortal() {
@@ -1857,6 +1865,10 @@ h1 {
         return CACHE_KEY_PREFIX + "_" + String(ano);
     }
 
+    function cacheKeyEstavel(ano) {
+        return "folha_dashboard_" + String(ano);
+    }
+
     function chaveLinhaPlanilha(item) {
         const row = item?._row ?? item?.rowNumber ?? item?.linhaPlanilha ?? item?.linha_planilha;
         const n = row != null && row !== "" ? Number(row) : 0;
@@ -1998,9 +2010,28 @@ h1 {
     async function fetchJsonAsset(urls) {
         for (const url of urls) {
             try {
-                const res = await fetch(url);
-                if (!res.ok) continue;
-                return await res.json();
+                let payload = null;
+                if (typeof caches !== "undefined") {
+                    try {
+                        const cache = await caches.open(CACHE_STATIC_NAME);
+                        const hit = await cache.match(url);
+                        if (hit) payload = await hit.json();
+                    } catch (_) { /* segue para rede */ }
+                }
+                if (!payload) {
+                    const res = await fetch(url);
+                    if (!res.ok) continue;
+                    payload = await res.json();
+                    if (typeof caches !== "undefined") {
+                        try {
+                            const cache = await caches.open(CACHE_STATIC_NAME);
+                            await cache.put(url, new Response(JSON.stringify(payload), {
+                                headers: { "Content-Type": "application/json" }
+                            }));
+                        } catch (_) { /* quota */ }
+                    }
+                }
+                return payload;
             } catch (_) { /* tenta próximo */ }
         }
         return null;
@@ -2019,6 +2050,9 @@ h1 {
     async function executarPreloadFolhaServico() {
         const resultado = { manifest: null, cache: null, snapshot: null };
         try {
+            resultado.cache = await obterCacheLocal(ANO_TODOS);
+            if (resultado.cache?.dados?.length) return resultado;
+
             resultado.manifest = await carregarManifestFolha();
             if (resultado.manifest?.anos?.length) {
                 folhaManifest = resultado.manifest;
@@ -2026,8 +2060,6 @@ h1 {
                     .map((item) => parseInt(String(item), 10))
                     .filter((item) => !Number.isNaN(item) && item >= 2000);
             }
-            resultado.cache = await obterCacheLocal(ANO_TODOS);
-            if (resultado.cache?.dados?.length) return resultado;
             resultado.snapshot = await carregarSnapshotTodos(ANO_TODOS);
         } catch (error) {
             console.warn("Preload folha de serviço:", error);
@@ -2203,10 +2235,65 @@ h1 {
     }
 
     function limparCachesDashboardAntigos() {
-        ["folha_dashboard_v3", "folha_dashboard_v4", "folha_dashboard_v5", "folha_dashboard_v6", "folha_dashboard_v7", "folha_dashboard_v8", "folha_dashboard_v9", "folha_dashboard_v10", "folha_dashboard_v11"].forEach((key) => {
+        LEGACY_CACHE_SLOTS.forEach((slot) => {
+            const key = "folha_dashboard_" + slot + "_todos";
             try { localStorage.removeItem(key); } catch (_) {}
+            try { localStorage.removeItem(key + "_meta"); } catch (_) {}
             try { sessionStorage.removeItem(key); } catch (_) {}
         });
+    }
+
+    function cachePayloadValido(parsed, ano) {
+        if (!parsed?.dados?.length || !parsed?.ts) return false;
+        if (Date.now() - parsed.ts > CACHE_TTL_MS) return false;
+        const anoCache = String(parsed.ano || parsed.meta?.ano || "");
+        if (ano && anoCache && anoCache !== String(ano)) return false;
+        return true;
+    }
+
+    function lerPayloadLocalStorage(key) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch (_) {
+            return null;
+        }
+    }
+
+    async function idbGetFromDb(dbName, key) {
+        try {
+            const db = await new Promise((resolve, reject) => {
+                const req = indexedDB.open(dbName);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+            if (!db.objectStoreNames.contains(CACHE_IDB_STORE)) return null;
+            return await new Promise((resolve, reject) => {
+                const tx = db.transaction(CACHE_IDB_STORE, "readonly");
+                const req = tx.objectStore(CACHE_IDB_STORE).get(key);
+                req.onsuccess = () => resolve(req.result ?? null);
+                req.onerror = () => reject(req.error);
+            });
+        } catch (_) {
+            return null;
+        }
+    }
+
+    async function buscarCacheLegado(ano) {
+        const anoStr = String(ano);
+        for (const slot of LEGACY_CACHE_SLOTS) {
+            const legacyKey = "folha_dashboard_" + slot + "_" + anoStr;
+            const fromLs = lerPayloadLocalStorage(legacyKey);
+            if (cachePayloadValido(fromLs, anoStr)) return fromLs;
+            for (const dbName of LEGACY_IDB_NAMES) {
+                const fromIdb = await idbGetFromDb(dbName, legacyKey);
+                if (cachePayloadValido(fromIdb, anoStr)) return fromIdb;
+                const est = await idbGetFromDb(dbName, cacheKeyEstavel(anoStr));
+                if (cachePayloadValido(est, anoStr)) return est;
+            }
+        }
+        return null;
     }
 
     function parseTimestamp(val) {
@@ -2260,28 +2347,31 @@ h1 {
     }
 
     function cacheMetaKey(ano) {
-        return cacheKeyParaAno(ano) + "_meta";
+        return cacheKeyEstavel(ano) + "_meta";
     }
 
     function lerCacheMeta(ano) {
-        try {
-            const raw = localStorage.getItem(cacheMetaKey(ano));
-            if (!raw) return null;
-            const parsed = JSON.parse(raw);
-            if (parsed.versao !== DASHBOARD_VERSAO) return null;
-            if (String(parsed.ano || "") !== String(ano)) return null;
-            if (Date.now() - parsed.ts > CACHE_TTL_MS) return null;
-            return parsed.meta || null;
-        } catch (_) {
-            return null;
+        const anoStr = String(ano);
+        const chaves = [cacheMetaKey(anoStr)];
+        for (const slot of LEGACY_CACHE_SLOTS) {
+            chaves.push("folha_dashboard_" + slot + "_" + anoStr + "_meta");
         }
+        for (const key of chaves) {
+            try {
+                const raw = localStorage.getItem(key);
+                if (!raw) continue;
+                const parsed = JSON.parse(raw);
+                if (Date.now() - parsed.ts > CACHE_TTL_MS) continue;
+                if (parsed.meta) return parsed.meta;
+            } catch (_) { /* próxima chave */ }
+        }
+        return null;
     }
 
     function salvarCacheMeta(ano, meta) {
         try {
             localStorage.setItem(cacheMetaKey(ano), JSON.stringify({
                 ts: Date.now(),
-                versao: DASHBOARD_VERSAO,
                 ano: String(ano),
                 meta: meta || {}
             }));
@@ -2329,33 +2419,31 @@ h1 {
     }
 
     function lerCacheLocalSync(ano) {
-        try {
-            const raw = localStorage.getItem(cacheKeyParaAno(ano));
-            if (!raw) return null;
-            const parsed = JSON.parse(raw);
-            if (!parsed?.dados || !parsed?.ts) return null;
-            if (parsed.versao !== DASHBOARD_VERSAO) return null;
-            if (String(parsed.ano || parsed.meta?.ano || "") !== String(ano)) return null;
-            if (Date.now() - parsed.ts > CACHE_TTL_MS) return null;
-            return parsed;
-        } catch (_) {
-            return null;
-        }
+        const anoStr = String(ano);
+        const estavel = lerPayloadLocalStorage(cacheKeyEstavel(anoStr));
+        if (cachePayloadValido(estavel, anoStr)) return estavel;
+        const legado = lerPayloadLocalStorage(cacheKeyParaAno(anoStr));
+        if (cachePayloadValido(legado, anoStr)) return legado;
+        return null;
     }
 
     async function obterCacheLocal(ano) {
-        const sync = lerCacheLocalSync(ano);
-        if (sync) return sync;
-        try {
-            const parsed = await idbGetCache(cacheKeyParaAno(ano));
-            if (!parsed?.dados || !parsed?.ts) return null;
-            if (parsed.versao !== DASHBOARD_VERSAO) return null;
-            if (String(parsed.ano || parsed.meta?.ano || "") !== String(ano)) return null;
-            if (Date.now() - parsed.ts > CACHE_TTL_MS) return null;
-            return parsed;
-        } catch (_) {
-            return null;
+        const anoStr = String(ano);
+        const shared = await idbGetCache(cacheKeyEstavel(anoStr));
+        if (cachePayloadValido(shared, anoStr)) return shared;
+
+        const legado = await buscarCacheLegado(anoStr);
+        if (legado) {
+            await salvarCacheLocal(legado.dados, legado.meta || {}, anoStr);
+            return legado;
         }
+
+        const sync = lerCacheLocalSync(anoStr);
+        if (sync) {
+            await salvarCacheLocal(sync.dados, sync.meta || {}, anoStr);
+            return sync;
+        }
+        return null;
     }
 
     function lerCacheLocal(ano) {
@@ -2363,22 +2451,16 @@ h1 {
     }
 
     async function salvarCacheLocal(dados, meta, ano) {
+        const anoStr = String(ano);
         const payload = {
             ts: Date.now(),
             versao: DASHBOARD_VERSAO,
-            ano: String(ano),
+            ano: anoStr,
             meta: meta || {},
             dados
         };
-        salvarCacheMeta(ano, meta);
-        const json = JSON.stringify(payload);
-        if (json.length <= 1500000) {
-            try {
-                localStorage.setItem(cacheKeyParaAno(ano), json);
-                return;
-            } catch (_) { /* quota */ }
-        }
-        await idbPutCache(cacheKeyParaAno(ano), payload);
+        salvarCacheMeta(anoStr, meta);
+        await idbPutCache(cacheKeyEstavel(anoStr), payload);
     }
 
     async function fetchComTimeout(url) {
