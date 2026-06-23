@@ -205,13 +205,16 @@ const CAMPOS_DISPARO_FORMULA = new Set(["saida_real","inicio_real","horario_said
 const TOLERANCIA_MIN = 5;
 const CAMPOS_HORA = new Set(["horario_saida_da_garagem","horario_de_inicio","saida_real","inicio_real"]);
 const DIAS_JANELA = 7;
-const CACHE_STORAGE_KEY = "portal_liberacao_lancamento_v1";
+const CACHE_STORAGE_KEY = "portal_liberacao_lancamento_v2";
 const LIBERACAO_DATA_BASE = "../assets/data/liberacao";
 const LIBERACAO_MANIFEST_URL = LIBERACAO_DATA_BASE + "/manifest.json";
 const LIBERACAO_ACOMPANHAMENTO_URL = LIBERACAO_DATA_BASE + "/acompanhamento-semana.json";
 let liberacaoManifest = null;
 let carregamentoEmAndamento = false;
+let carregamentoSemanaBackground = false;
 let eventosTabelaIniciados = false;
+let cabecalhoRenderizado = false;
+let cacheGravacaoTimer = null;
 const state = {
     colunas: COLUNAS_EXIBICAO,
     semana: [],
@@ -253,17 +256,25 @@ function lerCacheLiberacao(){
         return null;
     }
 }
-function salvarCacheLiberacao(dados,meta){
-    try{
-        localStorage.setItem(CACHE_STORAGE_KEY,JSON.stringify({
-            dados,
-            data_de:meta?.data_de||"",
-            data_ate:meta?.data_ate||"",
-            atualizadoEm:Date.now()
-        }));
-    }catch(err){
-        console.warn("Não foi possível gravar cache local:",err);
+function salvarCacheLiberacao(dados,meta,deferir){
+    const gravar=()=>{
+        try{
+            localStorage.setItem(CACHE_STORAGE_KEY,JSON.stringify({
+                dados,
+                data_de:meta?.data_de||"",
+                data_ate:meta?.data_ate||"",
+                atualizadoEm:Date.now()
+            }));
+        }catch(err){
+            console.warn("Não foi possível gravar cache local:",err);
+        }
+    };
+    if(deferir){
+        clearTimeout(cacheGravacaoTimer);
+        cacheGravacaoTimer=setTimeout(gravar,1200);
+        return;
     }
+    gravar();
 }
 function dataDentroDaJanela(data,dataDe,dataAte){
     return data&&dataDe&&dataAte&&data>=dataDe&&data<=dataAte;
@@ -593,7 +604,10 @@ function renderCorpoTabela(){
 }
 
 function renderTabela(){
-    renderCabecalho();
+    if(!cabecalhoRenderizado){
+        renderCabecalho();
+        cabecalhoRenderizado=true;
+    }
     renderCorpoTabela();
 }
 
@@ -666,9 +680,12 @@ function aplicarFiltroData(data,origem){
     state.todos=state.semana.filter(r=>normalizarDataIsoRow(r)===data);
     popularMaquinas([...new Set(state.todos.map(d=>String(d.maquina||"").trim()).filter(Boolean))]);
     aplicarFiltroMaquina();
-    renderTabela();
     const agora=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
-    setStatus(formatNumber(state.dados.length)+" registro(s) · "+brDate(data)+" · "+origem+" · "+agora,"ok");
+    const texto=formatNumber(state.dados.length)+" registro(s) · "+brDate(data)+" · "+origem+" · "+agora;
+    requestAnimationFrame(()=>{
+        renderTabela();
+        setStatus(texto,"ok");
+    });
 }
 
 async function carregarManifestLiberacao(){
@@ -702,26 +719,85 @@ function mesclarSemana(base, novos){
     return [...mapa.values()];
 }
 
-async function carregarSnapshotAcompanhamento(dataDe,hoje){
+function metaSnapshot(payload){
+    const meta=payload?.meta||liberacaoManifest?.acompanhamento||payload||{};
+    return {
+        data_de:meta.data_de||payload?.data_de||"",
+        data_ate:meta.data_ate||payload?.data_ate||""
+    };
+}
+
+function snapshotCobreData(payload,data){
+    if(!payload?.dados?.length||!data) return false;
+    const {data_de,data_ate}=metaSnapshot(payload);
+    if(data_de&&data_ate&&data>=data_de&&data<=data_ate) return true;
+    return payload.dados.some(r=>normalizarDataIsoRow(r)===data);
+}
+
+function urlSnapshotDia(data){
+    const arquivo=liberacaoManifest?.dias?.[data];
+    if(arquivo) return LIBERACAO_DATA_BASE+"/"+arquivo;
+    return LIBERACAO_DATA_BASE+"/acompanhamento-dia-"+data+".json";
+}
+
+async function carregarSnapshotDia(data){
+    if(!data) return null;
+    try{
+        const res=await fetch(urlSnapshotDia(data),{cache:"no-store"});
+        if(!res.ok) return null;
+        const payload=await res.json();
+        if(!Array.isArray(payload?.dados)||!payload.dados.length) return null;
+        return payload;
+    }catch(_){
+        return null;
+    }
+}
+
+async function carregarSnapshotSemana(dataDe,hoje,data){
     const [manifest,snapPayload]=await Promise.all([
-        carregarManifestLiberacao().then(m=>{liberacaoManifest=m;return m;}),
+        liberacaoManifest?Promise.resolve(liberacaoManifest):carregarManifestLiberacao().then(m=>{liberacaoManifest=m;return m;}),
         fetch(LIBERACAO_ACOMPANHAMENTO_URL,{cache:"no-store"})
             .then(r=>r.ok?r.json():null)
             .catch(()=>null)
     ]);
-    const meta=manifest?.acompanhamento;
-    if(!meta||meta.data_de!==dataDe||meta.data_ate!==hoje) return null;
     if(!Array.isArray(snapPayload?.dados)||!snapPayload.dados.length) return null;
-    return snapPayload;
+    if(data&&!snapshotCobreData(snapPayload,data)) return null;
+    const intervalo=metaSnapshot(snapPayload);
+    return Object.assign({},snapPayload,{
+        data_de:intervalo.data_de||dataDe,
+        data_ate:intervalo.data_ate||hoje
+    });
 }
 
 async function sincronizarDiaSelecionado(data){
     const res=await apiGet({recurso:"acompanhamento",data});
-    const novos=(res.dados||[]).map(r=>Object.assign({},r));
+    const novos=res.dados||[];
     if(!novos.length) return 0;
     state.semana=mesclarSemana(state.semana,novos);
-    salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte});
+    salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte},true);
     return novos.length;
+}
+
+async function carregarDiaRemoto(data){
+    const res=await apiGet({recurso:"acompanhamento",data});
+    return res.dados||[];
+}
+
+async function carregarSemanaBackground(dataDe,hoje,dataAtual){
+    if(carregamentoSemanaBackground) return;
+    carregamentoSemanaBackground=true;
+    try{
+        const res=await apiGet({recurso:"acompanhamento",data_de:dataDe,data_ate:hoje,ultima_semana:"0"});
+        const dados=res.dados||[];
+        if(!dados.length) return;
+        aplicarSemanaCarregada(dados,dataDe,hoje);
+        salvarCacheLiberacao(dados,{data_de:dataDe,data_ate:hoje},true);
+        if($("dataFiltro").value===dataAtual) aplicarFiltroData(dataAtual,"planilha · semana");
+    }catch(error){
+        console.warn("Falha ao carregar semana em background:",error);
+    }finally{
+        carregamentoSemanaBackground=false;
+    }
 }
 
 async function atualizarDadosRemotos(silencioso){
@@ -733,30 +809,35 @@ async function atualizarDadosRemotos(silencioso){
 
     carregamentoEmAndamento=true;
     if(!silencioso){
-        setStatus("Carregando planilha...","load");
+        setStatus("Carregando "+brDate(data)+"...","load");
         window.portalMostrarCarregando?.("Carregando liberação");
     }
 
     try{
-        const res=await apiGet({recurso:"acompanhamento",data_de:dataDe,data_ate:hoje,ultima_semana:"0"});
-        const dados=(res.dados||[]).map(r=>Object.assign({},r));
-        aplicarSemanaCarregada(dados,dataDe,hoje);
-        salvarCacheLiberacao(dados,{data_de:dataDe,data_ate:hoje});
-        const origem=(res.meta&&res.meta.cache?"servidor (cache)":"planilha")+(silencioso?" · atualizado":"");
-        aplicarFiltroData(data,origem);
+        const dadosDia=await carregarDiaRemoto(data);
+        aplicarSemanaCarregada(dadosDia,data,data);
+        aplicarFiltroData(data,(silencioso?"planilha · atualizado":"planilha"));
+        carregarSemanaBackground(dataDe,hoje,data);
     }catch(error){
         console.error("Erro ao carregar liberação:",error);
         const cache=lerCacheLiberacao();
-        const cacheValido=cache?.dados?.length&&cache.data_ate===hoje&&cache.data_de===dataDe;
-        if(!silencioso&&cacheValido){
-            aplicarSemanaCarregada(cache.dados.map(r=>Object.assign({},r)),dataDe,hoje);
+        if(!silencioso&&cache?.dados?.length&&dataDentroDaJanela(data,cache.data_de,cache.data_ate)){
+            aplicarSemanaCarregada(cache.dados,cache.data_de,cache.data_ate);
             aplicarFiltroData(data,"cache local (falha na atualização)");
+        }else if(!silencioso){
+            setStatus(error.message,"erro");
         }
-        if(!silencioso) setStatus(error.message,"erro");
     }finally{
         carregamentoEmAndamento=false;
         if(!silencioso) window.portalOcultarCarregando?.();
     }
+}
+
+function iniciarSyncDia(data,origemBase){
+    sincronizarDiaSelecionado(data).then(qtd=>{
+        if(!qtd) return;
+        aplicarFiltroData(data,origemBase+" + "+qtd+" novos");
+    }).catch(()=>{});
 }
 
 async function iniciarCarregamento(forceRefresh=false){
@@ -767,26 +848,40 @@ async function iniciarCarregamento(forceRefresh=false){
     const dataDe=isoDiasAtras(DIAS_JANELA);
     setStatus("Carregando dados locais...","load");
 
-    const cache=!forceRefresh?lerCacheLiberacao():null;
-    const cacheValido=cache&&cache.data_ate===hoje&&cache.data_de===dataDe&&cache.dados?.length;
-    const snapshot=!forceRefresh?await carregarSnapshotAcompanhamento(dataDe,hoje):null;
+    if(!forceRefresh){
+        const [snapDia,snapSemana,cache]=await Promise.all([
+            carregarSnapshotDia(data),
+            carregarSnapshotSemana(dataDe,hoje,data),
+            Promise.resolve(lerCacheLiberacao())
+        ]);
 
-    if(snapshot?.dados?.length&&dataDentroDaJanela(data,dataDe,hoje)){
-        aplicarSemanaCarregada(snapshot.dados.map(r=>Object.assign({},r)),dataDe,hoje);
-        salvarCacheLiberacao(snapshot.dados,{data_de:dataDe,data_ate:hoje});
-        aplicarFiltroData(data,"arquivo JSON");
-        sincronizarDiaSelecionado(data).then(qtd=>{
-            if(!qtd) return;
-            aplicarFiltroData(data,"JSON + "+qtd+" novos");
-        }).catch(()=>{});
-        return;
-    }
+        if(snapDia?.dados?.length){
+            if(snapSemana?.dados?.length){
+                aplicarSemanaCarregada(snapSemana.dados,snapSemana.data_de,snapSemana.data_ate);
+            }else if(cache?.dados?.length&&dataDentroDaJanela(data,cache.data_de,cache.data_ate)){
+                aplicarSemanaCarregada(cache.dados,cache.data_de,cache.data_ate);
+            }else{
+                aplicarSemanaCarregada(snapDia.dados,data,data);
+            }
+            aplicarFiltroData(data,"arquivo JSON");
+            iniciarSyncDia(data,"JSON");
+            if(!snapSemana?.dados?.length) carregarSemanaBackground(dataDe,hoje,data);
+            return;
+        }
 
-    if(cacheValido&&dataDentroDaJanela(data,dataDe,hoje)){
-        aplicarSemanaCarregada(cache.dados.map(r=>Object.assign({},r)),dataDe,hoje);
-        aplicarFiltroData(data,"cache local");
-        atualizarDadosRemotos(true);
-        return;
+        if(snapSemana?.dados?.length){
+            aplicarSemanaCarregada(snapSemana.dados,snapSemana.data_de,snapSemana.data_ate);
+            aplicarFiltroData(data,"arquivo JSON");
+            iniciarSyncDia(data,"JSON");
+            return;
+        }
+
+        if(cache?.dados?.length&&dataDentroDaJanela(data,cache.data_de,cache.data_ate)){
+            aplicarSemanaCarregada(cache.dados,cache.data_de,cache.data_ate);
+            aplicarFiltroData(data,"cache local");
+            iniciarSyncDia(data,"cache");
+            return;
+        }
     }
 
     await atualizarDadosRemotos(false);

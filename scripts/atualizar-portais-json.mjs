@@ -170,6 +170,32 @@ async function atualizarLiberacao() {
     atualizadoEm
   });
 
+  const diasManifest = {};
+  const porDia = {};
+  (acompanhamento.dados || []).forEach((row) => {
+    let iso = row.data_iso || "";
+    if (!iso) {
+      const br = String(row.data || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (br) iso = `${br[3]}-${br[2]}-${br[1]}`;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
+    if (!porDia[iso]) porDia[iso] = [];
+    porDia[iso].push(row);
+  });
+  Object.keys(porDia).sort().forEach((dia) => {
+    const arquivo = `acompanhamento-dia-${dia}.json`;
+    escreverJson(path.join(dir, arquivo), {
+      ok: true,
+      data: dia,
+      data_de: dia,
+      data_ate: dia,
+      total: porDia[dia].length,
+      dados: porDia[dia],
+      atualizadoEm
+    });
+    diasManifest[dia] = arquivo;
+  });
+
   escreverJson(path.join(dir, "manifest.json"), {
     atualizadoEm,
     dias_janela_lancamento: DIAS_JANELA_LANCAMENTO,
@@ -179,7 +205,8 @@ async function atualizarLiberacao() {
       data_de: dataDeSemana,
       data_ate: hoje,
       total: acompanhamento.dados.length
-    }
+    },
+    dias: diasManifest
   });
 }
 
