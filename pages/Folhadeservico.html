@@ -1366,7 +1366,8 @@ h1 {
     }
 
     function normalizarRegistro(item) {
-        const row = item?._row != null ? Number(item._row) : null;
+        const rowRaw = item?._row ?? item?.rowNumber ?? item?.linhaPlanilha ?? item?.linha_planilha;
+        const row = rowRaw != null && rowRaw !== "" ? Number(rowRaw) : null;
         return {
             _row: row && row >= 2 ? row : null,
             data: pickCampo(item, "data"),
@@ -1842,10 +1843,14 @@ h1 {
         return CACHE_KEY_PREFIX + "_" + String(ano);
     }
 
-    function chaveRegistroUnica(item) {
-        const row = item?._row != null ? Number(item._row) : 0;
-        if (row >= 2) return "row:" + row;
-        return "sig:" + [
+    function chaveLinhaPlanilha(item) {
+        const row = item?._row ?? item?.rowNumber ?? item?.linhaPlanilha ?? item?.linha_planilha;
+        const n = row != null && row !== "" ? Number(row) : 0;
+        return n >= 2 ? n : 0;
+    }
+
+    function assinaturaRegistro(item) {
+        return [
             item?.data || "",
             item?.hora || "",
             item?.analista || "",
@@ -1856,36 +1861,35 @@ h1 {
         ].join("|");
     }
 
-    function mesclarRegistros(base, novos) {
-        const resultado = [...(base || [])];
-        const indicePorRow = new Map();
-        const indicePorChave = new Map();
-        resultado.forEach((item, idx) => {
-            if (item?._row >= 2) indicePorRow.set(Number(item._row), idx);
-            indicePorChave.set(chaveRegistroUnica(item), idx);
-        });
-        (novos || []).forEach((item) => {
+    function chaveRegistroUnica(item) {
+        const row = chaveLinhaPlanilha(item);
+        if (row >= 2) return "row:" + row;
+        return "sig:" + assinaturaRegistro(item);
+    }
+
+    function deduplicarRegistros(lista) {
+        const comRow = [];
+        const semRow = [];
+        (lista || []).forEach((item) => {
             const registro = normalizarRegistro(item);
-            if (registro._row >= 2) {
-                const row = Number(registro._row);
-                if (indicePorRow.has(row)) {
-                    resultado[indicePorRow.get(row)] = registro;
-                } else {
-                    indicePorRow.set(row, resultado.length);
-                    indicePorChave.set(chaveRegistroUnica(registro), resultado.length);
-                    resultado.push(registro);
-                }
-                return;
-            }
-            const chave = chaveRegistroUnica(registro);
-            if (indicePorChave.has(chave)) {
-                resultado[indicePorChave.get(chave)] = registro;
-            } else {
-                indicePorChave.set(chave, resultado.length);
-                resultado.push(registro);
-            }
+            if (chaveLinhaPlanilha(registro) >= 2) comRow.push(registro);
+            else semRow.push(registro);
+        });
+        const mapaRow = new Map();
+        comRow.forEach((registro) => mapaRow.set(chaveLinhaPlanilha(registro), registro));
+        const sigsComRow = new Set(comRow.map(assinaturaRegistro));
+        const resultado = [...mapaRow.entries()]
+            .sort((a, b) => a[0] - b[0])
+            .map(([, registro]) => registro);
+        semRow.forEach((registro) => {
+            if (sigsComRow.has(assinaturaRegistro(registro))) return;
+            resultado.push(registro);
         });
         return resultado;
+    }
+
+    function mesclarRegistros(base, novos) {
+        return deduplicarRegistros([...(base || []), ...(novos || [])]);
     }
 
     async function buscarTotalPlanilha(ano) {
@@ -1900,7 +1904,9 @@ h1 {
 
     async function reconciliarContagemPlanilha(ano) {
         const totalPlanilha = await buscarTotalPlanilha(ano);
-        if (!totalPlanilha || dadosMestres.length >= totalPlanilha) return false;
+        if (!totalPlanilha) return false;
+        dadosMestres = deduplicarRegistros(dadosMestres);
+        if (dadosMestres.length === totalPlanilha) return false;
         await atualizarDadosRemotos("planilha (contagem)", true, ano);
         return true;
     }
@@ -2130,7 +2136,7 @@ h1 {
     }
 
     function aplicarDadosDashboard(dados, origem, meta) {
-        dadosMestres = dados;
+        dadosMestres = deduplicarRegistros(dados);
         gerarFiltrosDinamicos(dadosMestres);
         const filtrados = filtrarDadosAtuais();
         requestAnimationFrame(() => {
