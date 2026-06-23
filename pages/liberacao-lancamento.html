@@ -157,7 +157,7 @@ tbody td.col-maquina .cell-readonly{background:transparent;color:inherit;padding
         <div class="table-head">
             <div>
                 <h2 class="card-title">Planilha de acompanhamento</h2>
-                <div class="table-sub">Edite células vazias · horários calculam automaticamente · setas / Tab para navegar</div>
+                <div class="table-sub">Edite qualquer célula · salva automaticamente · setas / Tab para navegar</div>
             </div>
             <span class="status-pill" style="padding:6px 10px"><span id="tableInfo">0 linhas</span></span>
         </div>
@@ -175,7 +175,6 @@ tbody td.col-maquina .cell-readonly{background:transparent;color:inherit;padding
             <span class="legend-item"><span class="legend-swatch ok"></span>Salvo</span>
             <span class="legend-item"><span class="legend-swatch saving"></span>Salvando</span>
             <span class="legend-item"><span class="legend-swatch erro"></span>Erro ao salvar</span>
-            <span class="legend-item"><span class="legend-swatch locked"></span>Preenchido (somente leitura)</span>
             <span class="legend-item"><span class="legend-swatch formula"></span>Calculado automaticamente</span>
             <span class="legend-item">Setas / Tab / Enter — navegar células editáveis</span>
         </div>
@@ -391,31 +390,14 @@ function aplicarFormulasLinha(row){
     return row;
 }
 
-function capturarValoresIniciais(row){
-    row._valoresIniciais={};
-    state.colunas.forEach(c=>{
-        if(c.formula) return;
-        row._valoresIniciais[c.chave]=String(val(row,c.chave)||"").trim();
-    });
-    return aplicarFormulasLinha(row);
-}
-
 function ensureRowInit(row){
-    if(!row||row._valoresIniciais) return row;
-    return capturarValoresIniciais(row);
-}
-
-function celulaPreenchida(row,chave){
-    if(isColunaFormula(chave)) return true;
-    ensureRowInit(row);
-    return String(row._valoresIniciais?.[chave]??"").trim()!=="";
+    if(!row) return row;
+    return aplicarFormulasLinha(row);
 }
 
 function celulaEditavel(rowIdx,colIdx){
     if(rowIdx<0||rowIdx>=state.dados.length||colIdx<0||colIdx>=state.colunas.length) return false;
-    const chave=state.colunas[colIdx].chave;
-    if(isColunaFormula(chave)) return false;
-    return !celulaPreenchida(state.dados[rowIdx],chave);
+    return !isColunaFormula(state.colunas[colIdx].chave);
 }
 
 function setStatus(texto, tipo){
@@ -592,12 +574,7 @@ function renderCelula(row, rowIdx, col){
     if(col.formula||isColunaFormula(chave)){
         return '<span class="cell-readonly cell-formula cell-locked" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" aria-readonly="true" tabindex="-1" title="Calculado automaticamente — não editável">'+escapeHtml(v||"—")+'</span>';
     }
-    const locked=celulaPreenchida(row,chave);
     const clsExtra=(col.texto?" cell-texto":"")+clsMaquina;
-    const exibir=textoMaquina!=null?textoMaquina:(v||"—");
-    if(locked){
-        return '<span class="cell-readonly'+clsExtra+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" title="Preenchido na planilha — não editável">'+escapeHtml(exibir)+'</span>';
-    }
     if(CAMPOS_SELECT[chave]){
         const opts=CAMPOS_SELECT[chave].map(o=>'<option value="'+escapeHtml(o)+'"'+(o===v?" selected":"")+'>'+(o||"—")+'</option>').join("");
         return '<select class="cell-select'+clsExtra+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'">'+opts+'</select>';
@@ -635,8 +612,7 @@ function renderCorpoTabela(){
         return '<tr data-i="'+i+'">'+
         '<td class="col-fix col-sync sync-'+i+'">'+syncBadge(row,i)+'</td>'+
         cols.map(c=>{
-            const locked=celulaPreenchida(row,c.chave);
-            const cls=(locked&&c.chave!=="maquina"?" cell-locked":"")+(c.formula?" cell-formula":"");
+            const cls=(c.formula?" cell-formula":"");
             return '<td class="col-'+escapeHtml(c.chave)+cls+'" style="width:'+c.largura+'px">'+renderCelula(row,i,c)+'</td>';
         }).join("")+
         '</tr>';
@@ -659,7 +635,7 @@ function onCellChange(e){
     const i=Number(el.dataset.i);
     const k=el.dataset.k;
     if(isNaN(i)||!k) return;
-    if(isColunaFormula(k)||celulaPreenchida(state.dados[i],k)) return;
+    if(isColunaFormula(k)) return;
     state.dados[i][k]=el.value.trim();
     if(CAMPOS_DISPARO_FORMULA.has(k)) atualizarCelulasFormula(i);
     state.dados[i]._dirty=true;
