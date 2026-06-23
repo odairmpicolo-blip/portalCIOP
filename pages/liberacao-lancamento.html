@@ -202,7 +202,10 @@ const CAMPOS_SELECT = {
     trajeto_ocioso_correto: ["","SIM","NÃO"]
 };
 const CAMPOS_DISPARO_FORMULA = new Set(["saida_real","inicio_real","horario_saida_da_garagem","horario_de_inicio"]);
-const TOLERANCIA_MIN = 5;
+const SAIU_SIM_MIN = -10;
+const SAIU_SIM_MAX = 3;
+const INICIO_NO_HORARIO_MIN = -1;
+const INICIO_NO_HORARIO_MAX = 3;
 const CAMPOS_HORA = new Set(["horario_saida_da_garagem","horario_de_inicio","saida_real","inicio_real"]);
 const DIAS_JANELA = 7;
 const CACHE_STORAGE_KEY = "portal_liberacao_lancamento_v2";
@@ -346,27 +349,38 @@ function diffMinutos(real,previsto){
     return a-b;
 }
 
-function situacaoHorario(diff){
+function saiuNoHorarioSimNao(diff){
     if(diff==null) return "";
-    if(Math.abs(diff)<=TOLERANCIA_MIN) return "NO HORÁRIO";
-    return diff>0?"ATRASADO":"ADIANTADO";
+    return diff>=SAIU_SIM_MIN&&diff<=SAIU_SIM_MAX?"SIM":"NÃO";
+}
+
+function situacaoSaidaGaragem(diff){
+    if(diff==null) return "";
+    if(diff>=SAIU_SIM_MIN&&diff<=SAIU_SIM_MAX) return "NO HORÁRIO";
+    return diff>SAIU_SIM_MAX?"ATRASADO":"ADIANTADO";
+}
+
+function situacaoInicioHorario(diff){
+    if(diff==null) return "";
+    if(diff>=INICIO_NO_HORARIO_MIN&&diff<=INICIO_NO_HORARIO_MAX) return "NO HORÁRIO";
+    return diff>INICIO_NO_HORARIO_MAX?"ATRASADO":"ADIANTADO";
 }
 
 function aplicarFormulasLinha(row){
     const diffSaida=diffMinutos(val(row,"saida_real"),val(row,"horario_saida_da_garagem"));
     if(diffSaida!=null){
-        const simNao=Math.abs(diffSaida)<=TOLERANCIA_MIN?"SIM":"NÃO";
+        const simNao=saiuNoHorarioSimNao(diffSaida);
         row.saiu_no_horario=simNao;
         row.saiu_no_horaro=simNao;
-        row.saida_atrasado_adiantado=situacaoHorario(diffSaida);
-        row.minutos_atrasado_garagem=diffSaida>TOLERANCIA_MIN?String(diffSaida):"";
-        row.minutos_adiantado_garagem=diffSaida<-TOLERANCIA_MIN?String(Math.abs(diffSaida)):"";
+        row.saida_atrasado_adiantado=situacaoSaidaGaragem(diffSaida);
+        row.minutos_atrasado_garagem=diffSaida>SAIU_SIM_MAX?String(diffSaida):"";
+        row.minutos_adiantado_garagem=diffSaida<SAIU_SIM_MIN?String(Math.abs(diffSaida)):"";
     }
     const diffInicio=diffMinutos(val(row,"inicio_real"),val(row,"horario_de_inicio"));
     if(diffInicio!=null){
-        row.inicio_no_horario=situacaoHorario(diffInicio);
-        row.minutos_atrasado_no_inicio=diffInicio>TOLERANCIA_MIN?String(diffInicio):"";
-        row.minutos_adiantado_no_inicio=diffInicio<-TOLERANCIA_MIN?String(Math.abs(diffInicio)):"";
+        row.inicio_no_horario=situacaoInicioHorario(diffInicio);
+        row.minutos_atrasado_no_inicio=diffInicio>INICIO_NO_HORARIO_MAX?String(diffInicio):"";
+        row.minutos_adiantado_no_inicio=diffInicio<INICIO_NO_HORARIO_MIN?String(Math.abs(diffInicio)):"";
     }
     return row;
 }
