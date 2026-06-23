@@ -1,6 +1,11 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbylz8scwboPQLeOKWUpw9YqKxomjts1aa8KUwodAuq5IE3T9s7RXd6GJcfMnS9qu6DI/exec";
-const CACHE_STORAGE_KEY = "portal_autuacoes_dashboard_v1";
-const CACHE_TTL_MS = 30 * 60 * 1000;
+const AUTUACOES_DATA_BASE = "../assets/data/autuacoes";
+const AUTUACOES_MANIFEST_URL = AUTUACOES_DATA_BASE + "/manifest.json";
+const AUTUACOES_SNAPSHOT_URL = AUTUACOES_DATA_BASE + "/dados.json";
+const AUTUACOES_DATA_INICIO = "2015-01-01";
+const SYNC_DIAS_RECENTES = 14;
+const CACHE_STORAGE_KEY = "portal_autuacoes_dashboard_v2";
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 let DATA = [];
 let periodChart = null;
 let agentChart = null;
@@ -302,6 +307,20 @@ function montarUrlSemCache(url) {
     return url + sep + "_=" + Date.now();
 }
 
+function isoHojeAutuacoes() {
+    return new Date().toISOString().slice(0, 10);
+}
+
+function montarUrlAutuacoes(params) {
+    const sep = API_URL.includes("?") ? "&" : "?";
+    const qs = new URLSearchParams(Object.assign({
+        data_de: AUTUACOES_DATA_INICIO,
+        data_ate: isoHojeAutuacoes(),
+        completo: "1"
+    }, params || {}));
+    return API_URL + sep + qs.toString() + "&_=" + Date.now();
+}
+
 function lerCacheAutuacoesLocal() {
     try {
         const raw = localStorage.getItem(CACHE_STORAGE_KEY);
@@ -319,6 +338,51 @@ function salvarCacheAutuacoesLocal(payload) {
     try {
         localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify({ ts: Date.now(), payload }));
     } catch (_) {}
+}
+
+function chaveRegistroAutuacao(row) {
+    return [
+        row?.data_iso || row?.data_br || "",
+        row?.notificacao || "",
+        row?.auto || "",
+        row?.ordem || ""
+    ].join("|");
+}
+
+function mesclarAutuacoes(base, novos) {
+    const mapa = new Map();
+    (base || []).forEach((row) => mapa.set(chaveRegistroAutuacao(row), row));
+    (novos || []).forEach((row) => mapa.set(chaveRegistroAutuacao(row), row));
+    return [...mapa.values()];
+}
+
+function isoDiasAtrasAutuacoes(dias) {
+    const d = new Date();
+    d.setDate(d.getDate() - dias);
+    return d.toISOString().slice(0, 10);
+}
+
+async function carregarSnapshotAutuacoes() {
+    try {
+        const res = await fetch(AUTUACOES_SNAPSHOT_URL, { cache: "no-store" });
+        if (!res.ok) return null;
+        const payload = await res.json();
+        const rows = normalizeRows(payload);
+        if (!rows.length) return null;
+        return { payload, rows };
+    } catch (_) {
+        return null;
+    }
+}
+
+async function sincronizarAutuacoesRecentes() {
+    const dataDe = isoDiasAtrasAutuacoes(SYNC_DIAS_RECENTES);
+    const dataAte = isoDiasAtrasAutuacoes(0);
+    const response = await fetch(montarUrlAutuacoes({ data_de: dataDe, data_ate: dataAte, completo: "0" }), { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const payload = await response.json();
+    if (payload.status === "error") throw new Error(payload.message || "Erro na API");
+    return normalizeRows(payload);
 }
 
 function aplicarPayloadAutuacoes(payload, origem) {
@@ -441,6 +505,16 @@ function hexToRgb(hex) {
 function rgbaHex(hex, alpha) {
     const c = hexToRgb(hex);
     return `rgba(${c.r},${c.g},${c.b},${alpha})`;
+}
+
+function escurecerHex(hex, fator = 0.3) {
+    const c = hexToRgb(hex);
+    return `rgb(${Math.round(c.r * (1 - fator))},${Math.round(c.g * (1 - fator))},${Math.round(c.b * (1 - fator))})`;
+}
+
+function clarearHex(hex, fator = 0.22) {
+    const c = hexToRgb(hex);
+    return `rgb(${Math.min(255, Math.round(c.r + (255 - c.r) * fator))},${Math.min(255, Math.round(c.g + (255 - c.g) * fator))},${Math.min(255, Math.round(c.b + (255 - c.b) * fator))})`;
 }
 
 function nomeAgenteCurto(nome) {
@@ -618,11 +692,13 @@ function desenharGraficoAgentes(rows) {
 }
 
 let pieResizeObserver = null;
+const PIE_TILT = 0.62;
 
 function prepararCanvasPie(canvas) {
     const wrap = canvas?.parentElement;
-    const base = wrap ? Math.floor(Math.min(wrap.clientWidth, wrap.clientHeight)) : 160;
-    const size = Math.max(base, 96);
+    const max = 172;
+    const wrapW = wrap ? wrap.clientWidth : max;
+    const size = Math.min(Math.max(Math.floor(wrapW) || max, 108), max);
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(size * dpr);
     canvas.height = Math.round(size * dpr);
@@ -647,14 +723,21 @@ function observarResizePie() {
     pieResizeObserver.observe(wrap);
 }
 
-function corSegmentoPie(ctx, cx, cy, cor, angInicio, angFim, rIn, rOut) {
-    const mid = (angInicio + angFim) / 2;
-    const gx = cx + Math.cos(mid) * (rOut * 0.5);
-    const gy = cy + Math.sin(mid) * (rOut * 0.5);
-    const g = ctx.createRadialGradient(gx, gy, rIn, cx, cy, rOut);
-    g.addColorStop(0, "#fff");
-    g.addColorStop(0.15, cor);
-    g.addColorStop(1, cor);
+function arcoDonut(ctx, cx, cy, rOut, rIn, a0, a1) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, rOut, a0, a1);
+    ctx.arc(cx, cy, rIn, a1, a0, true);
+    ctx.closePath();
+}
+
+function gradienteSegmento3D(ctx, cx, cy, cor, a0, a1, rIn, rOut) {
+    const mid = (a0 + a1) / 2;
+    const gx = cx + Math.cos(mid) * rOut * 0.75;
+    const gy = cy + Math.sin(mid) * rOut * 0.75;
+    const g = ctx.createRadialGradient(gx, gy, rIn * 0.4, cx, cy, rOut);
+    g.addColorStop(0, clarearHex(cor, 0.28));
+    g.addColorStop(0.5, cor);
+    g.addColorStop(1, escurecerHex(cor, 0.32));
     return g;
 }
 
@@ -663,10 +746,12 @@ function drawPie(items, total) {
     if (!canvas) return;
     const { ctx, size } = prepararCanvasPie(canvas);
     const cx = size / 2;
-    const cy = size / 2;
-    const r = size * 0.4;
-    const rInner = size * 0.26;
-    const gap = 0.035;
+    const cy = size / 2 - size * 0.02;
+    const tilt = PIE_TILT;
+    const depth = size * 0.065;
+    const rOut = size * 0.36;
+    const rIn = size * 0.22;
+    const gap = 0.038;
     ctx.clearRect(0, 0, size, size);
 
     if (!total) {
@@ -680,41 +765,91 @@ function drawPie(items, total) {
     }
 
     ctx.save();
-    ctx.shadowColor = "rgba(0,212,255,.25)";
-    ctx.shadowBlur = size * 0.06;
-    let start = -Math.PI / 2;
-    items.forEach(([name, val], i) => {
-        const ang = (val / total) * Math.PI * 2;
-        if (ang <= 0) return;
-        const a0 = start + gap;
-        const a1 = start + ang - gap;
-        if (a1 <= a0) { start += ang; return; }
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, a0, a1);
-        ctx.arc(cx, cy, rInner, a1, a0, true);
-        ctx.closePath();
-        ctx.fillStyle = corSegmentoPie(ctx, cx, cy, COLORS[i % COLORS.length], a0, a1, rInner, r);
-        ctx.fill();
-        start += ang;
-    });
+    const aura = ctx.createRadialGradient(cx, cy - size * 0.04, 0, cx, cy, rOut * 1.35);
+    aura.addColorStop(0, "rgba(0,212,255,.12)");
+    aura.addColorStop(0.55, "rgba(19,89,199,.06)");
+    aura.addColorStop(1, "transparent");
+    ctx.fillStyle = aura;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + depth, rOut * 1.1, rOut * 1.1 * tilt, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
 
-    ctx.beginPath();
-    ctx.arc(cx, cy, rInner - 1, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255,255,255,.96)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(0,212,255,.2)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    let start = -Math.PI / 2;
+    const slices = items.map(([name, val], i) => {
+        const ang = (val / total) * Math.PI * 2;
+        const slice = {
+            name,
+            val,
+            a0: start + gap,
+            a1: start + ang - gap,
+            ang,
+            cor: COLORS[i % COLORS.length]
+        };
+        start += ang;
+        return slice;
+    }).filter((s) => s.a1 > s.a0);
 
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(1, tilt);
+    ctx.translate(-cx, -cy);
+
+    for (let layer = 5; layer >= 1; layer--) {
+        const ly = (depth * layer) / tilt / 5;
+        slices.forEach(({ a0, a1, cor }) => {
+            ctx.save();
+            ctx.translate(0, ly);
+            arcoDonut(ctx, cx, cy, rOut, rIn, a0, a1);
+            ctx.fillStyle = escurecerHex(cor, 0.12 + layer * 0.07);
+            ctx.fill();
+            ctx.restore();
+        });
+    }
+
+    ctx.shadowColor = "rgba(0,212,255,.22)";
+    ctx.shadowBlur = size * 0.04;
+    slices.forEach(({ a0, a1, cor }) => {
+        arcoDonut(ctx, cx, cy, rOut, rIn, a0, a1);
+        ctx.fillStyle = gradienteSegmento3D(ctx, cx, cy, cor, a0, a1, rIn, rOut);
+        ctx.fill();
+        ctx.strokeStyle = rgbaHex(cor, 0.45);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, cy, rOut - 1, a0 + 0.015, a1 - 0.015);
+        ctx.strokeStyle = rgbaHex("#ffffff", 0.4);
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+    });
+    ctx.shadowBlur = 0;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, rIn - 1.5, 0, Math.PI * 2);
+    const hub = ctx.createRadialGradient(cx, cy - rIn * 0.35, 0, cx, cy, rIn);
+    hub.addColorStop(0, "#ffffff");
+    hub.addColorStop(0.65, "#eef6ff");
+    hub.addColorStop(1, "#c7ddff");
+    ctx.fillStyle = hub;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,212,255,.4)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
     ctx.fillStyle = CHART_THEME.navy;
-    ctx.font = `800 ${Math.max(14, size * 0.11)}px 'Segoe UI', system-ui, Arial, sans-serif`;
+    ctx.font = `800 ${Math.max(15, size * 0.12)}px 'Segoe UI', system-ui, Arial, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    ctx.shadowColor = "rgba(0,212,255,.35)";
+    ctx.shadowBlur = 8;
     ctx.fillText(formatInt(total), cx, cy - size * 0.02);
+    ctx.shadowBlur = 0;
     ctx.fillStyle = CHART_THEME.muted;
-    ctx.font = `600 ${Math.max(9, size * 0.055)}px 'Segoe UI', system-ui, Arial, sans-serif`;
-    ctx.fillText("autuações", cx, cy + size * 0.09);
+    ctx.font = `600 ${Math.max(9, size * 0.052)}px 'Segoe UI', system-ui, Arial, sans-serif`;
+    ctx.fillText("autuações", cx, cy + size * 0.085);
+    ctx.restore();
 
     byId("legend").innerHTML = items.slice(0, 10).map(([name, val], i) => {
         const pct = ((val / total) * 100);
@@ -850,35 +985,59 @@ function init() {
 
 async function loadData() {
     const cacheLocal = lerCacheAutuacoesLocal();
-    let mostrouCache = false;
+    let mostrouDados = false;
 
-    if (cacheLocal) {
+    const snapshot = await carregarSnapshotAutuacoes();
+    if (snapshot?.rows?.length) {
+        DATA = snapshot.rows;
+        init();
+        salvarCacheAutuacoesLocal(snapshot.payload);
+        console.info("Autuações carregadas: arquivo JSON", DATA.length);
+        mostrouDados = true;
+    } else if (cacheLocal) {
         aplicarPayloadAutuacoes(cacheLocal, "cache local");
-        mostrouCache = true;
+        mostrouDados = true;
     }
 
     if (!API_URL) {
-        if (!mostrouCache) init();
+        if (!mostrouDados) init();
         return;
     }
 
-    if (!mostrouCache) {
+    if (!mostrouDados) {
         window.portalMostrarCarregando?.("Carregando autuações");
     }
 
     try {
-        const response = await fetch(montarUrlSemCache(API_URL), { cache: "no-store" });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload = await response.json();
-        if (payload.status === "error") throw new Error(payload.message || "Erro na API");
-        salvarCacheAutuacoesLocal(payload);
-        aplicarPayloadAutuacoes(payload, payload.cache ? "servidor (cache)" : "planilha");
+        const recentes = await sincronizarAutuacoesRecentes();
+        if (recentes.length) {
+            if (mostrouDados) {
+                DATA = mesclarAutuacoes(DATA, recentes);
+                init();
+                salvarCacheAutuacoesLocal({ status: "ok", data: DATA, data_de: snapshot?.payload?.data_de, data_ate: snapshot?.payload?.data_ate });
+                console.info("Autuações atualizadas: JSON + recentes", DATA.length);
+            } else {
+                const response = await fetch(montarUrlAutuacoes(), { cache: "no-store" });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const payload = await response.json();
+                if (payload.status === "error") throw new Error(payload.message || "Erro na API");
+                salvarCacheAutuacoesLocal(payload);
+                aplicarPayloadAutuacoes(payload, payload.cache ? "servidor (cache)" : "planilha");
+            }
+        } else if (!mostrouDados) {
+            const response = await fetch(montarUrlAutuacoes(), { cache: "no-store" });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const payload = await response.json();
+            if (payload.status === "error") throw new Error(payload.message || "Erro na API");
+            salvarCacheAutuacoesLocal(payload);
+            aplicarPayloadAutuacoes(payload, payload.cache ? "servidor (cache)" : "planilha");
+        }
         if (!DATA.length) {
-            console.warn("API de autuações retornou vazio.", payload);
+            console.warn("Autuações retornou vazio.");
         }
     } catch (error) {
         console.error("Erro ao carregar dados do Google Sheets:", error);
-        if (!mostrouCache) {
+        if (!mostrouDados) {
             const tbody = byId("tableBody");
             if (tbody) {
                 tbody.innerHTML = `<tr><td colspan="${TABLE_COLUMNS.length}" class="no-data">Não foi possível carregar as autuações. Confira se o Apps Script está publicado. (${escapeHtml(error.message)})</td></tr>`;

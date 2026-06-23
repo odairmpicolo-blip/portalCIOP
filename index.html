@@ -15,6 +15,10 @@ document.documentElement.classList.add("portal-auth-pending");
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portal Operacional - CIOP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous" defer></script>
 
 <style>
 
@@ -35,7 +39,7 @@ document.documentElement.classList.add("portal-auth-pending");
 }
 
 body{
-    font-family:Arial, Helvetica, "Segoe UI", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+    font-family:Arial,Helvetica,"Segoe UI",sans-serif;
     background:var(--fundo);
     color:var(--texto);
     min-height:100vh;
@@ -293,10 +297,57 @@ h1{
     color:var(--azul);
     font-size:22px;
     font-weight:900;
+    margin:0;
+    text-align:left;
+}
+
+.card-section-head{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:10px;
     margin:0 0 16px;
     padding-bottom:8px;
     border-bottom:2px solid rgba(6,36,92,.12);
-    text-align:center;
+}
+
+.card-section-toggle{
+    border:1px solid rgba(6,36,92,.15);
+    background:#f8fbff;
+    color:var(--azul);
+    width:34px;
+    height:34px;
+    border-radius:8px;
+    cursor:pointer;
+    display:grid;
+    place-items:center;
+    flex:0 0 auto;
+    transition:background .2s;
+}
+
+.card-section-toggle:hover,
+.card-section-toggle:focus-visible{
+    background:#eef4ff;
+    outline:none;
+}
+
+.card-section-toggle svg{
+    width:18px;
+    height:18px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:2.5;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    transition:transform .2s;
+}
+
+.card-section-toggle[aria-expanded="false"] svg{
+    transform:rotate(-90deg);
+}
+
+.card-section-corpo.portal-secao-fechada{
+    display:none;
 }
 
 .grid{
@@ -634,33 +685,60 @@ footer{
 }
 
 .notice-item-title,
-.notice-item-text,
 .notice-manage-item strong,
-.notice-manage-item span,
-#avisoTitulo,
-#avisoMensagem{
-    font-family:Arial, Helvetica, "Segoe UI", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+.notice-manage-item span{
+    font-family:Arial,Helvetica,"Segoe UI","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+    font-weight:700;
+    color:var(--texto);
+    letter-spacing:0;
+    word-spacing:normal;
+}
+
+.notice-item-title-inner,
+.notice-item-text-inner,
+.notice-manage-title-inner{
+    display:inline;
+    font:inherit;
+    letter-spacing:inherit;
+    word-spacing:inherit;
+    font-variant-numeric:normal;
+}
+
+.notice-item-title img.emoji,
+.notice-item-text img.emoji,
+.notice-manage-title-inner img.emoji{
+    height:1em;
+    width:1em;
+    margin:0 .05em 0 .1em;
+    vertical-align:-0.1em;
 }
 
 .notice-item-title{
-    color:var(--azul);
-    font-size:12px;
-    font-weight:900;
-    line-height:1.25;
+    font-size:13px;
+    line-height:1.4;
     white-space:normal;
     overflow:hidden;
     text-overflow:ellipsis;
 }
 
 .notice-item-text{
-    margin-top:3px;
-    color:#344054;
-    font-size:11px;
-    line-height:1.35;
+    font-family:Arial,Helvetica,"Segoe UI","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+    font-weight:400;
+    color:var(--texto);
+    letter-spacing:0;
+    word-spacing:normal;
+    margin-top:2px;
+    font-size:13px;
+    line-height:1.4;
     display:-webkit-box;
     -webkit-line-clamp:2;
     -webkit-box-orient:vertical;
     overflow:hidden;
+}
+
+#avisoTitulo,
+#avisoMensagem{
+    font-family:Arial,Helvetica,"Segoe UI","Noto Color Emoji","Segoe UI Emoji",sans-serif;
 }
 
 .notice-item-meta,
@@ -1532,6 +1610,8 @@ h1 {
                                 <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="Gerência">Gerência</label>
                                 <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="Analista">Analista</label>
                                 <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="SAC">SAC</label>
+                                <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="Fiscalização">Fiscalização</label>
+                                <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="Monitoramento">Monitoramento</label>
                                 <label class="notice-check"><input name="avisoPerfil" type="checkbox" value="Secretária">Secretária</label>
                             </div>
                         </details>
@@ -1591,9 +1671,14 @@ h1 {
         <div id="senhaStatus" class="password-status"></div>
     </section>
 
-    <section class="card-section" aria-label="Operação">
-        <h2 class="card-section-title">Operação</h2>
-        <div class="grid">
+    <section id="secaoOperacao" class="card-section" aria-label="Operação">
+        <div class="card-section-head">
+            <button type="button" class="card-section-toggle" id="toggleSecaoOperacao" aria-expanded="true" aria-controls="conteudoSecaoOperacao" aria-label="Abrir ou fechar Operação">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <h2 class="card-section-title">Operação</h2>
+        </div>
+        <div class="grid card-section-corpo" id="conteudoSecaoOperacao">
 
         <a href="pages/Folhadeservico1.html" class="card theme-blue" data-perfis="Administrador,Supervisor,Analista">
             <div class="card-top">
@@ -1763,9 +1848,14 @@ h1 {
         </div>
     </section>
 
-    <section class="card-section" aria-label="Dashboards">
-        <h2 class="card-section-title">Dashboards</h2>
-        <div class="grid">
+    <section id="secaoDashboards" class="card-section" aria-label="Dashboards">
+        <div class="card-section-head">
+            <button type="button" class="card-section-toggle" id="toggleSecaoDashboards" aria-expanded="true" aria-controls="conteudoSecaoDashboards" aria-label="Abrir ou fechar Dashboards">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <h2 class="card-section-title">Dashboards</h2>
+        </div>
+        <div class="grid card-section-corpo" id="conteudoSecaoDashboards">
 
         <a href="pages/Folhadeservico.html" class="card theme-blue">
             <div class="card-top">
@@ -1851,6 +1941,77 @@ function toggleMenu(){
     document.getElementById("sidebar").classList.toggle("active");
     document.getElementById("overlay").classList.toggle("active");
 }
+
+const PORTAL_SECOES_STORAGE_KEY = "portal-secoes-visiveis";
+
+function chaveSecoesPortal() {
+    const email = String(window.portalUsuario?.email || "visitante").trim().toLowerCase();
+    return PORTAL_SECOES_STORAGE_KEY + ":" + (email || "visitante");
+}
+
+function lerPreferenciasSecoesPortal() {
+    try {
+        const salvo = JSON.parse(localStorage.getItem(chaveSecoesPortal()) || "{}");
+        return {
+            operacao: salvo.operacao !== false,
+            dashboards: salvo.dashboards !== false
+        };
+    } catch (_) {
+        return { operacao: true, dashboards: true };
+    }
+}
+
+function salvarPreferenciasSecoesPortal(preferencias) {
+    try {
+        localStorage.setItem(chaveSecoesPortal(), JSON.stringify(preferencias));
+    } catch (_) {}
+}
+
+function aplicarEstadoSecaoPortal(botao, corpo, aberta) {
+    if (!botao || !corpo) return;
+    botao.setAttribute("aria-expanded", aberta ? "true" : "false");
+    corpo.classList.toggle("portal-secao-fechada", !aberta);
+}
+
+function aplicarPreferenciasSecoesPortal(preferencias = lerPreferenciasSecoesPortal()) {
+    aplicarEstadoSecaoPortal(
+        document.getElementById("toggleSecaoOperacao"),
+        document.getElementById("conteudoSecaoOperacao"),
+        preferencias.operacao
+    );
+    aplicarEstadoSecaoPortal(
+        document.getElementById("toggleSecaoDashboards"),
+        document.getElementById("conteudoSecaoDashboards"),
+        preferencias.dashboards
+    );
+}
+
+function inicializarVisibilidadeSecoesPortal() {
+    const toggleOperacao = document.getElementById("toggleSecaoOperacao");
+    const toggleDashboards = document.getElementById("toggleSecaoDashboards");
+    const corpoOperacao = document.getElementById("conteudoSecaoOperacao");
+    const corpoDashboards = document.getElementById("conteudoSecaoDashboards");
+    if (!toggleOperacao || !toggleDashboards || !corpoOperacao || !corpoDashboards) return;
+
+    aplicarPreferenciasSecoesPortal();
+
+    const alternar = (chave, botao, corpo) => {
+        botao.addEventListener("click", () => {
+            const aberta = botao.getAttribute("aria-expanded") !== "true";
+            const preferencias = lerPreferenciasSecoesPortal();
+            preferencias[chave] = aberta;
+            salvarPreferenciasSecoesPortal(preferencias);
+            aplicarEstadoSecaoPortal(botao, corpo, aberta);
+        });
+    };
+
+    alternar("operacao", toggleOperacao, corpoOperacao);
+    alternar("dashboards", toggleDashboards, corpoDashboards);
+}
+
+document.addEventListener("DOMContentLoaded", inicializarVisibilidadeSecoesPortal);
+window.addEventListener("portal:usuario-validado", () => aplicarPreferenciasSecoesPortal());
+window.atualizarVisibilidadeSecoesPortal = aplicarPreferenciasSecoesPortal;
 </script>
 
 <script type="module" id="portalAvisosScript">
@@ -1894,6 +2055,42 @@ function escapeAviso(valor) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+const TWEMOJI_OPTS = {
+    base: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/",
+    folder: "svg",
+    ext: ".svg",
+    className: "emoji"
+};
+
+function renderizarEmojiAviso(texto) {
+    const safe = escapeAviso(texto || "");
+    if (!window.twemoji) return safe;
+    return window.twemoji.parse(safe, TWEMOJI_OPTS);
+}
+
+function reaplicarEmojisAvisos() {
+    if (!window.twemoji) return;
+    document.querySelectorAll(".notice-item-title-inner, .notice-item-text-inner, .notice-manage-title-inner").forEach((inner) => {
+        if (inner.querySelector("img.emoji")) return;
+        const bruto = inner.textContent || "";
+        if (!bruto) return;
+        inner.innerHTML = renderizarEmojiAviso(bruto);
+    });
+}
+
+window.addEventListener("load", reaplicarEmojisAvisos);
+
+function preencherTextoAviso(elemento, texto) {
+    if (!elemento) return;
+    elemento.replaceChildren();
+    const inner = document.createElement("span");
+    inner.className = elemento.classList.contains("notice-item-title")
+        ? "notice-item-title-inner"
+        : "notice-item-text-inner";
+    inner.innerHTML = renderizarEmojiAviso(texto);
+    elemento.appendChild(inner);
 }
 
 function normalizarAvisoTexto(valor) {
@@ -2111,13 +2308,14 @@ function renderAvisos(lista) {
         item.className = "notice-item";
         const titulo = document.createElement("div");
         titulo.className = "notice-item-title";
-        titulo.textContent = aviso.titulo || "";
+        preencherTextoAviso(titulo, aviso.titulo);
         const mensagem = document.createElement("div");
         mensagem.className = "notice-item-text";
-        mensagem.textContent = aviso.mensagem || "";
+        preencherTextoAviso(mensagem, aviso.mensagem);
         item.append(titulo, mensagem);
         avisosLista.appendChild(item);
     });
+    reaplicarEmojisAvisos();
 }
 
 function renderAvisosGestor(lista) {
@@ -2130,7 +2328,7 @@ function renderAvisosGestor(lista) {
     avisosGerenciarLista.innerHTML = lista.map((aviso) => `
         <div class="notice-manage-item">
             <div>
-                <strong>${escapeAviso(aviso.titulo)}</strong>
+                <strong><span class="notice-manage-title-inner">${renderizarEmojiAviso(aviso.titulo)}</span></strong>
                 <span>${escapeAviso(destinatariosAviso(aviso))}</span>
             </div>
             <div class="notice-manage-actions">
@@ -2143,6 +2341,7 @@ function renderAvisosGestor(lista) {
             </div>
         </div>
     `).join("");
+    reaplicarEmojisAvisos();
 }
 
 function setAvisoStatus(texto, tipo = "") {

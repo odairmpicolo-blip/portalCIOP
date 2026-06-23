@@ -10,8 +10,9 @@
  */
 
 const ABA_NOME = "AUTUAÇÕES";
-const SCRIPT_VERSAO = "2026-06-22-perf-janela";
+const SCRIPT_VERSAO = "2026-06-23-historico-completo";
 const AUTUACOES_DIAS_JANELA = 365;
+const AUTUACOES_DATA_INICIO = "2015-01-01";
 const AUTUACOES_CHUNK_LINHAS = 800;
 const AUTUACOES_CACHE_TTL = 900;
 
@@ -139,9 +140,17 @@ function normalizarDataParamAutuacoes_(valor) {
 
 function montarPayloadAutuacoes_(params) {
   params = params || {};
-  var dataDe = normalizarDataParamAutuacoes_(params.data_de) || isoDataDiasAtrasAutuacoes_(AUTUACOES_DIAS_JANELA);
+  var completo = String(params.completo || params.todos || "") === "1";
+  var dataDe;
   var dataAte = normalizarDataParamAutuacoes_(params.data_ate) || isoDataDiasAtrasAutuacoes_(0);
-  var cacheKey = cacheChaveAutuacoes_(dataDe, dataAte);
+  if (completo) {
+    dataDe = normalizarDataParamAutuacoes_(params.data_de) || AUTUACOES_DATA_INICIO;
+  } else {
+    dataDe = normalizarDataParamAutuacoes_(params.data_de) || isoDataDiasAtrasAutuacoes_(AUTUACOES_DIAS_JANELA);
+  }
+  var cacheKey = completo
+    ? cacheChaveAutuacoes_("completo", dataDe + "|" + dataAte)
+    : cacheChaveAutuacoes_(dataDe, dataAte);
   var emCache = lerCacheAutuacoes_(cacheKey);
   if (emCache) {
     emCache.cache = true;

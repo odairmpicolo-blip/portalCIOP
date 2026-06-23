@@ -26,12 +26,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
 .toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap}
 .toolbar-left{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;flex:1;min-width:0}
 .nav-actions{display:flex;gap:8px;flex-wrap:wrap;flex:0 0 auto}
-.filters-inline{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;flex:1;min-width:280px}
-.filter-field{min-width:150px;flex:1;max-width:200px}
-.filter-field label{display:block;margin:0 0 4px;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
-.filter-field input,.filter-field select{width:100%;min-height:38px;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;background:#fafbfd;transition:border-color .15s,background .15s}
-.filter-field input:focus,.filter-field select:focus{outline:none;border-color:var(--blue2);background:var(--white);box-shadow:0 0 0 3px rgba(11,58,138,.08)}
-.btn-portal,.btn-primary,.btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;text-decoration:none;border-radius:6px;font-size:12px;font-weight:800;padding:8px 14px;border:0;cursor:pointer;font-family:inherit;transition:background .15s,transform .15s}
+.btn-portal,.btn-primary,.btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;border:0;cursor:pointer;font-family:inherit;transition:background .15s,transform .15s}
 .btn-portal,.btn-primary{background:var(--blue);color:#fff;box-shadow:0 1px 2px rgba(16,24,40,.08)}
 .btn-portal:hover,.btn-primary:hover{background:var(--blue2)}
 .btn-secondary{background:#e8edf6;color:var(--blue)}
@@ -114,6 +109,7 @@ tbody td.col-maquina .cell-readonly{background:transparent;color:inherit;padding
 </style>
 <link rel="stylesheet" href="../assets/css/portal-senha.css">
 <link rel="stylesheet" href="../assets/css/portal-titulos.css">
+<link rel="stylesheet" href="../assets/css/portal-filtros.css">
 <script src="../assets/js/loading.js"></script>
 <script type="module" src="../assets/js/auth.js"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
@@ -209,7 +205,16 @@ const CAMPOS_DISPARO_FORMULA = new Set(["saida_real","inicio_real","horario_said
 const TOLERANCIA_MIN = 5;
 const CAMPOS_HORA = new Set(["horario_saida_da_garagem","horario_de_inicio","saida_real","inicio_real"]);
 const DIAS_JANELA = 7;
-const CACHE_STORAGE_KEY = "portal_liberacao_lancamento_v1";
+const CACHE_STORAGE_KEY = "portal_liberacao_lancamento_v2";
+const LIBERACAO_DATA_BASE = "../assets/data/liberacao";
+const LIBERACAO_MANIFEST_URL = LIBERACAO_DATA_BASE + "/manifest.json";
+const LIBERACAO_ACOMPANHAMENTO_URL = LIBERACAO_DATA_BASE + "/acompanhamento-semana.json";
+let liberacaoManifest = null;
+let carregamentoEmAndamento = false;
+let carregamentoSemanaBackground = false;
+let eventosTabelaIniciados = false;
+let cabecalhoRenderizado = false;
+let cacheGravacaoTimer = null;
 const state = {
     colunas: COLUNAS_EXIBICAO,
     semana: [],
@@ -226,11 +231,33 @@ const state = {
 function $(id){return document.getElementById(id)}
 function escapeHtml(v){return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function brDate(iso){if(!iso)return "—";const p=iso.split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:iso}
-function isoHoje(){return new Date().toISOString().slice(0,10)}
-function isoDiasAtras(dias){
+function isoDataLocal(offsetDias){
     const d=new Date();
-    d.setDate(d.getDate()-dias);
-    return d.toISOString().slice(0,10);
+    d.setDate(d.getDate()+(offsetDias||0));
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,"0");
+    const dia=String(d.getDate()).padStart(2,"0");
+    return y+"-"+m+"-"+dia;
+}
+function isoHoje(){return isoDataLocal(0)}
+function isoAmanha(){return isoDataLocal(1)}
+function isoDiasAtras(dias){return isoDataLocal(-(dias||0))}
+function rotuloData(iso){
+    if(iso===isoHoje()) return "Hoje";
+    if(iso===isoAmanha()) return "Amanhã";
+    return brDate(iso);
+}
+function intervaloJanela(){
+    return {dataDe:isoDiasAtras(DIAS_JANELA),hoje:isoHoje(),amanha:isoAmanha()};
+}
+function configurarLimitesFiltroData(){
+    const {dataDe,amanha}=intervaloJanela();
+    const input=$("dataFiltro");
+    input.min=dataDe;
+    input.max=amanha;
+}
+function definirDataFiltroHoje(){
+    $("dataFiltro").value=isoHoje();
 }
 function normalizarDataIsoRow(row){
     if(row?.data_iso) return row.data_iso;
@@ -251,17 +278,25 @@ function lerCacheLiberacao(){
         return null;
     }
 }
-function salvarCacheLiberacao(dados,meta){
-    try{
-        localStorage.setItem(CACHE_STORAGE_KEY,JSON.stringify({
-            dados,
-            data_de:meta?.data_de||"",
-            data_ate:meta?.data_ate||"",
-            atualizadoEm:Date.now()
-        }));
-    }catch(err){
-        console.warn("Não foi possível gravar cache local:",err);
+function salvarCacheLiberacao(dados,meta,deferir){
+    const gravar=()=>{
+        try{
+            localStorage.setItem(CACHE_STORAGE_KEY,JSON.stringify({
+                dados,
+                data_de:meta?.data_de||"",
+                data_ate:meta?.data_ate||"",
+                atualizadoEm:Date.now()
+            }));
+        }catch(err){
+            console.warn("Não foi possível gravar cache local:",err);
+        }
+    };
+    if(deferir){
+        clearTimeout(cacheGravacaoTimer);
+        cacheGravacaoTimer=setTimeout(gravar,1200);
+        return;
     }
+    gravar();
 }
 function dataDentroDaJanela(data,dataDe,dataAte){
     return data&&dataDe&&dataAte&&data>=dataDe&&data<=dataAte;
@@ -345,8 +380,14 @@ function capturarValoresIniciais(row){
     return aplicarFormulasLinha(row);
 }
 
+function ensureRowInit(row){
+    if(!row||row._valoresIniciais) return row;
+    return capturarValoresIniciais(row);
+}
+
 function celulaPreenchida(row,chave){
     if(isColunaFormula(chave)) return true;
+    ensureRowInit(row);
     return String(row._valoresIniciais?.[chave]??"").trim()!=="";
 }
 
@@ -508,14 +549,20 @@ function onCellKeydown(e){
     if(dest) focarCelula(dest.row,dest.col);
 }
 
-function bindCelulas(){
-    $("tabelaCorpo").querySelectorAll("input,select").forEach(el=>{
-        el.addEventListener("change",onCellChange);
-        el.addEventListener("blur",onCellChange);
-        el.addEventListener("focus",()=>marcarCelulaAtiva(el));
-        el.addEventListener("keydown",onCellKeydown);
+function initEventosTabela(){
+    if(eventosTabelaIniciados) return;
+    const corpo=$("tabelaCorpo");
+    corpo.addEventListener("change",onCellChange);
+    corpo.addEventListener("blur",onCellChange,true);
+    corpo.addEventListener("focusin",(e)=>{
+        const el=e.target;
+        if(el.matches(".cell-input,.cell-select")) marcarCelulaAtiva(el);
     });
+    corpo.addEventListener("keydown",onCellKeydown);
+    eventosTabelaIniciados=true;
 }
+
+function bindCelulas(){ /* delegação em initEventosTabela */ }
 
 function renderCelula(row, rowIdx, col){
     const chave=col.chave;
@@ -563,6 +610,7 @@ function renderCabecalho(){
 function renderCorpoTabela(){
     const cols=state.colunas;
     $("tabelaCorpo").innerHTML=state.dados.map((row,i)=>{
+        ensureRowInit(row);
         aplicarFormulasLinha(row);
         return '<tr data-i="'+i+'">'+
         '<td class="col-fix col-sync sync-'+i+'">'+syncBadge(row,i)+'</td>'+
@@ -575,16 +623,19 @@ function renderCorpoTabela(){
     }).join("");
     $("emptyState").hidden=state.dados.length>0;
     $("tableInfo").textContent=formatNumber(state.dados.length)+" linha(s)";
-    bindCelulas();
 }
 
 function renderTabela(){
-    renderCabecalho();
+    if(!cabecalhoRenderizado){
+        renderCabecalho();
+        cabecalhoRenderizado=true;
+    }
     renderCorpoTabela();
 }
 
 function onCellChange(e){
     const el=e.target;
+    if(!el.matches(".cell-input,.cell-select")) return;
     const i=Number(el.dataset.i);
     const k=el.dataset.k;
     if(isNaN(i)||!k) return;
@@ -651,70 +702,241 @@ function aplicarFiltroData(data,origem){
     state.todos=state.semana.filter(r=>normalizarDataIsoRow(r)===data);
     popularMaquinas([...new Set(state.todos.map(d=>String(d.maquina||"").trim()).filter(Boolean))]);
     aplicarFiltroMaquina();
-    renderTabela();
     const agora=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
-    setStatus(formatNumber(state.dados.length)+" registro(s) · "+brDate(data)+" · "+origem+" · "+agora,"ok");
+    const texto=formatNumber(state.dados.length)+" registro(s) · "+rotuloData(data)+" · "+origem+" · "+agora;
+    requestAnimationFrame(()=>{
+        renderTabela();
+        setStatus(texto,"ok");
+    });
+}
+
+async function carregarManifestLiberacao(){
+    try{
+        const res=await fetch(LIBERACAO_MANIFEST_URL,{cache:"no-store"});
+        if(!res.ok) return null;
+        return await res.json();
+    }catch(_){
+        return null;
+    }
+}
+
+function chaveLinhaLiberacao(row){
+    if(row?._row) return "_row:"+row._row;
+    return [
+        normalizarDataIsoRow(row),
+        row?.maquina||"",
+        row?.linha||"",
+        row?.work_id||"",
+        row?.carro||""
+    ].join("|");
+}
+
+function mesclarSemana(base, novos){
+    const mapa=new Map();
+    (base||[]).forEach(r=>mapa.set(chaveLinhaLiberacao(r),Object.assign({},r)));
+    (novos||[]).forEach(r=>{
+        const copia=Object.assign({},r);
+        mapa.set(chaveLinhaLiberacao(copia),copia);
+    });
+    return [...mapa.values()];
+}
+
+function metaSnapshot(payload){
+    const meta=payload?.meta||liberacaoManifest?.acompanhamento||payload||{};
+    return {
+        data_de:meta.data_de||payload?.data_de||"",
+        data_ate:meta.data_ate||payload?.data_ate||""
+    };
+}
+
+function snapshotCobreData(payload,data){
+    if(!payload?.dados?.length||!data) return false;
+    const {data_de,data_ate}=metaSnapshot(payload);
+    if(data_de&&data_ate&&data>=data_de&&data<=data_ate) return true;
+    return payload.dados.some(r=>normalizarDataIsoRow(r)===data);
+}
+
+function urlSnapshotDia(data){
+    const arquivo=liberacaoManifest?.dias?.[data];
+    if(arquivo) return LIBERACAO_DATA_BASE+"/"+arquivo;
+    return LIBERACAO_DATA_BASE+"/acompanhamento-dia-"+data+".json";
+}
+
+async function carregarSnapshotDia(data){
+    if(!data) return null;
+    try{
+        const res=await fetch(urlSnapshotDia(data),{cache:"no-store"});
+        if(!res.ok) return null;
+        const payload=await res.json();
+        if(!Array.isArray(payload?.dados)||!payload.dados.length) return null;
+        return payload;
+    }catch(_){
+        return null;
+    }
+}
+
+async function carregarSnapshotSemana(dataDe,dataAteJanela,data){
+    const [manifest,snapPayload]=await Promise.all([
+        liberacaoManifest?Promise.resolve(liberacaoManifest):carregarManifestLiberacao().then(m=>{liberacaoManifest=m;return m;}),
+        fetch(LIBERACAO_ACOMPANHAMENTO_URL,{cache:"no-store"})
+            .then(r=>r.ok?r.json():null)
+            .catch(()=>null)
+    ]);
+    if(!Array.isArray(snapPayload?.dados)||!snapPayload.dados.length) return null;
+    if(data&&!snapshotCobreData(snapPayload,data)) return null;
+    const intervalo=metaSnapshot(snapPayload);
+    return Object.assign({},snapPayload,{
+        data_de:intervalo.data_de||dataDe,
+        data_ate:intervalo.data_ate||dataAteJanela
+    });
+}
+
+async function sincronizarDiaSelecionado(data){
+    const res=await apiGet({recurso:"acompanhamento",data});
+    const novos=res.dados||[];
+    if(!novos.length) return 0;
+    state.semana=mesclarSemana(state.semana,novos);
+    salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte},true);
+    return novos.length;
+}
+
+async function carregarDiaRemoto(data){
+    const res=await apiGet({recurso:"acompanhamento",data});
+    return res.dados||[];
+}
+
+async function carregarSemanaBackground(dataDe,dataAteJanela,dataAtual){
+    if(carregamentoSemanaBackground) return;
+    carregamentoSemanaBackground=true;
+    try{
+        const res=await apiGet({recurso:"acompanhamento",data_de:dataDe,data_ate:dataAteJanela,ultima_semana:"0"});
+        const dados=res.dados||[];
+        if(!dados.length) return;
+        aplicarSemanaCarregada(dados,dataDe,dataAteJanela);
+        salvarCacheLiberacao(dados,{data_de:dataDe,data_ate:dataAteJanela},true);
+        if($("dataFiltro").value===dataAtual) aplicarFiltroData(dataAtual,"planilha · semana");
+    }catch(error){
+        console.warn("Falha ao carregar semana em background:",error);
+    }finally{
+        carregamentoSemanaBackground=false;
+    }
+}
+
+async function atualizarDadosRemotos(silencioso){
+    if(carregamentoEmAndamento) return;
+    const data=$("dataFiltro").value;
+    if(!data) return;
+    const {dataDe,hoje,amanha}=intervaloJanela();
+
+    carregamentoEmAndamento=true;
+    if(!silencioso){
+        setStatus("Carregando "+rotuloData(data)+"...","load");
+        window.portalMostrarCarregando?.("Carregando liberação");
+    }
+
+    try{
+        const dadosDia=await carregarDiaRemoto(data);
+        aplicarSemanaCarregada(dadosDia,data,data);
+        aplicarFiltroData(data,(silencioso?"planilha · atualizado":"planilha"));
+        carregarSemanaBackground(dataDe,amanha,data);
+    }catch(error){
+        console.error("Erro ao carregar liberação:",error);
+        const cache=lerCacheLiberacao();
+        if(!silencioso&&cache?.dados?.length&&dataDentroDaJanela(data,cache.data_de,cache.data_ate)){
+            aplicarSemanaCarregada(cache.dados,cache.data_de,cache.data_ate);
+            aplicarFiltroData(data,"cache local (falha na atualização)");
+        }else if(!silencioso){
+            setStatus(error.message,"erro");
+        }
+    }finally{
+        carregamentoEmAndamento=false;
+        if(!silencioso) window.portalOcultarCarregando?.();
+    }
+}
+
+function iniciarSyncDia(data,origemBase){
+    sincronizarDiaSelecionado(data).then(qtd=>{
+        if(!qtd) return;
+        aplicarFiltroData(data,origemBase+" + "+qtd+" novos");
+    }).catch(()=>{});
+}
+
+async function iniciarCarregamento(forceRefresh=false){
+    const data=$("dataFiltro").value;
+    if(!data){setStatus("Informe a data.","erro");return;}
+
+    const {dataDe,amanha}=intervaloJanela();
+    setStatus("Carregando dados locais...","load");
+
+    if(!forceRefresh){
+        const [snapDia,snapSemana,cache]=await Promise.all([
+            carregarSnapshotDia(data),
+            carregarSnapshotSemana(dataDe,amanha,data),
+            Promise.resolve(lerCacheLiberacao())
+        ]);
+
+        if(snapDia?.dados?.length){
+            if(snapSemana?.dados?.length){
+                aplicarSemanaCarregada(snapSemana.dados,snapSemana.data_de,snapSemana.data_ate);
+            }else if(cache?.dados?.length&&dataDentroDaJanela(data,cache.data_de,cache.data_ate)){
+                aplicarSemanaCarregada(cache.dados,cache.data_de,cache.data_ate);
+            }else{
+                aplicarSemanaCarregada(snapDia.dados,data,data);
+            }
+            aplicarFiltroData(data,"arquivo JSON");
+            iniciarSyncDia(data,"JSON");
+            if(!snapSemana?.dados?.length) carregarSemanaBackground(dataDe,amanha,data);
+            return;
+        }
+
+        if(snapSemana?.dados?.length){
+            aplicarSemanaCarregada(snapSemana.dados,snapSemana.data_de,snapSemana.data_ate);
+            aplicarFiltroData(data,"arquivo JSON");
+            iniciarSyncDia(data,"JSON");
+            return;
+        }
+
+        if(cache?.dados?.length&&dataDentroDaJanela(data,cache.data_de,cache.data_ate)){
+            aplicarSemanaCarregada(cache.dados,cache.data_de,cache.data_ate);
+            aplicarFiltroData(data,"cache local");
+            iniciarSyncDia(data,"cache");
+            return;
+        }
+    }
+
+    await atualizarDadosRemotos(false);
 }
 
 async function carregar(forceRefresh=false){
     const data=$("dataFiltro").value;
     if(!data){setStatus("Informe a data.","erro");return;}
 
-    const hoje=isoHoje();
-    const dataDe=isoDiasAtras(DIAS_JANELA);
+    const {dataDe,amanha}=intervaloJanela();
 
-    if(!forceRefresh&&state.semana.length&&state.semanaDataDe===dataDe&&state.semanaDataAte===hoje){
+    if(!forceRefresh&&state.semana.length&&state.semanaDataDe===dataDe&&state.semanaDataAte===amanha){
         aplicarFiltroData(data,"memória");
         return;
     }
 
-    const cache=!forceRefresh?lerCacheLiberacao():null;
-    const cacheValido=cache&&cache.data_ate===hoje&&cache.data_de===dataDe&&cache.dados?.length;
-    let mostrouCache=false;
-
-    if(cacheValido){
-        aplicarSemanaCarregada(cache.dados.map(r=>capturarValoresIniciais(Object.assign({},r))),dataDe,hoje);
-        if(dataDentroDaJanela(data,dataDe,hoje)){
-            aplicarFiltroData(data,"cache local");
-            mostrouCache=true;
-        }
-    }
-
-    if(!mostrouCache){
-        setStatus("Carregando planilha...","load");
-        window.portalMostrarCarregando?.("Carregando liberação");
-    }
-
-    try {
-        const res=await apiGet({recurso:"acompanhamento",data_de:dataDe,data_ate:hoje,ultima_semana:"0"});
-        const dados=(res.dados||[]).map(r=>capturarValoresIniciais(Object.assign({},r)));
-        aplicarSemanaCarregada(dados,dataDe,hoje);
-        salvarCacheLiberacao(dados,{data_de:dataDe,data_ate:hoje});
-        const origem=(res.meta&&res.meta.cache?"servidor (cache)":"planilha")+(mostrouCache?" · atualizado":"");
-        aplicarFiltroData(data,origem);
-    } finally {
-        window.portalOcultarCarregando?.();
-    }
+    await iniciarCarregamento(forceRefresh);
 }
 
 $("dataFiltro").addEventListener("change",()=>{
     const data=$("dataFiltro").value;
-    const hoje=isoHoje();
-    const dataDe=isoDiasAtras(DIAS_JANELA);
-    if(state.semana.length&&state.semanaDataDe===dataDe&&state.semanaDataAte===hoje&&dataDentroDaJanela(data,dataDe,hoje)){
+    const {dataDe,amanha}=intervaloJanela();
+    if(state.semana.length&&state.semanaDataDe===dataDe&&state.semanaDataAte===amanha&&dataDentroDaJanela(data,dataDe,amanha)){
         aplicarFiltroData(data,"memória");
         return;
     }
     carregar().catch(e=>setStatus(e.message,"erro"));
 });
-$("maquinaFiltro").addEventListener("change",()=>{aplicarFiltroMaquina();renderTabela();setStatus(formatNumber(state.dados.length)+" registro(s) · "+brDate($("dataFiltro").value),"ok");});
+$("maquinaFiltro").addEventListener("change",()=>{aplicarFiltroMaquina();renderTabela();setStatus(formatNumber(state.dados.length)+" registro(s) · "+rotuloData($("dataFiltro").value),"ok");});
 
 function iniciar(){
-    const hoje=isoHoje();
-    $("dataFiltro").value=hoje;
-    $("dataFiltro").min=isoDiasAtras(DIAS_JANELA);
-    $("dataFiltro").max=hoje;
-    carregar().catch(e=>setStatus(e.message,"erro"));
+    initEventosTabela();
+    configurarLimitesFiltroData();
+    definirDataFiltroHoje();
+    iniciarCarregamento().catch(e=>setStatus(e.message,"erro"));
 }
 if(window.portalUsuarioValidado) iniciar();
 else window.addEventListener("portal:usuario-validado", iniciar, { once: true });
