@@ -17,8 +17,10 @@ document.documentElement.classList.add("portal-auth-pending");
     <title>Dashboard Folha de Serviços - CIOP / TCGL</title>
     <script src="../assets/js/loading.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <link rel="stylesheet" href="../assets/css/portal-senha.css">
 <link rel="stylesheet" href="../assets/css/portal-titulos.css">
+<link rel="stylesheet" href="../assets/css/portal-filtros.css">
 <script type="module" src="../assets/js/auth.js"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
     <style>
@@ -73,50 +75,7 @@ document.documentElement.classList.add("portal-auth-pending");
         }
 
         .filter-wrapper {
-            background: var(--white);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 25px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-        }
-        .filter-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: var(--blue);
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .filter-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
-        }
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .filter-group label {
-            font-size: 12px;
-            font-weight: bold;
-            color: var(--muted);
-        }
-        .filter-group select, .filter-group input {
-            padding: 8px 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 14px;
-            color: var(--text);
-            outline: none;
-            background-color: #fafafa;
-            transition: border 0.2s;
-        }
-        .filter-group select:focus, .filter-group input:focus {
-            border-color: var(--blue2);
-            background-color: #fff;
+            margin-bottom: 24px;
         }
 
         .kpi-grid {
@@ -161,7 +120,14 @@ document.documentElement.classList.add("portal-auth-pending");
             flex-direction: column;
         }
         .chart-card.main-chart {
-            min-height: 350px;
+            min-height: auto;
+        }
+        .chart-card.main-chart .chart-container {
+            min-height: 280px;
+            background: linear-gradient(180deg, rgba(6,36,92,.02), transparent 45%);
+            border-radius: 10px;
+            overflow-x: auto;
+            overflow-y: hidden;
         }
         .chart-card.secondary-chart {
             min-height: 320px;
@@ -487,84 +453,7 @@ document.documentElement.classList.add("portal-auth-pending");
             stroke-linejoin: round;
         }
         .filter-wrapper {
-            position: relative;
-            overflow: hidden;
-            border-radius: 8px;
-            border: 1px solid #d9e2f0;
-            border-left: 4px solid var(--orange);
-            padding: 18px;
             margin-bottom: 24px;
-            box-shadow: 0 14px 36px rgba(6, 36, 92, 0.08);
-            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-        }
-        .filter-title {
-            margin-bottom: 16px;
-            padding-bottom: 14px;
-            border-bottom: 1px solid #e8edf6;
-            gap: 10px;
-            font-size: 15px;
-            line-height: 1.2;
-        }
-        .section-icon {
-            width: 34px;
-            height: 34px;
-            border-radius: 8px;
-            color: var(--blue);
-            background: #eef4ff;
-            border: 1px solid rgba(6, 36, 92, 0.12);
-        }
-        .filter-grid {
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 10px;
-        }
-        .filter-group {
-            gap: 6px;
-            border: 1px solid #e4eaf4;
-            border-radius: 7px;
-            padding: 8px 9px;
-            background: #f8fafc;
-            min-width: 0;
-        }
-        .filter-group label {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            color: #344054;
-            font-size: 11px;
-            line-height: 1;
-            letter-spacing: 0;
-            text-transform: uppercase;
-        }
-        .filter-label-icon {
-            width: 24px;
-            height: 24px;
-            border-radius: 7px;
-            background: #ffffff;
-            color: var(--blue2);
-            border: 1px solid #dce5f2;
-        }
-        .filter-label-icon svg {
-            width: 14px;
-            height: 14px;
-        }
-        .filter-group select,
-        .filter-group input {
-            width: 100%;
-            min-width: 0;
-            height: 34px;
-            padding: 4px 8px;
-            font-size: 12px;
-            border-radius: 6px;
-            border: 1px solid #cfd8e8;
-            background-color: #ffffff;
-            color: #182230;
-            font-weight: 600;
-            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
-        }
-        .filter-group select:focus,
-        .filter-group input:focus {
-            border-color: var(--orange);
-            box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.14);
         }
         .kpi-grid {
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -798,16 +687,16 @@ document.documentElement.classList.add("portal-auth-pending");
         .load-banner {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            padding: 10px 14px;
-            border-radius: 8px;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 999px;
             border: 1px solid #dbe3ef;
             background: #fff;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             color: var(--muted);
             box-shadow: 0 2px 8px rgba(6, 36, 92, 0.04);
+            white-space: nowrap;
         }
         .load-banner.ok { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
         .load-banner.erro { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
@@ -980,65 +869,20 @@ document.documentElement.classList.add("portal-auth-pending");
             }
 
             .filter-wrapper {
-                padding: 12px 14px;
+                padding: 16px 18px;
                 margin-bottom: 20px;
-            }
-
-            .filter-title {
-                margin-bottom: 10px;
-                padding-bottom: 8px;
-                font-size: 14px;
-            }
-
-            .filter-title .section-icon {
-                width: 26px;
-                height: 26px;
-            }
-
-            .filter-title .section-icon svg {
-                width: 14px;
-                height: 14px;
-            }
-
-            .filter-grid {
-                display: grid;
-                grid-template-columns: 72px minmax(118px, 0.95fr) minmax(118px, 0.95fr) minmax(0, 1.15fr) minmax(0, 1.25fr) minmax(0, 0.9fr) minmax(0, 1.05fr);
-                gap: 8px;
-                align-items: end;
-            }
-
-            .filter-group {
-                min-width: 0;
-                padding: 6px 7px;
-                gap: 4px;
-                border-radius: 6px;
-            }
-
-            .filter-group label {
-                min-height: 16px;
-                font-size: 9px;
-                gap: 4px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-
-            .filter-label-icon {
-                display: none;
-            }
-
-            .filter-group select,
-            .filter-group input {
-                height: 30px;
-                padding: 3px 6px;
-                font-size: 11px;
-                line-height: 1.1;
             }
         }
 
         @media (min-width: 700px) and (max-width: 999px) {
-            .filter-grid {
-                grid-template-columns: repeat(3, minmax(0, 1fr));
+            .filter-group--data {
+                flex: 0 0 calc(50% - 5px);
+                width: calc(50% - 5px);
+                max-width: 180px;
+            }
+            .filter-group--select {
+                flex: 1 1 calc(50% - 5px);
+                max-width: calc(50% - 5px);
             }
         }
 
@@ -1046,12 +890,12 @@ document.documentElement.classList.add("portal-auth-pending");
         /* Ajuste: botão Portal dentro da caixa e título de filtros centralizado */
         .filter-head {
             display: grid;
-            grid-template-columns: minmax(110px, 160px) 1fr minmax(110px, 160px);
+            grid-template-columns: minmax(110px, 160px) 1fr auto;
             align-items: center;
             gap: 12px;
-            margin-bottom: 16px;
-            padding-bottom: 14px;
-            border-bottom: 1px solid #e8edf6;
+            margin-bottom: 18px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(6, 36, 92, 0.08);
         }
 
         .filter-head .btn-portal {
@@ -1070,28 +914,41 @@ document.documentElement.classList.add("portal-auth-pending");
             width: auto;
         }
 
-        .filter-head-spacer {
-            display: block;
-            width: 100%;
-            height: 1px;
+        .filter-head .load-banner {
+            justify-self: end;
+            align-self: center;
+            margin: 0;
+            max-width: min(320px, 42vw);
+            padding: 8px 14px;
+            font-size: 12px;
+        }
+
+        .filter-head .load-banner #load-message {
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         @media (max-width: 650px) {
             .filter-head {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr auto;
                 gap: 10px;
             }
 
             .filter-head .btn-portal {
+                grid-column: 1 / -1;
                 justify-self: start;
             }
 
             .filter-head .filter-title {
-                justify-self: center;
+                grid-column: 1;
+                justify-self: start;
             }
 
-            .filter-head-spacer {
-                display: none;
+            .filter-head .load-banner {
+                grid-column: 2;
+                grid-row: 2;
+                justify-self: end;
+                max-width: min(240px, 58vw);
             }
         }
 
@@ -1249,7 +1106,7 @@ h1 {
     </div>
 </div>
 <div class="container">
-    
+
     <div class="filter-wrapper">
         <div class="filter-head">
             <a href="../index.html" class="btn-portal">
@@ -1257,40 +1114,39 @@ h1 {
                 <span>Portal</span>
             </a>
             <div class="filter-title"><span class="section-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16"/><path d="M7 12h10"/><path d="M10 19h4"/></svg></span><span>Filtros de Monitoramento</span></div>
-            <span class="filter-head-spacer" aria-hidden="true"></span>
+            <div class="load-banner load" id="load-banner">
+                <span class="load-dot" id="load-dot"></span>
+                <span id="load-message">Preparando dashboard...</span>
+            </div>
         </div>
         <div class="filter-grid">
-            <div class="filter-group">
-                <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="5" width="18" height="16" rx="2"/></svg></span><span>Ano</span></label>
-                <select id="filtro-ano" onchange="trocarAnoDashboard()"></select>
-            </div>
-            <div class="filter-group">
+            <div class="filter-group filter-group--data">
                 <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="m10 15-2 2 2 2"/><path d="M8 17h7"/></svg></span><span>Data de</span></label>
                 <input type="date" id="filtro-data-de" onchange="filtrarDashboard()">
             </div>
-            <div class="filter-group">
+            <div class="filter-group filter-group--data">
                 <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="m14 15 2 2-2 2"/><path d="M9 17h7"/></svg></span><span>Data até</span></label>
                 <input type="date" id="filtro-data-ate" onchange="filtrarDashboard()">
             </div>
-            <div class="filter-group">
+            <div class="filter-group filter-group--select">
                 <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.7-4 4.3-6 8-6s6.3 2 8 6"/></svg></span><span>Analista</span></label>
                 <select id="filtro-analista" onchange="filtrarDashboard()">
                     <option value="">Todos os Analistas</option>
                 </select>
             </div>
-            <div class="filter-group">
+            <div class="filter-group filter-group--select">
                 <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg></span><span>Ocorrência</span></label>
                 <select id="filtro-ocorrencia" onchange="filtrarDashboard()">
                     <option value="">Todas as Ocorrências</option>
                 </select>
             </div>
-            <div class="filter-group">
+            <div class="filter-group filter-group--select">
                 <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><path d="M9 18h4a5 5 0 0 0 0-10h-2"/></svg></span><span>Linha</span></label>
                 <select id="filtro-linha" onchange="filtrarDashboard()">
                     <option value="">Todas as Linhas</option>
                 </select>
             </div>
-            <div class="filter-group">
+            <div class="filter-group filter-group--select">
                 <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 12 2 2 4-5"/><circle cx="12" cy="12" r="9"/></svg></span><span>Situação</span></label>
                 <select id="filtro-situacao" onchange="filtrarDashboard()">
                     <option value="">Todas as Situações</option>
@@ -1321,11 +1177,6 @@ h1 {
                 <span class="kpi-value" id="kpi-frequente">Carregando...</span>
             </span>
         </div>
-    </div>
-
-    <div class="load-banner load" id="load-banner">
-        <span class="load-dot" id="load-dot"></span>
-        <span id="load-message">Preparando dashboard...</span>
     </div>
 
     <div class="dashboard-grid">
@@ -1417,8 +1268,13 @@ h1 {
     const ANO_ATUAL = new Date().getFullYear();
     const ANO_TODOS = "todos";
     const CACHE_KEY_PREFIX = "folha_dashboard_v9";
-    const CACHE_TTL_MS = 60 * 60 * 1000;
+    const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
     const FETCH_TIMEOUT_MS = 120000;
+    const FOLHA_DATA_BASE = "../assets/data/folha-servico";
+    const FOLHA_MANIFEST_URL = FOLHA_DATA_BASE + "/manifest.json";
+    const SYNC_RECENTES_LIMIT = 500;
+    const AUTO_SYNC_INTERVAL_MS = 5 * 60 * 1000;
+    const JSON_UPDATE_COOLDOWN_MS = 15 * 60 * 1000;
     const CORES_BARRAS = ["#6366f1", "#8b5cf6", "#ec4899", "#f97316", "#14b8a6", "#22c55e", "#eab308", "#3b82f6", "#ef4444", "#64748b"];
     const PALETA_OCORRENCIA = {
         "ATRASADO": "#2563eb",
@@ -1473,6 +1329,9 @@ h1 {
     const chartAnalyticsInstances = {};
     let carregamentoEmAndamento = false;
     let mapaCorPorOcorrencia = {};
+    let folhaManifest = null;
+    let autoSyncTimer = null;
+    let ultimaSolicitacaoJson = 0;
 
     const pluginValoresLaterais = {
         id: "valoresLaterais",
@@ -1511,7 +1370,10 @@ h1 {
     }
 
     function normalizarRegistro(item) {
+        const rowRaw = item?._row ?? item?.rowNumber ?? item?.linhaPlanilha ?? item?.linha_planilha;
+        const row = rowRaw != null && rowRaw !== "" ? Number(rowRaw) : null;
         return {
+            _row: row && row >= 2 ? row : null,
             data: pickCampo(item, "data"),
             hora: pickCampo(item, "hora"),
             ocorrencia: pickCampo(item, "ocorrencia"),
@@ -1713,6 +1575,102 @@ h1 {
         return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
     }
 
+    const ANALISTAS_CHART_THEME = {
+        navy: "#071f57",
+        muted: "#667085",
+        cyan: "#00d4ff",
+        blue: "#1359c7",
+        grid: "rgba(6,36,92,.06)",
+        tooltipBg: "rgba(7,31,87,.94)",
+        tooltipBorder: "rgba(0,212,255,.35)"
+    };
+
+    function rgbaHexAnalistas(hex, alpha) {
+        const h = String(hex || "").replace("#", "");
+        if (h.length !== 6) return "rgba(19,89,199," + alpha + ")";
+        const r = parseInt(h.slice(0, 2), 16);
+        const g = parseInt(h.slice(2, 4), 16);
+        const b = parseInt(h.slice(4, 6), 16);
+        return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+    }
+
+    function gradienteNeonColunaAnalista(chart, idx, total) {
+        const ctx = chart.ctx;
+        const chartArea = chart.chartArea;
+        if (!chartArea) return ANALISTAS_CHART_THEME.blue;
+        const t = total > 1 ? idx / (total - 1) : 0;
+        const corA = "hsl(" + (210 + t * 40) + ", 88%, 52%)";
+        const corB = "hsl(" + (195 + t * 30) + ", 95%, 62%)";
+        const g = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+        g.addColorStop(0, rgbaHexAnalistas(ANALISTAS_CHART_THEME.navy, 0.35));
+        g.addColorStop(0.35, corA);
+        g.addColorStop(1, corB);
+        return g;
+    }
+
+    function arredondarRetanguloAnalistas(ctx, x, y, w, h, r) {
+        if (typeof ctx.roundRect === "function") {
+            ctx.roundRect(x, y, w, h, r);
+            return;
+        }
+        ctx.rect(x, y, w, h);
+    }
+
+    const pluginTrilhaColunasAnalistas = {
+        id: "trilhaColunasAnalistas",
+        beforeDatasetsDraw(chart) {
+            const meta = chart.getDatasetMeta(0);
+            if (!meta?.data?.length || chart.config.options.indexAxis === "y") return;
+            const ctx = chart.ctx;
+            const chartArea = chart.chartArea;
+            ctx.save();
+            meta.data.forEach((bar) => {
+                const w = Math.abs(bar.width || 0);
+                const x = bar.x - w / 2;
+                const h = chartArea.bottom - chartArea.top;
+                ctx.fillStyle = "rgba(6,36,92,.05)";
+                ctx.beginPath();
+                arredondarRetanguloAnalistas(ctx, x, chartArea.top, w, h, 6);
+                ctx.fill();
+            });
+            ctx.restore();
+        }
+    };
+
+    const pluginBrilhoColunasAnalistas = {
+        id: "brilhoColunasAnalistas",
+        afterDatasetsDraw(chart) {
+            const meta = chart.getDatasetMeta(0);
+            if (!meta?.data?.length || chart.config.options.indexAxis === "y") return;
+            const ctx = chart.ctx;
+            ctx.save();
+            ctx.globalCompositeOperation = "lighter";
+            meta.data.forEach((bar) => {
+                const top = Math.min(bar.y, bar.base);
+                const h = Math.abs(bar.y - bar.base);
+                const w = Math.abs(bar.width || 0);
+                if (h < 8) return;
+                ctx.fillStyle = "rgba(255,255,255,.2)";
+                ctx.beginPath();
+                arredondarRetanguloAnalistas(ctx, bar.x - w / 2 + 2, top + 2, Math.max(w - 4, 0), Math.max(h * 0.25, 2), 4);
+                ctx.fill();
+            });
+            ctx.restore();
+        }
+    };
+
+    function nomeAnalistaCurto(nome) {
+        const partes = String(nome || "").trim().split(/\s+/).filter(Boolean);
+        if (partes.length <= 2) return partes.join(" ");
+        return partes[0] + " " + partes[partes.length - 1];
+    }
+
+    function pluginsAnalistasChart() {
+        const list = [pluginTrilhaColunasAnalistas, pluginBrilhoColunasAnalistas];
+        if (typeof ChartDataLabels !== "undefined") list.unshift(ChartDataLabels);
+        return list;
+    }
+
     function destruirGrafico(id) {
         if (chartAnalyticsInstances[id]) {
             chartAnalyticsInstances[id].destroy();
@@ -1728,6 +1686,44 @@ h1 {
         } else if (horizontal) {
             wrap.style.minHeight = "260px";
         }
+    }
+
+    function ajustarDimensoesGraficoAnalistas(canvas, labels, values) {
+        const wrap = canvas?.closest(".chart-container");
+        if (!wrap) return;
+
+        let inner = canvas.parentElement;
+        if (!inner.classList.contains("chart-analistas-inner")) {
+            const novoInner = document.createElement("div");
+            novoInner.className = "chart-analistas-inner";
+            novoInner.style.position = "relative";
+            wrap.insertBefore(novoInner, canvas);
+            novoInner.appendChild(canvas);
+            inner = novoInner;
+        }
+
+        const total = labels.length;
+        const maxValor = values.length ? Math.max(...values) : 0;
+        const colWidth = 56;
+        const cardWidth = wrap.closest(".dashboard-grid")?.clientWidth
+            || wrap.parentElement?.clientWidth
+            || 900;
+        const larguraMin = total * colWidth + 48;
+        const usaScroll = larguraMin > cardWidth - 24;
+
+        const maiorNome = labels.reduce((m, l) => Math.max(m, String(l).length), 0);
+        const espacoRotulos = maiorNome > 14 ? 52 : 40;
+        const altura = Math.min(620, Math.max(300, 220 + Math.log10(maxValor + 1) * 42 + espacoRotulos));
+
+        wrap.style.overflowX = usaScroll ? "auto" : "visible";
+        wrap.style.width = "100%";
+        wrap.style.minWidth = "100%";
+        wrap.style.minHeight = altura + "px";
+        wrap.style.height = altura + "px";
+
+        inner.style.width = usaScroll ? larguraMin + "px" : "100%";
+        inner.style.minWidth = usaScroll ? larguraMin + "px" : "100%";
+        inner.style.height = altura + "px";
     }
 
     function criarGraficoAnalytics(id, config) {
@@ -1828,8 +1824,206 @@ h1 {
         msg.textContent = texto;
     }
 
+    function montarTextoRegistros(qtd, filtrado) {
+        const n = Number(qtd || 0).toLocaleString("pt-BR");
+        return filtrado ? n + " registro(s) filtrado(s)" : n + " registro(s)";
+    }
+
+    function filtrosAtivos() {
+        const dDe = document.getElementById("filtro-data-de")?.value || "";
+        const dAte = document.getElementById("filtro-data-ate")?.value || "";
+        const analista = document.getElementById("filtro-analista")?.value || "";
+        const ocorrencia = document.getElementById("filtro-ocorrencia")?.value || "";
+        const linha = document.getElementById("filtro-linha")?.value || "";
+        const situacao = document.getElementById("filtro-situacao")?.value || "";
+        return !!(dDe || dAte || analista || ocorrencia || linha || situacao);
+    }
+
+    function atualizarBannerRegistros(qtd) {
+        setLoadStatus(montarTextoRegistros(qtd, filtrosAtivos()), "ok");
+    }
+
     function cacheKeyParaAno(ano) {
         return CACHE_KEY_PREFIX + "_" + String(ano);
+    }
+
+    function chaveLinhaPlanilha(item) {
+        const row = item?._row ?? item?.rowNumber ?? item?.linhaPlanilha ?? item?.linha_planilha;
+        const n = row != null && row !== "" ? Number(row) : 0;
+        return n >= 2 ? n : 0;
+    }
+
+    function assinaturaRegistro(item) {
+        return [
+            item?.data || "",
+            item?.hora || "",
+            item?.analista || "",
+            item?.ocorrencia || "",
+            item?.carro || item?.carro_sai || "",
+            item?.linha || "",
+            item?.situacao || ""
+        ].join("|");
+    }
+
+    function chaveRegistroUnica(item) {
+        const row = chaveLinhaPlanilha(item);
+        if (row >= 2) return "row:" + row;
+        return "sig:" + assinaturaRegistro(item);
+    }
+
+    function deduplicarRegistros(lista) {
+        const comRow = [];
+        const semRow = [];
+        (lista || []).forEach((item) => {
+            const registro = normalizarRegistro(item);
+            if (chaveLinhaPlanilha(registro) >= 2) comRow.push(registro);
+            else semRow.push(registro);
+        });
+        const mapaRow = new Map();
+        comRow.forEach((registro) => mapaRow.set(chaveLinhaPlanilha(registro), registro));
+        const sigsComRow = new Set(comRow.map(assinaturaRegistro));
+        const resultado = [...mapaRow.entries()]
+            .sort((a, b) => a[0] - b[0])
+            .map(([, registro]) => registro);
+        semRow.forEach((registro) => {
+            if (sigsComRow.has(assinaturaRegistro(registro))) return;
+            resultado.push(registro);
+        });
+        return resultado;
+    }
+
+    function mesclarRegistros(base, novos) {
+        return deduplicarRegistros([...(base || []), ...(novos || [])]);
+    }
+
+    async function buscarTotalPlanilha(ano) {
+        try {
+            const url = montarUrlDashboard(ano, 0).replace("limit=" + DASHBOARD_POR_PAGINA, "limit=1");
+            const raw = await fetchComTimeout(url);
+            return Number(raw?.meta?.total_planilha || 0) || 0;
+        } catch (_) {
+            return 0;
+        }
+    }
+
+    async function reconciliarContagemPlanilha(ano) {
+        const totalPlanilha = await buscarTotalPlanilha(ano);
+        if (!totalPlanilha) return false;
+        dadosMestres = deduplicarRegistros(dadosMestres);
+        if (dadosMestres.length === totalPlanilha) return false;
+        await atualizarDadosRemotos("planilha (contagem)", true, ano);
+        return true;
+    }
+
+    function anoDoRegistro(item) {
+        const iso = isoDataRegistro(item);
+        return iso ? parseInt(iso.slice(0, 4), 10) : null;
+    }
+
+    function urlSnapshotAno(ano, bust) {
+        const sufixo = bust ? "?ts=" + Date.now() : "";
+        if (anoEhTodos(ano)) return FOLHA_DATA_BASE + "/todos.json" + sufixo;
+        return FOLHA_DATA_BASE + "/ano-" + encodeURIComponent(String(ano)) + ".json" + sufixo;
+    }
+
+    async function carregarManifestFolha() {
+        try {
+            const res = await fetch(FOLHA_MANIFEST_URL, { cache: "no-store" });
+            if (!res.ok) return null;
+            return await res.json();
+        } catch (_) {
+            return null;
+        }
+    }
+
+    async function carregarSnapshotAno(ano, bust) {
+        try {
+            const res = await fetch(urlSnapshotAno(ano, bust), { cache: "no-store" });
+            if (!res.ok) return null;
+            const payload = await res.json();
+            const dados = normalizarLista(payload.dados || payload);
+            if (!dados.length) return null;
+            return {
+                dados,
+                meta: {
+                    ano: payload.ano != null ? payload.ano : ano,
+                    total: payload.total || dados.length,
+                    total_planilha: payload.total_planilha || payload.total || dados.length,
+                    versao: payload.versao || folhaManifest?.versao || DASHBOARD_VERSAO,
+                    snapshotEm: payload.atualizadoEm || folhaManifest?.atualizadoEm || ""
+                }
+            };
+        } catch (_) {
+            return null;
+        }
+    }
+
+    async function solicitarAtualizacaoJson(origem) {
+        if (Date.now() - ultimaSolicitacaoJson < JSON_UPDATE_COOLDOWN_MS) return;
+        ultimaSolicitacaoJson = Date.now();
+        try {
+            const url = URL_DO_SCRIPT_GOOGLE + "?atualizar_json=1&origem=" + encodeURIComponent(origem || "dashboard");
+            await fetchComTimeout(url);
+        } catch (error) {
+            console.warn("Falha ao solicitar atualização do JSON:", error);
+        }
+    }
+
+    async function sincronizarRegistrosRecentes(ano) {
+        const totalAntes = dadosMestres.length;
+        const raw = await fetchComTimeout(URL_DO_SCRIPT_GOOGLE + "?somente_recentes=1&limit=" + SYNC_RECENTES_LIMIT);
+        const novos = normalizarLista(raw).filter((item) => {
+            const anoRegistro = anoDoRegistro(item);
+            return anoEhTodos(ano) || String(anoRegistro) === String(ano);
+        });
+        let alterou = false;
+        if (novos.length) {
+            dadosMestres = mesclarRegistros(dadosMestres, novos);
+            const cacheAtual = lerCacheLocal(ano);
+            salvarCacheLocal(dadosMestres, {
+                ano,
+                total: dadosMestres.length,
+                total_planilha: cacheAtual?.meta?.total_planilha || dadosMestres.length,
+                versao: DASHBOARD_VERSAO,
+                origem: "json_incremental"
+            }, ano);
+            alterou = true;
+        }
+        const reconciliou = await reconciliarContagemPlanilha(ano);
+        if (!alterou && (dadosMestres.length !== totalAntes || reconciliou)) alterou = true;
+        if (alterou) solicitarAtualizacaoJson("sync_recentes");
+        return { novos: novos.length, alterou };
+    }
+
+    async function executarCicloSincronizacaoAutomatica() {
+        if (carregamentoEmAndamento || anoCarregado == null) return;
+        try {
+            const resultado = await sincronizarRegistrosRecentes(anoCarregado);
+            if (resultado.alterou) {
+                aplicarDadosDashboard(dadosMestres, "atualizado automaticamente", {});
+            }
+        } catch (error) {
+            console.warn("Sincronização automática:", error);
+        }
+    }
+
+    function iniciarSincronizacaoAutomatica() {
+        if (autoSyncTimer) clearInterval(autoSyncTimer);
+        autoSyncTimer = setInterval(executarCicloSincronizacaoAutomatica, AUTO_SYNC_INTERVAL_MS);
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden) executarCicloSincronizacaoAutomatica();
+        });
+    }
+
+    async function carregarAnosDisponiveisPreferindoJson() {
+        folhaManifest = await carregarManifestFolha();
+        if (folhaManifest?.anos?.length) {
+            anosDisponiveis = folhaManifest.anos
+                .map((item) => parseInt(String(item), 10))
+                .filter((item) => !Number.isNaN(item) && item >= 2000);
+            return;
+        }
+        await buscarAnosDisponiveis();
     }
 
     function anoEhTodos(ano) {
@@ -1858,37 +2052,26 @@ h1 {
         return anosDisponiveis;
     }
 
-    function anoInicialPadrao() {
-        if (anosDisponiveis.includes(ANO_ATUAL)) return String(ANO_ATUAL);
-        if (anosDisponiveis.length) return String(anosDisponiveis[0]);
-        return String(ANO_ATUAL);
-    }
+    function configurarLimitesDatasGlobais() {
+        const inputDe = document.getElementById("filtro-data-de");
+        const inputAte = document.getElementById("filtro-data-ate");
+        if (!inputDe || !inputAte) return;
 
-    function preencherSelectAnos() {
-        const select = document.getElementById("filtro-ano");
-        if (!select) return;
-        const valorAtual = select.value;
-        select.innerHTML = "";
+        const hoje = new Date();
+        const hojeIso = hoje.toISOString().slice(0, 10);
+        const anos = anosDisponiveis.length ? anosDisponiveis : [ANO_ATUAL];
+        const minAno = Math.min(...anos);
+        const maxAno = Math.max(...anos);
+        const inicio = minAno + "-01-01";
+        const fim = maxAno === hoje.getFullYear() ? hojeIso : maxAno + "-12-31";
 
-        const optTodos = document.createElement("option");
-        optTodos.value = ANO_TODOS;
-        optTodos.textContent = "Todos os anos";
-        select.appendChild(optTodos);
-
-        anosDisponiveis.forEach((ano) => {
-            const opt = document.createElement("option");
-            opt.value = String(ano);
-            opt.textContent = String(ano);
-            select.appendChild(opt);
-        });
-
-        const opcoesValidas = [ANO_TODOS, ...anosDisponiveis.map(String)];
-        if (valorAtual && opcoesValidas.includes(valorAtual)) {
-            select.value = valorAtual;
-        } else {
-            select.value = anoInicialPadrao();
-        }
-        atualizarLimitesDataFiltro(select.value);
+        inputDe.min = inicio;
+        inputDe.max = fim;
+        inputDe.value = "";
+        inputAte.min = inicio;
+        inputAte.max = fim;
+        inputAte.value = "";
+        requestAnimationFrame(ajustarLarguraFiltros);
     }
 
     function isoDataRegistro(item) {
@@ -1901,47 +2084,61 @@ h1 {
         return d;
     }
 
-    function atualizarLimitesDataFiltro(ano) {
-        const inputDe = document.getElementById("filtro-data-de");
-        const inputAte = document.getElementById("filtro-data-ate");
-        if (!inputDe || !inputAte) return;
-
-        const hoje = new Date();
-        const hojeIso = hoje.toISOString().slice(0, 10);
-
-        if (anoEhTodos(ano)) {
-            const anos = anosDisponiveis.length ? anosDisponiveis : [ANO_ATUAL];
-            const minAno = Math.min(...anos);
-            const maxAno = Math.max(...anos);
-            const inicio = minAno + "-01-01";
-            const fim = maxAno === hoje.getFullYear() ? hojeIso : maxAno + "-12-31";
-            inputDe.min = inicio;
-            inputDe.max = fim;
-            inputDe.value = inicio;
-            inputAte.min = inicio;
-            inputAte.max = fim;
-            inputAte.value = maxAno === hoje.getFullYear() ? hojeIso : "";
-            return;
-        }
-
-        const anoNum = parseInt(String(ano || ANO_ATUAL), 10) || ANO_ATUAL;
-        const inicioAno = anoNum + "-01-01";
-        const fimAno = anoNum === hoje.getFullYear() ? hojeIso : anoNum + "-12-31";
-
-        inputDe.min = inicioAno;
-        inputDe.max = fimAno;
-        inputDe.value = inicioAno;
-
-        inputAte.min = inicioAno;
-        inputAte.max = fimAno;
-        inputAte.value = anoNum === hoje.getFullYear() ? hojeIso : "";
-    }
-
     function limparCachesDashboardAntigos() {
         ["folha_dashboard_v3", "folha_dashboard_v4", "folha_dashboard_v5", "folha_dashboard_v6", "folha_dashboard_v7", "folha_dashboard_v8"].forEach((key) => {
             try { localStorage.removeItem(key); } catch (_) {}
             try { sessionStorage.removeItem(key); } catch (_) {}
         });
+    }
+
+    function parseTimestamp(val) {
+        if (!val) return 0;
+        const n = Date.parse(val);
+        return Number.isNaN(n) ? 0 : n;
+    }
+
+    function escolherFonteLocal(cache, snapshot) {
+        const cacheOk = cache?.dados?.length > 0;
+        const snapOk = snapshot?.dados?.length > 0;
+        if (!cacheOk && !snapOk) return null;
+
+        if (cacheOk && !snapOk) {
+            return { origem: "cache", rotulo: "cache local", dados: cache.dados, meta: cache.meta || {} };
+        }
+        if (!cacheOk && snapOk) {
+            const extra = snapshot.meta?.snapshotEm
+                ? " · snapshot: " + new Date(snapshot.meta.snapshotEm).toLocaleString("pt-BR")
+                : "";
+            return { origem: "json", rotulo: "arquivo JSON" + extra, dados: snapshot.dados, meta: snapshot.meta || {} };
+        }
+
+        const cacheTs = cache.ts || 0;
+        const snapTs = parseTimestamp(snapshot.meta?.snapshotEm);
+        const cacheQtd = cache.dados.length;
+        const snapQtd = snapshot.dados.length;
+        const cacheTotalPlanilha = cache.meta?.total_planilha || cacheQtd;
+        const snapTotalPlanilha = snapshot.meta?.total_planilha || snapQtd;
+
+        const cacheMaisCompleto = cacheQtd > snapQtd;
+        const cacheMaisRecente = cacheTs > snapTs && cacheQtd >= snapQtd;
+        const cacheAlinhadoPlanilha = cacheTotalPlanilha > snapTotalPlanilha;
+
+        if (cacheMaisCompleto || cacheMaisRecente || cacheAlinhadoPlanilha) {
+            return { origem: "cache", rotulo: "cache local (sincronizado)", dados: cache.dados, meta: cache.meta || {} };
+        }
+
+        const extra = snapshot.meta?.snapshotEm
+            ? " · snapshot: " + new Date(snapshot.meta.snapshotEm).toLocaleString("pt-BR")
+            : "";
+        return { origem: "json", rotulo: "arquivo JSON" + extra, dados: snapshot.dados, meta: snapshot.meta || {} };
+    }
+
+    function devePersistirSnapshotNoCache(cache, snapshot) {
+        if (!snapshot?.dados?.length) return false;
+        if (!cache?.dados?.length) return true;
+        const cacheTs = cache.ts || 0;
+        const snapTs = parseTimestamp(snapshot.meta?.snapshotEm);
+        return snapshot.dados.length > cache.dados.length || snapTs > cacheTs;
     }
 
     function lerCacheLocal(ano) {
@@ -2031,31 +2228,18 @@ h1 {
     }
 
     function aplicarDadosDashboard(dados, origem, meta) {
-        dadosMestres = dados;
+        dadosMestres = deduplicarRegistros(dados);
         gerarFiltrosDinamicos(dadosMestres);
         const filtrados = filtrarDadosAtuais();
-        const totalPlanilha = meta?.total_planilha;
-        const versao = meta?.versao || "";
-        const extraPlanilha = totalPlanilha && totalPlanilha !== dados.length
-            ? " · planilha: " + totalPlanilha.toLocaleString("pt-BR")
-            : "";
-        const extraVersao = versao ? " · " + versao : "";
-        const extraAno = meta?.ano
-            ? " · " + (anoEhTodos(meta.ano) ? "todos os anos" : "ano " + meta.ano)
-            : "";
         requestAnimationFrame(() => {
             inicializarGraficos(filtrados);
-            setLoadStatus(
-                dados.length.toLocaleString("pt-BR") + " registro(s) · origem: " + origem + extraAno + extraPlanilha + extraVersao,
-                "ok"
-            );
+            atualizarBannerRegistros(filtrados.length);
         });
     }
 
     async function atualizarDadosRemotos(origemLabel, silencioso, ano) {
         if (carregamentoEmAndamento) return;
-        const selectAno = document.getElementById("filtro-ano")?.value;
-        const anoAlvo = ano != null ? String(ano) : (selectAno || anoInicialPadrao());
+        const anoAlvo = ano != null ? String(ano) : ANO_TODOS;
         carregamentoEmAndamento = true;
         setLoadStatus(
             silencioso
@@ -2069,6 +2253,7 @@ h1 {
             anoCarregado = anoAlvo;
             salvarCacheLocal(dados, meta, anoAlvo);
             aplicarDadosDashboard(dados, origemLabel, meta);
+            solicitarAtualizacaoJson("reload_remoto");
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
             const cache = lerCacheLocal(anoAlvo);
@@ -2086,43 +2271,38 @@ h1 {
         }
     }
 
-    function trocarAnoDashboard() {
-        const ano = document.getElementById("filtro-ano")?.value || "";
-        if (!ano) return;
-        atualizarLimitesDataFiltro(ano);
-        if (ano === String(anoCarregado)) {
-            filtrarDashboard();
-            return;
-        }
-        const cache = lerCacheLocal(ano);
-        if (cache?.dados?.length) {
-            anoCarregado = ano;
-            aplicarDadosDashboard(cache.dados, "cache local", cache.meta || {});
-            atualizarDadosRemotos("planilha", true, ano);
-            return;
-        }
-        atualizarDadosRemotos("planilha", false, ano);
-    }
-
     async function carregarFolhaServico() {
         limparCachesDashboardAntigos();
-        setLoadStatus("Carregando anos disponíveis...", "load");
+        setLoadStatus("Carregando dados locais...", "load");
         try {
-            await buscarAnosDisponiveis();
+            await carregarAnosDisponiveisPreferindoJson();
         } catch (error) {
-            console.warn("Falha ao listar anos da planilha:", error);
+            console.warn("Falha ao listar anos:", error);
             anosDisponiveis = [ANO_ATUAL];
         }
-        preencherSelectAnos();
-        const anoInicial = document.getElementById("filtro-ano")?.value || anoInicialPadrao();
+        configurarLimitesDatasGlobais();
+        const anoInicial = ANO_TODOS;
         const cache = lerCacheLocal(anoInicial);
-        if (cache?.dados?.length) {
+        const snapshot = await carregarSnapshotAno(anoInicial, false);
+        const fonte = escolherFonteLocal(cache, snapshot);
+
+        if (fonte) {
             anoCarregado = anoInicial;
-            aplicarDadosDashboard(cache.dados, "cache local", cache.meta || {});
-            atualizarDadosRemotos("planilha", true, anoInicial);
+            aplicarDadosDashboard(fonte.dados, fonte.rotulo, fonte.meta || {});
+            if (fonte.origem === "json" && devePersistirSnapshotNoCache(cache, snapshot)) {
+                salvarCacheLocal(snapshot.dados, snapshot.meta || {}, anoInicial);
+            }
+            sincronizarRegistrosRecentes(anoInicial).then((resultado) => {
+                if (resultado.alterou) {
+                    aplicarDadosDashboard(dadosMestres, "dados atualizados", fonte.meta || {});
+                }
+            }).catch(() => {});
+            iniciarSincronizacaoAutomatica();
             return;
         }
-        atualizarDadosRemotos("planilha", false, anoInicial);
+
+        await atualizarDadosRemotos("planilha", false, anoInicial);
+        iniciarSincronizacaoAutomatica();
     }
 
     window.onload = () => window.portalAguardarUsuario?.(carregarFolhaServico);
@@ -2144,6 +2324,46 @@ h1 {
         populateSelect('filtro-ocorrencia', ocorrencias);
         populateSelect('filtro-linha', linhas);
         populateSelect('filtro-situacao', situacoes);
+        ajustarLarguraFiltros();
+    }
+
+    const LARGURA_FILTRO = { min: 140, max: 360, data: 172 };
+    let medidorFiltroEl = null;
+
+    function medidorTextoFiltro() {
+        if (!medidorFiltroEl) {
+            medidorFiltroEl = document.createElement("span");
+            medidorFiltroEl.setAttribute("aria-hidden", "true");
+            medidorFiltroEl.style.cssText = "position:absolute;left:-9999px;top:-9999px;visibility:hidden;white-space:nowrap;font:600 15px 'Segoe UI',system-ui,Arial,sans-serif";
+            document.body.appendChild(medidorFiltroEl);
+        }
+        return medidorFiltroEl;
+    }
+
+    function ajustarLarguraSelect(select) {
+        if (!select) return;
+        const grupo = select.closest(".filter-group");
+        const medidor = medidorTextoFiltro();
+        let maxW = 0;
+        [...select.options].forEach((opt) => {
+            medidor.textContent = opt.text;
+            maxW = Math.max(maxW, medidor.offsetWidth);
+        });
+        const largura = Math.min(LARGURA_FILTRO.max, Math.max(LARGURA_FILTRO.min, maxW + 40));
+        select.style.width = largura + "px";
+        if (grupo) {
+            grupo.style.width = largura + "px";
+            grupo.style.flex = "0 0 " + largura + "px";
+        }
+    }
+
+    function ajustarLarguraFiltros() {
+        document.querySelectorAll(".filter-group--data").forEach((grupo) => {
+            const larguraData = window.innerWidth >= 1000 ? 168 : LARGURA_FILTRO.data;
+            grupo.style.width = larguraData + "px";
+            grupo.style.flex = "0 0 " + larguraData + "px";
+        });
+        document.querySelectorAll(".filter-group--select select").forEach(ajustarLarguraSelect);
     }
 
     function populateSelect(id, set) {
@@ -2216,32 +2436,97 @@ h1 {
     function criarGraficoAnalistasClassico(labels, values) {
         const canvas = document.getElementById("chartAnalistas");
         if (!canvas) return;
-        const wrap = canvas.closest(".chart-container");
-        if (wrap) wrap.style.minHeight = "";
         if (chartAnalistasInstance) chartAnalistasInstance.destroy();
+
+        const total = labels.length;
+        const labelsCurto = labels.map(nomeAnalistaCurto);
+        const nomesCompletos = labels.slice();
+        ajustarDimensoesGraficoAnalistas(canvas, labelsCurto, values);
+        const fonteGrafico = (peso, tamanho) => ({
+            family: "'Segoe UI', system-ui, Arial, sans-serif",
+            weight: peso,
+            size: tamanho
+        });
+
         chartAnalistasInstance = new Chart(canvas.getContext("2d"), {
             type: "bar",
             data: {
-                labels,
+                labels: labelsCurto,
                 datasets: [{
                     label: "Quantidade de Ocorrências",
                     data: values,
-                    backgroundColor: "#0b3a8a",
-                    borderRadius: 4
+                    backgroundColor(ctx) {
+                        return gradienteNeonColunaAnalista(ctx.chart, ctx.dataIndex, total);
+                    },
+                    borderRadius: { topLeft: 10, topRight: 10, bottomLeft: 4, bottomRight: 4 },
+                    borderSkipped: false,
+                    maxBarThickness: 48
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: { duration: 900, easing: "easeOutQuart" },
+                layout: { padding: { top: 28, right: 12, left: 8, bottom: 8 } },
                 plugins: {
                     legend: { display: false },
-                    tooltip: { callbacks: { label: c => " Ocorrências: " + c.raw } }
+                    tooltip: {
+                        backgroundColor: ANALISTAS_CHART_THEME.tooltipBg,
+                        titleColor: "#fff",
+                        bodyColor: "#e2e8f0",
+                        borderColor: ANALISTAS_CHART_THEME.tooltipBorder,
+                        borderWidth: 1,
+                        padding: 12,
+                        cornerRadius: 10,
+                        displayColors: false,
+                        titleFont: fonteGrafico("700", 12),
+                        bodyFont: fonteGrafico("600", 11),
+                        callbacks: {
+                            title(items) { return nomesCompletos[items[0]?.dataIndex] || ""; },
+                            label(ctx) { return " Ocorrências: " + ctx.raw; }
+                        }
+                    },
+                    datalabels: {
+                        anchor: "end",
+                        align: "top",
+                        offset: 4,
+                        color: ANALISTAS_CHART_THEME.navy,
+                        backgroundColor: "rgba(255,255,255,.88)",
+                        borderRadius: 6,
+                        padding: { top: 3, bottom: 3, left: 6, right: 6 },
+                        font: fonteGrafico("800", 10),
+                        formatter(value) { return value; }
+                    }
                 },
                 scales: {
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } },
-                    x: { ticks: { autoSkip: false } }
+                    x: {
+                        offset: true,
+                        border: { display: false },
+                        grid: { display: false },
+                        ticks: {
+                            font: fonteGrafico("700", 10),
+                            color: ANALISTAS_CHART_THEME.navy,
+                            maxRotation: 0,
+                            minRotation: 0,
+                            autoSkip: false,
+                            align: "center",
+                            padding: 8
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        border: { display: false },
+                        grid: { color: ANALISTAS_CHART_THEME.grid, drawTicks: false },
+                        ticks: {
+                            stepSize: 1,
+                            font: fonteGrafico("600", 10),
+                            color: ANALISTAS_CHART_THEME.muted,
+                            padding: 6
+                        }
+                    }
                 }
-            }
+            },
+            plugins: pluginsAnalistasChart()
         });
     }
 
@@ -2425,10 +2710,7 @@ h1 {
         const dadosFiltrados = filtrarDadosAtuais();
         requestAnimationFrame(() => {
             inicializarGraficos(dadosFiltrados);
-            setLoadStatus(
-                dadosFiltrados.length.toLocaleString("pt-BR") + " registro(s) filtrado(s)",
-                "ok"
-            );
+            atualizarBannerRegistros(dadosFiltrados.length);
         });
     }
 </script>

@@ -93,6 +93,9 @@ function doGet(e) {
       meta: { versao: SCRIPT_VERSAO, origem: "somente_recentes", limit: limit }
     });
   }
+  if (String(params.atualizar_json || "") === "1") {
+    return json_(solicitarAtualizacaoJsonPortal_(params.origem || "get"));
+  }
   if (String(params.dashboard || "") === "1") {
     return json_(montarRespostaDashboard_(params));
   }
@@ -422,6 +425,7 @@ function isoDataDiasAtrasFolha_(dias) {
 
 function objetoDashboardSlim_(item) {
   return {
+    _row: item._row || null,
     data: item.data || "",
     hora: item.hora || "",
     ocorrencia: item.ocorrencia || "",
@@ -589,6 +593,7 @@ function criarRegistro_(params) {
     return valorGravacaoColuna_(titulo, params);
   });
   sheet.appendRow(linha);
+  try { solicitarAtualizacaoJsonPortal_("create"); } catch (_) {}
   return { ok: true, linha: sheet.getLastRow(), acao: "create" };
 }
 
@@ -609,6 +614,7 @@ function atualizarRegistro_(params) {
   });
 
   sheet.getRange(row, 1, 1, titulos.length).setValues([valoresAtuais]);
+  try { solicitarAtualizacaoJsonPortal_("update"); } catch (_) {}
   return { ok: true, linha: row, acao: "update" };
 }
 
@@ -729,4 +735,73 @@ function json_(payload) {
   return ContentService
     .createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/** Dispara atualização dos snapshots JSON no GitHub (debounce 15 min). Configure GITHUB_PAT nas propriedades do script. */
+function solicitarAtualizacaoJsonPortal_(origem) {
+  origem = origem || "apps-script";
+  var cacheKey = "folha-json-update-" + SCRIPT_VERSAO;
+  try {
+    var cache = CacheService.getScriptCache();
+    if (cache.get(cacheKey)) {
+      return {
+        ok: true,
+        status: "debounced",
+        origem: origem,
+        mensagem: "Atualização JSON já solicitada recentemente."
+      };
+    }
+    cache.put(cacheKey, "1", 900);
+  } catch (errCache) {}
+
+  var token = PropertiesService.getScriptProperties().getProperty("GITHUB_PAT");
+  if (!token) {
+    return {
+      ok: true,
+      status: "pendente_cron",
+      origem: origem,
+      mensagem: "GITHUB_PAT não configurado — JSON será atualizado pelo agendamento do GitHub Actions."
+    };
+  }
+
+  try {
+    var repo = PropertiesService.getScriptProperties().getProperty("GITHUB_REPO") || "odairmpicolo-blip/portalCIOP";
+    var response = UrlFetchApp.fetch("https://api.github.com/repos/" + repo + "/dispatches", {
+      method: "post",
+      contentType: "application/json",
+      headers: {
+        Authorization: "Bearer " + token,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28"
+      },
+      payload: JSON.stringify({
+        event_type: "folha-servico",
+        client_payload: { origem: origem, ts: new Date().toISOString() }
+      }),
+      muteHttpExceptions: true
+    });
+    var code = response.getResponseCode();
+    if (code === 204) {
+      return {
+        ok: true,
+        status: "disparado",
+        origem: origem,
+        mensagem: "Workflow de atualização JSON acionado."
+      };
+    }
+    return {
+      ok: false,
+      status: "erro_github",
+      origem: origem,
+      http: code,
+      detalhe: String(response.getContentText() || "").slice(0, 500)
+    };
+  } catch (errFetch) {
+    return {
+      ok: false,
+      status: "erro",
+      origem: origem,
+      erro: errFetch.message || String(errFetch)
+    };
+  }
 }
