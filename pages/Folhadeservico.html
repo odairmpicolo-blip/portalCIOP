@@ -18,6 +18,8 @@ document.documentElement.classList.add("portal-auth-pending");
     <script src="../assets/js/loading.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <link rel="stylesheet" href="../assets/css/portal-senha.css">
 <link rel="stylesheet" href="../assets/css/portal-titulos.css">
 <link rel="stylesheet" href="../assets/css/portal-filtros.css">
@@ -740,6 +742,80 @@ document.documentElement.classList.add("portal-auth-pending");
             stroke-linejoin: round;
             flex: 0 0 auto;
         }
+        .analytics-section-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .btn-pdf-oficina {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 40px;
+            padding: 8px 14px;
+            border: 1px solid #c7d7f5;
+            border-radius: 10px;
+            background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+            color: var(--blue);
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        .btn-pdf-oficina:hover:not(:disabled) {
+            background: #e8f0ff;
+            border-color: #9bb8ef;
+        }
+        .btn-pdf-oficina:disabled { opacity: 0.55; cursor: not-allowed; }
+        .btn-pdf-oficina svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .pdf-oficina-export { margin-bottom: 18px; }
+        .pdf-oficina-charts {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+        .pdf-sheet-header { display: none; padding: 0 0 12px; }
+        .pdf-sheet-top {
+            display: grid;
+            grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr);
+            align-items: center;
+            gap: 16px;
+            padding: 10px 14px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+        .pdf-sheet-top .logo-ciop { justify-self: start; height: 38px; object-fit: contain; }
+        .pdf-sheet-top .logo-tcgl { justify-self: end; height: 42px; object-fit: contain; }
+        .pdf-sheet-title-wrap { text-align: center; }
+        .pdf-sheet-title { margin: 0; color: var(--blue); font-size: 18px; font-weight: 900; }
+        .pdf-sheet-period { margin: 4px 0 0; color: var(--muted); font-size: 11px; font-weight: 700; line-height: 1.45; }
+        body.pdf-exporting-oficina .header,
+        body.pdf-exporting-oficina .filter-wrapper,
+        body.pdf-exporting-oficina .kpi-grid,
+        body.pdf-exporting-oficina .dashboard-grid,
+        body.pdf-exporting-oficina .analytics-section-head,
+        body.pdf-exporting-oficina .analytics-grid,
+        body.pdf-exporting-oficina .analytics-grid-5,
+        body.pdf-exporting-oficina footer { visibility: hidden !important; }
+        body.pdf-exporting-oficina .pdf-sheet-header { display: block; }
+        body.pdf-exporting-oficina .pdf-oficina-export {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 1200px;
+            padding: 16px;
+            background: var(--bg);
+            z-index: 9999;
+        }
+        @media (max-width: 1100px) {
+            .pdf-oficina-charts { grid-template-columns: 1fr; }
+        }
         .load-banner.ok { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
         .load-banner.erro { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
         .load-banner.load { border-color: #fed7aa; background: #fff7ed; color: #9a3412; }
@@ -1248,8 +1324,41 @@ h1 {
 
     <section class="analytics-section" aria-label="Análises operacionais">
         <div class="analytics-section-head">
-            <h2>Análises Operacionais</h2>
-            <p>Indicadores detalhados conforme os filtros aplicados</p>
+            <div>
+                <h2>Análises Operacionais</h2>
+                <p>Indicadores detalhados conforme os filtros aplicados</p>
+            </div>
+            <button type="button" class="btn-pdf-oficina" id="btn-pdf-oficina" title="Gerar PDF dos gráficos de Oficina e Borracharia">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
+                <span>PDF Oficina / Borracharia</span>
+            </button>
+        </div>
+        <div id="pdfOficinaExport" class="pdf-oficina-export">
+            <div class="pdf-sheet-header" aria-hidden="true">
+                <div class="pdf-sheet-top">
+                    <img class="logo-ciop" src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
+                    <div class="pdf-sheet-title-wrap">
+                        <h2 class="pdf-sheet-title">Folha de Serviço — Oficina e Borracharia</h2>
+                        <p class="pdf-sheet-period" id="pdfOficinaPeriodo"></p>
+                        <p class="pdf-sheet-period" id="pdfOficinaFiltros"></p>
+                    </div>
+                    <img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+                </div>
+            </div>
+            <div class="pdf-oficina-charts">
+                <div class="chart-card accent-sky">
+                    <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="10" rx="2"/><path d="M7 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg></span><span>Carros com Mais Problemas (Oficina / Borracharia)</span></div>
+                    <div class="chart-container"><canvas id="chartCarrosProblemas"></canvas></div>
+                </div>
+                <div class="chart-card accent-sky">
+                    <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span><span>Maiores Problemas de Oficina</span></div>
+                    <div class="chart-container"><canvas id="chartProblemasOficina"></canvas></div>
+                </div>
+                <div class="chart-card accent-teal">
+                    <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span>Carros com Mais Borracharia</span></div>
+                    <div class="chart-container"><canvas id="chartCarrosBorracharia"></canvas></div>
+                </div>
+            </div>
         </div>
         <div class="analytics-grid">
             <div class="chart-card accent-coral chart-wide">
@@ -1281,14 +1390,6 @@ h1 {
             <div class="chart-card accent-indigo">
                 <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span>Período de Mais Ocorrências</span></div>
                 <div class="chart-container"><canvas id="chartPeriodo"></canvas></div>
-            </div>
-            <div class="chart-card accent-sky">
-                <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="10" rx="2"/><path d="M7 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg></span><span>Carros com Mais Problemas</span></div>
-                <div class="chart-container"><canvas id="chartCarrosProblemas"></canvas></div>
-            </div>
-            <div class="chart-card accent-sky">
-                <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span><span>Maiores Problemas de Oficina</span></div>
-                <div class="chart-container"><canvas id="chartProblemasOficina"></canvas></div>
             </div>
             <div class="chart-card accent-coral">
                 <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2h4"/><path d="M12 14v8"/><path d="M4.5 10A7.5 7.5 0 0 1 19.5 10"/><path d="m8 22 4-2 4 2"/></svg></span><span>Linhas com Mais Colisão</span></div>
@@ -3488,6 +3589,15 @@ h1 {
             corTema: corOficina
         });
 
+        const carrosBorracharia = topContagem(contarPor(dados, d => d.carro, item =>
+            ocorrenciaEh(item.ocorrencia, "BORRACHARIA")), 8);
+        criarGraficoAnalytics("chartCarrosBorracharia", {
+            labels: carrosBorracharia.length ? carrosBorracharia.map(i => i.label) : ["Sem dados"],
+            values: carrosBorracharia.length ? carrosBorracharia.map(i => i.qtd) : [0],
+            horizontal: true,
+            corTema: corBorracharia
+        });
+
         const linhasColisao = topContagem(contarPor(dados, d => d.linha, item =>
             ocorrenciaEh(item.ocorrencia, "COLISAO", "COLISÃO")), 8);
         criarGraficoAnalytics("chartLinhasColisao", {
@@ -3563,6 +3673,109 @@ h1 {
             atualizarBannerRegistros(dadosFiltrados.length);
         });
     }
+
+    function formatarDataFiltroPdf(iso) {
+        if (!iso) return "—";
+        const p = String(iso).split("-");
+        return p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : iso;
+    }
+
+    function montarResumoFiltrosPdf() {
+        const partes = [];
+        const de = document.getElementById("filtro-data-de")?.value || "";
+        const ate = document.getElementById("filtro-data-ate")?.value || "";
+        partes.push("Período: " + formatarDataFiltroPdf(de) + " a " + formatarDataFiltroPdf(ate));
+
+        const analista = document.getElementById("filtro-analista")?.value || "";
+        const motSai = document.getElementById("filtro-mot-sai")?.value || "";
+        const ocorrencia = document.getElementById("filtro-ocorrencia")?.value || "";
+        const linha = document.getElementById("filtro-linha")?.value || "";
+        const situacao = document.getElementById("filtro-situacao")?.value || "";
+        if (analista) partes.push("Analista: " + analista);
+        if (motSai) partes.push("Motorista: " + motSai);
+        if (ocorrencia) partes.push("Ocorrência: " + ocorrencia);
+        if (linha) partes.push("Linha: " + linha);
+        if (situacao) partes.push("Situação: " + situacao);
+
+        const qtd = filtrarDadosAtuais().length;
+        partes.push(qtd.toLocaleString("pt-BR") + " registro(s) no filtro");
+        partes.push("Gerado em " + new Date().toLocaleString("pt-BR"));
+        return partes.join(" · ");
+    }
+
+    async function gerarPdfOficinaBorracharia() {
+        if (!window.jspdf) {
+            setLoadStatus("Biblioteca PDF indisponível.", "erro");
+            return;
+        }
+        if (!window.html2canvas) {
+            setLoadStatus("Biblioteca de captura indisponível.", "erro");
+            return;
+        }
+        const alvo = document.getElementById("pdfOficinaExport");
+        if (!alvo?.querySelector("canvas")) {
+            setLoadStatus("Carregue os gráficos antes de gerar o PDF.", "erro");
+            return;
+        }
+
+        const btn = document.getElementById("btn-pdf-oficina");
+        if (btn) btn.disabled = true;
+        setLoadStatus("Gerando PDF Oficina / Borracharia...", "load");
+        window.portalMostrarCarregando?.("Gerando PDF");
+
+        const de = document.getElementById("filtro-data-de")?.value || "";
+        const ate = document.getElementById("filtro-data-ate")?.value || "";
+        document.getElementById("pdfOficinaPeriodo").textContent =
+            "Período: " + formatarDataFiltroPdf(de) + " a " + formatarDataFiltroPdf(ate);
+        document.getElementById("pdfOficinaFiltros").textContent = montarResumoFiltrosPdf();
+        document.body.classList.add("pdf-exporting-oficina");
+
+        try {
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            const canvas = await html2canvas(alvo, {
+                scale: 2,
+                backgroundColor: "#f5f7fb",
+                logging: false,
+                useCORS: true,
+                windowWidth: alvo.scrollWidth,
+                windowHeight: alvo.scrollHeight
+            });
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+            const pageW = 297;
+            const pageH = 210;
+            const margin = 6;
+            const availW = pageW - margin * 2;
+            const availH = pageH - margin * 2;
+            const imgRatio = canvas.width / canvas.height;
+            let drawW = availW;
+            let drawH = drawW / imgRatio;
+            if (drawH > availH) {
+                drawH = availH;
+                drawW = drawH * imgRatio;
+            }
+            const x = margin + (availW - drawW) / 2;
+            const y = margin + (availH - drawH) / 2;
+            pdf.addImage(canvas.toDataURL("image/png"), "PNG", x, y, drawW, drawH);
+
+            const nomeDe = de || "inicio";
+            const nomeAte = ate || "fim";
+            pdf.save("folha-oficina-borracharia-" + nomeDe + "-" + nomeAte + ".pdf");
+            setLoadStatus("PDF Oficina / Borracharia gerado.", "ok");
+        } catch (error) {
+            console.error("Erro ao gerar PDF:", error);
+            setLoadStatus("Erro ao gerar PDF: " + (error.message || "falha na captura"), "erro");
+        } finally {
+            document.body.classList.remove("pdf-exporting-oficina");
+            if (btn) btn.disabled = false;
+            window.portalOcultarCarregando?.();
+        }
+    }
+
+    document.getElementById("btn-pdf-oficina")?.addEventListener("click", () => {
+        gerarPdfOficinaBorracharia().catch(() => {});
+    });
 </script>
 </body>
 </html>
