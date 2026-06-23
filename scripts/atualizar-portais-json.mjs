@@ -21,14 +21,25 @@ const LIBERACAO_URL = process.env.LIBERACAO_API_URL
 
 const DIAS_JANELA_LANCAMENTO = Number(process.env.LIBERACAO_DIAS_JANELA || 7);
 
+function isoDataLocal(offsetDias = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDias);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function isoHoje() {
-  return new Date().toISOString().slice(0, 10);
+  return isoDataLocal(0);
+}
+
+function isoAmanha() {
+  return isoDataLocal(1);
 }
 
 function isoDiasAtras(dias) {
-  const d = new Date();
-  d.setDate(d.getDate() - dias);
-  return d.toISOString().slice(0, 10);
+  return isoDataLocal(-dias);
 }
 
 async function fetchJson(url) {
@@ -163,10 +174,12 @@ async function atualizarLiberacao() {
   }
 
   const dataDeSemana = isoDiasAtras(DIAS_JANELA_LANCAMENTO);
-  console.log(`Baixando liberação lançamento (${dataDeSemana} a ${hoje})...`);
-  const acompanhamento = await buscarLiberacaoAcompanhamento(dataDeSemana, hoje);
+  const amanha = isoAmanha();
+  console.log(`Baixando liberação lançamento (${dataDeSemana} a ${amanha})...`);
+  const acompanhamento = await buscarLiberacaoAcompanhamento(dataDeSemana, amanha);
   escreverJson(path.join(dir, "acompanhamento-semana.json"), {
     ...acompanhamento,
+    data_ate: amanha,
     atualizadoEm
   });
 
@@ -203,7 +216,7 @@ async function atualizarLiberacao() {
     acompanhamento: {
       arquivo: "acompanhamento-semana.json",
       data_de: dataDeSemana,
-      data_ate: hoje,
+      data_ate: amanha,
       total: acompanhamento.dados.length
     },
     dias: diasManifest
