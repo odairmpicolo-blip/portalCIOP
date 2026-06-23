@@ -1187,6 +1187,12 @@ h1 {
                 </select>
             </div>
             <div class="filter-group filter-group--select">
+                <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c1.2-3.3 3.2-5 6-5s4.8 1.7 6 5"/><path d="M16 11a3 3 0 1 0-.8-5.9"/><path d="M17 20h4c-.5-2.4-1.8-4-4-4.8"/></svg></span><span>Mot. que sai</span></label>
+                <select id="filtro-mot-sai" onchange="filtrarDashboard()">
+                    <option value="">Todos os Motoristas</option>
+                </select>
+            </div>
+            <div class="filter-group filter-group--select">
                 <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg></span><span>Ocorrência</span></label>
                 <select id="filtro-ocorrencia" onchange="filtrarDashboard()">
                     <option value="">Todas as Ocorrências</option>
@@ -1909,10 +1915,11 @@ h1 {
         const dDe = document.getElementById("filtro-data-de")?.value || "";
         const dAte = document.getElementById("filtro-data-ate")?.value || "";
         const analista = document.getElementById("filtro-analista")?.value || "";
+        const motSai = document.getElementById("filtro-mot-sai")?.value || "";
         const ocorrencia = document.getElementById("filtro-ocorrencia")?.value || "";
         const linha = document.getElementById("filtro-linha")?.value || "";
         const situacao = document.getElementById("filtro-situacao")?.value || "";
-        return !!(dDe || dAte || analista || ocorrencia || linha || situacao);
+        return !!(dDe || dAte || analista || motSai || ocorrencia || linha || situacao);
     }
 
     function atualizarBannerRegistros(qtd) {
@@ -3109,20 +3116,28 @@ h1 {
     iniciarPreloadFolhaServico();
     window.onload = () => window.portalAguardarUsuario?.(carregarFolhaServico);
 
+    function motoristaQueSai(item) {
+        return pickCampo(item, "mot_que_sai", "mot_sai", "motorista");
+    }
+
     function gerarFiltrosDinamicos(dados) {
         const analistas = new Set();
+        const motoristas = new Set();
         const ocorrencias = new Set();
         const linhas = new Set();
         const situacoes = new Set();
 
         dados.forEach(item => {
             if(item.analista) analistas.add(item.analista);
+            const mot = motoristaQueSai(item);
+            if (mot) motoristas.add(mot);
             if(item.ocorrencia) ocorrencias.add(item.ocorrencia);
             if(item.linha) linhas.add(item.linha);
             if(item.situacao) situacoes.add(item.situacao);
         });
 
         populateSelect('filtro-analista', analistas);
+        populateSelect('filtro-mot-sai', motoristas);
         populateSelect('filtro-ocorrencia', ocorrencias);
         populateSelect('filtro-linha', linhas);
         populateSelect('filtro-situacao', situacoes);
@@ -3492,6 +3507,7 @@ h1 {
         const dDe = document.getElementById("filtro-data-de")?.value || "";
         const dAte = document.getElementById("filtro-data-ate")?.value || "";
         const analista = document.getElementById("filtro-analista").value;
+        const motSai = document.getElementById("filtro-mot-sai").value;
         const ocorrencia = document.getElementById("filtro-ocorrencia").value;
         const linha = document.getElementById("filtro-linha").value;
         const situacao = document.getElementById("filtro-situacao").value;
@@ -3501,6 +3517,7 @@ h1 {
             if (dDe && iso && iso < dDe) return false;
             if (dAte && iso && iso > dAte) return false;
             if (analista && item.analista !== analista) return false;
+            if (motSai && motoristaQueSai(item) !== motSai) return false;
             if (ocorrencia && item.ocorrencia !== ocorrencia) return false;
             if (linha && item.linha !== linha) return false;
             if (situacao && item.situacao !== situacao) return false;
