@@ -904,6 +904,7 @@ async function carregarDiaRemoto(data,vivo){
     const res=await apiGet({
         recurso:"acompanhamento",
         data,
+        limit:"0",
         ...(vivo?{vivo:"1"}:{})
     });
     return res.dados||[];
@@ -916,13 +917,16 @@ async function carregarHojeVivo(){
 function aplicarPlanilhaHoje(dadosPlanilha,origemBase){
     if(!ehDiaAtual($("dataFiltro").value)||!dadosPlanilha?.length) return false;
     const hoje=isoHoje();
+    const qtdAntes=state.semana.filter(r=>normalizarDataIsoRow(r)===hoje).length;
     const {dataDe,amanha}=intervaloJanela();
     state.semana=mesclarSemana(state.semana,dadosPlanilha);
     state.semanaDataDe=state.semanaDataDe||dataDe;
     state.semanaDataAte=amanha;
     salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte},true);
+    const qtdDepois=state.semana.filter(r=>normalizarDataIsoRow(r)===hoje).length;
     const base=origemBase?origemBase+" · ":"";
-    aplicarFiltroData(hoje,base+"planilha · hoje");
+    const extra=qtdDepois!==qtdAntes?" · "+qtdDepois+" registro(s)":"";
+    aplicarFiltroData(hoje,base+"planilha · hoje"+extra);
     return true;
 }
 

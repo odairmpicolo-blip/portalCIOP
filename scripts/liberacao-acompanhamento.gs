@@ -54,6 +54,14 @@ function gravarCacheLiberacao_(chave, obj) {
 }
 
 function montarJanelaLeituraLiberacao_(dataFiltro, dataDe, dataAte, ultimaSemanaFlag) {
+  if (dataFiltro) {
+    return {
+      ultimaSemanaOnly: false,
+      dataDe: dataFiltro,
+      dataAte: dataFiltro,
+      dataFiltro: dataFiltro
+    };
+  }
   var dataDeNorm = normalizarDataIsoLiberacao_(dataDe || "");
   var dataAteNorm = normalizarDataIsoLiberacao_(dataAte || "");
   var hojeIso = isoDataDiasAtrasLiberacao_(0);
@@ -398,7 +406,39 @@ function isoDataDiasAtrasLiberacao_(dias) {
   return Utilities.formatDate(d, Session.getScriptTimeZone(), "yyyy-MM-dd");
 }
 
+function lerAcompanhamentoDiaCompleto_(dataIso, limit, maquinaFiltro) {
+  const sheet = abrirAbaPorGid_(LIBERACAO_SPREADSHEET_ID, LIBERACAO_ACOMPANHAMENTO_GID);
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  if (lastRow < 2) return [];
+
+  const cabecalho = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(normalizarChaveLiberacao_);
+  const dados = [];
+  var row = 2;
+
+  while (row <= lastRow) {
+    const endRow = Math.min(lastRow, row + LIBERACAO_CHUNK_LINHAS - 1);
+    const numRows = endRow - row + 1;
+    const valores = sheet.getRange(row, 1, numRows, lastCol).getValues();
+    for (var i = 0; i < valores.length; i++) {
+      const rowNum = row + i;
+      const item = linhaAcompanhamentoParaObjeto_(cabecalho, valores[i], rowNum);
+      const iso = item.data_iso || normalizarDataIsoLiberacao_(item.data);
+      if (iso !== dataIso) continue;
+      if (!filtrarMaquinaLiberacao_(item, maquinaFiltro)) continue;
+      dados.push(item);
+    }
+    row = endRow + 1;
+  }
+
+  if (limit > 0 && dados.length > limit) dados.splice(limit);
+  return dados;
+}
+
 function lerAcompanhamentoLiberacao_(dataFiltro, limit, maquinaFiltro, janelaOpts) {
+  if (dataFiltro) {
+    return lerAcompanhamentoDiaCompleto_(dataFiltro, limit, maquinaFiltro);
+  }
   var ultimaSemanaOnly = true;
   var dataMinIso = "";
   var dataMaxIso = "";
