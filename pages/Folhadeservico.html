@@ -1343,9 +1343,13 @@ h1 {
 
     const FOLHA_DATA_BASE = resolverBasePortal() + "/assets/data/folha-servico";
     const FOLHA_MANIFEST_URL = FOLHA_DATA_BASE + "/manifest.json";
+    const FOLHA_MODO_JSON_HIBRIDO = true;
     const AUTO_SYNC_INTERVAL_MS = 5 * 60 * 1000;
     const SYNC_MARGEM_ANTERIORES = 10;
+    const RECONCILIAR_TAIL_LIMITE = SYNC_MARGEM_ANTERIORES;
     const JSON_UPDATE_COOLDOWN_MS = 15 * 60 * 1000;
+    const JSON_REFRESH_POLL_MS = 15 * 1000;
+    const JSON_REFRESH_TIMEOUT_MS = 12 * 60 * 1000;
     const CORES_BARRAS = ["#6366f1", "#8b5cf6", "#ec4899", "#f97316", "#14b8a6", "#22c55e", "#eab308", "#3b82f6", "#ef4444", "#64748b"];
     const PALETA_OCORRENCIA = {
         "ATRASADO": "#2563eb",
@@ -2075,10 +2079,198 @@ h1 {
         }
     }
 
+    async function buscarUltimosLancamentosPlanilha(limite) {
+        const n = Math.max(1, Math.min(limite || RECONCILIAR_TAIL_LIMITE, 100));
+        const url = URL_DO_SCRIPT_GOOGLE + "?somente_recentes=1&limit=" + n;
+        const raw = await fetchComTimeout(url);
+        if (raw?.ok === false) throw new Error(raw.erro || "somente_recentes indisponível");
+        return normalizarLista(raw);
+    }
+
+    function aplicarReconciliacaoTail(dados, recentes, maxRowPlanilha) {
+        const mapaRecentes = new Map();
+        (recentes || []).forEach((item) => {
+            const reg = normalizarRegistro(item);
+            const row = chaveLinhaPlanilha(reg);
+            if (row >= 2) mapaRecentes.set(row, reg);
+        });
+        if (!mapaRecentes.size) return dados || [];
+
+        const rowsRecentes = [...mapaRecentes.keys()];
+        const minRow = Math.min(...rowsRecentes);
+        const maxRow = Math.max(...rowsRecentes);
+        const maxRowEfetivo = maxRowPlanilha > 0 ? maxRowPlanilha : maxRow;
+
+        let lista = deduplicarRegistros(dados || []);
+        lista = lista.filter((item) => {
+            const row = chaveLinhaPlanilha(item);
+            if (row < 2) return true;
+            if (row > maxRowEfetivo) return false;
+            if (row >= minRow && row <= maxRow && !mapaRecentes.has(row)) return false;
+            return true;
+        });
+
+        return mesclarRegistros(lista, [...mapaRecentes.values()]);
+    }
+
+    async function reconciliarUltimosLancamentosPlanilha(silencioso) {
+        if (!FOLHA_MODO_JSON_HIBRIDO) return { alterou: false };
+
+        const limite = RECONCILIAR_TAIL_LIMITE;
+        if (!silencioso) {
+            setLoadStatus(
+                "Verificando últimos " + limite + " lançamentos na planilha (edições e exclusões)...",
+                "load"
+            );
+        }
+
+        try {
+            const recentes = await buscarUltimosLancamentosPlanilha(limite);
+            if (!recentes.length) return { alterou: false };
+
+            const totalPlanilha = await buscarTotalPlanilha(ANO_TODOS);
+            const maxRowPlanilha = totalPlanilha > 0 ? totalPlanilha + 1 : 0;
+
+            const assinaturasAntes = snapshotAssinaturas(dadosMestres);
+            const qtdAntes = deduplicarRegistros(dadosMestres).length;
+
+            dadosMestres = aplicarReconciliacaoTail(dadosMestres, recentes, maxRowPlanilha);
+            dadosMestres = deduplicarRegistros(dadosMestres);
+
+            const alterou = snapshotAssinaturas(dadosMestres) !== assinaturasAntes
+                || dadosMestres.length !== qtdAntes;
+
+            if (alterou) {
+                await salvarCacheLocal(dadosMestres, {
+                    ano: ANO_TODOS,
+                    total: dadosMestres.length,
+                    total_planilha: totalPlanilha || dadosMestres.length,
+                    versao: DASHBOARD_VERSAO,
+                    origem: "reconciliar_tail"
+                }, ANO_TODOS);
+                aplicarDadosDashboard(
+                    dadosMestres,
+                    "últimos lançamentos verificados",
+                    (await obterCacheLocal(ANO_TODOS))?.meta || {}
+                );
+            }
+
+            return { alterou, removidos: qtdAntes - dadosMestres.length };
+        } catch (error) {
+            console.warn("Reconciliação dos últimos lançamentos:", error);
+            return { alterou: false, erro: error };
+        }
+    }
+
     function sufixoCacheJson(bust) {
+        if (bust) return "?ts=" + Date.now();
         const versao = folhaManifest?.atualizadoEm || folhaManifest?.versao || "";
         if (versao) return "?v=" + encodeURIComponent(versao);
-        return bust ? "?ts=" + Date.now() : "";
+        return "";
+    }
+
+    function obterMarcaManifesto(manifest) {
+        const m = manifest || folhaManifest;
+        return String(m?.atualizadoEm || m?.versao || "");
+    }
+
+    function statusLinhaSnapshot(meta) {
+        const qtd = meta?.total || meta?.total_planilha || deduplicarRegistros(dadosMestres).length;
+        const quando = meta?.snapshotEm || meta?.atualizadoEm;
+        let texto = montarTextoRegistros(qtd, filtrosAtivos());
+        if (quando) {
+            texto += " · atualizado em " + new Date(quando).toLocaleString("pt-BR");
+        }
+        return texto;
+    }
+
+    async function fetchJsonAssetRede(urls, noStore) {
+        for (const url of urls) {
+            try {
+                const res = await fetch(url, noStore ? { cache: "no-store" } : {});
+                if (!res.ok) continue;
+                return await res.json();
+            } catch (_) { /* tenta próximo */ }
+        }
+        return null;
+    }
+
+    async function carregarSnapshotTodosDireto(bust) {
+        return await carregarSnapshotAno(ANO_TODOS, bust);
+    }
+
+    async function refrescarJsonFolhaEmBackground(silencioso) {
+        const marcaAntes = obterMarcaManifesto();
+        if (!silencioso) setLoadStatus("Baixando arquivo JSON...", "load");
+
+        const manifest = await fetchJsonAssetRede(urlsManifestFolha(!silencioso), !silencioso);
+        if (manifest) folhaManifest = manifest;
+        if (folhaManifest?.anos?.length) {
+            anosDisponiveis = folhaManifest.anos
+                .map((item) => parseInt(String(item), 10))
+                .filter((item) => !Number.isNaN(item) && item >= 2000);
+        }
+
+        const bust = !silencioso || obterMarcaManifesto() !== marcaAntes;
+        const snapshot = await carregarSnapshotTodosDireto(bust);
+
+        if (!snapshot?.dados?.length) {
+            await reconciliarUltimosLancamentosPlanilha(silencioso);
+            if (dadosMestres.length) {
+                const metaTail = (await obterCacheLocal(ANO_TODOS))?.meta || lerCacheMeta(ANO_TODOS) || {};
+                setLoadStatus(statusLinhaSnapshot(metaTail), "ok");
+            }
+            return null;
+        }
+
+        const cache = await obterCacheLocal(ANO_TODOS);
+        const fonte = escolherFonteLocal(cache, snapshot);
+        if (!fonte?.dados?.length) return snapshot;
+
+        const qtdAtual = deduplicarRegistros(dadosMestres).length;
+        const snapTs = parseTimestamp(fonte.meta?.snapshotEm || fonte.meta?.atualizadoEm);
+        const cacheTs = parseTimestamp(cache?.meta?.snapshotEm || cache?.meta?.atualizadoEm);
+        const deveAplicar = !qtdAtual
+            || fonte.dados.length > qtdAtual
+            || snapTs > cacheTs
+            || (silencioso && obterMarcaManifesto() !== marcaAntes);
+
+        if (deveAplicar) {
+            anoCarregado = ANO_TODOS;
+            await salvarCacheLocal(fonte.dados, fonte.meta, ANO_TODOS);
+            aplicarDadosDashboard(fonte.dados, "arquivo JSON", fonte.meta || {});
+        }
+
+        await reconciliarUltimosLancamentosPlanilha(silencioso);
+
+        const metaExibir = (await obterCacheLocal(ANO_TODOS))?.meta || fonte.meta || {};
+        if (silencioso) {
+            setLoadStatus(statusLinhaSnapshot(metaExibir), "ok");
+        } else {
+            setLoadStatus(statusLinhaSnapshot(metaExibir) + " · dados atualizados", "ok");
+        }
+        return snapshot;
+    }
+
+    async function aguardarNovoSnapshotJson(marcaInicial) {
+        const inicio = Date.now();
+        while (Date.now() - inicio < JSON_REFRESH_TIMEOUT_MS) {
+            const segundos = Math.round((Date.now() - inicio) / 1000);
+            setLoadStatus("Aguardando novo JSON no repositório (" + segundos + "s)...", "load");
+            await new Promise((resolve) => setTimeout(resolve, JSON_REFRESH_POLL_MS));
+
+            const manifest = await fetchJsonAssetRede(urlsManifestFolha(true), true);
+            if (manifest) {
+                folhaManifest = manifest;
+                const marca = obterMarcaManifesto(manifest);
+                if (marca && marca !== marcaInicial) return manifest;
+            }
+
+            const snapRaw = await fetchJsonAssetRede(urlsSnapshotAno(ANO_TODOS, true), true);
+            const marcaSnap = String(snapRaw?.atualizadoEm || "");
+            if (marcaSnap && marcaSnap !== marcaInicial) return folhaManifest;
+        }
+        return null;
     }
 
     function urlsManifestFolha(bust) {
@@ -2142,8 +2334,6 @@ h1 {
         const resultado = { manifest: null, cache: null, snapshot: null };
         try {
             resultado.cache = await obterCacheLocal(ANO_TODOS);
-            if (resultado.cache?.dados?.length) return resultado;
-
             resultado.manifest = await carregarManifestFolha();
             if (resultado.manifest?.anos?.length) {
                 folhaManifest = resultado.manifest;
@@ -2151,7 +2341,13 @@ h1 {
                     .map((item) => parseInt(String(item), 10))
                     .filter((item) => !Number.isNaN(item) && item >= 2000);
             }
-            resultado.snapshot = await carregarSnapshotTodos(ANO_TODOS);
+            if (FOLHA_MODO_JSON_HIBRIDO) {
+                if (!resultado.cache?.dados?.length) {
+                    resultado.snapshot = await carregarSnapshotTodosDireto(false);
+                }
+            } else if (!resultado.cache?.dados?.length) {
+                resultado.snapshot = await carregarSnapshotTodos(ANO_TODOS);
+            }
         } catch (error) {
             console.warn("Preload folha de serviço:", error);
         }
@@ -2206,6 +2402,19 @@ h1 {
     }
 
     function finalizarCargaFolhaServico(ano) {
+        if (FOLHA_MODO_JSON_HIBRIDO) {
+            if (dadosMestres.length) {
+                setLoadStatus(
+                    montarTextoRegistros(dadosMestres.length, filtrosAtivos()) + " · atualizando em segundo plano...",
+                    "load"
+                );
+            }
+            refrescarJsonFolhaEmBackground(true).catch((error) => {
+                console.warn("Refresh JSON em segundo plano:", error);
+                if (dadosMestres.length) atualizarBannerRegistros(filtrarDadosAtuais().length);
+            }).finally(() => iniciarSincronizacaoAutomatica());
+            return;
+        }
         reconciliarSeAtrasado(ano).finally(() => {
             iniciarSincronizacaoAutomatica();
         });
@@ -2216,6 +2425,29 @@ h1 {
         const btn = document.getElementById("btn-atualizar-servicos");
         atualizacaoManualEmAndamento = true;
         if (btn) btn.disabled = true;
+
+        if (FOLHA_MODO_JSON_HIBRIDO) {
+            setLoadStatus("Solicitando atualização dos dados...", "load");
+            try {
+                const marcaInicial = obterMarcaManifesto()
+                    || String(lerCacheMeta(ANO_TODOS)?.snapshotEm || lerCacheMeta(ANO_TODOS)?.atualizadoEm || "");
+                await solicitarAtualizacaoJson("dashboard_manual", true);
+                await reconciliarUltimosLancamentosPlanilha(false);
+                await aguardarNovoSnapshotJson(marcaInicial);
+                await refrescarJsonFolhaEmBackground(false);
+            } catch (error) {
+                console.warn("Atualização manual (JSON):", error);
+                setLoadStatus(
+                    "Erro ao atualizar: " + (error.message || "verifique a conexão"),
+                    "erro"
+                );
+            } finally {
+                atualizacaoManualEmAndamento = false;
+                if (btn) btn.disabled = false;
+            }
+            return;
+        }
+
         setLoadStatus("Buscando novos serviços na planilha...", "load");
         try {
             const totalPlanilha = await buscarTotalPlanilha(anoCarregado);
@@ -2278,7 +2510,10 @@ h1 {
 
     async function carregarSnapshotAno(ano, bust) {
         try {
-            const payload = await fetchJsonAsset(urlsSnapshotAno(ano, bust));
+            const urls = urlsSnapshotAno(ano, bust);
+            const payload = bust
+                ? await fetchJsonAssetRede(urls, true)
+                : await fetchJsonAsset(urls);
             if (!payload) return null;
             const dados = normalizarLista(payload.dados || payload);
             if (!dados.length) return null;
@@ -2320,8 +2555,8 @@ h1 {
         };
     }
 
-    async function solicitarAtualizacaoJson(origem) {
-        if (Date.now() - ultimaSolicitacaoJson < JSON_UPDATE_COOLDOWN_MS) return;
+    async function solicitarAtualizacaoJson(origem, forcar) {
+        if (!forcar && Date.now() - ultimaSolicitacaoJson < JSON_UPDATE_COOLDOWN_MS) return;
         ultimaSolicitacaoJson = Date.now();
         try {
             const url = URL_DO_SCRIPT_GOOGLE + "?atualizar_json=1&origem=" + encodeURIComponent(origem || "dashboard");
@@ -2332,6 +2567,15 @@ h1 {
     }
 
     async function executarCicloSincronizacaoAutomatica() {
+        if (FOLHA_MODO_JSON_HIBRIDO) {
+            if (carregamentoEmAndamento) return;
+            try {
+                await refrescarJsonFolhaEmBackground(true);
+            } catch (error) {
+                console.warn("Refresh JSON automático:", error);
+            }
+            return;
+        }
         if (carregamentoEmAndamento || anoCarregado == null) return;
         try {
             const resultado = await sincronizarIncremental(anoCarregado);
@@ -2778,11 +3022,15 @@ h1 {
             }
         }
         if (!anosDisponiveis.length) {
-            try {
-                await buscarAnosDisponiveis();
-            } catch (error) {
-                console.warn("Falha ao listar anos:", error);
+            if (FOLHA_MODO_JSON_HIBRIDO) {
                 anosDisponiveis = [ANO_ATUAL];
+            } else {
+                try {
+                    await buscarAnosDisponiveis();
+                } catch (error) {
+                    console.warn("Falha ao listar anos:", error);
+                    anosDisponiveis = [ANO_ATUAL];
+                }
             }
         }
 
@@ -2793,6 +3041,32 @@ h1 {
         const totalExibir = metaInstante?.total || metaInstante?.total_planilha || folhaManifest?.totais?.todos;
         if (totalExibir) {
             setLoadStatus(montarTextoRegistros(totalExibir) + " · preparando...", "load");
+        }
+
+        if (FOLHA_MODO_JSON_HIBRIDO) {
+            if (preload.cache?.dados?.length) {
+                anoCarregado = anoInicial;
+                aplicarDadosDashboard(preload.cache.dados, "cache local", preload.cache.meta || {});
+                finalizarCargaFolhaServico(anoInicial);
+                return;
+            }
+
+            if (preload.snapshot?.dados?.length) {
+                anoCarregado = anoInicial;
+                aplicarDadosDashboard(preload.snapshot.dados, "arquivo JSON", preload.snapshot.meta || {});
+                await salvarCacheLocal(preload.snapshot.dados, preload.snapshot.meta || {}, anoInicial);
+                finalizarCargaFolhaServico(anoInicial);
+                return;
+            }
+
+            setLoadStatus("Baixando arquivo JSON...", "load");
+            await refrescarJsonFolhaEmBackground(false);
+            if (dadosMestres.length) {
+                finalizarCargaFolhaServico(anoInicial);
+            } else {
+                setLoadStatus("Não foi possível carregar os dados. Toque em Atualizar.", "erro");
+            }
+            return;
         }
 
         if (preload.cache?.dados?.length) {
