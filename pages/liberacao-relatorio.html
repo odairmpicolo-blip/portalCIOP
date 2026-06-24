@@ -62,7 +62,8 @@ table.relatorio tbody tr.row-div td{box-shadow:inset 3px 0 0 var(--orange)}
 .empty{padding:48px 24px;text-align:center;color:var(--muted)}
 .empty-title{font-size:16px;font-weight:900;color:var(--blue);margin-bottom:6px}
 .page-footer{padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-top:1px solid var(--border);background:var(--white)}
-@media(max-width:720px){.header{grid-template-columns:1fr;text-align:center}}
+.toolbar-colunas{margin-bottom:14px}
+.filters-colunas{width:100%}
 </style>
 <link rel="stylesheet" href="../assets/css/portal-senha.css">
 <link rel="stylesheet" href="../assets/css/portal-titulos.css">
@@ -131,6 +132,20 @@ table.relatorio tbody tr.row-div td{box-shadow:inset 3px 0 0 var(--orange)}
             <span id="statusLine">Selecione o período e clique em Gerar relatório.</span>
         </div>
     </div>
+    <div class="toolbar-colunas filters-inline filters-colunas" aria-label="Filtros de colunas">
+        <div class="filter-field"><label for="filtroSaiu">Saiu no horário</label>
+            <select id="filtroSaiu"><option value="">Todos</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option></select>
+        </div>
+        <div class="filter-field"><label for="filtroTrajeto">Trajeto ocioso correto?</label>
+            <select id="filtroTrajeto"><option value="">Todos</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option><option value="SEM COMUNICAÇÃO">SEM COMUNICAÇÃO</option></select>
+        </div>
+        <div class="filter-field"><label for="filtroInicio">Início no horário</label>
+            <select id="filtroInicio"><option value="">Todos</option><option value="NO HORÁRIO">NO HORÁRIO</option><option value="ATRASADO">ATRASADO</option><option value="ADIANTADO">ADIANTADO</option></select>
+        </div>
+        <div class="filter-field"><label for="filtroSaidaColM">Saída atrasado/adiantado</label>
+            <select id="filtroSaidaColM"><option value="">Todos</option><option value="NO HORÁRIO">NO HORÁRIO</option><option value="ATRASADO">ATRASADO</option><option value="ADIANTADO">ADIANTADO</option></select>
+        </div>
+    </div>
 
     <section class="table-card">
         <div class="table-head">
@@ -187,7 +202,7 @@ const COLUNAS = [
     { chave: "observacoes", rotulo: "OBSERVAÇÕES", largura: 160, pdfWidth: 36, texto: true }
 ];
 
-const state = { linhas: [], bruto: [] };
+const state = { linhas: [], bruto: [], ultimaOrigem: "" };
 
 function $(id){ return document.getElementById(id); }
 function escapeHtml(v){ return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
@@ -229,6 +244,91 @@ function situacaoInicioHorario(diff){
     if(diff==null) return "";
     if(diff>=INICIO_NO_HORARIO_MIN&&diff<=INICIO_NO_HORARIO_MAX) return "NO HORÁRIO";
     return diff>INICIO_NO_HORARIO_MAX?"ATRASADO":"ADIANTADO";
+}
+function situacaoSaidaGaragem(diff){
+    if(diff==null) return "";
+    if(diff>=SAIU_SIM_MIN&&diff<=SAIU_SIM_MAX) return "NO HORÁRIO";
+    return diff>SAIU_SIM_MAX?"ATRASADO":"ADIANTADO";
+}
+function normalizarOpcaoFiltro(v){
+    return String(v||"")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g,"")
+        .toUpperCase()
+        .replace(/\s+/g," ")
+        .trim();
+}
+function rowComFormulas(row){
+    return aplicarFormulasLinha(Object.assign({},row));
+}
+function valorFiltroSaiuNoHorario(row){
+    const copia=rowComFormulas(row);
+    const v=String(val(copia,"saiu_no_horario")||"").trim();
+    if(v) return normalizarOpcaoFiltro(v);
+    const diff=diffMinutos(val(copia,"saida_real"),val(copia,"horario_saida_da_garagem"));
+    if(diff==null) return "";
+    return saiuNoHorarioSimNao(diff)==="SIM"?"SIM":"NÃO";
+}
+function valorFiltroInicioNoHorario(row){
+    const copia=rowComFormulas(row);
+    const v=String(val(copia,"inicio_no_horario")||"").trim();
+    if(v) return normalizarOpcaoFiltro(v);
+    const diff=diffMinutos(val(copia,"inicio_real"),val(copia,"horario_de_inicio"));
+    return diff==null?"":normalizarOpcaoFiltro(situacaoInicioHorario(diff));
+}
+function valorFiltroTrajeto(row){
+    return normalizarOpcaoFiltro(val(row,"trajeto_ocioso_correto"));
+}
+function valorFiltroSaidaColM(row){
+    const copia=rowComFormulas(row);
+    const v=String(val(copia,"saida_atrasado_adiantado")||"").trim();
+    if(v) return normalizarOpcaoFiltro(v);
+    const diff=diffMinutos(val(copia,"saida_real"),val(copia,"horario_saida_da_garagem"));
+    return diff==null?"":normalizarOpcaoFiltro(situacaoSaidaGaragem(diff));
+}
+function aplicarFiltrosColunas(dados){
+    const fSaiu=normalizarOpcaoFiltro($("filtroSaiu").value);
+    const fTrajeto=normalizarOpcaoFiltro($("filtroTrajeto").value);
+    const fInicio=normalizarOpcaoFiltro($("filtroInicio").value);
+    const fSaidaM=normalizarOpcaoFiltro($("filtroSaidaColM").value);
+    return dados.filter((row)=>{
+        if(fSaiu&&valorFiltroSaiuNoHorario(row)!==fSaiu) return false;
+        if(fTrajeto&&valorFiltroTrajeto(row)!==fTrajeto) return false;
+        if(fInicio&&valorFiltroInicioNoHorario(row)!==fInicio) return false;
+        if(fSaidaM&&valorFiltroSaidaColM(row)!==fSaidaM) return false;
+        return true;
+    });
+}
+function popularOpcoesTrajeto(dados){
+    const sel=$("filtroTrajeto");
+    const atual=sel.value;
+    const fixas=["","SIM","NÃO","SEM COMUNICAÇÃO"];
+    const extras=new Set();
+    (dados||[]).forEach((row)=>{
+        const v=valorFiltroTrajeto(row);
+        if(v&&!fixas.includes(v)) extras.add(v);
+    });
+    const opcoes=[...fixas.filter(Boolean),...[...extras].sort((a,b)=>a.localeCompare(b,"pt-BR"))];
+    sel.innerHTML=opcoes.map((op)=>{
+        const label=op||"Todos";
+        return `<option value="${escapeHtml(op)}">${escapeHtml(label)}</option>`;
+    }).join("");
+    if(opcoes.includes(atual)) sel.value=atual;
+}
+function reaplicarFiltrosLocais(){
+    if(!state.bruto.length) return;
+    const dataDe=$("dataDe").value;
+    const dataAte=$("dataAte").value;
+    if(!dataDe||!dataAte) return;
+    const filtrados=aplicarFiltrosColunas(ordenarLinhas(filtrarLinhas(state.bruto,dataDe,dataAte)));
+    state.linhas=filtrados.map(linhaParaRelatorio);
+    renderTabela();
+    const origemTxt=state.ultimaOrigem?` · ${state.ultimaOrigem}`:"";
+    if(!state.linhas.length){
+        setStatus(`Nenhum registro com os filtros entre ${brDate(dataDe)} e ${brDate(dataAte)}.${origemTxt}`,"erro");
+    }else{
+        setStatus(`${state.linhas.length.toLocaleString("pt-BR")} registro(s) · ${brDate(dataDe)} a ${brDate(dataAte)}${origemTxt}`,"ok");
+    }
 }
 function aplicarFormulasLinha(row){
     const diffSaida=diffMinutos(val(row,"saida_real"),val(row,"horario_saida_da_garagem"));
@@ -329,7 +429,9 @@ async function gerarRelatorio(){
             onProgress:(msg)=>setStatus(msg,"load")
         });
         state.bruto=resultado.dados;
-        const filtrados=ordenarLinhas(filtrarLinhas(resultado.dados,dataDe,dataAte));
+        state.ultimaOrigem=resultado.origem||"";
+        popularOpcoesTrajeto(state.bruto);
+        const filtrados=aplicarFiltrosColunas(ordenarLinhas(filtrarLinhas(resultado.dados,dataDe,dataAte)));
         state.linhas=filtrados.map(linhaParaRelatorio);
         renderTabela();
         const origemTxt=resultado.origem?` · ${resultado.origem}`:"";
@@ -387,6 +489,9 @@ function iniciar(){
     renderCabecalho();
     renderTabela();
     $("btnGerar").addEventListener("click",()=>gerarRelatorio());
+    ["filtroSaiu","filtroTrajeto","filtroInicio","filtroSaidaColM"].forEach((id)=>{
+        $(id).addEventListener("change",()=>reaplicarFiltrosLocais());
+    });
     $("btnCsv").addEventListener("click",()=>exportar("csv"));
     $("btnExcel").addEventListener("click",()=>exportar("xlsx"));
     $("btnPdf").addEventListener("click",()=>exportar("pdf"));
