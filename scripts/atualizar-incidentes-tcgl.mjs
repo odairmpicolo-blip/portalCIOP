@@ -289,6 +289,20 @@ function applyTipoVazio(row) {
   return row;
 }
 
+function ensureTipoOriginal(row) {
+  const tipo = String(row.tipo || "").trim();
+  const original = String(row.tipoOriginal || "").trim();
+  if (original && original.toUpperCase() !== "VAZIO") {
+    row.tipoOriginal = original;
+    if (!tipo || tipo.toUpperCase() === "VAZIO") row.tipo = original;
+  } else if (tipo && tipo.toUpperCase() !== "VAZIO") {
+    row.tipoOriginal = tipo;
+  } else {
+    row.tipoOriginal = original || tipo;
+  }
+  return row;
+}
+
 function vehicleNumber(value) {
   const text = String(value || '').trim();
   const match = text.match(/^([^\s-]+)/);
@@ -324,6 +338,7 @@ async function loadChunk(jar, start, length, allowRelogin = true) {
 
 function normalize(row) {
   const dateTime = splitDateTime(row.AddDTS);
+  const tipoOriginal = String(row.IncidentTypeName || '').trim();
   return {
     incidentId: String(row.IncidentID || row.IncidentNr || ''),
     id: String(row.IncidentNr || ''),
@@ -332,7 +347,8 @@ function normalize(row) {
     veiculo: vehicleNumber(row.VehicleDescription),
     linha: String(row.routename || ''),
     criadoPor: String(row.CreatedBy || ''),
-    tipo: String(row.IncidentTypeName || ''),
+    tipo: tipoOriginal,
+    tipoOriginal,
     proprietario: String(row.OwnedBy || ''),
     estado: String(row.StateName || ''),
     natureOfProblem: '',
@@ -368,6 +384,8 @@ function readExistingPayload() {
       if (!isOnOrAfterMinDate(row)) continue;
       const key = rowKey(row);
       if (!key) continue;
+      ensureTipoOriginal(row);
+      applyTipoVazio(row);
       existing.rows.push(row);
       existing.rowMap.set(key, row);
       existing.processedIds.add(key);
@@ -467,12 +485,14 @@ function mergeRows(newRows, existing) {
       row.natureOfProblem = String(old.natureOfProblem || '');
       row.instructions = String(old.instructions || '');
     }
+    ensureTipoOriginal(row);
     if (key) used.add(key);
     merged.push(row);
   }
   for (const row of existing.rows) {
     const key = rowKey(row);
     if (key && used.has(key)) continue;
+    ensureTipoOriginal(row);
     merged.push(row);
     if (key) used.add(key);
   }
@@ -516,7 +536,10 @@ while (total === null || start < total) {
 
 const mergedRows = mergeRows(rows, existingPayload).filter(isOnOrAfterMinDate);
 await enrichDetails(jar, mergedRows, mergedRows);
-mergedRows.forEach(applyTipoVazio);
+mergedRows.forEach((row) => {
+  ensureTipoOriginal(row);
+  applyTipoVazio(row);
+});
 const finalRows = mergedRows.filter(isOnOrAfterMinDate);
 const processedIds = Array.from(new Set(finalRows.map(rowKey).filter(Boolean)));
 const checkedDetailIds = Array.from(existingPayload.checkedDetailIds);
