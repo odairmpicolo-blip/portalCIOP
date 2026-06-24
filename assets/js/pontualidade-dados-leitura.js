@@ -1,6 +1,3 @@
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { app } from "./portal-firestore.js";
-import { carregarCenarioPontualidadeFirestore, normalizarDataIso } from "./pontualidade-firestore.js";
 import { carregarSnapshotAws } from "./portal-aws-config.js";
 
 export const PONTUALIDADE_DATA_BASE = "../assets/data/pontualidade";
@@ -10,6 +7,15 @@ export const CENARIOS_URL = {
   padrao: "https://script.google.com/macros/s/AKfycbwp-s3tzcxQl0gsm20zSfBb7Rw0bQwKnIX0hB9j_nLDIALZKvu3xeGL9G1jo-SSsXhQ9A/exec",
   alternativo: "https://script.google.com/macros/s/AKfycbypfszDiFW2RTgoIvnzSYNSHALfCePOINDaFfcViFIcYqXEj3-O9NXsbs-mdRJ2I2jF/exec"
 };
+
+function normalizarDataIso(row) {
+  const bruto = row?.date || row?.data || row?.data_iso || "";
+  const text = String(bruto).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+  const p = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (p) return `${p[3]}-${p[1].padStart(2, "0")}-${p[2].padStart(2, "0")}`;
+  return "";
+}
 
 function parsePercentValue(value) {
   if (value === null || value === undefined || value === "") return 0;
@@ -63,12 +69,6 @@ function withTimeout(promise, ms) {
   ]);
 }
 
-async function aguardarAuthFirestore() {
-  const auth = getAuth(app);
-  if (typeof auth.authStateReady === "function") await auth.authStateReady();
-  return auth.currentUser;
-}
-
 async function carregarJsonCenario(cenario) {
   try {
     const res = await fetch(`${PONTUALIDADE_DATA_BASE}/${encodeURIComponent(cenario)}.json?t=${Date.now()}`, { cache: "no-store" });
@@ -79,12 +79,6 @@ async function carregarJsonCenario(cenario) {
   } catch (_) {
     return { meta: null, dados: [] };
   }
-}
-
-async function carregarFirestore(cenario) {
-  await aguardarAuthFirestore();
-  const res = await carregarCenarioPontualidadeFirestore(cenario);
-  return res?.dados || [];
 }
 
 async function carregarPlanilha(cenario) {
@@ -104,30 +98,26 @@ async function carregarAws(cenario) {
   return normalizarLinhasPontualidade(bruto);
 }
 
-/** Fluxo único de leitura por cenário: AWS → Firestore → JSON → planilha. */
+/** Fluxo de leitura por cenário: AWS → JSON → planilha. */
 export async function carregarDadosPontualidade(cenario, { onProgress } = {}) {
   const tentativas = [];
   const origens = [];
 
-  onProgress?.("Consultando AWS, Firestore e JSON...");
-  const [awsRes, fsRes, jsonRes] = await Promise.allSettled([
+  onProgress?.("Consultando AWS e JSON...");
+  const [awsRes, jsonRes] = await Promise.allSettled([
     withTimeout(carregarAws(cenario), 15000),
-    withTimeout(carregarFirestore(cenario), 30000),
     withTimeout(carregarJsonCenario(cenario), 15000)
   ]);
 
   const aws = awsRes.status === "fulfilled" ? awsRes.value : [];
-  const firestore = fsRes.status === "fulfilled" ? fsRes.value : [];
   const jsonPack = jsonRes.status === "fulfilled" ? jsonRes.value : { meta: null, dados: [] };
   const json = jsonPack.dados || [];
 
   tentativas.push(`AWS: ${aws.length}`);
-  tentativas.push(`Firestore: ${firestore.length}`);
   tentativas.push(`JSON: ${json.length}`);
 
-  let dados = mesclarPorData([json, firestore, aws]);
+  let dados = mesclarPorData([json, aws]);
   if (aws.length) origens.push("AWS");
-  if (firestore.length) origens.push("Firestore");
   if (json.length) origens.push("JSON");
 
   onProgress?.("Complementando com planilha...");

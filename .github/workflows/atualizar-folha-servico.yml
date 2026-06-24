@@ -58,25 +58,6 @@ jobs:
             assets/data/autuacoes/*.json
             assets/data/liberacao/*.json
 
-      - name: Instalar dependências
-        run: npm ci
-
-      - name: Importar snapshots no Firestore
-        env:
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          FIREBASE_SA_PATH: ${{ runner.temp }}/firebase-sa.json
-        run: |
-          if [ -z "${FIREBASE_SERVICE_ACCOUNT_JSON}" ]; then
-            echo "FIREBASE_SERVICE_ACCOUNT não configurado — import Firestore ignorado."
-            exit 0
-          fi
-          printf '%s' "${FIREBASE_SERVICE_ACCOUNT_JSON}" > "${FIREBASE_SA_PATH}"
-          export FIREBASE_SERVICE_ACCOUNT="${FIREBASE_SA_PATH}"
-          npm run import-folha-servico-firestore
-          npm run import-pontualidade-firestore
-          npm run import-autuacoes-firestore
-          npm run import-liberacao-firestore
-
       - name: Importar snapshots no DSQL (planilha → JSON → AWS)
         env:
           DSQL_CLUSTER_ID: ${{ secrets.DSQL_CLUSTER_ID }}

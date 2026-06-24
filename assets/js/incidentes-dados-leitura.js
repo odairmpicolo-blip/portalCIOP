@@ -1,13 +1,18 @@
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { app } from "./portal-firestore.js";
-import {
-  carregarHistoricoIncidentesFirestore,
-  idIncidente,
-  normalizarDataIsoIncidente
-} from "./incidentes-firestore.js";
 import { carregarSnapshotAws } from "./portal-aws-config.js";
 
 export const INCIDENTES_JSON_URL = "../assets/data/incidentes-tcgl.json";
+
+export function normalizarDataIsoIncidente(row) {
+  if (row?.data_iso) return row.data_iso;
+  const br = String(row?.data || "").trim();
+  const p = br.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (p) return `${p[3]}-${p[1].padStart(2, "0")}-${p[2].padStart(2, "0")}`;
+  return /^\d{4}-\d{2}-\d{2}/.test(br) ? br.slice(0, 10) : "";
+}
+
+export function idIncidente(row) {
+  return String(row?.incidentId || row?.id || "").trim();
+}
 
 function chaveIncidente(row) {
   return idIncidente(row) || [
@@ -38,12 +43,6 @@ function withTimeout(promise, ms) {
   ]);
 }
 
-async function aguardarAuthFirestore() {
-  const auth = getAuth(app);
-  if (typeof auth.authStateReady === "function") await auth.authStateReady();
-  return auth.currentUser;
-}
-
 async function carregarJsonSnapshot() {
   try {
     const res = await fetch(`${INCIDENTES_JSON_URL}?t=${Date.now()}`, { cache: "no-store" });
@@ -54,12 +53,6 @@ async function carregarJsonSnapshot() {
   } catch (_) {
     return { payload: null, incidentes: [] };
   }
-}
-
-async function carregarFirestore(onProgress) {
-  await aguardarAuthFirestore();
-  const res = await carregarHistoricoIncidentesFirestore({ onProgress });
-  return res?.dados || [];
 }
 
 function montarPayload(basePayload, incidentes) {
@@ -79,31 +72,25 @@ async function carregarAws() {
   return { payload: snap.payload, incidentes };
 }
 
-/** Fluxo único de leitura: AWS → Firestore → JSON. */
+/** Fluxo de leitura: AWS → JSON (planilha). */
 export async function carregarDadosIncidentes({ onProgress } = {}) {
-  onProgress?.("Consultando AWS, Firestore e JSON...");
-  const [awsRes, fsRes, jsonRes] = await Promise.allSettled([
+  onProgress?.("Consultando AWS e JSON...");
+  const [awsRes, jsonRes] = await Promise.allSettled([
     withTimeout(carregarAws(), 15000),
-    withTimeout(carregarFirestore(onProgress), 90000),
     withTimeout(carregarJsonSnapshot(), 20000)
   ]);
 
   const awsPack = awsRes.status === "fulfilled" ? awsRes.value : { payload: null, incidentes: [] };
   const aws = awsPack.incidentes || [];
-  const firestore = fsRes.status === "fulfilled" ? fsRes.value : [];
   const jsonPack = jsonRes.status === "fulfilled" ? jsonRes.value : { payload: null, incidentes: [] };
   const json = jsonPack.incidentes || [];
-  const tentativas = [
-    `AWS: ${aws.length}`,
-    `Firestore: ${firestore.length}`,
-    `JSON: ${json.length}`
-  ];
+
+  const tentativas = [`AWS: ${aws.length}`, `JSON: ${json.length}`];
   const origens = [];
   if (aws.length) origens.push("AWS");
-  if (firestore.length) origens.push("Firestore");
   if (json.length) origens.push("JSON");
 
-  const incidentes = mesclarIncidentes([json, firestore, aws]);
+  const incidentes = mesclarIncidentes([json, aws]);
   const payload = montarPayload(jsonPack.payload, incidentes);
 
   return {
@@ -112,5 +99,3 @@ export async function carregarDadosIncidentes({ onProgress } = {}) {
     tentativas
   };
 }
-
-export { normalizarDataIsoIncidente, idIncidente };

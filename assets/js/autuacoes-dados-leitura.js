@@ -1,6 +1,3 @@
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { app } from "./portal-firestore.js";
-import { carregarTodosAutuacoesFirestore } from "./autuacoes-firestore.js";
 import { carregarSnapshotAws } from "./portal-aws-config.js";
 
 export const AUTUACOES_API_URL = "https://script.google.com/macros/s/AKfycbylz8scwboPQLeOKWUpw9YqKxomjts1aa8KUwodAuq5IE3T9s7RXd6GJcfMnS9qu6DI/exec";
@@ -38,12 +35,6 @@ function withTimeout(promise, ms) {
   ]);
 }
 
-async function aguardarAuthFirestore() {
-  const auth = getAuth(app);
-  if (typeof auth.authStateReady === "function") await auth.authStateReady();
-  return auth.currentUser;
-}
-
 function isoHoje() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -64,12 +55,6 @@ async function carregarJsonSnapshot() {
   } catch (_) {
     return { payload: null, rows: [] };
   }
-}
-
-async function carregarFirestore() {
-  await aguardarAuthFirestore();
-  const res = await carregarTodosAutuacoesFirestore();
-  return res?.dados || [];
 }
 
 async function carregarPlanilhaRecentes() {
@@ -107,34 +92,27 @@ async function carregarAws() {
   return { payload: snap.payload, rows };
 }
 
-/**
- * Fluxo único de leitura: AWS → Firestore → JSON → planilha (recente ou completa).
- * Somente consulta — dados vêm da planilha via import/admin.
- */
+/** Fluxo de leitura: AWS → JSON → planilha. */
 export async function carregarDadosAutuacoes({ onProgress } = {}) {
   const tentativas = [];
   const origens = [];
 
-  onProgress?.("Consultando AWS, Firestore e JSON...");
-  const [awsRes, fsRes, jsonRes] = await Promise.allSettled([
+  onProgress?.("Consultando AWS e JSON...");
+  const [awsRes, jsonRes] = await Promise.allSettled([
     withTimeout(carregarAws(), 15000),
-    withTimeout(carregarFirestore(), 45000),
     withTimeout(carregarJsonSnapshot(), 20000)
   ]);
 
   const awsPack = awsRes.status === "fulfilled" ? awsRes.value : { payload: null, rows: [] };
   const aws = awsPack.rows || [];
-  const firestore = fsRes.status === "fulfilled" ? fsRes.value : [];
   const jsonPayload = jsonRes.status === "fulfilled" ? jsonRes.value : { payload: null, rows: [] };
   const json = jsonPayload.rows || [];
 
   tentativas.push(`AWS: ${aws.length}`);
-  tentativas.push(`Firestore: ${firestore.length}`);
   tentativas.push(`JSON: ${json.length}`);
 
-  let dados = mesclarLinhas([json, firestore, aws]);
+  let dados = mesclarLinhas([json, aws]);
   if (aws.length) origens.push("AWS");
-  if (firestore.length) origens.push("Firestore");
   if (json.length) origens.push("JSON");
 
   onProgress?.("Complementando com planilha...");

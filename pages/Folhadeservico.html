@@ -1536,8 +1536,6 @@ h1 {
     const FOLHA_DATA_BASE = resolverBasePortal() + "/assets/data/folha-servico";
     const FOLHA_MANIFEST_URL = FOLHA_DATA_BASE + "/manifest.json";
     const FOLHA_MODO_JSON_HIBRIDO = true;
-    const FOLHA_USAR_FIRESTORE = true;
-    const FOLHA_FIRESTORE_DIAS_MERGE = 45;
     const AUTO_SYNC_INTERVAL_MS = 5 * 60 * 1000;
     const SYNC_MARGEM_ANTERIORES = 10;
     const RECONCILIAR_TAIL_LIMITE = SYNC_MARGEM_ANTERIORES;
@@ -2596,52 +2594,18 @@ h1 {
         }
     }
 
-    async function mesclarFirestoreNoDashboard() {
-        if (!FOLHA_USAR_FIRESTORE) return;
-        try {
-            const base = resolverBasePortal();
-            const mod = await import(base + "/assets/js/folha-dados-leitura.js?v=20260624b");
-            const isoLocal = (offset) => {
-                const d = new Date();
-                d.setDate(d.getDate() + offset);
-                return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-            };
-            const dataDe = isoLocal(-FOLHA_FIRESTORE_DIAS_MERGE);
-            const dataAte = isoLocal(0);
-            const { dados, origem } = await mod.carregarDadosFolhaFirestore(dataDe, dataAte);
-            if (!dados?.length) return;
-            dadosMestres = mesclarRegistros(dadosMestres, normalizarLista(dados));
-            aplicarDadosDashboard(dadosMestres, origem ? "Firestore · " + origem : "Firestore", { origem: "firestore" });
-            await salvarCacheLocal(dadosMestres, {
-                ano: ANO_TODOS,
-                total: dadosMestres.length,
-                origem: "firestore_merge",
-                versao: DASHBOARD_VERSAO
-            }, ANO_TODOS);
-        } catch (err) {
-            console.warn("Firestore folha:", err);
-        }
-    }
-
     function finalizarCargaFolhaServico(ano) {
         if (FOLHA_MODO_JSON_HIBRIDO) {
-            const posFirestore = () => {
-                if (dadosMestres.length) {
-                    setLoadStatus(
-                        montarTextoRegistros(dadosMestres.length, filtrosAtivos()) + " · atualizando em segundo plano...",
-                        "load"
-                    );
-                }
-                refrescarJsonFolhaEmBackground(true).catch((error) => {
-                    console.warn("Refresh JSON em segundo plano:", error);
-                    if (dadosMestres.length) atualizarBannerRegistros(filtrarDadosAtuais().length);
-                }).finally(() => iniciarSincronizacaoAutomatica());
-            };
-            if (FOLHA_USAR_FIRESTORE) {
-                mesclarFirestoreNoDashboard().finally(posFirestore);
-            } else {
-                posFirestore();
+            if (dadosMestres.length) {
+                setLoadStatus(
+                    montarTextoRegistros(dadosMestres.length, filtrosAtivos()) + " · atualizando em segundo plano...",
+                    "load"
+                );
             }
+            refrescarJsonFolhaEmBackground(true).catch((error) => {
+                console.warn("Refresh JSON em segundo plano:", error);
+                if (dadosMestres.length) atualizarBannerRegistros(filtrarDadosAtuais().length);
+            }).finally(() => iniciarSincronizacaoAutomatica());
             return;
         }
         reconciliarSeAtrasado(ano).finally(() => {

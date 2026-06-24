@@ -1010,7 +1010,7 @@ const BASE_CSV = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export
 const AUTO_FETCH_MS = 120000;
 const CACHE_TERMINAIS_KEY = "portal_terminais_v1";
 const AUTO_RENDER_MS = 30000;
-const TERMINAIS_USAR_FIRESTORE = true;
+const TERMINAIS_USAR_AWS_JSON = true;
 
 let REGISTROS = [];
 let DADOS = [];
@@ -1482,7 +1482,7 @@ async function carregarPlanilha(manual){
     }
     setErroFonte("");
     try {
-        if (TERMINAIS_USAR_FIRESTORE) {
+        if (TERMINAIS_USAR_AWS_JSON) {
             try {
                 const mod = await import("../assets/js/terminais-dados-leitura.js?v=20260624d");
                 const res = await mod.carregarDadosTerminais({
@@ -1493,7 +1493,7 @@ async function carregarPlanilha(manual){
                     return;
                 }
             } catch (moduleErr) {
-                console.warn("Firestore/AWS indisponível, usando planilha:", moduleErr);
+                console.warn("AWS/JSON indisponível, usando planilha:", moduleErr);
             }
         }
         const resultado = await Promise.allSettled([buscarAba(GID_DADOS), buscarAba(GID_PROGRAMACAO)]);

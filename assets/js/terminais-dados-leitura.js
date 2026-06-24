@@ -1,12 +1,27 @@
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { app } from "./portal-firestore.js";
-import {
-  carregarSnapshotTerminaisFirestore,
-  reidratarSnapshotTerminais
-} from "./terminais-firestore.js";
 import { carregarSnapshotAws } from "./portal-aws-config.js";
 
 export const TERMINAIS_JSON_URL = "../assets/data/terminais-agora.json";
+
+export function reidratarSnapshotTerminais(payload) {
+  if (!payload) return null;
+  return {
+    DADOS: payload.DADOS || [],
+    MAP_TERMINAL_TELEFONE: payload.MAP_TERMINAL_TELEFONE || {},
+    REGISTROS: (payload.REGISTROS || []).map((item) => ({
+      ...item,
+      data: item.data ? new Date(item.data) : null,
+      start: item.start ? new Date(item.start) : null,
+      end: item.end ? new Date(item.end) : null
+    })),
+    atualizadoEm: payload.atualizadoEm || null,
+    fonte: payload.fonte || ""
+  };
+}
+
+export function mapTerminalTelefoneFromPlain(obj) {
+  if (obj instanceof Map) return obj;
+  return new Map(Object.entries(obj || {}));
+}
 
 function withTimeout(promise, ms) {
   return Promise.race([
@@ -17,28 +32,14 @@ function withTimeout(promise, ms) {
   ]);
 }
 
-async function aguardarAuthFirestore() {
-  const auth = getAuth(app);
-  if (typeof auth.authStateReady === "function") await auth.authStateReady();
-  return auth.currentUser;
-}
-
 async function carregarJsonSnapshot() {
   try {
     const res = await fetch(`${TERMINAIS_JSON_URL}?t=${Date.now()}`, { cache: "no-store" });
     if (!res.ok) return null;
-    const payload = await res.json();
-    return reidratarSnapshotTerminais(payload);
+    return reidratarSnapshotTerminais(await res.json());
   } catch (_) {
     return null;
   }
-}
-
-async function carregarFirestore() {
-  await aguardarAuthFirestore();
-  const res = await carregarSnapshotTerminaisFirestore();
-  if (!res.ok || !res.payload) return null;
-  return reidratarSnapshotTerminais(res.payload);
 }
 
 async function carregarAws() {
@@ -58,27 +59,23 @@ function escolherSnapshot(candidatos) {
   return validos[0];
 }
 
-/** Fluxo único de leitura: AWS → Firestore → JSON. */
+/** Fluxo de leitura: AWS → JSON (planilha). */
 export async function carregarDadosTerminais({ onProgress } = {}) {
-  onProgress?.("Consultando AWS, Firestore e JSON...");
-  const [awsRes, fsRes, jsonRes] = await Promise.allSettled([
+  onProgress?.("Consultando AWS e JSON...");
+  const [awsRes, jsonRes] = await Promise.allSettled([
     withTimeout(carregarAws(), 20000),
-    withTimeout(carregarFirestore(), 30000),
     withTimeout(carregarJsonSnapshot(), 15000)
   ]);
 
   const aws = awsRes.status === "fulfilled" ? awsRes.value : null;
-  const firestore = fsRes.status === "fulfilled" ? fsRes.value : null;
   const json = jsonRes.status === "fulfilled" ? jsonRes.value : null;
   const snapshot = escolherSnapshot([
     aws ? { ...aws, _origem: "AWS" } : null,
-    firestore ? { ...firestore, _origem: "Firestore" } : null,
     json ? { ...json, _origem: "JSON" } : null
   ]);
 
   const origens = [];
   if (aws?.REGISTROS?.length) origens.push("AWS");
-  if (firestore?.REGISTROS?.length) origens.push("Firestore");
   if (json?.REGISTROS?.length) origens.push("JSON");
 
   return {
@@ -86,10 +83,7 @@ export async function carregarDadosTerminais({ onProgress } = {}) {
     origem: snapshot?._origem || origens.join(" · ") || "",
     tentativas: [
       `AWS: ${aws?.REGISTROS?.length || 0}`,
-      `Firestore: ${firestore?.REGISTROS?.length || 0}`,
       `JSON: ${json?.REGISTROS?.length || 0}`
     ]
   };
 }
-
-export { reidratarSnapshotTerminais, mapTerminalTelefoneFromPlain } from "./terminais-firestore.js";
