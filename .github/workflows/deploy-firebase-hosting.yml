@@ -15,19 +15,10 @@ jobs:
       - name: Baixar portal
         uses: actions/checkout@v4
 
-      - name: Configurar Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-
       - name: Publicar no Firebase Hosting
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ runner.temp }}/firebase-sa.json
-        run: |
-          if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]; then
-            echo "Configure o secret FIREBASE_SERVICE_ACCOUNT no repositório."
-            exit 1
-          fi
-          printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > "$FIREBASE_SERVICE_ACCOUNT"
-          export GOOGLE_APPLICATION_CREDENTIALS="$FIREBASE_SERVICE_ACCOUNT"
-          npx firebase-tools@latest deploy --only hosting --project portal-ciop
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: portal-ciop
+          channelId: live
