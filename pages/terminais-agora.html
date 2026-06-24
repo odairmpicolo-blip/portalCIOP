@@ -878,6 +878,8 @@ h1 {
 <link rel="stylesheet" href="../assets/css/portal-senha.css">
 <link rel="stylesheet" href="../assets/css/portal-titulos.css">
 <link rel="stylesheet" href="../assets/css/portal-filtros.css">
+<!-- Defina a URL da API AWS quando estiver no ar: -->
+<!-- <script>window.PORTAL_AWS_API_URL = "https://sua-api.amazonaws.com";</script> -->
 <script type="module" src="../assets/js/auth.js"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 </head>
@@ -912,7 +914,7 @@ h1 {
         </a>
         <div class="source-status" aria-live="polite">
             <span id="sourceDot" class="dot"></span>
-            <span id="sourceText">Aguardando leitura da planilha</span>
+            <span id="sourceText">Aguardando dados</span>
             <button class="btn btn-secondary btn-refresh" type="button" onclick="carregarPlanilha(true)">Atualizar</button>
         </div>
     </div>
@@ -1008,6 +1010,7 @@ const BASE_CSV = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export
 const AUTO_FETCH_MS = 120000;
 const CACHE_TERMINAIS_KEY = "portal_terminais_v1";
 const AUTO_RENDER_MS = 30000;
+const TERMINAIS_USAR_FIRESTORE = true;
 
 let REGISTROS = [];
 let DADOS = [];
@@ -1418,12 +1421,47 @@ function salvarCacheTerminais(payload) {
     } catch (error) {}
 }
 
+function mapFromPlain(obj){
+    if (obj instanceof Map) return obj;
+    return new Map(Object.entries(obj || {}));
+}
+function reidratarRegistros(regs){
+    return (regs || []).map(function(item){
+        return Object.assign({}, item, {
+            data: item.data ? new Date(item.data) : null,
+            start: item.start ? new Date(item.start) : null,
+            end: item.end ? new Date(item.end) : null
+        });
+    });
+}
 function aplicarCacheTerminais(cache) {
     DADOS = cache.DADOS || [];
-    MAP_TERMINAL_TELEFONE = cache.MAP_TERMINAL_TELEFONE || {};
-    REGISTROS = cache.REGISTROS || [];
+    MAP_TERMINAL_TELEFONE = mapFromPlain(cache.MAP_TERMINAL_TELEFONE);
+    REGISTROS = reidratarRegistros(cache.REGISTROS);
     atualizarSelectTerminais();
     render();
+}
+function aplicarSnapshotTerminais(snapshot, origem) {
+    DADOS = snapshot.DADOS || [];
+    MAP_TERMINAL_TELEFONE = mapFromPlain(snapshot.MAP_TERMINAL_TELEFONE);
+    REGISTROS = snapshot.REGISTROS || [];
+    salvarCacheTerminais({
+        DADOS,
+        MAP_TERMINAL_TELEFONE: Object.fromEntries(MAP_TERMINAL_TELEFONE),
+        REGISTROS: (snapshot.REGISTROS || []).map(function(item){
+            return Object.assign({}, item, {
+                data: item.data instanceof Date ? item.data.toISOString() : item.data,
+                start: item.start instanceof Date ? item.start.toISOString() : item.start,
+                end: item.end instanceof Date ? item.end.toISOString() : item.end
+            });
+        })
+    });
+    atualizarSelectTerminais();
+    render();
+    const agora = new Date();
+    let texto = "Atualizado " + agora.toLocaleString("pt-BR", {dateStyle:"short", timeStyle:"short"}) + " | Registros: " + formatInt(REGISTROS.length);
+    if (origem) texto += " · " + origem;
+    setStatusFonte("ok", texto);
 }
 
 async function carregarPlanilha(manual){
@@ -1440,10 +1478,24 @@ async function carregarPlanilha(manual){
 
     if (!mostrouCache) {
         window.portalMostrarCarregando?.("Carregando terminais");
-        setStatusFonte("", "Lendo planilha...");
+        setStatusFonte("", "Consultando dados...");
     }
     setErroFonte("");
     try {
+        if (TERMINAIS_USAR_FIRESTORE) {
+            try {
+                const mod = await import("../assets/js/terminais-dados-leitura.js?v=20260624d");
+                const res = await mod.carregarDadosTerminais({
+                    onProgress: function(msg){ setStatusFonte("", msg); }
+                });
+                if (res.payload?.REGISTROS?.length) {
+                    aplicarSnapshotTerminais(res.payload, res.origem);
+                    return;
+                }
+            } catch (moduleErr) {
+                console.warn("Firestore/AWS indisponível, usando planilha:", moduleErr);
+            }
+        }
         const resultado = await Promise.allSettled([buscarAba(GID_DADOS), buscarAba(GID_PROGRAMACAO)]);
         const dadosRows = resultado[0].status === "fulfilled" ? resultado[0].value : [];
         if (resultado[1].status !== "fulfilled") throw resultado[1].reason;
@@ -1453,20 +1505,25 @@ async function carregarPlanilha(manual){
         REGISTROS = normalizarProgramacao(resultado[1].value, dados.mapa);
         salvarCacheTerminais({
             DADOS,
-            MAP_TERMINAL_TELEFONE,
-            REGISTROS
+            MAP_TERMINAL_TELEFONE: Object.fromEntries(MAP_TERMINAL_TELEFONE),
+            REGISTROS: REGISTROS.map(function(item){
+                return Object.assign({}, item, {
+                    data: item.data instanceof Date ? item.data.toISOString() : item.data,
+                    start: item.start instanceof Date ? item.start.toISOString() : item.start,
+                    end: item.end instanceof Date ? item.end.toISOString() : item.end
+                });
+            })
         });
         atualizarSelectTerminais();
         render();
         const agora = new Date();
-        const prefixo = mostrouCache ? "Atualizado" : "Atualizado";
-        const texto = prefixo + " " + agora.toLocaleString("pt-BR", {dateStyle:"short", timeStyle:"short"}) + " | Registros: " + formatInt(REGISTROS.length);
+        const texto = "Atualizado " + agora.toLocaleString("pt-BR", {dateStyle:"short", timeStyle:"short"}) + " | Registros: " + formatInt(REGISTROS.length) + " · Planilha";
         setStatusFonte("ok", texto);
     } catch (error) {
-        console.error("Erro ao carregar planilha:", error);
+        console.error("Erro ao carregar terminais:", error);
         if (!mostrouCache) {
-            setStatusFonte("erro", "Falha ao ler a planilha");
-            setErroFonte("Não consegui ler a planilha. Para funcionar automaticamente, compartilhe a planilha como visualização para quem tiver o link ou publique as abas usadas. Aba Escala configurada: gid " + GID_PROGRAMACAO + ". Aba Base de Dados configurada: gid " + GID_DADOS + ".");
+            setStatusFonte("erro", "Falha ao carregar dados");
+            setErroFonte(error.message || "Não foi possível carregar os dados de terminais.");
             render();
         }
     } finally {

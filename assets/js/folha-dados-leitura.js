@@ -1,13 +1,12 @@
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { app } from "./portal-firestore.js";
-import {
-  carregarDiaFolhaFirestore,
-  carregarJanelaFolhaFirestore,
-  listarDatasIsoJanela,
-  normalizarDataIsoRow
-} from "./folha-servico-firestore.js";
+import { carregarSnapshotAws } from "./portal-aws-config.js";
 
-export { normalizarDataIsoRow };
+export function normalizarDataIsoRow(row) {
+  if (row?.data_iso) return row.data_iso;
+  const br = String(row?.data || "").trim();
+  const p = br.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (p) return `${p[3]}-${p[1].padStart(2, "0")}-${p[2].padStart(2, "0")}`;
+  return /^\d{4}-\d{2}-\d{2}/.test(br) ? br.slice(0, 10) : "";
+}
 
 export const FOLHA_API_URL = "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
 export const FOLHA_DATA_BASE = "../assets/data/folha-servico";
@@ -52,7 +51,23 @@ function isoDataLocal(offsetDias = 0) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/** Interseção do período pedido com a janela recente (planilha é fonte viva). */
+function listarDatasIsoJanela(dataDe, dataAte) {
+  if (!dataDe || !dataAte || dataAte < dataDe) return [];
+  const out = [];
+  const [y0, m0, d0] = dataDe.split("-").map(Number);
+  const [y1, m1, d1] = dataAte.split("-").map(Number);
+  const cursor = new Date(Date.UTC(y0, m0 - 1, d0));
+  const fim = new Date(Date.UTC(y1, m1 - 1, d1));
+  while (cursor <= fim) {
+    const y = cursor.getUTCFullYear();
+    const m = String(cursor.getUTCMonth() + 1).padStart(2, "0");
+    const d = String(cursor.getUTCDate()).padStart(2, "0");
+    out.push(`${y}-${m}-${d}`);
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return out;
+}
+
 function janelaPlanilhaRecente(dataDe, dataAte) {
   const hoje = isoDataLocal(0);
   const limite = isoDataLocal(-JANELA_PLANILHA_DIAS);
@@ -71,12 +86,6 @@ function withTimeout(promise, ms) {
   ]);
 }
 
-async function aguardarAuthFirestore() {
-  const auth = getAuth(app);
-  if (typeof auth.authStateReady === "function") await auth.authStateReady();
-  return auth.currentUser;
-}
-
 async function carregarJsonTodos(dataDe, dataAte) {
   try {
     const res = await fetch(`${FOLHA_TODOS_URL}?t=${Date.now()}`, { cache: "no-store" });
@@ -89,21 +98,26 @@ async function carregarJsonTodos(dataDe, dataAte) {
   }
 }
 
-async function carregarDadosFirestore(dataDe, dataAte) {
-  await aguardarAuthFirestore();
-  const dias = listarDatasIsoJanela(dataDe, dataAte);
-  const partes = await Promise.all(
-    dias.map((dia) => carregarDiaFolhaFirestore(dia).catch(() => null))
-  );
-  let dados = [];
-  partes.forEach((parte) => {
-    if (parte?.dados?.length) dados.push(...parte.dados);
-  });
-  if (!dados.length) {
-    const janela = await carregarJanelaFolhaFirestore(dataDe, dataAte).catch(() => null);
-    if (janela?.dados?.length) dados = janela.dados;
+async function complementarPlanilha(dados, dataDe, dataAte, onProgress) {
+  const tentativas = [];
+  const origens = [];
+  const janelaPlanilha = janelaPlanilhaRecente(dataDe, dataAte);
+  const buscarPlanilha = !dados.length || janelaPlanilha;
+  if (!buscarPlanilha) return { dados, origens, tentativas };
+
+  const alvo = janelaPlanilha || { de: dataDe, ate: dataAte };
+  onProgress?.("Complementando com planilha...");
+  try {
+    const planilha = await withTimeout(carregarDadosApi(alvo.de, alvo.ate), 120000);
+    tentativas.push(`planilha: ${planilha.length}`);
+    if (planilha.length) {
+      dados = mesclarLinhas([dados, filtrarPeriodo(planilha, dataDe, dataAte)]);
+      origens.push("planilha");
+    }
+  } catch (err) {
+    tentativas.push(`planilha: ${err.message === "timeout" ? "timeout" : "erro"}`);
   }
-  return filtrarPeriodo(dados, dataDe, dataAte);
+  return { dados, origens, tentativas };
 }
 
 async function apiGet(params) {
@@ -131,55 +145,37 @@ async function carregarDadosApi(dataDe, dataAte) {
   return mesclarLinhas(partes);
 }
 
-/** Carrega registros de um período (Firestore → JSON → planilha). */
+async function carregarAwsPeriodo(dataDe, dataAte) {
+  const snap = await carregarSnapshotAws("/snapshots/folha", { timeoutMs: 15000 });
+  if (!snap?.payload) return [];
+  const lista = Array.isArray(snap.payload?.dados) ? snap.payload.dados : [];
+  return filtrarPeriodo(lista, dataDe, dataAte);
+}
+
+/** Carrega registros de um período (AWS → JSON → planilha). */
 export async function carregarDadosFolhaPeriodo(dataDe, dataAte, { onProgress } = {}) {
-  onProgress?.("Consultando Firestore e JSON...");
-  const [fsRes, jsonRes] = await Promise.allSettled([
-    withTimeout(carregarDadosFirestore(dataDe, dataAte), 25000),
+  onProgress?.("Consultando AWS e JSON...");
+  const [awsRes, jsonRes] = await Promise.allSettled([
+    withTimeout(carregarAwsPeriodo(dataDe, dataAte), 15000),
     withTimeout(carregarJsonTodos(dataDe, dataAte), 20000)
   ]);
 
-  const firestore = fsRes.status === "fulfilled" ? fsRes.value : [];
+  const aws = awsRes.status === "fulfilled" ? awsRes.value : [];
   const json = jsonRes.status === "fulfilled" ? jsonRes.value : [];
-  const tentativas = [
-    `Firestore: ${firestore.length}`,
-    `JSON: ${json.length}`
-  ];
-
-  let dados = mesclarLinhas([json, firestore]);
+  const tentativas = [`AWS: ${aws.length}`, `JSON: ${json.length}`];
+  let dados = mesclarLinhas([json, aws]);
   const origens = [];
-  if (firestore.length) origens.push("Firestore");
+  if (aws.length) origens.push("AWS");
   if (json.length) origens.push("JSON");
 
-  const janelaPlanilha = janelaPlanilhaRecente(dataDe, dataAte);
-  const buscarPlanilha = !dados.length || janelaPlanilha;
-  if (buscarPlanilha) {
-    const alvo = janelaPlanilha || { de: dataDe, ate: dataAte };
-    onProgress?.("Complementando com planilha...");
-    try {
-      const planilha = await withTimeout(carregarDadosApi(alvo.de, alvo.ate), 120000);
-      tentativas.push(`planilha: ${planilha.length}`);
-      if (planilha.length) {
-        dados = mesclarLinhas([
-          dados,
-          filtrarPeriodo(planilha, dataDe, dataAte)
-        ]);
-        origens.push("planilha");
-      }
-    } catch (err) {
-      tentativas.push(`planilha: ${err.message === "timeout" ? "timeout" : "erro"}`);
-    }
-  }
+  const complemento = await complementarPlanilha(dados, dataDe, dataAte, onProgress);
+  dados = complemento.dados;
+  tentativas.push(...complemento.tentativas);
+  complemento.origens.forEach((o) => { if (!origens.includes(o)) origens.push(o); });
 
   return {
     dados,
     origem: origens.join(" · ") || "",
     tentativas
   };
-}
-
-/** Complemento recente para o dashboard (Firestore prioritário). */
-export async function carregarDadosFolhaFirestore(dataDe, dataAte) {
-  const { dados, origem } = await carregarDadosFolhaPeriodo(dataDe, dataAte);
-  return { dados, origem };
 }
