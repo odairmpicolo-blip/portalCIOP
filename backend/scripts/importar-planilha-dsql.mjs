@@ -21,6 +21,7 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const portalRoot = process.env.PORTAL_ROOT || path.join(__dirname, "..", "..");
+const dataDir = process.env.PORTAL_DATA_DIR || path.join(portalRoot, "assets", "data");
 const PORTAL_TZ = process.env.PORTAL_TZ || "America/Sao_Paulo";
 const LIBERACAO_URL = process.env.LIBERACAO_API_URL
   || process.env.FOLHA_SERVICO_API_URL
@@ -108,7 +109,7 @@ async function importTerminais(pool) {
 }
 
 async function importIncidentes(pool) {
-  const file = path.join(portalRoot, "assets", "data", "incidentes-tcgl.json");
+  const file = path.join(dataDir, "incidentes-tcgl.json");
   const payload = readJson(file);
   if (!payload) {
     console.warn("[incidentes] JSON não encontrado");

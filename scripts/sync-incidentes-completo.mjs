@@ -17,7 +17,8 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const portalRoot = process.env.PORTAL_ROOT || path.resolve(scriptDir, "..");
 const nodeBin = process.env.CIOP_NODE_BIN || process.execPath;
 const jsonRel = "assets/data/incidentes-tcgl.json";
-const jsonPath = path.join(portalRoot, jsonRel);
+const dataDir = process.env.PORTAL_DATA_DIR || path.join(portalRoot, "assets", "data");
+const jsonPath = path.join(dataDir, "incidentes-tcgl.json");
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
@@ -118,7 +119,7 @@ export async function syncIncidentes() {
     console.log("[sync] Importando incidentes no Aurora DSQL...");
     const backendScripts = path.join(portalRoot, "backend", "scripts", "importar-planilha-dsql.mjs");
     run(nodeBin, [backendScripts, "incidentes"], {
-      env: { ...process.env, PORTAL_ROOT: portalRoot }
+      env: { ...process.env, PORTAL_ROOT: portalRoot, PORTAL_DATA_DIR: dataDir }
     });
     steps.dsql = true;
   }

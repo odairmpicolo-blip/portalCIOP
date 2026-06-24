@@ -22,7 +22,8 @@ async function loadSecrets() {
 
 export async function handler(event = {}) {
   const mode = event.mode || process.env.SYNC_MODE || "full";
-  process.env.PORTAL_ROOT = process.env.PORTAL_ROOT || "/var/task";
+  process.env.PORTAL_ROOT = process.env.PORTAL_ROOT || "/var/task/portal";
+  process.env.PORTAL_DATA_DIR = process.env.PORTAL_DATA_DIR || "/tmp/portal-data";
   process.env.SYNC_INCIDENTES_SKIP_GIT = process.env.SYNC_INCIDENTES_SKIP_GIT || "1";
 
   await loadSecrets();

@@ -53,7 +53,7 @@ publish_portal_prod() {
   )
 }
 
-if already_ran_today; then
+if [[ "$MODE" != "manual" ]] && already_ran_today; then
   log "Atualização de $(today_sp) já concluída ($MODE)."
   exit 0
 fi
