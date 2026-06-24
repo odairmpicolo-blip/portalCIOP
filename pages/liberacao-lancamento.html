@@ -598,14 +598,22 @@ function complementarPlanilhaBackground(origem){
 async function apiGet(params){
     const p=Object.assign({liberacao:"1"},params);
     if(p.vivo==="1") p._=String(Date.now());
-    const res=await fetch(API_URL+"?"+new URLSearchParams(p),{cache:"no-store"});
-    const data=await res.json();
+    const res=await fetch(API_URL+"?"+new URLSearchParams(p),{cache:"no-store",redirect:"follow"});
+    const texto=await res.text();
+    let data;
+    try{ data=JSON.parse(texto); }catch(_){ throw new Error("Resposta inválida da planilha."); }
     if(!data.ok) throw new Error(data.erro||"Erro na leitura.");
     return data;
 }
 async function apiPost(payload){
-    const res=await fetch(API_URL,{method:"POST",body:new URLSearchParams(Object.assign({liberacao:"1"},payload))});
-    const data=await res.json();
+    const res=await fetch(API_URL,{
+        method:"POST",
+        body:new URLSearchParams(Object.assign({liberacao:"1"},payload)),
+        redirect:"follow"
+    });
+    const texto=await res.text();
+    let data;
+    try{ data=JSON.parse(texto); }catch(_){ throw new Error("Resposta inválida da planilha ao salvar."); }
     if(!data.ok) throw new Error(data.erro||"Erro ao salvar.");
     return data;
 }

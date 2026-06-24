@@ -14,7 +14,9 @@ service cloud.firestore {
     }
 
     function perfilAtual() {
-      return get(/databases/$(database)/documents/usuarios/$(email())).data.perfil;
+      return exists(/databases/$(database)/documents/usuarios/$(email()))
+        ? get(/databases/$(database)/documents/usuarios/$(email())).data.perfil
+        : "";
     }
 
     function gestor() {
@@ -33,32 +35,11 @@ service cloud.firestore {
       return lista is list && perfilAtual() in lista;
     }
 
-    function perfilLiberacao() {
-      return signedIn() && (
-        bootstrapGestor() ||
-        perfilAtual() in ['Administrador', 'Supervisor', 'Analista']
-      );
-    }
-
     function perfilFolhaServico() {
       return signedIn() && (
         bootstrapGestor() ||
         perfilAtual() in ['Administrador', 'Supervisor', 'Analista']
       );
-    }
-
-    match /liberacaoDias/{dataIso} {
-      allow read: if perfilLiberacao();
-      allow create, update: if perfilLiberacao();
-      allow delete: if gestor();
-
-      match /linhas/{linhaId} {
-        allow read: if perfilLiberacao();
-        allow create, update: if perfilLiberacao()
-          && request.resource.data.atualizadoPor == email()
-          && linhaId == string(request.resource.data._row);
-        allow delete: if gestor();
-      }
     }
 
     match /folhaServicoDias/{dataIso} {

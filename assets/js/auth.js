@@ -374,7 +374,7 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
       return;
     }
 
-    const cadastro = { ...await getCadastro(user), email: user.email };
+    const cadastro = { ...await getCadastro(user), email: String(user.email || "").toLowerCase() };
 
     if (cadastro.ativo === false) {
       alert("Seu acesso ao portal esta desativado. Procure um administrador.");

@@ -1,4 +1,5 @@
-import { db } from "./portal-firestore.js";
+import { app, db } from "./portal-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   collection,
   doc,
@@ -8,6 +9,11 @@ import {
   serverTimestamp,
   setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+function emailAuthAtual(fallback = "") {
+  const auth = getAuth(app);
+  return String(auth.currentUser?.email || fallback || "").trim();
+}
 
 export const COLECAO_LIBERACAO_DIAS = "liberacaoDias";
 export const SUBCOLECAO_LINHAS = "linhas";
@@ -27,7 +33,7 @@ function sanitizarLinha(row, dataIso) {
   delete copia._dirty;
   delete copia._syncErro;
   delete copia._ultimoCampoEditado;
-  copia._row = Number(id) || id;
+  copia._row = id;
   copia.data_iso = normalizarDataIsoRow(copia) || dataIso;
   return copia;
 }
@@ -146,8 +152,10 @@ export async function salvarLinhaLiberacaoFirestore(row, email, extras = {}) {
   if (!dataIso || !id) throw new Error("Linha invalida para Firestore.");
   const payload = sanitizarLinha(row, dataIso);
   if (!payload) throw new Error("Linha invalida para Firestore.");
+  const authEmail = emailAuthAtual(email);
+  if (!authEmail) throw new Error("Sessão expirada. Entre novamente no portal.");
   payload.atualizadoEm = serverTimestamp();
-  payload.atualizadoPor = String(email || "").trim().toLowerCase();
+  payload.atualizadoPor = authEmail;
   payload.origem = "portal";
   if (extras.syncPlanilha) payload.syncPlanilhaStatus = extras.syncPlanilha;
   await setDoc(doc(db, COLECAO_LIBERACAO_DIAS, dataIso, SUBCOLECAO_LINHAS, id), payload, { merge: true });
@@ -163,9 +171,13 @@ export async function marcarSyncPlanilhaLiberacaoFirestore(row, email, status) {
   const dataIso = normalizarDataIsoRow(row);
   const id = String(row?._row || "").trim();
   if (!dataIso || !id) return;
+  const authEmail = emailAuthAtual(email);
+  if (!authEmail) return;
   await setDoc(doc(db, COLECAO_LIBERACAO_DIAS, dataIso, SUBCOLECAO_LINHAS, id), {
+    _row: id,
+    atualizadoPor: authEmail,
     syncPlanilhaStatus: status,
     syncPlanilhaEm: serverTimestamp(),
-    syncPlanilhaPor: String(email || "").trim().toLowerCase()
+    syncPlanilhaPor: authEmail
   }, { merge: true });
 }
