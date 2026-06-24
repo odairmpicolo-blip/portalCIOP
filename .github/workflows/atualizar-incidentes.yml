@@ -25,15 +25,15 @@ jobs:
         with:
           node-version: "24"
 
+      - name: Sincronizar com origin
+        run: git pull --rebase origin main
+
       - name: Atualizar incidentes TCGL
         env:
           CIOP_INCIDENTES_USUARIO: ${{ secrets.CIOP_INCIDENTES_USUARIO }}
           CIOP_INCIDENTES_SENHA: ${{ secrets.CIOP_INCIDENTES_SENHA }}
           PORTAL_ROOT: ${{ github.workspace }}
         run: node scripts/atualizar-incidentes-tcgl.mjs
-
-      - name: Sincronizar com origin
-        run: git pull --rebase origin main
 
       - name: Publicar dados atualizados
         uses: stefanzweifel/git-auto-commit-action@v5

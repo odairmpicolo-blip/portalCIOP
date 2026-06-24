@@ -25,13 +25,13 @@ jobs:
         with:
           node-version: "24"
 
+      - name: Sincronizar com origin
+        run: git pull --rebase origin main
+
       - name: Atualizar snapshot da planilha
         env:
           PORTAL_ROOT: ${{ github.workspace }}
         run: node scripts/atualizar-terminais-planilha.mjs
-
-      - name: Sincronizar com origin
-        run: git pull --rebase origin main
 
       - name: Publicar dados atualizados
         uses: stefanzweifel/git-auto-commit-action@v5
