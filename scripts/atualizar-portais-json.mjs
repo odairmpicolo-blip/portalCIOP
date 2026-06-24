@@ -20,14 +20,30 @@ const LIBERACAO_URL = process.env.LIBERACAO_API_URL
   || "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
 
 const DIAS_JANELA_LANCAMENTO = Number(process.env.LIBERACAO_DIAS_JANELA || 7);
+const PORTAL_TZ = process.env.PORTAL_TZ || "America/Sao_Paulo";
+
+function partesDataPortal(data = new Date()) {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: PORTAL_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(data);
+  const get = (tipo) => partes.find((p) => p.type === tipo)?.value;
+  return {
+    year: Number(get("year")),
+    month: Number(get("month")),
+    day: Number(get("day"))
+  };
+}
 
 function isoDataLocal(offsetDias = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDias);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  const { year, month, day } = partesDataPortal(new Date());
+  const d = new Date(Date.UTC(year, month - 1, day + offsetDias));
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dia = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${dia}`;
 }
 
 function isoHoje() {
