@@ -1,12 +1,10 @@
-name: Atualizar JSON liberação hoje
+name: Atualizar terminais planilha
 
 on:
   schedule:
-    # A cada 3 minutos (UTC) — API → JSON centralizado para todos os usuários
-    - cron: "*/3 * * * *"
+    # A cada 5 minutos (UTC)
+    - cron: "*/5 * * * *"
   workflow_dispatch:
-  repository_dispatch:
-    types: [folha-servico, liberacao]
 
 permissions:
   contents: write
@@ -14,7 +12,7 @@ permissions:
 jobs:
   atualizar:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Baixar portal
@@ -25,22 +23,21 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Gerar JSON de liberação (hoje)
+      - name: Atualizar snapshot da planilha
         env:
           PORTAL_ROOT: ${{ github.workspace }}
-          PORTAL_JSON_TIMEOUT_MS: 180000
-        run: node scripts/atualizar-portais-json.mjs --liberacao-hoje
+        run: node scripts/atualizar-terminais-planilha.mjs
 
-      - name: Publicar JSON de liberação (hoje)
+      - name: Publicar dados atualizados
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Atualiza JSON liberação hoje"
-          file_pattern: assets/data/liberacao/*.json
+          commit_message: "Atualiza terminais agora"
+          file_pattern: assets/data/terminais-agora.json
 
       - name: Instalar dependências
         run: npm ci
 
-      - name: Importar liberação no Firestore (janela API planilha)
+      - name: Importar terminais no Firestore
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_SA_PATH: ${{ runner.temp }}/firebase-sa.json
@@ -51,9 +48,9 @@ jobs:
           fi
           printf '%s' "${FIREBASE_SERVICE_ACCOUNT_JSON}" > "${FIREBASE_SA_PATH}"
           export FIREBASE_SERVICE_ACCOUNT="${FIREBASE_SA_PATH}"
-          npm run import-liberacao-firestore
+          npm run import-terminais-firestore
 
-      - name: Importar liberação hoje no DSQL (planilha → JSON → AWS)
+      - name: Importar terminais no DSQL (planilha → JSON → AWS)
         env:
           DSQL_CLUSTER_ID: ${{ secrets.DSQL_CLUSTER_ID }}
           DSQL_REGION: sa-east-1
@@ -65,4 +62,15 @@ jobs:
             echo "DSQL_CLUSTER_ID não configurado — import DSQL ignorado."
             exit 0
           fi
-          bash scripts/ci-import-dsql.sh liberacao-hoje
+          bash scripts/ci-import-dsql.sh terminais
+
+      - name: Importar terminais na API AWS (opcional)
+        env:
+          PORTAL_AWS_API_URL: ${{ secrets.PORTAL_AWS_API_URL }}
+          PORTAL_API_KEY: ${{ secrets.PORTAL_API_KEY }}
+        run: |
+          if [ -z "$PORTAL_AWS_API_URL" ] || [ -z "$PORTAL_API_KEY" ]; then
+            echo "PORTAL_AWS_API_URL / PORTAL_API_KEY não configurados — import API ignorado."
+            exit 0
+          fi
+          node scripts/importar-terminais-aws.mjs
