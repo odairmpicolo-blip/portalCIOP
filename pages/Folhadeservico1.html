@@ -1381,6 +1381,48 @@ h1 {
         .field-oficina-only.field-oficina-hidden {
             display: none !important;
         }
+        .launch-combobox {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            width: 100%;
+        }
+        .launch-combobox-list {
+            position: absolute;
+            top: calc(100% + 2px);
+            left: 0;
+            right: 0;
+            z-index: 50;
+            margin: 0;
+            padding: 4px 0;
+            list-style: none;
+            background: #fff;
+            border: 1px solid #cfd8e8;
+            border-radius: 6px;
+            box-shadow: 0 8px 22px rgba(16, 24, 40, 0.14);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .launch-combobox-list[hidden] { display: none !important; }
+        .launch-combobox-list li {
+            padding: 6px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #182230;
+            cursor: pointer;
+            line-height: 1.25;
+        }
+        .launch-combobox-list li:hover,
+        .launch-combobox-list li.active {
+            background: #eef4ff;
+        }
+        .launch-combobox-list li mark {
+            background: #fef3c7;
+            color: inherit;
+            font-weight: 800;
+            padding: 0;
+        }
         @media (min-width: 1100px) {
             .launch-card.launch-compact-form {
                 padding: 12px 14px;
@@ -1641,10 +1683,14 @@ h1 {
         { id: "novo-local", key: "local", label: "Local" },
         { id: "novo-situacao", key: "situacao", label: "Situação" }
     ];
-    const CHAVES_CAMPOS_SELECT = new Set([
-        "ocorrencia", "analista", "carro_sai", "mot_sai", "carro_entra", "mot_entra",
-        "linha", "motivo_oficina", "local", "mecanico", "situacao", "tempo_deslocamento"
-    ]);
+    const ORDEM_CAMPOS_LANCAMENTO = [
+        "novo-data", "novo-hora", "novo-ocorrencia", "novo-analista", "novo-carro-sai", "novo-mot-sai",
+        "novo-carro-entra", "novo-mot-entra", "novo-linha", "novo-tabela", "novo-servico",
+        "novo-motivo-oficina", "novo-local", "novo-mecanico", "novo-situacao", "novo-tempo-deslocamento",
+        "novo-observacoes"
+    ];
+    const CAMPOS_SEM_SUGESTAO_COMBOBOX = new Set(["novo-hora", "novo-observacoes"]);
+    const comboboxLancamento = new Map();
 
     let dadosMestres = [];
     let intervaloLancamentosId = null;
@@ -1740,6 +1786,7 @@ h1 {
 
     window.onload = () => {
         aplicarMascaraHora();
+        configurarComboboxesLancamento();
         const iniciar = () => inicializarPaginaLancamento();
         if (typeof window.portalAguardarUsuario === "function") {
             window.portalAguardarUsuario(iniciar);
@@ -1747,6 +1794,279 @@ h1 {
             iniciar();
         }
     };
+
+    function normalizarBuscaCombobox(valor) {
+        return String(valor || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .trim()
+            .toLowerCase();
+    }
+
+    function campoLancamentoVisivel(id) {
+        const el = document.getElementById(id);
+        if (!el || el.disabled) return false;
+        const grupo = el.closest(".launch-group");
+        if (grupo?.classList.contains("field-oficina-hidden")) return false;
+        return true;
+    }
+
+    function camposLancamentoVisiveis() {
+        return ORDEM_CAMPOS_LANCAMENTO.filter(campoLancamentoVisivel);
+    }
+
+    function navegarCampoLancamento(idAtual, passo) {
+        const visiveis = camposLancamentoVisiveis();
+        const idx = visiveis.indexOf(idAtual);
+        if (idx < 0) return false;
+        const destino = visiveis[idx + passo];
+        if (!destino) return false;
+        const el = document.getElementById(destino);
+        if (!el) return false;
+        el.focus();
+        if (el.tagName === "INPUT" && (el.type === "text" || el.type === "search")) {
+            el.select();
+        }
+        return true;
+    }
+
+    function podeNavegarHorizontalCampo(el, direcao) {
+        if (!el || el.tagName !== "INPUT" || el.type === "date") return true;
+        if (el.type !== "text" && el.type !== "search") return true;
+        const pos = el.selectionStart ?? 0;
+        const fim = el.selectionEnd ?? 0;
+        if (pos !== fim) return false;
+        if (direcao === "right") return pos >= el.value.length;
+        if (direcao === "left") return pos <= 0;
+        return true;
+    }
+
+    function filtrarOpcoesCombobox(opcoes, termo) {
+        const lista = Array.isArray(opcoes) ? opcoes : [];
+        const q = normalizarBuscaCombobox(termo);
+        if (!q) return lista.slice(0, 40);
+        return lista.filter(op => normalizarBuscaCombobox(op).includes(q)).slice(0, 40);
+    }
+
+    function melhorValorCombobox(termo, opcoes) {
+        const texto = String(termo || "").trim();
+        if (!texto) return "";
+        const lista = Array.isArray(opcoes) ? opcoes : [];
+        const norm = normalizarBuscaCombobox(texto);
+        const exata = lista.find(op => normalizarBuscaCombobox(op) === norm);
+        if (exata) return exata;
+        const prefixo = lista.filter(op => normalizarBuscaCombobox(op).startsWith(norm));
+        if (prefixo.length > 0) return prefixo[0];
+        const contem = lista.filter(op => normalizarBuscaCombobox(op).includes(norm));
+        if (contem.length > 0) return contem[0];
+        return texto;
+    }
+
+    function atualizarListaCombobox(input, listaEl, filtrados, termo) {
+        const state = comboboxLancamento.get(input.id);
+        if (!state) return;
+        listaEl.innerHTML = "";
+        if (!filtrados.length) {
+            listaEl.hidden = true;
+            state.activeIndex = -1;
+            return;
+        }
+        if (state.activeIndex < 0 || state.activeIndex >= filtrados.length) state.activeIndex = 0;
+        const normTermo = normalizarBuscaCombobox(termo);
+        filtrados.forEach((opcao, idx) => {
+            const li = document.createElement("li");
+            li.setAttribute("role", "option");
+            li.dataset.value = opcao;
+            if (normTermo) {
+                const escaped = String(termo).trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                const match = opcao.match(new RegExp(escaped, "i"));
+                if (match && match.index != null) {
+                    const inicio = match.index;
+                    const fim = inicio + match[0].length;
+                    li.innerHTML =
+                        escaparHtml(opcao.slice(0, inicio)) +
+                        "<mark>" + escaparHtml(opcao.slice(inicio, fim)) + "</mark>" +
+                        escaparHtml(opcao.slice(fim));
+                } else {
+                    li.textContent = opcao;
+                }
+            } else {
+                li.textContent = opcao;
+            }
+            if (idx === state.activeIndex) li.classList.add("active");
+            li.addEventListener("mousedown", (evento) => {
+                evento.preventDefault();
+                input.value = opcao;
+                listaEl.hidden = true;
+                state.activeIndex = -1;
+                input.dispatchEvent(new Event("change", { bubbles: true }));
+            });
+            listaEl.appendChild(li);
+        });
+        listaEl.hidden = false;
+    }
+
+    function mostrarSugestoesCombobox(input) {
+        const state = comboboxLancamento.get(input.id);
+        if (!state) return;
+        const filtrados = filtrarOpcoesCombobox(state.options, input.value);
+        atualizarListaCombobox(input, state.listEl, filtrados, input.value);
+    }
+
+    function fecharCombobox(input) {
+        const state = comboboxLancamento.get(input.id);
+        if (!state) return;
+        state.listEl.hidden = true;
+        state.activeIndex = -1;
+    }
+
+    function aplicarValorComboboxBlur(input) {
+        const state = comboboxLancamento.get(input.id);
+        if (!state || !state.options.length) return;
+        const valor = melhorValorCombobox(input.value, state.options);
+        if (valor) input.value = valor;
+    }
+
+    function onComboboxKeydown(evento, input) {
+        const state = comboboxLancamento.get(input.id);
+        if (!state) return;
+        const listaAberta = !state.listEl.hidden;
+        const filtrados = filtrarOpcoesCombobox(state.options, input.value);
+
+        if (listaAberta && filtrados.length) {
+            if (evento.key === "ArrowDown") {
+                evento.preventDefault();
+                state.activeIndex = Math.min(state.activeIndex + 1, filtrados.length - 1);
+                atualizarListaCombobox(input, state.listEl, filtrados, input.value);
+                return;
+            }
+            if (evento.key === "ArrowUp") {
+                evento.preventDefault();
+                state.activeIndex = Math.max(state.activeIndex - 1, 0);
+                atualizarListaCombobox(input, state.listEl, filtrados, input.value);
+                return;
+            }
+            if (evento.key === "Enter") {
+                evento.preventDefault();
+                const escolhido = filtrados[state.activeIndex] || filtrados[0];
+                if (escolhido) {
+                    input.value = escolhido;
+                    fecharCombobox(input);
+                    input.dispatchEvent(new Event("change", { bubbles: true }));
+                    navegarCampoLancamento(input.id, 1);
+                }
+                return;
+            }
+            if (evento.key === "Escape") {
+                evento.preventDefault();
+                fecharCombobox(input);
+                return;
+            }
+        }
+
+        let passo = 0;
+        if (evento.key === "ArrowRight" && podeNavegarHorizontalCampo(input, "right")) passo = 1;
+        else if (evento.key === "ArrowLeft" && podeNavegarHorizontalCampo(input, "left")) passo = -1;
+        else if (evento.key === "ArrowDown") passo = 1;
+        else if (evento.key === "ArrowUp") passo = -1;
+        else if (evento.key === "Enter" && !evento.shiftKey) passo = 1;
+        else if (evento.key === "Tab") passo = evento.shiftKey ? -1 : 1;
+        if (!passo) return;
+
+        evento.preventDefault();
+        fecharCombobox(input);
+        aplicarValorComboboxBlur(input);
+        navegarCampoLancamento(input.id, passo);
+    }
+
+    function initComboboxLancamento(input) {
+        if (!input || input.dataset.comboboxInit === "1") return;
+        input.dataset.comboboxInit = "1";
+        input.autocomplete = "off";
+
+        const wrap = document.createElement("div");
+        wrap.className = "launch-combobox";
+        input.parentNode.insertBefore(wrap, input);
+        wrap.appendChild(input);
+
+        const listEl = document.createElement("ul");
+        listEl.className = "launch-combobox-list";
+        listEl.setAttribute("role", "listbox");
+        listEl.hidden = true;
+        wrap.appendChild(listEl);
+
+        const state = { listEl, options: [], activeIndex: -1 };
+        comboboxLancamento.set(input.id, state);
+
+        input.addEventListener("input", () => {
+            state.activeIndex = 0;
+            mostrarSugestoesCombobox(input);
+        });
+        input.addEventListener("focus", () => {
+            state.activeIndex = 0;
+            mostrarSugestoesCombobox(input);
+        });
+        input.addEventListener("blur", () => {
+            window.setTimeout(() => {
+                fecharCombobox(input);
+                aplicarValorComboboxBlur(input);
+            }, 120);
+        });
+        input.addEventListener("keydown", (evento) => onComboboxKeydown(evento, input));
+    }
+
+    function converterSelectParaCombobox(select) {
+        const input = document.createElement("input");
+        input.type = "text";
+        Array.from(select.attributes).forEach(attr => {
+            if (attr.name === "type") return;
+            input.setAttribute(attr.name, attr.value);
+        });
+        input.autocomplete = "off";
+        input.value = select.value;
+        const opcoes = Array.from(select.options).map(opt => opt.value).filter(Boolean);
+        select.replaceWith(input);
+        initComboboxLancamento(input);
+        const state = comboboxLancamento.get(input.id);
+        if (state) state.options = valoresOrdenados(new Set(opcoes));
+    }
+
+    function configurarComboboxesLancamento() {
+        ORDEM_CAMPOS_LANCAMENTO.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (el.tagName === "SELECT") converterSelectParaCombobox(el);
+            else if (el.tagName === "INPUT" && (el.type === "text" || el.type === "search")) initComboboxLancamento(el);
+        });
+        configurarNavegacaoCamposLancamento();
+    }
+
+    function configurarNavegacaoCamposLancamento() {
+        ORDEM_CAMPOS_LANCAMENTO.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el || el.dataset.navCampoInit === "1") return;
+            if (el.classList.contains("launch-combobox-input") || comboboxLancamento.has(id)) return;
+            el.dataset.navCampoInit = "1";
+            el.addEventListener("keydown", (evento) => {
+                let passo = 0;
+                if (evento.key === "ArrowRight" && podeNavegarHorizontalCampo(el, "right")) passo = 1;
+                else if (evento.key === "ArrowLeft" && podeNavegarHorizontalCampo(el, "left")) passo = -1;
+                else if (evento.key === "ArrowDown") passo = 1;
+                else if (evento.key === "ArrowUp") passo = -1;
+                else if (evento.key === "Enter" && !evento.shiftKey && el.tagName !== "TEXTAREA") passo = 1;
+                else if (evento.key === "Tab") passo = evento.shiftKey ? -1 : 1;
+                if (!passo) return;
+                evento.preventDefault();
+                navegarCampoLancamento(id, passo);
+            });
+        });
+    }
+
+    function definirOpcoesCombobox(id, opcoes) {
+        const state = comboboxLancamento.get(id);
+        if (!state) return;
+        state.options = valoresOrdenados(new Set(Array.isArray(opcoes) ? opcoes : []));
+    }
 
     function lerCacheOpcoes() {
         try {
@@ -1932,11 +2252,12 @@ h1 {
     }
 
     function configurarToggleOficina() {
-        const select = document.getElementById("novo-ocorrencia");
-        if (!select) return;
-        if (select.dataset.oficinaToggle !== "1") {
-            select.dataset.oficinaToggle = "1";
-            select.addEventListener("change", atualizarCamposOficina);
+        const campo = document.getElementById("novo-ocorrencia");
+        if (!campo) return;
+        if (campo.dataset.oficinaToggle !== "1") {
+            campo.dataset.oficinaToggle = "1";
+            campo.addEventListener("change", atualizarCamposOficina);
+            campo.addEventListener("blur", () => window.setTimeout(atualizarCamposOficina, 140));
         }
         atualizarCamposOficina();
     }
@@ -2055,18 +2376,9 @@ h1 {
         if (!campo) return;
         const valores = valoresOrdenados(set);
         const valorAtual = campo.value;
-
-        if (campo.tagName === "SELECT") {
-            campo.innerHTML = '<option value="">—</option>';
-            valores.forEach(val => {
-                const opt = document.createElement("option");
-                opt.value = val;
-                opt.textContent = val;
-                campo.appendChild(opt);
-            });
-            if (valorAtual && valores.some(v => String(v) === String(valorAtual))) {
-                campo.value = valorAtual;
-            }
+        definirOpcoesCombobox(id, valores);
+        if (valorAtual && valores.some(v => String(v) === String(valorAtual))) {
+            campo.value = valorAtual;
         }
     }
 
@@ -2081,6 +2393,16 @@ h1 {
             });
             opcoesFormularioPermitidas[campo.key] = valoresOrdenados(valores);
             populateSelect(campo.id, valores);
+        });
+        ["tabela", "servico"].forEach(key => {
+            const id = key === "tabela" ? "novo-tabela" : "novo-servico";
+            const valores = new Set();
+            dados.forEach(item => {
+                if (item[key]) valores.add(item[key]);
+            });
+            const el = document.getElementById(id);
+            if (el?.value) valores.add(el.value);
+            populateSelect(id, valores);
         });
     }
 
@@ -2119,13 +2441,11 @@ h1 {
     function garantirOpcaoSelect(id, valor) {
         const texto = String(valor || "").trim();
         if (!texto) return;
-        const el = document.getElementById(id);
-        if (!el || el.tagName !== "SELECT") return;
-        if ([...el.options].some(opt => String(opt.value) === texto)) return;
-        const opt = document.createElement("option");
-        opt.value = texto;
-        opt.textContent = texto;
-        el.appendChild(opt);
+        const state = comboboxLancamento.get(id);
+        if (!state) return;
+        if (!state.options.some(opt => String(opt) === texto)) {
+            state.options = valoresOrdenados(new Set(state.options.concat([texto])));
+        }
     }
 
     function atualizarModoFormulario() {
