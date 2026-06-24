@@ -270,7 +270,7 @@ let planilhaHojeEmFlightModo = "";
 let syncPlanilhaEmAndamento = false;
 let intervaloSyncJsonId = null;
 let syncPlanilhaTimerId = null;
-let carregamentoInicial = true;
+let planilhaHojeComplementada=false;
 let overlayOperacaoNivel = 0;
 let overlayAberturaAtivo = false;
 let eventosTabelaIniciados = false;
@@ -591,6 +591,7 @@ function complementarPlanilhaBackground(origem){
             state.semanaDataAte=amanha;
             salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte},true);
             if(assinaturaAntes!==assinaturaDia(state.semana,hoje)){
+                planilhaHojeComplementada=true;
                 aplicarFiltroData(hoje,origem||"planilha · hoje");
             }
         }).catch(()=>{});
@@ -980,6 +981,36 @@ function chaveLinhaLiberacao(row){
     ].join("|");
 }
 
+function celulaLancamentoPreenchida(v){
+    const t=String(v||"").trim();
+    return t!==""&&t!=="—"&&t!=="-";
+}
+function contarLancamentosLinha(row){
+    if(!row) return 0;
+    let n=0;
+    ["carro","motorista","saida_real","inicio_real","trajeto_ocioso_correto","observacoes"].forEach(k=>{
+        if(celulaLancamentoPreenchida(row[k])) n++;
+    });
+    return n;
+}
+function contarLancamentosDia(dados,data){
+    return (dados||[]).filter(r=>normalizarDataIsoRow(r)===data&&contarLancamentosLinha(r)>0).length;
+}
+function mesclarLinhaLiberacao(base,novo){
+    if(!base) return Object.assign({},novo);
+    if(!novo) return Object.assign({},base);
+    if(base._dirty) return Object.assign({},base);
+    const out=Object.assign({},base);
+    Object.keys(novo).forEach(key=>{
+        if(key==="_dirty"||key==="_syncErro") return;
+        const nv=novo[key];
+        const bv=out[key];
+        const nvP=celulaLancamentoPreenchida(nv);
+        const bvP=celulaLancamentoPreenchida(bv);
+        if(nvP||!bvP) out[key]=nv;
+    });
+    return out;
+}
 function mesclarSemana(base, novos){
     const mapa=new Map();
     (base||[]).forEach(r=>mapa.set(chaveLinhaLiberacao(r),Object.assign({},r)));
@@ -987,7 +1018,7 @@ function mesclarSemana(base, novos){
         const k=chaveLinhaLiberacao(r);
         const existente=mapa.get(k);
         if(existente&&existente._dirty) return;
-        mapa.set(k,Object.assign({},r));
+        mapa.set(k,existente?mesclarLinhaLiberacao(existente,r):Object.assign({},r));
     });
     return [...mapa.values()];
 }
@@ -1096,10 +1127,15 @@ async function sincronizarJsonHoje(){
     try{
         const snap=await carregarSnapshotDia(hoje,true);
         if(!snap?.dados?.length) return;
+        const filledJson=contarLancamentosDia(snap.dados,hoje);
+        const filledState=contarLancamentosDia(state.semana,hoje);
+        if(planilhaHojeComplementada&&filledJson<filledState) return;
+        if(filledJson===0&&filledState>0) return;
         const {dataDe,amanha}=intervaloJanela();
-        state.semana=mesclarSemana(state.semana,snap.dados);
-        state.semanaDataDe=state.semanaDataDe||dataDe;
-        state.semanaDataAte=amanha;
+        const mesclado=mesclarSemana(state.semana,snap.dados);
+        const filledDepois=contarLancamentosDia(mesclado,hoje);
+        if(filledDepois<filledState) return;
+        state.semana=mesclado;
         salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte},true);
         if(assinaturaAntes!==assinaturaDia(state.semana,hoje)){
             aplicarSyncHojeSeAlterou(true,"JSON · hoje");
@@ -1134,6 +1170,7 @@ function aplicarPlanilhaHoje(dadosPlanilha,origemBase){
     const base=origemBase?origemBase+" · ":"";
     const extra=qtdDepois!==qtdAntes?" · "+qtdDepois+" registro(s)":"";
     aplicarFiltroData(hoje,base+"planilha · hoje"+extra);
+    planilhaHojeComplementada=true;
     return true;
 }
 
@@ -1328,7 +1365,7 @@ function iniciarPollingHoje(){
     if(intervaloSyncJsonId) clearInterval(intervaloSyncJsonId);
     if(syncPlanilhaTimerId) clearInterval(syncPlanilhaTimerId);
     intervaloSyncJsonId=setInterval(rodarSyncAutomatico,INTERVALO_SYNC_PLANILHA_MS);
-    setTimeout(rodarSyncAutomatico,500);
+    setTimeout(rodarSyncAutomatico,45000);
     document.addEventListener("visibilitychange",()=>{
         if(!document.hidden) rodarSyncAutomatico();
     });
