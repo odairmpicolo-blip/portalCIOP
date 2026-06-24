@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Baixar portal
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Configurar Node
         uses: actions/setup-node@v4
@@ -30,6 +32,9 @@ jobs:
           PORTAL_ROOT: ${{ github.workspace }}
           PORTAL_JSON_TIMEOUT_MS: 180000
         run: node scripts/atualizar-portais-json.mjs --liberacao-hoje
+
+      - name: Sincronizar com origin
+        run: git pull --rebase origin main
 
       - name: Publicar JSON de liberação (hoje)
         uses: stefanzweifel/git-auto-commit-action@v5

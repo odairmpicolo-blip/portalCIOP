@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Baixar portal
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Configurar Node
         uses: actions/setup-node@v4
@@ -29,6 +31,9 @@ jobs:
           CIOP_INCIDENTES_SENHA: ${{ secrets.CIOP_INCIDENTES_SENHA }}
           PORTAL_ROOT: ${{ github.workspace }}
         run: node scripts/atualizar-incidentes-tcgl.mjs
+
+      - name: Sincronizar com origin
+        run: git pull --rebase origin main
 
       - name: Publicar dados atualizados
         uses: stefanzweifel/git-auto-commit-action@v5
