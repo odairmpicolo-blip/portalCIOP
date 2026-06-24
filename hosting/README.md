@@ -1,53 +1,51 @@
 # Domínio customizado (GitHub Pages)
 
-## 1. Definir o subdomínio
+Domínio configurado: **portalciop.com.br**
 
-Escolha **uma** opção:
+## 1. DNS no Registro.br
 
-**Opção A — arquivo (recomendado)**  
-Crie `hosting/CNAME` com **uma linha**, só o host (sem `https://`):
-
-```text
-portal.seudominio.com.br
-```
-
-**Opção B — variável no GitHub**  
-Repositório → **Settings → Secrets and variables → Actions → Variables**  
-Nome: `PORTAL_CUSTOM_DOMAIN`  
-Valor: `portal.seudominio.com.br`
-
-## 2. DNS no Registro.br (ou outro provedor)
-
-Para subdomínio `portal.seudominio.com.br`:
+Para o domínio raiz `portalciop.com.br`, crie **4 registros A** apontando para o GitHub Pages:
 
 | Tipo | Nome | Valor |
 |------|------|--------|
-| **CNAME** | `portal` | `odairmpicolo-blip.github.io` |
+| **A** | `@` (ou vazio) | `185.199.108.153` |
+| **A** | `@` | `185.199.109.153` |
+| **A** | `@` | `185.199.110.153` |
+| **A** | `@` | `185.199.111.153` |
+
+Opcional — se quiser `www.portalciop.com.br` também:
+
+| Tipo | Nome | Valor |
+|------|------|--------|
+| **CNAME** | `www` | `odairmpicolo-blip.github.io` |
 
 Aguarde a propagação (minutos a algumas horas).
 
-## 3. GitHub
+## 2. GitHub
 
-1. **Settings → Pages** → Source deve ser **GitHub Actions** (após o primeiro deploy do workflow).
-2. Em **Custom domain**, o GitHub pode mostrar o domínio após o deploy com `CNAME`.
-3. Ative **Enforce HTTPS** quando o certificado estiver pronto.
+1. **Settings → Pages** → Source: **GitHub Actions**
+2. Após o deploy, confira **Custom domain**: `portalciop.com.br`
+3. Ative **Enforce HTTPS** quando o certificado estiver pronto
 
-URL temporária (sem domínio): `https://odairmpicolo-blip.github.io/portalCIOP/`
+URL temporária (sem DNS): `https://odairmpicolo-blip.github.io/portalCIOP/`
 
-## 4. Firebase Authentication
+## 3. Firebase Authentication
 
 Console Firebase → **Authentication → Settings → Authorized domains**  
-Adicione: `portal.seudominio.com.br`
+Adicione: `portalciop.com.br`
 
-## 5. API AWS (se usar backend)
+## 4. API AWS (se usar backend)
 
 Em `backend/.env`, inclua o domínio em `CORS_ORIGINS`:
 
 ```env
-CORS_ORIGINS=https://portal.seudominio.com.br,https://portal-ciop.web.app,http://localhost:5173
+CORS_ORIGINS=https://portalciop.com.br,https://portal-ciop.web.app,http://localhost:5173
 ```
 
-## 6. Deploy
+## 5. Deploy
 
-O workflow `.github/workflows/deploy-github-pages.yml` publica automaticamente no push em `main`.  
+O workflow `.github/workflows/deploy-github-pages.yml` publica no push em `main`.  
 Deploy manual: **Actions → Deploy GitHub Pages → Run workflow**.
+
+O domínio está em `hosting/CNAME` (commitado no repositório).
+
