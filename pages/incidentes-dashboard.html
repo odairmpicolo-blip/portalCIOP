@@ -678,7 +678,7 @@ function downloadBlob(blob, filename) {
 }
 
 let carregandoIncidentes = false;
-const CACHE_INCIDENTES_KEY = "portal_incidentes_tcgl_v1";
+const CACHE_INCIDENTES_KEY = "portal_incidentes_tcgl_v2";
 const CACHE_INCIDENTES_TTL_MS = 60 * 60 * 1000;
 
 function lerCacheIncidentes() {
@@ -726,6 +726,10 @@ async function carregarIncidentes(forcar) {
     const status = document.getElementById("statusLine");
     btn.disabled = true;
 
+    if (forcar) {
+        try { localStorage.removeItem(CACHE_INCIDENTES_KEY); } catch (error) {}
+    }
+
     const cacheLocal = !forcar ? lerCacheIncidentes() : null;
     if (cacheLocal) {
         aplicarPayloadIncidentes(cacheLocal);
@@ -735,14 +739,24 @@ async function carregarIncidentes(forcar) {
     }
 
     try {
-        const url = forcar || !cacheLocal
-            ? "../assets/data/incidentes-tcgl.json?ts=" + Date.now()
-            : "../assets/data/incidentes-tcgl.json";
-        const response = await fetch(url, cacheLocal && !forcar ? {} : { cache: "no-store" });
-        if (!response.ok) throw new Error("Não foi possível carregar o arquivo de incidentes.");
-        const payload = await response.json();
-        salvarCacheIncidentes(payload);
-        aplicarPayloadIncidentes(payload);
+        const mod = await import("../assets/js/incidentes-dados-leitura.js?v=20260624f");
+        const res = await mod.carregarDadosIncidentes({
+            onProgress: (msg) => {
+                if (!cacheLocal || forcar) status.textContent = msg;
+            }
+        });
+        const incidentes = res?.payload?.incidentes || [];
+        if (!incidentes.length && !cacheLocal) {
+            throw new Error("Nenhum incidente encontrado (AWS/JSON).");
+        }
+        if (res?.payload) {
+            salvarCacheIncidentes(res.payload);
+            aplicarPayloadIncidentes(res.payload);
+            atualizarStatusLinha(res.payload, state.all.length);
+            if (res.origem) {
+                document.getElementById("statusLine").textContent += " · " + res.origem;
+            }
+        }
     } catch (error) {
         if (!cacheLocal) {
             status.textContent = error.message || "Erro ao atualizar incidentes.";
