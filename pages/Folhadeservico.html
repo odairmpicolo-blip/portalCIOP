@@ -118,6 +118,8 @@ document.documentElement.classList.add("portal-auth-pending");
             border-radius: 8px;
             padding: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+            container-type: inline-size;
+            container-name: chart-card;
             display: flex;
             flex-direction: column;
         }
@@ -135,18 +137,34 @@ document.documentElement.classList.add("portal-auth-pending");
             min-height: 320px;
         }
         .chart-header {
-            font-size: 15px;
+            display: flex;
+            align-items: flex-start;
+            gap: clamp(6px, 2.5cqi, 10px);
+            font-size: clamp(10px, 4.5cqi, 15px);
             font-weight: bold;
             color: var(--blue);
+            line-height: 1.25;
             margin-bottom: 15px;
             border-bottom: 2px solid var(--bg);
             padding-bottom: 8px;
+        }
+        .chart-header > span:last-child {
+            flex: 1;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            hyphens: auto;
         }
         .chart-container {
             position: relative;
             flex: 1;
             width: 100%;
             min-height: 220px;
+            min-width: 0;
+        }
+        .chart-container canvas {
+            display: block;
+            max-width: 100%;
         }
 
         .table-card {
@@ -1608,20 +1626,24 @@ h1 {
             const meta = chart.getDatasetMeta(0);
             if (!meta.data.length) return;
             const horizontal = chart.options.indexAxis === "y";
+            const fontSize = Math.max(8, Math.min(11, Math.floor(chart.width / 72)));
             ctx.save();
-            ctx.font = "700 11px Arial, Helvetica, sans-serif";
+            ctx.font = "700 " + fontSize + "px Arial, Helvetica, sans-serif";
             ctx.fillStyle = "#475467";
             meta.data.forEach((bar, i) => {
                 const val = data.datasets[0].data[i];
                 if (val == null) return;
+                const texto = String(val);
                 if (horizontal) {
+                    const limite = chart.chartArea.right - 8;
+                    if (bar.x + ctx.measureText(texto).width + 6 > limite) return;
                     ctx.textAlign = "left";
                     ctx.textBaseline = "middle";
-                    ctx.fillText(String(val), bar.x + 6, bar.y);
+                    ctx.fillText(texto, bar.x + 6, bar.y);
                 } else {
                     ctx.textAlign = "center";
                     ctx.textBaseline = "bottom";
-                    ctx.fillText(String(val), bar.x, bar.y - 4);
+                    ctx.fillText(texto, bar.x, bar.y - 4);
                 }
             });
             ctx.restore();
@@ -1927,10 +1949,44 @@ h1 {
         }
     };
 
-    function nomeAnalistaCurto(nome) {
+    function truncarTextoGrafico(texto, maxChars) {
+        const s = String(texto || "").trim();
+        if (!s) return "";
+        const limite = Math.max(4, maxChars || 12);
+        if (s.length <= limite) return s;
+        return s.slice(0, limite - 1) + "…";
+    }
+
+    function larguraContainerGrafico(canvas) {
+        const wrap = canvas?.closest(".chart-container");
+        return wrap?.clientWidth || canvas?.parentElement?.clientWidth || 320;
+    }
+
+    function medirEixoYHorizontal(chartWidth, labels) {
+        const largura = Math.max(180, chartWidth);
+        const maxLen = labels.reduce((m, l) => Math.max(m, String(l || "").length), 0);
+        const slotWidth = Math.min(150, Math.max(72, largura * 0.38));
+        const fontSize = Math.max(8, Math.min(11, Math.floor(slotWidth / Math.max(maxLen * 0.52, 7))));
+        const maxChars = Math.max(6, Math.floor(slotWidth / (fontSize * 0.55)));
+        return { fontSize, maxChars, paddingLeft: Math.ceil(slotWidth) };
+    }
+
+    function medirEixoXVertical(chartWidth, labels) {
+        const largura = Math.max(180, chartWidth);
+        const n = Math.max(labels.length, 1);
+        const maxLen = labels.reduce((m, l) => Math.max(m, String(l || "").length), 0);
+        const slot = largura / n;
+        const fontSize = Math.max(7, Math.min(10, Math.floor(slot / Math.max(maxLen * 0.48, 6))));
+        const maxChars = Math.max(4, Math.floor(slot / (fontSize * 0.52)));
+        const maxRotation = maxLen > maxChars ? (slot < 52 ? 90 : 45) : 0;
+        return { fontSize, maxChars, maxRotation };
+    }
+
+    function nomeAnalistaCurto(nome, maxChars = 16) {
         const partes = String(nome || "").trim().split(/\s+/).filter(Boolean);
-        if (partes.length <= 2) return partes.join(" ");
-        return partes[0] + " " + partes[partes.length - 1];
+        let result = partes.length <= 2 ? partes.join(" ") : partes[0] + " " + partes[partes.length - 1];
+        if (result.length > maxChars) return truncarTextoGrafico(result, maxChars);
+        return result;
     }
 
     function pluginsAnalistasChart() {
@@ -1999,10 +2055,17 @@ h1 {
         if (!canvas) return;
         destruirGrafico(id);
         const horizontal = config.horizontal !== false;
-        const labels = config.labels || [];
+        const labelsCompletos = (config.labels || []).slice();
         const values = config.values || [];
-        const barColors = resolverCoresGrafico(config, labels);
-        ajustarAlturaGrafico(canvas, labels, horizontal);
+        const barColors = resolverCoresGrafico(config, labelsCompletos);
+        ajustarAlturaGrafico(canvas, labelsCompletos, horizontal);
+
+        const chartWidth = larguraContainerGrafico(canvas);
+        const eixoY = horizontal ? medirEixoYHorizontal(chartWidth, labelsCompletos) : null;
+        const eixoX = !horizontal ? medirEixoXVertical(chartWidth, labelsCompletos) : null;
+        const labels = horizontal
+            ? labelsCompletos.map(l => truncarTextoGrafico(l, eixoY.maxChars))
+            : labelsCompletos.map(l => truncarTextoGrafico(l, eixoX.maxChars));
 
         chartAnalyticsInstances[id] = new Chart(canvas.getContext("2d"), {
             type: "bar",
@@ -2042,7 +2105,14 @@ h1 {
                 indexAxis: horizontal ? "y" : "x",
                 responsive: true,
                 maintainAspectRatio: false,
-                layout: { padding: { right: horizontal ? 40 : 4, top: horizontal ? 4 : 20, left: 4 } },
+                layout: {
+                    padding: {
+                        right: horizontal ? 36 : 4,
+                        top: horizontal ? 4 : (eixoX?.maxRotation >= 45 ? 16 : 20),
+                        left: 4,
+                        bottom: !horizontal && eixoX?.maxRotation >= 45 ? 4 : 0
+                    }
+                },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -2050,6 +2120,7 @@ h1 {
                         padding: 10,
                         cornerRadius: 8,
                         callbacks: {
+                            title: items => labelsCompletos[items[0]?.dataIndex] || items[0]?.label || "",
                             label: ctx => " Total: " + ctx.raw
                         }
                     }
@@ -2059,24 +2130,34 @@ h1 {
                         beginAtZero: true,
                         grid: { color: "#eef2f7", drawBorder: false },
                         border: { display: false },
-                        ticks: { stepSize: 1, font: { size: 10, weight: "600" }, color: "#667085" }
+                        ticks: { stepSize: 1, font: { size: 9, weight: "600" }, color: "#667085" }
                     },
                     y: {
                         grid: { display: false },
                         border: { display: false },
-                        ticks: { font: { size: 10, weight: "700" }, autoSkip: false, color: "#344054" }
+                        ticks: {
+                            font: { size: eixoY.fontSize, weight: "700" },
+                            autoSkip: false,
+                            color: "#344054"
+                        }
                     }
                 } : {
                     x: {
                         grid: { display: false },
                         border: { display: false },
-                        ticks: { font: { size: 10, weight: "600" }, autoSkip: false, maxRotation: 45, minRotation: 0, color: "#344054" }
+                        ticks: {
+                            font: { size: eixoX.fontSize, weight: "600" },
+                            autoSkip: false,
+                            maxRotation: eixoX.maxRotation,
+                            minRotation: eixoX.maxRotation,
+                            color: "#344054"
+                        }
                     },
                     y: {
                         beginAtZero: true,
                         grid: { color: "#eef2f7", drawBorder: false },
                         border: { display: false },
-                        ticks: { stepSize: 1, font: { size: 10, weight: "600" }, color: "#667085" }
+                        ticks: { stepSize: 1, font: { size: 9, weight: "600" }, color: "#667085" }
                     }
                 }
             }
@@ -3413,7 +3494,11 @@ h1 {
         select.value = valorSelecionado;
     }
 
+    let dadosGraficosCache = null;
+    let graficosResizeTimer = null;
+
     function inicializarGraficos(dados) {
+        dadosGraficosCache = dados;
         const total = dados.length || 1;
 
         // 1. Contagem Analistas
@@ -3473,14 +3558,19 @@ h1 {
         if (chartAnalistasInstance) chartAnalistasInstance.destroy();
 
         const total = labels.length;
-        const labelsCurto = labels.map(nomeAnalistaCurto);
+        const labelsProvisorios = labels.map(nomeAnalistaCurto);
         const nomesCompletos = labels.slice();
-        ajustarDimensoesGraficoAnalistas(canvas, labelsCurto, values);
+        ajustarDimensoesGraficoAnalistas(canvas, labelsProvisorios, values);
+
+        const chartWidth = canvas.parentElement?.clientWidth || larguraContainerGrafico(canvas);
+        const eixoX = medirEixoXVertical(chartWidth, labels);
+        const labelsCurto = labels.map(n => nomeAnalistaCurto(n, eixoX.maxChars));
         const fonteGrafico = (peso, tamanho) => ({
             family: "'Segoe UI', system-ui, Arial, sans-serif",
             weight: peso,
             size: tamanho
         });
+        const fonteDatalabel = Math.max(8, Math.min(10, eixoX.fontSize));
 
         chartAnalistasInstance = new Chart(canvas.getContext("2d"), {
             type: "bar",
@@ -3528,7 +3618,7 @@ h1 {
                         backgroundColor: "rgba(255,255,255,.88)",
                         borderRadius: 6,
                         padding: { top: 3, bottom: 3, left: 6, right: 6 },
-                        font: fonteGrafico("800", 10),
+                        font: fonteGrafico("800", fonteDatalabel),
                         formatter(value) { return value; }
                     }
                 },
@@ -3538,10 +3628,10 @@ h1 {
                         border: { display: false },
                         grid: { display: false },
                         ticks: {
-                            font: fonteGrafico("700", 10),
+                            font: fonteGrafico("700", eixoX.fontSize),
                             color: ANALISTAS_CHART_THEME.navy,
-                            maxRotation: 0,
-                            minRotation: 0,
+                            maxRotation: eixoX.maxRotation,
+                            minRotation: eixoX.maxRotation,
                             autoSkip: false,
                             align: "center",
                             padding: 8
@@ -3918,6 +4008,14 @@ h1 {
 
     document.getElementById("btn-pdf-oficina")?.addEventListener("click", () => {
         gerarPdfOficinaBorracharia().catch(() => {});
+    });
+
+    window.addEventListener("resize", () => {
+        clearTimeout(graficosResizeTimer);
+        graficosResizeTimer = setTimeout(() => {
+            if (!dadosGraficosCache) return;
+            inicializarGraficos(dadosGraficosCache);
+        }, 250);
     });
 </script>
 </body>
