@@ -28,7 +28,7 @@ jobs:
           node-version: "24"
 
       - name: Sincronizar com origin
-        run: git pull --rebase origin main
+        run: git pull --rebase --autostash origin main
 
       - name: Gerar JSON da folha de serviço
         env:
@@ -37,7 +37,7 @@ jobs:
         run: node scripts/atualizar-folha-servico-json.mjs
 
       - name: Sincronizar antes do commit (folha)
-        run: git pull --rebase origin main
+        run: git pull --rebase --autostash origin main
 
       - name: Publicar JSON da folha de serviço
         uses: stefanzweifel/git-auto-commit-action@v5
@@ -53,7 +53,7 @@ jobs:
         continue-on-error: true
 
       - name: Sincronizar antes do commit (snapshots)
-        run: git pull --rebase origin main
+        run: git pull --rebase --autostash origin main
 
       - name: Publicar outros snapshots JSON
         uses: stefanzweifel/git-auto-commit-action@v5
