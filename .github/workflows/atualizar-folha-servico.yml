@@ -36,6 +36,9 @@ jobs:
           FOLHA_SERVICO_TIMEOUT_MS: 180000
         run: node scripts/atualizar-folha-servico-json.mjs
 
+      - name: Sincronizar antes do commit (folha)
+        run: git pull --rebase origin main
+
       - name: Publicar JSON da folha de serviço
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
@@ -48,6 +51,9 @@ jobs:
           PORTAL_JSON_TIMEOUT_MS: 300000
         run: node scripts/atualizar-portais-json.mjs
         continue-on-error: true
+
+      - name: Sincronizar antes do commit (snapshots)
+        run: git pull --rebase origin main
 
       - name: Publicar outros snapshots JSON
         uses: stefanzweifel/git-auto-commit-action@v5
