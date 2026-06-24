@@ -96,7 +96,7 @@ else
     mark_success
     log "Atualização concluída na segunda tentativa."
   else
-    log "ERRO: falha na atualização após 2 tentativas. Próxima execução amanhã às 16:00 ou manual: bash \"$0\" manual"
+    log "ERRO: falha na atualização após 2 tentativas. Próxima execução amanhã às 04:00 ou manual: bash \"$0\" manual"
     exit 1
   fi
 fi

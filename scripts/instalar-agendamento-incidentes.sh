@@ -1,5 +1,5 @@
 #!/bin/bash
-# Instala agendamento local (launchd): todo dia às 16:00 e ao ligar o Mac, se ainda não atualizou hoje.
+# Instala agendamento local (launchd): todo dia às 04:00 e ao ligar o Mac, se ainda não atualizou hoje.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -48,7 +48,7 @@ cat > "$PLIST_PATH" <<EOF
   <key>StartCalendarInterval</key>
   <dict>
     <key>Hour</key>
-    <integer>16</integer>
+    <integer>4</integer>
     <key>Minute</key>
     <integer>0</integer>
   </dict>
@@ -69,7 +69,7 @@ launchctl bootstrap "gui/${UID_NUM}" "$PLIST_PATH"
 launchctl enable "gui/${UID_NUM}/${PLIST_LABEL}"
 
 echo "Agendamento instalado."
-echo "  Horário: todo dia às 16:00 (horário local do Mac)"
+echo "  Horário: todo dia às 04:00 (horário local do Mac)"
 echo "  Ao ligar: executa se ainda não atualizou hoje"
 echo "  Plist:   $PLIST_PATH"
 echo "  Log:     $HOME/Library/Logs/ciop-portal/atualizar-incidentes.log"
