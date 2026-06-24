@@ -1,9 +1,20 @@
-# Deploy automático desativado — não roda em push (evita falhas no CI).
-# Para publicar manualmente: Actions → Deploy Firebase Hosting → Run workflow.
+# Publica o portal estático no Firebase Hosting (produção portal-ciop.web.app).
 name: Deploy Firebase Hosting
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "pages/**"
+      - "assets/**"
+      - "index.html"
+      - "firebase.json"
+      - ".firebaserc"
   workflow_dispatch:
+
+concurrency:
+  group: firebase-hosting-production
+  cancel-in-progress: true
 
 permissions:
   contents: read
