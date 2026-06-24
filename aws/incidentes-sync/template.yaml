@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Portal CIOP — sync incidentes TCGL → S3 cache → Aurora DSQL (sa-east-1)
+
+Parameters:
+  DsqlClusterId:
+    Type: String
+    Default: ort34httzig7iktrneb4ytcy5u
+  IncidentesSecretName:
+    Type: String
+    Default: portal-ciop/incidentes-sync
+  ScheduleExpression:
+    Type: String
+    Default: cron(0 9 * * ? *)
+    Description: "09:00 UTC = 06:00 horário de Brasília"
+
+Resources:
+  IncidentesStateBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  IncidentesSyncRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: portal-incidentes-dsql-s3-secrets
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: dsql:DbConnectAdmin
+                Resource: !Sub "arn:aws:dsql:${AWS::Region}:${AWS::AccountId}:cluster/${DsqlClusterId}"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt IncidentesStateBucket.Arn
+                  - !Sub "${IncidentesStateBucket.Arn}/*"
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${IncidentesSecretName}*"
+
+  IncidentesSyncFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: portal-ciop-incidentes-sync
+      Description: Busca incidentes TCGL e importa no Aurora DSQL
+      Runtime: nodejs20.x
+      Handler: index.handler
+      Role: !GetAtt IncidentesSyncRole.Arn
+      Timeout: 900
+      MemorySize: 1024
+      EphemeralStorage:
+        Size: 1024
+      Environment:
+        Variables:
+          DSQL_CLUSTER_ID: !Ref DsqlClusterId
+          DSQL_REGION: !Ref AWS::Region
+          DSQL_USER: admin
+          SYNC_INCIDENTES_SKIP_GIT: "1"
+          INCIDENTES_STATE_S3_BUCKET: !Ref IncidentesStateBucket
+          INCIDENTES_STATE_S3_KEY: incidentes-tcgl.json
+          INCIDENTES_SECRET_NAME: !Ref IncidentesSecretName
+          PORTAL_ROOT: /var/task
+      Code:
+        ZipFile: |
+          export const handler = async () => ({ ok: false, error: "Deploy o pacote com scripts/build-incidentes-lambda.sh" });
+
+  IncidentesSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Sync diário incidentes TCGL → DSQL
+      ScheduleExpression: !Ref ScheduleExpression
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt IncidentesSyncFunction.Arn
+          Id: IncidentesSyncTarget
+
+  IncidentesSchedulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IncidentesSyncFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt IncidentesSchedule.Arn
+
+Outputs:
+  FunctionName:
+    Value: !Ref IncidentesSyncFunction
+  StateBucket:
+    Value: !Ref IncidentesStateBucket
+  StateBucketArn:
+    Value: !GetAtt IncidentesStateBucket.Arn

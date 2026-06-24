@@ -84,14 +84,14 @@ if [[ -z "$CIOP_INCIDENTES_USUARIO" || -z "$CIOP_INCIDENTES_SENHA" ]]; then
   exit 1
 fi
 
-if "$NODE_BIN" "$PORTAL_ROOT/scripts/atualizar-incidentes-local.mjs" >> "$LOG_FILE" 2>&1; then
+if "$NODE_BIN" "$PORTAL_ROOT/scripts/sync-incidentes-completo.mjs" >> "$LOG_FILE" 2>&1; then
   publish_portal_prod
   mark_success
-  log "Atualização concluída com sucesso."
+  log "Atualização concluída com sucesso (TCGL + DSQL + git)."
 else
   log "Primeira tentativa falhou. Nova tentativa em 120 segundos..."
   sleep 120
-  if "$NODE_BIN" "$PORTAL_ROOT/scripts/atualizar-incidentes-local.mjs" >> "$LOG_FILE" 2>&1; then
+  if "$NODE_BIN" "$PORTAL_ROOT/scripts/sync-incidentes-completo.mjs" >> "$LOG_FILE" 2>&1; then
     publish_portal_prod
     mark_success
     log "Atualização concluída na segunda tentativa."
