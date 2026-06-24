@@ -199,7 +199,7 @@ tbody td.col-maquina .cell-readonly{background:transparent;color:inherit;padding
             <span class="legend-item"><span class="legend-swatch saving"></span>Salvando</span>
             <span class="legend-item"><span class="legend-swatch erro"></span>Erro ao salvar</span>
             <span class="legend-item"><span class="legend-swatch formula"></span>Calculado automaticamente</span>
-            <span class="legend-item"><span class="legend-swatch" style="background:#f8fafc;border-color:#cbd5e1"></span>Preenchido (não editável)</span>
+            <span class="legend-item"><span class="legend-swatch" style="background:#f8fafc;border-color:#cbd5e1"></span>Preenchido (só as 10 últimas editáveis)</span>
             <span class="legend-item">Setas / Tab / Enter — navegar células editáveis</span>
         </div>
     </section>
@@ -248,6 +248,7 @@ const CAMPOS_FORMULA_PLANILHA = [
     "minutos_adiantado_no_inicio"
 ];
 const CAMPOS_DISPARO_FORMULA = new Set(["saida_real","inicio_real","horario_saida_da_garagem","horario_de_inicio"]);
+const LIMITE_CELULAS_LANCADAS_EDITAVEIS = 10;
 const SAIU_SIM_MIN = -10;
 const SAIU_SIM_MAX = 3;
 const INICIO_NO_HORARIO_MIN = -1;
@@ -276,6 +277,8 @@ let overlayAberturaAtivo = false;
 let eventosTabelaIniciados = false;
 let cabecalhoRenderizado = false;
 let cacheGravacaoTimer = null;
+let filaCelulasLancadasRecentes = [];
+let celulasLancadasRecentes = new Set();
 const state = {
     colunas: COLUNAS_EXIBICAO,
     semana: [],
@@ -532,10 +535,44 @@ function celulaTemValorPreenchido(row,chave){
     const v=String(val(row,chave)||"").trim();
     return v!==""&&v!=="—"&&v!=="-";
 }
+function chaveCelulaLancada(row,chave){
+    return String(row?._row||"")+":"+chave;
+}
+function indiceLinhaPorRowId(rowId){
+    return state.dados.findIndex(r=>String(r._row)===String(rowId));
+}
+function inicializarCelulasLancadasRecentes(){
+    const lista=[];
+    const rows=[...state.dados].sort((a,b)=>(b._row||0)-(a._row||0));
+    for(const row of rows){
+        for(const chave of CAMPOS_EDITAVEIS){
+            if(!celulaTemValorPreenchido(row,chave)) continue;
+            lista.push(chaveCelulaLancada(row,chave));
+            if(lista.length>=LIMITE_CELULAS_LANCADAS_EDITAVEIS) break;
+        }
+        if(lista.length>=LIMITE_CELULAS_LANCADAS_EDITAVEIS) break;
+    }
+    filaCelulasLancadasRecentes=lista;
+    celulasLancadasRecentes=new Set(lista);
+}
+function registrarCelulaLancadaRecente(row,chave){
+    if(!row||!chave||!celulaTemValorPreenchido(row,chave)) return null;
+    const key=chaveCelulaLancada(row,chave);
+    const removida=filaCelulasLancadasRecentes.length>=LIMITE_CELULAS_LANCADAS_EDITAVEIS
+        ?filaCelulasLancadasRecentes[0]
+        :null;
+    filaCelulasLancadasRecentes=filaCelulasLancadasRecentes.filter(k=>k!==key);
+    filaCelulasLancadasRecentes.push(key);
+    while(filaCelulasLancadasRecentes.length>LIMITE_CELULAS_LANCADAS_EDITAVEIS){
+        filaCelulasLancadasRecentes.shift();
+    }
+    celulasLancadasRecentes=new Set(filaCelulasLancadasRecentes);
+    return removida&&removida!==key?removida:null;
+}
 function celulaEditavelPorChave(chave,row){
     if(!CAMPOS_EDITAVEIS.has(chave)) return false;
-    if(row&&celulaTemValorPreenchido(row,chave)) return false;
-    return true;
+    if(!row||!celulaTemValorPreenchido(row,chave)) return true;
+    return celulasLancadasRecentes.has(chaveCelulaLancada(row,chave));
 }
 function celulaEditavel(rowIdx,colIdx){
     if(rowIdx<0||rowIdx>=state.dados.length||colIdx<0||colIdx>=state.colunas.length) return false;
@@ -771,9 +808,9 @@ function renderCelula(row, rowIdx, col){
     const clsExtra=(col.texto?" cell-texto":"")+clsMaquina;
     if(!celulaEditavelPorChave(chave,row)){
         const exibir=chave==="maquina"?textoMaquina:v;
-        const bloqueado=CAMPOS_EDITAVEIS.has(chave)&&celulaTemValorPreenchido(row,chave);
+        const bloqueado=CAMPOS_EDITAVEIS.has(chave)&&celulaTemValorPreenchido(row,chave)&&!celulaEditavelPorChave(chave,row);
         const clsLock=bloqueado?" cell-locked":"";
-        const titulo=bloqueado?"Preenchido na planilha — não editável":"Não editável";
+        const titulo=bloqueado?"Preenchido na planilha — não editável":(celulaTemValorPreenchido(row,chave)?"Lançamento recente — editável":"Não editável");
         return '<span class="cell-readonly'+clsExtra+clsLock+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" aria-readonly="true" tabindex="-1" title="'+titulo+'">'+escapeHtml(exibir||"—")+'</span>';
     }
     if(CAMPOS_SELECT[chave]){
@@ -865,6 +902,7 @@ function onCellChange(e){
     state.dados[i][k]=el.value.trim();
     if(CAMPOS_DISPARO_FORMULA.has(k)) atualizarCelulasFormula(i);
     state.dados[i]._dirty=true;
+    state.dados[i]._ultimoCampoEditado=k;
     state.dados[i]._syncErro=false;
     el.classList.remove("saved","erro");
     el.classList.add("saving");
@@ -895,7 +933,15 @@ async function salvarLinha(i){
         const idxSem=state.semana.findIndex(r=>r._row===row._row);
         if(idxSem>=0) state.semana[idxSem]=row;
         if(state.semana.length) salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte});
+        const campoLancado=row._ultimoCampoEditado;
+        delete row._ultimoCampoEditado;
+        const chaveRemovida=campoLancado?registrarCelulaLancadaRecente(row,campoLancado):null;
         atualizarLinhaPosSalvar(i);
+        if(chaveRemovida){
+            const rowId=chaveRemovida.split(":")[0];
+            const idxRemovido=indiceLinhaPorRowId(rowId);
+            if(idxRemovido>=0&&idxRemovido!==i) atualizarLinhaPosSalvar(idxRemovido);
+        }
         if(ehDiaAtual($("dataFiltro").value)) setTimeout(()=>sincronizarJsonHoje(),1500);
     }catch(err){
         row._syncErro=true;
@@ -972,6 +1018,7 @@ function aplicarFiltroData(data,origem){
     state.todos=state.semana.filter(r=>normalizarDataIsoRow(r)===data);
     popularMaquinas([...new Set(state.todos.map(d=>String(d.maquina||"").trim()).filter(Boolean))]);
     aplicarFiltroMaquina();
+    inicializarCelulasLancadasRecentes();
     const agora=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
     const texto=formatNumber(state.dados.length)+" registro(s) · "+rotuloData(data)+" · "+origem+" · "+agora;
     requestAnimationFrame(()=>{
