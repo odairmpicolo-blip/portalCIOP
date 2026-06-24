@@ -121,7 +121,7 @@ input,select{
     color:var(--text);
 }
 .filter-actions{display:flex;gap:8px;align-items:end}
-.charts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.charts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
 .chart-card,.table-card{
     background:#fff;
     border:1px solid var(--border);
@@ -129,6 +129,8 @@ input,select{
     box-shadow:0 10px 28px rgba(16,24,40,.07);
 }
 .chart-card{padding:14px;min-height:310px}
+.chart-note{margin:-4px 0 12px;color:var(--muted);font-size:11px;line-height:1.4;font-weight:600}
+.chart-card-vazio .bar-fill{background:linear-gradient(90deg,#94a3b8,#cbd5e1)}
 .card-title{margin:0 0 12px;color:var(--blue);font-size:15px;font-weight:900}
 .bar-row{display:grid;grid-template-columns:minmax(0,1fr) 46px;gap:8px;align-items:center;margin:8px 0}
 .bar-label{font-size:12px;color:#344054;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -314,6 +316,11 @@ tbody tr:hover{background:#fff7ed}
             <h2 class="card-title">Tipo do incidente</h2>
             <div id="chartTipo"></div>
         </article>
+        <article class="chart-card chart-card-vazio">
+            <h2 class="card-title">Vazio <span id="chartVazioTotal" class="pill" style="margin-left:6px;font-size:11px">0</span></h2>
+            <p class="chart-note">Esses Incidentes não podem ser considerados como estatísticas, pois são registros que deveriam ser excluídos</p>
+            <div id="chartVazio"></div>
+        </article>
     </section>
 
     <section class="table-card" aria-label="Tabela de incidentes">
@@ -474,12 +481,23 @@ function distinctCount(rows, key) {
     return new Set(rows.map((row) => row[key]).filter(Boolean)).size;
 }
 
+function isRegistroVazio(row) {
+    if (row?.registroVazio === true) return true;
+    const semDetalhe = !String(row?.natureOfProblem || "").trim() && !String(row?.instructions || "").trim();
+    return semDetalhe;
+}
+
+function rowsParaEstatistica(rows) {
+    return rows.filter((row) => !isRegistroVazio(row));
+}
+
 function renderKpis() {
-    const linha = firstCounter(state.filtered, "linha");
-    const tipo = firstCounter(state.filtered, "tipo");
-    const criado = firstCounter(state.filtered, "criadoPor");
-    const proprietario = firstCounter(state.filtered, "proprietario");
-    const tiposDistintos = distinctCount(state.filtered, "tipo");
+    const statsRows = rowsParaEstatistica(state.filtered);
+    const linha = firstCounter(statsRows, "linha");
+    const tipo = firstCounter(statsRows, "tipo");
+    const criado = firstCounter(statsRows, "criadoPor");
+    const proprietario = firstCounter(statsRows, "proprietario");
+    const tiposDistintos = distinctCount(statsRows, "tipo");
     document.getElementById("kpiTotal").textContent = formatNumber(state.filtered.length);
     document.getElementById("kpiPeriodo").textContent = state.filtered.length === state.all.length ? "Todos os registros TCGL" : "Resultado filtrado";
     setKpi("kpiLinha", "kpiLinhaQtd", linha);
@@ -495,9 +513,9 @@ function setKpi(valueId, subId, counter) {
     document.getElementById(subId).textContent = formatNumber(counter.total) + " incidentes";
 }
 
-function renderChart(targetId, key) {
+function renderChart(targetId, key, rows) {
     const target = document.getElementById(targetId);
-    const data = countBy(state.filtered, key).slice(0, 10);
+    const data = countBy(rows, key).slice(0, 10);
     const max = data[0]?.total || 1;
     target.innerHTML = data.map((item) => {
         const width = Math.max(4, Math.round((item.total / max) * 100));
@@ -539,12 +557,16 @@ function renderTable() {
 }
 
 function render() {
+    const statsRows = rowsParaEstatistica(state.filtered);
+    const vazioRows = state.filtered.filter(isRegistroVazio);
     renderKpis();
-    renderChart("chartCriado", "criadoPor");
-    renderChart("chartProprietario", "proprietario");
-    renderChart("chartEstado", "estado");
-    renderChart("chartLinha", "linha");
-    renderChart("chartTipo", "tipo");
+    renderChart("chartCriado", "criadoPor", statsRows);
+    renderChart("chartProprietario", "proprietario", statsRows);
+    renderChart("chartEstado", "estado", statsRows);
+    renderChart("chartLinha", "linha", statsRows);
+    renderChart("chartTipo", "tipo", statsRows);
+    document.getElementById("chartVazioTotal").textContent = formatNumber(vazioRows.length);
+    renderChart("chartVazio", "tipo", vazioRows);
     updateSortIndicators();
     renderTable();
 }

@@ -19,7 +19,6 @@ const detailLimit = Number(process.env.CIOP_INCIDENTES_DETALHES_LIMITE || 0);
 const loadDetails = process.env.CIOP_INCIDENTES_DETALHES !== '0';
 const pageLength = Number(process.env.CIOP_INCIDENTES_LOTE || 2000);
 const DATA_MINIMA_ISO = String(process.env.CIOP_INCIDENTES_DATA_MIN || "2026-01-01").trim();
-const TIPO_VAZIO_LABEL = String(process.env.CIOP_INCIDENTES_TIPO_VAZIO || "VAZIO").trim();
 
 if (!usuario || !senha) {
   throw new Error('Configure CIOP_INCIDENTES_USUARIO e CIOP_INCIDENTES_SENHA antes de atualizar os incidentes.');
@@ -284,9 +283,9 @@ function isOnOrAfterMinDate(row) {
 }
 
 function applyTipoVazio(row) {
-  if (!String(row.natureOfProblem || "").trim() && !String(row.instructions || "").trim()) {
-    row.tipo = TIPO_VAZIO_LABEL;
-  }
+  const semNatureza = !String(row.natureOfProblem || "").trim();
+  const semInstrucoes = !String(row.instructions || "").trim();
+  row.registroVazio = semNatureza && semInstrucoes;
   return row;
 }
 
@@ -521,7 +520,7 @@ mergedRows.forEach(applyTipoVazio);
 const finalRows = mergedRows.filter(isOnOrAfterMinDate);
 const processedIds = Array.from(new Set(finalRows.map(rowKey).filter(Boolean)));
 const checkedDetailIds = Array.from(existingPayload.checkedDetailIds);
-console.log(`Incidentes desde ${DATA_MINIMA_ISO}: ${finalRows.length} (tipo VAZIO quando sem natureza/instruções).`);
+console.log(`Incidentes desde ${DATA_MINIMA_ISO}: ${finalRows.length} (registroVazio quando sem natureza/instruções; tipo TCGL preservado).`);
 
 const payload = {
   atualizadoEm: new Date().toISOString(),
