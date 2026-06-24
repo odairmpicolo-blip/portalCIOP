@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relatório — Folha de Serviço | Portal CIOP</title>
+<style>
+:root{--blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--bg:#f5f7fb;--border:#dfe5ef;--text:#101828;--muted:#667085;--red:#dc2626;--green:#15803d;--white:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.header{background:var(--white);display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);gap:16px;align-items:center;padding:8px 20px;border-bottom:1px solid #e8edf6}
+.header > a:first-child{justify-self:start;display:flex;align-items:center}
+.logo-ciop{height:42px;object-fit:contain}.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.ciop-session{display:flex;align-items:center;gap:6px;max-width:260px;padding:4px 8px;border:1px solid rgba(6,36,92,.12);border-radius:6px;background:var(--white);color:var(--blue);font-size:11px}
+.ciop-session-user{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.ciop-session-profile{color:var(--muted);font-weight:600}
+.ciop-session .btn-logout{background:var(--red);color:#fff;border:none;border-radius:5px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer}
+.container{max-width:100%;margin:20px auto 32px;padding:0 20px;flex:1;width:100%}
+.toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.toolbar-left{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;flex:1;min-width:0}
+.nav-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn-icon{display:inline-flex;width:16px;height:16px;flex:0 0 auto}
+.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-portal,.btn-primary,.btn-secondary,.btn-export{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;border:0;cursor:pointer;font-family:inherit}
+.btn-portal,.btn-primary{background:var(--blue);color:#fff}
+.btn-portal:hover,.btn-primary:hover{background:var(--blue2)}
+.btn-secondary{background:#e8edf6;color:var(--blue)}
+.btn-export{background:var(--white);color:var(--blue);border:1px solid var(--border);min-height:40px;font-size:12px;padding:6px 12px}
+.btn-export:disabled{opacity:.5;cursor:not-allowed}
+.btn-export.csv{border-left:3px solid var(--green)}.btn-export.xlsx{border-left:3px solid #2563eb}.btn-export.pdf{border-left:3px solid var(--orange)}
+.export-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.status-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;background:var(--white);border:1px solid var(--border);border-radius:999px;font-size:12px;font-weight:700;color:var(--muted)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#94a3b8}
+.status-dot.ok{background:var(--green)}.status-dot.load{background:var(--orange);animation:pulse 1s infinite}.status-dot.erro{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.table-card{overflow:hidden;background:var(--white);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 28px rgba(16,24,40,.07)}
+.table-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.card-title{margin:0;color:var(--blue);font-size:15px;font-weight:900}
+.table-sub{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px}
+.table-wrap{overflow:auto;max-height:calc(100vh - 320px);min-height:420px}
+table.relatorio{width:100%;border-collapse:separate;border-spacing:0;font-size:11px;min-width:1200px}
+table.relatorio thead th{position:sticky;top:0;z-index:2;background:#06245c;color:#fff;padding:10px 6px;font-size:8.5px;font-weight:900;text-transform:uppercase;text-align:center}
+table.relatorio tbody td{border-bottom:1px solid #edf2f7;padding:7px 5px;text-align:center;vertical-align:middle;background:var(--white);word-break:break-word}
+table.relatorio tbody tr:nth-child(even) td{background:#fafbfd}
+table.relatorio td.col-texto,table.relatorio th.col-texto{text-align:left}
+.empty{padding:48px 24px;text-align:center;color:var(--muted)}
+.empty-title{font-size:16px;font-weight:900;color:var(--blue);margin-bottom:6px}
+.page-footer{padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-top:1px solid var(--border);background:var(--white)}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css">
+<link rel="stylesheet" href="../assets/css/portal-filtros.css">
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="../assets/js/loading.js"></script>
+<script type="module" src="../assets/js/auth.js"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+</head>
+<body data-require-perfis="Administrador,Supervisor,Analista">
+<header class="header">
+    <a href="https://mov1.com.br" target="_blank" rel="noopener"><img class="logo-ciop" src="../assets/img/CIOP Sem Fundo.png" alt="CIOP"></a>
+    <div class="title-wrap">
+        <h1 style="margin:0;color:var(--blue);font-size:20px;font-weight:900">FOLHA DE SERVIÇO</h1>
+        <div class="header-subtitle">Relatório operacional · Firestore · exportação CSV · Excel · PDF</div>
+    </div>
+    <div class="header-actions">
+        <div class="ciop-session">
+            <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
+            <span class="ciop-session-profile" id="perfilUsuario">Perfil</span>
+            <button class="btn-logout" type="button" onclick="logout()">Sair</button>
+        </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+    </div>
+</header>
+<main class="container">
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <div class="nav-actions">
+                <a class="btn-portal" href="../index.html"><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Portal</a>
+                <a class="btn-secondary" href="relatorios.html"><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6V3Z"/><path d="M15 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg></span>Relatórios</a>
+                <a class="btn-secondary" href="Folhadeservico.html"><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5"/><path d="M12 16V8"/><path d="M16 16v-7"/></svg></span>Dashboard</a>
+            </div>
+            <div class="filters-inline" aria-label="Filtros">
+                <div class="filter-field"><label for="dataDe">Data de</label><input id="dataDe" type="date"></div>
+                <div class="filter-field"><label for="dataAte">Data até</label><input id="dataAte" type="date"></div>
+            </div>
+            <button type="button" class="btn-primary" id="btnGerar">Gerar relatório</button>
+        </div>
+        <div class="status-pill"><span class="status-dot load" id="statusDot"></span><span id="statusLine">Selecione o período.</span></div>
+    </div>
+    <section class="table-card">
+        <div class="table-head">
+            <div>
+                <h2 class="card-title">Folha de Serviço</h2>
+                <div class="table-sub" id="tableSub">Portal CIOP · TCGL</div>
+            </div>
+            <div class="export-bar">
+                <button type="button" class="btn-export csv" id="btnCsv" disabled>CSV</button>
+                <button type="button" class="btn-export xlsx" id="btnExcel" disabled>Excel</button>
+                <button type="button" class="btn-export pdf" id="btnPdf" disabled>PDF</button>
+                <span class="status-pill" style="padding:6px 10px"><span id="tableInfo">0 linhas</span></span>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="relatorio"><thead id="tabelaHead"></thead><tbody id="tabelaCorpo"></tbody></table>
+            <div class="empty" id="emptyState"><div class="empty-title">Nenhum dado para exibir</div><div>Defina o período e clique em <strong>Gerar relatório</strong>.</div></div>
+        </div>
+    </section>
+</main>
+<footer class="page-footer">Portal CIOP · Relatório Folha de Serviço · TCGL</footer>
+<script type="module">
+import { carregarDadosFolhaPeriodo, normalizarDataIsoRow } from "../assets/js/folha-dados-leitura.js?v=20260624b";
+import { exportarCsv, exportarExcel, exportarPdf } from "../assets/js/liberacao-relatorio-export.js?v=20260624b";
+
+const COLUNAS = [
+    { chave: "data", rotulo: "DATA", largura: 72, pdfWidth: 16 },
+    { chave: "hora", rotulo: "HORA", largura: 48, pdfWidth: 12 },
+    { chave: "ocorrencia", rotulo: "OCORRÊNCIA", largura: 88, pdfWidth: 22 },
+    { chave: "analista", rotulo: "ANALISTA", largura: 56, pdfWidth: 14 },
+    { chave: "carro_sai", rotulo: "CARRO SAI", largura: 52, pdfWidth: 14 },
+    { chave: "mot_sai", rotulo: "MOT. SAI", largura: 52, pdfWidth: 14 },
+    { chave: "carro_entra", rotulo: "CARRO ENTRA", largura: 52, pdfWidth: 14 },
+    { chave: "mot_entra", rotulo: "MOT. ENTRA", largura: 52, pdfWidth: 14 },
+    { chave: "linha", rotulo: "LINHA", largura: 44, pdfWidth: 12 },
+    { chave: "tabela", rotulo: "TABELA", largura: 52, pdfWidth: 12 },
+    { chave: "servico", rotulo: "SERVIÇO", largura: 72, pdfWidth: 18 },
+    { chave: "local", rotulo: "LOCAL", largura: 72, pdfWidth: 18 },
+    { chave: "situacao", rotulo: "SITUAÇÃO", largura: 72, pdfWidth: 18 },
+    { chave: "motivo_oficina", rotulo: "MOTIVO OFICINA", largura: 88, pdfWidth: 20, texto: true },
+    { chave: "observacoes", rotulo: "OBSERVAÇÕES", largura: 120, pdfWidth: 28, texto: true }
+];
+
+const state = { linhas: [] };
+function $(id){ return document.getElementById(id); }
+function escapeHtml(v){ return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function isoDataLocal(n=0){ const d=new Date(); d.setDate(d.getDate()+n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function brDate(iso){ if(!iso) return "—"; const p=iso.split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:iso; }
+function pick(row,...keys){ for(const k of keys){ const v=row?.[k]; if(v!=null&&String(v).trim()!=="") return String(v).trim(); } return ""; }
+function val(row,key){
+    if(key==="carro_sai") return pick(row,"carro_sai","carro_que_sai","carro");
+    if(key==="mot_sai") return pick(row,"mot_sai","mot_que_sai","motorista");
+    if(key==="motivo_oficina") return pick(row,"motivo_oficina","motivo_somente_oficina");
+    return pick(row,key);
+}
+function linhaParaRelatorio(row){
+    const dataIso=normalizarDataIsoRow(row);
+    const out={};
+    COLUNAS.forEach(col=>{ out[col.chave]=col.chave==="data"?brDate(dataIso):val(row,col.chave)||"—"; });
+    return out;
+}
+function setStatus(t,tipo){ $("statusLine").textContent=t; $("statusDot").className="status-dot"+(tipo?` ${tipo}`:""); }
+function toggleExport(h){ ["btnCsv","btnExcel","btnPdf"].forEach(id=>{ $(id).disabled=!h; }); }
+function renderCabecalho(){ $("tabelaHead").innerHTML=`<tr>${COLUNAS.map(c=>`<th class="${c.texto?"col-texto":""}" style="min-width:${c.largura}px">${escapeHtml(c.rotulo)}</th>`).join("")}</tr>`; }
+function renderTabela(){
+    if(!state.linhas.length){ $("tabelaCorpo").innerHTML=""; $("emptyState").hidden=false; $("tableInfo").textContent="0 linhas"; toggleExport(false); return; }
+    $("emptyState").hidden=true;
+    $("tabelaCorpo").innerHTML=state.linhas.map(r=>`<tr>${COLUNAS.map(c=>`<td class="${c.texto?"col-texto":""}">${escapeHtml(r[c.chave])}</td>`).join("")}</tr>`).join("");
+    $("tableInfo").textContent=`${state.linhas.length.toLocaleString("pt-BR")} linha(s)`;
+    toggleExport(true);
+}
+function ordenar(dados){ return dados.slice().sort((a,b)=>{ const da=normalizarDataIsoRow(a),db=normalizarDataIsoRow(b); if(da!==db) return da.localeCompare(db); return String(a.hora||"").localeCompare(String(b.hora||"")); }); }
+function metaExport(dataDe,dataAte){
+    return { titulo:"Folha de Serviço", periodo:dataDe===dataAte?brDate(dataDe):`${brDate(dataDe)} a ${brDate(dataAte)}`, geradoEm:new Date().toLocaleString("pt-BR"), arquivoBase:`folha-${dataDe}${dataAte!==dataDe?"_"+dataAte:""}` };
+}
+async function gerarRelatorio(){
+    const dataDe=$("dataDe").value, dataAte=$("dataAte").value;
+    if(!dataDe||!dataAte){ setStatus("Informe data de e data até.","erro"); return; }
+    if(dataAte<dataDe){ setStatus("Data até inválida.","erro"); return; }
+    setStatus("Carregando...","load"); window.portalMostrarCarregando?.("Gerando relatório"); toggleExport(false);
+    try{
+        const res=await carregarDadosFolhaPeriodo(dataDe,dataAte,{ onProgress:(m)=>setStatus(m,"load") });
+        state.linhas=ordenar(res.dados.filter(r=>{ const iso=normalizarDataIsoRow(r); return iso&&iso>=dataDe&&iso<=dataAte; })).map(linhaParaRelatorio);
+        renderTabela();
+        setStatus(state.linhas.length?`${state.linhas.length.toLocaleString("pt-BR")} registro(s) · ${res.origem||"sem origem"}`:`Nenhum registro (${res.tentativas?.join(" · ")||""})`,"ok");
+        $("tableSub").textContent=`Portal CIOP · TCGL · ${metaExport(dataDe,dataAte).periodo}`;
+    }catch(e){ state.linhas=[]; renderTabela(); setStatus(e.message,"erro"); }
+    finally{ window.portalOcultarCarregando?.(); }
+}
+function exportar(tipo){
+    if(!state.linhas.length) return;
+    const meta=metaExport($("dataDe").value,$("dataAte").value);
+    if(tipo==="csv") exportarCsv(COLUNAS,state.linhas,meta);
+    else if(tipo==="xlsx") exportarExcel(COLUNAS,state.linhas,meta);
+    else exportarPdf(COLUNAS,state.linhas,meta,{ logoCiop:"../assets/img/CIOP Sem Fundo.png", logoTcgl:"../assets/img/LOGO_TCGL-removebg-preview.png" }).catch(e=>setStatus(e.message,"erro"));
+}
+function iniciar(){
+    const hoje=isoDataLocal(0);
+    ["dataDe","dataAte"].forEach(id=>{ $(id).max=hoje; $(id).min=isoDataLocal(-365); });
+    $("dataDe").value=isoDataLocal(-7); $("dataAte").value=hoje;
+    renderCabecalho(); renderTabela();
+    $("btnGerar").addEventListener("click",gerarRelatorio);
+    $("btnCsv").addEventListener("click",()=>exportar("csv"));
+    $("btnExcel").addEventListener("click",()=>exportar("xlsx"));
+    $("btnPdf").addEventListener("click",()=>exportar("pdf"));
+}
+if(window.portalUsuarioValidado) iniciar();
+else window.addEventListener("portal:usuario-validado",()=>iniciar(),{once:true});
+</script>
+</body>
+</html>

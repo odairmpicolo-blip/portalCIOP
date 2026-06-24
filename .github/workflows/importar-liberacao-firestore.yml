@@ -1,0 +1,36 @@
+name: Importar liberação Firestore
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  importar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Baixar portal
+        uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Importar janela de liberação
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ runner.temp }}/firebase-sa.json
+          PORTAL_JSON_TIMEOUT_MS: 180000
+        run: |
+          if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ]; then
+            echo "Configure o secret FIREBASE_SERVICE_ACCOUNT no repositório (JSON da service account)."
+            exit 1
+          fi
+          printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > "$FIREBASE_SERVICE_ACCOUNT"
+          npm run import-liberacao-firestore
