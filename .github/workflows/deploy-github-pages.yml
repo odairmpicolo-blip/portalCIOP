@@ -9,7 +9,7 @@ on:
       - "assets/**"
       - "index.html"
       - "login.html"
-      - "hosting/CNAME.aguardando-dns"
+      - "hosting/CNAME"
       - ".github/workflows/deploy-github-pages.yml"
   workflow_dispatch:
 
@@ -47,6 +47,9 @@ jobs:
           if [ -n "${CUSTOM_DOMAIN:-}" ]; then
             echo "$CUSTOM_DOMAIN" > site/CNAME
             echo "Domínio customizado (variável): $CUSTOM_DOMAIN"
+          elif [ -f hosting/CNAME ]; then
+            cp hosting/CNAME site/CNAME
+            echo "Domínio customizado (hosting/CNAME): $(cat site/CNAME)"
           else
             echo "Sem CNAME — site em https://odairmpicolo-blip.github.io/portalCIOP/"
           fi

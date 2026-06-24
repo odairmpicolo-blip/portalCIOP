@@ -1,49 +1,31 @@
-# Domínio: www.portalciop.com.br (GitHub Pages)
+# Domínio: www.portalciop.com.br
 
-## ✅ Já configurado automaticamente
-- GitHub Pages → `www.portalciop.com.br`
-- Firebase Auth → `portalciop.com.br` e `www.portalciop.com.br`
+## Registro no Registro.br (obrigatório)
 
-## ⚠️ Você só precisa de 1 registro DNS (mais fácil que 4 registros A)
+Na **Configurar zona DNS** → **Modo avançado** → **Nova entrada**:
 
-### No Registro.br
+| TIPO | NOME | DADOS |
+|------|------|--------|
+| **CNAME** | `www` | `odairmpicolo-blip.github.io` |
 
-1. Acesse https://registro.br/login/ e entre na conta
-2. Clique em **portalciop.com.br**
-3. Role até **Configurar endereçamento**
-4. Clique em **Configurar zona DNS** (ou **Salvar e editar DNS**)
-5. Se pedir, ative **Modo avançado**
-6. Clique em **Nova entrada** / **+**
-7. Preencha **exatamente**:
+Salve e aguarde 15–30 min.
 
-| Campo | Valor |
-|-------|--------|
-| **Tipo** | `CNAME` |
-| **Nome** | `www` |
-| **Dados** | `odairmpicolo-blip.github.io` |
+## (Opcional) portalciop.com.br sem www
 
-8. **Salvar** a zona
+Adicione **4 registros A** com nome vazio (não use `@`):
 
-### (Opcional) Redirecionar portalciop.com.br → www
+- `185.199.108.153`
+- `185.199.109.153`
+- `185.199.110.153`
+- `185.199.111.153`
 
-Na mesma página, em **Endereço do site** (modo simples), se houver campo para o domínio raiz, use:
-
-`https://www.portalciop.com.br`
-
----
-
-## Depois de salvar (15 min – 2 h)
-
-Avise no chat para ativar HTTPS, ou rode:
-
-```bash
-gh api -X PUT repos/odairmpicolo-blip/portalCIOP/pages \
-  -f build_type=workflow \
-  -f cname=www.portalciop.com.br \
-  -f https_enforced=true
-```
+No GitHub Pages, configure redirecionamento de apex para www se necessário.
 
 ## URLs
 
-- Site no GitHub (funciona agora): https://odairmpicolo-blip.github.io/portalCIOP/
-- Com DNS: https://www.portalciop.com.br
+- https://www.portalciop.com.br
+- https://odairmpicolo-blip.github.io/portalCIOP/ (espelho GitHub)
+
+## Ativar domínio no deploy
+
+O arquivo `hosting/CNAME` contém `www.portalciop.com.br`. O workflow **Deploy GitHub Pages** publica automaticamente.
