@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relatório — Acompanhamento da Liberação | Portal CIOP</title>
+<style>
+:root{--blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--bg:#f5f7fb;--border:#dfe5ef;--text:#101828;--muted:#667085;--red:#dc2626;--green:#15803d;--white:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.header{background:var(--white);display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);gap:16px;align-items:center;padding:8px 20px;border-bottom:1px solid #e8edf6}
+.header > a:first-child{justify-self:start;display:flex;align-items:center}
+.logo-ciop{height:42px;object-fit:contain}.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.ciop-session{display:flex;align-items:center;gap:6px;max-width:260px;padding:4px 8px;border:1px solid rgba(6,36,92,.12);border-radius:6px;background:var(--white);color:var(--blue);font-size:11px}
+.ciop-session-user{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.ciop-session-profile{color:var(--muted);font-weight:600}
+.ciop-session .btn-logout{background:var(--red);color:#fff;border:none;border-radius:5px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer}
+.container{max-width:100%;margin:20px auto 32px;padding:0 20px;flex:1;width:100%}
+.toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.toolbar-left{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;flex:1;min-width:0}
+.nav-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn-icon{display:inline-flex;width:16px;height:16px;flex:0 0 auto}
+.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-portal,.btn-primary,.btn-secondary,.btn-export{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;border:0;cursor:pointer;font-family:inherit;transition:background .15s,transform .15s}
+.btn-portal,.btn-primary{background:var(--blue);color:#fff;box-shadow:0 1px 2px rgba(16,24,40,.08)}
+.btn-portal:hover,.btn-primary:hover{background:var(--blue2)}
+.btn-secondary{background:#e8edf6;color:var(--blue)}
+.btn-secondary:hover{background:#dbe4f2}
+.btn-export{background:var(--white);color:var(--blue);border:1px solid var(--border);min-height:40px;font-size:12px;padding:6px 12px}
+.btn-export:hover{background:#f8fafc;border-color:rgba(6,36,92,.2);transform:translateY(-1px)}
+.btn-export:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-export.csv{border-left:3px solid var(--green)}
+.btn-export.xlsx{border-left:3px solid #2563eb}
+.btn-export.pdf{border-left:3px solid var(--orange)}
+.export-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.status-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;background:var(--white);border:1px solid var(--border);border-radius:999px;font-size:12px;font-weight:700;color:var(--muted)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;flex:0 0 auto}
+.status-dot.ok{background:var(--green)}.status-dot.load{background:var(--orange);animation:pulse 1s infinite}.status-dot.erro{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.table-card{overflow:hidden;background:var(--white);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 28px rgba(16,24,40,.07)}
+.table-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fff,#fafbfd);flex-wrap:wrap}
+.card-title{margin:0;color:var(--blue);font-size:15px;font-weight:900}
+.table-sub{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px}
+.table-wrap{overflow:auto;max-height:calc(100vh - 320px);min-height:420px}
+table.relatorio{width:100%;border-collapse:separate;border-spacing:0;font-size:11px;min-width:1400px;table-layout:fixed}
+table.relatorio thead th{position:sticky;top:0;z-index:2;background:#06245c;color:#fff;padding:10px 6px;font-size:8.5px;font-weight:900;text-transform:uppercase;text-align:center;white-space:normal;line-height:1.25;border-bottom:2px solid #0b3a8a;letter-spacing:.03em}
+table.relatorio tbody td{border-bottom:1px solid #edf2f7;padding:7px 5px;text-align:center;vertical-align:middle;background:var(--white);word-break:break-word}
+table.relatorio tbody tr:nth-child(even) td{background:#fafbfd}
+table.relatorio tbody tr:hover td{background:#fff7ed}
+table.relatorio td.col-texto,table.relatorio th.col-texto{text-align:left}
+table.relatorio td.col-formula{color:#1d4ed8;background:#f8fbff;font-weight:700}
+table.relatorio td.cell-div-neg{background:#fef2f2!important;color:#b91c1c!important;font-weight:800}
+table.relatorio td.cell-div-warn{background:#fffbeb!important;color:#b45309!important;font-weight:800}
+table.relatorio tbody tr:nth-child(even) td.cell-div-neg{background:#fee2e2!important}
+table.relatorio tbody tr:nth-child(even) td.cell-div-warn{background:#fef3c7!important}
+table.relatorio tbody tr.row-div td{box-shadow:inset 3px 0 0 var(--orange)}
+.empty{padding:48px 24px;text-align:center;color:var(--muted)}
+.empty-title{font-size:16px;font-weight:900;color:var(--blue);margin-bottom:6px}
+.page-footer{padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-top:1px solid var(--border);background:var(--white)}
+@media(max-width:720px){.header{grid-template-columns:1fr;text-align:center}}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css">
+<link rel="stylesheet" href="../assets/css/portal-titulos.css">
+<link rel="stylesheet" href="../assets/css/portal-filtros.css">
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="../assets/js/loading.js"></script>
+<script>
+(function(){
+    var base="../assets/data/liberacao/";
+    var d=new Date();
+    var iso=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    window.__liberacaoPrecargaHojeIso=iso;
+    window.__liberacaoPrecargaSemana=fetch(base+"acompanhamento-semana.json",{cache:"no-store"})
+        .then(function(r){return r.ok?r.json():null;})
+        .catch(function(){return null;});
+    window.__liberacaoPrecargaHoje=fetch(base+"manifest.json",{cache:"no-store"})
+        .then(function(r){return r.ok?r.json():null;})
+        .then(function(m){
+            var arquivo=m&&m.dias&&m.dias[iso];
+            if(!arquivo) return null;
+            return fetch(base+arquivo,{cache:"no-store"})
+                .then(function(r){return r.ok?r.json():null;})
+                .then(function(p){return p&&Array.isArray(p.dados)&&p.dados.length?p:null;});
+        })
+        .catch(function(){return null;});
+})();
+</script>
+<script type="module" src="../assets/js/auth.js"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+</head>
+<body data-require-perfis="Administrador,Supervisor,Analista">
+<header class="header">
+    <a href="https://mov1.com.br" target="_blank" rel="noopener"><img class="logo-ciop" src="../assets/img/CIOP Sem Fundo.png" alt="CIOP"></a>
+    <div class="title-wrap">
+        <h1 class="liberacao-title-art" aria-label="Acompanhamento da Liberação">
+            <img src="../assets/img/titulo-liberacao.png" alt="Acompanhamento da Liberação">
+        </h1>
+        <div class="header-subtitle">Relatório operacional · exportação CSV · Excel · PDF</div>
+    </div>
+    <div class="header-actions">
+        <div class="ciop-session">
+            <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
+            <span class="ciop-session-profile" id="perfilUsuario">Perfil</span>
+            <button class="btn-logout" type="button" onclick="logout()">Sair</button>
+        </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+    </div>
+</header>
+
+<main class="container">
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <div class="nav-actions">
+                <a class="btn-portal" href="../index.html"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Portal</a>
+                <a class="btn-secondary" href="relatorios.html"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6V3Z"/><path d="M15 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/><path d="M9 8h3"/></svg></span>Relatórios</a>
+            </div>
+            <div class="filters-inline" aria-label="Filtros">
+                <div class="filter-field"><label for="dataDe">Data de</label><input id="dataDe" type="date"></div>
+                <div class="filter-field"><label for="dataAte">Data até</label><input id="dataAte" type="date"></div>
+            </div>
+            <button type="button" class="btn-primary" id="btnGerar">Gerar relatório</button>
+        </div>
+        <div class="status-pill">
+            <span class="status-dot load" id="statusDot"></span>
+            <span id="statusLine">Selecione o período e clique em Gerar relatório.</span>
+        </div>
+    </div>
+
+    <section class="table-card">
+        <div class="table-head">
+            <div>
+                <h2 class="card-title">Acompanhamento da Liberação</h2>
+                <div class="table-sub" id="tableSub">Portal CIOP · TCGL · cabeçalho incluído nas exportações</div>
+            </div>
+            <div class="export-bar">
+                <button type="button" class="btn-export csv" id="btnCsv" disabled>CSV</button>
+                <button type="button" class="btn-export xlsx" id="btnExcel" disabled>Excel</button>
+                <button type="button" class="btn-export pdf" id="btnPdf" disabled>PDF</button>
+                <span class="status-pill" style="padding:6px 10px"><span id="tableInfo">0 linhas</span></span>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="relatorio">
+                <thead id="tabelaHead"></thead>
+                <tbody id="tabelaCorpo"></tbody>
+            </table>
+            <div class="empty" id="emptyState">
+                <div class="empty-title">Nenhum dado para exibir</div>
+                <div>Defina o período e clique em <strong>Gerar relatório</strong>.</div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer class="page-footer">Portal CIOP · Relatório Acompanhamento da Liberação · TCGL</footer>
+
+<script type="module">
+import { carregarDadosLiberacaoPeriodo, normalizarDataIsoRow } from "../assets/js/liberacao-dados-leitura.js?v=20260624a";
+import { exportarCsv, exportarExcel, exportarPdf } from "../assets/js/liberacao-relatorio-export.js?v=20260624b";
+
+const DIAS_JANELA = 7;
+const SAIU_SIM_MIN = -10;
+const SAIU_SIM_MAX = 3;
+const INICIO_NO_HORARIO_MIN = -1;
+const INICIO_NO_HORARIO_MAX = 3;
+
+const COLUNAS = [
+    { chave: "data", rotulo: "DATA", largura: 72, pdfWidth: 16 },
+    { chave: "linha", rotulo: "LINHA", largura: 48, pdfWidth: 12 },
+    { chave: "work_id", rotulo: "WORK-ID", largura: 76, pdfWidth: 18 },
+    { chave: "carro", rotulo: "CARRO", largura: 44, pdfWidth: 12 },
+    { chave: "motorista", rotulo: "MOTORISTA", largura: 72, pdfWidth: 22 },
+    { chave: "horario_saida_da_garagem", rotulo: "HORÁRIO DE SAÍDA DA GARAGEM", largura: 68, pdfWidth: 18 },
+    { chave: "saida_real", rotulo: "SAÍDA REAL", largura: 56, pdfWidth: 14 },
+    { chave: "saiu_no_horario", rotulo: "SAIU NO HORÁRIO", largura: 64, pdfWidth: 16, formula: true },
+    { chave: "local_inicio", rotulo: "LOCAL INÍCIO", largura: 100, pdfWidth: 24, texto: true },
+    { chave: "trajeto_ocioso_correto", rotulo: "TRAJETO OCIOSO CORRETO?", largura: 72, pdfWidth: 18 },
+    { chave: "horario_de_inicio", rotulo: "HORÁRIO DE INÍCIO", largura: 68, pdfWidth: 18 },
+    { chave: "inicio_real", rotulo: "INÍCIO REAL", largura: 56, pdfWidth: 14 },
+    { chave: "inicio_no_horario", rotulo: "INÍCIO NO HORÁRIO", largura: 68, pdfWidth: 18, formula: true },
+    { chave: "observacoes", rotulo: "OBSERVAÇÕES", largura: 160, pdfWidth: 36, texto: true }
+];
+
+const state = { linhas: [], bruto: [] };
+
+function $(id){ return document.getElementById(id); }
+function escapeHtml(v){ return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function isoDataLocal(offsetDias=0){
+    const d=new Date();
+    d.setDate(d.getDate()+offsetDias);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function isoHoje(){ return isoDataLocal(0); }
+function isoAmanha(){ return isoDataLocal(1); }
+function isoDiasAtras(n){ return isoDataLocal(-(n||0)); }
+function brDate(iso){
+    if(!iso) return "—";
+    const p=iso.split("-");
+    return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:iso;
+}
+function val(row,key){
+    if(row[key]!=null&&row[key]!=="") return row[key];
+    if(key==="horario_saida_da_garagem") return row.horario_de_saida_da_garagem||"";
+    if(key==="saiu_no_horario") return row.saiu_no_horaro||"";
+    return "";
+}
+function minutosDesdeMeiaNoite(v){
+    const p=String(v||"").trim().match(/^(\d{1,2}):(\d{2})/);
+    if(!p) return null;
+    return parseInt(p[1],10)*60+parseInt(p[2],10);
+}
+function diffMinutos(real,previsto){
+    const a=minutosDesdeMeiaNoite(real);
+    const b=minutosDesdeMeiaNoite(previsto);
+    if(a==null||b==null) return null;
+    return a-b;
+}
+function saiuNoHorarioSimNao(diff){
+    if(diff==null) return "";
+    return diff>=SAIU_SIM_MIN&&diff<=SAIU_SIM_MAX?"SIM":"NÃO";
+}
+function situacaoInicioHorario(diff){
+    if(diff==null) return "";
+    if(diff>=INICIO_NO_HORARIO_MIN&&diff<=INICIO_NO_HORARIO_MAX) return "NO HORÁRIO";
+    return diff>INICIO_NO_HORARIO_MAX?"ATRASADO":"ADIANTADO";
+}
+function aplicarFormulasLinha(row){
+    const diffSaida=diffMinutos(val(row,"saida_real"),val(row,"horario_saida_da_garagem"));
+    if(diffSaida!=null){
+        const simNao=saiuNoHorarioSimNao(diffSaida);
+        row.saiu_no_horario=simNao;
+        row.saiu_no_horaro=simNao;
+    }
+    const diffInicio=diffMinutos(val(row,"inicio_real"),val(row,"horario_de_inicio"));
+    if(diffInicio!=null) row.inicio_no_horario=situacaoInicioHorario(diffInicio);
+    return row;
+}
+function classesDivergencia(row){
+    const classes={};
+    const snh=String(val(row,"saiu_no_horario")||"").trim().toUpperCase();
+    if(snh==="NÃO") classes.saiu_no_horario="cell-div-neg";
+    const inh=String(val(row,"inicio_no_horario")||"").trim().toUpperCase();
+    if(inh==="ATRASADO") classes.inicio_no_horario="cell-div-neg";
+    else if(inh==="ADIANTADO") classes.inicio_no_horario="cell-div-warn";
+    const toc=String(val(row,"trajeto_ocioso_correto")||"").trim().toUpperCase();
+    if(toc==="NÃO") classes.trajeto_ocioso_correto="cell-div-neg";
+    return classes;
+}
+function linhaParaRelatorio(row){
+    const copia=aplicarFormulasLinha(Object.assign({},row));
+    const dataIso=normalizarDataIsoRow(copia);
+    const out={};
+    COLUNAS.forEach((col)=>{
+        if(col.chave==="data") out.data=brDate(dataIso);
+        else out[col.chave]=String(val(copia,col.chave)||"").trim()||"—";
+    });
+    out._classes=classesDivergencia(copia);
+    return out;
+}
+function linhasExportacao(){
+    return state.linhas.map(({ _classes, ...rest }) => rest);
+}
+function setStatus(texto,tipo){
+    $("statusLine").textContent=texto;
+    $("statusDot").className="status-dot"+(tipo?` ${tipo}`:"");
+}
+function toggleExport(habilitado){
+    ["btnCsv","btnExcel","btnPdf"].forEach(id=>{ $(id).disabled=!habilitado; });
+}
+function renderCabecalho(){
+    $("tabelaHead").innerHTML=`<tr>${COLUNAS.map(c=>{
+        const cls=(c.texto?" col-texto":"")+(c.formula?" col-formula":"");
+        return `<th class="${cls.trim()}" style="width:${c.largura}px;min-width:${c.largura}px">${escapeHtml(c.rotulo)}</th>`;
+    }).join("")}</tr>`;
+}
+function renderTabela(){
+    const corpo=$("tabelaCorpo");
+    if(!state.linhas.length){
+        corpo.innerHTML="";
+        $("emptyState").hidden=false;
+        $("tableInfo").textContent="0 linhas";
+        toggleExport(false);
+        return;
+    }
+    $("emptyState").hidden=true;
+    corpo.innerHTML=state.linhas.map(row=>{
+        const rowDiv=Object.keys(row._classes||{}).some(k=>row._classes[k]?.includes("div-neg")||row._classes[k]?.includes("div-warn"));
+        return `<tr${rowDiv?' class="row-div"':""}>${COLUNAS.map(col=>{
+            const divCls=row._classes?.[col.chave]||"";
+            const cls=(col.texto?" col-texto":"")+(col.formula?" col-formula":"")+(divCls?` ${divCls}`:"");
+            return `<td class="${cls.trim()}">${escapeHtml(row[col.chave])}</td>`;
+        }).join("")}</tr>`;
+    }).join("");
+    $("tableInfo").textContent=`${state.linhas.length.toLocaleString("pt-BR")} linha(s)`;
+    toggleExport(true);
+}
+function filtrarLinhas(dados,dataDe,dataAte){
+    return dados.filter(row=>{
+        const iso=normalizarDataIsoRow(row);
+        return iso&&iso>=dataDe&&iso<=dataAte;
+    });
+}
+function ordenarLinhas(dados){
+    return dados.slice().sort((a,b)=>{
+        const da=normalizarDataIsoRow(a), db=normalizarDataIsoRow(b);
+        if(da!==db) return da.localeCompare(db);
+        const ha=val(a,"horario_saida_da_garagem"), hb=val(b,"horario_saida_da_garagem");
+        return String(ha).localeCompare(String(hb));
+    });
+}
+async function gerarRelatorio(){
+    const dataDe=$("dataDe").value;
+    const dataAte=$("dataAte").value;
+    if(!dataDe||!dataAte){ setStatus("Informe data de e data até.","erro"); return; }
+    if(dataAte<dataDe){ setStatus("Data até não pode ser anterior à data de.","erro"); return; }
+
+    setStatus("Carregando dados...","load");
+    window.portalMostrarCarregando?.("Gerando relatório");
+    toggleExport(false);
+
+    try{
+        const resultado=await carregarDadosLiberacaoPeriodo(dataDe,dataAte,{
+            onProgress:(msg)=>setStatus(msg,"load")
+        });
+        state.bruto=resultado.dados;
+        const filtrados=ordenarLinhas(filtrarLinhas(resultado.dados,dataDe,dataAte));
+        state.linhas=filtrados.map(linhaParaRelatorio);
+        renderTabela();
+        const origemTxt=resultado.origem?` · ${resultado.origem}`:"";
+        if(!state.linhas.length){
+            const debug=resultado.tentativas?.length?` (${resultado.tentativas.join(" · ")})`:"";
+            setStatus(`Nenhum registro entre ${brDate(dataDe)} e ${brDate(dataAte)}.${debug}`,"erro");
+        }else{
+            setStatus(`${state.linhas.length.toLocaleString("pt-BR")} registro(s) · ${brDate(dataDe)} a ${brDate(dataAte)}${origemTxt}`,"ok");
+        }
+        $("tableSub").textContent=`Portal CIOP · TCGL · ${metaExportacao(dataDe,dataAte).periodo}`;
+    }catch(err){
+        state.linhas=[];
+        renderTabela();
+        setStatus(err.message||"Falha ao gerar relatório.","erro");
+    }finally{
+        window.portalOcultarCarregando?.();
+    }
+}
+function metaExportacao(dataDe,dataAte){
+    const agora=new Date().toLocaleString("pt-BR");
+    const periodo=dataDe===dataAte?brDate(dataDe):`${brDate(dataDe)} a ${brDate(dataAte)}`;
+    return {
+        titulo:"Acompanhamento da Liberação",
+        periodo,
+        geradoEm:agora,
+        arquivoBase:`liberacao-${dataDe}${dataAte!==dataDe?"_"+dataAte:""}`
+    };
+}
+function exportar(tipo){
+    if(!state.linhas.length) return;
+    const meta=metaExportacao($("dataDe").value,$("dataAte").value);
+    const linhas=linhasExportacao();
+    if(tipo==="csv") exportarCsv(COLUNAS,linhas,meta);
+    else if(tipo==="xlsx") exportarExcel(COLUNAS,linhas,meta);
+    else exportarPdf(COLUNAS,linhas,meta,{
+        logoCiop:"../assets/img/CIOP Sem Fundo.png",
+        logoTcgl:"../assets/img/LOGO_TCGL-removebg-preview.png"
+    }).catch(err=>setStatus(err.message,"erro"));
+}
+
+function configurarFiltros(){
+    const min=isoDiasAtras(DIAS_JANELA);
+    const amanha=isoAmanha();
+    const hoje=isoHoje();
+    ["dataDe","dataAte"].forEach(id=>{
+        $(id).min=min;
+        $(id).max=amanha;
+    });
+    $("dataDe").value=hoje;
+    $("dataAte").value=hoje;
+}
+
+function iniciar(){
+    configurarFiltros();
+    renderCabecalho();
+    renderTabela();
+    $("btnGerar").addEventListener("click",()=>gerarRelatorio());
+    $("btnCsv").addEventListener("click",()=>exportar("csv"));
+    $("btnExcel").addEventListener("click",()=>exportar("xlsx"));
+    $("btnPdf").addEventListener("click",()=>exportar("pdf"));
+    gerarRelatorio();
+}
+
+if(window.portalUsuarioValidado) iniciar();
+else window.addEventListener("portal:usuario-validado",()=>{ iniciar(); },{ once:true });
+</script>
+</body>
+</html>

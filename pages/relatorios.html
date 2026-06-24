@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relatórios | Portal CIOP</title>
+<style>
+:root{--blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--bg:#f5f7fb;--border:#dfe5ef;--text:#101828;--muted:#667085;--red:#dc2626;--white:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.header{background:var(--white);display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);gap:16px;align-items:center;padding:8px 20px;border-bottom:1px solid #e8edf6}
+.header > a:first-child{justify-self:start;display:flex;align-items:center}
+.logo-ciop{height:42px;object-fit:contain}.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.ciop-session{display:flex;align-items:center;gap:6px;max-width:260px;padding:4px 8px;border:1px solid rgba(6,36,92,.12);border-radius:6px;background:var(--white);color:var(--blue);font-size:11px}
+.ciop-session-user{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.ciop-session-profile{color:var(--muted);font-weight:600}
+.ciop-session .btn-logout{background:var(--red);color:#fff;border:none;border-radius:5px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer}
+.container{max-width:1200px;margin:24px auto 40px;padding:0 20px;flex:1;width:100%}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.btn-portal{display:inline-flex;align-items:center;gap:8px;min-height:44px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;background:var(--blue);color:#fff}
+.btn-portal:hover{background:var(--blue2)}
+.btn-icon{display:inline-flex;width:16px;height:16px;flex:0 0 auto}
+.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.intro{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:20px 22px;margin-bottom:20px;box-shadow:0 10px 28px rgba(16,24,40,.06)}
+.intro h2{margin:0 0 6px;color:var(--blue);font-size:18px;font-weight:900}
+.intro p{margin:0;color:var(--muted);font-size:13px;line-height:1.5;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.card{display:flex;flex-direction:column;gap:12px;padding:18px;background:var(--white);border:1px solid var(--border);border-radius:16px;text-decoration:none;color:inherit;box-shadow:0 10px 28px rgba(16,24,40,.07);transition:transform .15s,box-shadow .15s,border-color .15s;min-height:180px}
+.card:hover{transform:translateY(-2px);box-shadow:0 16px 36px rgba(16,24,40,.12);border-color:rgba(6,36,92,.18)}
+.card-top{display:flex;align-items:flex-start;gap:12px}
+.card-figure{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#fff7ed,#ffedd5);color:var(--orange);flex:0 0 auto}
+.card-figure svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.card-title{font-size:16px;font-weight:900;color:var(--blue);line-height:1.25}
+.card-desc{font-size:12px;color:var(--muted);font-weight:600;line-height:1.45;flex:1}
+.card-btn{align-self:flex-start;padding:8px 14px;border-radius:999px;background:var(--blue);color:#fff;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+.card.theme-orange .card-figure{background:linear-gradient(135deg,#fff7ed,#ffedd5);color:var(--orange)}
+.card.theme-blue .card-figure{background:linear-gradient(135deg,#eff6ff,#dbeafe);color:var(--blue2)}
+.card.soon{opacity:.72;pointer-events:none}
+.card.soon .card-btn{background:#94a3b8}
+.badge-soon{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#f1f5f9;color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase}
+.page-footer{padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-top:1px solid var(--border);background:var(--white)}
+@media(max-width:720px){.header{grid-template-columns:1fr;text-align:center}}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css">
+<link rel="stylesheet" href="../assets/css/portal-titulos.css">
+<script src="../assets/js/loading.js"></script>
+<script type="module" src="../assets/js/auth.js"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+</head>
+<body data-require-perfis="Administrador,Supervisor,Analista">
+<header class="header">
+    <a href="https://mov1.com.br" target="_blank" rel="noopener"><img class="logo-ciop" src="../assets/img/CIOP Sem Fundo.png" alt="CIOP"></a>
+    <div class="title-wrap">
+        <h1 class="relatorio-title-art" aria-label="Relatórios">
+            <img src="../assets/img/titulo-relatorio.png" alt="Relatórios">
+        </h1>
+        <div class="header-subtitle">Consultas e exportações operacionais</div>
+    </div>
+    <div class="header-actions">
+        <div class="ciop-session">
+            <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
+            <span class="ciop-session-profile" id="perfilUsuario">Perfil</span>
+            <button class="btn-logout" type="button" onclick="logout()">Sair</button>
+        </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+    </div>
+</header>
+
+<main class="container">
+    <div class="toolbar">
+        <a class="btn-portal" href="../index.html"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Portal</a>
+    </div>
+
+    <section class="intro">
+        <h2>Relatórios em Operação</h2>
+        <p>Selecione o relatório desejado. Os dados são carregados do Firestore e podem ser exportados em CSV, Excel e PDF com cabeçalho CIOP · TCGL.</p>
+    </section>
+
+    <div class="grid">
+        <a href="liberacao-relatorio.html" class="card theme-orange">
+            <div class="card-top">
+                <div class="card-figure">
+                    <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M8 10h8"/><path d="M8 14h5"/><path d="M8 6V4h8v2"/></svg>
+                </div>
+                <div class="card-title">Acompanhamento da Liberação</div>
+            </div>
+            <div class="card-desc">Relatório tabular com saídas, inícios, trajeto ocioso e observações por data. Exportação CSV, Excel e PDF.</div>
+            <span class="card-btn">Abrir relatório</span>
+        </a>
+
+        <div class="card theme-blue soon">
+            <div class="card-top">
+                <div class="card-figure">
+                    <svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6V3Z"/><path d="M15 3v4h4"/></svg>
+                </div>
+                <div class="card-title">Folha de Serviço <span class="badge-soon">Em breve</span></div>
+            </div>
+            <div class="card-desc">Relatório consolidado da folha de serviço por período.</div>
+            <span class="card-btn">Em breve</span>
+        </div>
+    </div>
+</main>
+
+<footer class="page-footer">Portal CIOP · Relatórios · TCGL</footer>
+</body>
+</html>
