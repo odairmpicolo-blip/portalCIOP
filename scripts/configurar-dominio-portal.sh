@@ -14,13 +14,11 @@ gh api "repos/${REPO}/pages" --jq '{cname, html_url, https_enforced, build_type}
 
 echo ""
 echo "==> 2/3 Firebase Auth (domínio autorizado)"
-if [ -f "${ROOT}/.secrets/serviceAccount.json" ]; then
-  cd "${ROOT}/backend"
-  GOOGLE_APPLICATION_CREDENTIALS="${ROOT}/.secrets/serviceAccount.json" \
-    node scripts/adicionar-dominio-firebase-auth.mjs
+cd "${ROOT}"
+if node scripts/adicionar-dominio-firebase-auth.cjs; then
+  :
 else
-  echo "AVISO: ${ROOT}/.secrets/serviceAccount.json não encontrado."
-  echo "Adicione manualmente em Firebase Console → Authentication → Authorized domains: ${DOMAIN}"
+  echo "Falha no script Firebase. Rode: firebase login && node scripts/adicionar-dominio-firebase-auth.cjs"
 fi
 
 echo ""
