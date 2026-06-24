@@ -1,51 +1,49 @@
-# Domínio customizado (GitHub Pages)
+# Domínio: www.portalciop.com.br (GitHub Pages)
 
-Domínio configurado: **portalciop.com.br**
+## ✅ Já configurado automaticamente
+- GitHub Pages → `www.portalciop.com.br`
+- Firebase Auth → `portalciop.com.br` e `www.portalciop.com.br`
 
-## 1. DNS no Registro.br
+## ⚠️ Você só precisa de 1 registro DNS (mais fácil que 4 registros A)
 
-Para o domínio raiz `portalciop.com.br`, crie **4 registros A** apontando para o GitHub Pages:
+### No Registro.br
 
-| Tipo | Nome | Valor |
-|------|------|--------|
-| **A** | `@` (ou vazio) | `185.199.108.153` |
-| **A** | `@` | `185.199.109.153` |
-| **A** | `@` | `185.199.110.153` |
-| **A** | `@` | `185.199.111.153` |
+1. Acesse https://registro.br/login/ e entre na conta
+2. Clique em **portalciop.com.br**
+3. Role até **Configurar endereçamento**
+4. Clique em **Configurar zona DNS** (ou **Salvar e editar DNS**)
+5. Se pedir, ative **Modo avançado**
+6. Clique em **Nova entrada** / **+**
+7. Preencha **exatamente**:
 
-Opcional — se quiser `www.portalciop.com.br` também:
+| Campo | Valor |
+|-------|--------|
+| **Tipo** | `CNAME` |
+| **Nome** | `www` |
+| **Dados** | `odairmpicolo-blip.github.io` |
 
-| Tipo | Nome | Valor |
-|------|------|--------|
-| **CNAME** | `www` | `odairmpicolo-blip.github.io` |
+8. **Salvar** a zona
 
-Aguarde a propagação (minutos a algumas horas).
+### (Opcional) Redirecionar portalciop.com.br → www
 
-## 2. GitHub
+Na mesma página, em **Endereço do site** (modo simples), se houver campo para o domínio raiz, use:
 
-1. **Settings → Pages** → Source: **GitHub Actions**
-2. Após o deploy, confira **Custom domain**: `portalciop.com.br`
-3. Ative **Enforce HTTPS** quando o certificado estiver pronto
+`https://www.portalciop.com.br`
 
-URL temporária (sem DNS): `https://odairmpicolo-blip.github.io/portalCIOP/`
+---
 
-## 3. Firebase Authentication
+## Depois de salvar (15 min – 2 h)
 
-Console Firebase → **Authentication → Settings → Authorized domains**  
-Adicione: `portalciop.com.br`
+Avise no chat para ativar HTTPS, ou rode:
 
-## 4. API AWS (se usar backend)
-
-Em `backend/.env`, inclua o domínio em `CORS_ORIGINS`:
-
-```env
-CORS_ORIGINS=https://portalciop.com.br,https://portal-ciop.web.app,http://localhost:5173
+```bash
+gh api -X PUT repos/odairmpicolo-blip/portalCIOP/pages \
+  -f build_type=workflow \
+  -f cname=www.portalciop.com.br \
+  -f https_enforced=true
 ```
 
-## 5. Deploy
+## URLs
 
-O workflow `.github/workflows/deploy-github-pages.yml` publica no push em `main`.  
-Deploy manual: **Actions → Deploy GitHub Pages → Run workflow**.
-
-O domínio está em `hosting/CNAME` (commitado no repositório).
-
+- Site no GitHub (funciona agora): https://odairmpicolo-blip.github.io/portalCIOP/
+- Com DNS: https://www.portalciop.com.br

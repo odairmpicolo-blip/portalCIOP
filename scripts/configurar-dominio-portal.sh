@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DOMAIN="${PORTAL_DOMAIN:-portalciop.com.br}"
+DOMAIN="${PORTAL_DOMAIN:-www.portalciop.com.br}"
 REPO="${GITHUB_REPO:-odairmpicolo-blip/portalCIOP}"
 
 echo "==> 1/3 GitHub Pages (domínio ${DOMAIN})"
@@ -22,12 +22,8 @@ else
 fi
 
 echo ""
-echo "==> 3/3 DNS (Registro.br) — ação manual obrigatória"
-echo "Crie 4 registros A para @ (domínio raiz):"
-echo "  185.199.108.153"
-echo "  185.199.109.153"
-echo "  185.199.110.153"
-echo "  185.199.111.153"
+echo "==> 3/3 DNS (Registro.br) — 1 registro CNAME"
+echo "Tipo: CNAME | Nome: www | Dados: odairmpicolo-blip.github.io"
 echo ""
 if command -v dig >/dev/null 2>&1; then
   echo "DNS atual de ${DOMAIN}:"
