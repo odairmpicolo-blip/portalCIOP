@@ -255,9 +255,7 @@ const CAMPOS_HORA = new Set(["horario_saida_da_garagem","horario_de_inicio","sai
 const DIAS_JANELA = 7;
 const CACHE_STORAGE_KEY = "portal_liberacao_lancamento_v2";
 const LIBERACAO_MODO_JSON_HIBRIDO = true;
-const INTERVALO_SYNC_PLANILHA_MS = 3000;
-const INTERVALO_SYNC_JSON_MS = 30000;
-const INTERVALO_SYNC_JITTER_MS = 500;
+const INTERVALO_SYNC_BACKGROUND_MS = 5000;
 const LIBERACAO_DATA_BASE = "../assets/data/liberacao";
 const LIBERACAO_MANIFEST_URL = LIBERACAO_DATA_BASE + "/manifest.json";
 const LIBERACAO_ACOMPANHAMENTO_URL = LIBERACAO_DATA_BASE + "/acompanhamento-semana.json";
@@ -266,9 +264,8 @@ let carregamentoEmAndamento = false;
 let atualizacaoPlanilhaEmAndamento = false;
 let planilhaHojeEmFlight = null;
 let planilhaHojeEmFlightModo = "";
-let syncPlanilhaEmAndamento = false;
-let intervaloSyncJsonId = null;
-let syncPlanilhaTimerId = null;
+let syncBackgroundEmAndamento = false;
+let intervaloSyncBackgroundId = null;
 let planilhaHojeComplementada=false;
 let overlayOperacaoNivel = 0;
 let overlayAberturaAtivo = false;
@@ -435,7 +432,7 @@ function obterPlanilhaHoje(force, vivo){
 }
 function aplicarSyncHojeSeAlterou(alterou,origem){
     if(!alterou||!ehDiaAtual($("dataFiltro").value)||usuarioEditando()) return;
-    aplicarFiltroData(isoHoje(),origem||"planilha · hoje");
+    aplicarFiltroDataSilencioso(isoHoje(),origem||"sincronizado");
 }
 function formatNumber(v){return Number(v||0).toLocaleString("pt-BR")}
 function normalizarMaquina(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/\s+/g," ").trim()}
@@ -820,27 +817,37 @@ function renderLinhaHtml(row,i){
         '</tr>';
 }
 
+function capturarFocoCelula(){
+    const ativo=document.activeElement;
+    if(!ativo?.matches(".cell-input,.cell-select")) return null;
+    return {
+        i:Number(ativo.dataset.i),
+        k:ativo.dataset.k,
+        start:ativo.selectionStart,
+        end:ativo.selectionEnd
+    };
+}
+function restaurarFocoCelula(foco){
+    if(!foco||foco.i==null||!foco.k) return;
+    const el=document.querySelector('[data-i="'+foco.i+'"][data-k="'+foco.k+'"]');
+    if(!el?.matches("input,select")) return;
+    el.focus();
+    if(el.tagName==="INPUT"&&foco.start!=null) el.setSelectionRange(foco.start,foco.end);
+    marcarCelulaAtiva(el);
+}
+
 function atualizarLinhaPosSalvar(i){
     const row=state.dados[i];
     if(!row) return;
     const tr=document.querySelector('#tabelaCorpo tr[data-i="'+i+'"]');
     if(!tr) return;
-    const ativo=document.activeElement;
-    const foco=ativo?.matches(".cell-input,.cell-select")?{
-        i:Number(ativo.dataset.i),
-        k:ativo.dataset.k,
-        start:ativo.selectionStart,
-        end:ativo.selectionEnd
-    }:null;
+    const foco=capturarFocoCelula();
     const tmp=document.createElement("tbody");
     tmp.innerHTML=renderLinhaHtml(row,i);
     const novo=tmp.firstElementChild;
     tr.replaceWith(novo);
     if(!foco||foco.i!==i) return;
-    const el=document.querySelector('[data-i="'+i+'"][data-k="'+foco.k+'"]');
-    if(!el?.matches("input,select")) return;
-    el.focus();
-    if(el.tagName==="INPUT"&&foco.start!=null) el.setSelectionRange(foco.start,foco.end);
+    restaurarFocoCelula(foco);
 }
 
 function renderCorpoTabela(){
@@ -967,6 +974,20 @@ function escolherFonteJanela(cache,snapSemana,snapDia,data){
 
     if(!semana.length) return null;
     return {dados:semana,dataDe:metaDe,dataAte:metaAte,rotulo};
+}
+
+function aplicarFiltroDataSilencioso(data,origem){
+    const foco=capturarFocoCelula();
+    state.colunas=COLUNAS_EXIBICAO;
+    state.todos=state.semana.filter(r=>normalizarDataIsoRow(r)===data);
+    popularMaquinas([...new Set(state.todos.map(d=>String(d.maquina||"").trim()).filter(Boolean))]);
+    aplicarFiltroMaquina();
+    renderCorpoTabela();
+    if(foco) restaurarFocoCelula(foco);
+    const agora=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+    $("statusLine").textContent=formatNumber(state.dados.length)+" registro(s) · "+rotuloData(data)+" · "+origem+" · "+agora;
+    $("statusDot").className="status-dot ok";
+    if(state.dados.length>0) encerrarOverlayAbertura();
 }
 
 function aplicarFiltroData(data,origem){
@@ -1110,6 +1131,54 @@ async function carregarSnapshotSemana(dataDe,dataAteJanela,data){
     });
 }
 
+async function atualizarFontesHojeSilencioso(){
+    const hoje=isoHoje();
+    const {dataDe,amanha}=intervaloJanela();
+    try{
+        const snap=await carregarSnapshotDia(hoje,true);
+        if(snap?.dados?.length){
+            const filledJson=contarLancamentosDia(snap.dados,hoje);
+            const filledState=contarLancamentosDia(state.semana,hoje);
+            if(planilhaHojeComplementada&&filledJson<filledState) return;
+            if(filledJson===0&&filledState>0) return;
+            const mesclado=mesclarSemana(state.semana,snap.dados);
+            const filledDepois=contarLancamentosDia(mesclado,hoje);
+            if(filledDepois<filledState) return;
+            state.semana=mesclado;
+            state.semanaDataDe=state.semanaDataDe||dataDe;
+            state.semanaDataAte=amanha;
+            salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte},true);
+        }
+    }catch(_){}
+    if(usuarioEditando()) return;
+    try{
+        const dados=await obterPlanilhaHoje(false,false);
+        if(dados?.length){
+            state.semana=mesclarSemana(state.semana,dados);
+            state.semanaDataDe=state.semanaDataDe||dataDe;
+            state.semanaDataAte=amanha;
+            salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte},true);
+            planilhaHojeComplementada=true;
+        }
+    }catch(_){}
+}
+
+async function rodarSyncBackground(){
+    if(document.hidden||!ehDiaAtual($("dataFiltro").value)) return;
+    if(usuarioEditando()) return;
+    if(carregamentoEmAndamento||atualizacaoPlanilhaEmAndamento||syncBackgroundEmAndamento) return;
+    syncBackgroundEmAndamento=true;
+    const hoje=isoHoje();
+    const assinaturaAntes=assinaturaDia(state.semana,hoje);
+    try{
+        await atualizarFontesHojeSilencioso();
+        if(assinaturaAntes!==assinaturaDia(state.semana,hoje)&&!usuarioEditando()){
+            aplicarFiltroDataSilencioso(hoje,"sincronizado");
+        }
+    }catch(_){}
+    finally{ syncBackgroundEmAndamento=false; }
+}
+
 async function sincronizarDiaAtualPlanilha(silencioso,force){
     if(carregamentoEmAndamento||atualizacaoPlanilhaEmAndamento) return false;
     const hoje=isoHoje();
@@ -1131,39 +1200,24 @@ function syncDiaAtualEmBackground(origemBase){
 
 function rodarSyncHojeSilencioso(origem){
     if(document.hidden||!ehDiaAtual($("dataFiltro").value)||usuarioEditando()) return;
-    if(carregamentoEmAndamento||atualizacaoPlanilhaEmAndamento||syncPlanilhaEmAndamento) return;
-    syncPlanilhaEmAndamento=true;
+    if(carregamentoEmAndamento||atualizacaoPlanilhaEmAndamento||syncBackgroundEmAndamento) return;
+    syncBackgroundEmAndamento=true;
+    const hoje=isoHoje();
+    const assinaturaAntes=assinaturaDia(state.semana,hoje);
     sincronizarDiaAtualPlanilha(true,false).then(alterou=>{
-        aplicarSyncHojeSeAlterou(alterou,origem||"planilha · hoje");
-    }).catch(()=>{}).finally(()=>{syncPlanilhaEmAndamento=false;});
-}
-
-function rodarSyncAutomatico(){
-    if(!ehDiaAtual($("dataFiltro").value)) return;
-    sincronizarJsonHoje();
+        const mudou=alterou||assinaturaAntes!==assinaturaDia(state.semana,hoje);
+        aplicarSyncHojeSeAlterou(mudou,origem||"planilha · hoje");
+    }).catch(()=>{}).finally(()=>{syncBackgroundEmAndamento=false;});
 }
 
 async function sincronizarJsonHoje(){
     if(document.hidden||!ehDiaAtual($("dataFiltro").value)||usuarioEditando()) return;
     const hoje=isoHoje();
     const assinaturaAntes=assinaturaDia(state.semana,hoje);
-    try{
-        const snap=await carregarSnapshotDia(hoje,true);
-        if(!snap?.dados?.length) return;
-        const filledJson=contarLancamentosDia(snap.dados,hoje);
-        const filledState=contarLancamentosDia(state.semana,hoje);
-        if(planilhaHojeComplementada&&filledJson<filledState) return;
-        if(filledJson===0&&filledState>0) return;
-        const {dataDe,amanha}=intervaloJanela();
-        const mesclado=mesclarSemana(state.semana,snap.dados);
-        const filledDepois=contarLancamentosDia(mesclado,hoje);
-        if(filledDepois<filledState) return;
-        state.semana=mesclado;
-        salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte},true);
-        if(assinaturaAntes!==assinaturaDia(state.semana,hoje)){
-            aplicarSyncHojeSeAlterou(true,"JSON · hoje");
-        }
-    }catch(_){}
+    await atualizarFontesHojeSilencioso();
+    if(assinaturaAntes!==assinaturaDia(state.semana,hoje)){
+        aplicarSyncHojeSeAlterou(true,"JSON · hoje");
+    }
 }
 
 async function carregarDiaRemoto(data,vivo){
@@ -1385,12 +1439,11 @@ $("maquinaFiltro").addEventListener("change",()=>{aplicarFiltroMaquina();renderT
 $("btn-atualizar-planilha").addEventListener("click",()=>{atualizarPlanilhaRemoto().catch(()=>{});});
 
 function iniciarPollingHoje(){
-    if(intervaloSyncJsonId) clearInterval(intervaloSyncJsonId);
-    if(syncPlanilhaTimerId) clearInterval(syncPlanilhaTimerId);
-    intervaloSyncJsonId=setInterval(rodarSyncAutomatico,INTERVALO_SYNC_PLANILHA_MS);
-    setTimeout(rodarSyncAutomatico,45000);
+    if(intervaloSyncBackgroundId) clearInterval(intervaloSyncBackgroundId);
+    intervaloSyncBackgroundId=setInterval(rodarSyncBackground,INTERVALO_SYNC_BACKGROUND_MS);
+    setTimeout(rodarSyncBackground,1500);
     document.addEventListener("visibilitychange",()=>{
-        if(!document.hidden) rodarSyncAutomatico();
+        if(!document.hidden) rodarSyncBackground();
     });
 }
 
