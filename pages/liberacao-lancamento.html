@@ -579,12 +579,22 @@ function encerrarOverlayAbertura(){
     ocultarOverlayOperacao();
 }
 function complementarPlanilhaBackground(origem){
-    if(!ehDiaAtual($("dataFiltro").value)) return;
+    if(!ehDiaAtual($("dataFiltro").value)||usuarioEditando()) return;
     setTimeout(()=>{
+        const hoje=isoHoje();
+        const assinaturaAntes=assinaturaDia(state.semana,hoje);
         obterPlanilhaHoje(false,false).then(dados=>{
-            if(dados?.length) aplicarPlanilhaHoje(dados,origem||"planilha");
+            if(!dados?.length) return;
+            const {dataDe,amanha}=intervaloJanela();
+            state.semana=mesclarSemana(state.semana,dados);
+            state.semanaDataDe=state.semanaDataDe||dataDe;
+            state.semanaDataAte=amanha;
+            salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte},true);
+            if(assinaturaAntes!==assinaturaDia(state.semana,hoje)){
+                aplicarFiltroData(hoje,origem||"planilha · hoje");
+            }
         }).catch(()=>{});
-    },300);
+    },400);
 }
 
 async function apiGet(params){
@@ -1223,6 +1233,15 @@ async function iniciarCarregamento(forceRefresh=false){
     }
 
     if(ehDiaAtual(data)){
+        try{
+            atualizarOverlayOperacao("Buscando lançamentos na planilha...");
+            const dadosPlanilha=await obterPlanilhaHoje(true,false);
+            if(dadosPlanilha?.length){
+                complementarSemanaCarregada({dados:dadosPlanilha,rotulo:"planilha · hoje"},data);
+                finalizarCarregamentoInicial(true);
+                return;
+            }
+        }catch(_){}
         encerrarOverlayAbertura();
         setStatus("Sem JSON local. Use Atualizar ou aguarde o JSON da API (~3 min).","erro");
         finalizarCarregamentoInicial(false);
@@ -1350,6 +1369,7 @@ async function iniciar(){
     }else{
         iniciarOverlayAbertura();
     }
+    if(ehDiaAtual($("dataFiltro").value)) complementarPlanilhaBackground("planilha · hoje");
     iniciarCarregamento().catch(e=>{
         setStatus(e.message,"erro");
         encerrarOverlayAbertura();

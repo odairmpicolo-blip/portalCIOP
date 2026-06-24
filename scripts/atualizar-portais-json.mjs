@@ -168,7 +168,9 @@ async function buscarLiberacaoDia(data, timeoutMs = TIMEOUT_MS) {
     liberacao: "1",
     recurso: "acompanhamento",
     data,
-    limit: "0"
+    limit: "0",
+    vivo: "1",
+    _: String(Date.now())
   })}`;
   const res = await fetchJson(url, timeoutMs);
   if (!res.ok) throw new Error(res.erro || "Falha no acompanhamento do dia");
