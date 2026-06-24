@@ -25,8 +25,10 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Sincronizar com origin
-        run: git pull --rebase --autostash origin main
+      - name: Configurar git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Atualizar incidentes TCGL
         env:
@@ -35,14 +37,8 @@ jobs:
           PORTAL_ROOT: ${{ github.workspace }}
         run: node scripts/atualizar-incidentes-tcgl.mjs
 
-      - name: Sincronizar antes do commit
-        run: git pull --rebase --autostash origin main
-
       - name: Publicar dados atualizados
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Atualiza incidentes TCGL"
-          file_pattern: assets/data/incidentes-tcgl.json
+        run: bash scripts/ci-git-commit-push.sh "Atualiza incidentes TCGL" assets/data/incidentes-tcgl.json
 
       - name: Importar incidentes no DSQL (planilha → JSON → AWS)
         env:

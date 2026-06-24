@@ -27,8 +27,10 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Sincronizar com origin
-        run: git pull --rebase --autostash origin main
+      - name: Configurar git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Gerar JSON da folha de serviço
         env:
@@ -36,14 +38,8 @@ jobs:
           FOLHA_SERVICO_TIMEOUT_MS: 180000
         run: node scripts/atualizar-folha-servico-json.mjs
 
-      - name: Sincronizar antes do commit (folha)
-        run: git pull --rebase --autostash origin main
-
       - name: Publicar JSON da folha de serviço
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Atualiza JSON da folha de serviço"
-          file_pattern: assets/data/folha-servico/*.json
+        run: bash scripts/ci-git-commit-push.sh "Atualiza JSON da folha de serviço" assets/data/folha-servico/*.json
 
       - name: Gerar JSON (pontualidade, autuações, liberação)
         env:
@@ -52,17 +48,8 @@ jobs:
         run: node scripts/atualizar-portais-json.mjs
         continue-on-error: true
 
-      - name: Sincronizar antes do commit (snapshots)
-        run: git pull --rebase --autostash origin main
-
       - name: Publicar outros snapshots JSON
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Atualiza snapshots JSON (pontualidade, autuações, liberação)"
-          file_pattern: |
-            assets/data/pontualidade/*.json
-            assets/data/autuacoes/*.json
-            assets/data/liberacao/*.json
+        run: bash scripts/ci-git-commit-push.sh "Atualiza snapshots JSON (pontualidade, autuações, liberação)" assets/data/pontualidade/*.json assets/data/autuacoes/*.json assets/data/liberacao/*.json
 
       - name: Importar snapshots no DSQL (planilha → JSON → AWS)
         env:

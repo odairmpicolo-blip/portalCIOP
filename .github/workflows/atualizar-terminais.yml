@@ -25,22 +25,18 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Sincronizar com origin
-        run: git pull --rebase --autostash origin main
+      - name: Configurar git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Atualizar snapshot da planilha
         env:
           PORTAL_ROOT: ${{ github.workspace }}
         run: node scripts/atualizar-terminais-planilha.mjs
 
-      - name: Sincronizar antes do commit
-        run: git pull --rebase --autostash origin main
-
       - name: Publicar dados atualizados
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Atualiza terminais agora"
-          file_pattern: assets/data/terminais-agora.json
+        run: bash scripts/ci-git-commit-push.sh "Atualiza terminais agora" assets/data/terminais-agora.json
 
       - name: Importar terminais no DSQL (planilha → JSON → AWS)
         env:
