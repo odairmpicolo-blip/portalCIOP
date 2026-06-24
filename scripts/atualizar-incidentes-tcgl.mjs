@@ -18,11 +18,22 @@ const detailConcurrency = Number(process.env.CIOP_INCIDENTES_DETALHES_CONCURRENC
 const detailLimit = Number(process.env.CIOP_INCIDENTES_DETALHES_LIMITE || 0);
 const loadDetails = process.env.CIOP_INCIDENTES_DETALHES !== '0';
 const pageLength = Number(process.env.CIOP_INCIDENTES_LOTE || 2000);
-const lookbackDays = Number(process.env.CIOP_INCIDENTES_REVISAR_DIAS || 30);
+const DATA_MINIMA_ISO = String(process.env.CIOP_INCIDENTES_DATA_MIN || "2026-01-01").trim();
+const TIPO_VAZIO_LABEL = String(process.env.CIOP_INCIDENTES_TIPO_VAZIO || "VAZIO").trim();
 
 if (!usuario || !senha) {
   throw new Error('Configure CIOP_INCIDENTES_USUARIO e CIOP_INCIDENTES_SENHA antes de atualizar os incidentes.');
 }
+
+function parseIsoDate(iso) {
+  const match = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) throw new Error(`CIOP_INCIDENTES_DATA_MIN inválida: ${iso}`);
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+const minDateCutoff = parseIsoDate(DATA_MINIMA_ISO);
 
 const columns = [
   'IncidentID',
@@ -260,9 +271,23 @@ function parseBrazilianDate(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function isBeforeLookback(row, cutoff) {
+function isBeforeMinDate(row) {
   const date = parseBrazilianDate(row.data);
-  return date ? date < cutoff : false;
+  if (!date) return true;
+  return date < minDateCutoff;
+}
+
+function isOnOrAfterMinDate(row) {
+  const date = parseBrazilianDate(row.data);
+  if (!date) return false;
+  return date >= minDateCutoff;
+}
+
+function applyTipoVazio(row) {
+  if (!String(row.natureOfProblem || "").trim() && !String(row.instructions || "").trim()) {
+    row.tipo = TIPO_VAZIO_LABEL;
+  }
+  return row;
 }
 
 function vehicleNumber(value) {
@@ -341,6 +366,7 @@ function readExistingPayload() {
       checkedDetailIds: new Set((payload.idsDetalhesConsultados || []).map(String)),
     };
     for (const row of payload.incidentes || []) {
+      if (!isOnOrAfterMinDate(row)) continue;
       const key = rowKey(row);
       if (!key) continue;
       existing.rows.push(row);
@@ -461,62 +487,53 @@ fs.mkdirSync(outputDir, { recursive: true });
 let start = 0;
 let total = null;
 const rows = [];
-const fullLoad = existingPayload.processedIds.size === 0;
-const lookbackCutoff = new Date();
-lookbackCutoff.setHours(0, 0, 0, 0);
-lookbackCutoff.setDate(lookbackCutoff.getDate() - lookbackDays);
 
-if (fullLoad) {
-  console.log('Atualização: primeira carga, buscando toda a tabela TCGL.');
-} else {
-  console.log(`Atualização: cache encontrado com ${existingPayload.processedIds.size} IDs. Revisando os últimos ${lookbackDays} dias e buscando dados novos.`);
-}
+console.log(`Atualização: buscando todos os incidentes TCGL desde ${DATA_MINIMA_ISO.split("-").reverse().join("/")}.`);
 
 while (total === null || start < total) {
   const chunk = await loadChunk(jar, start, pageLength);
   if (chunk.length === 0) break;
   total = Number(chunk[0].QueryRowCount || chunk.length);
-  const normalized = chunk.map(normalize);
+  const normalized = chunk.map(normalize).filter((row) => isOnOrAfterMinDate(row));
   rows.push(...normalized);
   const snapshot = {
     atualizadoEm: new Date().toISOString(),
     fonte: 'Gerenciamento de Incidentes',
     empresa: 'TCGL',
+    dataMinima: DATA_MINIMA_ISO,
     totalServidor: total,
     totalExtraido: rows.length,
     incidentes: rows,
   };
   fs.writeFileSync(partialFile, JSON.stringify(snapshot));
-  console.log(`Baixados ${rows.length}/${total}`);
-  const allKnown = normalized.every((row) => existingPayload.processedIds.has(rowKey(row)));
-  const outsideLookback = normalized.some((row) => isBeforeLookback(row, lookbackCutoff));
-  if (!fullLoad && allKnown && outsideLookback) {
-    console.log(`Atualização: registros conhecidos e anteriores a ${lookbackDays} dias encontrados. Encerrando busca incremental.`);
+  console.log(`Baixados ${rows.length}/${total} (desde ${DATA_MINIMA_ISO})`);
+  const chunkNormalizedAll = chunk.map(normalize);
+  if (chunkNormalizedAll.length > 0 && chunkNormalizedAll.every(isBeforeMinDate)) {
+    console.log(`Atualização: lote anterior a ${DATA_MINIMA_ISO}. Encerrando paginação.`);
     break;
   }
   start += pageLength;
 }
 
-const mergedRows = mergeRows(rows, existingPayload);
-await enrichDetails(jar, mergedRows, fullLoad ? mergedRows : rows);
-const filteredRows = mergedRows.filter((row) => row.natureOfProblem.trim() || row.instructions.trim());
-const processedIds = Array.from(new Set([
-  ...existingPayload.processedIds,
-  ...mergedRows.map(rowKey).filter(Boolean),
-]));
+const mergedRows = mergeRows(rows, existingPayload).filter(isOnOrAfterMinDate);
+await enrichDetails(jar, mergedRows, mergedRows);
+mergedRows.forEach(applyTipoVazio);
+const finalRows = mergedRows.filter(isOnOrAfterMinDate);
+const processedIds = Array.from(new Set(finalRows.map(rowKey).filter(Boolean)));
 const checkedDetailIds = Array.from(existingPayload.checkedDetailIds);
-console.log(`Filtro de detalhes: ${filteredRows.length}/${mergedRows.length} incidentes mantidos.`);
+console.log(`Incidentes desde ${DATA_MINIMA_ISO}: ${finalRows.length} (tipo VAZIO quando sem natureza/instruções).`);
 
 const payload = {
   atualizadoEm: new Date().toISOString(),
   fonte: 'Gerenciamento de Incidentes',
   empresa: 'TCGL',
+  dataMinima: DATA_MINIMA_ISO,
   totalServidor: total ?? rows.length,
-  totalExtraido: filteredRows.length,
+  totalExtraido: finalRows.length,
   totalComEmpresa: mergedRows.length,
   idsProcessados: processedIds,
   idsDetalhesConsultados: checkedDetailIds,
-  incidentes: filteredRows,
+  incidentes: finalRows,
 };
 
 fs.writeFileSync(outputFile, JSON.stringify(payload));
