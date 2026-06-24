@@ -1181,6 +1181,11 @@ async function iniciarCarregamento(forceRefresh=false){
     const data=$("dataFiltro").value;
     if(!data){setStatus("Informe a data.","erro");finalizarCarregamentoInicial(false);return;}
 
+    if(!forceRefresh&&state.dados.length){
+        finalizarCarregamentoInicial(true);
+        return;
+    }
+
     const {dataDe,amanha}=intervaloJanela();
     const hoje=isoHoje();
     const cache=lerCacheLiberacao();
@@ -1310,19 +1315,41 @@ function iniciarPollingHoje(){
     });
 }
 
-function iniciar(){
+async function aplicarPrecargaInicial(){
+    const data=$("dataFiltro").value||isoHoje();
+    aplicarCacheLocalLiberacao();
+    if(state.dados.length) return;
+
+    const snapDia=await (obterPrecargaHoje()||carregarSnapshotDia(data)).catch(()=>null);
+    if(snapDia?.dados?.length){
+        complementarSemanaCarregada({dados:snapDia.dados,rotulo:"JSON · dia"},data);
+        return;
+    }
+
+    const {dataDe,amanha}=intervaloJanela();
+    const snapSem=await (obterPrecargaSemana()||null);
+    if(snapSem?.dados?.length&&snapshotCobreData(snapSem,data)){
+        const intervalo=metaSnapshot(snapSem);
+        complementarSemanaCarregada({
+            dados:snapSem.dados,
+            dataDe:intervalo.data_de||dataDe,
+            dataAte:intervalo.data_ate||amanha,
+            rotulo:"arquivo JSON"
+        },data);
+    }
+}
+
+async function iniciar(){
     initEventosTabela();
     configurarLimitesFiltroData();
     definirDataFiltroHoje();
-    iniciarOverlayAbertura();
     carregarManifestLiberacao().then(m=>{if(m)liberacaoManifest=m;});
-    aplicarCacheLocalLiberacao();
-    const snapDiaPrecarga=carregarSnapshotDia(isoHoje());
-    snapDiaPrecarga.then(snap=>{
-        if(!snap?.dados?.length||state.dados.length) return;
-        const data=$("dataFiltro").value||isoHoje();
-        complementarSemanaCarregada({dados:snap.dados,rotulo:"JSON · dia"},data);
-    }).catch(()=>{});
+    await aplicarPrecargaInicial();
+    if(state.dados.length){
+        finalizarCarregamentoInicial(true);
+    }else{
+        iniciarOverlayAbertura();
+    }
     iniciarCarregamento().catch(e=>{
         setStatus(e.message,"erro");
         encerrarOverlayAbertura();
@@ -1330,7 +1357,7 @@ function iniciar(){
     iniciarPollingHoje();
 }
 if(window.portalUsuarioValidado) iniciar();
-else window.addEventListener("portal:usuario-validado", iniciar, { once: true });
+else window.addEventListener("portal:usuario-validado", ()=>{iniciar();}, { once: true });
 </script>
 </body>
 </html>
