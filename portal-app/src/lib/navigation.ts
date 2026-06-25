@@ -137,15 +137,6 @@ export const portalCards: PortalCard[] = [
     section: 'operacao',
   },
   {
-    id: 'tabelas-horarias',
-    title: 'Tabelas Horárias',
-    description: 'Consulta web das tabelas por linha (úteis, sábado e domingo).',
-    action: 'Acessar',
-    theme: 'teal',
-    legacyPath: '/pages/tabelas-horarias.html',
-    section: 'operacao',
-  },
-  {
     id: 'drive-monitoramento',
     title: 'Drive Monitoramento',
     description: 'Drive — Oficial Monitoramento.',
