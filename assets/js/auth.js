@@ -146,6 +146,17 @@ function garantirCssSessao() {
 
 garantirCssSessao();
 
+function garantirRodapePortal() {
+  if (document.querySelector("script[data-portal-footer]")) return;
+  const script = document.createElement("script");
+  script.src = portalPath("assets/js/portal-footer.js");
+  script.defer = true;
+  script.dataset.portalFooter = "1";
+  document.head.appendChild(script);
+}
+
+garantirRodapePortal();
+
 async function getCadastro(user) {
   const email = String(user.email || "").toLowerCase();
   const cached = lerCadastroCache(email);

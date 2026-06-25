@@ -41,7 +41,11 @@ export function AppLayout() {
           <main className="app-content">
             <Outlet />
           </main>
-          <footer className="app-footer">© 2026 CIOP — Todos os direitos reservados</footer>
+          <footer className="app-footer portal-site-footer">
+            <div className="footer-inner">
+              <span className="footer-text">© 2026 CIOP - Todos os direitos reservados</span>
+            </div>
+          </footer>
         </div>
         {podeAvisos ? (
           <NoticeModal

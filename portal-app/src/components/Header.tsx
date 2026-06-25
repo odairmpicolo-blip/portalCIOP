@@ -8,7 +8,11 @@ export function Header({ onMenuToggle }: { onMenuToggle: () => void }) {
     <header className="app-header">
       <div className="header-left">
         <button type="button" className="menu-toggle" onClick={onMenuToggle} aria-label="Abrir menu">
-          ☰
+          <span className="menu-bars" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
         </button>
         <div className="brand">
           <img
