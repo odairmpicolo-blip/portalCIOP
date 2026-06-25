@@ -15,7 +15,7 @@ export function Header({ onMenuToggle }: { onMenuToggle: () => void }) {
           </span>
         </button>
         <div className="brand portal-brand-mark" aria-label="Portal CIOP TCGL Operações">
-          <span className="portal-brand-name">Portal CI<span className="portal-brand-o">O</span>P</span>
+          <img className="portal-brand-art" src="/assets/img/titulo-portal-ciop.png" alt="Portal CIOP" />
           <span className="portal-brand-meta">TCGL · Operações</span>
         </div>
       </div>

@@ -5,9 +5,15 @@
     return window.location.pathname.includes("/pages/") ? "../index.html" : "index.html";
   }
 
+  function brandImgSrc() {
+    return window.location.pathname.includes("/pages/")
+      ? "../assets/img/titulo-portal-ciop.png"
+      : "assets/img/titulo-portal-ciop.png";
+  }
+
   function brandInnerHtml() {
     return (
-      '<span class="portal-brand-name">Portal CI<span class="portal-brand-o">O</span>P</span>' +
+      '<img class="portal-brand-art" src="' + brandImgSrc() + '" alt="Portal CIOP">' +
       '<span class="portal-brand-meta">TCGL · Operações</span>'
     );
   }
@@ -40,7 +46,6 @@
     document.querySelectorAll(".login-brand-v2, .login-brand").forEach((wrap) => {
       if (wrap.dataset.portalBrandDone) return;
       wrap.classList.add("portal-brand-mark", "portal-brand-mark--center");
-      wrap.querySelectorAll("img").forEach((img) => img.remove());
       wrap.querySelectorAll("p").forEach((p) => {
         if (/acesso operacional/i.test(p.textContent || "")) p.remove();
       });
