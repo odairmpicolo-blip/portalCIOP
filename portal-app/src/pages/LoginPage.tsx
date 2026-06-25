@@ -59,13 +59,9 @@ export function LoginPage() {
   return (
     <div className="login-page">
       <form className="login-card" onSubmit={onSubmit}>
-        <div className="login-brand">
-          <img
-            src={`${import.meta.env.BASE_URL}assets/img/titulo-portal-ciop.png`}
-            alt="Portal CIOP"
-            className="login-title-art"
-          />
-          <p>Acesso operacional TCGL</p>
+        <div className="login-brand portal-brand-mark portal-brand-mark--center" aria-label="Portal CIOP TCGL Operações">
+          <span className="portal-brand-name">Portal CIOP</span>
+          <span className="portal-brand-meta">TCGL · Operações</span>
         </div>
 
         <label htmlFor="email">E-mail</label>

@@ -182,7 +182,27 @@ function garantirCssSessao() {
   document.head.appendChild(link);
 }
 
+function garantirCssMarca() {
+  if (document.querySelector("link[data-portal-brand]")) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = portalPath("assets/css/portal-brand.css");
+  link.dataset.portalBrand = "1";
+  document.head.appendChild(link);
+}
+
+function garantirMarcaPortal() {
+  if (document.querySelector("script[data-portal-brand-js]")) return;
+  const script = document.createElement("script");
+  script.src = portalPath("assets/js/portal-brand.js");
+  script.defer = true;
+  script.dataset.portalBrandJs = "1";
+  document.head.appendChild(script);
+}
+
 garantirCssSessao();
+garantirCssMarca();
+garantirMarcaPortal();
 
 function garantirRodapePortal() {
   if (document.querySelector("script[data-portal-footer]")) return;
