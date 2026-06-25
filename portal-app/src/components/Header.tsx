@@ -26,7 +26,7 @@ export function Header({ onMenuToggle }: { onMenuToggle: () => void }) {
         </a>
         <div className="session-chip" aria-label="Sessão do usuário">
           <span className="session-name">{user?.nome || 'Usuário'}</span>
-          <span className="session-profile">{user?.perfil || 'Perfil'}</span>
+          {user?.cargo ? <span className="session-profile">{user.cargo}</span> : null}
         </div>
         <button type="button" className="btn-logout" onClick={() => void logout()}>
           Sair

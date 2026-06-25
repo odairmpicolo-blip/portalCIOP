@@ -126,6 +126,17 @@ function portalPath(file) {
   return inPages ? "../" + file : file;
 }
 
+function garantirCssSessao() {
+  if (document.querySelector("link[data-portal-session]")) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = portalPath("assets/css/portal-session.css");
+  link.dataset.portalSession = "1";
+  document.head.appendChild(link);
+}
+
+garantirCssSessao();
+
 async function getCadastro(user) {
   const email = String(user.email || "").toLowerCase();
   const cached = lerCadastroCache(email);
@@ -384,10 +395,19 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
     }
 
     const nome = document.getElementById("usuarioLogado");
-    const perfil = document.getElementById("perfilUsuario");
+    const cargoEl = document.getElementById("perfilUsuario");
 
-    if (nome) nome.textContent = cadastro.nome;
-    if (perfil) perfil.textContent = cadastro.perfil;
+    if (nome) nome.textContent = cadastro.nome || "";
+    if (cargoEl) {
+      const cargo = String(cadastro.cargo || "").trim();
+      cargoEl.textContent = cargo;
+      cargoEl.hidden = !cargo;
+    }
+    const heroNome = document.getElementById("heroPrimeiroNome");
+    if (heroNome && cadastro.nome) {
+      const partes = cadastro.nome.trim().split(/\s+/);
+      heroNome.textContent = partes[0] || cadastro.nome;
+    }
     if (aplicarPermissoes(cadastro) !== false) {
       window.portalUsuarioValidado = true;
       liberarHtmlValidado();
