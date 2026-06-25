@@ -916,7 +916,7 @@ h1 {
         <div class="source-status" aria-live="polite">
             <span id="sourceDot" class="dot"></span>
             <span id="sourceText">Aguardando dados</span>
-            <button class="btn btn-secondary btn-refresh" type="button" onclick="carregarPlanilha(true)">Atualizar</button>
+            <button class="btn btn-secondary btn-refresh" id="btnAtualizarPlanilha" type="button" onclick="carregarPlanilha(true)">Atualizar da planilha</button>
         </div>
     </div>
 
@@ -1465,8 +1465,36 @@ function aplicarSnapshotTerminais(snapshot, origem) {
     setStatusFonte("ok", texto);
 }
 
+async function carregarPlanilhaAoVivo(){
+    const resultado = await Promise.allSettled([buscarAba(GID_DADOS), buscarAba(GID_PROGRAMACAO)]);
+    const dadosRows = resultado[0].status === "fulfilled" ? resultado[0].value : [];
+    if (resultado[1].status !== "fulfilled") throw resultado[1].reason;
+    const dados = normalizarDados(dadosRows);
+    DADOS = dados.lista;
+    MAP_TERMINAL_TELEFONE = dados.mapaTerminalTelefone;
+    REGISTROS = normalizarProgramacao(resultado[1].value, dados.mapa);
+    salvarCacheTerminais({
+        DADOS,
+        MAP_TERMINAL_TELEFONE: Object.fromEntries(MAP_TERMINAL_TELEFONE),
+        REGISTROS: REGISTROS.map(function(item){
+            return Object.assign({}, item, {
+                data: item.data instanceof Date ? item.data.toISOString() : item.data,
+                start: item.start instanceof Date ? item.start.toISOString() : item.start,
+                end: item.end instanceof Date ? item.end.toISOString() : item.end
+            });
+        })
+    });
+    atualizarSelectTerminais();
+    render();
+    const agora = new Date();
+    const texto = "Planilha ao vivo · " + agora.toLocaleString("pt-BR", {dateStyle:"short", timeStyle:"short"}) + " | Registros: " + formatInt(REGISTROS.length);
+    setStatusFonte("ok", texto);
+}
+
 async function carregarPlanilha(manual){
     if (!manual && document.hidden) return;
+
+    const btnRefresh = byId("btnAtualizarPlanilha");
 
     const cacheLocal = !manual ? lerCacheTerminais() : null;
     let mostrouCache = false;
@@ -1479,10 +1507,20 @@ async function carregarPlanilha(manual){
 
     if (!mostrouCache) {
         window.portalMostrarCarregando?.("Carregando terminais");
-        setStatusFonte("", "Consultando dados...");
+        setStatusFonte("", manual ? "Consultando planilha ao vivo..." : "Consultando dados...");
+    } else if (manual) {
+        setStatusFonte("", "Consultando planilha ao vivo...");
+    }
+    if (manual && btnRefresh) {
+        btnRefresh.disabled = true;
+        btnRefresh.textContent = "Atualizando...";
     }
     setErroFonte("");
     try {
+        if (manual) {
+            await carregarPlanilhaAoVivo();
+            return;
+        }
         if (TERMINAIS_USAR_AWS_JSON) {
             try {
                 const mod = await import("../assets/js/terminais-dados-leitura.js?v=20260624d");
@@ -1497,37 +1535,19 @@ async function carregarPlanilha(manual){
                 console.warn("AWS/JSON indisponível, usando planilha:", moduleErr);
             }
         }
-        const resultado = await Promise.allSettled([buscarAba(GID_DADOS), buscarAba(GID_PROGRAMACAO)]);
-        const dadosRows = resultado[0].status === "fulfilled" ? resultado[0].value : [];
-        if (resultado[1].status !== "fulfilled") throw resultado[1].reason;
-        const dados = normalizarDados(dadosRows);
-        DADOS = dados.lista;
-        MAP_TERMINAL_TELEFONE = dados.mapaTerminalTelefone;
-        REGISTROS = normalizarProgramacao(resultado[1].value, dados.mapa);
-        salvarCacheTerminais({
-            DADOS,
-            MAP_TERMINAL_TELEFONE: Object.fromEntries(MAP_TERMINAL_TELEFONE),
-            REGISTROS: REGISTROS.map(function(item){
-                return Object.assign({}, item, {
-                    data: item.data instanceof Date ? item.data.toISOString() : item.data,
-                    start: item.start instanceof Date ? item.start.toISOString() : item.start,
-                    end: item.end instanceof Date ? item.end.toISOString() : item.end
-                });
-            })
-        });
-        atualizarSelectTerminais();
-        render();
-        const agora = new Date();
-        const texto = "Atualizado " + agora.toLocaleString("pt-BR", {dateStyle:"short", timeStyle:"short"}) + " | Registros: " + formatInt(REGISTROS.length) + " · Planilha";
-        setStatusFonte("ok", texto);
+        await carregarPlanilhaAoVivo();
     } catch (error) {
         console.error("Erro ao carregar terminais:", error);
-        if (!mostrouCache) {
+        if (!mostrouCache || manual) {
             setStatusFonte("erro", "Falha ao carregar dados");
             setErroFonte(error.message || "Não foi possível carregar os dados de terminais.");
             render();
         }
     } finally {
+        if (btnRefresh) {
+            btnRefresh.disabled = false;
+            btnRefresh.textContent = "Atualizar da planilha";
+        }
         window.portalOcultarCarregando?.();
     }
 }
