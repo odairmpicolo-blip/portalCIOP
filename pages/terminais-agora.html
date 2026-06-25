@@ -916,7 +916,7 @@ h1 {
         <div class="source-status" aria-live="polite">
             <span id="sourceDot" class="dot"></span>
             <span id="sourceText">Aguardando dados</span>
-            <button class="btn btn-secondary btn-refresh" id="btnAtualizarPlanilha" type="button" onclick="carregarPlanilha(true)">Atualizar da planilha</button>
+            <button class="btn btn-secondary btn-refresh" id="btnAtualizarPlanilha" type="button" onclick="carregarPlanilha(true)">Atualizar</button>
         </div>
     </div>
 
@@ -1011,7 +1011,6 @@ const BASE_CSV = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export
 const AUTO_FETCH_MS = 120000;
 const CACHE_TERMINAIS_KEY = "portal_terminais_v1";
 const AUTO_RENDER_MS = 30000;
-const TERMINAIS_USAR_AWS_JSON = true;
 
 let REGISTROS = [];
 let DADOS = [];
@@ -1507,34 +1506,14 @@ async function carregarPlanilha(manual){
 
     if (!mostrouCache) {
         window.portalMostrarCarregando?.("Carregando terminais");
-        setStatusFonte("", manual ? "Consultando planilha ao vivo..." : "Consultando dados...");
-    } else if (manual) {
-        setStatusFonte("", "Consultando planilha ao vivo...");
     }
+    setStatusFonte("", "Consultando planilha ao vivo...");
     if (manual && btnRefresh) {
         btnRefresh.disabled = true;
         btnRefresh.textContent = "Atualizando...";
     }
     setErroFonte("");
     try {
-        if (manual) {
-            await carregarPlanilhaAoVivo();
-            return;
-        }
-        if (TERMINAIS_USAR_AWS_JSON) {
-            try {
-                const mod = await import("../assets/js/terminais-dados-leitura.js?v=20260624d");
-                const res = await mod.carregarDadosTerminais({
-                    onProgress: function(msg){ setStatusFonte("", msg); }
-                });
-                if (res.payload?.REGISTROS?.length) {
-                    aplicarSnapshotTerminais(res.payload, res.origem);
-                    return;
-                }
-            } catch (moduleErr) {
-                console.warn("AWS/JSON indisponível, usando planilha:", moduleErr);
-            }
-        }
         await carregarPlanilhaAoVivo();
     } catch (error) {
         console.error("Erro ao carregar terminais:", error);
@@ -1546,7 +1525,7 @@ async function carregarPlanilha(manual){
     } finally {
         if (btnRefresh) {
             btnRefresh.disabled = false;
-            btnRefresh.textContent = "Atualizar da planilha";
+            btnRefresh.textContent = "Atualizar";
         }
         window.portalOcultarCarregando?.();
     }
