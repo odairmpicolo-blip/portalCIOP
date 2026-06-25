@@ -98,6 +98,10 @@ export function LoginPage() {
         <button type="button" className="btn-link" onClick={() => void onReset()}>
           Esqueci minha senha
         </button>
+
+        <a href="/login.html" className="btn-link login-classic-link">
+          Login clássico
+        </a>
       </form>
     </div>
   )

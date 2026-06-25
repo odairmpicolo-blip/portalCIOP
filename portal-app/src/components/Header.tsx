@@ -21,6 +21,9 @@ export function Header({ onMenuToggle }: { onMenuToggle: () => void }) {
       </div>
 
       <div className="header-right">
+        <a href="/" className="btn-legacy-portal" title="Voltar ao portal clássico">
+          Portal clássico
+        </a>
         <div className="session-chip" aria-label="Sessão do usuário">
           <span className="session-name">{user?.nome || 'Usuário'}</span>
           <span className="session-profile">{user?.perfil || 'Perfil'}</span>
