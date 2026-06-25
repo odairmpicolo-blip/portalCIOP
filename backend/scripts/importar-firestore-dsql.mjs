@@ -15,6 +15,7 @@ import {
   upsertSnapshot,
   upsertPontualidade,
   upsertTerminais,
+  upsertAviso,
   gravarLiberacaoLinhas
 } from "./lib/dsql-import.mjs";
 
@@ -23,7 +24,7 @@ const portalRoot = process.env.PORTAL_ROOT || path.join(__dirname, "..", "..");
 const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "portal-ciop";
 const BATCH_TX = 2500;
 
-const JOBS = ["terminais", "incidentes", "autuacoes", "folha", "pontualidade", "liberacao"];
+const JOBS = ["terminais", "incidentes", "autuacoes", "folha", "pontualidade", "liberacao", "avisos"];
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -203,6 +204,18 @@ async function importLiberacao(pool, db) {
   }
 }
 
+async function importAvisos(pool, db) {
+  console.log("[avisos] lendo Firestore...");
+  const snap = await db.collection("avisos").get();
+  let count = 0;
+  for (const docSnap of snap.docs) {
+    const dados = docSnap.data();
+    await upsertAviso(pool, { id: docSnap.id, ...dados });
+    count += 1;
+  }
+  console.log(`[avisos] ${count} avisos`);
+}
+
 async function main() {
   const selected = process.argv.slice(2).length ? process.argv.slice(2) : JOBS;
   const db = await initFirestore();
@@ -228,6 +241,9 @@ async function main() {
           break;
         case "liberacao":
           await importLiberacao(pool, db);
+          break;
+        case "avisos":
+          await importAvisos(pool, db);
           break;
         default:
           console.warn(`Job desconhecido: ${job}`);

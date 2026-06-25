@@ -37,6 +37,7 @@ jobs:
       - name: Preparar site estático
         env:
           CUSTOM_DOMAIN: ${{ vars.PORTAL_CUSTOM_DOMAIN }}
+          PORTAL_AWS_API_URL: ${{ secrets.PORTAL_AWS_API_URL }}
         run: |
           set -euo pipefail
           mkdir site
@@ -53,6 +54,21 @@ jobs:
           else
             echo "Sem CNAME — site em https://odairmpicolo-blip.github.io/portalCIOP/"
             echo "Para ativar domínio após DNS: bash scripts/ativar-dominio-portal.sh"
+          fi
+
+          if [ -n "${PORTAL_AWS_API_URL:-}" ]; then
+            node <<'NODE'
+const fs = require("fs");
+const path = "site/assets/data/portal-runtime.json";
+const url = process.env.PORTAL_AWS_API_URL.replace(/\/$/, "");
+const cfg = JSON.parse(fs.readFileSync(path, "utf8"));
+cfg.awsApiUrl = url;
+delete cfg.devApiKey;
+fs.writeFileSync(path, JSON.stringify(cfg, null, 2) + "\n");
+console.log("portal-runtime.json → awsApiUrl:", url);
+NODE
+          else
+            echo "PORTAL_AWS_API_URL não definida — portal-runtime.json mantém valor do repositório"
           fi
 
       - name: Configurar GitHub Pages

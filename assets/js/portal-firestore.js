@@ -11,6 +11,12 @@ import {
   query,
   where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  listarAvisosAws,
+  salvarAvisoAws,
+  excluirAvisoAws
+} from "./avisos-aws.js";
+import { awsApiEnabled, initPortalAwsRuntime } from "./portal-aws-config.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
@@ -198,6 +204,16 @@ async function sincronizarAvisosPorUsuario(lista) {
 }
 
 export async function listarAvisosFirestore({ email = "", perfil = "", gestor = false } = {}) {
+  await initPortalAwsRuntime();
+  if (awsApiEnabled()) {
+    try {
+      const lista = await listarAvisosAws({ gestor });
+      if (lista !== null) return lista;
+    } catch (error) {
+      console.warn("Avisos AWS indisponíveis, usando Firestore:", error);
+    }
+  }
+
   const avisos = new Map();
   const col = collection(db, COLECAO_AVISOS);
 
@@ -230,6 +246,16 @@ export async function listarAvisosFirestore({ email = "", perfil = "", gestor = 
 }
 
 export async function salvarAvisoFirestore(aviso) {
+  await initPortalAwsRuntime();
+  if (awsApiEnabled()) {
+    try {
+      const salvo = await salvarAvisoAws(aviso);
+      if (salvo) return salvo;
+    } catch (error) {
+      console.warn("Salvar aviso AWS falhou, usando Firestore:", error);
+    }
+  }
+
   const titulo = normalizarTextoAviso(aviso?.titulo);
   const mensagem = normalizarTextoAviso(aviso?.mensagem);
   if (!titulo || !mensagem) throw new Error("Informe titulo e mensagem do aviso.");
@@ -283,6 +309,16 @@ export async function salvarAvisoFirestore(aviso) {
 }
 
 export async function excluirAvisoFirestore(id) {
+  await initPortalAwsRuntime();
+  if (awsApiEnabled()) {
+    try {
+      const ok = await excluirAvisoAws(id);
+      if (ok) return;
+    } catch (error) {
+      console.warn("Excluir aviso AWS falhou, usando Firestore:", error);
+    }
+  }
+
   const avisoId = String(id || "").trim();
   if (!avisoId) throw new Error("Aviso invalido.");
   const avisoRef = doc(db, COLECAO_AVISOS, avisoId);
