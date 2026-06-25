@@ -130,7 +130,8 @@ function atualizarSaudacaoHero(nome) {
   const heroNome = document.getElementById("heroNomeUsuario");
   if (heroNome) {
     const texto = String(nome || window.portalUsuario?.nome || "").trim();
-    heroNome.textContent = texto || "usuário";
+    const partes = texto.split(/\s+/);
+    heroNome.textContent = partes[0] || texto || "usuário";
   }
 }
 
