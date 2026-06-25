@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>Ônibus Agora | Portal CIOP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+:root{
+  --blue:#06245c;--blue-soft:#0b3a8a;--teal:#2db4bf;--orange:#ff6b00;
+  --bg:#eef2f8;--surface:#fff;--surface-2:#f8fafc;--border:#e2e8f0;
+  --text:#0f172a;--muted:#64748b;--ok:#059669;--warn:#d97706;
+  --shadow:0 1px 2px rgba(15,23,42,.06),0 16px 40px rgba(6,36,92,.10);
+  --radius:18px;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
+.header{background:rgba(255,255,255,.97);backdrop-filter:blur(12px);display:grid;grid-template-columns:minmax(160px,1fr) auto minmax(240px,1fr);gap:16px;align-items:center;padding:10px 20px;border-bottom:1px solid var(--border)}
+.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.page-kicker{margin:0 0 4px;color:var(--teal);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.page-title{margin:0;color:var(--blue);font-size:24px;font-weight:800;letter-spacing:-.02em}
+.page-desc{margin:4px 0 0;color:var(--muted);font-size:13px;font-weight:500}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.ciop-session{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--blue);background:#fff}
+.ciop-session-user{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.btn-logout{background:#ef4444;color:#fff;border:0;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer}
+
+.shell{max-width:1560px;margin:0 auto;padding:18px 18px 36px;width:100%;flex:1}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.topbar-left,.topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 16px;border-radius:999px;border:1px solid transparent;font:inherit;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;transition:.18s ease}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-primary{background:var(--blue);color:#fff;box-shadow:0 8px 20px rgba(6,36,92,.18)}
+.btn-primary:hover{background:var(--blue-soft);transform:translateY(-1px)}
+.btn-ghost{background:#fff;color:var(--blue);border-color:var(--border)}
+.btn-ghost:hover{background:var(--surface-2)}
+.btn-ghost.active{background:#effcfb;border-color:rgba(45,180,191,.45);color:var(--blue)}
+
+.live-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:#fff;border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(5,150,105,.15)}
+.live-dot.busy{background:var(--orange);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+.layout{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:stretch}
+@media(max-width:1080px){.layout{grid-template-columns:1fr}}
+
+.sidebar{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.card-pad{padding:16px 18px}
+.card-title{margin:0 0 4px;font-size:15px;font-weight:800;color:var(--blue)}
+.card-sub{margin:0 0 12px;font-size:12px;color:var(--muted);line-height:1.45;font-weight:500}
+
+.field{display:grid;gap:6px;margin-bottom:10px}
+.field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.input,.select{
+  width:100%;height:44px;border:1px solid var(--border);border-radius:12px;padding:0 12px;
+  font:inherit;font-size:14px;font-weight:500;background:var(--surface-2);color:var(--text)
+}
+.input:focus,.select:focus{outline:none;border-color:#7dd3dc;box-shadow:0 0 0 4px rgba(45,180,191,.15);background:#fff}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
+.stat{padding:10px 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border)}
+.stat b{display:block;font-size:18px;font-weight:800;color:var(--blue);letter-spacing:-.02em}
+.stat span{font-size:11px;color:var(--muted);font-weight:600}
+
+.lines{max-height:240px;overflow:auto;display:grid;gap:4px}
+.line-btn{width:100%;display:flex;align-items:center;gap:10px;border:1px solid transparent;background:transparent;border-radius:12px;padding:8px 10px;cursor:pointer;font:inherit;text-align:left;transition:.15s ease}
+.line-btn:hover{background:var(--surface-2)}
+.line-btn.active{background:#effcfb;border-color:rgba(45,180,191,.35)}
+.line-chip{width:48px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex:0 0 auto}
+.line-meta{min-width:0;flex:1}
+.line-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.line-route{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.main{display:flex;flex-direction:column;min-height:720px}
+.tabs{display:flex;gap:8px;padding:12px 14px 0;flex-wrap:wrap}
+.tab{border:1px solid var(--border);background:#fff;color:var(--blue);border-radius:999px;padding:9px 16px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.tab.active{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 8px 18px rgba(6,36,92,.18)}
+
+.panel-wrap{flex:1;padding:14px;display:flex;flex-direction:column;min-height:0}
+.panel{flex:1;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;position:relative;min-height:520px}
+.panel[hidden]{display:none!important}
+
+#mapa{width:100%;height:100%;min-height:520px;background:#dbeafe}
+.map-tools{position:absolute;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:8px}
+.map-tools .btn{min-height:38px;padding:0 12px;font-size:12px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px)}
+
+.leaflet-popup-content-wrapper{border-radius:14px;box-shadow:var(--shadow);padding:0;overflow:hidden}
+.leaflet-popup-content{margin:0;min-width:210px}
+.popup{padding:14px 16px}
+.popup-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.popup-chip{width:42px;height:36px;border-radius:10px;display:grid;place-items:center;font-weight:800;color:#fff;font-size:13px}
+.popup-title{font-size:15px;font-weight:800;color:var(--blue);line-height:1.2}
+.popup-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.popup-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.popup-item{padding:8px 10px;border-radius:10px;background:var(--surface-2);font-size:11px;color:var(--muted)}
+.popup-item strong{display:block;font-size:13px;color:var(--text);margin-top:2px}
+
+.bus-marker-wrap{background:transparent!important;border:0!important;overflow:visible!important}
+.bus-marker{
+  width:36px;position:relative;
+  filter:drop-shadow(0 3px 8px rgba(15,23,42,.32));
+  transition:transform .35s cubic-bezier(.4,0,.2,1),filter .25s ease;
+}
+.bus-marker.dim{opacity:.34;filter:grayscale(.35) drop-shadow(0 2px 5px rgba(15,23,42,.12))}
+.bus-marker.highlight{
+  z-index:900!important;
+  transform:scale(1.12);
+  filter:drop-shadow(0 5px 14px rgba(15,23,42,.38));
+}
+.bus-marker svg{display:block;width:36px;height:28px}
+.bus-labels{
+  position:absolute;left:50%;bottom:100%;
+  transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  margin-bottom:3px;pointer-events:none;
+}
+.bus-tag{
+  font-size:9px;font-weight:800;letter-spacing:.02em;
+  padding:2px 6px;border-radius:999px;white-space:nowrap;line-height:1.2;
+  border:1.5px solid #fff;
+  box-shadow:0 1px 6px rgba(15,23,42,.2);
+}
+.bus-tag-prefix{background:#fff;color:#06245c}
+.bus-tag-line{color:#fff}
+.bus-marker.highlight .bus-tag{box-shadow:0 0 0 2px rgba(45,180,191,.22),0 2px 8px rgba(15,23,42,.22)}
+
+.schedule-scroll{overflow:auto;padding:16px;max-height:calc(72vh - 40px)}
+.hero{padding:20px;border-radius:14px;color:#fff;margin-bottom:14px;background:linear-gradient(135deg,var(--teal),var(--blue))}
+.hero h3{margin:0;font-size:22px;font-weight:800}
+.hero p{margin:6px 0 0;font-size:13px;opacity:.92}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.chip{border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 14px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;color:var(--blue)}
+.chip.active{background:var(--teal);border-color:var(--teal);color:#fff}
+.columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.col{border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.col-head{padding:10px 12px;background:var(--surface-2);font-size:12px;font-weight:800;color:var(--blue)}
+.col-body{padding:10px;display:flex;flex-wrap:wrap;gap:6px}
+.time{min-width:58px;padding:8px;border-radius:10px;background:var(--surface-2);text-align:center;font-size:13px;font-weight:800;color:var(--blue);font-variant-numeric:tabular-nums}
+
+.empty{padding:40px 20px;text-align:center;color:var(--muted)}
+.empty h3{margin:0 0 8px;color:var(--blue);font-size:18px;font-weight:800}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css">
+<link rel="stylesheet" href="../assets/css/portal-brand.css">
+<link rel="stylesheet" href="../assets/css/portal-header.css">
+<link rel="stylesheet" href="../assets/css/portal-session.css">
+<script src="../assets/js/loading.js"></script>
+<script type="module" src="../assets/js/auth.js"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+</head>
+<body data-require-usuarios="odair.marin@icloud.com,rogerio@tcgl.com.br" data-require-somente-usuarios="true">
+<header class="header">
+    <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações">
+        <img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP">
+        <span class="portal-brand-meta">TCGL · Operações</span>
+    </a>
+    <div class="title-wrap">
+        <p class="page-kicker">Monitoramento ao vivo</p>
+        <h1 class="page-title">Ônibus Agora</h1>
+        <p class="page-desc">Mapa em tempo real · Londrina · dados Bus2</p>
+    </div>
+    <div class="header-actions">
+        <div class="ciop-session">
+            <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
+            <button class="btn-logout" type="button" onclick="logout()">Sair</button>
+        </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+    </div>
+</header>
+
+<main class="shell">
+    <div class="topbar">
+        <div class="topbar-left">
+            <a class="btn btn-primary" href="../index.html">
+                <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+                Portal
+            </a>
+            <span class="live-pill" id="livePill">
+                <span class="live-dot" id="liveDot"></span>
+                <span id="liveText">Conectando...</span>
+            </span>
+        </div>
+        <div class="topbar-actions">
+            <button type="button" class="btn btn-ghost" id="btnAtualizar">Atualizar agora</button>
+            <a class="btn btn-ghost" href="https://bus2.info/pr/londrina" target="_blank" rel="noopener">Bus2 Londrina</a>
+        </div>
+    </div>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="card card-pad">
+                <h2 class="card-title">Buscar</h2>
+                <p class="card-sub">Filtre por linha ou número do veículo.</p>
+                <div class="field">
+                    <label for="buscaLinha">Linha</label>
+                    <input class="input" id="buscaLinha" type="search" placeholder="Ex.: 301, Alemanha..." autocomplete="off">
+                </div>
+                <div class="field">
+                    <label for="buscaVeiculo">Veículo</label>
+                    <input class="input" id="buscaVeiculo" type="search" placeholder="Ex.: 3173" autocomplete="off">
+                </div>
+                <div class="stats">
+                    <div class="stat"><b id="statOnline">0</b><span>Online</span></div>
+                    <div class="stat"><b id="statLinhas">0</b><span>Linhas</span></div>
+                    <div class="stat"><b id="statVisiveis">0</b><span>Visíveis</span></div>
+                </div>
+            </div>
+
+            <div class="card card-pad" style="flex:1;display:flex;flex-direction:column;min-height:0">
+                <h2 class="card-title">Linhas</h2>
+                <p class="card-sub">Clique para focar no mapa. Vazio = ver todas.</p>
+                <div class="lines" id="listaLinhas"></div>
+                <button type="button" class="btn btn-ghost" id="btnLimparFiltro" style="margin-top:10px;width:100%">Ver todas as linhas</button>
+            </div>
+        </aside>
+
+        <section class="card main">
+            <div class="tabs">
+                <button type="button" class="tab active" data-tab="mapa">Mapa ao vivo</button>
+                <button type="button" class="tab" data-tab="horarios">Horários da linha</button>
+            </div>
+            <div class="panel-wrap">
+                <div class="panel" id="panelMapa">
+                    <div id="mapa"></div>
+                    <div class="map-tools">
+                        <button type="button" class="btn btn-ghost" id="btnMapaClaro">Mapa claro</button>
+                        <button type="button" class="btn btn-ghost" id="btnMapaBus2">Estilo Bus2</button>
+                        <button type="button" class="btn btn-ghost" id="btnMapaSat">Satélite</button>
+                        <button type="button" class="btn btn-ghost" id="btnCentralizar">Centralizar</button>
+                    </div>
+                </div>
+                <div class="panel schedule-scroll" id="panelHorarios" hidden>
+                    <div class="empty" id="horariosEmpty">
+                        <h3>Horários da linha</h3>
+                        <p>Selecione uma linha na lista para consultar partidas previstas.</p>
+                    </div>
+                    <div id="horariosConteudo" hidden></div>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+const BUS2 = {
+    hash: "2fvn7",
+    proxyFallback: "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com",
+    proxyBase: null,
+    tiles: {
+        light: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        lightBus2: "https://bus2.info/api/public/tiles/light/{z}/{x}/{y}",
+        satellite: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+    },
+    centro: [-23.303, -51.166],
+    zoom: 13,
+    intervaloMs: 20000,
+    pontualidade: {
+        adiantadoSeg: 120,
+        atrasadoSeg: 360,
+        cores: { adiantado: "#D30000", atrasado: "#FFFF00", noHorario: "#8FD400" }
+    }
+};
+
+const state = {
+    project: null,
+    routes: [],
+    routeFiltro: null,
+    veiculoFiltro: "",
+    buscaLinha: "",
+    tab: "mapa",
+    vehicles: new Map(),
+    markers: new Map(),
+    timetableCache: new Map(),
+    shapeCache: new Map(),
+    pollTimer: null,
+    pollIndex: 0,
+    lastUpdate: null,
+    manifest: null,
+    liveOk: false,
+    mapa: null,
+    tileLayer: null,
+    shapeLayer: null,
+    schedule: { directionId: 0, serviceId: null, timetable: null, route: null }
+};
+
+function $(id){ return document.getElementById(id); }
+
+function esc(v){
+    return String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function corCss(hex){
+    const h = String(hex || "").trim();
+    if (!h) return "#2db4bf";
+    return h.startsWith("#") ? h : ("#" + h);
+}
+
+function contraste(hex){
+    const c = corCss(hex).replace("#", "");
+    if (c.length !== 6) return "#fff";
+    const r = parseInt(c.slice(0, 2), 16), g = parseInt(c.slice(2, 4), 16), b = parseInt(c.slice(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? "#06245c" : "#fff";
+}
+
+function statusPontualidade(delaySec){
+    const { adiantadoSeg, atrasadoSeg, cores } = BUS2.pontualidade;
+    if (delaySec == null || !Number.isFinite(Number(delaySec))) return null;
+    const d = Number(delaySec);
+    if (d < -adiantadoSeg) {
+        return { tipo: "adiantado", cor: cores.adiantado, min: Math.round(Math.abs(d) / 60), d };
+    }
+    if (d > atrasadoSeg) {
+        return { tipo: "atrasado", cor: cores.atrasado, min: Math.round(d / 60), d };
+    }
+    return { tipo: "no_horario", cor: cores.noHorario, min: 0, d };
+}
+
+function corOnibusVeiculo(v){
+    return statusPontualidade(v.delay)?.cor || "#ffffff";
+}
+
+function infoPontualidade(v){
+    if (v.delay == null || !Number.isFinite(Number(v.delay))) {
+        return { rotulo: "Pontualidade", valor: "—", cor: "#64748b" };
+    }
+    const st = statusPontualidade(v.delay);
+    if (!st) return { rotulo: "Pontualidade", valor: "—", cor: "#64748b" };
+    if (st.tipo === "adiantado") {
+        return { rotulo: "Adiantado", valor: st.min + " min", cor: st.cor };
+    }
+    if (st.tipo === "atrasado") {
+        return { rotulo: "Atrasado", valor: st.min + " min", cor: st.cor };
+    }
+    return { rotulo: "Pontualidade", valor: "No horário", cor: st.cor };
+}
+
+function resolverBasePortal(){
+    const path = String(window.location.pathname || "").replace(/\\/g, "/");
+    const pagesIdx = path.indexOf("/pages/");
+    if (pagesIdx >= 0) return path.slice(0, pagesIdx);
+    const last = path.lastIndexOf("/");
+    return last > 0 ? path.slice(0, last) : "";
+}
+
+function normalizarProxyBase(apiUrl){
+    let url = String(apiUrl || "").trim().replace(/\/+$/, "");
+    if (!url) return "";
+    if (url.endsWith("/bus2")) return url;
+    return url + "/bus2";
+}
+
+async function fetchJson(url){
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok){
+        const body = await res.text().catch(() => "");
+        let msg = "Erro " + res.status + " em " + url;
+        try {
+            const j = JSON.parse(body);
+            if (j.message) msg += ": " + j.message;
+            else if (j.erro) msg += ": " + j.erro;
+        } catch { /* ignore */ }
+        throw new Error(msg);
+    }
+    return res.json();
+}
+
+async function initBus2Proxy(){
+    if (BUS2.proxyBase) return;
+    const candidatos = [
+        resolverBasePortal() + "/assets/data/portal-runtime.json",
+        new URL("../assets/data/portal-runtime.json", window.location.href).href
+    ];
+    for (const cfgUrl of candidatos){
+        try {
+            const cfg = await fetchJson(cfgUrl);
+            const base = normalizarProxyBase(cfg?.awsApiUrl);
+            const local = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(base);
+            const onLocal = /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+            if (base && (!local || onLocal)){
+                BUS2.proxyBase = base;
+                return;
+            }
+        } catch { /* tenta próximo */ }
+    }
+    if (BUS2.proxyFallback) BUS2.proxyBase = normalizarProxyBase(BUS2.proxyFallback);
+}
+
+function staticUrl(relativePath){
+    return resolverBasePortal() + "/assets/data/bus2/" + String(relativePath || "").replace(/^\//, "");
+}
+
+async function fetchStaticJson(relativePath){
+    return fetchJson(staticUrl(relativePath));
+}
+
+async function fetchBus2Live(pathAndQuery){
+    if (!BUS2.proxyBase) throw new Error("Mapa ao vivo indisponível (API proxy não configurada).");
+    const path = String(pathAndQuery || "").replace(/^\//, "");
+    return fetchJson(BUS2.proxyBase + "/" + path);
+}
+
+function ordenarRotas(a, b){
+    const na = parseInt(String(a.shortName).replace(/\D/g, ""), 10);
+    const nb = parseInt(String(b.shortName).replace(/\D/g, ""), 10);
+    if (!Number.isNaN(na) && !Number.isNaN(nb) && na !== nb) return na - nb;
+    return String(a.shortName).localeCompare(String(b.shortName), "pt-BR", { numeric: true });
+}
+
+function rotasVisiveis(){
+    const q = state.buscaLinha.trim().toLowerCase();
+    return state.routes.filter(r => {
+        if (!q) return true;
+        return String(r.shortName).toLowerCase().includes(q)
+            || String(r.longName || "").toLowerCase().includes(q);
+    }).sort(ordenarRotas);
+}
+
+function setLive(texto, busy){
+    $("liveText").textContent = texto;
+    $("liveDot").classList.toggle("busy", !!busy);
+}
+
+function iconeOnibusHtml(corLinha, corOnibus, prefixo, linha, extraClass){
+    const cl = esc(corCss(corLinha));
+    const co = esc(corCss(corOnibus));
+    return '<div class="bus-marker ' + (extraClass || "") + '" style="--cor:' + cl + '">' +
+        '<div class="bus-labels">' +
+            '<span class="bus-tag bus-tag-prefix">' + esc(prefixo || "—") + '</span>' +
+            '<span class="bus-tag bus-tag-line" style="background:' + cl + ';color:' + contraste(corLinha) + '">' + esc(linha || "?") + '</span>' +
+        '</div>' +
+        '<svg viewBox="0 0 32 28" aria-hidden="true">' +
+            '<g transform="translate(16,14)">' +
+                '<path fill="' + co + '" stroke="#fff" stroke-width="1" d="M-13.5-5.8h27a3.8 3.8 0 0 1 3.8 3.8v7.8a3.8 3.8 0 0 1-3.8 3.8h-27a3.8 3.8 0 0 1-3.8-3.8v-7.8a3.8 3.8 0 0 1 3.8-3.8z"/>' +
+                '<rect x="-10" y="-2.6" width="5.8" height="4.4" rx="1.1" fill="#fff" opacity=".82"/>' +
+                '<rect x="-2.2" y="-2.6" width="5.8" height="4.4" rx="1.1" fill="#fff" opacity=".82"/>' +
+                '<rect x="5.6" y="-2.6" width="5.8" height="4.4" rx="1.1" fill="#fff" opacity=".82"/>' +
+                '<circle cx="-8" cy="8.2" r="2.3" fill="#fff" stroke="#475569" stroke-width=".9"/>' +
+                '<circle cx="8" cy="8.2" r="2.3" fill="#fff" stroke="#475569" stroke-width=".9"/>' +
+                '<circle cx="-8" cy="8.2" r=".9" fill="#94a3b8"/>' +
+                '<circle cx="8" cy="8.2" r=".9" fill="#94a3b8"/>' +
+                '<path fill="#fff" opacity=".92" d="M11.2-1.2h2.4a1.2 1.2 0 0 1 1.2 1.2v2.6h-4.8v-2.6a1.2 1.2 0 0 1 1.2-1.2z"/>' +
+            '</g>' +
+        '</svg></div>';
+}
+
+function initMapa(){
+    if (state.mapa) return;
+    if (typeof L === "undefined") throw new Error("Mapa indisponível: biblioteca Leaflet não carregou.");
+    state.mapa = L.map("mapa", { zoomControl: true }).setView(BUS2.centro, BUS2.zoom);
+    state.tileLayer = L.tileLayer(BUS2.tiles.light, {
+        maxZoom: 18,
+        attribution: "© OpenStreetMap",
+        subdomains: "abc"
+    }).addTo(state.mapa);
+    setTimeout(() => state.mapa.invalidateSize(), 200);
+}
+
+function trocarTile(tipo){
+    if (!state.mapa || !state.tileLayer) return;
+    state.mapa.removeLayer(state.tileLayer);
+    if (tipo === "sat"){
+        state.tileLayer = L.tileLayer(BUS2.tiles.satellite, { maxZoom: 18, attribution: "© Esri" }).addTo(state.mapa);
+    } else if (tipo === "bus2"){
+        state.tileLayer = L.tileLayer(BUS2.tiles.lightBus2, { maxZoom: 18, attribution: "© Bus2 / OpenStreetMap" }).addTo(state.mapa);
+    } else {
+        state.tileLayer = L.tileLayer(BUS2.tiles.light, { maxZoom: 18, attribution: "© OpenStreetMap", subdomains: "abc" }).addTo(state.mapa);
+    }
+}
+
+function renderListaLinhas(){
+    const lista = rotasVisiveis();
+    $("listaLinhas").innerHTML = lista.map(r => {
+        const cor = corCss(r.color);
+        const ativo = state.routeFiltro?.routeId === r.routeId;
+        return '<button type="button" class="line-btn' + (ativo ? " active" : "") + '" data-id="' + r.routeId + '">' +
+            '<span class="line-chip" style="background:' + esc(cor) + ';color:' + contraste(cor) + '">' + esc(r.shortName) + '</span>' +
+            '<span class="line-meta"><div class="line-name">Linha ' + esc(r.shortName) + '</div><div class="line-route">' + esc(r.longName || "") + '</div></span>' +
+        '</button>';
+    }).join("") || '<div class="empty"><p>Nenhuma linha encontrada.</p></div>';
+
+    $("listaLinhas").querySelectorAll(".line-btn").forEach(btn => {
+        btn.addEventListener("click", () => selecionarLinha(Number(btn.dataset.id)));
+    });
+    $("statLinhas").textContent = state.routes.length;
+}
+
+function veiculoPassaFiltro(v){
+    if (state.routeFiltro && v.routeId !== state.routeFiltro.routeId) return false;
+    const q = state.veiculoFiltro.trim();
+    if (q && !String(v.vehicleId || "").includes(q)) return false;
+    return true;
+}
+
+function popupHtml(v){
+    const cor = corCss(v.route?.color);
+    const pont = infoPontualidade(v);
+    return '<div class="popup">' +
+        '<div class="popup-head">' +
+            '<span class="popup-chip" style="background:' + esc(cor) + ';color:' + contraste(cor) + '">' + esc(v.route?.shortName || "?") + '</span>' +
+            '<div><div class="popup-title">Veículo ' + esc(v.vehicleId) + '</div><div class="popup-sub">' + esc(v.route?.longName || "") + '</div></div>' +
+        '</div>' +
+        '<div class="popup-grid">' +
+            '<div class="popup-item">Posição<strong>' + esc(v.positionTime || "—") + '</strong></div>' +
+            '<div class="popup-item">' + esc(pont.rotulo) + '<strong style="color:' + esc(pont.cor) + '">' + esc(pont.valor) + '</strong></div>' +
+            '<div class="popup-item">Viagem<strong>' + esc(v.tripDesc || "—") + '</strong></div>' +
+            '<div class="popup-item">Percorrido<strong>' + esc(v.percTravelled != null ? v.percTravelled + "%" : "—") + '</strong></div>' +
+        '</div></div>';
+}
+
+function atualizarMarcadores(){
+    if (!state.mapa) return;
+    const visiveis = new Set();
+    let countVis = 0;
+
+    state.vehicles.forEach((v, key) => {
+        const ok = veiculoPassaFiltro(v);
+        if (!ok) return;
+        countVis += 1;
+        visiveis.add(key);
+        const extra = state.veiculoFiltro && String(v.vehicleId).includes(state.veiculoFiltro) ? "highlight" : "";
+        const icon = L.divIcon({
+            className: "bus-marker-wrap",
+            html: iconeOnibusHtml(corCss(v.route?.color), corOnibusVeiculo(v), v.vehicleId, v.route?.shortName, extra),
+            iconSize: [36, 54],
+            iconAnchor: [18, 54]
+        });
+        let marker = state.markers.get(key);
+        if (!marker){
+            marker = L.marker([v.lat, v.lng], { icon }).addTo(state.mapa);
+            marker.bindPopup(() => popupHtml(v));
+            state.markers.set(key, marker);
+        } else {
+            marker.setLatLng([v.lat, v.lng]);
+            marker.setIcon(icon);
+            marker.setPopupContent(popupHtml(v));
+        }
+    });
+
+    state.markers.forEach((marker, key) => {
+        if (!visiveis.has(key)){
+            state.mapa.removeLayer(marker);
+            state.markers.delete(key);
+        }
+    });
+
+    $("statOnline").textContent = state.vehicles.size;
+    $("statVisiveis").textContent = countVis;
+
+    if (state.routeFiltro && countVis > 0){
+        const pts = [...state.vehicles.values()].filter(veiculoPassaFiltro).map(v => [v.lat, v.lng]);
+        if (pts.length) state.mapa.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 15 });
+    } else if (state.veiculoFiltro && countVis === 1){
+        const alvo = [...state.vehicles.values()].find(veiculoPassaFiltro);
+        if (alvo){
+            state.mapa.setView([alvo.lat, alvo.lng], 16, { animate: true });
+            state.markers.get(alvo.key)?.openPopup();
+        }
+    }
+}
+
+async function obterTimetable(routeId){
+    if (state.timetableCache.has(routeId)) return state.timetableCache.get(routeId);
+    const data = await fetchStaticJson("timetables/" + routeId + ".json");
+    state.timetableCache.set(routeId, data);
+    return data;
+}
+
+async function obterShape(tripId){
+    if (state.shapeCache.has(tripId)) return state.shapeCache.get(tripId);
+    try {
+        const data = await fetchStaticJson("shapes/" + tripId + ".json");
+        state.shapeCache.set(tripId, data);
+        return data;
+    } catch { return null; }
+}
+
+function decodePolyline(str, precision){
+    let index = 0, lat = 0, lng = 0, coordinates = [];
+    const factor = Math.pow(10, precision == null ? 5 : precision);
+    while (index < str.length){
+        let b, shift = 0, result = 0;
+        do { b = str.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+        lat += (result & 1) ? ~(result >> 1) : (result >> 1);
+        shift = 0; result = 0;
+        do { b = str.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+        lng += (result & 1) ? ~(result >> 1) : (result >> 1);
+        coordinates.push([lat / factor, lng / factor]);
+    }
+    return coordinates;
+}
+
+function desenharShape(route, tripId){
+    if (!state.mapa) return;
+    if (state.shapeLayer){
+        state.mapa.removeLayer(state.shapeLayer);
+        state.shapeLayer = null;
+    }
+    obterShape(tripId).then(data => {
+        if (!data?.shape) return;
+        const latlngs = decodePolyline(data.shape, 5);
+        if (!latlngs.length) return;
+        state.shapeLayer = L.polyline(latlngs, { color: corCss(route.color), weight: 5, opacity: 0.78 }).addTo(state.mapa);
+        state.mapa.fitBounds(state.shapeLayer.getBounds(), { padding: [40, 40] });
+    });
+}
+
+async function buscarVeiculosRota(route){
+    const tt = await obterTimetable(route.routeId);
+    const trips = tt?.timetable?.trips || [];
+    const found = [];
+    for (const trip of trips){
+        try {
+            const list = await fetchBus2Live("vehicles?origin=web&trip_id=" + trip.tripId + "&route_id=" + route.routeId);
+            if (!Array.isArray(list)) continue;
+            list.forEach(v => {
+                found.push({
+                    ...v,
+                    routeId: route.routeId,
+                    route,
+                    tripId: trip.tripId,
+                    tripDesc: trip.tripDesc,
+                    key: String(v.vehicleId) + ":" + route.routeId
+                });
+            });
+        } catch { /* linha sem veículo online */ }
+    }
+    return found;
+}
+
+async function pollLote(){
+    if (!state.routes.length) return;
+    if (!BUS2.proxyBase){
+        setLive("Horários OK · mapa ao vivo requer API AWS", false);
+        return;
+    }
+    setLive("Atualizando posições...", true);
+    const lote = 18;
+    const start = state.pollIndex;
+    const slice = [];
+    for (let i = 0; i < lote; i += 1){
+        slice.push(state.routes[(start + i) % state.routes.length]);
+    }
+    state.pollIndex = (start + lote) % state.routes.length;
+
+    const promises = slice.map(r => buscarVeiculosRota(r));
+    const results = await Promise.allSettled(promises);
+    results.forEach(res => {
+        if (res.status !== "fulfilled") return;
+        res.value.forEach(v => {
+            v.lastSeen = Date.now();
+            state.vehicles.set(v.key, v);
+        });
+    });
+
+    const staleMs = Math.max(BUS2.intervaloMs * 8, 120000);
+    const cutoff = Date.now() - staleMs;
+    state.vehicles.forEach((v, key) => {
+        if ((v.lastSeen || 0) < cutoff) state.vehicles.delete(key);
+    });
+
+    state.lastUpdate = new Date();
+    state.liveOk = true;
+    atualizarMarcadores();
+    const hora = state.lastUpdate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    setLive(state.vehicles.size + " ônibus · " + hora, false);
+}
+
+function iniciarPoll(){
+    clearInterval(state.pollTimer);
+    pollLote();
+    state.pollTimer = setInterval(pollLote, BUS2.intervaloMs);
+}
+
+async function selecionarLinha(routeId){
+    const route = state.routes.find(r => r.routeId === routeId);
+    if (!route) return;
+    state.routeFiltro = route;
+    state.schedule.route = route;
+    state.schedule.timetable = null;
+    renderListaLinhas();
+    atualizarMarcadores();
+    const tt = await obterTimetable(routeId);
+    state.schedule.timetable = tt;
+    state.schedule.directionId = tt?.timetable?.directions?.[0]?.directionId ?? 0;
+    state.schedule.serviceId = null;
+    const tripId = tt?.timetable?.trips?.[0]?.tripId;
+    if (tripId) desenharShape(route, tripId);
+    renderHorarios();
+    buscarVeiculosRota(route).then(list => {
+        list.forEach(v => {
+            v.lastSeen = Date.now();
+            state.vehicles.set(v.key, v);
+        });
+        atualizarMarcadores();
+    }).catch(() => { /* proxy indisponível — horários ainda funcionam */ });
+}
+
+function limparFiltro(){
+    state.routeFiltro = null;
+    state.veiculoFiltro = "";
+    $("buscaVeiculo").value = "";
+    renderListaLinhas();
+    if (state.shapeLayer && state.mapa){
+        state.mapa.removeLayer(state.shapeLayer);
+        state.shapeLayer = null;
+    }
+    state.mapa?.setView(BUS2.centro, BUS2.zoom);
+    atualizarMarcadores();
+}
+
+function servicoHoje(services){
+    const hoje = new Date();
+    const idx = hoje.getDay();
+    return services.find(s => {
+        if (Array.isArray(s.days) && s.days.length === 7 && !s.days[idx]) return false;
+        if (s.start && hoje < new Date(String(s.start).slice(0, 10) + "T00:00:00")) return false;
+        if (s.end && hoje > new Date(String(s.end).slice(0, 10) + "T23:59:59")) return false;
+        return true;
+    }) || services[0];
+}
+
+function brDate(iso){
+    if (!iso) return "—";
+    const p = String(iso).slice(0, 10).split("-");
+    return p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : iso;
+}
+
+function montarHorarios(){
+    const tt = state.schedule.timetable;
+    const route = state.schedule.route;
+    if (!tt || !route){
+        $("horariosEmpty").hidden = false;
+        $("horariosConteudo").hidden = true;
+        return;
+    }
+    $("horariosEmpty").hidden = true;
+    $("horariosConteudo").hidden = false;
+    const dirs = tt.timetable?.directions || [];
+    const dir = dirs.find(d => d.directionId === state.schedule.directionId) || dirs[0];
+    const services = dir?.services || [];
+    const svc = services.find(s => s.serviceId === state.schedule.serviceId) || servicoHoje(services);
+    if (svc) state.schedule.serviceId = svc.serviceId;
+    const trips = (tt.timetable?.trips || []).filter(t => t.directionId === dir.directionId);
+
+    const dirChips = dirs.map(d => '<button type="button" class="chip' + (d.directionId === state.schedule.directionId ? " active" : "") + '" data-dir="' + d.directionId + '">' + esc(d.desc || "Sentido") + '</button>').join("");
+    const svcChips = services.map(s => '<button type="button" class="chip' + (s.serviceId === state.schedule.serviceId ? " active" : "") + '" data-svc="' + s.serviceId + '">' + esc(s.desc || "Dia") + '</button>').join("");
+
+    const deps = {};
+    (svc?.departures || []).forEach(d => { (deps[d.seq] ||= []).push(d); });
+    Object.values(deps).forEach(a => a.sort((x, y) => String(x.dep).localeCompare(String(y.dep))));
+
+    const cols = trips.map(t => {
+        const horas = (deps[t.seq] || []).map(d => '<span class="time">' + esc(d.dep) + '</span>').join("") || '<span class="time" style="opacity:.4">—</span>';
+        return '<article class="col"><div class="col-head">' + esc(t.tripDesc || "Terminal") + '</div><div class="col-body">' + horas + '</div></article>';
+    }).join("");
+
+    $("horariosConteudo").innerHTML =
+        '<div class="hero" style="background:linear-gradient(135deg,' + esc(corCss(route.color)) + ',' + esc(corCss("#06245c")) + ')">' +
+            '<h3>Linha ' + esc(route.shortName) + ' · ' + esc(route.longName) + '</h3>' +
+            '<p>Horários previstos · ' + esc(svc?.desc || "") + '</p></div>' +
+        (dirs.length > 1 ? '<div class="chips" id="chipsDir">' + dirChips + '</div>' : '') +
+        (services.length > 1 ? '<div class="chips" id="chipsSvc">' + svcChips + '</div>' : '') +
+        '<p style="font-size:12px;color:var(--muted);margin:0 0 12px">Válido de ' + esc(brDate(svc?.start)) + ' a ' + esc(brDate(svc?.end)) + '.</p>' +
+        '<div class="columns">' + cols + '</div>';
+
+    $("chipsDir")?.querySelectorAll(".chip").forEach(btn => btn.addEventListener("click", () => {
+        state.schedule.directionId = Number(btn.dataset.dir);
+        renderHorarios();
+    }));
+    $("chipsSvc")?.querySelectorAll(".chip").forEach(btn => btn.addEventListener("click", () => {
+        state.schedule.serviceId = Number(btn.dataset.svc);
+        renderHorarios();
+    }));
+}
+
+function renderHorarios(){ montarHorarios(); }
+
+function trocarTab(tab){
+    state.tab = tab;
+    document.querySelectorAll(".tab").forEach(el => el.classList.toggle("active", el.dataset.tab === tab));
+    $("panelMapa").hidden = tab !== "mapa";
+    $("panelHorarios").hidden = tab !== "horarios";
+    if (tab === "mapa") setTimeout(() => state.mapa?.invalidateSize(), 150);
+    if (tab === "horarios" && state.routeFiltro) renderHorarios();
+}
+
+async function boot(){
+    setLive("Carregando linhas...", true);
+    initMapa();
+    await initBus2Proxy();
+
+    try {
+        state.manifest = await fetchStaticJson("manifest.json");
+    } catch { /* manifest opcional */ }
+
+    const project = await fetchStaticJson("project.json");
+    state.project = project;
+    BUS2.intervaloMs = (project.realtimeUpdateFreqSec || 20) * 1000;
+
+    const routes = await fetchStaticJson("routes.json");
+    state.routes = Array.isArray(routes) ? routes.slice().sort(ordenarRotas) : [];
+    renderListaLinhas();
+
+    const manifestTxt = state.manifest?.atualizadoEm
+        ? " · horários " + new Date(state.manifest.atualizadoEm).toLocaleString("pt-BR")
+        : "";
+    setLive(state.routes.length + " linhas" + manifestTxt, false);
+
+    const linhaParam = new URLSearchParams(location.search).get("linha");
+    if (linhaParam){
+        const alvo = state.routes.find(r => String(r.shortName) === linhaParam || String(r.routeId) === linhaParam);
+        if (alvo) await selecionarLinha(alvo.routeId);
+    }
+
+    if (BUS2.proxyBase){
+        iniciarPoll();
+        setTimeout(pollLote, 2500);
+    }
+}
+
+function bind(){
+    $("buscaLinha").addEventListener("input", e => { state.buscaLinha = e.target.value; renderListaLinhas(); });
+    $("buscaVeiculo").addEventListener("input", e => { state.veiculoFiltro = e.target.value.trim(); atualizarMarcadores(); });
+    $("btnLimparFiltro").addEventListener("click", limparFiltro);
+    $("btnAtualizar").addEventListener("click", () => { state.vehicles.clear(); pollLote(); });
+    $("btnMapaClaro").addEventListener("click", () => trocarTile("light"));
+    $("btnMapaBus2").addEventListener("click", () => trocarTile("bus2"));
+    $("btnMapaSat").addEventListener("click", () => trocarTile("sat"));
+    $("btnCentralizar").addEventListener("click", () => state.mapa?.setView(BUS2.centro, BUS2.zoom));
+    document.querySelectorAll(".tab").forEach(btn => btn.addEventListener("click", () => trocarTab(btn.dataset.tab)));
+}
+
+function iniciar(){
+    bind();
+    boot().catch(err => {
+        setLive(err.message || "Erro ao iniciar", false);
+        $("listaLinhas").innerHTML = '<div class="empty"><h3>Falha ao carregar</h3><p>' + esc(err.message || "Não foi possível carregar os dados Bus2.") + '</p></div>';
+    });
+}
+
+if (window.portalUsuarioValidado) iniciar();
+else window.addEventListener("portal:usuario-validado", iniciar, { once: true });
+</script>
+</body>
+</html>

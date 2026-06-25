@@ -403,10 +403,14 @@ function usuarioPodeVer(el, cadastro) {
   const perfisBloqueados = listaAtributo(el.dataset.excluirPerfis);
   if (perfisBloqueados.includes(perfil)) return false;
 
+  const usuariosPermitidos = listaEmails(el.dataset.usuarios);
+  if (el.dataset.somenteUsuarios === "true" && usuariosPermitidos.length > 0) {
+    return usuariosPermitidos.includes(email);
+  }
+
   if (isAdministrador(cadastro)) return true;
 
   const perfisPermitidos = listaAtributo(el.dataset.perfis);
-  const usuariosPermitidos = listaEmails(el.dataset.usuarios);
 
   const temRegraPerfil = perfisPermitidos.length > 0;
   const temRegraUsuario = usuariosPermitidos.length > 0;
@@ -464,8 +468,13 @@ function aplicarPermissoes(cadastro) {
 
   const perfisObrigatorios = listaAtributo(document.body?.dataset.requirePerfis);
   const usuariosObrigatorios = listaEmails(document.body?.dataset.requireUsuarios);
-  if ((perfisObrigatorios.length || usuariosObrigatorios.length) && !isAdministrador(cadastro)) {
-    const email = String(cadastro.email || "").toLowerCase();
+  const email = String(cadastro.email || "").toLowerCase();
+  if (document.body?.dataset.requireSomenteUsuarios === "true" && usuariosObrigatorios.length) {
+    if (!usuariosObrigatorios.includes(email)) {
+      window.location.href = portalPath("index.html");
+      return false;
+    }
+  } else if ((perfisObrigatorios.length || usuariosObrigatorios.length) && !isAdministrador(cadastro)) {
     const permitido = perfisObrigatorios.includes(perfilAtual) || usuariosObrigatorios.includes(email);
     if (!permitido) {
       window.location.href = portalPath("index.html");
