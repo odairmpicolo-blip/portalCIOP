@@ -19,6 +19,12 @@ service cloud.firestore {
         : "";
     }
 
+    function perfilBuscaAtual() {
+      return exists(/databases/$(database)/documents/usuarios/$(email()))
+        ? get(/databases/$(database)/documents/usuarios/$(email())).data.perfilBusca
+        : "";
+    }
+
     function gestor() {
       return signedIn() && (bootstrapGestor() || perfilAtual() in ['Administrador', 'Supervisor', 'Gerência', 'Gerencia']);
     }
@@ -35,12 +41,18 @@ service cloud.firestore {
       return lista is list && perfilAtual() in lista;
     }
 
+    function listaTemPerfilBusca(lista) {
+      return lista is list && perfilBuscaAtual() != "" && perfilBuscaAtual() in lista;
+    }
+
     match /avisos/{avisoId} {
       allow read: if signedIn() && (
         podePostarAviso() ||
         resource.data.publico == true ||
         listaTemUsuario(resource.data.usuarios) ||
-        listaTemPerfil(resource.data.perfisRegra)
+        listaTemPerfil(resource.data.perfisRegra) ||
+        listaTemPerfil(resource.data.perfis) ||
+        listaTemPerfilBusca(resource.data.perfisBusca)
       );
       allow create, update, delete: if podePostarAviso();
     }

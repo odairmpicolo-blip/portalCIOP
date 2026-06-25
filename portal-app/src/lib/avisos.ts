@@ -174,10 +174,14 @@ export async function listarAvisosFirestore({
 
   const emailUsuario = normalizarEmail(email)
   const perfilRegra = String(perfil || '').trim()
+  const perfilBusca = normalizarPerfilAviso(perfil)
   const consultas = [getDocs(query(col, where('publico', '==', true)))]
 
   if (emailUsuario) {
     consultas.push(getDocs(collection(db, COLECAO_AVISOS_USUARIO, emailUsuario, 'itens')))
+  }
+  if (perfilBusca) {
+    consultas.push(getDocs(query(col, where('perfisBusca', 'array-contains', perfilBusca))))
   }
   if (perfilRegra) {
     consultas.push(getDocs(query(col, where('perfisRegra', 'array-contains', perfilRegra))))

@@ -191,6 +191,22 @@ function garantirCssMarca() {
   document.head.appendChild(link);
 }
 
+function garantirCssHeader() {
+  if (document.querySelector("link[data-portal-header]")) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = portalPath("assets/css/portal-header.css");
+  link.dataset.portalHeader = "1";
+  document.head.appendChild(link);
+}
+
+function notificarPortalPronto() {
+  window.dispatchEvent(new CustomEvent("portal:usuario-validado", { detail: window.portalUsuario }));
+  if (typeof window.iniciarAvisosPortal === "function") {
+    window.iniciarAvisosPortal();
+  }
+}
+
 function garantirMarcaPortal() {
   if (document.querySelector("script[data-portal-brand-js]")) return;
   const script = document.createElement("script");
@@ -202,6 +218,7 @@ function garantirMarcaPortal() {
 
 garantirCssSessao();
 garantirCssMarca();
+garantirCssHeader();
 garantirMarcaPortal();
 
 function garantirRodapePortal() {
@@ -493,7 +510,7 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
       window.portalUsuarioValidado = true;
       liberarHtmlValidado();
       ocultarCarregando();
-      window.dispatchEvent(new CustomEvent("portal:usuario-validado", { detail: window.portalUsuario }));
+      notificarPortalPronto();
     } else {
       liberarHtmlValidado();
       ocultarCarregando();

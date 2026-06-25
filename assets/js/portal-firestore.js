@@ -24,9 +24,25 @@ export function normalizarEmail(email) {
   return String(email || "").trim().toLowerCase();
 }
 
+function normalizarPerfilAviso(perfil) {
+  return String(perfil || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 export function normalizarCadastro(cadastro, email) {
   if (typeof cadastro === "string") {
-    return { email: normalizarEmail(email), nome: email, perfil: cadastro, registro: "", ativo: true };
+    const perfil = cadastro;
+    return {
+      email: normalizarEmail(email),
+      nome: email,
+      perfil,
+      registro: "",
+      perfilBusca: normalizarPerfilAviso(perfil),
+      ativo: true
+    };
   }
   return {
     email: normalizarEmail(cadastro?.email || email),
@@ -34,6 +50,7 @@ export function normalizarCadastro(cadastro, email) {
     perfil: cadastro?.perfil || "Usuario",
     registro: String(cadastro?.registro ?? cadastro?.matricula ?? cadastro?.regist ?? "").trim(),
     cargo: String(cadastro?.cargo ?? cadastro?.funcaoCargo ?? "").trim(),
+    perfilBusca: normalizarPerfilAviso(cadastro?.perfil || "Usuario"),
     ativo: cadastro?.ativo !== false
   };
 }
@@ -62,6 +79,7 @@ export async function salvarUsuarioFirestore(email, cadastro) {
     email: id,
     nome: dados.nome,
     perfil: dados.perfil,
+    perfilBusca: normalizarPerfilAviso(dados.perfil),
     registro: dados.registro,
     cargo: dados.cargo || "",
     ativo: dados.ativo !== false,
@@ -94,14 +112,6 @@ function variantesEmailAviso(email) {
   const original = String(email || "").trim();
   const normalizado = normalizarEmail(original);
   return [...new Set([original, normalizado].filter(Boolean))];
-}
-
-function normalizarPerfilAviso(perfil) {
-  return String(perfil || "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
 }
 
 function criarPerfisRegraAviso(perfis) {
@@ -210,12 +220,16 @@ export async function listarAvisosFirestore({ email = "", perfil = "", gestor = 
 
   const emailUsuario = normalizarEmail(email);
   const perfilRegra = String(perfil || "").trim();
+  const perfilBusca = normalizarPerfilAviso(perfil);
   const consultas = [
     getDocs(query(col, where("publico", "==", true)))
   ];
 
   if (emailUsuario) {
     consultas.push(getDocs(collection(db, COLECAO_AVISOS_USUARIO, emailUsuario, "itens")));
+  }
+  if (perfilBusca) {
+    consultas.push(getDocs(query(col, where("perfisBusca", "array-contains", perfilBusca))));
   }
   if (perfilRegra) {
     consultas.push(getDocs(query(col, where("perfisRegra", "array-contains", perfilRegra))));

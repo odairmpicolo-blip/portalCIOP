@@ -1564,6 +1564,7 @@ h1 {
 <link rel="stylesheet" href="assets/css/portal-titulos.css">
 <link rel="stylesheet" href="assets/css/portal-home-v2.css">
 <link rel="stylesheet" href="assets/css/portal-brand.css">
+<link rel="stylesheet" href="assets/css/portal-header.css">
 <link rel="stylesheet" href="assets/css/portal-footer.css">
 <script src="assets/js/portal-senha.js" defer></script>
 <script src="assets/js/portal-footer.js" defer></script>
@@ -2654,6 +2655,7 @@ function setAvisoStatus(texto, tipo = "") {
 }
 
 async function carregarAvisos() {
+    if (!avisosLista) return;
     try {
         const usuario = window.portalUsuario || {};
         avisosCarregados = await listarAvisosFirestore({
@@ -2664,7 +2666,14 @@ async function carregarAvisos() {
         renderAvisos(avisosCarregados);
     } catch (error) {
         console.error("Erro ao carregar avisos:", error);
-        avisosLista.innerHTML = '<div class="notice-empty">Avisos indisponíveis.</div>';
+        const codigo = String(error?.code || "");
+        const mensagem = codigo.includes("permission")
+            ? "Sem permissão para ler avisos (Firestore)."
+            : "Avisos indisponíveis no momento.";
+        avisosLista.innerHTML = '<div class="notice-empty">' + mensagem + '</div>';
+        if (avisosContador) {
+            avisosContador.hidden = true;
+        }
     }
 }
 
@@ -2847,9 +2856,13 @@ document.addEventListener("keydown", (event) => {
 });
 
 function iniciarAvisosPortal() {
+    if (!avisosLista || window._avisosPortalIniciado) return;
+    window._avisosPortalIniciado = true;
     if (avisoEditorBtn) avisoEditorBtn.hidden = !usuarioPodeEnviarAviso();
     carregarAvisos();
 }
+
+window.iniciarAvisosPortal = iniciarAvisosPortal;
 
 if (window.portalUsuarioValidado) {
     iniciarAvisosPortal();
