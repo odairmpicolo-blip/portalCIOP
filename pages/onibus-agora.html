@@ -14,21 +14,34 @@
 <style>
 :root{
   --blue:#06245c;--blue-soft:#0b3a8a;--teal:#2db4bf;--orange:#ff6b00;
-  --bg:#eef2f8;--surface:#fff;--surface-2:#f8fafc;--border:#e2e8f0;
-  --text:#0f172a;--muted:#64748b;--ok:#059669;--warn:#d97706;
-  --shadow:0 1px 2px rgba(15,23,42,.06),0 16px 40px rgba(6,36,92,.10);
-  --radius:18px;
+  --bg:#070b14;--surface:rgba(12,20,36,.88);--surface-2:rgba(15,23,42,.65);--border:rgba(45,180,191,.14);
+  --text:#e2e8f0;--muted:#94a3b8;--ok:#8fd400;--warn:#ff6b00;
+  --shadow:0 1px 2px rgba(0,0,0,.2),0 20px 50px rgba(0,0,0,.35);
+  --radius:18px;--glow:0 0 24px rgba(45,180,191,.18);
 }
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
-.header{background:rgba(255,255,255,.97);backdrop-filter:blur(12px);display:grid;grid-template-columns:minmax(160px,1fr) auto minmax(240px,1fr);gap:16px;align-items:center;padding:10px 20px;border-bottom:1px solid var(--border)}
+body.oa-page{
+  margin:0;min-height:100vh;display:flex;flex-direction:column;
+  font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--text);
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%,rgba(45,180,191,.12),transparent 50%),
+    radial-gradient(ellipse 60% 40% at 100% 0%,rgba(6,36,92,.35),transparent 45%),
+    linear-gradient(180deg,#070b14 0%,#0a1020 50%,#06102a 100%);
+  -webkit-font-smoothing:antialiased;
+}
+.header{
+  background:rgba(7,11,20,.92);backdrop-filter:blur(16px);
+  display:grid;grid-template-columns:minmax(160px,1fr) auto minmax(240px,1fr);gap:16px;align-items:center;
+  padding:10px 20px;border-bottom:1px solid var(--border);
+  box-shadow:0 4px 30px rgba(0,0,0,.25);
+}
 .logo-tcgl{height:46px;object-fit:contain}
 .title-wrap{justify-self:center;text-align:center}
-.page-kicker{margin:0 0 4px;color:var(--teal);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
-.page-title{margin:0;color:var(--blue);font-size:24px;font-weight:800;letter-spacing:-.02em}
+.page-kicker{margin:0 0 4px;color:var(--teal);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-shadow:0 0 20px rgba(45,180,191,.35)}
+.page-title{margin:0;color:#f8fafc;font-size:24px;font-weight:800;letter-spacing:-.02em;font-family:Orbitron,sans-serif}
 .page-desc{margin:4px 0 0;color:var(--muted);font-size:13px;font-weight:500}
 .header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
-.ciop-session{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--blue);background:#fff}
+.ciop-session{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;font-size:12px;color:#e2e8f0;background:var(--surface-2)}
 .ciop-session-user{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
 .btn-logout{background:#ef4444;color:#fff;border:0;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer}
 
@@ -37,14 +50,14 @@ body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:In
 .topbar-left,.topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 16px;border-radius:999px;border:1px solid transparent;font:inherit;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;transition:.18s ease}
 .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.btn-primary{background:var(--blue);color:#fff;box-shadow:0 8px 20px rgba(6,36,92,.18)}
-.btn-primary:hover{background:var(--blue-soft);transform:translateY(-1px)}
-.btn-ghost{background:#fff;color:var(--blue);border-color:var(--border)}
-.btn-ghost:hover{background:var(--surface-2)}
-.btn-ghost.active{background:#effcfb;border-color:rgba(45,180,191,.45);color:var(--blue)}
+.btn-primary{background:linear-gradient(135deg,var(--blue-soft),var(--blue));color:#fff;box-shadow:0 8px 24px rgba(6,36,92,.45);border:1px solid rgba(45,180,191,.2)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:var(--glow),0 8px 24px rgba(6,36,92,.5)}
+.btn-ghost{background:var(--surface-2);color:#e2e8f0;border-color:var(--border)}
+.btn-ghost:hover{background:rgba(45,180,191,.12);border-color:rgba(45,180,191,.35)}
+.btn-ghost.active{background:rgba(45,180,191,.2);border-color:rgba(45,180,191,.5);color:#fff}
 
-.live-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:#fff;border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted)}
-.live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(5,150,105,.15)}
+.live-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted);font-family:"JetBrains Mono",monospace}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(143,212,0,.2),0 0 12px rgba(143,212,0,.5)}
 .live-dot.busy{background:var(--orange);animation:pulse 1.2s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
 
@@ -52,78 +65,110 @@ body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:In
 @media(max-width:1080px){.layout{grid-template-columns:1fr}}
 
 .sidebar{display:flex;flex-direction:column;gap:14px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;backdrop-filter:blur(12px)}
 .card-pad{padding:16px 18px}
-.card-title{margin:0 0 4px;font-size:15px;font-weight:800;color:var(--blue)}
+.card-title{margin:0 0 4px;font-size:15px;font-weight:800;color:#f8fafc;font-family:Orbitron,sans-serif;font-size:13px;letter-spacing:.04em}
 .card-sub{margin:0 0 12px;font-size:12px;color:var(--muted);line-height:1.45;font-weight:500}
 
 .field{display:grid;gap:6px;margin-bottom:10px}
 .field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .input,.select{
   width:100%;height:44px;border:1px solid var(--border);border-radius:12px;padding:0 12px;
-  font:inherit;font-size:14px;font-weight:500;background:var(--surface-2);color:var(--text)
+  font:inherit;font-size:14px;font-weight:500;background:rgba(7,11,20,.6);color:#e2e8f0
 }
-.input:focus,.select:focus{outline:none;border-color:#7dd3dc;box-shadow:0 0 0 4px rgba(45,180,191,.15);background:#fff}
+.input:focus,.select:focus{outline:none;border-color:rgba(45,180,191,.55);box-shadow:0 0 0 4px rgba(45,180,191,.12);background:rgba(7,11,20,.85)}
+.input::placeholder{color:#64748b}
 
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
-.stat{padding:10px 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border)}
-.stat b{display:block;font-size:18px;font-weight:800;color:var(--blue);letter-spacing:-.02em}
+.stat{padding:10px 12px;border-radius:12px;background:rgba(7,11,20,.5);border:1px solid var(--border)}
+.stat b{display:block;font-size:18px;font-weight:800;color:var(--teal);letter-spacing:-.02em;font-family:Orbitron,sans-serif}
 .stat span{font-size:11px;color:var(--muted);font-weight:600}
 
 .lines{max-height:240px;overflow:auto;display:grid;gap:4px}
-.line-btn{width:100%;display:flex;align-items:center;gap:10px;border:1px solid transparent;background:transparent;border-radius:12px;padding:8px 10px;cursor:pointer;font:inherit;text-align:left;transition:.15s ease}
-.line-btn:hover{background:var(--surface-2)}
-.line-btn.active{background:#effcfb;border-color:rgba(45,180,191,.35)}
-.line-chip{width:48px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex:0 0 auto}
+.line-btn{width:100%;display:flex;align-items:center;gap:10px;border:1px solid transparent;background:transparent;border-radius:12px;padding:8px 10px;cursor:pointer;font:inherit;text-align:left;transition:.15s ease;color:#e2e8f0}
+.line-btn:hover{background:rgba(45,180,191,.08)}
+.line-btn.active{background:rgba(45,180,191,.14);border-color:rgba(45,180,191,.35);box-shadow:inset 0 0 0 1px rgba(45,180,191,.15)}
+.line-chip{width:48px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex:0 0 auto;box-shadow:0 4px 12px rgba(0,0,0,.25)}
 .line-meta{min-width:0;flex:1}
 .line-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .line-route{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.main{display:flex;flex-direction:column;min-height:720px}
-.tabs{display:flex;gap:8px;padding:12px 14px 0;flex-wrap:wrap}
-.tab{border:1px solid var(--border);background:#fff;color:var(--blue);border-radius:999px;padding:9px 16px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
-.tab.active{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 8px 18px rgba(6,36,92,.18)}
+.main{display:flex;flex-direction:column;min-height:720px;background:var(--surface);border:1px solid var(--border)}
+.tabs{display:flex;gap:8px;padding:12px 14px 0;flex-wrap:wrap;border-bottom:1px solid rgba(45,180,191,.08)}
+.tab{border:1px solid var(--border);background:rgba(7,11,20,.5);color:#cbd5e1;border-radius:999px;padding:9px 16px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.02em;transition:.18s ease}
+.tab:hover{border-color:rgba(45,180,191,.35);color:#fff}
+.tab.active{background:linear-gradient(135deg,rgba(45,180,191,.85),rgba(6,36,92,.95));border-color:rgba(45,180,191,.5);color:#fff;box-shadow:0 6px 20px rgba(45,180,191,.2)}
 
-.panel-wrap{flex:1;padding:14px;display:flex;flex-direction:column;min-height:0}
-.panel{flex:1;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;position:relative;min-height:520px}
+.panel-wrap{flex:1;padding:14px;display:flex;flex-direction:column;min-height:0;background:rgba(7,11,20,.35)}
+.panel{flex:1;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#0a0f1a;position:relative;min-height:520px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.03)}
 .panel[hidden]{display:none!important}
 
-#mapa{width:100%;height:100%;min-height:520px;background:#dbeafe}
+#mapa,#mapaViagem{width:100%;height:100%;min-height:520px;background:#0c1424}
 .map-tools{position:absolute;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:8px}
 .shape-picker{
   position:absolute;left:12px;bottom:12px;z-index:500;width:min(320px,calc(100% - 24px));
-  background:rgba(255,255,255,.97);border:1px solid var(--border);border-radius:14px;
-  box-shadow:0 10px 28px rgba(15,23,42,.18);padding:12px 12px 10px;
-  backdrop-filter:blur(8px);
+  background:rgba(7,11,20,.94);border:1px solid rgba(45,180,191,.22);border-radius:14px;
+  box-shadow:0 10px 40px rgba(0,0,0,.45);padding:12px 12px 10px;backdrop-filter:blur(12px);
 }
 .shape-picker-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
-.shape-picker-head strong{font-size:13px;color:var(--blue)}
+.shape-picker-head strong{font-size:13px;color:#f8fafc;font-family:Orbitron,sans-serif}
 .shape-picker-close{border:0;background:transparent;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:8px}
-.shape-picker-close:hover{background:var(--surface-2);color:var(--blue)}
+.shape-picker-close:hover{background:rgba(45,180,191,.12);color:#fff}
 .shape-picker-sub{margin:0 0 8px;font-size:11px;color:var(--muted);line-height:1.4}
 .shape-picker-list{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow:auto}
 .shape-picker-btn{
-  display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;
-  border:1px solid var(--border);background:#fff;border-radius:10px;padding:8px 10px;
-  font:inherit;text-align:left;cursor:pointer;transition:border-color .15s,background .15s;
+  display:grid;grid-template-columns:5px 1fr;align-items:center;gap:10px;width:100%;
+  border:1px solid var(--border);background:rgba(15,23,42,.55);border-radius:10px;padding:8px 10px;
+  font:inherit;text-align:left;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s;
 }
-.shape-picker-btn:hover{border-color:var(--teal);background:var(--surface-2)}
-.shape-picker-btn.active{border-color:var(--teal);background:rgba(45,180,191,.1);box-shadow:0 0 0 2px rgba(45,180,191,.15)}
+.shape-picker-btn::before{content:"";width:5px;height:100%;min-height:32px;border-radius:999px;background:var(--via-cor,var(--teal))}
+.shape-picker-btn:hover{border-color:rgba(45,180,191,.4);background:rgba(45,180,191,.08)}
+.shape-picker-btn.active{border-color:var(--via-cor,var(--teal));background:rgba(45,180,191,.12);box-shadow:0 0 0 2px color-mix(in srgb,var(--via-cor,var(--teal)) 25%,transparent)}
+.shape-picker-text{display:flex;flex-direction:column;gap:2px;min-width:0}
 .shape-picker-sentido{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-.shape-picker-via{font-size:12px;font-weight:800;color:var(--blue)}
+.shape-picker-via{font-size:12px;font-weight:800;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .shape-picker-all{width:100%;margin-top:8px;font-size:11px}
-.map-tools .btn{min-height:38px;padding:0 12px;font-size:12px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px)}
+.map-tools .btn{min-height:38px;padding:0 12px;font-size:12px;background:rgba(7,11,20,.92);backdrop-filter:blur(8px);color:#e2e8f0;border-color:var(--border)}
 
-.leaflet-popup-content-wrapper{border-radius:14px;box-shadow:var(--shadow);padding:0;overflow:hidden}
-.leaflet-popup-content{margin:0;min-width:210px}
+#panelViagem{background:linear-gradient(165deg,#070b14 0%,#0c1424 45%,#06102a 100%);border-color:rgba(45,180,191,.12)}
+.viagem-wrap{position:relative;z-index:1;height:100%;min-height:520px;display:flex;flex-direction:column}
+.viagem-empty{padding:56px 24px;text-align:center;color:var(--muted);flex:1;display:grid;place-content:center}
+.viagem-empty h3{margin:0 0 10px;color:#e2e8f0;font-family:Orbitron,sans-serif;font-size:18px}
+.viagem-split{flex:1;display:grid;grid-template-columns:minmax(260px,320px) 1fr;min-height:520px}
+@media(max-width:900px){.viagem-split{grid-template-columns:1fr;grid-template-rows:auto 360px}}
+.viagem-aside{display:flex;flex-direction:column;border-right:1px solid rgba(45,180,191,.1);background:rgba(7,11,20,.5);min-height:0}
+.viagem-aside-head{padding:16px 16px 12px;border-bottom:1px solid rgba(45,180,191,.1)}
+.viagem-kicker{margin:0 0 4px;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+.viagem-title{margin:0;font-size:15px;font-weight:800;color:#f8fafc;font-family:Orbitron,sans-serif}
+.viagem-sub{margin:6px 0 0;font-size:11px;color:var(--muted)}
+.viagem-list{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
+.viagem-row{
+  display:grid;grid-template-columns:5px minmax(0,1fr) auto;align-items:center;gap:12px;
+  min-height:52px;padding:8px 10px;border-radius:12px;border:1px solid var(--border);
+  background:rgba(15,23,42,.45);cursor:pointer;transition:.18s ease;text-align:left;width:100%;
+  font:inherit;color:inherit;
+}
+.viagem-bar{width:5px;height:36px;border-radius:999px;background:var(--via-cor);box-shadow:0 0 12px color-mix(in srgb,var(--via-cor) 50%,transparent)}
+.viagem-row:hover{border-color:rgba(45,180,191,.35);background:rgba(45,180,191,.08)}
+.viagem-row.active{border-color:var(--via-cor);background:rgba(45,180,191,.1);box-shadow:0 0 0 1px color-mix(in srgb,var(--via-cor) 30%,transparent),0 0 20px color-mix(in srgb,var(--via-cor) 15%,transparent)}
+.viagem-local{display:block;font-size:13px;font-weight:800;color:#f8fafc;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.viagem-sentido{display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.viagem-row-meta{font-size:10px;font-weight:800;color:var(--via-cor);letter-spacing:.06em;white-space:nowrap}
+.viagem-mapa-wrap{position:relative;min-height:280px}
+.viagem-toolbar{position:absolute;top:10px;right:10px;z-index:500;display:flex;gap:6px;flex-wrap:wrap}
+.viagem-toolbar .btn{min-height:34px;padding:0 10px;font-size:11px}
+
+.leaflet-popup-content-wrapper{border-radius:14px;box-shadow:var(--shadow);padding:0;overflow:hidden;background:#0c1424;border:1px solid rgba(45,180,191,.2)}
+.leaflet-popup-content{margin:0;min-width:210px;color:#e2e8f0}
+.leaflet-popup-tip{background:#0c1424}
 .popup{padding:14px 16px}
 .popup-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .popup-chip{width:42px;height:36px;border-radius:10px;display:grid;place-items:center;font-weight:800;color:#fff;font-size:13px}
-.popup-title{font-size:15px;font-weight:800;color:var(--blue);line-height:1.2}
+.popup-title{font-size:15px;font-weight:800;color:#f8fafc;line-height:1.2}
 .popup-sub{font-size:12px;color:var(--muted);margin-top:2px}
 .popup-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.popup-item{padding:8px 10px;border-radius:10px;background:var(--surface-2);font-size:11px;color:var(--muted)}
-.popup-item strong{display:block;font-size:13px;color:var(--text);margin-top:2px}
+.popup-item{padding:8px 10px;border-radius:10px;background:rgba(15,23,42,.65);font-size:11px;color:var(--muted);border:1px solid rgba(148,163,184,.08)}
+.popup-item strong{display:block;font-size:13px;color:#e2e8f0;margin-top:2px}
 
 .bus-marker-wrap{background:transparent!important;border:0!important;overflow:visible!important}
 .bus-marker{
@@ -246,15 +291,18 @@ body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:In
   content:"";width:6px;height:6px;border-radius:50%;background:var(--route-accent,var(--teal));
   box-shadow:0 0 10px var(--route-accent,var(--teal));flex:0 0 auto;
 }
-.sched-col-body{padding:12px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start}
+.sched-col-body{padding:12px;display:flex;flex-direction:column;gap:6px;align-items:stretch;max-height:300px;overflow-y:auto}
 
 .time{
-  position:relative;min-width:64px;padding:10px 12px;border-radius:12px;text-align:center;
+  position:relative;width:100%;padding:10px 12px;border-radius:12px;text-align:center;
   font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;
   color:#94a3b8;background:rgba(15,23,42,.55);border:1px solid rgba(148,163,184,.1);
   transition:transform .25s ease,opacity .25s ease,box-shadow .25s ease,border-color .25s ease;
+  flex-shrink:0;
 }
-.time.past{opacity:.28;transform:scale(.94);filter:grayscale(.4)}
+.time.past{opacity:.72;color:#64748b;background:rgba(15,23,42,.35);border-color:rgba(100,116,139,.12);transform:none;filter:none}
+.time.past::before{content:"";position:absolute;left:10px;top:50%;width:4px;height:4px;border-radius:50%;background:#475569;transform:translateY(-50%);opacity:.8}
+.time:not(.past):not(.next){color:#cbd5e1}
 .time.next{
   color:#fff;background:linear-gradient(145deg,rgba(45,180,191,.45),rgba(6,36,92,.75));
   border-color:rgba(45,180,191,.65);transform:scale(1.06);z-index:2;
@@ -289,7 +337,7 @@ body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:In
 <script type="module" src="../assets/js/auth.js"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 </head>
-<body data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
+<body class="oa-page" data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
 <header class="header">
     <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações">
         <img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP">
@@ -358,6 +406,7 @@ body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:In
         <section class="card main">
             <div class="tabs">
                 <button type="button" class="tab active" data-tab="mapa">Mapa ao vivo</button>
+                <button type="button" class="tab" data-tab="viagem">Viagem</button>
                 <button type="button" class="tab" data-tab="horarios">Horários da linha</button>
             </div>
             <div class="panel-wrap">
@@ -377,6 +426,31 @@ body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:In
                         <button type="button" class="btn btn-ghost" id="btnMapaBus2">Estilo Bus2</button>
                         <button type="button" class="btn btn-ghost" id="btnMapaSat">Satélite</button>
                         <button type="button" class="btn btn-ghost" id="btnCentralizar">Centralizar</button>
+                    </div>
+                </div>
+                <div class="panel" id="panelViagem" hidden>
+                    <div class="viagem-wrap">
+                        <div class="viagem-empty" id="viagemEmpty">
+                            <h3>Viagem · vias e locais</h3>
+                            <p>Selecione uma linha para ver todas as vias coloridas e terminais alinhados.</p>
+                        </div>
+                        <div class="viagem-split" id="viagemConteudo" hidden>
+                            <aside class="viagem-aside">
+                                <div class="viagem-aside-head">
+                                    <p class="viagem-kicker">Trajetos · Bus2</p>
+                                    <h3 class="viagem-title" id="viagemTitulo">Linha</h3>
+                                    <p class="viagem-sub" id="viagemSub">Clique no local para destacar a via no mapa</p>
+                                </div>
+                                <div class="viagem-list" id="viagemLista" role="list"></div>
+                            </aside>
+                            <div class="viagem-mapa-wrap">
+                                <div id="mapaViagem"></div>
+                                <div class="viagem-toolbar">
+                                    <button type="button" class="btn btn-ghost" id="btnViagemTodas">Todas as vias</button>
+                                    <button type="button" class="btn btn-ghost" id="btnViagemCentralizar">Centralizar</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="panel" id="panelHorarios" hidden>
@@ -409,7 +483,8 @@ const BUS2 = {
         adiantadoSeg: 120,
         atrasadoSeg: 360,
         cores: { adiantado: "#D30000", atrasado: "#FFFF00", noHorario: "#8FD400" }
-    }
+    },
+    viaCores: ["#2db4bf","#8fd400","#ff6b00","#a855f7","#ef4444","#eab308","#ec4899","#38bdf8","#f472b6","#84cc16"]
 };
 
 const state = {
@@ -431,6 +506,12 @@ const state = {
     mapa: null,
     tileLayer: null,
     shapeLayer: null,
+    mapaViagem: null,
+    tileLayerViagem: null,
+    shapeLayerViagem: null,
+    viagemLinhas: new Map(),
+    viagemOpcoes: [],
+    viagemTripAtivo: null,
     schedule: { directionId: 0, serviceId: null, timetable: null, route: null },
     scheduleTickTimer: null
 };
@@ -757,14 +838,22 @@ function ocultarShapePicker(){
     if (picker) picker.hidden = true;
 }
 
+function corVia(i){
+    return BUS2.viaCores[Math.abs(Number(i) || 0) % BUS2.viaCores.length];
+}
+
 function opcoesTrajeto(tt){
     const dirs = tt?.timetable?.directions || [];
     const dirMap = new Map(dirs.map(d => [d.directionId, d.desc || ("Sentido " + (Number(d.directionId) + 1))]));
-    return (tt?.timetable?.trips || []).map(t => {
+    return (tt?.timetable?.trips || []).map((t, i) => {
         const sentido = dirMap.get(t.directionId) || "Sentido";
         const via = String(t.tripDesc || t.shortName || "Principal").trim();
-        return { tripId: t.tripId, directionId: t.directionId, sentido, via, label: sentido + " · " + via };
+        return { tripId: t.tripId, directionId: t.directionId, sentido, via, label: sentido + " · " + via, cor: corVia(i), idx: i };
     });
+}
+
+function opcoesTrajetoComCor(opcoes){
+    return (opcoes || []).map((o, i) => ({ ...o, cor: o.cor || corVia(i), idx: i }));
 }
 
 async function desenharShapes(route, tripIds, opts){
@@ -772,8 +861,9 @@ async function desenharShapes(route, tripIds, opts){
     limparShapes();
     const group = L.layerGroup();
     const bounds = L.latLngBounds([]);
-    const cor = corCss(route.color);
     const ids = [...new Set(tripIds.map(Number).filter(Boolean))];
+    const opcoes = opts?.opcoes || [];
+    const corMap = new Map(opcoes.map(o => [Number(o.tripId), o.cor || corCss(route.color)]));
 
     for (let i = 0; i < ids.length; i += 1){
         const data = await obterShape(ids[i]);
@@ -781,11 +871,12 @@ async function desenharShapes(route, tripIds, opts){
         const latlngs = decodePolyline(data.shape, 5);
         if (!latlngs.length) continue;
         const multi = ids.length > 1;
+        const cor = corMap.get(ids[i]) || (multi ? corVia(i) : corCss(route.color));
         const line = L.polyline(latlngs, {
             color: cor,
-            weight: multi ? 4 : 5,
-            opacity: multi ? Math.max(0.45, 0.82 - i * 0.12) : 0.78,
-            dashArray: multi && i > 0 ? "10 8" : null
+            weight: multi ? 5 : 5,
+            opacity: multi ? 0.88 : 0.82,
+            dashArray: null
         });
         line.addTo(group);
         bounds.extend(line.getBounds());
@@ -799,6 +890,111 @@ async function desenharShapes(route, tripIds, opts){
     }
 }
 
+function limparShapesViagem(){
+    if (state.shapeLayerViagem && state.mapaViagem){
+        state.mapaViagem.removeLayer(state.shapeLayerViagem);
+        state.shapeLayerViagem = null;
+    }
+    state.viagemLinhas.clear();
+}
+
+async function desenharShapesViagem(route, opcoes, tripIdsFiltro){
+    if (!state.mapaViagem || !opcoes?.length) return;
+    limparShapesViagem();
+    const group = L.layerGroup();
+    const bounds = L.latLngBounds([]);
+    const filtro = tripIdsFiltro ? new Set(tripIdsFiltro.map(Number)) : null;
+
+    for (const o of opcoes){
+        if (filtro && !filtro.has(Number(o.tripId))) continue;
+        const data = await obterShape(o.tripId);
+        if (!data?.shape) continue;
+        const latlngs = decodePolyline(data.shape, 5);
+        if (!latlngs.length) continue;
+        const ativo = !filtro || filtro.size === 1;
+        const line = L.polyline(latlngs, {
+            color: o.cor,
+            weight: ativo ? 6 : 5,
+            opacity: ativo ? 0.95 : 0.55
+        });
+        line.addTo(group);
+        state.viagemLinhas.set(Number(o.tripId), line);
+        bounds.extend(line.getBounds());
+    }
+
+    if (!group.getLayers().length) return;
+    group.addTo(state.mapaViagem);
+    state.shapeLayerViagem = group;
+    if (bounds.isValid()) state.mapaViagem.fitBounds(bounds, { padding: [36, 36], maxZoom: 15 });
+}
+
+function destacarViaViagem(tripId){
+    state.viagemTripAtivo = tripId ? Number(tripId) : null;
+    document.querySelectorAll(".viagem-row").forEach(row => {
+        row.classList.toggle("active", Number(row.dataset.trip) === state.viagemTripAtivo);
+    });
+    state.viagemLinhas.forEach((line, id) => {
+        if (!state.viagemTripAtivo){
+            line.setStyle({ weight: 5, opacity: 0.88 });
+            return;
+        }
+        const ativo = id === state.viagemTripAtivo;
+        line.setStyle({ weight: ativo ? 6 : 4, opacity: ativo ? 0.98 : 0.22 });
+    });
+    if (state.viagemTripAtivo && state.viagemLinhas.has(state.viagemTripAtivo)){
+        const b = state.viagemLinhas.get(state.viagemTripAtivo).getBounds();
+        if (b.isValid()) state.mapaViagem.fitBounds(b, { padding: [48, 48], maxZoom: 15 });
+    }
+}
+
+function initMapaViagem(){
+    if (state.mapaViagem) return;
+    if (typeof L === "undefined") return;
+    state.mapaViagem = L.map("mapaViagem", { zoomControl: true }).setView(BUS2.centro, BUS2.zoom);
+    state.tileLayerViagem = L.tileLayer(BUS2.tiles.light, {
+        maxZoom: 18,
+        attribution: "© OpenStreetMap",
+        subdomains: "abc"
+    }).addTo(state.mapaViagem);
+}
+
+function renderViagem(){
+    const route = state.routeFiltro;
+    const tt = state.schedule.timetable;
+    if (!route || !tt){
+        $("viagemEmpty").hidden = false;
+        $("viagemConteudo").hidden = true;
+        return;
+    }
+    $("viagemEmpty").hidden = true;
+    $("viagemConteudo").hidden = false;
+    const opcoes = state.viagemOpcoes.length ? state.viagemOpcoes : opcoesTrajetoComCor(opcoesTrajeto(tt));
+    state.viagemOpcoes = opcoes;
+    $("viagemTitulo").textContent = "Linha " + (route.shortName || "?") + " · " + (route.longName || "");
+    $("viagemSub").textContent = opcoes.length + " via(s) · cores distintas no mapa";
+
+    $("viagemLista").innerHTML = opcoes.map(o =>
+        '<button type="button" class="viagem-row' + (state.viagemTripAtivo === o.tripId ? " active" : "") + '" data-trip="' + o.tripId + '" style="--via-cor:' + esc(o.cor) + '" role="listitem">' +
+            '<span class="viagem-bar" aria-hidden="true"></span>' +
+            '<span class="viagem-row-text"><span class="viagem-local">' + esc(o.via) + '</span><span class="viagem-sentido">' + esc(o.sentido) + '</span></span>' +
+            '<span class="viagem-row-meta">VIA ' + (o.idx + 1) + '</span>' +
+        '</button>'
+    ).join("");
+
+    $("viagemLista").querySelectorAll(".viagem-row").forEach(btn => {
+        btn.addEventListener("click", () => {
+            destacarViaViagem(Number(btn.dataset.trip));
+        });
+    });
+
+    initMapaViagem();
+    setTimeout(async () => {
+        state.mapaViagem?.invalidateSize();
+        await desenharShapesViagem(route, opcoes, null);
+        destacarViaViagem(null);
+    }, 120);
+}
+
 function renderShapePicker(route, opcoes){
     const picker = $("shapePicker");
     const list = $("shapePickerList");
@@ -807,9 +1003,11 @@ function renderShapePicker(route, opcoes){
     $("shapePickerTitle").textContent = "Linha " + (route.shortName || "?") + " · trajeto";
     $("shapePickerSub").textContent = "Esta linha tem " + opcoes.length + " vias. Escolha qual desenhar no mapa:";
     list.innerHTML = opcoes.map(o =>
-        '<button type="button" class="shape-picker-btn" data-trip="' + o.tripId + '">' +
-            '<span class="shape-picker-sentido">' + esc(o.sentido) + '</span>' +
-            '<span class="shape-picker-via">' + esc(o.via) + '</span>' +
+        '<button type="button" class="shape-picker-btn" data-trip="' + o.tripId + '" style="--via-cor:' + esc(o.cor) + '">' +
+            '<span class="shape-picker-text">' +
+                '<span class="shape-picker-via">' + esc(o.via) + '</span>' +
+                '<span class="shape-picker-sentido">' + esc(o.sentido) + '</span>' +
+            '</span>' +
         '</button>'
     ).join("");
 
@@ -820,20 +1018,21 @@ function renderShapePicker(route, opcoes){
     list.querySelectorAll(".shape-picker-btn").forEach(btn => {
         btn.addEventListener("click", async () => {
             list.querySelectorAll(".shape-picker-btn").forEach(b => b.classList.toggle("active", b === btn));
-            await desenharShapes(route, [Number(btn.dataset.trip)]);
+            await desenharShapes(route, [Number(btn.dataset.trip)], { opcoes });
         });
     });
 
     if (todos){
         todos.onclick = async () => {
             list.querySelectorAll(".shape-picker-btn").forEach(b => b.classList.remove("active"));
-            await desenharShapes(route, opcoes.map(o => o.tripId));
+            await desenharShapes(route, opcoes.map(o => o.tripId), { opcoes });
         };
     }
 }
 
 async function configurarTrajetoLinha(route, tt){
-    const opcoes = opcoesTrajeto(tt);
+    const opcoes = opcoesTrajetoComCor(opcoesTrajeto(tt));
+    state.viagemOpcoes = opcoes;
     if (!opcoes.length){
         limparShapes();
         ocultarShapePicker();
@@ -841,11 +1040,12 @@ async function configurarTrajetoLinha(route, tt){
     }
     if (opcoes.length === 1){
         ocultarShapePicker();
-        await desenharShapes(route, [opcoes[0].tripId]);
+        await desenharShapes(route, [opcoes[0].tripId], { opcoes });
         return;
     }
     limparShapes();
     renderShapePicker(route, opcoes);
+    if (state.tab === "viagem") renderViagem();
 }
 
 async function buscarVeiculosRota(route){
@@ -929,6 +1129,7 @@ async function selecionarLinha(routeId){
     state.schedule.serviceId = null;
     await configurarTrajetoLinha(route, tt);
     renderHorarios();
+    if (state.tab === "viagem") renderViagem();
     buscarVeiculosRota(route).then(list => {
         list.forEach(v => {
             v.lastSeen = Date.now();
@@ -941,12 +1142,17 @@ async function selecionarLinha(routeId){
 function limparFiltro(){
     state.routeFiltro = null;
     state.veiculoFiltro = "";
+    state.viagemOpcoes = [];
+    state.viagemTripAtivo = null;
     $("buscaVeiculo").value = "";
     renderListaLinhas();
     limparShapes();
+    limparShapesViagem();
     ocultarShapePicker();
     state.mapa?.setView(BUS2.centro, BUS2.zoom);
     atualizarMarcadores();
+    if (state.tab === "viagem") renderViagem();
+    if (state.tab === "horarios") renderHorarios();
 }
 
 function servicoHoje(services){
@@ -1088,7 +1294,10 @@ function montarHorarios(){
 
     const cols = trips.map(t => {
         const tripDesc = t.tripDesc || "Terminal";
-        const horas = (deps[t.seq] || []).map(d => {
+        const horas = (deps[t.seq] || [])
+            .slice()
+            .sort((a, b) => parseDepMin(a.dep) - parseDepMin(b.dep))
+            .map(d => {
             const cls = classesChipHorario(d, t.seq, tripDesc, agoraMin, perSeq, globalNext);
             return '<span class="' + cls + '">' + esc(d.dep) + '</span>';
         }).join("") || '<span class="time" style="opacity:.35">—</span>';
@@ -1147,8 +1356,16 @@ function trocarTab(tab){
     state.tab = tab;
     document.querySelectorAll(".tab").forEach(el => el.classList.toggle("active", el.dataset.tab === tab));
     $("panelMapa").hidden = tab !== "mapa";
+    $("panelViagem").hidden = tab !== "viagem";
     $("panelHorarios").hidden = tab !== "horarios";
     if (tab === "mapa") setTimeout(() => state.mapa?.invalidateSize(), 150);
+    if (tab === "viagem"){
+        setTimeout(() => {
+            initMapaViagem();
+            state.mapaViagem?.invalidateSize();
+            renderViagem();
+        }, 150);
+    }
     if (tab === "horarios"){
         iniciarScheduleTick();
         if (state.routeFiltro) renderHorarios();
@@ -1201,6 +1418,18 @@ function bind(){
     $("btnMapaSat").addEventListener("click", () => trocarTile("sat"));
     $("btnCentralizar").addEventListener("click", () => state.mapa?.setView(BUS2.centro, BUS2.zoom));
     $("shapePickerClose")?.addEventListener("click", ocultarShapePicker);
+    $("btnViagemTodas")?.addEventListener("click", async () => {
+        if (!state.routeFiltro || !state.viagemOpcoes.length) return;
+        await desenharShapesViagem(state.routeFiltro, state.viagemOpcoes, null);
+        destacarViaViagem(null);
+    });
+    $("btnViagemCentralizar")?.addEventListener("click", () => {
+        if (state.shapeLayerViagem?.getBounds?.()?.isValid()) {
+            state.mapaViagem.fitBounds(state.shapeLayerViagem.getBounds(), { padding: [40, 40], maxZoom: 15 });
+        } else {
+            state.mapaViagem?.setView(BUS2.centro, BUS2.zoom);
+        }
+    });
     document.querySelectorAll(".tab").forEach(btn => btn.addEventListener("click", () => trocarTab(btn.dataset.tab)));
 }
 
