@@ -78,8 +78,28 @@ export async function upsertPontualidade(pool, cenario, payload) {
   );
 }
 
+async function insertLiberacaoLote(client, lote, origem) {
+  if (!lote.length) return;
+  const values = [];
+  const params = [];
+  lote.forEach((row, idx) => {
+    const base = idx * 4;
+    values.push(`($${base + 1}::date, $${base + 2}, $${base + 3}::jsonb, $${base + 4}, NOW())`);
+    params.push(row.data_iso, row.row_id, JSON.stringify(row.payload), origem);
+  });
+  await client.query(
+    `INSERT INTO liberacao_linhas (data_iso, row_id, payload, atualizado_por, atualizado_em)
+     VALUES ${values.join(", ")}
+     ON CONFLICT (data_iso, row_id) DO UPDATE SET
+       payload = EXCLUDED.payload,
+       atualizado_em = NOW()`,
+    params
+  );
+}
+
 export async function gravarLiberacaoLinhas(pool, linhas, { origem = "planilha" } = {}) {
-  const BATCH_TX = 2500;
+  const TX_MAX_ROWS = 200;
+  const INSERT_ROWS = 40;
   const rows = [];
   for (const { dataIso, row } of linhas) {
     const rowId = String(row?._row || "").trim();
@@ -93,19 +113,12 @@ export async function gravarLiberacaoLinhas(pool, linhas, { origem = "planilha" 
   }
   let done = 0;
   while (done < rows.length) {
-    const chunk = rows.slice(done, done + BATCH_TX);
+    const chunk = rows.slice(done, done + TX_MAX_ROWS);
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
-      for (const row of chunk) {
-        await client.query(
-          `INSERT INTO liberacao_linhas (data_iso, row_id, payload, atualizado_por, atualizado_em)
-           VALUES ($1::date, $2, $3::jsonb, $4, NOW())
-           ON CONFLICT (data_iso, row_id) DO UPDATE SET
-             payload = EXCLUDED.payload,
-             atualizado_em = NOW()`,
-          [row.data_iso, row.row_id, JSON.stringify(row.payload), origem]
-        );
+      for (let i = 0; i < chunk.length; i += INSERT_ROWS) {
+        await insertLiberacaoLote(client, chunk.slice(i, i + INSERT_ROWS), origem);
       }
       await client.query("COMMIT");
     } catch (err) {
