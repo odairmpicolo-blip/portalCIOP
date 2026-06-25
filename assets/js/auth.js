@@ -403,10 +403,9 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
       cargoEl.textContent = cargo;
       cargoEl.hidden = !cargo;
     }
-    const heroNome = document.getElementById("heroPrimeiroNome");
+    const heroNome = document.getElementById("heroNomeUsuario");
     if (heroNome && cadastro.nome) {
-      const partes = cadastro.nome.trim().split(/\s+/);
-      heroNome.textContent = partes[0] || cadastro.nome;
+      heroNome.textContent = cadastro.nome.trim();
     }
     if (aplicarPermissoes(cadastro) !== false) {
       window.portalUsuarioValidado = true;

@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>Tabelas Horárias | Portal CIOP</title>
+<style>
+:root{
+  --blue:#06245c;--blue2:#0b3a8a;--cyan:#00d4ff;--orange:#ff6b00;
+  --bg:#eef3fb;--bg2:#e3ecfa;--surface:rgba(255,255,255,.88);
+  --border:rgba(6,36,92,.12);--text:#0f172a;--muted:#5b6b86;--white:#fff;
+  --glow:0 0 0 1px rgba(0,212,255,.15),0 12px 40px rgba(6,36,92,.08);
+  --info:#1565c0;--alerta:#c62828;--destaque:#fff8e1
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;display:flex;flex-direction:column;color:var(--text);
+  font-family:"Segoe UI",Arial,Helvetica,sans-serif;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, rgba(0,212,255,.12), transparent 55%),
+    radial-gradient(900px 400px at 100% 0%, rgba(11,58,138,.10), transparent 50%),
+    linear-gradient(180deg,var(--bg),var(--bg2))
+}
+.header{
+  background:rgba(255,255,255,.92);backdrop-filter:blur(10px);
+  display:grid;grid-template-columns:minmax(160px,1fr) auto minmax(260px,1fr);
+  gap:16px;align-items:center;padding:10px 20px;border-bottom:1px solid var(--border)
+}
+.logo-ciop{height:44px;object-fit:contain}
+.logo-tcgl{height:48px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.04em}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.ciop-session{display:flex;align-items:center;gap:6px;max-width:260px;padding:4px 8px;border:1px solid var(--border);border-radius:8px;font-size:11px;color:var(--blue)}
+.ciop-session-user{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.ciop-session-profile{color:var(--muted);font-weight:600}
+.btn-logout{background:#dc2626;color:#fff;border:0;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer}
+.container{max-width:min(1720px,100%);margin:20px auto 32px;padding:0 18px;flex:1;width:100%}
+.toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.toolbar-left{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;flex:1}
+.btn-portal,.btn-primary,.btn-secondary{
+  display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:8px 14px;border-radius:12px;border:0;
+  font-size:13px;font-weight:800;text-decoration:none;cursor:pointer;font-family:inherit;transition:.2s ease
+}
+.btn-portal,.btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;box-shadow:0 8px 24px rgba(6,36,92,.18)}
+.btn-portal:hover,.btn-primary:hover{transform:translateY(-1px);filter:brightness(1.05)}
+.btn-secondary{background:rgba(255,255,255,.9);color:var(--blue);border:1px solid var(--border)}
+.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2}
+.layout{display:grid;grid-template-columns:minmax(260px,320px) 1fr;gap:16px;align-items:start}
+@media(max-width:960px){.layout{grid-template-columns:1fr}}
+.panel{
+  background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--orange);
+  border-radius:18px;padding:18px;box-shadow:var(--glow);backdrop-filter:blur(8px)
+}
+.panel h2{margin:0 0 12px;color:var(--blue);font-size:17px;font-weight:900;letter-spacing:.02em}
+.tipo-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tipo-tab{
+  border:1px solid var(--border);background:rgba(248,250,252,.9);color:var(--blue);
+  border-radius:999px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;transition:.15s ease
+}
+.tipo-tab.ativo{background:linear-gradient(135deg,var(--blue),var(--blue2));border-color:transparent;color:#fff;box-shadow:0 6px 18px rgba(6,36,92,.2)}
+.busca{
+  width:100%;min-height:42px;border:1.5px solid rgba(6,36,92,.14);border-radius:12px;
+  padding:10px 12px;font-size:14px;font-weight:600;background:rgba(255,255,255,.95)
+}
+.catalogo{max-height:calc(100vh - 280px);overflow:auto;display:grid;gap:8px}
+.catalogo-item{
+  width:100%;text-align:left;border:1px solid var(--border);background:rgba(255,255,255,.92);
+  border-radius:12px;padding:10px 12px;cursor:pointer;font-family:inherit;transition:.15s ease
+}
+.catalogo-item:hover,.catalogo-item.ativo{border-color:rgba(0,212,255,.45);background:linear-gradient(180deg,#f8fcff,#f2f8ff);box-shadow:0 0 0 1px rgba(0,212,255,.12)}
+.catalogo-item .linha{font-size:15px;font-weight:900;color:var(--blue)}
+.catalogo-item .meta{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px}
+.viewer{min-height:420px}
+.viewer-empty{padding:48px 20px;text-align:center;color:var(--muted);font-weight:700}
+.th-header{
+  background:linear-gradient(135deg,rgba(255,255,255,.98),rgba(241,248,255,.95));
+  border:1px solid var(--border);border-radius:16px;padding:18px 20px;margin-bottom:14px;box-shadow:var(--glow)
+}
+.th-header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.th-titulo{margin:0;color:var(--blue);font-size:22px;font-weight:900;letter-spacing:.03em}
+.th-sub{font-size:12px;color:var(--muted);font-weight:700;margin-top:4px}
+.th-badges{display:flex;gap:8px;flex-wrap:wrap}
+.th-badge{
+  display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:12px;
+  background:linear-gradient(180deg,#f3f8ff,#eaf2ff);border:1px solid rgba(0,212,255,.18);
+  color:var(--blue);font-size:12px;font-weight:800
+}
+.th-badge strong{font-size:14px}
+.secao{margin-bottom:18px}
+.secao-titulo{margin:0 0 8px;color:var(--blue2);font-size:13px;font-weight:900;letter-spacing:.02em;white-space:pre-line;line-height:1.35}
+.table-wrap{
+  overflow:auto;border:1px solid rgba(6,36,92,.12);border-radius:14px;
+  background:linear-gradient(180deg,#fff,#fbfdff);box-shadow:inset 0 1px 0 rgba(255,255,255,.8)
+}
+table.th-grid{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;min-width:480px}
+table.th-grid th{
+  position:sticky;top:0;z-index:2;
+  background:linear-gradient(180deg,#0b3a8a,#06245c);color:#eaf6ff;
+  padding:10px 8px;font-size:10px;font-weight:800;border-bottom:2px solid rgba(0,212,255,.35);
+  white-space:pre-line;line-height:1.35;vertical-align:bottom;box-shadow:0 2px 8px rgba(6,36,92,.15)
+}
+table.th-grid td{
+  padding:9px 8px;border-bottom:1px solid rgba(6,36,92,.06);text-align:center;vertical-align:middle;
+  transition:background .12s ease
+}
+table.th-grid tbody tr:hover td{background:rgba(0,212,255,.04)}
+table.th-grid tr:nth-child(even) td{background:rgba(6,36,92,.02)}
+table.th-grid td.alin-esq{text-align:left}
+table.th-grid td.cel-b,table.th-grid th.cel-b{font-weight:800}
+table.th-grid td.cel-info,table.th-grid th.cel-info{color:var(--info)}
+table.th-grid td.cel-alerta{color:var(--alerta);font-weight:800}
+table.th-grid td.cel-destaque{background:var(--destaque)!important}
+table.th-grid td.cel-hora{font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.toolbar-actions{display:flex;gap:8px;flex-wrap:wrap}
+.status{font-size:12px;color:var(--muted);font-weight:700}
+@media print{
+  .header,.toolbar,.catalogo-panel,.toolbar-actions,.btn-portal{display:none!important}
+  .layout{grid-template-columns:1fr}
+  .panel{box-shadow:none;border:0}
+  .table-wrap{overflow:visible}
+  table.th-grid th{background:#f1f5f9!important;color:var(--blue)!important;box-shadow:none}
+}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css">
+<link rel="stylesheet" href="../assets/css/portal-titulos.css">
+<link rel="stylesheet" href="../assets/css/portal-filtros.css">
+<script src="../assets/js/loading.js"></script>
+<script type="module" src="../assets/js/auth.js"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+</head>
+<body data-require-perfis="Administrador,Supervisor,Analista,Consulta">
+<header class="header">
+    <a href="https://mov1.com.br" target="_blank" rel="noopener"><img class="logo-ciop" src="../assets/img/CIOP Sem Fundo.png" alt="CIOP"></a>
+    <div class="title-wrap">
+        <h1 class="page-title-art" aria-label="Tabelas Horárias" style="margin:0;color:var(--blue);font-size:26px;font-weight:900">Tabelas Horárias</h1>
+        <div class="header-subtitle">Consulta e publicação das tabelas por linha e tipo de dia</div>
+    </div>
+    <div class="header-actions">
+        <div class="ciop-session">
+            <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
+            <span class="ciop-session-cargo" id="perfilUsuario" hidden></span>
+            <button class="btn-logout" type="button" onclick="logout()">Sair</button>
+        </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+    </div>
+</header>
+
+<main class="container">
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <a class="btn-portal" href="../index.html"><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg></span>Portal</a>
+            <span class="status" id="statusLinha">Carregando catálogo...</span>
+        </div>
+        <div class="toolbar-actions">
+            <button type="button" class="btn-secondary" id="btnImprimir" disabled>Imprimir</button>
+            <a class="btn-secondary" href="https://drive.google.com/drive/folders/1TKryDACuyao1v2wE9GGSM0rws2oOnQu5" target="_blank" rel="noopener">Pasta Drive</a>
+        </div>
+    </div>
+
+    <div class="layout">
+        <aside class="panel catalogo-panel">
+            <h2>Catálogo</h2>
+            <div class="tipo-tabs" id="tipoTabs"></div>
+            <input class="busca" id="buscaLinha" type="search" placeholder="Buscar linha ou nome..." autocomplete="off">
+            <div class="catalogo" id="catalogoLista" style="margin-top:12px"></div>
+        </aside>
+
+        <section class="panel viewer" id="viewer">
+            <div class="viewer-empty" id="viewerEmpty">Selecione uma tabela no catálogo para visualizar.</div>
+            <div id="viewerConteudo" hidden></div>
+        </section>
+    </div>
+</main>
+
+<script>
+const DATA_BASE = "../assets/data/tabelas-horarias";
+const MANIFEST_URL = DATA_BASE + "/manifest.json";
+const TIPOS_ORDEM = ["uteis", "sabado", "domingo"];
+
+let manifest = null;
+let tipoAtivo = "uteis";
+let tabelaAtiva = null;
+let payloadAtivo = null;
+
+function $(id){ return document.getElementById(id); }
+
+function esc(v){
+    return String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function escTitulo(v){
+    return esc(v).replace(/\n/g, "<br>");
+}
+
+function valorUtil(v){
+    const s = String(v ?? "").trim();
+    return s && s !== "--:--" && s !== "|";
+}
+
+function enriquecerEstilo(val, estilo){
+    if (estilo && (estilo.b || estilo.fg || estilo.bg)) return estilo;
+    const t = String(val ?? "").trim();
+    if (!t) return estilo || null;
+    const out = { ...(estilo || {}) };
+    if (/^(via |entra no |carro do |reaproveit)/i.test(t)) { out.b = 1; out.fg = "#1565C0"; }
+    if (/^OF \d|amarelo|metros$/i.test(t) || /^\d+,\d+\s*m/i.test(t)) { out.b = 1; if (!out.fg) out.fg = "#C62828"; }
+    if (/^rec\.?$/i.test(t)) out.b = 1;
+    if (/^\d{1,2}:\d{2}$/.test(t) && t !== "--:--") return out.b || out.fg || out.bg ? out : null;
+    return Object.keys(out).length ? out : null;
+}
+
+function classesEstilo(val, estilo){
+    const st = enriquecerEstilo(val, estilo);
+    const cls = [];
+    if (st?.b) cls.push("cel-b");
+    if (st?.fg === "#1565C0" || st?.fg === "#0000FF" || st?.fg === "#0070C0" || st?.fg === "#0000ff") cls.push("cel-info");
+    else if (st?.fg === "#C62828" || st?.fg === "#FF0000") cls.push("cel-alerta");
+    if (st?.bg) cls.push("cel-destaque");
+    if (/^\d{1,2}:\d{2}$/.test(String(val || ""))) cls.push("cel-hora");
+    return { cls: cls.join(" "), st };
+}
+
+function estiloInline(st){
+    if (!st) return "";
+    const parts = [];
+    if (st.fg) parts.push("color:" + st.fg);
+    if (st.bg) parts.push("background:" + st.bg);
+    return parts.join(";");
+}
+
+function podarColunas(colunas, linhas){
+    return (colunas || []).filter(col => (linhas || []).some(row => valorUtil(row[col.chave])));
+}
+
+function brDate(iso){
+    if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso || "—";
+    const p = iso.split("-");
+    return p[2] + "/" + p[1] + "/" + p[0];
+}
+
+function rotuloTipo(tipo){
+    return manifest?.tipos?.[tipo]?.rotulo || tipo;
+}
+
+function tabelasFiltradas(){
+    const busca = ($("buscaLinha").value || "").trim().toLowerCase();
+    return (manifest?.tabelas || [])
+        .filter(t => t.tipo === tipoAtivo)
+        .filter(t => {
+            if(!busca) return true;
+            return String(t.linha || "").toLowerCase().includes(busca)
+                || String(t.titulo || "").toLowerCase().includes(busca)
+                || String(t.id || "").toLowerCase().includes(busca);
+        })
+        .sort((a,b) => (a.ordem||0) - (b.ordem||0) || String(a.linha).localeCompare(String(b.linha), "pt-BR", {numeric:true}));
+}
+
+function renderTipoTabs(){
+    $("tipoTabs").innerHTML = TIPOS_ORDEM.map(tipo => {
+        const info = manifest?.tipos?.[tipo];
+        const qtd = (manifest?.tabelas || []).filter(x => x.tipo === tipo).length;
+        const total = info?.total || qtd;
+        const label = (info?.rotulo || tipo) + " (" + qtd + (total > qtd ? "/" + total : "") + ")";
+        return '<button type="button" class="tipo-tab' + (tipo === tipoAtivo ? " ativo" : "") + '" data-tipo="' + esc(tipo) + '">' + esc(label) + '</button>';
+    }).join("");
+    $("tipoTabs").querySelectorAll(".tipo-tab").forEach(btn => {
+        btn.addEventListener("click", () => {
+            tipoAtivo = btn.dataset.tipo;
+            renderTipoTabs();
+            renderCatalogo();
+        });
+    });
+}
+
+function renderCatalogo(){
+    const lista = tabelasFiltradas();
+    $("catalogoLista").innerHTML = lista.length
+        ? lista.map(t => '<button type="button" class="catalogo-item' + (tabelaAtiva?.id === t.id ? " ativo" : "") + '" data-id="' + esc(t.id) + '"><div class="linha">' + esc(t.titulo || ("LINHA " + t.linha)) + '</div><div class="meta">Linha ' + esc(t.linha) + " · " + esc(rotuloTipo(t.tipo)) + '</div></button>').join("")
+        : '<div class="viewer-empty" style="padding:20px">Nenhuma tabela encontrada.</div>';
+    $("catalogoLista").querySelectorAll(".catalogo-item").forEach(btn => {
+        btn.addEventListener("click", () => abrirTabela(btn.dataset.id));
+    });
+    $("statusLinha").textContent = lista.length + " tabela(s) em " + rotuloTipo(tipoAtivo);
+}
+
+function montarCabecalho(meta){
+    return '<div class="th-header"><div class="th-header-top"><div><h3 class="th-titulo">' + esc(meta?.titulo || "TABELA HORÁRIA") + '</h3><div class="th-sub">' + esc(meta?.subtitulo || "") + '</div></div><div class="th-badges"><span class="th-badge">Linha <strong>' + esc(meta?.linha || "—") + '</strong></span><span class="th-badge">' + esc(meta?.dia_semana || "—") + '</span><span class="th-badge">Execução <strong>' + esc(brDate(meta?.data_execucao)) + '</strong></span></div></div></div>';
+}
+
+function montarGrid(colunas, linhas){
+    const cols = podarColunas(colunas, linhas);
+    if(!cols.length) return '<div class="viewer-empty" style="padding:16px">Sem horários nesta seção.</div>';
+    const head = cols.map(c => {
+        const { cls, st } = classesEstilo(c.rotulo, c.estilo);
+        return '<th class="' + cls + '" style="min-width:' + (c.largura || 72) + 'px;' + estiloInline(st) + '">' + escTitulo(c.rotulo || c.chave) + '</th>';
+    }).join("");
+    const body = (linhas || []).map(row => {
+        let pular = 0;
+        const tds = [];
+        for (const c of cols) {
+            if (pular > 0) { pular--; continue; }
+            const merge = row.__m?.[c.chave];
+            if (merge?.cs > 1) pular = merge.cs - 1;
+            const val = row[c.chave] ?? "";
+            const { cls, st } = classesEstilo(val, row.__s?.[c.chave]);
+            const alin = c.alinhamento === "esquerda" ? " alin-esq" : "";
+            const attrs = merge?.cs > 1 ? ' colspan="' + merge.cs + '"' : "";
+            const attrs2 = merge?.rs > 1 ? ' rowspan="' + merge.rs + '"' : "";
+            tds.push('<td class="' + (cls + alin).trim() + '"' + attrs + attrs2 + ' style="' + estiloInline(st) + '">' + escTitulo(val) + '</td>');
+        }
+        return '<tr>' + tds.join("") + '</tr>';
+    }).join("");
+    return '<div class="table-wrap"><table class="th-grid"><thead><tr>' + head + '</tr></thead><tbody>' + (body || '<tr><td colspan="' + cols.length + '">Sem horários cadastrados.</td></tr>') + '</tbody></table></div>';
+}
+
+function montarSecoes(secoes){
+    const multi = (secoes || []).length > 1;
+    return (secoes || []).map(sec => {
+        const titulo = multi && sec.titulo
+            ? '<h4 class="secao-titulo">' + escTitulo(sec.titulo) + '</h4>'
+            : '';
+        return '<div class="secao">' + titulo + montarGrid(sec.colunas, sec.linhas) + '</div>';
+    }).join("");
+}
+
+function renderViewer(payload){
+    payloadAtivo = payload;
+    if(!payload){
+        $("viewerEmpty").hidden = false;
+        $("viewerConteudo").hidden = true;
+        $("btnImprimir").disabled = true;
+        return;
+    }
+    $("viewerEmpty").hidden = true;
+    $("viewerConteudo").hidden = false;
+    $("btnImprimir").disabled = false;
+    const html = montarCabecalho(payload.meta)
+        + (payload.secoes?.length ? montarSecoes(payload.secoes) : montarGrid(payload.colunas, payload.linhas));
+    $("viewerConteudo").innerHTML = html;
+}
+
+async function abrirTabela(id){
+    const item = (manifest?.tabelas || []).find(t => t.id === id);
+    if(!item) return;
+    tabelaAtiva = item;
+    renderCatalogo();
+    $("statusLinha").textContent = "Carregando " + (item.titulo || item.linha) + "...";
+    try{
+        const res = await fetch(DATA_BASE + "/" + item.arquivo, { cache: "no-store" });
+        if(!res.ok) throw new Error("Arquivo não encontrado");
+        const payload = await res.json();
+        renderViewer(payload);
+        $("statusLinha").textContent = (item.titulo || ("Linha " + item.linha)) + " · " + rotuloTipo(item.tipo);
+    }catch(err){
+        renderViewer(null);
+        $("statusLinha").textContent = "Erro: " + (err.message || "falha ao carregar");
+    }
+}
+
+async function carregarManifest(){
+    const res = await fetch(MANIFEST_URL, { cache: "no-store" });
+    if(!res.ok) throw new Error("Manifest de tabelas indisponível");
+    manifest = await res.json();
+    const hoje = new Date();
+    const dia = hoje.getDay();
+    if(dia === 0) tipoAtivo = "domingo";
+    else if(dia === 6) tipoAtivo = "sabado";
+    else tipoAtivo = "uteis";
+    renderTipoTabs();
+    renderCatalogo();
+    const primeira = tabelasFiltradas()[0];
+    if(primeira) await abrirTabela(primeira.id);
+}
+
+function iniciar(){
+    $("buscaLinha").addEventListener("input", renderCatalogo);
+    $("btnImprimir").addEventListener("click", () => window.print());
+    carregarManifest().catch(err => {
+        $("statusLinha").textContent = err.message || "Erro ao iniciar";
+    });
+}
+
+if(window.portalUsuarioValidado) iniciar();
+else window.addEventListener("portal:usuario-validado", iniciar, { once: true });
+</script>
+</body>
+</html>

@@ -151,7 +151,7 @@
       window.toggleSenhaPanel();
     });
 
-    const sair = session.querySelector("#btnLogout, .btn-logout");
+    const sair = session.querySelector("#btnLogout, button.btn-logout:not(.btn-senha-portal)");
     if (sair) session.insertBefore(btn, sair);
     else session.appendChild(btn);
   }
