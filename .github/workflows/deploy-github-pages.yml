@@ -57,16 +57,16 @@ jobs:
           fi
 
           if [ -n "${PORTAL_AWS_API_URL:-}" ]; then
-            node <<'NODE'
-const fs = require("fs");
-const path = "site/assets/data/portal-runtime.json";
-const url = process.env.PORTAL_AWS_API_URL.replace(/\/$/, "");
-const cfg = JSON.parse(fs.readFileSync(path, "utf8"));
-cfg.awsApiUrl = url;
-delete cfg.devApiKey;
-fs.writeFileSync(path, JSON.stringify(cfg, null, 2) + "\n");
-console.log("portal-runtime.json → awsApiUrl:", url);
-NODE
+            node -e "
+              const fs = require('fs');
+              const path = 'site/assets/data/portal-runtime.json';
+              const url = process.env.PORTAL_AWS_API_URL.replace(/\\/$/, '');
+              const cfg = JSON.parse(fs.readFileSync(path, 'utf8'));
+              cfg.awsApiUrl = url;
+              delete cfg.devApiKey;
+              fs.writeFileSync(path, JSON.stringify(cfg, null, 2) + '\n');
+              console.log('portal-runtime.json -> awsApiUrl:', url);
+            "
           else
             echo "PORTAL_AWS_API_URL não definida — portal-runtime.json mantém valor do repositório"
           fi
