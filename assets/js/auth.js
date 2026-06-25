@@ -19,6 +19,7 @@ const authReady = setPersistence(auth, browserSessionPersistence).catch((error) 
 
 const LOADING_ID = "portalLoadingOverlay";
 const AUTH_PENDING_CLASS = "portal-auth-pending";
+let portalCarregamentoEncerrado = false;
 
 function bloquearHtmlAteValidar() {
   document.documentElement.classList.add(AUTH_PENDING_CLASS);
@@ -47,6 +48,7 @@ const loadingExternoOcultar = typeof window.portalOcultarCarregando === "functio
 const loadingGlobalDisponivel = Boolean(loadingExternoMostrar && loadingExternoOcultar);
 
 function mostrarCarregando(texto = "Carregando portal") {
+  if (portalCarregamentoEncerrado) return;
   if (loadingGlobalDisponivel) {
     loadingExternoMostrar(texto);
     return;
@@ -93,6 +95,7 @@ function mostrarCarregando(texto = "Carregando portal") {
 }
 
 function ocultarCarregando() {
+  portalCarregamentoEncerrado = true;
   if (loadingGlobalDisponivel) {
     loadingExternoOcultar();
     return;
@@ -463,6 +466,7 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
     if (cadastro.ativo === false) {
       alert("Seu acesso ao portal esta desativado. Procure um administrador.");
       await signOut(auth);
+      ocultarCarregando();
       window.location.href = portalPath("login.html");
       return;
     }
@@ -483,6 +487,9 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
       liberarHtmlValidado();
       ocultarCarregando();
       window.dispatchEvent(new CustomEvent("portal:usuario-validado", { detail: window.portalUsuario }));
+    } else {
+      liberarHtmlValidado();
+      ocultarCarregando();
     }
   } catch (error) {
     console.error("Erro ao validar usuario:", error);
