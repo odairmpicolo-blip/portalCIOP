@@ -143,8 +143,8 @@ export async function upsertAviso(pool, aviso) {
       payload.ativo,
       inicioEm.toISOString(),
       fimEm.toISOString(),
-      perfisRegra,
-      usuarios,
+      JSON.stringify(perfisRegra),
+      JSON.stringify(usuarios),
       criadoEm?.toISOString() || null,
       atualizadoEm?.toISOString() || null
     ]

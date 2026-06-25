@@ -29,6 +29,19 @@ function criarPerfisRegra(perfis) {
   return [...variantes];
 }
 
+function jsonArray(valor) {
+  if (Array.isArray(valor)) return valor;
+  if (typeof valor === "string") {
+    try {
+      const parsed = JSON.parse(valor);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+  return [];
+}
+
 function rowParaAviso(row) {
   const payload = row.payload || {};
   return {
@@ -37,9 +50,9 @@ function rowParaAviso(row) {
     mensagem: payload.mensagem || "",
     publico: row.publico === true,
     perfis: payload.perfis || [],
-    perfisRegra: row.perfis_regra || payload.perfisRegra || [],
+    perfisRegra: jsonArray(row.perfis_regra).length ? jsonArray(row.perfis_regra) : (payload.perfisRegra || []),
     perfisBusca: payload.perfisBusca || [],
-    usuarios: row.usuarios || payload.usuarios || [],
+    usuarios: jsonArray(row.usuarios).length ? jsonArray(row.usuarios) : (payload.usuarios || []),
     autorEmail: payload.autorEmail || "",
     autorNome: payload.autorNome || "",
     inicioEm: row.inicio_em,
@@ -84,10 +97,10 @@ router.get("/", requireFirebaseUser, async (req, res) => {
            AND fim_em >= NOW()
            AND (
              publico = TRUE
-             OR $1 = ANY(usuarios)
-             OR $2 = ANY(perfis_regra)
-             OR $3 = ANY(perfis_regra)
-             OR $4 = ANY(perfis_regra)
+             OR usuarios @> jsonb_build_array($1)
+             OR perfis_regra @> jsonb_build_array($2)
+             OR perfis_regra @> jsonb_build_array($3)
+             OR perfis_regra @> jsonb_build_array($4)
            )
          ORDER BY inicio_em DESC`,
         [ctx.email, perfil, perfil.toLowerCase(), perfilSemAcento]
@@ -153,7 +166,7 @@ router.post("/", requireFirebaseUser, async (req, res) => {
          perfis_regra = EXCLUDED.perfis_regra,
          usuarios = EXCLUDED.usuarios,
          atualizado_em = NOW()`,
-      [id, JSON.stringify(payload), payload.publico, inicioEm.toISOString(), fimEm.toISOString(), perfisRegra, usuarios]
+      [id, JSON.stringify(payload), payload.publico, inicioEm.toISOString(), fimEm.toISOString(), JSON.stringify(perfisRegra), JSON.stringify(usuarios)]
     );
 
     const saved = await query(

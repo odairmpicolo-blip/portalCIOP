@@ -53,8 +53,8 @@ CREATE TABLE IF NOT EXISTS avisos (
   ativo BOOLEAN NOT NULL DEFAULT TRUE,
   inicio_em TIMESTAMPTZ NOT NULL,
   fim_em TIMESTAMPTZ NOT NULL,
-  perfis_regra TEXT[] NOT NULL DEFAULT '{}',
-  usuarios TEXT[] NOT NULL DEFAULT '{}',
+  perfis_regra JSONB NOT NULL DEFAULT '[]'::jsonb,
+  usuarios JSONB NOT NULL DEFAULT '[]'::jsonb,
   criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
