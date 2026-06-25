@@ -462,11 +462,21 @@ function tipoOriginalIncidente(row) {
     return tipo || "Sem informação";
 }
 
+function rotuloTipoIncidente(value) {
+    const tipo = String(value || "").trim();
+    if (tipo.toUpperCase() === "AE") return "(Botão de Emergência) " + tipo;
+    return tipo || "Sem informação";
+}
+
+function tipoExibicaoIncidente(row) {
+    return rotuloTipoIncidente(tipoOriginalIncidente(row));
+}
+
 function populateSelectTipo(select, rows) {
     const previous = select.value;
     const values = Array.from(new Set(rows.map(tipoOriginalIncidente).filter(Boolean)))
         .sort((a, b) => String(a).localeCompare(String(b), "pt-BR", { numeric: true }));
-    select.innerHTML = '<option value="">Todos</option>' + values.map((value) => '<option value="' + escapeHtml(value) + '">' + escapeHtml(value) + '</option>').join("");
+    select.innerHTML = '<option value="">Todos</option>' + values.map((value) => '<option value="' + escapeHtml(value) + '">' + escapeHtml(rotuloTipoIncidente(value)) + '</option>').join("");
     if (values.includes(previous)) select.value = previous;
 }
 
@@ -506,7 +516,7 @@ function applyFilters() {
         if (exact.criadoPor && row.criadoPor !== exact.criadoPor) return false;
         if (exact.proprietario && row.proprietario !== exact.proprietario) return false;
         if (!search) return true;
-        return normalizeText([row.id, row.data, row.hora, row.veiculo, row.linha, row.criadoPor, tipoOriginalIncidente(row), row.proprietario, row.estado, row.natureOfProblem, row.instructions].join(" ")).includes(search);
+        return normalizeText([row.id, row.data, row.hora, row.veiculo, row.linha, row.criadoPor, tipoOriginalIncidente(row), tipoExibicaoIncidente(row), row.proprietario, row.estado, row.natureOfProblem, row.instructions].join(" ")).includes(search);
     });
 
     sortRows();
@@ -549,7 +559,7 @@ function renderKpis() {
     document.getElementById("kpiTotal").textContent = formatNumber(state.filtered.length);
     document.getElementById("kpiPeriodo").textContent = state.filtered.length === state.all.length ? "Todos os registros TCGL" : "Resultado filtrado";
     setKpi("kpiLinha", "kpiLinhaQtd", linha);
-    setKpi("kpiTipo", "kpiTipoQtd", tipo);
+    setKpi("kpiTipo", "kpiTipoQtd", { label: rotuloTipoIncidente(tipo.label), total: tipo.total });
     document.getElementById("kpiTiposDistintos").textContent = formatNumber(tiposDistintos);
     document.getElementById("kpiTiposDistintosSub").textContent = tiposDistintos === 1 ? "tipo distinto no filtro" : "tipos distintos no filtro";
     setKpi("kpiCriador", "kpiCriadorQtd", criado);
@@ -604,7 +614,7 @@ function renderTable() {
         '<td title="' + escapeHtml(row.veiculoDescricao || row.veiculo) + '">' + escapeHtml(row.veiculo) + '</td>' +
         '<td>' + escapeHtml(row.linha) + '</td>' +
         '<td>' + escapeHtml(row.criadoPor) + '</td>' +
-        '<td>' + escapeHtml(tipoOriginalIncidente(row)) + '</td>' +
+        '<td>' + escapeHtml(tipoExibicaoIncidente(row)) + '</td>' +
         '<td>' + escapeHtml(row.proprietario) + '</td>' +
         '<td>' + escapeHtml(row.estado) + '</td><td>' + escapeHtml(row.natureOfProblem || "") + '</td><td>' + escapeHtml(row.instructions || "") + '</td>' +
     '</tr>').join("");
@@ -622,9 +632,9 @@ function render() {
     renderChart("chartProprietario", "proprietario", statsRows);
     renderChart("chartEstado", "estado", statsRows);
     renderChart("chartLinha", "linha", statsRows);
-    renderChartFn("chartTipo", statsRows, tipoOriginalIncidente);
+    renderChartFn("chartTipo", statsRows, tipoExibicaoIncidente);
     document.getElementById("chartVazioTotal").textContent = formatNumber(vazioRows.length) + " incidentes";
-    renderChartFn("chartVazio", vazioRows, tipoOriginalIncidente);
+    renderChartFn("chartVazio", vazioRows, tipoExibicaoIncidente);
     updateSortIndicators();
     renderTable();
 }
@@ -636,7 +646,7 @@ function csvValue(value) {
 function exportCsv() {
     const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções"];
     const lines = [header.map(csvValue).join(";")].concat(state.filtered.map((row) => [
-        row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,tipoOriginalIncidente(row),row.proprietario,row.estado,row.natureOfProblem,row.instructions
+        row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,tipoExibicaoIncidente(row),row.proprietario,row.estado,row.natureOfProblem,row.instructions
     ].map(csvValue).join(";")));
     downloadBlob(new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" }), "incidentes-tcgl.csv");
 }
@@ -711,7 +721,7 @@ function createZip(files) {
 
 function exportExcel() {
     const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções"];
-    const rows = [header].concat(state.filtered.map((row) => [row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,tipoOriginalIncidente(row),row.proprietario,row.estado,row.natureOfProblem,row.instructions]));
+    const rows = [header].concat(state.filtered.map((row) => [row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,tipoExibicaoIncidente(row),row.proprietario,row.estado,row.natureOfProblem,row.instructions]));
     const widths = [10,12,9,12,13,22,28,24,16,46,52];
     const cols = widths.map((width, index) => '<col min="' + (index + 1) + '" max="' + (index + 1) + '" width="' + width + '" customWidth="1"/>').join("");
     const sheetRows = rows.map((row, rowIndex) => '<row r="' + (rowIndex + 1) + '" ht="' + (rowIndex === 0 ? 28 : 24) + '" customHeight="1">' +
