@@ -129,12 +129,6 @@ function portalPath(file) {
   return inPages ? "../" + file : file;
 }
 
-function iniciaisUsuario(nome) {
-  const partes = String(nome || "").trim().split(/\s+/).filter(Boolean);
-  if (!partes.length) return "U";
-  return partes.slice(0, 2).map((p) => p[0]).join("").toUpperCase();
-}
-
 function modernizarSessaoUsuario() {
   const session = document.querySelector(".ciop-session");
   if (!session) return;
@@ -152,14 +146,7 @@ function modernizarSessaoUsuario() {
     if (cargoEl) info.appendChild(cargoEl);
   }
 
-  let avatar = session.querySelector(".ciop-session-avatar");
-  if (!avatar) {
-    avatar = document.createElement("span");
-    avatar.className = "ciop-session-avatar";
-    avatar.setAttribute("aria-hidden", "true");
-    session.insertBefore(avatar, info);
-  }
-  avatar.textContent = iniciaisUsuario(userEl.textContent);
+  session.querySelector(".ciop-session-avatar")?.remove();
 
   let actions = session.querySelector(".ciop-session-actions");
   if (!actions) {
