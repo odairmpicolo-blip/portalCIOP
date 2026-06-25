@@ -35,27 +35,6 @@ service cloud.firestore {
       return lista is list && perfilAtual() in lista;
     }
 
-    function perfilFolhaServico() {
-      return signedIn() && (
-        bootstrapGestor() ||
-        perfilAtual() in ['Administrador', 'Supervisor', 'Analista']
-      );
-    }
-
-    match /folhaServicoDias/{dataIso} {
-      allow read: if perfilFolhaServico();
-      allow create, update: if perfilFolhaServico();
-      allow delete: if gestor();
-
-      match /linhas/{linhaId} {
-        allow read: if perfilFolhaServico();
-        allow create, update: if perfilFolhaServico()
-          && request.resource.data.atualizadoPor == email()
-          && linhaId == string(request.resource.data._row);
-        allow delete: if gestor();
-      }
-    }
-
     match /avisos/{avisoId} {
       allow read: if signedIn() && (
         podePostarAviso() ||
