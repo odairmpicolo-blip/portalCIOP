@@ -7,9 +7,11 @@ on:
     paths:
       - "pages/**"
       - "assets/**"
+      - "app/**"
+      - "portal-app/**"
       - "index.html"
       - "login.html"
-      - "hosting/CNAME"
+      - "hosting/**"
       - ".github/workflows/deploy-github-pages.yml"
   workflow_dispatch:
 
@@ -25,7 +27,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -33,6 +35,19 @@ jobs:
     steps:
       - name: Baixar portal
         uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: portal-app/package-lock.json
+
+      - name: Build do app React
+        run: |
+          cd portal-app
+          npm ci
+          npm run build
 
       - name: Preparar site estático
         env:
@@ -42,7 +57,8 @@ jobs:
           set -euo pipefail
           mkdir site
           cp index.html login.html site/
-          cp -r pages assets site/
+          cp -r pages assets app site/
+          cp hosting/404.html site/404.html
           touch site/.nojekyll
 
           if [ -n "${CUSTOM_DOMAIN:-}" ]; then

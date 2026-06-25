@@ -23,8 +23,14 @@ No GitHub Pages, configure redirecionamento de apex para www se necessário.
 
 ## URLs
 
-- https://www.portalciop.com.br
+- https://www.portalciop.com.br → redireciona para `/app/`
 - https://odairmpicolo-blip.github.io/portalCIOP/ (espelho GitHub)
+
+## Portal React
+
+O app moderno fica em `/app/`. O deploy inclui build automático do `portal-app/` e fallback SPA (`hosting/404.html`).
+
+Para abrir o portal legado na raiz: `/?legado=1`
 
 ## Ativar domínio no deploy
 
