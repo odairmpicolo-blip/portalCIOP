@@ -5,7 +5,6 @@ import { query, isDsqlMode } from "./db.js";
 import liberacaoRouter from "./routes/liberacao.js";
 import terminaisRouter from "./routes/terminais.js";
 import snapshotsRouter from "./routes/snapshots.js";
-import avisosRouter from "./routes/avisos.js";
 
 const app = express();
 app.use(express.json({ limit: "15mb" }));
@@ -36,7 +35,6 @@ app.get("/health", async (_req, res) => {
 app.use("/liberacao", liberacaoRouter);
 app.use("/terminais", terminaisRouter);
 app.use("/snapshots", snapshotsRouter);
-app.use("/avisos", avisosRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ ok: false, erro: "Rota não encontrada" });

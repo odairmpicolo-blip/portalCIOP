@@ -11,12 +11,6 @@ import {
   query,
   where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {
-  listarAvisosAws,
-  salvarAvisoAws,
-  excluirAvisoAws
-} from "./avisos-aws.js";
-import { awsApiEnabled, initPortalAwsRuntime } from "./portal-aws-config.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
@@ -203,61 +197,11 @@ async function sincronizarAvisosPorUsuario(lista) {
   await Promise.allSettled(tarefas);
 }
 
-async function carregarAvisosJsonPortal() {
-  if (typeof window === "undefined") return [];
-  const urls = [];
-  try {
-    const base = window.location.pathname.replace(/\/pages\/.*$/, "").replace(/\/$/, "");
-    urls.push(`${base}/assets/data/avisos-portal.json`);
-  } catch (_) {
-    /* import.meta / window indisponível */
-  }
-  urls.push("../assets/data/avisos-portal.json");
-  for (const configUrl of urls) {
-    try {
-      const res = await fetch(`${configUrl}?t=${Date.now()}`, { cache: "no-store" });
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (!Array.isArray(data?.avisos)) return [];
-      return data.avisos.map((item) => normalizarAviso(item.id, item));
-    } catch (_) {
-      continue;
-    }
-  }
-  return [];
-}
-
-function avisoVisivelParaUsuario(aviso, email = "", perfil = "") {
-  if (aviso?.ativo === false) return false;
-  if (!avisoEmExposicao(aviso)) return false;
-  if (aviso?.publico === true) return true;
-  const emailUsuario = normalizarEmail(email);
-  if (emailUsuario && (aviso.usuarios || []).includes(emailUsuario)) return true;
-  const perfilRegra = String(perfil || "").trim();
-  if (!perfilRegra) return false;
-  const perfilSemAcento = perfilRegra.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const regras = aviso.perfisRegra || [];
-  return regras.includes(perfilRegra)
-    || regras.includes(perfilRegra.toLowerCase())
-    || regras.includes(perfilSemAcento);
-}
-
 export async function listarAvisosFirestore({ email = "", perfil = "", gestor = false } = {}) {
-  await initPortalAwsRuntime();
-  if (awsApiEnabled()) {
-    try {
-      const lista = await listarAvisosAws({ gestor });
-      if (lista !== null) return lista;
-    } catch (error) {
-      console.warn("Avisos AWS indisponíveis, usando JSON/Firestore:", error);
-    }
-  }
-
   const avisos = new Map();
   const col = collection(db, COLECAO_AVISOS);
 
   if (gestor) {
-    for (const aviso of await carregarAvisosJsonPortal()) avisos.set(aviso.id, aviso);
     adicionarAvisosDoSnap(avisos, await getDocs(col));
     const listaGestor = ordenarAvisos([...avisos.values()]);
     await sincronizarAvisosPorUsuario(listaGestor);
@@ -266,9 +210,6 @@ export async function listarAvisosFirestore({ email = "", perfil = "", gestor = 
 
   const emailUsuario = normalizarEmail(email);
   const perfilRegra = String(perfil || "").trim();
-  for (const aviso of await carregarAvisosJsonPortal()) {
-    if (avisoVisivelParaUsuario(aviso, emailUsuario, perfilRegra)) avisos.set(aviso.id, aviso);
-  }
   const consultas = [
     getDocs(query(col, where("publico", "==", true)))
   ];
@@ -289,16 +230,6 @@ export async function listarAvisosFirestore({ email = "", perfil = "", gestor = 
 }
 
 export async function salvarAvisoFirestore(aviso) {
-  await initPortalAwsRuntime();
-  if (awsApiEnabled()) {
-    try {
-      const salvo = await salvarAvisoAws(aviso);
-      if (salvo) return salvo;
-    } catch (error) {
-      console.warn("Salvar aviso AWS falhou, usando Firestore:", error);
-    }
-  }
-
   const titulo = normalizarTextoAviso(aviso?.titulo);
   const mensagem = normalizarTextoAviso(aviso?.mensagem);
   if (!titulo || !mensagem) throw new Error("Informe titulo e mensagem do aviso.");
@@ -352,16 +283,6 @@ export async function salvarAvisoFirestore(aviso) {
 }
 
 export async function excluirAvisoFirestore(id) {
-  await initPortalAwsRuntime();
-  if (awsApiEnabled()) {
-    try {
-      const ok = await excluirAvisoAws(id);
-      if (ok) return;
-    } catch (error) {
-      console.warn("Excluir aviso AWS falhou, usando Firestore:", error);
-    }
-  }
-
   const avisoId = String(id || "").trim();
   if (!avisoId) throw new Error("Aviso invalido.");
   const avisoRef = doc(db, COLECAO_AVISOS, avisoId);

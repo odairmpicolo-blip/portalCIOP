@@ -44,17 +44,3 @@ CREATE TABLE IF NOT EXISTS pontualidade_snapshot (
   atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (cenario)
 );
-
--- Quadro de avisos do portal (substitui Firestore /avisos)
-CREATE TABLE IF NOT EXISTS avisos (
-  id TEXT PRIMARY KEY,
-  payload JSONB NOT NULL,
-  publico BOOLEAN NOT NULL DEFAULT FALSE,
-  ativo BOOLEAN NOT NULL DEFAULT TRUE,
-  inicio_em TIMESTAMPTZ NOT NULL,
-  fim_em TIMESTAMPTZ NOT NULL,
-  perfis_regra JSONB NOT NULL DEFAULT '[]'::jsonb,
-  usuarios JSONB NOT NULL DEFAULT '[]'::jsonb,
-  criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
