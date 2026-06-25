@@ -42,10 +42,12 @@ export function Header({ onMenuToggle }: { onMenuToggle: () => void }) {
             <span className="session-name">{user?.nome || 'Usuário'}</span>
             {user?.cargo ? <span className="session-profile">{user.cargo}</span> : null}
           </div>
+          <div className="session-actions">
+            <button type="button" className="btn-logout" onClick={() => void logout()}>
+              Sair
+            </button>
+          </div>
         </div>
-        <button type="button" className="btn-logout" onClick={() => void logout()}>
-          Sair
-        </button>
       </div>
     </header>
   )

@@ -157,6 +157,19 @@ function modernizarSessaoUsuario() {
     session.insertBefore(avatar, info);
   }
   avatar.textContent = iniciaisUsuario(userEl.textContent);
+
+  let actions = session.querySelector(".ciop-session-actions");
+  if (!actions) {
+    actions = document.createElement("div");
+    actions.className = "ciop-session-actions";
+    session.appendChild(actions);
+  }
+
+  session.querySelectorAll(".btn-senha-portal, .btn-logout:not(.btn-senha-portal)").forEach((btn) => {
+    if (btn.parentElement !== actions) actions.appendChild(btn);
+  });
+
+  session.classList.add("ciop-session-modern");
 }
 
 window.modernizarSessaoUsuario = modernizarSessaoUsuario;
@@ -188,6 +201,8 @@ function garantirRodapePortal() {
   script.defer = true;
   script.dataset.portalFooter = "1";
   document.head.appendChild(script);
+}
+
 garantirRodapePortal();
 window.addEventListener("portal:usuario-validado", modernizarSessaoUsuario);
 
@@ -434,6 +449,7 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
   try {
     if (!user) {
       if (!pagina.endsWith("/login.html") && !pagina.endsWith("login.html")) {
+        ocultarCarregando();
         window.location.href = portalPath("login.html");
       } else {
         liberarHtmlValidado();

@@ -78,16 +78,6 @@ export const portalCards: PortalCard[] = [
     section: 'operacao',
   },
   {
-    id: 'relatorios',
-    title: 'Relatórios',
-    description: 'Relatórios operacionais com exportação CSV, Excel e PDF.',
-    action: 'Acessar',
-    theme: 'slate',
-    legacyPath: '/pages/relatorios.html',
-    access: adminSupervisorAnalista,
-    section: 'operacao',
-  },
-  {
     id: 'terminais-agora',
     title: 'Terminais Agora',
     description: 'Presença de fiscais por terminal em tempo real.',
@@ -231,6 +221,16 @@ export const portalCards: PortalCard[] = [
       perfis: ['Administrador', 'Supervisor'],
       usuarios: ['pedroisrael2009@gmail.com'],
     },
+    section: 'operacao',
+  },
+  {
+    id: 'relatorios',
+    title: 'Relatórios',
+    description: 'Relatórios operacionais com exportação CSV, Excel e PDF.',
+    action: 'Acessar',
+    theme: 'slate',
+    legacyPath: '/pages/relatorios.html',
+    access: adminSupervisorAnalista,
     section: 'operacao',
   },
   {
