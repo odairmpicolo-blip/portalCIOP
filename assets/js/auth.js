@@ -126,6 +126,14 @@ function portalPath(file) {
   return inPages ? "../" + file : file;
 }
 
+function atualizarSaudacaoHero(nome) {
+  const heroNome = document.getElementById("heroNomeUsuario");
+  if (heroNome) {
+    const texto = String(nome || window.portalUsuario?.nome || "").trim();
+    heroNome.textContent = texto || "usuário";
+  }
+}
+
 function garantirCssSessao() {
   if (document.querySelector("link[data-portal-session]")) return;
   const link = document.createElement("link");
@@ -336,6 +344,8 @@ function aplicarPermissoes(cadastro) {
     isAdmin: admin
   };
 
+  atualizarSaudacaoHero(cadastro.nome);
+
   document.querySelectorAll("[data-admin-only]").forEach((el) => {
     el.style.display = admin ? "flex" : "none";
   });
@@ -403,10 +413,7 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
       cargoEl.textContent = cargo;
       cargoEl.hidden = !cargo;
     }
-    const heroNome = document.getElementById("heroNomeUsuario");
-    if (heroNome && cadastro.nome) {
-      heroNome.textContent = cadastro.nome.trim();
-    }
+    atualizarSaudacaoHero(cadastro.nome);
     if (aplicarPermissoes(cadastro) !== false) {
       window.portalUsuarioValidado = true;
       liberarHtmlValidado();

@@ -144,7 +144,7 @@
 
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "btn-logout btn-senha-portal";
+    btn.className = "btn-senha-portal";
     btn.dataset.portalSenhaBtn = "1";
     btn.textContent = "Senha";
     btn.addEventListener("click", function () {
