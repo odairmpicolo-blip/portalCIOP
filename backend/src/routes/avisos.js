@@ -97,10 +97,10 @@ router.get("/", requireFirebaseUser, async (req, res) => {
            AND fim_em >= NOW()
            AND (
              publico = TRUE
-             OR usuarios @> jsonb_build_array($1)
-             OR perfis_regra @> jsonb_build_array($2)
-             OR perfis_regra @> jsonb_build_array($3)
-             OR perfis_regra @> jsonb_build_array($4)
+             OR usuarios @> jsonb_build_array($1::text)
+             OR perfis_regra @> jsonb_build_array($2::text)
+             OR perfis_regra @> jsonb_build_array($3::text)
+             OR perfis_regra @> jsonb_build_array($4::text)
            )
          ORDER BY inicio_em DESC`,
         [ctx.email, perfil, perfil.toLowerCase(), perfilSemAcento]

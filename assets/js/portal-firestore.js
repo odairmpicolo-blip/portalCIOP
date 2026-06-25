@@ -203,6 +203,45 @@ async function sincronizarAvisosPorUsuario(lista) {
   await Promise.allSettled(tarefas);
 }
 
+async function carregarAvisosJsonPortal() {
+  if (typeof window === "undefined") return [];
+  const urls = [];
+  try {
+    const base = window.location.pathname.replace(/\/pages\/.*$/, "").replace(/\/$/, "");
+    urls.push(`${base}/assets/data/avisos-portal.json`);
+  } catch (_) {
+    /* import.meta / window indisponível */
+  }
+  urls.push("../assets/data/avisos-portal.json");
+  for (const configUrl of urls) {
+    try {
+      const res = await fetch(`${configUrl}?t=${Date.now()}`, { cache: "no-store" });
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (!Array.isArray(data?.avisos)) return [];
+      return data.avisos.map((item) => normalizarAviso(item.id, item));
+    } catch (_) {
+      continue;
+    }
+  }
+  return [];
+}
+
+function avisoVisivelParaUsuario(aviso, email = "", perfil = "") {
+  if (aviso?.ativo === false) return false;
+  if (!avisoEmExposicao(aviso)) return false;
+  if (aviso?.publico === true) return true;
+  const emailUsuario = normalizarEmail(email);
+  if (emailUsuario && (aviso.usuarios || []).includes(emailUsuario)) return true;
+  const perfilRegra = String(perfil || "").trim();
+  if (!perfilRegra) return false;
+  const perfilSemAcento = perfilRegra.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const regras = aviso.perfisRegra || [];
+  return regras.includes(perfilRegra)
+    || regras.includes(perfilRegra.toLowerCase())
+    || regras.includes(perfilSemAcento);
+}
+
 export async function listarAvisosFirestore({ email = "", perfil = "", gestor = false } = {}) {
   await initPortalAwsRuntime();
   if (awsApiEnabled()) {
@@ -210,7 +249,7 @@ export async function listarAvisosFirestore({ email = "", perfil = "", gestor = 
       const lista = await listarAvisosAws({ gestor });
       if (lista !== null) return lista;
     } catch (error) {
-      console.warn("Avisos AWS indisponíveis, usando Firestore:", error);
+      console.warn("Avisos AWS indisponíveis, usando JSON/Firestore:", error);
     }
   }
 
@@ -218,6 +257,7 @@ export async function listarAvisosFirestore({ email = "", perfil = "", gestor = 
   const col = collection(db, COLECAO_AVISOS);
 
   if (gestor) {
+    for (const aviso of await carregarAvisosJsonPortal()) avisos.set(aviso.id, aviso);
     adicionarAvisosDoSnap(avisos, await getDocs(col));
     const listaGestor = ordenarAvisos([...avisos.values()]);
     await sincronizarAvisosPorUsuario(listaGestor);
@@ -226,6 +266,9 @@ export async function listarAvisosFirestore({ email = "", perfil = "", gestor = 
 
   const emailUsuario = normalizarEmail(email);
   const perfilRegra = String(perfil || "").trim();
+  for (const aviso of await carregarAvisosJsonPortal()) {
+    if (avisoVisivelParaUsuario(aviso, emailUsuario, perfilRegra)) avisos.set(aviso.id, aviso);
+  }
   const consultas = [
     getDocs(query(col, where("publico", "==", true)))
   ];
