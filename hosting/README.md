@@ -1,19 +1,41 @@
-# Publicação estática (GitHub Pages)
+# Domínio: www.portalciop.com.br
 
 O portal é hospedado **somente no GitHub Pages** — não usamos Firebase Hosting.
 
-O workflow `.github/workflows/deploy-github-pages.yml` monta o site com:
+## Registro no Registro.br (obrigatório)
 
-- `app/` — portal React (`/app/`)
-- `pages/`, `assets/` — módulos legados
-- `index.html`, `login.html` — portal **clássico** (padrão); use `?app=1` para ir direto ao React
-- Botão **Novo portal** na toolbar leva a `/app/`
-- `404.html` — fallback SPA para rotas diretas como `/app/login`
+Na **Configurar zona DNS** → **Modo avançado** → **Nova entrada**:
 
-## Domínio customizado
+| TIPO | NOME | DADOS |
+|------|------|--------|
+| **CNAME** | `www` | `odairmpicolo-blip.github.io` |
 
-Copie `CNAME.exemplo` para `CNAME` com o domínio desejado, ou defina a variável `PORTAL_CUSTOM_DOMAIN` no GitHub.
+Salve e aguarde 15–30 min.
 
-## API AWS em produção
+## (Opcional) portalciop.com.br sem www
 
-Configure o secret `PORTAL_AWS_API_URL` no repositório para injetar a URL no `portal-runtime.json` no deploy.
+Adicione **4 registros A** com nome vazio (não use `@`):
+
+- `185.199.108.153`
+- `185.199.109.153`
+- `185.199.110.153`
+- `185.199.111.153`
+
+No GitHub Pages, configure redirecionamento de apex para www se necessário.
+
+## URLs
+
+- https://www.portalciop.com.br — portal **clássico** (padrão)
+- https://www.portalciop.com.br/app/ — **novo portal** (experimental)
+- `/?app=1` abre o novo portal direto
+- https://odairmpicolo-blip.github.io/portalCIOP/ (espelho GitHub)
+
+## Portal React
+
+O app moderno fica em `/app/`. O deploy inclui build automático do `portal-app/` e fallback SPA (`hosting/404.html`).
+
+Para abrir o novo portal: clique em **Novo portal** na toolbar ou acesse `/app/`.
+
+## Ativar domínio no deploy
+
+O arquivo `hosting/CNAME` contém `www.portalciop.com.br`. O workflow **Deploy GitHub Pages** publica automaticamente.
