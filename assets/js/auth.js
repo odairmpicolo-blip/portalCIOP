@@ -449,7 +449,9 @@ function aplicarPermissoes(cadastro) {
   });
 
   document.querySelectorAll("[data-perfis], [data-usuarios]").forEach((el) => {
-    el.style.display = usuarioPodeVer(el, cadastro) ? "flex" : "none";
+    const pode = usuarioPodeVer(el, cadastro);
+    el.classList.toggle("portal-card-visivel", pode);
+    el.hidden = !pode;
   });
 
   if (document.body?.dataset.requireAdmin === "true" && !admin) {
