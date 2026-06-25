@@ -745,16 +745,21 @@ function onCellKeydown(e){
     else if(e.key==="Tab"){stepCol=e.shiftKey?-1:1;mover=true;}
     if(!mover) return;
 
+    aplicarEdicaoCelula(el,{agendar:false,flush:false});
     e.preventDefault();
     const dest=encontrarCelulaEditavel(rowIdx,colIdx,stepRow,stepCol);
-    if(dest) focarCelula(dest.row,dest.col);
+    if(dest){
+        if(dest.row!==rowIdx) flushSalvarLinha(rowIdx);
+        focarCelula(dest.row,dest.col);
+    }
 }
 
 function initEventosTabela(){
     if(eventosTabelaIniciados) return;
     const corpo=$("tabelaCorpo");
+    corpo.addEventListener("input",onCellInput);
     corpo.addEventListener("change",onCellChange);
-    corpo.addEventListener("blur",onCellChange,true);
+    corpo.addEventListener("blur",onCellBlur,true);
     corpo.addEventListener("focusin",(e)=>{
         const el=e.target;
         if(el.matches(".cell-input,.cell-select")) marcarCelulaAtiva(el);
@@ -867,9 +872,33 @@ function renderTabela(){
     renderCorpoTabela();
 }
 
-function onCellChange(e){
-    const el=e.target;
-    if(!el.matches(".cell-input,.cell-select")) return;
+function syncLinhaFromDom(i){
+    const row=state.dados[i];
+    if(!row) return;
+    document.querySelectorAll('#tabelaCorpo [data-i="'+i+'"]').forEach(el=>{
+        if(!el.matches(".cell-input,.cell-select")) return;
+        const k=el.dataset.k;
+        if(!k||!celulaEditavelPorChave(k,row)||isColunaFormula(k)) return;
+        row[k]=el.value.trim();
+    });
+    aplicarFormulasLinha(row);
+}
+
+function agendarSalvarLinha(i){
+    clearTimeout(state.saveTimers[i]);
+    state.saveTimers[i]=setTimeout(()=>salvarLinha(i),800);
+}
+
+function flushSalvarLinha(i){
+    clearTimeout(state.saveTimers[i]);
+    delete state.saveTimers[i];
+    const row=state.dados[i];
+    if(!row||!row._row||state.saving[i]||!row._dirty) return;
+    void salvarLinha(i);
+}
+
+function aplicarEdicaoCelula(el,{agendar=true,flush=false}={}){
+    if(!el?.matches(".cell-input,.cell-select")) return;
     const i=Number(el.dataset.i);
     const k=el.dataset.k;
     if(isNaN(i)||!k) return;
@@ -880,14 +909,40 @@ function onCellChange(e){
     state.dados[i]._syncErro=false;
     el.classList.remove("saved","erro");
     el.classList.add("saving");
-    document.querySelector(".sync-"+i).innerHTML=syncBadge(state.dados[i],i);
-    clearTimeout(state.saveTimers[i]);
-    state.saveTimers[i]=setTimeout(()=>salvarLinha(i),800);
+    const syncEl=document.querySelector(".sync-"+i);
+    if(syncEl) syncEl.innerHTML=syncBadge(state.dados[i],i);
+    if(flush) flushSalvarLinha(i);
+    else if(agendar) agendarSalvarLinha(i);
+}
+
+function onCellInput(e){
+    aplicarEdicaoCelula(e.target,{agendar:true,flush:false});
+}
+
+function onCellChange(e){
+    aplicarEdicaoCelula(e.target,{agendar:true,flush:false});
+}
+
+function onCellBlur(e){
+    const el=e.target;
+    if(!el.matches(".cell-input,.cell-select")) return;
+    const i=Number(el.dataset.i);
+    const related=e.relatedTarget;
+    const vaiParaMesmaLinha=!!(
+        related&&
+        related.matches&&
+        related.matches(".cell-input,.cell-select")&&
+        Number(related.dataset.i)===i
+    );
+    aplicarEdicaoCelula(el,{agendar:false,flush:false});
+    if(vaiParaMesmaLinha) agendarSalvarLinha(i);
+    else flushSalvarLinha(i);
 }
 
 async function salvarLinha(i){
     clearTimeout(state.saveTimers[i]);
     delete state.saveTimers[i];
+    syncLinhaFromDom(i);
     const row=state.dados[i];
     if(!row||!row._row) return;
     aplicarFormulasLinha(row);
