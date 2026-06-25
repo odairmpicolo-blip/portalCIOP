@@ -126,6 +126,41 @@ function portalPath(file) {
   return inPages ? "../" + file : file;
 }
 
+function iniciaisUsuario(nome) {
+  const partes = String(nome || "").trim().split(/\s+/).filter(Boolean);
+  if (!partes.length) return "U";
+  return partes.slice(0, 2).map((p) => p[0]).join("").toUpperCase();
+}
+
+function modernizarSessaoUsuario() {
+  const session = document.querySelector(".ciop-session");
+  if (!session) return;
+
+  const userEl = session.querySelector(".ciop-session-user, #usuarioLogado");
+  const cargoEl = session.querySelector(".ciop-session-cargo, .ciop-session-profile, #perfilUsuario");
+  if (!userEl) return;
+
+  let info = session.querySelector(".ciop-session-info");
+  if (!info) {
+    info = document.createElement("div");
+    info.className = "ciop-session-info";
+    session.insertBefore(info, userEl);
+    info.appendChild(userEl);
+    if (cargoEl) info.appendChild(cargoEl);
+  }
+
+  let avatar = session.querySelector(".ciop-session-avatar");
+  if (!avatar) {
+    avatar = document.createElement("span");
+    avatar.className = "ciop-session-avatar";
+    avatar.setAttribute("aria-hidden", "true");
+    session.insertBefore(avatar, info);
+  }
+  avatar.textContent = iniciaisUsuario(userEl.textContent);
+}
+
+window.modernizarSessaoUsuario = modernizarSessaoUsuario;
+
 function atualizarSaudacaoHero(nome) {
   const heroNome = document.getElementById("heroNomeUsuario");
   if (heroNome) {
@@ -153,9 +188,8 @@ function garantirRodapePortal() {
   script.defer = true;
   script.dataset.portalFooter = "1";
   document.head.appendChild(script);
-}
-
 garantirRodapePortal();
+window.addEventListener("portal:usuario-validado", modernizarSessaoUsuario);
 
 async function getCadastro(user) {
   const email = String(user.email || "").toLowerCase();
@@ -357,6 +391,7 @@ function aplicarPermissoes(cadastro) {
   };
 
   atualizarSaudacaoHero(cadastro.nome);
+  modernizarSessaoUsuario();
 
   document.querySelectorAll("[data-admin-only]").forEach((el) => {
     el.style.display = admin ? "flex" : "none";
@@ -426,6 +461,7 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
       cargoEl.hidden = !cargo;
     }
     atualizarSaudacaoHero(cadastro.nome);
+    modernizarSessaoUsuario();
     if (aplicarPermissoes(cadastro) !== false) {
       window.portalUsuarioValidado = true;
       liberarHtmlValidado();

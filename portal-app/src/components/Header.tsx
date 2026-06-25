@@ -1,6 +1,12 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
+function iniciaisUsuario(nome?: string) {
+  const partes = String(nome || '').trim().split(/\s+/).filter(Boolean)
+  if (!partes.length) return 'U'
+  return partes.slice(0, 2).map((p) => p[0]).join('').toUpperCase()
+}
+
 export function Header({ onMenuToggle }: { onMenuToggle: () => void }) {
   const { user, logout } = useAuth()
 
@@ -28,9 +34,14 @@ export function Header({ onMenuToggle }: { onMenuToggle: () => void }) {
         <a href="/" className="btn-legacy-portal" title="Voltar ao portal clássico">
           Portal clássico
         </a>
-        <div className="session-chip" aria-label="Sessão do usuário">
-          <span className="session-name">{user?.nome || 'Usuário'}</span>
-          {user?.cargo ? <span className="session-profile">{user.cargo}</span> : null}
+        <div className="session-chip session-chip-modern" aria-label="Sessão do usuário">
+          <span className="session-avatar" aria-hidden="true">
+            {iniciaisUsuario(user?.nome)}
+          </span>
+          <div className="session-info">
+            <span className="session-name">{user?.nome || 'Usuário'}</span>
+            {user?.cargo ? <span className="session-profile">{user.cargo}</span> : null}
+          </div>
         </div>
         <button type="button" className="btn-logout" onClick={() => void logout()}>
           Sair

@@ -159,6 +159,9 @@
   window.initPortalSenhaUI = function () {
     criarBotaoSenha();
     criarPainelSenha();
+    if (typeof window.modernizarSessaoUsuario === "function") {
+      window.modernizarSessaoUsuario();
+    }
   };
 
   function iniciar() {
