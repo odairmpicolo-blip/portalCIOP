@@ -9,29 +9,25 @@ Repositórios:
 - **portal-teste** (`~/portal-teste`) — desenvolvimento / validação
 - **portalCIOP** (`~/portalCIOP`) — código de produção (GitHub)
 
-## Migração gradual para Firebase (portal-ciop.web.app)
+## Hospedagem do portal
 
-- **Não desativar** o portal de produção que a equipe usa hoje. Pessoas dependem dele.
-- **portal-ciop.web.app** é ambiente **paralelo** (Firebase Hosting), não substituto automático do host atual.
-- Deploy no Firebase Hosting **não remove** GitHub Pages / URL antiga — os dois podem coexistir.
-- Só orientar migração de usuários ou desligar o host antigo quando o usuário confirmar **corte** explícito.
+- O portal estático é publicado **somente no GitHub Pages** (workflow `deploy-github-pages.yml`).
+- Produção: **www.portalciop.com.br** (via `hosting/CNAME`).
+- **Firebase** é usado apenas para **Auth** e **Firestore** — não há Firebase Hosting.
 
 Ordem recomendada:
 1. Desenvolver e validar em **portal-teste**
-2. Publicar no GitHub (**portalCIOP**) — produção atual continua ativa para usuários
-3. Opcional: espelhar em **portal-ciop.web.app** após validação (Firebase Hosting)
-4. Corte para Firebase/domínio novo **somente com confirmação explícita**
+2. Publicar no GitHub (**portalCIOP**) — o workflow de Pages faz o deploy automático no push em `main`
 
 Quando o usuário pedir commit, push, publicar ou implantar:
 
 1. Aplicar **somente em portal-teste** por padrão (commit + push).
-2. **Perguntar explicitamente** se também deve publicar em **portalCIOP** (GitHub produção) antes de commitar ou dar push lá.
-3. **Perguntar explicitamente** antes de `firebase deploy --only hosting` (portal-ciop.web.app).
-4. Não publicar em produção sem confirmação do usuário, mesmo que as alterações já estejam no teste.
+2. **Perguntar explicitamente** se também deve publicar em **portalCIOP** (produção) antes de commitar ou dar push lá.
+3. Não publicar em produção sem confirmação do usuário, mesmo que as alterações já estejam no teste.
 
 Apps Script (`.gs`): lembrar que reimplantar o Web App no Google é manual, independente do git.
 
-Firebase deploy hosting:
+Regras Firestore (se alteradas):
 ```bash
-cd ~/portalCIOP && npx firebase deploy --only hosting --project portal-ciop
+cd ~/portalCIOP && npx firebase deploy --only firestore:rules --project portal-ciop
 ```

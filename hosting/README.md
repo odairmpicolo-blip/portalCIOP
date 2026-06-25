@@ -1,5 +1,7 @@
 # Domínio: www.portalciop.com.br
 
+O portal é hospedado **somente no GitHub Pages** — não usamos Firebase Hosting.
+
 ## Registro no Registro.br (obrigatório)
 
 Na **Configurar zona DNS** → **Modo avançado** → **Nova entrada**:

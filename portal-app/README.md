@@ -29,7 +29,7 @@ Para API AWS local, copie `assets/data/portal-runtime.local.example.json` para `
 npm run build
 ```
 
-Gera a pasta `app/` na raiz do repositório (ao lado de `pages/` e `assets/`) para publicar em `/app/` no mesmo domínio do portal legado.
+Gera a pasta `app/` na raiz do repositório (ao lado de `pages/` e `assets/`) para publicar em `/app/` no GitHub Pages.
 
 ## Deploy recomendado
 
