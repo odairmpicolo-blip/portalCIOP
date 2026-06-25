@@ -27,10 +27,8 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Configurar git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Sincronizar com origin
+        run: git pull --rebase --autostash origin main
 
       - name: Gerar JSON de liberação (hoje)
         env:
@@ -38,8 +36,14 @@ jobs:
           PORTAL_JSON_TIMEOUT_MS: 180000
         run: node scripts/atualizar-portais-json.mjs --liberacao-hoje
 
+      - name: Sincronizar antes do commit
+        run: git pull --rebase --autostash origin main
+
       - name: Publicar JSON de liberação (hoje)
-        run: bash scripts/ci-git-commit-push.sh "Atualiza JSON liberação hoje" assets/data/liberacao/*.json
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Atualiza JSON liberação hoje"
+          file_pattern: assets/data/liberacao/*.json
 
       - name: Importar liberação hoje no DSQL (planilha → JSON → AWS)
         env:
