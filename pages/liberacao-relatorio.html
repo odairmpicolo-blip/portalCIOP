@@ -343,7 +343,7 @@ function reaplicarFiltrosLocais(){
     if(!state.linhas.length){
         setStatus(`Nenhum registro com os filtros entre ${brDate(dataDe)} e ${brDate(dataAte)}.${origemTxt}`,"erro");
     }else{
-        setStatus(`${state.linhas.length.toLocaleString("pt-BR")} registro(s) · ${brDate(dataDe)} a ${brDate(dataAte)}${origemTxt}`,"ok");
+        setStatus(`${state.linhas.length.toLocaleString("pt-BR")} registro(s)`,"ok");
     }
 }
 function aplicarFormulasLinha(row){
@@ -450,12 +450,11 @@ async function gerarRelatorio(){
         const filtrados=aplicarFiltrosColunas(ordenarLinhas(filtrarLinhas(resultado.dados,dataDe,dataAte)));
         state.linhas=filtrados.map(linhaParaRelatorio);
         renderTabela();
-        const origemTxt=resultado.origem?` · ${resultado.origem}`:"";
         if(!state.linhas.length){
             const debug=resultado.tentativas?.length?` (${resultado.tentativas.join(" · ")})`:"";
             setStatus(`Nenhum registro entre ${brDate(dataDe)} e ${brDate(dataAte)}.${debug}`,"erro");
         }else{
-            setStatus(`${state.linhas.length.toLocaleString("pt-BR")} registro(s) · ${brDate(dataDe)} a ${brDate(dataAte)}${origemTxt}`,"ok");
+            setStatus(`${state.linhas.length.toLocaleString("pt-BR")} registro(s)`,"ok");
         }
         $("tableSub").textContent=`Portal CIOP · TCGL · ${metaExportacao(dataDe,dataAte).periodo}`;
     }catch(err){
