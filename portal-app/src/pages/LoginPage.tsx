@@ -60,7 +60,7 @@ export function LoginPage() {
     <div className="login-page">
       <form className="login-card" onSubmit={onSubmit}>
         <div className="login-brand portal-brand-mark portal-brand-mark--center" aria-label="Portal CIOP TCGL Operações">
-          <span className="portal-brand-name">Portal CIOP</span>
+          <span className="portal-brand-name">Portal CI<span className="portal-brand-o">O</span>P</span>
           <span className="portal-brand-meta">TCGL · Operações</span>
         </div>
 

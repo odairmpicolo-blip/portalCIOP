@@ -7,7 +7,7 @@
 
   function brandInnerHtml() {
     return (
-      '<span class="portal-brand-name">Portal CIOP</span>' +
+      '<span class="portal-brand-name">Portal CI<span class="portal-brand-o">O</span>P</span>' +
       '<span class="portal-brand-meta">TCGL · Operações</span>'
     );
   }
@@ -19,53 +19,54 @@
   }
 
   function aplicarMarca(host, asLink) {
-    if (!host || host.dataset.portalBrandDone) return;
-    host.dataset.portalBrandDone = "1";
+    if (!host) return;
     host.classList.add("portal-brand-mark");
     host.setAttribute("aria-label", BRAND_LABEL);
     if (asLink && host.tagName === "A") {
       host.href = homeHref();
+      host.removeAttribute("target");
+      host.removeAttribute("rel");
     }
     host.innerHTML = brandInnerHtml();
+    host.dataset.portalBrandDone = "1";
   }
 
   function modernizarMarcaPortal() {
-    document.querySelectorAll(".header-brand").forEach((wrap) => aplicarMarca(wrap, false));
+    document.querySelectorAll(".header-brand, .portal-brand-mark").forEach((wrap) => {
+      if (isPrintContext(wrap)) return;
+      aplicarMarca(wrap, wrap.tagName === "A");
+    });
 
-    document.querySelectorAll(".login-brand-v2").forEach((wrap) => {
+    document.querySelectorAll(".login-brand-v2, .login-brand").forEach((wrap) => {
       if (wrap.dataset.portalBrandDone) return;
-      wrap.dataset.portalBrandDone = "1";
       wrap.classList.add("portal-brand-mark", "portal-brand-mark--center");
-      wrap.setAttribute("aria-label", BRAND_LABEL);
       wrap.querySelectorAll("img").forEach((img) => img.remove());
       wrap.querySelectorAll("p").forEach((p) => {
         if (/acesso operacional/i.test(p.textContent || "")) p.remove();
       });
-      if (!wrap.querySelector(".portal-brand-name")) {
-        wrap.innerHTML = brandInnerHtml();
-      }
+      aplicarMarca(wrap, false);
     });
 
     document.querySelectorAll("img.logo-ciop, img.brand-title-art, img.login-title-art-v2").forEach((img) => {
       if (isPrintContext(img)) return;
       const linkParent = img.closest("a");
-      const host = linkParent || img.parentElement;
-      if (!host || host.dataset.portalBrandDone) return;
-
-      if (linkParent) {
+      if (linkParent && !linkParent.classList.contains("portal-brand-mark")) {
         aplicarMarca(linkParent, true);
         img.remove();
         return;
       }
-
-      const mark = document.createElement("div");
-      mark.className = "portal-brand-mark";
-      mark.setAttribute("aria-label", BRAND_LABEL);
-      mark.innerHTML = brandInnerHtml();
-      mark.dataset.portalBrandDone = "1";
-      img.replaceWith(mark);
+      if (img.classList.contains("portal-brand-mark")) return;
+      const mark = document.createElement(linkParent ? "a" : "div");
+      aplicarMarca(mark, Boolean(linkParent));
+      if (linkParent) {
+        linkParent.replaceWith(mark);
+      } else {
+        img.replaceWith(mark);
+      }
     });
   }
+
+  window.modernizarMarcaPortal = modernizarMarcaPortal;
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", modernizarMarcaPortal, { once: true });

@@ -213,6 +213,11 @@ function garantirMarcaPortal() {
   script.src = portalPath("assets/js/portal-brand.js");
   script.defer = true;
   script.dataset.portalBrandJs = "1";
+  script.onload = () => {
+    if (typeof window.modernizarMarcaPortal === "function") {
+      window.modernizarMarcaPortal();
+    }
+  };
   document.head.appendChild(script);
 }
 
