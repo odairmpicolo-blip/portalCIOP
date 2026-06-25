@@ -90,6 +90,28 @@ body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:In
 
 #mapa{width:100%;height:100%;min-height:520px;background:#dbeafe}
 .map-tools{position:absolute;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:8px}
+.shape-picker{
+  position:absolute;left:12px;bottom:12px;z-index:500;width:min(320px,calc(100% - 24px));
+  background:rgba(255,255,255,.97);border:1px solid var(--border);border-radius:14px;
+  box-shadow:0 10px 28px rgba(15,23,42,.18);padding:12px 12px 10px;
+  backdrop-filter:blur(8px);
+}
+.shape-picker-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.shape-picker-head strong{font-size:13px;color:var(--blue)}
+.shape-picker-close{border:0;background:transparent;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:8px}
+.shape-picker-close:hover{background:var(--surface-2);color:var(--blue)}
+.shape-picker-sub{margin:0 0 8px;font-size:11px;color:var(--muted);line-height:1.4}
+.shape-picker-list{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow:auto}
+.shape-picker-btn{
+  display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;
+  border:1px solid var(--border);background:#fff;border-radius:10px;padding:8px 10px;
+  font:inherit;text-align:left;cursor:pointer;transition:border-color .15s,background .15s;
+}
+.shape-picker-btn:hover{border-color:var(--teal);background:var(--surface-2)}
+.shape-picker-btn.active{border-color:var(--teal);background:rgba(45,180,191,.1);box-shadow:0 0 0 2px rgba(45,180,191,.15)}
+.shape-picker-sentido{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.shape-picker-via{font-size:12px;font-weight:800;color:var(--blue)}
+.shape-picker-all{width:100%;margin-top:8px;font-size:11px}
 .map-tools .btn{min-height:38px;padding:0 12px;font-size:12px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px)}
 
 .leaflet-popup-content-wrapper{border-radius:14px;box-shadow:var(--shadow);padding:0;overflow:hidden}
@@ -230,6 +252,15 @@ body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:In
             <div class="panel-wrap">
                 <div class="panel" id="panelMapa">
                     <div id="mapa"></div>
+                    <div class="shape-picker" id="shapePicker" hidden>
+                        <div class="shape-picker-head">
+                            <strong id="shapePickerTitle">Trajeto da linha</strong>
+                            <button type="button" class="shape-picker-close" id="shapePickerClose" aria-label="Fechar">×</button>
+                        </div>
+                        <p class="shape-picker-sub" id="shapePickerSub"></p>
+                        <div class="shape-picker-list" id="shapePickerList"></div>
+                        <button type="button" class="btn btn-ghost shape-picker-all" id="shapePickerTodos">Ver todas as vias</button>
+                    </div>
                     <div class="map-tools">
                         <button type="button" class="btn btn-ghost" id="btnMapaClaro">Mapa claro</button>
                         <button type="button" class="btn btn-ghost" id="btnMapaBus2">Estilo Bus2</button>
@@ -557,7 +588,11 @@ function atualizarMarcadores(){
 
     if (state.routeFiltro && countVis > 0){
         const pts = [...state.vehicles.values()].filter(veiculoPassaFiltro).map(v => [v.lat, v.lng]);
-        if (pts.length) state.mapa.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 15 });
+        if (pts.length){
+            let bounds = L.latLngBounds(pts);
+            if (state.shapeLayer?.getBounds) bounds = bounds.extend(state.shapeLayer.getBounds());
+            state.mapa.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        }
     } else if (state.veiculoFiltro && countVis === 1){
         const alvo = [...state.vehicles.values()].find(veiculoPassaFiltro);
         if (alvo){
@@ -598,19 +633,107 @@ function decodePolyline(str, precision){
     return coordinates;
 }
 
-function desenharShape(route, tripId){
-    if (!state.mapa) return;
-    if (state.shapeLayer){
+function limparShapes(){
+    if (state.shapeLayer && state.mapa){
         state.mapa.removeLayer(state.shapeLayer);
         state.shapeLayer = null;
     }
-    obterShape(tripId).then(data => {
-        if (!data?.shape) return;
-        const latlngs = decodePolyline(data.shape, 5);
-        if (!latlngs.length) return;
-        state.shapeLayer = L.polyline(latlngs, { color: corCss(route.color), weight: 5, opacity: 0.78 }).addTo(state.mapa);
-        state.mapa.fitBounds(state.shapeLayer.getBounds(), { padding: [40, 40] });
+}
+
+function ocultarShapePicker(){
+    const picker = $("shapePicker");
+    if (picker) picker.hidden = true;
+}
+
+function opcoesTrajeto(tt){
+    const dirs = tt?.timetable?.directions || [];
+    const dirMap = new Map(dirs.map(d => [d.directionId, d.desc || ("Sentido " + (Number(d.directionId) + 1))]));
+    return (tt?.timetable?.trips || []).map(t => {
+        const sentido = dirMap.get(t.directionId) || "Sentido";
+        const via = String(t.tripDesc || t.shortName || "Principal").trim();
+        return { tripId: t.tripId, directionId: t.directionId, sentido, via, label: sentido + " · " + via };
     });
+}
+
+async function desenharShapes(route, tripIds, opts){
+    if (!state.mapa || !tripIds?.length) return;
+    limparShapes();
+    const group = L.layerGroup();
+    const bounds = L.latLngBounds([]);
+    const cor = corCss(route.color);
+    const ids = [...new Set(tripIds.map(Number).filter(Boolean))];
+
+    for (let i = 0; i < ids.length; i += 1){
+        const data = await obterShape(ids[i]);
+        if (!data?.shape) continue;
+        const latlngs = decodePolyline(data.shape, 5);
+        if (!latlngs.length) continue;
+        const multi = ids.length > 1;
+        const line = L.polyline(latlngs, {
+            color: cor,
+            weight: multi ? 4 : 5,
+            opacity: multi ? Math.max(0.45, 0.82 - i * 0.12) : 0.78,
+            dashArray: multi && i > 0 ? "10 8" : null
+        });
+        line.addTo(group);
+        bounds.extend(line.getBounds());
+    }
+
+    if (!group.getLayers().length) return;
+    group.addTo(state.mapa);
+    state.shapeLayer = group;
+    if (opts?.ajustarZoom !== false && bounds.isValid()) {
+        state.mapa.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+    }
+}
+
+function renderShapePicker(route, opcoes){
+    const picker = $("shapePicker");
+    const list = $("shapePickerList");
+    if (!picker || !list || !opcoes.length) return;
+
+    $("shapePickerTitle").textContent = "Linha " + (route.shortName || "?") + " · trajeto";
+    $("shapePickerSub").textContent = "Esta linha tem " + opcoes.length + " vias. Escolha qual desenhar no mapa:";
+    list.innerHTML = opcoes.map(o =>
+        '<button type="button" class="shape-picker-btn" data-trip="' + o.tripId + '">' +
+            '<span class="shape-picker-sentido">' + esc(o.sentido) + '</span>' +
+            '<span class="shape-picker-via">' + esc(o.via) + '</span>' +
+        '</button>'
+    ).join("");
+
+    const todos = $("shapePickerTodos");
+    if (todos) todos.hidden = opcoes.length < 2;
+    picker.hidden = false;
+
+    list.querySelectorAll(".shape-picker-btn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            list.querySelectorAll(".shape-picker-btn").forEach(b => b.classList.toggle("active", b === btn));
+            await desenharShapes(route, [Number(btn.dataset.trip)]);
+        });
+    });
+
+    if (todos){
+        todos.onclick = async () => {
+            list.querySelectorAll(".shape-picker-btn").forEach(b => b.classList.remove("active"));
+            await desenharShapes(route, opcoes.map(o => o.tripId));
+        };
+    }
+}
+
+async function configurarTrajetoLinha(route, tt){
+    const opcoes = opcoesTrajeto(tt);
+    if (!opcoes.length){
+        limparShapes();
+        ocultarShapePicker();
+        return;
+    }
+    if (opcoes.length === 1){
+        ocultarShapePicker();
+        await desenharShapes(route, [opcoes[0].tripId]);
+        return;
+    }
+    limparShapes();
+    renderShapePicker(route, opcoes);
 }
 
 async function buscarVeiculosRota(route){
@@ -692,8 +815,7 @@ async function selecionarLinha(routeId){
     state.schedule.timetable = tt;
     state.schedule.directionId = tt?.timetable?.directions?.[0]?.directionId ?? 0;
     state.schedule.serviceId = null;
-    const tripId = tt?.timetable?.trips?.[0]?.tripId;
-    if (tripId) desenharShape(route, tripId);
+    await configurarTrajetoLinha(route, tt);
     renderHorarios();
     buscarVeiculosRota(route).then(list => {
         list.forEach(v => {
@@ -709,10 +831,8 @@ function limparFiltro(){
     state.veiculoFiltro = "";
     $("buscaVeiculo").value = "";
     renderListaLinhas();
-    if (state.shapeLayer && state.mapa){
-        state.mapa.removeLayer(state.shapeLayer);
-        state.shapeLayer = null;
-    }
+    limparShapes();
+    ocultarShapePicker();
     state.mapa?.setView(BUS2.centro, BUS2.zoom);
     atualizarMarcadores();
 }
@@ -836,6 +956,7 @@ function bind(){
     $("btnMapaBus2").addEventListener("click", () => trocarTile("bus2"));
     $("btnMapaSat").addEventListener("click", () => trocarTile("sat"));
     $("btnCentralizar").addEventListener("click", () => state.mapa?.setView(BUS2.centro, BUS2.zoom));
+    $("shapePickerClose")?.addEventListener("click", ocultarShapePicker);
     document.querySelectorAll(".tab").forEach(btn => btn.addEventListener("click", () => trocarTab(btn.dataset.tab)));
 }
 
