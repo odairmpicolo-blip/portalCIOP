@@ -9,7 +9,7 @@
 <title>Ônibus Agora | Portal CIOP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Orbitron:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <style>
 :root{
@@ -154,18 +154,129 @@ body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:In
 .bus-tag-line{color:#fff}
 .bus-marker.highlight .bus-tag{box-shadow:0 0 0 2px rgba(45,180,191,.22),0 2px 8px rgba(15,23,42,.22)}
 
-.schedule-scroll{overflow:auto;padding:16px;max-height:calc(72vh - 40px)}
-.hero{padding:20px;border-radius:14px;color:#fff;margin-bottom:14px;background:linear-gradient(135deg,var(--teal),var(--blue))}
-.hero h3{margin:0;font-size:22px;font-weight:800}
-.hero p{margin:6px 0 0;font-size:13px;opacity:.92}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
-.chip{border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 14px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;color:var(--blue)}
-.chip.active{background:var(--teal);border-color:var(--teal);color:#fff}
-.columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
-.col{border:1px solid var(--border);border-radius:14px;overflow:hidden}
-.col-head{padding:10px 12px;background:var(--surface-2);font-size:12px;font-weight:800;color:var(--blue)}
-.col-body{padding:10px;display:flex;flex-wrap:wrap;gap:6px}
-.time{min-width:58px;padding:8px;border-radius:10px;background:var(--surface-2);text-align:center;font-size:13px;font-weight:800;color:var(--blue);font-variant-numeric:tabular-nums}
+#panelHorarios{
+  overflow:auto;padding:0;max-height:calc(72vh - 40px);
+  background:linear-gradient(165deg,#070b14 0%,#0c1424 45%,#06102a 100%);
+  border-color:rgba(45,180,191,.12);
+  position:relative;
+}
+#panelHorarios::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 45% at 15% -5%,rgba(45,180,191,.16),transparent 55%),
+    radial-gradient(ellipse 55% 40% at 95% 105%,rgba(6,36,92,.45),transparent 50%),
+    repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,.015) 2px,rgba(255,255,255,.015) 3px);
+}
+#panelHorarios::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(45,180,191,.04),transparent);
+  animation:schedScan 8s linear infinite;
+}
+@keyframes schedScan{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.sched-wrap{position:relative;z-index:1;padding:20px 20px 28px;--route-accent:var(--teal)}
+
+#panelHorarios .empty{padding:56px 24px;text-align:center;color:rgba(148,163,184,.85)}
+#panelHorarios .empty h3{margin:0 0 10px;color:#e2e8f0;font-size:20px;font-weight:800;letter-spacing:-.02em}
+#panelHorarios .empty p{font-size:13px;line-height:1.5;max-width:320px;margin:0 auto}
+
+.sched-head{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid rgba(45,180,191,.12);
+}
+.sched-head-main{min-width:0}
+.sched-kicker{margin:0 0 6px;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+.sched-title{margin:0;font-size:clamp(20px,3vw,26px);font-weight:800;color:#f8fafc;letter-spacing:-.02em;line-height:1.15}
+.sched-sub{margin:6px 0 0;font-size:12px;color:rgba(148,163,184,.9);font-weight:500}
+.sched-valid{font-size:11px;color:rgba(100,116,139,.95);white-space:nowrap}
+
+.sched-hero{
+  position:relative;border-radius:22px;padding:22px 24px 20px;margin-bottom:20px;overflow:hidden;
+  background:linear-gradient(135deg,rgba(45,180,191,.14),rgba(6,36,92,.42));
+  border:1px solid rgba(45,180,191,.28);
+  box-shadow:0 0 0 1px rgba(255,255,255,.04) inset,0 20px 50px rgba(0,0,0,.35);
+}
+.sched-hero-glow{
+  position:absolute;top:-40%;right:-10%;width:220px;height:220px;border-radius:50%;
+  background:radial-gradient(circle,rgba(45,180,191,.35),transparent 70%);
+  filter:blur(8px);pointer-events:none;
+}
+.sched-hero-label{margin:0 0 4px;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:rgba(45,180,191,.95)}
+.sched-hero-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.sched-hero-time{
+  margin:0;font-family:Orbitron,sans-serif;font-size:clamp(44px,9vw,72px);font-weight:800;line-height:1;
+  letter-spacing:.06em;background:linear-gradient(92deg,#fff 0%,var(--teal) 45%,#fff 90%);
+  background-size:220% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  animation:schedShimmer 5s linear infinite;
+}
+@keyframes schedShimmer{0%{background-position:0% center}100%{background-position:220% center}}
+.sched-hero-meta{margin:8px 0 0;font-size:13px;font-weight:600;color:#e2e8f0}
+.sched-hero-meta span{color:var(--teal)}
+.sched-hero-countdown{
+  padding:10px 16px;border-radius:14px;font-size:12px;font-weight:800;color:#0a0f1f;
+  background:linear-gradient(135deg,#8fd400,#2db4bf);box-shadow:0 8px 24px rgba(45,180,191,.25);
+  white-space:nowrap;font-variant-numeric:tabular-nums;
+}
+.sched-hero-countdown.amanha{background:linear-gradient(135deg,#fbbf24,#ff6b00);color:#0f172a}
+
+.sched-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.sched-chips .chip{
+  border:1px solid rgba(45,180,191,.22);background:rgba(255,255,255,.04);border-radius:999px;
+  padding:8px 14px;font:inherit;font-size:11px;font-weight:700;cursor:pointer;color:#cbd5e1;
+  transition:border-color .2s,background .2s,transform .15s;
+}
+.sched-chips .chip:hover{border-color:rgba(45,180,191,.45);background:rgba(45,180,191,.08)}
+.sched-chips .chip.active{
+  background:linear-gradient(135deg,rgba(45,180,191,.85),rgba(6,36,92,.9));
+  border-color:rgba(45,180,191,.55);color:#fff;box-shadow:0 6px 20px rgba(45,180,191,.22);
+}
+
+.sched-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px}
+.sched-col{
+  border-radius:18px;overflow:hidden;
+  background:rgba(255,255,255,.03);border:1px solid rgba(148,163,184,.1);
+  backdrop-filter:blur(8px);box-shadow:0 8px 32px rgba(0,0,0,.2);
+}
+.sched-col-head{
+  padding:12px 14px;font-size:11px;font-weight:800;color:#e2e8f0;letter-spacing:.04em;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),transparent);
+  border-bottom:1px solid rgba(148,163,184,.08);
+  display:flex;align-items:center;gap:8px;
+}
+.sched-col-head::before{
+  content:"";width:6px;height:6px;border-radius:50%;background:var(--route-accent,var(--teal));
+  box-shadow:0 0 10px var(--route-accent,var(--teal));flex:0 0 auto;
+}
+.sched-col-body{padding:12px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start}
+
+.time{
+  position:relative;min-width:64px;padding:10px 12px;border-radius:12px;text-align:center;
+  font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;
+  color:#94a3b8;background:rgba(15,23,42,.55);border:1px solid rgba(148,163,184,.1);
+  transition:transform .25s ease,opacity .25s ease,box-shadow .25s ease,border-color .25s ease;
+}
+.time.past{opacity:.28;transform:scale(.94);filter:grayscale(.4)}
+.time.next{
+  color:#fff;background:linear-gradient(145deg,rgba(45,180,191,.45),rgba(6,36,92,.75));
+  border-color:rgba(45,180,191,.65);transform:scale(1.06);z-index:2;
+  box-shadow:0 0 18px rgba(45,180,191,.35),0 0 36px rgba(45,180,191,.12),inset 0 1px 0 rgba(255,255,255,.12);
+  animation:schedNextPulse 2.8s ease-in-out infinite;
+}
+.time.next-global{
+  border-color:rgba(143,212,0,.75);
+  box-shadow:0 0 22px rgba(143,212,0,.35),0 0 40px rgba(143,212,0,.12),inset 0 1px 0 rgba(255,255,255,.15);
+}
+.time.next::after{
+  content:"PRÓXIMO";position:absolute;top:-9px;left:50%;transform:translateX(-50%);
+  font-family:Inter,sans-serif;font-size:7px;font-weight:800;letter-spacing:.14em;
+  color:var(--teal);background:#0a0f1f;padding:2px 7px;border-radius:999px;
+  border:1px solid rgba(45,180,191,.45);white-space:nowrap;
+}
+.time.next-global::after{content:"PRÓXIMA";color:#8fd400;border-color:rgba(143,212,0,.55)}
+.time.next.amanha::after{content:"AMANHÃ"}
+@keyframes schedNextPulse{
+  0%,100%{box-shadow:0 0 18px rgba(45,180,191,.3),0 0 36px rgba(45,180,191,.1),inset 0 1px 0 rgba(255,255,255,.12)}
+  50%{box-shadow:0 0 26px rgba(45,180,191,.5),0 0 48px rgba(45,180,191,.18),inset 0 1px 0 rgba(255,255,255,.18)}
+}
 
 .empty{padding:40px 20px;text-align:center;color:var(--muted)}
 .empty h3{margin:0 0 8px;color:var(--blue);font-size:18px;font-weight:800}
@@ -268,7 +379,7 @@ body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:In
                         <button type="button" class="btn btn-ghost" id="btnCentralizar">Centralizar</button>
                     </div>
                 </div>
-                <div class="panel schedule-scroll" id="panelHorarios" hidden>
+                <div class="panel" id="panelHorarios" hidden>
                     <div class="empty" id="horariosEmpty">
                         <h3>Horários da linha</h3>
                         <p>Selecione uma linha na lista para consultar partidas previstas.</p>
@@ -320,7 +431,8 @@ const state = {
     mapa: null,
     tileLayer: null,
     shapeLayer: null,
-    schedule: { directionId: 0, serviceId: null, timetable: null, route: null }
+    schedule: { directionId: 0, serviceId: null, timetable: null, route: null },
+    scheduleTickTimer: null
 };
 
 function $(id){ return document.getElementById(id); }
@@ -854,6 +966,94 @@ function brDate(iso){
     return p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : iso;
 }
 
+function parseDepMin(dep){
+    const p = String(dep || "").trim().split(":");
+    if (p.length < 2) return NaN;
+    const h = Number(p[0]), m = Number(p[1]);
+    if (!Number.isFinite(h) || !Number.isFinite(m)) return NaN;
+    return h * 60 + m;
+}
+
+function minutosAgora(){
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+}
+
+function minutosRestantes(agoraMin, depMin, amanha){
+    if (amanha) return 24 * 60 - agoraMin + depMin;
+    let diff = depMin - agoraMin;
+    if (diff < 0) diff += 24 * 60;
+    return diff;
+}
+
+function formatarContagem(minutos, amanha){
+    if (amanha) return "Amanhã · " + (minutos < 60 ? minutos + " min" : Math.floor(minutos / 60) + "h" + (minutos % 60 ? " " + (minutos % 60) + "min" : ""));
+    if (minutos <= 0) return "Partindo agora";
+    if (minutos < 60) return "em " + minutos + " min";
+    const h = Math.floor(minutos / 60), m = minutos % 60;
+    return "em " + h + "h" + (m ? " " + m + "min" : "");
+}
+
+function calcDestaquesHorarios(deps, trips, agoraMin){
+    let globalNext = null;
+    const perSeq = new Map();
+
+    trips.forEach(t => {
+        const lista = (deps[t.seq] || [])
+            .slice()
+            .filter(d => parseDepMin(d.dep) >= 0)
+            .sort((a, b) => parseDepMin(a.dep) - parseDepMin(b.dep));
+        if (!lista.length) return;
+
+        const prox = lista.find(d => parseDepMin(d.dep) >= agoraMin);
+        const chosen = prox || lista[0];
+        const amanha = !prox;
+        const depMin = parseDepMin(chosen.dep);
+        perSeq.set(t.seq, { dep: chosen.dep, amanha, tripDesc: t.tripDesc || "Terminal" });
+
+        const effectiveMin = amanha ? depMin + 24 * 60 : depMin;
+        if (!globalNext || effectiveMin < globalNext.effectiveMin){
+            globalNext = {
+                dep: chosen.dep,
+                amanha,
+                depMin,
+                effectiveMin,
+                tripDesc: t.tripDesc || "Terminal",
+                seq: t.seq
+            };
+        }
+    });
+
+    return { globalNext, perSeq };
+}
+
+function classesChipHorario(d, seq, tripDesc, agoraMin, perSeq, globalNext){
+    const depMin = parseDepMin(d.dep);
+    const col = perSeq.get(seq);
+    const isNext = col && col.dep === d.dep;
+    const amanha = isNext && col.amanha;
+    const isPast = !isNext && depMin < agoraMin;
+    const isGlobal = isNext && globalNext && globalNext.dep === d.dep && globalNext.tripDesc === tripDesc;
+    let cls = "time";
+    if (isPast) cls += " past";
+    if (isNext) cls += " next" + (amanha ? " amanha" : "") + (isGlobal ? " next-global" : "");
+    return cls;
+}
+
+function pararScheduleTick(){
+    if (state.scheduleTickTimer){
+        clearInterval(state.scheduleTickTimer);
+        state.scheduleTickTimer = null;
+    }
+}
+
+function iniciarScheduleTick(){
+    pararScheduleTick();
+    state.scheduleTickTimer = setInterval(() => {
+        if (state.tab === "horarios" && state.schedule.timetable) renderHorarios();
+    }, 30000);
+}
+
 function montarHorarios(){
     const tt = state.schedule.timetable;
     const route = state.schedule.route;
@@ -871,26 +1071,61 @@ function montarHorarios(){
     if (svc) state.schedule.serviceId = svc.serviceId;
     const trips = (tt.timetable?.trips || []).filter(t => t.directionId === dir.directionId);
 
-    const dirChips = dirs.map(d => '<button type="button" class="chip' + (d.directionId === state.schedule.directionId ? " active" : "") + '" data-dir="' + d.directionId + '">' + esc(d.desc || "Sentido") + '</button>').join("");
-    const svcChips = services.map(s => '<button type="button" class="chip' + (s.serviceId === state.schedule.serviceId ? " active" : "") + '" data-svc="' + s.serviceId + '">' + esc(s.desc || "Dia") + '</button>').join("");
-
     const deps = {};
     (svc?.departures || []).forEach(d => { (deps[d.seq] ||= []).push(d); });
     Object.values(deps).forEach(a => a.sort((x, y) => String(x.dep).localeCompare(String(y.dep))));
 
+    const agoraMin = minutosAgora();
+    const { globalNext, perSeq } = calcDestaquesHorarios(deps, trips, agoraMin);
+    const corRoute = esc(corCss(route.color));
+
+    const dirChips = dirs.map(d =>
+        '<button type="button" class="chip' + (d.directionId === state.schedule.directionId ? " active" : "") + '" data-dir="' + d.directionId + '">' + esc(d.desc || "Sentido") + '</button>'
+    ).join("");
+    const svcChips = services.map(s =>
+        '<button type="button" class="chip' + (s.serviceId === state.schedule.serviceId ? " active" : "") + '" data-svc="' + s.serviceId + '">' + esc(s.desc || "Dia") + '</button>'
+    ).join("");
+
     const cols = trips.map(t => {
-        const horas = (deps[t.seq] || []).map(d => '<span class="time">' + esc(d.dep) + '</span>').join("") || '<span class="time" style="opacity:.4">—</span>';
-        return '<article class="col"><div class="col-head">' + esc(t.tripDesc || "Terminal") + '</div><div class="col-body">' + horas + '</div></article>';
+        const tripDesc = t.tripDesc || "Terminal";
+        const horas = (deps[t.seq] || []).map(d => {
+            const cls = classesChipHorario(d, t.seq, tripDesc, agoraMin, perSeq, globalNext);
+            return '<span class="' + cls + '">' + esc(d.dep) + '</span>';
+        }).join("") || '<span class="time" style="opacity:.35">—</span>';
+        return '<article class="sched-col"><div class="sched-col-head">' + esc(tripDesc) + '</div><div class="sched-col-body">' + horas + '</div></article>';
     }).join("");
 
+    let heroHtml = "";
+    if (globalNext){
+        const rest = minutosRestantes(agoraMin, globalNext.depMin, globalNext.amanha);
+        const countdownCls = "sched-hero-countdown" + (globalNext.amanha ? " amanha" : "");
+        heroHtml =
+            '<section class="sched-hero" aria-label="Próxima partida">' +
+                '<div class="sched-hero-glow"></div>' +
+                '<p class="sched-hero-label">Próxima partida</p>' +
+                '<div class="sched-hero-row">' +
+                    '<div><p class="sched-hero-time">' + esc(globalNext.dep) + '</p>' +
+                    '<p class="sched-hero-meta"><span>' + esc(globalNext.tripDesc) + '</span> · Linha ' + esc(route.shortName) + '</p></div>' +
+                    '<div class="' + countdownCls + '">' + esc(formatarContagem(rest, globalNext.amanha)) + '</div>' +
+                '</div>' +
+            '</section>';
+    }
+
     $("horariosConteudo").innerHTML =
-        '<div class="hero" style="background:linear-gradient(135deg,' + esc(corCss(route.color)) + ',' + esc(corCss("#06245c")) + ')">' +
-            '<h3>Linha ' + esc(route.shortName) + ' · ' + esc(route.longName) + '</h3>' +
-            '<p>Horários previstos · ' + esc(svc?.desc || "") + '</p></div>' +
-        (dirs.length > 1 ? '<div class="chips" id="chipsDir">' + dirChips + '</div>' : '') +
-        (services.length > 1 ? '<div class="chips" id="chipsSvc">' + svcChips + '</div>' : '') +
-        '<p style="font-size:12px;color:var(--muted);margin:0 0 12px">Válido de ' + esc(brDate(svc?.start)) + ' a ' + esc(brDate(svc?.end)) + '.</p>' +
-        '<div class="columns">' + cols + '</div>';
+        '<div class="sched-wrap" style="--route-accent:' + corRoute + '">' +
+            '<header class="sched-head">' +
+                '<div class="sched-head-main">' +
+                    '<p class="sched-kicker">Horários · Bus2</p>' +
+                    '<h3 class="sched-title">Linha ' + esc(route.shortName) + ' · ' + esc(route.longName) + '</h3>' +
+                    '<p class="sched-sub">' + esc(svc?.desc || "") + ' · sentido selecionado</p>' +
+                '</div>' +
+                '<span class="sched-valid">Válido ' + esc(brDate(svc?.start)) + ' – ' + esc(brDate(svc?.end)) + '</span>' +
+            '</header>' +
+            heroHtml +
+            (dirs.length > 1 ? '<div class="sched-chips" id="chipsDir">' + dirChips + '</div>' : '') +
+            (services.length > 1 ? '<div class="sched-chips" id="chipsSvc">' + svcChips + '</div>' : '') +
+            '<div class="sched-grid">' + cols + '</div>' +
+        '</div>';
 
     $("chipsDir")?.querySelectorAll(".chip").forEach(btn => btn.addEventListener("click", () => {
         state.schedule.directionId = Number(btn.dataset.dir);
@@ -900,6 +1135,10 @@ function montarHorarios(){
         state.schedule.serviceId = Number(btn.dataset.svc);
         renderHorarios();
     }));
+
+    requestAnimationFrame(() => {
+        document.querySelector("#horariosConteudo .time.next")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
 }
 
 function renderHorarios(){ montarHorarios(); }
@@ -910,7 +1149,12 @@ function trocarTab(tab){
     $("panelMapa").hidden = tab !== "mapa";
     $("panelHorarios").hidden = tab !== "horarios";
     if (tab === "mapa") setTimeout(() => state.mapa?.invalidateSize(), 150);
-    if (tab === "horarios" && state.routeFiltro) renderHorarios();
+    if (tab === "horarios"){
+        iniciarScheduleTick();
+        if (state.routeFiltro) renderHorarios();
+    } else {
+        pararScheduleTick();
+    }
 }
 
 async function boot(){
