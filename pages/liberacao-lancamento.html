@@ -201,7 +201,8 @@ tbody td.col-maquina .cell-readonly{background:transparent;color:inherit;padding
             <span class="legend-item"><span class="legend-swatch saving"></span>Salvando</span>
             <span class="legend-item"><span class="legend-swatch erro"></span>Erro ao salvar</span>
             <span class="legend-item"><span class="legend-swatch formula"></span>Calculado automaticamente</span>
-            <span class="legend-item">Setas / Tab / Enter — navegar células editáveis</span>
+            <span class="legend-item">Saída/Início Real: digite HH:MM (ex.: 1430 → 14:30)</span>
+            <span class="legend-item">Trajeto ocioso: ↑↓ no select · Tab / Enter — navegar células</span>
         </div>
     </section>
 </main>
@@ -228,8 +229,9 @@ const COLUNAS_EXIBICAO = [
     { chave: "observacoes", rotulo: "OBSERVAÇÕES", largura: 180, texto: true }
 ];
 const CAMPOS_SELECT = {
-    trajeto_ocioso_correto: ["","SIM","NÃO"]
+    trajeto_ocioso_correto: ["","SIM","NÃO","SEM COMUNICAÇÃO"]
 };
+const CAMPOS_HORA_LANCAMENTO = new Set(["saida_real","inicio_real"]);
 const CAMPOS_EDITAVEIS = new Set([
     "carro",
     "motorista",
@@ -472,6 +474,46 @@ function minutosDesdeMeiaNoite(v){
     const p=String(v||"").trim().match(/^(\d{1,2}):(\d{2})/);
     if(!p) return null;
     return parseInt(p[1],10)*60+parseInt(p[2],10);
+}
+
+function ehCampoHoraLancamento(chave){
+    return CAMPOS_HORA_LANCAMENTO.has(chave);
+}
+
+function normalizarHoraLancamento(valor){
+    if(valor==null||valor==="") return "";
+    if(Object.prototype.toString.call(valor)==="[object Date]"&&!isNaN(valor)){
+        return String(valor.getHours()).padStart(2,"0")+":"+String(valor.getMinutes()).padStart(2,"0");
+    }
+    const texto=String(valor).trim();
+    if(!texto) return "";
+    const hm=texto.match(/^(\d{1,2}):(\d{2})/);
+    if(hm) return hm[1].padStart(2,"0")+":"+hm[2];
+    const digits=texto.replace(/\D/g,"");
+    if(digits.length>=3){
+        return digits.slice(0,2).padStart(2,"0")+":"+digits.slice(2,4).padEnd(2,"0").slice(0,2);
+    }
+    if(digits.length===1||digits.length===2) return digits;
+    return texto;
+}
+
+function mascararHoraDigitacao(valor){
+    let v=String(valor||"").replace(/\D/g,"").slice(0,4);
+    if(v.length>=3) v=v.slice(0,2)+":"+v.slice(2);
+    return v;
+}
+
+function aplicarMascaraHoraInput(el){
+    const masked=mascararHoraDigitacao(el.value);
+    if(el.value!==masked) el.value=masked;
+}
+
+function alternarOpcaoSelect(el,delta){
+    const idx=el.selectedIndex+delta;
+    if(idx<0||idx>=el.options.length) return false;
+    el.selectedIndex=idx;
+    aplicarEdicaoCelula(el,{agendar:true,flush:false});
+    return true;
 }
 
 function diffMinutos(real,previsto){
@@ -735,6 +777,23 @@ function onCellKeydown(e){
     const colIdx=indiceColuna(el.dataset.k);
     if(isNaN(rowIdx)||colIdx<0) return;
 
+    if(el.tagName==="SELECT"){
+        if(e.key==="ArrowDown"){
+            if(alternarOpcaoSelect(el,1)){e.preventDefault();return;}
+            e.preventDefault();
+            const dest=encontrarCelulaEditavel(rowIdx,colIdx,1,0);
+            if(dest){flushSalvarLinha(rowIdx);focarCelula(dest.row,dest.col);}
+            return;
+        }
+        if(e.key==="ArrowUp"){
+            if(alternarOpcaoSelect(el,-1)){e.preventDefault();return;}
+            e.preventDefault();
+            const dest=encontrarCelulaEditavel(rowIdx,colIdx,-1,0);
+            if(dest){flushSalvarLinha(rowIdx);focarCelula(dest.row,dest.col);}
+            return;
+        }
+    }
+
     let stepRow=0,stepCol=0,mover=false;
     if(e.key==="ArrowRight"&&podeNavegarHorizontal(el,"right")){stepCol=1;mover=true;}
     else if(e.key==="ArrowLeft"&&podeNavegarHorizontal(el,"left")){stepCol=-1;mover=true;}
@@ -783,8 +842,15 @@ function renderCelula(row, rowIdx, col){
         return '<span class="cell-readonly'+clsExtra+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" aria-readonly="true" tabindex="-1" title="Não editável">'+escapeHtml(exibir||"—")+'</span>';
     }
     if(CAMPOS_SELECT[chave]){
-        const opts=CAMPOS_SELECT[chave].map(o=>'<option value="'+escapeHtml(o)+'"'+(o===v?" selected":"")+'>'+(o||"—")+'</option>').join("");
-        return '<select class="cell-select'+clsExtra+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'">'+opts+'</select>';
+        const opcoes=CAMPOS_SELECT[chave].slice();
+        const atual=String(v||"").trim();
+        if(atual&&!opcoes.includes(atual)) opcoes.push(atual);
+        const opts=opcoes.map(o=>'<option value="'+escapeHtml(o)+'"'+(o===atual?" selected":"")+'>'+(o||"—")+'</option>').join("");
+        return '<select class="cell-select'+clsExtra+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" title="↑↓ alterar opção · Tab para próxima célula">'+opts+'</select>';
+    }
+    if(ehCampoHoraLancamento(chave)){
+        const hora=normalizarHoraLancamento(v)||"";
+        return '<input class="cell-input cell-hora'+clsExtra+'" type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" value="'+escapeHtml(hora)+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" autocomplete="off" spellcheck="false" title="Digite HH:MM — ex.: 1430 vira 14:30">';
     }
     return '<input class="cell-input'+clsExtra+'" type="text" value="'+escapeHtml(v)+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" autocomplete="off" spellcheck="false">';
 }
@@ -878,7 +944,9 @@ function syncLinhaFromDom(i){
         if(!el.matches(".cell-input,.cell-select")) return;
         const k=el.dataset.k;
         if(!k||!celulaEditavelPorChave(k,row)||isColunaFormula(k)) return;
-        row[k]=el.value.trim();
+        row[k]=ehCampoHoraLancamento(k)
+            ? (normalizarHoraLancamento(el.value.trim())||mascararHoraDigitacao(el.value.trim()))
+            : el.value.trim();
     });
     aplicarFormulasLinha(row);
 }
@@ -902,7 +970,12 @@ function aplicarEdicaoCelula(el,{agendar=true,flush=false}={}){
     const k=el.dataset.k;
     if(isNaN(i)||!k) return;
     if(!celulaEditavelPorChave(k,state.dados[i])||isColunaFormula(k)) return;
-    state.dados[i][k]=el.value.trim();
+    let valor=el.value.trim();
+    if(ehCampoHoraLancamento(k)){
+        valor=normalizarHoraLancamento(valor)||mascararHoraDigitacao(valor);
+        if(el.value!==valor) el.value=valor;
+    }
+    state.dados[i][k]=valor;
     if(CAMPOS_DISPARO_FORMULA.has(k)) atualizarCelulasFormula(i);
     state.dados[i]._dirty=true;
     state.dados[i]._syncErro=false;
@@ -915,7 +988,11 @@ function aplicarEdicaoCelula(el,{agendar=true,flush=false}={}){
 }
 
 function onCellInput(e){
-    aplicarEdicaoCelula(e.target,{agendar:true,flush:false});
+    const el=e.target;
+    if(el.matches(".cell-input")&&ehCampoHoraLancamento(el.dataset.k)){
+        aplicarMascaraHoraInput(el);
+    }
+    aplicarEdicaoCelula(el,{agendar:true,flush:false});
 }
 
 function onCellChange(e){
