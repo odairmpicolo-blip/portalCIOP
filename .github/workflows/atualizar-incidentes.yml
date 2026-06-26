@@ -1,8 +1,7 @@
 name: Atualizar incidentes TCGL
 
-# portalCIOP: JSON do portal-teste → Aurora DSQL (import no banco AWS).
+# portalCIOP: TCGL → Aurora DSQL (único import no banco AWS).
 # JSON no git vem do workflow exportar-incidentes-dsql.yml (DSQL → git).
-# TCGL direto nos runners do GitHub costuma falhar (timeout); portal-teste é a fonte do JSON.
 # Janela 04:48–01:28 BRT, a cada 1h02. Silêncio: 01:30–04:48.
 
 on:
@@ -75,8 +74,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Obter JSON de incidentes do portal-teste
-        run: bash scripts/ci-sync-incidentes-json-teste.sh
+      - name: Buscar incidentes no TCGL
+        env:
+          CIOP_INCIDENTES_USUARIO: ${{ secrets.CIOP_INCIDENTES_USUARIO }}
+          CIOP_INCIDENTES_SENHA: ${{ secrets.CIOP_INCIDENTES_SENHA }}
+          PORTAL_ROOT: ${{ github.workspace }}
+        run: node scripts/atualizar-incidentes-tcgl.mjs
 
       - name: Importar incidentes no Aurora DSQL (AWS)
         env:
