@@ -165,8 +165,10 @@ function modernizarSessaoUsuario() {
 
 window.modernizarSessaoUsuario = modernizarSessaoUsuario;
 
-function atualizarSaudacaoHero(nome) {
-  aplicarSaudacaoHero(nome);
+function atualizarSaudacaoHero(cadastroOuNome) {
+  const nome = typeof cadastroOuNome === "string" ? cadastroOuNome : cadastroOuNome?.nome;
+  const genero = typeof cadastroOuNome === "object" ? cadastroOuNome?.genero : "";
+  aplicarSaudacaoHero(nome, { genero });
 }
 
 function garantirCssSessao() {
@@ -434,10 +436,11 @@ function aplicarPermissoes(cadastro) {
     email: cadastro.email,
     registro: cadastro.registro || "",
     cargo: cadastro.cargo || "",
+    genero: cadastro.genero || "",
     isAdmin: admin
   };
 
-  atualizarSaudacaoHero(cadastro.nome);
+  atualizarSaudacaoHero(cadastro);
   modernizarSessaoUsuario();
 
   document.querySelectorAll("[data-admin-only]").forEach((el) => {
@@ -516,7 +519,7 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
       cargoEl.textContent = cargo;
       cargoEl.hidden = !cargo;
     }
-    atualizarSaudacaoHero(cadastro.nome);
+    atualizarSaudacaoHero(cadastro);
     modernizarSessaoUsuario();
     if (aplicarPermissoes(cadastro) !== false) {
       window.portalUsuarioValidado = true;

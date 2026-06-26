@@ -3,9 +3,14 @@ const MASCULINO_TERMINA_A = new Set([
 ]);
 
 const FEMININO_SEM_A = new Set([
-    "beatriz", "raquel", "isabel", "mabel", "carmem", "ines", "inês", "mercedes",
+    "beatriz", "raquel", "isabel", "mabel", "carmem", "ines", "mercedes",
     "alice", "nicole", "michelle", "rachel", "gisele", "gabrielle", "jane", "june",
-    "rose", "claire", "marileide", "sueli", "luz", "sol"
+    "rose", "claire", "marileide", "sueli", "luz", "sol", "judith", "ingrid"
+]);
+
+const FEMININO_TERMINA_E = new Set([
+    "simone", "irene", "michele", "caroline", "eliane", "silviane", "claudine",
+    "ruth", "edite", "suzane", "ivone", "ione"
 ]);
 
 export const MESES_PORTAL = [
@@ -132,9 +137,19 @@ function normalizarNome(nome) {
 export function ehNomeFeminino(nomeCompleto) {
     const n = normalizarNome(nomeCompleto);
     if (!n) return false;
-    if (FEMININO_SEM_A.has(n)) return true;
+    if (FEMININO_SEM_A.has(n) || FEMININO_TERMINA_E.has(n)) return true;
     if (MASCULINO_TERMINA_A.has(n)) return false;
     return n.endsWith("a");
+}
+
+function ehGeneroFeminino(genero) {
+    const g = String(genero || "").trim().toLowerCase();
+    return g === "f" || g === "fem" || g === "feminino" || g === "feminina" || g === "mulher";
+}
+
+export function textoSaudacao(nome, genero) {
+    const feminino = ehGeneroFeminino(genero) || ehNomeFeminino(nome);
+    return feminino ? "Bem-vinda" : "Bem-vindo";
 }
 
 export function temaMesAtual(dataRef) {
@@ -182,7 +197,7 @@ function htmlLaco(tema) {
     return svgLaco(tema.corClara, tema.corEscura);
 }
 
-export function aplicarSaudacaoHero(nome) {
+export function aplicarSaudacaoHero(nome, opts = {}) {
     const hero = document.getElementById("headerHero");
     const saudacaoEl = document.getElementById("heroSaudacao");
     const nomeEl = document.getElementById("heroNomeUsuario");
@@ -196,10 +211,11 @@ export function aplicarSaudacaoHero(nome) {
     const texto = String(nome || window.portalUsuario?.nome || "").trim();
     const partes = texto.split(/\s+/);
     const primeiro = partes[0] || texto || "usuário";
-    const feminino = ehNomeFeminino(texto);
+    const genero = opts.genero ?? window.portalUsuario?.genero ?? "";
 
-    saudacaoEl.textContent = feminino ? "Bem-vinda" : "Bem-vindo";
+    saudacaoEl.textContent = textoSaudacao(primeiro, genero);
     nomeEl.textContent = primeiro;
+    hero.setAttribute("aria-label", saudacaoEl.textContent + ", " + primeiro);
 
     const tema = temaMesAtual(new Date());
     const campanha = partesCampanha(tema);
