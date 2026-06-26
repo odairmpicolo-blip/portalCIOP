@@ -57,6 +57,19 @@ export async function upsertSnapshot(pool, table, payload) {
   );
 }
 
+export async function lerSnapshot(pool, table, id = "atual") {
+  const res = await pool.query(
+    `SELECT payload, atualizado_em FROM ${table} WHERE id = $1 LIMIT 1`,
+    [id]
+  );
+  if (!res.rows.length) return null;
+  const row = res.rows[0];
+  return {
+    payload: row.payload,
+    atualizadoEm: row.atualizado_em
+  };
+}
+
 export async function upsertTerminais(pool, payload) {
   await pool.query(
     `INSERT INTO terminais_snapshot (id, payload, fonte, atualizado_em)
