@@ -55,8 +55,14 @@ async function carregarJsonSnapshot() {
   }
 }
 
-function montarPayload(basePayload, incidentes) {
-  const payload = Object.assign({}, basePayload || {});
+function montarPayload(fontes, incidentes) {
+  const candidatos = fontes.filter(Boolean);
+  const base = candidatos.sort((a, b) => {
+    const ta = Date.parse(a?.atualizadoEm || 0) || 0;
+    const tb = Date.parse(b?.atualizadoEm || 0) || 0;
+    return tb - ta;
+  })[0] || {};
+  const payload = Object.assign({}, base);
   payload.incidentes = incidentes;
   payload.totalExtraido = incidentes.length;
   if (!payload.atualizadoEm) payload.atualizadoEm = new Date().toISOString();
@@ -67,9 +73,10 @@ function montarPayload(basePayload, incidentes) {
 
 async function carregarAws() {
   const snap = await carregarSnapshotAws("/snapshots/incidentes", { timeoutMs: 12000 });
-  if (!snap?.payload) return { payload: null, incidentes: [] };
+  if (!snap?.payload) return { payload: null, incidentes: [], atualizadoEm: null };
   const incidentes = Array.isArray(snap.payload?.incidentes) ? snap.payload.incidentes : [];
-  return { payload: snap.payload, incidentes };
+  const atualizadoEm = snap.atualizadoEm || snap.payload?.atualizadoEm || null;
+  return { payload: snap.payload, incidentes, atualizadoEm };
 }
 
 /** Fluxo de leitura: AWS → JSON (planilha). */
@@ -91,7 +98,10 @@ export async function carregarDadosIncidentes({ onProgress } = {}) {
   if (json.length) origens.push("JSON");
 
   const incidentes = mesclarIncidentes([json, aws]);
-  const payload = montarPayload(jsonPack.payload, incidentes);
+  const payload = montarPayload(
+    [jsonPack.payload, awsPack.payload].filter(Boolean),
+    incidentes
+  );
 
   return {
     payload,
