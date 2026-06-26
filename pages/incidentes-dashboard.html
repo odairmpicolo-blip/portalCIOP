@@ -771,7 +771,7 @@ function downloadBlob(blob, filename) {
 }
 
 let carregandoIncidentes = false;
-const CACHE_INCIDENTES_KEY = "portal_incidentes_dsql_v1";
+const CACHE_INCIDENTES_KEY = "portal_incidentes_v4";
 const CACHE_INCIDENTES_TTL_MS = 15 * 60 * 1000;
 
 function lerCacheIncidentes() {
@@ -828,11 +828,11 @@ async function carregarIncidentes(forcar) {
         aplicarPayloadIncidentes(cacheLocal);
         status.textContent = "Cache local · atualizando em segundo plano...";
     } else {
-        status.textContent = forcar ? "Atualizando tabela..." : "Carregando incidentes do banco...";
+        status.textContent = forcar ? "Atualizando tabela..." : "Carregando incidentes...";
     }
 
     try {
-        const mod = await import("../assets/js/incidentes-dados-leitura.js?v=20260626h");
+        const mod = await import("../assets/js/incidentes-dados-leitura.js?v=20260627a");
         const res = await mod.carregarDadosIncidentes({
             onProgress: (msg) => {
                 if (!cacheLocal || forcar) status.textContent = msg;
@@ -840,7 +840,7 @@ async function carregarIncidentes(forcar) {
         });
         const incidentes = res?.payload?.incidentes || [];
         if (!incidentes.length && !cacheLocal) {
-            throw new Error("Nenhum incidente encontrado no banco de dados.");
+            throw new Error("Nenhum incidente encontrado (AWS/JSON).");
         }
         if (res?.payload) {
             salvarCacheIncidentes(res.payload);

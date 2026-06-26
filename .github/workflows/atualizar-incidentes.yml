@@ -1,7 +1,6 @@
 name: Atualizar incidentes TCGL
 
-# TCGL → Aurora DSQL. Portais leem via API AWS (/snapshots/incidentes).
-# Se TCGL falhar, o snapshot no DSQL é mantido sem alteração.
+# TCGL → Aurora DSQL + JSON no git (leitura no GitHub Pages; API AWS quando disponível).
 # Janela 04:48–01:28 BRT, a cada 1h02. Silêncio: 01:30–04:48.
 
 on:
@@ -51,7 +50,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   atualizar:
@@ -105,3 +104,13 @@ jobs:
             exit 1
           fi
           bash scripts/ci-import-dsql.sh incidentes
+
+      - name: Configurar git
+        if: steps.tcgl.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Publicar JSON no GitHub Pages
+        if: steps.tcgl.outcome == 'success'
+        run: bash scripts/ci-git-commit-push.sh "Atualiza incidentes TCGL" assets/data/incidentes-tcgl.json
