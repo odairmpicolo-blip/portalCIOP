@@ -5,12 +5,12 @@ const MASCULINO_TERMINA_A = new Set([
 const FEMININO_SEM_A = new Set([
     "beatriz", "raquel", "isabel", "mabel", "carmem", "ines", "mercedes",
     "alice", "nicole", "michelle", "rachel", "gisele", "gabrielle", "jane", "june",
-    "rose", "claire", "marileide", "sueli", "luz", "sol", "judith", "ingrid"
+    "rose", "claire", "marileide", "sueli", "luz", "sol", "judith", "ingrid", "geneci"
 ]);
 
 const FEMININO_TERMINA_E = new Set([
     "simone", "irene", "michele", "caroline", "eliane", "silviane", "claudine",
-    "ruth", "edite", "suzane", "ivone", "ione"
+    "ruth", "edite", "suzane", "ivone", "ione", "cleonice"
 ]);
 
 export const MESES_PORTAL = [
