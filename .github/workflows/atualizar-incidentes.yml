@@ -1,7 +1,7 @@
 name: Atualizar incidentes TCGL
 
 # TCGL → Aurora DSQL. Portais leem via API AWS (/snapshots/incidentes).
-# Se TCGL falhar nos runners, usa JSON do portal-teste antes do import DSQL.
+# Se TCGL falhar, o snapshot no DSQL é mantido sem alteração.
 # Janela 04:48–01:28 BRT, a cada 1h02. Silêncio: 01:30–04:48.
 
 on:
@@ -83,11 +83,12 @@ jobs:
           PORTAL_ROOT: ${{ github.workspace }}
         run: node scripts/atualizar-incidentes-tcgl.mjs
 
-      - name: Usar JSON do portal-teste (TCGL indisponível)
+      - name: TCGL indisponível — mantendo DSQL
         if: steps.tcgl.outcome == 'failure'
-        run: bash scripts/ci-sync-incidentes-json-teste.sh
+        run: echo "TCGL falhou; snapshot no DSQL não foi alterado."
 
       - name: Importar incidentes no Aurora DSQL
+        if: steps.tcgl.outcome == 'success'
         env:
           DSQL_CLUSTER_ID: ${{ secrets.DSQL_CLUSTER_ID }}
           DSQL_REGION: sa-east-1

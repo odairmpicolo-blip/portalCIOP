@@ -1,4 +1,4 @@
-# Atualiza incidentes TCGL e publica no GitHub.
+# Atualiza incidentes TCGL → Aurora DSQL (fonte dos portais).
 # Ignora se a data de hoje (America/Sao_Paulo) ja foi atualizada com sucesso.
 param(
     [Parameter(Position = 0)]
@@ -54,41 +54,16 @@ function Import-EnvFile {
     }
 }
 
-function Publish-PortalProd {
-    param([string]$JsonPath)
-    $prodRoot = $env:CIOP_PORTAL_PROD
-    if (-not $prodRoot -or -not (Test-Path $prodRoot)) { return }
-    if (-not (Test-Path $JsonPath)) { return }
-
-    Write-Log "Publicando JSON no portal de producao: $prodRoot"
-    Copy-Item -Path $JsonPath -Destination (Join-Path $prodRoot 'assets\data\incidentes-tcgl.json') -Force
-    Push-Location $prodRoot
-    try {
-        git add assets/data/incidentes-tcgl.json | Out-Null
-        git diff --cached --quiet
-        if ($LASTEXITCODE -eq 0) {
-            Write-Log 'portalCIOP: sem alteracoes no JSON.'
-            return
-        }
-        $stamp = [TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow, $TzId).ToString('dd/MM/yyyy HH:mm')
-        git commit -m "Atualiza incidentes TCGL - $stamp" | Out-Null
-        git push | Out-Null
-    }
-    finally {
-        Pop-Location
-    }
-}
-
 function Invoke-Update {
     $nodeBin = if ($env:CIOP_NODE_BIN) { $env:CIOP_NODE_BIN } else { (Get-Command node -ErrorAction Stop).Source }
-    $localScript = Join-Path $PortalRoot 'scripts\atualizar-incidentes-local.mjs'
-    & $nodeBin $localScript 2>&1 | Out-File -FilePath $LogFile -Append -Encoding UTF8
+    $syncScript = Join-Path $PortalRoot 'scripts\sync-incidentes-completo.mjs'
+    & $nodeBin $syncScript 2>&1 | Out-File -FilePath $LogFile -Append -Encoding UTF8
     return $LASTEXITCODE -eq 0
 }
 
 New-Item -ItemType Directory -Force -Path $StateDir, $LogDir | Out-Null
 
-if (Test-AlreadyRanToday) {
+if ($Mode -ne 'manual' -and (Test-AlreadyRanToday)) {
     Write-Log "Atualizacao de $(Get-SpToday) ja concluida ($Mode)."
     exit 0
 }
@@ -102,19 +77,15 @@ Write-Log "Iniciando atualizacao ($Mode) - portal: $PortalRoot"
 Import-EnvFile -Path $EnvFile
 
 $env:PORTAL_ROOT = $PortalRoot
-if (-not $env:CIOP_PORTAL_PROD) { Remove-Item Env:CIOP_PORTAL_PROD -ErrorAction SilentlyContinue }
 
 if (-not $env:CIOP_INCIDENTES_USUARIO -or -not $env:CIOP_INCIDENTES_SENHA) {
     Write-Log "ERRO: CIOP_INCIDENTES_USUARIO ou CIOP_INCIDENTES_SENHA vazio em $EnvFile"
     exit 1
 }
 
-$jsonPath = Join-Path $PortalRoot 'assets\data\incidentes-tcgl.json'
-
 if (Invoke-Update) {
-    Publish-PortalProd -JsonPath $jsonPath
     Set-SuccessMark
-    Write-Log 'Atualizacao concluida com sucesso.'
+    Write-Log 'Atualizacao concluida com sucesso (TCGL → DSQL).'
     exit 0
 }
 
@@ -122,11 +93,10 @@ Write-Log 'Primeira tentativa falhou. Nova tentativa em 120 segundos...'
 Start-Sleep -Seconds 120
 
 if (Invoke-Update) {
-    Publish-PortalProd -JsonPath $jsonPath
     Set-SuccessMark
-    Write-Log 'Atualizacao concluida na segunda tentativa.'
+    Write-Log 'Atualizacao concluida na segunda tentativa (TCGL → DSQL).'
     exit 0
 }
 
-Write-Log 'ERRO: falha na atualizacao apos 2 tentativas. Proxima execucao amanha as 03:00.'
+Write-Log 'ERRO: falha na atualizacao apos 2 tentativas. Proxima execucao amanha as 04:00.'
 exit 1
