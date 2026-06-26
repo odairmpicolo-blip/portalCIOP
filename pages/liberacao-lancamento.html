@@ -83,6 +83,13 @@ tbody tr:nth-child(even) td.cell-formula{background:#f1f6ff}
 .cell-input.saved,.cell-select.saved{background:#f0fdf4}
 .cell-input.erro,.cell-select.erro{background:#fef2f2}
 .cell-readonly{display:block;width:100%;min-width:76px;padding:7px 6px;font-size:11px;color:#475467;background:#f8fafc;cursor:default;user-select:text}
+.cell-hora-wrap{display:flex;align-items:center;justify-content:center;width:100%;min-width:0;gap:0;padding:0 2px}
+.cell-hora-wrap .cell-hora-part{flex:1 1 0;min-width:0;max-width:28px;padding:7px 2px;text-align:center}
+.cell-hora-sep{flex:0 0 auto;font-size:11px;font-weight:800;color:#475467;line-height:1;user-select:none;pointer-events:none;padding:0 1px}
+.cell-hora-wrap .cell-hora-part:focus{background:var(--white)}
+.cell-hora-wrap .cell-hora-part.saving{background:#fff7ed}
+.cell-hora-wrap .cell-hora-part.saved{background:#f0fdf4}
+.cell-hora-wrap .cell-hora-part.erro{background:#fef2f2}
 tbody td.cell-locked{background:#f8fafc}
 tbody tr:nth-child(even) td.cell-locked{background:#f1f5f9}
 tbody tr:hover td.cell-locked{background:#f1f5f9}
@@ -201,7 +208,7 @@ tbody td.col-maquina .cell-readonly{background:transparent;color:inherit;padding
             <span class="legend-item"><span class="legend-swatch saving"></span>Salvando</span>
             <span class="legend-item"><span class="legend-swatch erro"></span>Erro ao salvar</span>
             <span class="legend-item"><span class="legend-swatch formula"></span>Calculado automaticamente</span>
-            <span class="legend-item">Saída/Início Real: digite HH:MM (ex.: 1430 → 14:30)</span>
+            <span class="legend-item">Saída/Início Real: edite horas e minutos (HH : MM)</span>
             <span class="legend-item">Trajeto ocioso: ↑↓ no select · Tab / Enter — navegar células</span>
         </div>
     </section>
@@ -497,15 +504,58 @@ function normalizarHoraLancamento(valor){
     return texto;
 }
 
-function mascararHoraDigitacao(valor){
-    let v=String(valor||"").replace(/\D/g,"").slice(0,4);
-    if(v.length>=3) v=v.slice(0,2)+":"+v.slice(2);
-    return v;
+function splitHoraLancamento(valor){
+    const norm=normalizarHoraLancamento(valor);
+    if(!norm) return {h:"",m:""};
+    const partes=norm.split(":");
+    return {h:partes[0]||"",m:partes[1]||""};
 }
 
-function aplicarMascaraHoraInput(el){
-    const masked=mascararHoraDigitacao(el.value);
-    if(el.value!==masked) el.value=masked;
+function lerHoraLancamentoWrap(wrap){
+    if(!wrap) return "";
+    const h=String(wrap.querySelector(".cell-hora-h")?.value||"").replace(/\D/g,"").slice(0,2);
+    const m=String(wrap.querySelector(".cell-hora-m")?.value||"").replace(/\D/g,"").slice(0,2);
+    if(!h&&!m) return "";
+    if(h&&m) return h.padStart(2,"0").slice(0,2)+":"+m.padStart(2,"0").slice(0,2);
+    if(h) return h;
+    return m?":"+m:"";
+}
+
+function sincronizarHoraWrapNoBlur(wrap){
+    if(!wrap) return;
+    const valor=normalizarHoraLancamento(lerHoraLancamentoWrap(wrap))||"";
+    const partes=splitHoraLancamento(valor);
+    const hEl=wrap.querySelector(".cell-hora-h");
+    const mEl=wrap.querySelector(".cell-hora-m");
+    if(hEl) hEl.value=partes.h;
+    if(mEl) mEl.value=partes.m;
+}
+
+function aplicarInputHoraParte(el){
+    const parte=el.dataset.part;
+    const limpo=String(el.value||"").replace(/\D/g,"").slice(0,2);
+    if(el.value!==limpo) el.value=limpo;
+    if(parte==="h"&&limpo.length>=2){
+        const m=el.closest(".cell-hora-wrap")?.querySelector(".cell-hora-m");
+        if(m&&document.activeElement===el) m.focus();
+    }
+}
+
+function partesHoraLancamento(el){
+    if(!el) return [el];
+    const wrap=el.closest(".cell-hora-wrap");
+    if(!wrap) return [el];
+    return [...wrap.querySelectorAll(".cell-hora-part")];
+}
+
+function renderCelulaHoraLancamento(row, rowIdx, chave, clsExtra){
+    const partes=splitHoraLancamento(val(row,chave));
+    const titulo="Horas e minutos — Tab avança entre os campos";
+    return '<div class="cell-hora-wrap" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'">'+
+        '<input class="cell-input cell-hora-part cell-hora-h'+clsExtra+'" type="text" inputmode="numeric" maxlength="2" placeholder="HH" value="'+escapeHtml(partes.h)+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" data-part="h" autocomplete="off" spellcheck="false" title="'+titulo+'">'+
+        '<span class="cell-hora-sep" aria-hidden="true">:</span>'+
+        '<input class="cell-input cell-hora-part cell-hora-m'+clsExtra+'" type="text" inputmode="numeric" maxlength="2" placeholder="MM" value="'+escapeHtml(partes.m)+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" data-part="m" autocomplete="off" spellcheck="false" title="'+titulo+'">'+
+        '</div>';
 }
 
 function alternarOpcaoSelect(el,delta){
@@ -751,12 +801,14 @@ function focarCelula(rowIdx,colIdx){
     const dest=celulaEditavel(rowIdx,colIdx)?{row:rowIdx,col:colIdx}:encontrarCelulaEditavel(rowIdx,colIdx,0,1);
     if(!dest) return false;
     const chave=state.colunas[dest.col].chave;
-    const el=document.querySelector('[data-i="'+dest.row+'"][data-k="'+chave+'"]');
-    if(!el||!el.matches("input,select")) return false;
-    el.focus();
-    if(el.tagName==="INPUT") el.select();
-    marcarCelulaAtiva(el);
-    el.scrollIntoView({block:"nearest",inline:"nearest"});
+    let el=document.querySelector('.cell-hora-wrap[data-i="'+dest.row+'"][data-k="'+chave+'"]');
+    if(!el) el=document.querySelector('[data-i="'+dest.row+'"][data-k="'+chave+'"]');
+    const focusEl=el?.matches?.(".cell-hora-wrap")?el.querySelector(".cell-hora-h"):el;
+    if(!focusEl||!focusEl.matches("input,select")) return false;
+    focusEl.focus();
+    if(focusEl.tagName==="INPUT") focusEl.select();
+    marcarCelulaAtiva(focusEl);
+    focusEl.scrollIntoView({block:"nearest",inline:"nearest"});
     return true;
 }
 
@@ -776,6 +828,26 @@ function onCellKeydown(e){
     const rowIdx=Number(el.dataset.i);
     const colIdx=indiceColuna(el.dataset.k);
     if(isNaN(rowIdx)||colIdx<0) return;
+
+    if(el.classList.contains("cell-hora-part")){
+        const wrap=el.closest(".cell-hora-wrap");
+        if(e.key==="Tab"&&!e.shiftKey&&el.classList.contains("cell-hora-h")){
+            const m=wrap?.querySelector(".cell-hora-m");
+            if(m){e.preventDefault();aplicarEdicaoCelula(el,{agendar:false,flush:false});m.focus();m.select();return;}
+        }
+        if(e.key==="Tab"&&e.shiftKey&&el.classList.contains("cell-hora-m")){
+            const h=wrap?.querySelector(".cell-hora-h");
+            if(h){e.preventDefault();aplicarEdicaoCelula(el,{agendar:false,flush:false});h.focus();h.select();return;}
+        }
+        if(e.key==="ArrowRight"&&el.classList.contains("cell-hora-h")&&podeNavegarHorizontal(el,"right")){
+            const m=wrap?.querySelector(".cell-hora-m");
+            if(m){e.preventDefault();m.focus();m.select();return;}
+        }
+        if(e.key==="ArrowLeft"&&el.classList.contains("cell-hora-m")&&podeNavegarHorizontal(el,"left")){
+            const h=wrap?.querySelector(".cell-hora-h");
+            if(h){e.preventDefault();h.focus();h.select();return;}
+        }
+    }
 
     if(el.tagName==="SELECT"){
         if(e.key==="ArrowDown"){
@@ -849,8 +921,7 @@ function renderCelula(row, rowIdx, col){
         return '<select class="cell-select'+clsExtra+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" title="↑↓ alterar opção · Tab para próxima célula">'+opts+'</select>';
     }
     if(ehCampoHoraLancamento(chave)){
-        const hora=normalizarHoraLancamento(v)||"";
-        return '<input class="cell-input cell-hora'+clsExtra+'" type="text" inputmode="numeric" maxlength="5" placeholder="HH:MM" value="'+escapeHtml(hora)+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" autocomplete="off" spellcheck="false" title="Digite HH:MM — ex.: 1430 vira 14:30">';
+        return renderCelulaHoraLancamento(row, rowIdx, chave, clsExtra);
     }
     return '<input class="cell-input'+clsExtra+'" type="text" value="'+escapeHtml(v)+'" data-i="'+rowIdx+'" data-k="'+escapeHtml(chave)+'" autocomplete="off" spellcheck="false">';
 }
@@ -896,13 +967,16 @@ function capturarFocoCelula(){
     return {
         i:Number(ativo.dataset.i),
         k:ativo.dataset.k,
+        part:ativo.dataset.part||"",
         start:ativo.selectionStart,
         end:ativo.selectionEnd
     };
 }
 function restaurarFocoCelula(foco){
     if(!foco||foco.i==null||!foco.k) return;
-    const el=document.querySelector('[data-i="'+foco.i+'"][data-k="'+foco.k+'"]');
+    let el=document.querySelector('.cell-hora-wrap[data-i="'+foco.i+'"][data-k="'+foco.k+'"]');
+    if(el&&foco.part) el=el.querySelector('.cell-hora-'+foco.part);
+    if(!el) el=document.querySelector('[data-i="'+foco.i+'"][data-k="'+foco.k+'"]');
     if(!el?.matches("input,select")) return;
     el.focus();
     if(el.tagName==="INPUT"&&foco.start!=null) el.setSelectionRange(foco.start,foco.end);
@@ -940,13 +1014,19 @@ function renderTabela(){
 function syncLinhaFromDom(i){
     const row=state.dados[i];
     if(!row) return;
+    const horaLidas=new Set();
     document.querySelectorAll('#tabelaCorpo [data-i="'+i+'"]').forEach(el=>{
         if(!el.matches(".cell-input,.cell-select")) return;
         const k=el.dataset.k;
         if(!k||!celulaEditavelPorChave(k,row)||isColunaFormula(k)) return;
-        row[k]=ehCampoHoraLancamento(k)
-            ? (normalizarHoraLancamento(el.value.trim())||mascararHoraDigitacao(el.value.trim()))
-            : el.value.trim();
+        if(ehCampoHoraLancamento(k)){
+            if(horaLidas.has(k)) return;
+            horaLidas.add(k);
+            const wrap=el.closest(".cell-hora-wrap");
+            row[k]=normalizarHoraLancamento(lerHoraLancamentoWrap(wrap))||lerHoraLancamentoWrap(wrap);
+            return;
+        }
+        row[k]=el.value.trim();
     });
     aplicarFormulasLinha(row);
 }
@@ -970,17 +1050,24 @@ function aplicarEdicaoCelula(el,{agendar=true,flush=false}={}){
     const k=el.dataset.k;
     if(isNaN(i)||!k) return;
     if(!celulaEditavelPorChave(k,state.dados[i])||isColunaFormula(k)) return;
-    let valor=el.value.trim();
+    let valor;
     if(ehCampoHoraLancamento(k)){
-        valor=normalizarHoraLancamento(valor)||mascararHoraDigitacao(valor);
-        if(el.value!==valor) el.value=valor;
+        const wrap=el.closest(".cell-hora-wrap");
+        valor=lerHoraLancamentoWrap(wrap);
+        if(!agendar||flush) valor=normalizarHoraLancamento(valor)||valor;
+        if(!agendar) sincronizarHoraWrapNoBlur(wrap);
+    } else {
+        valor=el.value.trim();
     }
     state.dados[i][k]=valor;
     if(CAMPOS_DISPARO_FORMULA.has(k)) atualizarCelulasFormula(i);
     state.dados[i]._dirty=true;
     state.dados[i]._syncErro=false;
-    el.classList.remove("saved","erro");
-    el.classList.add("saving");
+    const alvos=partesHoraLancamento(el);
+    alvos.forEach(node=>{
+        node.classList.remove("saved","erro");
+        node.classList.add("saving");
+    });
     const syncEl=document.querySelector(".sync-"+i);
     if(syncEl) syncEl.innerHTML=syncBadge(state.dados[i],i);
     if(flush) flushSalvarLinha(i);
@@ -989,8 +1076,8 @@ function aplicarEdicaoCelula(el,{agendar=true,flush=false}={}){
 
 function onCellInput(e){
     const el=e.target;
-    if(el.matches(".cell-input")&&ehCampoHoraLancamento(el.dataset.k)){
-        aplicarMascaraHoraInput(el);
+    if(el.matches(".cell-input")&&el.classList.contains("cell-hora-part")){
+        aplicarInputHoraParte(el);
     }
     aplicarEdicaoCelula(el,{agendar:true,flush:false});
 }
@@ -1004,6 +1091,10 @@ function onCellBlur(e){
     if(!el.matches(".cell-input,.cell-select")) return;
     const i=Number(el.dataset.i);
     const related=e.relatedTarget;
+    const wrap=el.closest(".cell-hora-wrap");
+    const vaiParaMesmaHora=!!(
+        wrap&&related&&related.closest&&related.closest(".cell-hora-wrap")===wrap
+    );
     const vaiParaMesmaLinha=!!(
         related&&
         related.matches&&
@@ -1011,6 +1102,7 @@ function onCellBlur(e){
         Number(related.dataset.i)===i
     );
     aplicarEdicaoCelula(el,{agendar:false,flush:false});
+    if(vaiParaMesmaHora) return;
     if(vaiParaMesmaLinha) agendarSalvarLinha(i);
     else flushSalvarLinha(i);
 }
