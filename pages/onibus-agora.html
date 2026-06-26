@@ -9,39 +9,34 @@
 <title>Ônibus Agora | Portal CIOP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Orbitron:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <style>
 :root{
   --blue:#06245c;--blue-soft:#0b3a8a;--teal:#2db4bf;--orange:#ff6b00;
-  --bg:#070b14;--surface:rgba(12,20,36,.88);--surface-2:rgba(15,23,42,.65);--border:rgba(45,180,191,.14);
-  --text:#e2e8f0;--muted:#94a3b8;--ok:#8fd400;--warn:#ff6b00;
-  --shadow:0 1px 2px rgba(0,0,0,.2),0 20px 50px rgba(0,0,0,.35);
-  --radius:18px;--glow:0 0 24px rgba(45,180,191,.18);
+  --bg:#f5f7fb;--surface:#fff;--surface-2:#f8fafc;--border:#dfe5ef;
+  --text:#101828;--muted:#667085;--ok:#059669;--warn:#d97706;
+  --shadow:0 1px 2px rgba(15,23,42,.06),0 16px 40px rgba(6,36,92,.10);
+  --radius:18px;
 }
 *{box-sizing:border-box}
 body.oa-page{
   margin:0;min-height:100vh;display:flex;flex-direction:column;
-  font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--text);
-  background:
-    radial-gradient(ellipse 80% 50% at 10% -10%,rgba(45,180,191,.12),transparent 50%),
-    radial-gradient(ellipse 60% 40% at 100% 0%,rgba(6,36,92,.35),transparent 45%),
-    linear-gradient(180deg,#070b14 0%,#0a1020 50%,#06102a 100%);
+  font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--text);background:var(--bg);
   -webkit-font-smoothing:antialiased;
 }
 .header{
-  background:rgba(7,11,20,.92);backdrop-filter:blur(16px);
+  background:rgba(255,255,255,.97);backdrop-filter:blur(12px);
   display:grid;grid-template-columns:minmax(160px,1fr) auto minmax(240px,1fr);gap:16px;align-items:center;
-  padding:10px 20px;border-bottom:1px solid var(--border);
-  box-shadow:0 4px 30px rgba(0,0,0,.25);
+  padding:10px 20px;border-bottom:1px solid var(--border);box-shadow:0 2px 10px rgba(0,0,0,.05);
 }
 .logo-tcgl{height:46px;object-fit:contain}
 .title-wrap{justify-self:center;text-align:center}
-.page-kicker{margin:0 0 4px;color:var(--teal);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-shadow:0 0 20px rgba(45,180,191,.35)}
-.page-title{margin:0;color:#f8fafc;font-size:24px;font-weight:800;letter-spacing:-.02em;font-family:Orbitron,sans-serif}
+.page-kicker{margin:0 0 4px;color:var(--teal);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.page-title{margin:0;color:var(--blue);font-size:24px;font-weight:800;letter-spacing:-.02em}
 .page-desc{margin:4px 0 0;color:var(--muted);font-size:13px;font-weight:500}
 .header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
-.ciop-session{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;font-size:12px;color:#e2e8f0;background:var(--surface-2)}
+.ciop-session{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--blue);background:#fff}
 .ciop-session-user{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
 .btn-logout{background:#ef4444;color:#fff;border:0;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer}
 
@@ -50,14 +45,14 @@ body.oa-page{
 .topbar-left,.topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 16px;border-radius:999px;border:1px solid transparent;font:inherit;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;transition:.18s ease}
 .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.btn-primary{background:linear-gradient(135deg,var(--blue-soft),var(--blue));color:#fff;box-shadow:0 8px 24px rgba(6,36,92,.45);border:1px solid rgba(45,180,191,.2)}
-.btn-primary:hover{transform:translateY(-1px);box-shadow:var(--glow),0 8px 24px rgba(6,36,92,.5)}
-.btn-ghost{background:var(--surface-2);color:#e2e8f0;border-color:var(--border)}
-.btn-ghost:hover{background:rgba(45,180,191,.12);border-color:rgba(45,180,191,.35)}
-.btn-ghost.active{background:rgba(45,180,191,.2);border-color:rgba(45,180,191,.5);color:#fff}
+.btn-primary{background:var(--blue);color:#fff;box-shadow:0 8px 20px rgba(6,36,92,.18)}
+.btn-primary:hover{background:var(--blue-soft);transform:translateY(-1px)}
+.btn-ghost{background:#fff;color:var(--blue);border-color:var(--border)}
+.btn-ghost:hover{background:var(--surface-2)}
+.btn-ghost.active{background:#effcfb;border-color:rgba(45,180,191,.45);color:var(--blue)}
 
-.live-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted);font-family:"JetBrains Mono",monospace}
-.live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(143,212,0,.2),0 0 12px rgba(143,212,0,.5)}
+.live-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:#fff;border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(5,150,105,.15)}
 .live-dot.busy{background:var(--orange);animation:pulse 1.2s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
 
@@ -65,110 +60,125 @@ body.oa-page{
 @media(max-width:1080px){.layout{grid-template-columns:1fr}}
 
 .sidebar{display:flex;flex-direction:column;gap:14px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;backdrop-filter:blur(12px)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
 .card-pad{padding:16px 18px}
-.card-title{margin:0 0 4px;font-size:15px;font-weight:800;color:#f8fafc;font-family:Orbitron,sans-serif;font-size:13px;letter-spacing:.04em}
+.card-title{margin:0 0 4px;font-size:15px;font-weight:800;color:var(--blue)}
 .card-sub{margin:0 0 12px;font-size:12px;color:var(--muted);line-height:1.45;font-weight:500}
 
 .field{display:grid;gap:6px;margin-bottom:10px}
 .field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .input,.select{
   width:100%;height:44px;border:1px solid var(--border);border-radius:12px;padding:0 12px;
-  font:inherit;font-size:14px;font-weight:500;background:rgba(7,11,20,.6);color:#e2e8f0
+  font:inherit;font-size:14px;font-weight:500;background:var(--surface-2);color:var(--text)
 }
-.input:focus,.select:focus{outline:none;border-color:rgba(45,180,191,.55);box-shadow:0 0 0 4px rgba(45,180,191,.12);background:rgba(7,11,20,.85)}
-.input::placeholder{color:#64748b}
+.input:focus,.select:focus{outline:none;border-color:#7dd3dc;box-shadow:0 0 0 4px rgba(45,180,191,.15);background:#fff}
 
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
-.stat{padding:10px 12px;border-radius:12px;background:rgba(7,11,20,.5);border:1px solid var(--border)}
-.stat b{display:block;font-size:18px;font-weight:800;color:var(--teal);letter-spacing:-.02em;font-family:Orbitron,sans-serif}
+.stat{padding:10px 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border)}
+.stat b{display:block;font-size:18px;font-weight:800;color:var(--blue);letter-spacing:-.02em}
 .stat span{font-size:11px;color:var(--muted);font-weight:600}
 
 .lines{max-height:240px;overflow:auto;display:grid;gap:4px}
-.line-btn{width:100%;display:flex;align-items:center;gap:10px;border:1px solid transparent;background:transparent;border-radius:12px;padding:8px 10px;cursor:pointer;font:inherit;text-align:left;transition:.15s ease;color:#e2e8f0}
-.line-btn:hover{background:rgba(45,180,191,.08)}
-.line-btn.active{background:rgba(45,180,191,.14);border-color:rgba(45,180,191,.35);box-shadow:inset 0 0 0 1px rgba(45,180,191,.15)}
-.line-chip{width:48px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex:0 0 auto;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.line-btn{width:100%;display:flex;align-items:center;gap:10px;border:1px solid transparent;background:transparent;border-radius:12px;padding:8px 10px;cursor:pointer;font:inherit;text-align:left;transition:.15s ease;color:var(--text)}
+.line-btn:hover{background:var(--surface-2)}
+.line-btn.active{background:#effcfb;border-color:rgba(45,180,191,.35)}
+.line-chip{width:48px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex:0 0 auto}
 .line-meta{min-width:0;flex:1}
 .line-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .line-route{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.main{display:flex;flex-direction:column;min-height:720px;background:var(--surface);border:1px solid var(--border)}
-.tabs{display:flex;gap:8px;padding:12px 14px 0;flex-wrap:wrap;border-bottom:1px solid rgba(45,180,191,.08)}
-.tab{border:1px solid var(--border);background:rgba(7,11,20,.5);color:#cbd5e1;border-radius:999px;padding:9px 16px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.02em;transition:.18s ease}
-.tab:hover{border-color:rgba(45,180,191,.35);color:#fff}
-.tab.active{background:linear-gradient(135deg,rgba(45,180,191,.85),rgba(6,36,92,.95));border-color:rgba(45,180,191,.5);color:#fff;box-shadow:0 6px 20px rgba(45,180,191,.2)}
+.main{display:flex;flex-direction:column;min-height:720px}
+.tabs{display:flex;gap:8px;padding:12px 14px 0;flex-wrap:wrap}
+.tab{border:1px solid var(--border);background:#fff;color:var(--blue);border-radius:999px;padding:9px 16px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:.18s ease}
+.tab:hover{background:var(--surface-2)}
+.tab.active{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 8px 18px rgba(6,36,92,.18)}
 
-.panel-wrap{flex:1;padding:14px;display:flex;flex-direction:column;min-height:0;background:rgba(7,11,20,.35)}
-.panel{flex:1;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#0a0f1a;position:relative;min-height:520px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.03)}
+.panel-wrap{flex:1;padding:14px;display:flex;flex-direction:column;min-height:0}
+.panel{flex:1;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;position:relative;min-height:520px}
 .panel[hidden]{display:none!important}
 
-#mapa,#mapaViagem{width:100%;height:100%;min-height:520px;background:#0c1424}
+#mapa,#mapaViagem{width:100%;height:100%;min-height:520px;background:#dbeafe}
 .map-tools{position:absolute;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:8px}
 .shape-picker{
   position:absolute;left:12px;bottom:12px;z-index:500;width:min(320px,calc(100% - 24px));
-  background:rgba(7,11,20,.94);border:1px solid rgba(45,180,191,.22);border-radius:14px;
-  box-shadow:0 10px 40px rgba(0,0,0,.45);padding:12px 12px 10px;backdrop-filter:blur(12px);
+  background:rgba(255,255,255,.97);border:1px solid var(--border);border-radius:14px;
+  box-shadow:0 10px 28px rgba(15,23,42,.18);padding:12px 12px 10px;backdrop-filter:blur(8px);
 }
 .shape-picker-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
-.shape-picker-head strong{font-size:13px;color:#f8fafc;font-family:Orbitron,sans-serif}
+.shape-picker-head strong{font-size:13px;color:var(--blue)}
 .shape-picker-close{border:0;background:transparent;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:8px}
-.shape-picker-close:hover{background:rgba(45,180,191,.12);color:#fff}
+.shape-picker-close:hover{background:var(--surface-2);color:var(--blue)}
 .shape-picker-sub{margin:0 0 8px;font-size:11px;color:var(--muted);line-height:1.4}
 .shape-picker-list{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow:auto}
 .shape-picker-btn{
   display:grid;grid-template-columns:5px 1fr;align-items:center;gap:10px;width:100%;
-  border:1px solid var(--border);background:rgba(15,23,42,.55);border-radius:10px;padding:8px 10px;
+  border:1px solid var(--border);background:#fff;border-radius:10px;padding:8px 10px;
   font:inherit;text-align:left;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s;
 }
 .shape-picker-btn::before{content:"";width:5px;height:100%;min-height:32px;border-radius:999px;background:var(--via-cor,var(--teal))}
-.shape-picker-btn:hover{border-color:rgba(45,180,191,.4);background:rgba(45,180,191,.08)}
-.shape-picker-btn.active{border-color:var(--via-cor,var(--teal));background:rgba(45,180,191,.12);box-shadow:0 0 0 2px color-mix(in srgb,var(--via-cor,var(--teal)) 25%,transparent)}
+.shape-picker-btn:hover{border-color:var(--teal);background:var(--surface-2)}
+.shape-picker-btn.active{border-color:var(--via-cor,var(--teal));background:#effcfb;box-shadow:0 0 0 2px color-mix(in srgb,var(--via-cor,var(--teal)) 20%,transparent)}
 .shape-picker-text{display:flex;flex-direction:column;gap:2px;min-width:0}
 .shape-picker-sentido{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-.shape-picker-via{font-size:12px;font-weight:800;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shape-picker-via{font-size:12px;font-weight:800;color:var(--blue);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .shape-picker-all{width:100%;margin-top:8px;font-size:11px}
-.map-tools .btn{min-height:38px;padding:0 12px;font-size:12px;background:rgba(7,11,20,.92);backdrop-filter:blur(8px);color:#e2e8f0;border-color:var(--border)}
+.map-tools .btn{min-height:38px;padding:0 12px;font-size:12px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px)}
+.map-filtro-pont{
+  position:absolute;left:12px;top:12px;z-index:500;display:flex;flex-wrap:wrap;align-items:center;gap:6px;
+  max-width:min(420px,calc(100% - 24px));padding:8px 10px;border-radius:14px;
+  background:rgba(255,255,255,.97);border:1px solid var(--border);box-shadow:0 8px 24px rgba(15,23,42,.14);backdrop-filter:blur(8px);
+}
+.map-filtro-label{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+.pont-chip{
+  display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:#fff;
+  border-radius:999px;padding:6px 11px;font:inherit;font-size:11px;font-weight:700;cursor:pointer;color:var(--blue);
+  transition:border-color .15s,background .15s,opacity .15s;
+}
+.pont-chip::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--pont-cor,var(--teal));flex:0 0 auto;border:1px solid rgba(15,23,42,.12)}
+.pont-chip[data-pont="atrasado"]{color:#854d0e}
+.pont-chip:hover{border-color:var(--pont-cor,var(--teal))}
+.pont-chip.active{border-color:var(--pont-cor,var(--teal));background:color-mix(in srgb,var(--pont-cor,var(--teal)) 14%,#fff);box-shadow:0 0 0 2px color-mix(in srgb,var(--pont-cor,var(--teal)) 20%,transparent)}
+.pont-chip:not(.active){opacity:.55}
 
-#panelViagem{background:linear-gradient(165deg,#070b14 0%,#0c1424 45%,#06102a 100%);border-color:rgba(45,180,191,.12)}
+#panelViagem{background:var(--surface)}
 .viagem-wrap{position:relative;z-index:1;height:100%;min-height:520px;display:flex;flex-direction:column}
 .viagem-empty{padding:56px 24px;text-align:center;color:var(--muted);flex:1;display:grid;place-content:center}
-.viagem-empty h3{margin:0 0 10px;color:#e2e8f0;font-family:Orbitron,sans-serif;font-size:18px}
-.viagem-split{flex:1;display:grid;grid-template-columns:minmax(260px,320px) 1fr;min-height:520px}
+.viagem-empty h3{margin:0 0 10px;color:var(--blue);font-size:18px;font-weight:800}
+.viagem-split{flex:1;display:grid;grid-template-columns:minmax(300px,400px) 1fr;min-height:520px}
 @media(max-width:900px){.viagem-split{grid-template-columns:1fr;grid-template-rows:auto 360px}}
-.viagem-aside{display:flex;flex-direction:column;border-right:1px solid rgba(45,180,191,.1);background:rgba(7,11,20,.5);min-height:0}
-.viagem-aside-head{padding:16px 16px 12px;border-bottom:1px solid rgba(45,180,191,.1)}
-.viagem-kicker{margin:0 0 4px;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
-.viagem-title{margin:0;font-size:15px;font-weight:800;color:#f8fafc;font-family:Orbitron,sans-serif}
+.viagem-aside{display:flex;flex-direction:column;border-right:1px solid var(--border);background:var(--surface-2);min-height:0}
+.viagem-cards{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:12px}
+.viagem-aside-head{padding:16px 16px 12px;border-bottom:1px solid var(--border);background:#fff}
+.viagem-kicker{margin:0 0 4px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--teal)}
+.viagem-title{margin:0;font-size:15px;font-weight:800;color:var(--blue)}
 .viagem-sub{margin:6px 0 0;font-size:11px;color:var(--muted)}
 .viagem-list{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
 .viagem-row{
   display:grid;grid-template-columns:5px minmax(0,1fr) auto;align-items:center;gap:12px;
   min-height:52px;padding:8px 10px;border-radius:12px;border:1px solid var(--border);
-  background:rgba(15,23,42,.45);cursor:pointer;transition:.18s ease;text-align:left;width:100%;
-  font:inherit;color:inherit;
+  background:#fff;cursor:pointer;transition:.18s ease;text-align:left;width:100%;font:inherit;color:inherit;
 }
-.viagem-bar{width:5px;height:36px;border-radius:999px;background:var(--via-cor);box-shadow:0 0 12px color-mix(in srgb,var(--via-cor) 50%,transparent)}
-.viagem-row:hover{border-color:rgba(45,180,191,.35);background:rgba(45,180,191,.08)}
-.viagem-row.active{border-color:var(--via-cor);background:rgba(45,180,191,.1);box-shadow:0 0 0 1px color-mix(in srgb,var(--via-cor) 30%,transparent),0 0 20px color-mix(in srgb,var(--via-cor) 15%,transparent)}
-.viagem-local{display:block;font-size:13px;font-weight:800;color:#f8fafc;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.viagem-bar{width:5px;height:36px;border-radius:999px;background:var(--via-cor)}
+.viagem-row:hover{border-color:var(--teal);background:#f8fafc}
+.viagem-row.active{border-color:var(--via-cor);background:#effcfb;box-shadow:0 0 0 2px color-mix(in srgb,var(--via-cor) 18%,transparent)}
+.viagem-local{display:block;font-size:13px;font-weight:800;color:var(--blue);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .viagem-sentido{display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
 .viagem-row-meta{font-size:10px;font-weight:800;color:var(--via-cor);letter-spacing:.06em;white-space:nowrap}
 .viagem-mapa-wrap{position:relative;min-height:280px}
 .viagem-toolbar{position:absolute;top:10px;right:10px;z-index:500;display:flex;gap:6px;flex-wrap:wrap}
 .viagem-toolbar .btn{min-height:34px;padding:0 10px;font-size:11px}
 
-.leaflet-popup-content-wrapper{border-radius:14px;box-shadow:var(--shadow);padding:0;overflow:hidden;background:#0c1424;border:1px solid rgba(45,180,191,.2)}
-.leaflet-popup-content{margin:0;min-width:210px;color:#e2e8f0}
-.leaflet-popup-tip{background:#0c1424}
+.leaflet-popup-content-wrapper{border-radius:14px;box-shadow:var(--shadow);padding:0;overflow:hidden;background:#fff}
+.leaflet-popup-content{margin:0;min-width:210px;color:var(--text)}
+.leaflet-popup-tip{background:#fff}
 .popup{padding:14px 16px}
 .popup-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .popup-chip{width:42px;height:36px;border-radius:10px;display:grid;place-items:center;font-weight:800;color:#fff;font-size:13px}
-.popup-title{font-size:15px;font-weight:800;color:#f8fafc;line-height:1.2}
+.popup-title{font-size:15px;font-weight:800;color:var(--blue);line-height:1.2}
 .popup-sub{font-size:12px;color:var(--muted);margin-top:2px}
 .popup-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.popup-item{padding:8px 10px;border-radius:10px;background:rgba(15,23,42,.65);font-size:11px;color:var(--muted);border:1px solid rgba(148,163,184,.08)}
-.popup-item strong{display:block;font-size:13px;color:#e2e8f0;margin-top:2px}
+.popup-item{padding:8px 10px;border-radius:10px;background:var(--surface-2);font-size:11px;color:var(--muted)}
+.popup-item strong{display:block;font-size:13px;color:var(--text);margin-top:2px}
 
 .bus-marker-wrap{background:transparent!important;border:0!important;overflow:visible!important}
 .bus-marker{
@@ -199,132 +209,136 @@ body.oa-page{
 .bus-tag-line{color:#fff}
 .bus-marker.highlight .bus-tag{box-shadow:0 0 0 2px rgba(45,180,191,.22),0 2px 8px rgba(15,23,42,.22)}
 
-#panelHorarios{
-  overflow:auto;padding:0;max-height:calc(72vh - 40px);
-  background:linear-gradient(165deg,#070b14 0%,#0c1424 45%,#06102a 100%);
-  border-color:rgba(45,180,191,.12);
-  position:relative;
-}
-#panelHorarios::before{
-  content:"";position:absolute;inset:0;pointer-events:none;
-  background:
-    radial-gradient(ellipse 70% 45% at 15% -5%,rgba(45,180,191,.16),transparent 55%),
-    radial-gradient(ellipse 55% 40% at 95% 105%,rgba(6,36,92,.45),transparent 50%),
-    repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,.015) 2px,rgba(255,255,255,.015) 3px);
-}
-#panelHorarios::after{
-  content:"";position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(90deg,transparent,rgba(45,180,191,.04),transparent);
-  animation:schedScan 8s linear infinite;
-}
-@keyframes schedScan{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+#panelHorarios{overflow:auto;padding:0;max-height:calc(72vh - 40px);background:var(--bg);position:relative}
 .sched-wrap{position:relative;z-index:1;padding:20px 20px 28px;--route-accent:var(--teal)}
 
-#panelHorarios .empty{padding:56px 24px;text-align:center;color:rgba(148,163,184,.85)}
-#panelHorarios .empty h3{margin:0 0 10px;color:#e2e8f0;font-size:20px;font-weight:800;letter-spacing:-.02em}
+#panelHorarios .empty{padding:56px 24px;text-align:center;color:var(--muted)}
+#panelHorarios .empty h3{margin:0 0 10px;color:var(--blue);font-size:20px;font-weight:800}
 #panelHorarios .empty p{font-size:13px;line-height:1.5;max-width:320px;margin:0 auto}
 
 .sched-head{
   display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;
-  margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid rgba(45,180,191,.12);
+  margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border);
 }
 .sched-head-main{min-width:0}
-.sched-kicker{margin:0 0 6px;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
-.sched-title{margin:0;font-size:clamp(20px,3vw,26px);font-weight:800;color:#f8fafc;letter-spacing:-.02em;line-height:1.15}
-.sched-sub{margin:6px 0 0;font-size:12px;color:rgba(148,163,184,.9);font-weight:500}
-.sched-valid{font-size:11px;color:rgba(100,116,139,.95);white-space:nowrap}
+.sched-kicker{margin:0 0 6px;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--teal)}
+.sched-title{margin:0;font-size:clamp(20px,3vw,26px);font-weight:800;color:var(--blue);letter-spacing:-.02em;line-height:1.15}
+.sched-sub{margin:6px 0 0;font-size:12px;color:var(--muted);font-weight:500}
+.sched-valid{font-size:11px;color:var(--muted);white-space:nowrap}
 
 .sched-hero{
-  position:relative;border-radius:22px;padding:22px 24px 20px;margin-bottom:20px;overflow:hidden;
-  background:linear-gradient(135deg,rgba(45,180,191,.14),rgba(6,36,92,.42));
-  border:1px solid rgba(45,180,191,.28);
-  box-shadow:0 0 0 1px rgba(255,255,255,.04) inset,0 20px 50px rgba(0,0,0,.35);
+  position:relative;border-radius:18px;padding:22px 24px 20px;margin-bottom:20px;overflow:hidden;
+  color:#fff;background:linear-gradient(135deg,var(--teal),var(--blue));
+  box-shadow:0 12px 32px rgba(6,36,92,.2);
 }
-.sched-hero-glow{
-  position:absolute;top:-40%;right:-10%;width:220px;height:220px;border-radius:50%;
-  background:radial-gradient(circle,rgba(45,180,191,.35),transparent 70%);
-  filter:blur(8px);pointer-events:none;
-}
-.sched-hero-label{margin:0 0 4px;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:rgba(45,180,191,.95)}
+.sched-hero-glow{display:none}
+.sched-hero-label{margin:0 0 4px;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.9}
 .sched-hero-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .sched-hero-time{
-  margin:0;font-family:Orbitron,sans-serif;font-size:clamp(44px,9vw,72px);font-weight:800;line-height:1;
-  letter-spacing:.06em;background:linear-gradient(92deg,#fff 0%,var(--teal) 45%,#fff 90%);
-  background-size:220% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-  animation:schedShimmer 5s linear infinite;
+  margin:0;font-family:"JetBrains Mono",monospace;font-size:clamp(40px,8vw,64px);font-weight:800;line-height:1;
+  letter-spacing:.04em;color:#fff;
 }
-@keyframes schedShimmer{0%{background-position:0% center}100%{background-position:220% center}}
-.sched-hero-meta{margin:8px 0 0;font-size:13px;font-weight:600;color:#e2e8f0}
-.sched-hero-meta span{color:var(--teal)}
+.sched-hero-meta{margin:8px 0 0;font-size:13px;font-weight:600;opacity:.95}
+.sched-hero-meta span{font-weight:800}
 .sched-hero-countdown{
-  padding:10px 16px;border-radius:14px;font-size:12px;font-weight:800;color:#0a0f1f;
-  background:linear-gradient(135deg,#8fd400,#2db4bf);box-shadow:0 8px 24px rgba(45,180,191,.25);
-  white-space:nowrap;font-variant-numeric:tabular-nums;
+  padding:10px 16px;border-radius:14px;font-size:12px;font-weight:800;color:var(--blue);
+  background:#fff;box-shadow:0 4px 16px rgba(0,0,0,.12);white-space:nowrap;font-variant-numeric:tabular-nums;
 }
-.sched-hero-countdown.amanha{background:linear-gradient(135deg,#fbbf24,#ff6b00);color:#0f172a}
+.sched-hero-countdown.amanha{background:#fff7ed;color:#c2410c}
 
 .sched-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
 .sched-chips .chip{
-  border:1px solid rgba(45,180,191,.22);background:rgba(255,255,255,.04);border-radius:999px;
-  padding:8px 14px;font:inherit;font-size:11px;font-weight:700;cursor:pointer;color:#cbd5e1;
-  transition:border-color .2s,background .2s,transform .15s;
+  border:1px solid var(--border);background:#fff;border-radius:999px;
+  padding:8px 14px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;color:var(--blue);
+  transition:border-color .2s,background .2s;
 }
-.sched-chips .chip:hover{border-color:rgba(45,180,191,.45);background:rgba(45,180,191,.08)}
-.sched-chips .chip.active{
-  background:linear-gradient(135deg,rgba(45,180,191,.85),rgba(6,36,92,.9));
-  border-color:rgba(45,180,191,.55);color:#fff;box-shadow:0 6px 20px rgba(45,180,191,.22);
-}
+.sched-chips .chip:hover{background:var(--surface-2);border-color:var(--teal)}
+.sched-chips .chip.active{background:var(--teal);border-color:var(--teal);color:#fff}
 
 .sched-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:14px}
-.sched-col{
-  border-radius:18px;overflow:hidden;
-  background:rgba(255,255,255,.03);border:1px solid rgba(148,163,184,.1);
-  backdrop-filter:blur(8px);box-shadow:0 8px 32px rgba(0,0,0,.2);
-}
+.sched-col{border-radius:16px;overflow:hidden;background:#fff;border:1px solid var(--border);box-shadow:var(--shadow)}
 .sched-col-head{
-  padding:12px 14px;font-size:11px;font-weight:800;color:#e2e8f0;letter-spacing:.04em;
-  background:linear-gradient(180deg,rgba(255,255,255,.06),transparent);
-  border-bottom:1px solid rgba(148,163,184,.08);
+  padding:12px 14px;font-size:12px;font-weight:800;color:var(--blue);
+  background:var(--surface-2);border-bottom:1px solid var(--border);
   display:flex;align-items:center;gap:8px;
 }
 .sched-col-head::before{
-  content:"";width:6px;height:6px;border-radius:50%;background:var(--route-accent,var(--teal));
-  box-shadow:0 0 10px var(--route-accent,var(--teal));flex:0 0 auto;
+  content:"";width:6px;height:6px;border-radius:50%;background:var(--route-accent,var(--teal));flex:0 0 auto;
 }
 .sched-col-body{padding:12px;display:flex;flex-direction:column;gap:6px;align-items:stretch;max-height:300px;overflow-y:auto}
 
 .time{
-  position:relative;width:100%;padding:10px 12px;border-radius:12px;text-align:center;
+  position:relative;width:100%;padding:10px 12px;border-radius:10px;text-align:center;
   font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;
-  color:#94a3b8;background:rgba(15,23,42,.55);border:1px solid rgba(148,163,184,.1);
-  transition:transform .25s ease,opacity .25s ease,box-shadow .25s ease,border-color .25s ease;
-  flex-shrink:0;
+  color:var(--blue);background:var(--surface-2);border:1px solid var(--border);
+  transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;flex-shrink:0;
 }
-.time.past{opacity:.72;color:#64748b;background:rgba(15,23,42,.35);border-color:rgba(100,116,139,.12);transform:none;filter:none}
-.time.past::before{content:"";position:absolute;left:10px;top:50%;width:4px;height:4px;border-radius:50%;background:#475569;transform:translateY(-50%);opacity:.8}
-.time:not(.past):not(.next){color:#cbd5e1}
+.time.past{opacity:.72;color:var(--muted);background:#fff;border-color:#e8ecf3}
+.time.past::before{content:"";position:absolute;left:10px;top:50%;width:4px;height:4px;border-radius:50%;background:#cbd5e1;transform:translateY(-50%)}
 .time.next{
-  color:#fff;background:linear-gradient(145deg,rgba(45,180,191,.45),rgba(6,36,92,.75));
-  border-color:rgba(45,180,191,.65);transform:scale(1.06);z-index:2;
-  box-shadow:0 0 18px rgba(45,180,191,.35),0 0 36px rgba(45,180,191,.12),inset 0 1px 0 rgba(255,255,255,.12);
-  animation:schedNextPulse 2.8s ease-in-out infinite;
+  color:#fff;background:linear-gradient(135deg,var(--teal),var(--blue-soft));
+  border-color:var(--blue);transform:scale(1.03);z-index:2;
+  box-shadow:0 6px 18px rgba(6,36,92,.18);
 }
-.time.next-global{
-  border-color:rgba(143,212,0,.75);
-  box-shadow:0 0 22px rgba(143,212,0,.35),0 0 40px rgba(143,212,0,.12),inset 0 1px 0 rgba(255,255,255,.15);
-}
+.time.next-global{border-color:var(--ok);box-shadow:0 6px 18px rgba(5,150,105,.22)}
 .time.next::after{
   content:"PRÓXIMO";position:absolute;top:-9px;left:50%;transform:translateX(-50%);
-  font-family:Inter,sans-serif;font-size:7px;font-weight:800;letter-spacing:.14em;
-  color:var(--teal);background:#0a0f1f;padding:2px 7px;border-radius:999px;
-  border:1px solid rgba(45,180,191,.45);white-space:nowrap;
+  font-family:Inter,sans-serif;font-size:7px;font-weight:800;letter-spacing:.12em;
+  color:var(--teal);background:#fff;padding:2px 7px;border-radius:999px;
+  border:1px solid rgba(45,180,191,.35);white-space:nowrap;
 }
-.time.next-global::after{content:"PRÓXIMA";color:#8fd400;border-color:rgba(143,212,0,.55)}
-.time.next.amanha::after{content:"AMANHÃ"}
-@keyframes schedNextPulse{
-  0%,100%{box-shadow:0 0 18px rgba(45,180,191,.3),0 0 36px rgba(45,180,191,.1),inset 0 1px 0 rgba(255,255,255,.12)}
-  50%{box-shadow:0 0 26px rgba(45,180,191,.5),0 0 48px rgba(45,180,191,.18),inset 0 1px 0 rgba(255,255,255,.18)}
+.time.next-global::after{content:"PRÓXIMA";color:var(--ok);border-color:rgba(5,150,105,.35)}
+.time.next.amanha::after{content:"AMANHÃ";color:var(--orange);border-color:rgba(255,107,0,.35)}
+
+.via-card{
+  border-radius:14px;border:1px solid var(--border);background:#fff;overflow:hidden;
+  cursor:pointer;transition:border-color .18s,box-shadow .18s;text-align:left;
 }
+.via-card:hover{border-color:var(--teal)}
+.via-card.active{border-color:var(--via-cor,var(--teal));box-shadow:0 0 0 2px color-mix(in srgb,var(--via-cor,var(--teal)) 16%,transparent)}
+.via-card-head{padding:14px 14px 10px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.via-card-bar{width:100%;height:4px;border-radius:999px;background:var(--via-cor,var(--teal));margin-bottom:10px}
+.via-card-saida{margin:0;font-size:15px;font-weight:800;color:var(--blue);line-height:1.2}
+.via-card-rota{margin:6px 0 0;font-size:12px;font-weight:600;color:var(--muted);line-height:1.35}
+.via-card-body{padding:12px 14px 14px}
+.via-card-svc-label{margin:0 0 8px;font-size:12px;font-weight:800;color:var(--text)}
+.via-card-dias{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
+.dia-chip{
+  min-width:30px;padding:4px 0;border-radius:6px;text-align:center;
+  font-size:9px;font-weight:800;letter-spacing:.04em;color:#fff;background:#cbd5e1;
+}
+.dia-chip.on{background:var(--blue)}
+.via-card-svc-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.via-card-svc-chips .chip{
+  border:1px solid var(--border);background:#fff;border-radius:999px;
+  padding:5px 10px;font:inherit;font-size:10px;font-weight:700;cursor:pointer;color:var(--blue);
+}
+.via-card-svc-chips .chip.active{background:var(--teal);border-color:var(--teal);color:#fff}
+.via-card-times{display:flex;flex-wrap:wrap;gap:6px}
+.via-card-times .time{width:auto;min-width:58px;padding:8px 10px;font-size:12px}
+
+.local-card{
+  border-radius:14px;border:1px solid var(--border);background:#fff;overflow:hidden;
+  transition:border-color .18s,box-shadow .18s;text-align:left;
+}
+.local-card-head{padding:14px 16px 12px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.local-card-local{margin:0;font-size:16px;font-weight:800;color:var(--blue);line-height:1.2}
+.local-card-saida{margin:4px 0 0;font-size:11px;font-weight:600;color:var(--muted)}
+.local-card-body{padding:12px 14px 14px}
+.via-legend{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.via-legend-item{
+  display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:#fff;
+  border-radius:999px;padding:5px 10px;font:inherit;font-size:10px;font-weight:700;cursor:pointer;color:var(--blue);
+  transition:border-color .15s,background .15s;
+}
+.via-legend-item::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--via-cor,var(--teal));flex:0 0 auto}
+.via-legend-item:hover{border-color:var(--via-cor,var(--teal));background:var(--surface-2)}
+.via-legend-item.active{border-color:var(--via-cor,var(--teal));background:color-mix(in srgb,var(--via-cor,var(--teal)) 12%,#fff);box-shadow:0 0 0 2px color-mix(in srgb,var(--via-cor,var(--teal)) 18%,transparent)}
+.local-card-times{display:flex;flex-wrap:wrap;gap:6px}
+.local-card-times .time{width:auto;min-width:54px;padding:8px 10px;font-size:12px;border-left:3px solid var(--via-cor,var(--teal))}
+.local-card-times .time.past{border-left-color:color-mix(in srgb,var(--via-cor,#cbd5e1) 40%,#cbd5e1)}
+.local-card-times .time.next{border-left-color:#fff}
+.local-card.active{border-color:var(--teal);box-shadow:0 0 0 2px rgba(45,180,191,.16)}
 
 .empty{padding:40px 20px;text-align:center;color:var(--muted)}
 .empty h3{margin:0 0 8px;color:var(--blue);font-size:18px;font-weight:800}
@@ -412,6 +426,12 @@ body.oa-page{
             <div class="panel-wrap">
                 <div class="panel" id="panelMapa">
                     <div id="mapa"></div>
+                    <div class="map-filtro-pont" id="mapFiltroPont" aria-label="Filtro de pontualidade">
+                        <span class="map-filtro-label">Pontualidade</span>
+                        <button type="button" class="pont-chip active" data-pont="adiantado" style="--pont-cor:#D30000">Adiantado</button>
+                        <button type="button" class="pont-chip active" data-pont="no_horario" style="--pont-cor:#8FD400">No horário</button>
+                        <button type="button" class="pont-chip active" data-pont="atrasado" style="--pont-cor:#FFFF00">Atrasado</button>
+                    </div>
                     <div class="shape-picker" id="shapePicker" hidden>
                         <div class="shape-picker-head">
                             <strong id="shapePickerTitle">Trajeto da linha</strong>
@@ -431,17 +451,17 @@ body.oa-page{
                 <div class="panel" id="panelViagem" hidden>
                     <div class="viagem-wrap">
                         <div class="viagem-empty" id="viagemEmpty">
-                            <h3>Viagem · vias e locais</h3>
-                            <p>Selecione uma linha para ver todas as vias coloridas e terminais alinhados.</p>
+                            <h3>Viagem · horários e mapa</h3>
+                            <p>Selecione uma linha para ver saídas, vias e partidas como no Bus2You.</p>
                         </div>
                         <div class="viagem-split" id="viagemConteudo" hidden>
                             <aside class="viagem-aside">
                                 <div class="viagem-aside-head">
                                     <p class="viagem-kicker">Trajetos · Bus2</p>
                                     <h3 class="viagem-title" id="viagemTitulo">Linha</h3>
-                                    <p class="viagem-sub" id="viagemSub">Clique no local para destacar a via no mapa</p>
+                                    <p class="viagem-sub" id="viagemSub">Horários por saída e via · clique para destacar no mapa</p>
                                 </div>
-                                <div class="viagem-list" id="viagemLista" role="list"></div>
+                                <div class="viagem-cards" id="viagemCards" role="list"></div>
                             </aside>
                             <div class="viagem-mapa-wrap">
                                 <div id="mapaViagem"></div>
@@ -484,7 +504,7 @@ const BUS2 = {
         atrasadoSeg: 360,
         cores: { adiantado: "#D30000", atrasado: "#FFFF00", noHorario: "#8FD400" }
     },
-    viaCores: ["#2db4bf","#8fd400","#ff6b00","#a855f7","#ef4444","#eab308","#ec4899","#38bdf8","#f472b6","#84cc16"]
+    viaCores: ["#2db4bf","#06245c","#ff6b00","#0b3a8a","#059669","#8b5cf6","#eab308","#ec4899","#38bdf8","#64748b"]
 };
 
 const state = {
@@ -492,6 +512,7 @@ const state = {
     routes: [],
     routeFiltro: null,
     veiculoFiltro: "",
+    filtroPontualidade: { adiantado: true, no_horario: true, atrasado: true, sem_dado: true },
     buscaLinha: "",
     tab: "mapa",
     vehicles: new Map(),
@@ -512,7 +533,7 @@ const state = {
     viagemLinhas: new Map(),
     viagemOpcoes: [],
     viagemTripAtivo: null,
-    schedule: { directionId: 0, serviceId: null, timetable: null, route: null },
+    schedule: { cardKey: null, servicePorCard: {}, timetable: null, route: null },
     scheduleTickTimer: null
 };
 
@@ -717,10 +738,29 @@ function renderListaLinhas(){
     $("statLinhas").textContent = state.routes.length;
 }
 
+function tipoPontualidadeVeiculo(v){
+    const st = statusPontualidade(v.delay);
+    if (!st) return "sem_dado";
+    return st.tipo;
+}
+
+function veiculoPassaFiltroPontualidade(v){
+    const tipo = tipoPontualidadeVeiculo(v);
+    return !!state.filtroPontualidade[tipo];
+}
+
+function syncFiltroPontualidadeUI(){
+    document.querySelectorAll(".pont-chip[data-pont]").forEach(btn => {
+        const on = !!state.filtroPontualidade[btn.dataset.pont];
+        btn.classList.toggle("active", on);
+    });
+}
+
 function veiculoPassaFiltro(v){
     if (state.routeFiltro && v.routeId !== state.routeFiltro.routeId) return false;
     const q = state.veiculoFiltro.trim();
     if (q && !String(v.vehicleId || "").includes(q)) return false;
+    if (!veiculoPassaFiltroPontualidade(v)) return false;
     return true;
 }
 
@@ -930,8 +970,17 @@ async function desenharShapesViagem(route, opcoes, tripIdsFiltro){
 
 function destacarViaViagem(tripId){
     state.viagemTripAtivo = tripId ? Number(tripId) : null;
-    document.querySelectorAll(".viagem-row").forEach(row => {
+    document.querySelectorAll(".via-legend-item").forEach(row => {
         row.classList.toggle("active", Number(row.dataset.trip) === state.viagemTripAtivo);
+    });
+    document.querySelectorAll(".local-card").forEach(card => {
+        if (!state.viagemTripAtivo){
+            card.classList.remove("active");
+            return;
+        }
+        const hasVia = card.querySelector('.via-legend-item[data-trip="' + state.viagemTripAtivo + '"]')
+            || card.querySelector('.local-card-times .time[data-trip="' + state.viagemTripAtivo + '"]');
+        card.classList.toggle("active", !!hasVia);
     });
     state.viagemLinhas.forEach((line, id) => {
         if (!state.viagemTripAtivo){
@@ -968,30 +1017,25 @@ function renderViagem(){
     }
     $("viagemEmpty").hidden = true;
     $("viagemConteudo").hidden = false;
+    const grupos = extrairGruposLocaisBus2(tt);
     const opcoes = state.viagemOpcoes.length ? state.viagemOpcoes : opcoesTrajetoComCor(opcoesTrajeto(tt));
     state.viagemOpcoes = opcoes;
+    const agoraMin = minutosAgora();
+    const cards = cardsFromGrupos(grupos);
+    const { perCard } = calcProximaPartidaCards(cards, agoraMin);
+
     $("viagemTitulo").textContent = "Linha " + (route.shortName || "?") + " · " + (route.longName || "");
-    $("viagemSub").textContent = opcoes.length + " via(s) · cores distintas no mapa";
+    $("viagemSub").textContent = grupos.length + " local(is) · vias coloridas · horários reunidos";
 
-    $("viagemLista").innerHTML = opcoes.map(o =>
-        '<button type="button" class="viagem-row' + (state.viagemTripAtivo === o.tripId ? " active" : "") + '" data-trip="' + o.tripId + '" style="--via-cor:' + esc(o.cor) + '" role="listitem">' +
-            '<span class="viagem-bar" aria-hidden="true"></span>' +
-            '<span class="viagem-row-text"><span class="viagem-local">' + esc(o.via) + '</span><span class="viagem-sentido">' + esc(o.sentido) + '</span></span>' +
-            '<span class="viagem-row-meta">VIA ' + (o.idx + 1) + '</span>' +
-        '</button>'
-    ).join("");
-
-    $("viagemLista").querySelectorAll(".viagem-row").forEach(btn => {
-        btn.addEventListener("click", () => {
-            destacarViaViagem(Number(btn.dataset.trip));
-        });
-    });
+    $("viagemCards").innerHTML = grupos.map(g => htmlGrupoLocalBus2(g, route, agoraMin, perCard, null, opcoes)).join("");
+    bindCardHorarioEvents($("viagemCards"));
 
     initMapaViagem();
     setTimeout(async () => {
         state.mapaViagem?.invalidateSize();
         await desenharShapesViagem(route, opcoes, null);
-        destacarViaViagem(null);
+        if (state.viagemTripAtivo) destacarViaViagem(state.viagemTripAtivo);
+        else destacarViaViagem(null);
     }, 120);
 }
 
@@ -1125,8 +1169,8 @@ async function selecionarLinha(routeId){
     atualizarMarcadores();
     const tt = await obterTimetable(routeId);
     state.schedule.timetable = tt;
-    state.schedule.directionId = tt?.timetable?.directions?.[0]?.directionId ?? 0;
-    state.schedule.serviceId = null;
+    state.schedule.cardKey = null;
+    state.schedule.servicePorCard = {};
     await configurarTrajetoLinha(route, tt);
     renderHorarios();
     if (state.tab === "viagem") renderViagem();
@@ -1142,9 +1186,11 @@ async function selecionarLinha(routeId){
 function limparFiltro(){
     state.routeFiltro = null;
     state.veiculoFiltro = "";
+    state.filtroPontualidade = { adiantado: true, no_horario: true, atrasado: true, sem_dado: true };
     state.viagemOpcoes = [];
     state.viagemTripAtivo = null;
     $("buscaVeiculo").value = "";
+    syncFiltroPontualidadeUI();
     renderListaLinhas();
     limparShapes();
     limparShapesViagem();
@@ -1200,14 +1246,127 @@ function formatarContagem(minutos, amanha){
     return "em " + h + "h" + (m ? " " + m + "min" : "");
 }
 
-function calcDestaquesHorarios(deps, trips, agoraMin){
-    let globalNext = null;
-    const perSeq = new Map();
+function nomeLocal(desc){
+    return String(desc || "").replace(/^Saída\s+/i, "").trim() || String(desc || "Local");
+}
 
-    trips.forEach(t => {
-        const lista = (deps[t.seq] || [])
+function nomeVia(tripDesc){
+    const s = String(tripDesc || "").trim();
+    const parts = s.split(" - ");
+    if (parts.length >= 2) return parts[parts.length - 1];
+    const m = s.match(/\bVia\s+(.+)$/i);
+    if (m) return "Via " + m[1];
+    return s || "Principal";
+}
+
+function labelVia(via, grupo){
+    const curta = nomeVia(via.via);
+    const iguais = grupo.vias.filter(v => nomeVia(v.via) === curta);
+    if (iguais.length > 1){
+        const origem = String(via.via || "").split(" - ")[0].trim();
+        return origem + " · " + curta;
+    }
+    return curta;
+}
+
+function extrairGruposLocaisBus2(tt){
+    const trips = tt?.timetable?.trips || [];
+    const tripBySeq = new Map(trips.map(t => [Number(t.seq), t]));
+    return (tt?.timetable?.directions || []).map((dir, dirIdx) => {
+        const seqs = new Set();
+        (dir.services || []).forEach(svc => {
+            (svc.departures || []).forEach(d => {
+                if (d.seq != null) seqs.add(Number(d.seq));
+            });
+        });
+        const vias = [...seqs].sort((a, b) => a - b).map((seq, i) => {
+            const trip = tripBySeq.get(seq);
+            return {
+                key: dirIdx + "-" + seq,
+                seq,
+                tripId: trip?.tripId,
+                via: trip?.tripDesc || "Principal",
+                corIdx: i
+            };
+        });
+        vias.forEach(v => { v.viaCurta = labelVia(v, { vias }); });
+        return {
+            key: "local-" + dirIdx,
+            dirIdx,
+            local: nomeLocal(dir.desc),
+            saida: dir.desc || "Saída",
+            directionId: dir.directionId,
+            services: dir.services || [],
+            vias
+        };
+    }).filter(g => g.vias.length);
+}
+
+function cardsFromGrupos(grupos){
+    return grupos.flatMap(g => g.vias.map(v => ({
+        key: v.key,
+        dirIdx: g.dirIdx,
+        saida: g.saida,
+        local: g.local,
+        via: v.via,
+        seq: v.seq,
+        tripId: v.tripId,
+        services: g.services
+    })));
+}
+
+function extrairCardsViagemBus2(tt){
+    return cardsFromGrupos(extrairGruposLocaisBus2(tt));
+}
+
+function servicoDoGrupo(grupo){
+    const services = grupo.services || [];
+    const saved = state.schedule.servicePorCard[grupo.key];
+    if (saved != null){
+        const found = services.find(s => s.serviceId === saved);
+        if (found) return found;
+    }
+    return servicoHoje(services);
+}
+
+function servicoDoCard(card){
+    const services = card.services || [];
+    const saved = state.schedule.servicePorCard[card.key];
+    if (saved != null){
+        const found = services.find(s => s.serviceId === saved);
+        if (found) return found;
+    }
+    const grupoKey = "local-" + card.dirIdx;
+    const savedGrupo = state.schedule.servicePorCard[grupoKey];
+    if (savedGrupo != null){
+        const found = services.find(s => s.serviceId === savedGrupo);
+        if (found) return found;
+    }
+    return servicoHoje(services);
+}
+
+function corDaVia(via, grupo, opcoes){
+    const op = opcoes.find(o => Number(o.tripId) === Number(via.tripId));
+    return op?.cor || corVia(via.corIdx + grupo.dirIdx);
+}
+
+function htmlChipsDiasSemana(svc){
+    const labels = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
+    return labels.map((lbl, i) => {
+        const on = svc?.days?.[i] === true;
+        return '<span class="dia-chip' + (on ? " on" : "") + '">' + lbl + '</span>';
+    }).join("");
+}
+
+function calcProximaPartidaCards(cards, agoraMin){
+    let globalNext = null;
+    const perCard = new Map();
+
+    cards.forEach(card => {
+        const svc = servicoDoCard(card);
+        const lista = (svc?.departures || [])
+            .filter(d => Number(d.seq) === card.seq && parseDepMin(d.dep) >= 0)
             .slice()
-            .filter(d => parseDepMin(d.dep) >= 0)
             .sort((a, b) => parseDepMin(a.dep) - parseDepMin(b.dep));
         if (!lista.length) return;
 
@@ -1215,7 +1374,7 @@ function calcDestaquesHorarios(deps, trips, agoraMin){
         const chosen = prox || lista[0];
         const amanha = !prox;
         const depMin = parseDepMin(chosen.dep);
-        perSeq.set(t.seq, { dep: chosen.dep, amanha, tripDesc: t.tripDesc || "Terminal" });
+        perCard.set(card.key, { dep: chosen.dep, amanha, depMin, via: card.via, saida: card.saida, local: card.local, seq: card.seq });
 
         const effectiveMin = amanha ? depMin + 24 * 60 : depMin;
         if (!globalNext || effectiveMin < globalNext.effectiveMin){
@@ -1224,26 +1383,98 @@ function calcDestaquesHorarios(deps, trips, agoraMin){
                 amanha,
                 depMin,
                 effectiveMin,
-                tripDesc: t.tripDesc || "Terminal",
-                seq: t.seq
+                tripDesc: card.via,
+                saida: card.saida,
+                local: card.local,
+                seq: card.seq,
+                cardKey: card.key
             };
         }
     });
 
-    return { globalNext, perSeq };
+    return { globalNext, perCard };
 }
 
-function classesChipHorario(d, seq, tripDesc, agoraMin, perSeq, globalNext){
+function classesChipHorarioCard(d, cardKey, agoraMin, perCard, globalNext){
     const depMin = parseDepMin(d.dep);
-    const col = perSeq.get(seq);
+    const col = perCard.get(cardKey);
     const isNext = col && col.dep === d.dep;
     const amanha = isNext && col.amanha;
     const isPast = !isNext && depMin < agoraMin;
-    const isGlobal = isNext && globalNext && globalNext.dep === d.dep && globalNext.tripDesc === tripDesc;
+    const isGlobal = isNext && globalNext && globalNext.dep === d.dep && globalNext.cardKey === cardKey;
     let cls = "time";
     if (isPast) cls += " past";
     if (isNext) cls += " next" + (amanha ? " amanha" : "") + (isGlobal ? " next-global" : "");
     return cls;
+}
+
+function htmlGrupoLocalBus2(grupo, route, agoraMin, perCard, globalNext, opcoes){
+    const svc = servicoDoGrupo(grupo);
+    if (svc) state.schedule.servicePorCard[grupo.key] = svc.serviceId;
+    const svcChips = (grupo.services || []).length > 1
+        ? (grupo.services || []).map(s =>
+            '<button type="button" class="chip' + (s.serviceId === svc?.serviceId ? " active" : "") + '" data-card="' + esc(grupo.key) + '" data-svc="' + s.serviceId + '">' + esc(s.desc || "Dia") + '</button>'
+        ).join("")
+        : "";
+
+    const legend = grupo.vias.map(v => {
+        const cor = corDaVia(v, grupo, opcoes);
+        const active = state.viagemTripAtivo === v.tripId;
+        return '<button type="button" class="via-legend-item' + (active ? " active" : "") + '" data-trip="' + esc(v.tripId || "") + '" data-card="' + esc(v.key) + '" data-group="' + esc(grupo.key) + '" style="--via-cor:' + esc(cor) + '" title="' + esc(v.via) + '">' + esc(v.viaCurta) + '</button>';
+    }).join("");
+
+    const horarios = [];
+    grupo.vias.forEach(v => {
+        const cor = corDaVia(v, grupo, opcoes);
+        (svc?.departures || [])
+            .filter(d => Number(d.seq) === v.seq)
+            .forEach(d => horarios.push({ dep: d.dep, cardKey: v.key, cor, viaCurta: v.viaCurta, tripId: v.tripId }));
+    });
+    horarios.sort((a, b) => parseDepMin(a.dep) - parseDepMin(b.dep));
+
+    const times = horarios.map(h => {
+        const cls = classesChipHorarioCard({ dep: h.dep }, h.cardKey, agoraMin, perCard, globalNext);
+        return '<span class="' + cls + '" data-trip="' + esc(h.tripId || "") + '" data-card="' + esc(h.cardKey) + '" style="--via-cor:' + esc(h.cor) + '" title="' + esc(h.viaCurta) + '">' + esc(h.dep) + '</span>';
+    }).join("") || '<span class="time" style="opacity:.35">—</span>';
+
+    const groupActive = grupo.vias.some(v => state.viagemTripAtivo === v.tripId || state.schedule.cardKey === v.key);
+    return '<article class="local-card' + (groupActive ? " active" : "") + '" data-group="' + esc(grupo.key) + '" role="listitem">' +
+        '<div class="local-card-head">' +
+            '<h4 class="local-card-local">' + esc(grupo.local) + '</h4>' +
+            (grupo.saida !== grupo.local ? '<p class="local-card-saida">' + esc(grupo.saida) + '</p>' : '') +
+        '</div>' +
+        '<div class="local-card-body">' +
+            '<p class="via-card-svc-label">' + esc(svc?.desc || "Horários") + '</p>' +
+            '<div class="via-card-dias">' + htmlChipsDiasSemana(svc) + '</div>' +
+            (svcChips ? '<div class="via-card-svc-chips">' + svcChips + '</div>' : '') +
+            (grupo.vias.length > 1 ? '<div class="via-legend">' + legend + '</div>' : '') +
+            '<div class="local-card-times">' + times + '</div>' +
+        '</div>' +
+    '</article>';
+}
+
+function bindCardHorarioEvents(root){
+    root.querySelectorAll(".via-legend-item, .local-card-times .time[data-trip]").forEach(el => {
+        el.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            const tripId = el.dataset.trip;
+            state.schedule.cardKey = el.dataset.card;
+            if (tripId && state.tab === "viagem") destacarViaViagem(Number(tripId));
+            else if (tripId) {
+                document.querySelectorAll(".via-legend-item").forEach(row => {
+                    row.classList.toggle("active", Number(row.dataset.trip) === Number(tripId));
+                });
+            }
+        });
+    });
+    root.querySelectorAll(".via-card-svc-chips .chip").forEach(btn => {
+        btn.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            state.schedule.servicePorCard[btn.dataset.card] = Number(btn.dataset.svc);
+            renderHorarios();
+            if (state.tab === "viagem") renderViagem();
+        });
+    });
 }
 
 function pararScheduleTick(){
@@ -1256,7 +1487,9 @@ function pararScheduleTick(){
 function iniciarScheduleTick(){
     pararScheduleTick();
     state.scheduleTickTimer = setInterval(() => {
-        if (state.tab === "horarios" && state.schedule.timetable) renderHorarios();
+        if (!state.schedule.timetable) return;
+        if (state.tab === "horarios") renderHorarios();
+        if (state.tab === "viagem") renderViagem();
     }, 30000);
 }
 
@@ -1270,39 +1503,16 @@ function montarHorarios(){
     }
     $("horariosEmpty").hidden = true;
     $("horariosConteudo").hidden = false;
-    const dirs = tt.timetable?.directions || [];
-    const dir = dirs.find(d => d.directionId === state.schedule.directionId) || dirs[0];
-    const services = dir?.services || [];
-    const svc = services.find(s => s.serviceId === state.schedule.serviceId) || servicoHoje(services);
-    if (svc) state.schedule.serviceId = svc.serviceId;
-    const trips = (tt.timetable?.trips || []).filter(t => t.directionId === dir.directionId);
 
-    const deps = {};
-    (svc?.departures || []).forEach(d => { (deps[d.seq] ||= []).push(d); });
-    Object.values(deps).forEach(a => a.sort((x, y) => String(x.dep).localeCompare(String(y.dep))));
-
+    const grupos = extrairGruposLocaisBus2(tt);
+    const opcoes = state.viagemOpcoes.length ? state.viagemOpcoes : opcoesTrajetoComCor(opcoesTrajeto(tt));
     const agoraMin = minutosAgora();
-    const { globalNext, perSeq } = calcDestaquesHorarios(deps, trips, agoraMin);
+    const cards = cardsFromGrupos(grupos);
+    const { globalNext, perCard } = calcProximaPartidaCards(cards, agoraMin);
     const corRoute = esc(corCss(route.color));
+    const svcRef = grupos.length ? servicoDoGrupo(grupos[0]) : null;
 
-    const dirChips = dirs.map(d =>
-        '<button type="button" class="chip' + (d.directionId === state.schedule.directionId ? " active" : "") + '" data-dir="' + d.directionId + '">' + esc(d.desc || "Sentido") + '</button>'
-    ).join("");
-    const svcChips = services.map(s =>
-        '<button type="button" class="chip' + (s.serviceId === state.schedule.serviceId ? " active" : "") + '" data-svc="' + s.serviceId + '">' + esc(s.desc || "Dia") + '</button>'
-    ).join("");
-
-    const cols = trips.map(t => {
-        const tripDesc = t.tripDesc || "Terminal";
-        const horas = (deps[t.seq] || [])
-            .slice()
-            .sort((a, b) => parseDepMin(a.dep) - parseDepMin(b.dep))
-            .map(d => {
-            const cls = classesChipHorario(d, t.seq, tripDesc, agoraMin, perSeq, globalNext);
-            return '<span class="' + cls + '">' + esc(d.dep) + '</span>';
-        }).join("") || '<span class="time" style="opacity:.35">—</span>';
-        return '<article class="sched-col"><div class="sched-col-head">' + esc(tripDesc) + '</div><div class="sched-col-body">' + horas + '</div></article>';
-    }).join("");
+    const cardsHtml = grupos.map(g => htmlGrupoLocalBus2(g, route, agoraMin, perCard, globalNext, opcoes)).join("");
 
     let heroHtml = "";
     if (globalNext){
@@ -1314,7 +1524,7 @@ function montarHorarios(){
                 '<p class="sched-hero-label">Próxima partida</p>' +
                 '<div class="sched-hero-row">' +
                     '<div><p class="sched-hero-time">' + esc(globalNext.dep) + '</p>' +
-                    '<p class="sched-hero-meta"><span>' + esc(globalNext.tripDesc) + '</span> · Linha ' + esc(route.shortName) + '</p></div>' +
+                    '<p class="sched-hero-meta"><span>' + esc(globalNext.local || globalNext.saida) + '</span> · ' + esc(globalNext.tripDesc) + ' · Linha ' + esc(route.shortName) + '</p></div>' +
                     '<div class="' + countdownCls + '">' + esc(formatarContagem(rest, globalNext.amanha)) + '</div>' +
                 '</div>' +
             '</section>';
@@ -1324,26 +1534,17 @@ function montarHorarios(){
         '<div class="sched-wrap" style="--route-accent:' + corRoute + '">' +
             '<header class="sched-head">' +
                 '<div class="sched-head-main">' +
-                    '<p class="sched-kicker">Horários · Bus2</p>' +
+                    '<p class="sched-kicker">Viagem · Bus2</p>' +
                     '<h3 class="sched-title">Linha ' + esc(route.shortName) + ' · ' + esc(route.longName) + '</h3>' +
-                    '<p class="sched-sub">' + esc(svc?.desc || "") + ' · sentido selecionado</p>' +
+                    '<p class="sched-sub">Horários por local · vias coloridas · partidas reunidas</p>' +
                 '</div>' +
-                '<span class="sched-valid">Válido ' + esc(brDate(svc?.start)) + ' – ' + esc(brDate(svc?.end)) + '</span>' +
+                '<span class="sched-valid">Válido ' + esc(brDate(svcRef?.start)) + ' – ' + esc(brDate(svcRef?.end)) + '</span>' +
             '</header>' +
             heroHtml +
-            (dirs.length > 1 ? '<div class="sched-chips" id="chipsDir">' + dirChips + '</div>' : '') +
-            (services.length > 1 ? '<div class="sched-chips" id="chipsSvc">' + svcChips + '</div>' : '') +
-            '<div class="sched-grid">' + cols + '</div>' +
+            '<div class="viagem-cards" style="padding:0">' + cardsHtml + '</div>' +
         '</div>';
 
-    $("chipsDir")?.querySelectorAll(".chip").forEach(btn => btn.addEventListener("click", () => {
-        state.schedule.directionId = Number(btn.dataset.dir);
-        renderHorarios();
-    }));
-    $("chipsSvc")?.querySelectorAll(".chip").forEach(btn => btn.addEventListener("click", () => {
-        state.schedule.serviceId = Number(btn.dataset.svc);
-        renderHorarios();
-    }));
+    bindCardHorarioEvents($("horariosConteudo"));
 
     requestAnimationFrame(() => {
         document.querySelector("#horariosConteudo .time.next")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -1411,6 +1612,15 @@ async function boot(){
 function bind(){
     $("buscaLinha").addEventListener("input", e => { state.buscaLinha = e.target.value; renderListaLinhas(); });
     $("buscaVeiculo").addEventListener("input", e => { state.veiculoFiltro = e.target.value.trim(); atualizarMarcadores(); });
+    $("mapFiltroPont")?.querySelectorAll(".pont-chip").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const key = btn.dataset.pont;
+            if (!key) return;
+            state.filtroPontualidade[key] = !state.filtroPontualidade[key];
+            syncFiltroPontualidadeUI();
+            atualizarMarcadores();
+        });
+    });
     $("btnLimparFiltro").addEventListener("click", limparFiltro);
     $("btnAtualizar").addEventListener("click", () => { state.vehicles.clear(); pollLote(); });
     $("btnMapaClaro").addEventListener("click", () => trocarTile("light"));
