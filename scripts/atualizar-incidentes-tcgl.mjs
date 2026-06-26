@@ -1,3 +1,7 @@
+/**
+ * Busca incidentes no TCGL (Gerenciamento de Incidentes).
+ * Incremental: incidentes já conhecidos só atualizam estado; detalhes só para novos.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -475,20 +479,44 @@ async function enrichDetails(jar, rows, candidateRows = rows) {
   return rows;
 }
 
+function chunkSemNovidade(chunkRows, existing) {
+  if (!chunkRows.length) return false;
+  return chunkRows.every((row) => {
+    const key = rowKey(row);
+    if (!key) return true;
+    const old = existing.rowMap.get(key);
+    if (!old) return false;
+    return String(old.estado || "") === String(row.estado || "");
+  });
+}
+
 function mergeRows(newRows, existing) {
   const merged = [];
   const used = new Set();
+  const novosIds = new Set();
+  let countNovos = 0;
+  let countEstado = 0;
+
   for (const row of newRows) {
     const key = rowKey(row);
-    const old = existing.rowMap.get(key);
-    if (old?.natureOfProblem || old?.instructions) {
-      row.natureOfProblem = String(old.natureOfProblem || '');
-      row.instructions = String(old.instructions || '');
+    const old = key ? existing.rowMap.get(key) : null;
+    if (old) {
+      const nextEstado = String(row.estado || "");
+      if (nextEstado && nextEstado !== String(old.estado || "")) {
+        old.estado = nextEstado;
+        countEstado += 1;
+      }
+      ensureTipoOriginal(old);
+      merged.push(old);
+    } else {
+      ensureTipoOriginal(row);
+      merged.push(row);
+      countNovos += 1;
+      if (key) novosIds.add(key);
     }
-    ensureTipoOriginal(row);
     if (key) used.add(key);
-    merged.push(row);
   }
+
   for (const row of existing.rows) {
     const key = rowKey(row);
     if (key && used.has(key)) continue;
@@ -496,7 +524,9 @@ function mergeRows(newRows, existing) {
     merged.push(row);
     if (key) used.add(key);
   }
-  return merged;
+
+  console.log(`Merge: ${countNovos} novos, ${countEstado} estados atualizados, ${merged.length} total.`);
+  return { merged, countNovos, novosIds };
 }
 
 const existingPayload = readExistingPayload();
@@ -531,11 +561,22 @@ while (total === null || start < total) {
     console.log(`Atualização: lote anterior a ${DATA_MINIMA_ISO}. Encerrando paginação.`);
     break;
   }
+  if (chunkNormalizedAll.length > 0 && chunkSemNovidade(chunkNormalizedAll, existingPayload)) {
+    console.log("Atualização: lote sem incidentes novos nem mudança de estado. Encerrando paginação.");
+    break;
+  }
   start += pageLength;
 }
 
-const mergedRows = mergeRows(rows, existingPayload).filter(isOnOrAfterMinDate);
-await enrichDetails(jar, mergedRows, mergedRows);
+const { merged: mergedRows, novosIds } = mergeRows(rows, existingPayload);
+const novosParaDetalhe = mergedRows.filter((row) => {
+  const key = rowKey(row);
+  return key && novosIds.has(key)
+    && !existingPayload.checkedDetailIds.has(key)
+    && !String(row.natureOfProblem || "").trim()
+    && !String(row.instructions || "").trim();
+});
+await enrichDetails(jar, mergedRows, novosParaDetalhe);
 mergedRows.forEach((row) => {
   ensureTipoOriginal(row);
   applyTipoVazio(row);
