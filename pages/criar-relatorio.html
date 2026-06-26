@@ -189,7 +189,28 @@ select:disabled{
     font-size:14px;
     font-weight:700;
 }
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:flex-start}
+.modelo-wrap{position:relative;flex:1 1 100%}
+.modelo-btn{width:100%;justify-content:space-between}
+.modelo-menu{
+    position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;
+    background:#fff;border:1px solid var(--border);border-radius:8px;
+    box-shadow:0 12px 28px rgba(16,24,40,.14);padding:6px;max-height:280px;overflow:auto;
+}
+.modelo-menu[hidden]{display:none!important}
+.modelo-item{
+    display:block;width:100%;border:0;background:transparent;border-radius:6px;
+    padding:9px 10px;font:inherit;font-size:12px;font-weight:700;text-align:left;
+    color:var(--blue);cursor:pointer;
+}
+.modelo-item:hover,.modelo-item.active{background:#effcfb}
+.modelo-item.active{color:var(--blue)}
+.ia-actions{display:flex;gap:8px;flex-wrap:wrap;width:100%}
+.ia-actions .btn{flex:1 1 calc(50% - 4px);min-width:140px}
+.bloco-funcionario.oculto{display:none!important}
+.preview-funcionario.oculto{display:none!important}
+.report-title-informativo{font-size:17px}
+.status.ia{color:var(--blue)}
 .status{min-height:18px;margin-top:10px;font-size:12px;font-weight:700;color:var(--muted)}
 .status.erro{color:var(--red)}
 .status.ok{color:var(--green)}
@@ -379,7 +400,16 @@ select:disabled{
         <aside class="panel">
             <h2 class="panel-title">Dados do relatório</h2>
 
-            <div class="field-grid">
+            <label for="modeloRelatorio">Modelo do relatório</label>
+            <div class="modelo-wrap">
+                <button type="button" class="btn btn-secondary modelo-btn" id="modeloBtn" aria-haspopup="listbox" aria-expanded="false">
+                    <span id="modeloBtnLabel">Selecione o modelo</span>
+                    <span aria-hidden="true">▾</span>
+                </button>
+                <div class="modelo-menu" id="modeloMenu" role="listbox" hidden></div>
+            </div>
+
+            <div class="field-grid bloco-funcionario" id="blocoFuncionario">
                 <div>
                     <label for="registroFuncionario">Registro do funcionário</label>
                     <input id="registroFuncionario" type="text" inputmode="numeric" autocomplete="off" list="listaFuncionarios" placeholder="Digite o registro">
@@ -396,6 +426,13 @@ select:disabled{
                 <div>
                     <label for="funcaoFuncionario">Função</label>
                     <input id="funcaoFuncionario" type="text" readonly>
+                </div>
+            </div>
+
+            <div class="field-grid">
+                <div class="full" id="wrapProtocoloInformativo" hidden>
+                    <label for="numeroRelatorioInfo">Nº Protocolo</label>
+                    <input id="numeroRelatorioInfo" type="text" readonly>
                 </div>
                 <div>
                     <label for="dataRelatorio">Data</label>
@@ -420,7 +457,11 @@ select:disabled{
             <div id="cargoAssinaturaTexto" class="cargo-vinculado">Cargo não vinculado</div>
 
             <div class="actions">
-                <button class="btn btn-secondary" type="button" id="gerarTextoBtn">Gerar texto</button>
+                <div class="ia-actions">
+                    <button class="btn btn-secondary" type="button" id="iaGerarBtn">Gerar com IA</button>
+                    <button class="btn btn-secondary" type="button" id="iaCorrigirBtn">Corrigir texto</button>
+                </div>
+                <button class="btn btn-secondary" type="button" id="gerarTextoBtn">Gerar texto padrão</button>
                 <button class="btn btn-secondary" type="button" id="limparBtn">Limpar</button>
             </div>
             <div class="status" id="statusRelatorio">Preparando base do relatório...</div>
@@ -435,14 +476,14 @@ select:disabled{
                 </div>
 
                 <div class="report-title">
-                    <h2>RELATÓRIO</h2>
+                    <h2 id="previewTitulo">RELATÓRIO</h2>
                     <div class="report-number" id="previewNumero">N° CIOP00000</div>
                 </div>
 
                 <div class="report-fields">
-                    <div class="report-line"><span class="report-label">Funcionário:</span> <span id="previewRegistro"></span></div>
-                    <div class="report-line"><span class="report-label">Nome:</span> <span id="previewNome"></span></div>
-                    <div class="report-line"><span class="report-label">Função:</span> <span id="previewFuncao"></span></div>
+                    <div class="report-line preview-funcionario" id="previewLinhaRegistro"><span class="report-label">Funcionário:</span> <span id="previewRegistro"></span></div>
+                    <div class="report-line preview-funcionario" id="previewLinhaNome"><span class="report-label">Nome:</span> <span id="previewNome"></span></div>
+                    <div class="report-line preview-funcionario" id="previewLinhaFuncao"><span class="report-label">Função:</span> <span id="previewFuncao"></span></div>
                     <div class="report-line"><span class="report-label">Carro:</span> <span id="previewCarro"></span></div>
                     <div class="report-line"><span class="report-label">Data:</span> <span id="previewData"></span></div>
                     <div class="report-line"><span class="report-label">Linha/Rota:</span> <span id="previewLinha"></span></div>
@@ -475,6 +516,7 @@ select:disabled{
 <script type="module">
 import { buscarUsuarioFirestore, normalizarCadastro } from "../assets/js/portal-firestore.js";
 import { usuarios as usuariosLocais } from "../assets/js/usuarios.js";
+import { TIPOS_RELATORIO, gerarTextoModelo, gerarTextoIA, corrigirTextoIA } from "../assets/js/relatorio-ia.js";
 
 const SHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const GID_RO = "665320337";
@@ -502,6 +544,7 @@ const campos = {
 
 };
 const preview = {
+    titulo: document.getElementById("previewTitulo"),
     numero: document.getElementById("previewNumero"),
     registro: document.getElementById("previewRegistro"),
     nome: document.getElementById("previewNome"),
@@ -513,6 +556,12 @@ const preview = {
     assinaturaRegistro: document.getElementById("previewAssinaturaRegistro"),
     assinaturaCargo: document.getElementById("previewAssinaturaCargo")
 };
+const blocoFuncionario = document.getElementById("blocoFuncionario");
+const wrapProtocoloInformativo = document.getElementById("wrapProtocoloInformativo");
+const numeroRelatorioInfo = document.getElementById("numeroRelatorioInfo");
+const modeloBtn = document.getElementById("modeloBtn");
+const modeloBtnLabel = document.getElementById("modeloBtnLabel");
+const modeloMenu = document.getElementById("modeloMenu");
 
 let funcionarios = [];
 let protocoloAtual = null;
@@ -521,6 +570,137 @@ let protocoloRegistrado = false;
 let corpoFoiEditado = false;
 let dadosGeraisLinhas = [];
 let colunasDadosGerais = { carro: 6, linha: 7, motorista: 5 };
+let tipoRelatorio = null;
+let iaBusy = false;
+
+function ehInformativo() {
+    return !!TIPOS_RELATORIO[tipoRelatorio]?.informativo;
+}
+
+function contextoRelatorio() {
+    return {
+        data: normalizarDataInput(campos.data.value),
+        nome: campos.nome.value,
+        registro: campos.registro.value,
+        funcao: campos.funcao.value,
+        carro: campos.carro.value,
+        linha: campos.linha.value
+    };
+}
+
+function montarMenuModelos() {
+    if (!modeloMenu) return;
+    modeloMenu.innerHTML = Object.values(TIPOS_RELATORIO).map((tipo) =>
+        "<button type=\"button\" class=\"modelo-item" + (tipoRelatorio === tipo.id ? " active" : "") + "\" data-tipo=\"" + tipo.id + "\" role=\"option\">" + escapeOption(tipo.label) + "</button>"
+    ).join("");
+    modeloMenu.querySelectorAll(".modelo-item").forEach((btn) => {
+        btn.addEventListener("click", () => selecionarModelo(btn.dataset.tipo));
+    });
+}
+
+function fecharMenuModelos() {
+    if (!modeloMenu || !modeloBtn) return;
+    modeloMenu.hidden = true;
+    modeloBtn.setAttribute("aria-expanded", "false");
+}
+
+function abrirMenuModelos() {
+    if (!modeloMenu || !modeloBtn) return;
+    montarMenuModelos();
+    modeloMenu.hidden = false;
+    modeloBtn.setAttribute("aria-expanded", "true");
+}
+
+function aplicarModoInformativo() {
+    const informativo = ehInformativo();
+    blocoFuncionario?.classList.toggle("oculto", informativo);
+    wrapProtocoloInformativo.hidden = !informativo;
+    document.querySelectorAll(".preview-funcionario").forEach((el) => el.classList.toggle("oculto", informativo));
+    if (preview.titulo) {
+        preview.titulo.textContent = informativo ? "RELATÓRIO INFORMATIVO" : "RELATÓRIO";
+        preview.titulo.classList.toggle("report-title-informativo", informativo);
+    }
+    if (informativo) {
+        campos.registro.value = "";
+        campos.nome.value = "";
+        campos.funcao.value = "";
+        if (numeroRelatorioInfo) numeroRelatorioInfo.value = campos.numero.value;
+    }
+}
+
+function selecionarModelo(tipoId, opts) {
+    if (!TIPOS_RELATORIO[tipoId]) return;
+    tipoRelatorio = tipoId;
+    if (modeloBtnLabel) modeloBtnLabel.textContent = TIPOS_RELATORIO[tipoId].label;
+    aplicarModoInformativo();
+    fecharMenuModelos();
+    if (!opts?.silencioso) {
+        corpoFoiEditado = false;
+        corpoRelatorio.value = gerarCorpoPadrao();
+        autoGrow();
+    }
+    atualizarPreview();
+    setStatus("Modelo selecionado: " + TIPOS_RELATORIO[tipoId].label + ".", "ok");
+}
+
+async function executarGeracaoIA() {
+    if (!tipoRelatorio) {
+        setStatus("Selecione um modelo de relatório antes de gerar com IA.", "erro");
+        return;
+    }
+    if (!ehInformativo() && !String(campos.registro.value || "").trim()) {
+        setStatus("Informe o registro do funcionário ou escolha Relatório informativo.", "erro");
+        return;
+    }
+    if (iaBusy) return;
+    iaBusy = true;
+    setStatus("Gerando texto com IA...", "ia");
+    window.portalMostrarCarregando?.("Gerando texto com IA");
+    try {
+        const res = await gerarTextoIA(tipoRelatorio, contextoRelatorio());
+        corpoFoiEditado = false;
+        corpoRelatorio.value = res.texto;
+        autoGrow();
+        setStatus(res.origem === "ia"
+            ? "Texto gerado com IA. Revise antes de gerar o PDF."
+            : "Modelo aplicado (IA indisponível). Texto pronto para revisão.", res.origem === "ia" ? "ok" : "ia");
+    } catch (err) {
+        console.error(err);
+        corpoRelatorio.value = gerarCorpoPadrao();
+        autoGrow();
+        setStatus("Não foi possível usar a IA. Modelo padrão aplicado.", "erro");
+    } finally {
+        iaBusy = false;
+        window.portalOcultarCarregando?.();
+    }
+}
+
+async function executarCorrecaoIA() {
+    const base = String(corpoRelatorio.value || "").trim();
+    if (!base) {
+        setStatus("Digite ou gere um texto antes de corrigir.", "erro");
+        return;
+    }
+    if (iaBusy) return;
+    iaBusy = true;
+    setStatus("Corrigindo texto com IA...", "ia");
+    window.portalMostrarCarregando?.("Corrigindo texto");
+    try {
+        const res = await corrigirTextoIA(base);
+        corpoFoiEditado = true;
+        corpoRelatorio.value = res.texto;
+        autoGrow();
+        setStatus(res.origem === "ia"
+            ? "Texto corrigido com IA."
+            : "Correções básicas aplicadas (IA indisponível).", res.origem === "ia" ? "ok" : "ia");
+    } catch (err) {
+        console.error(err);
+        setStatus("Falha ao corrigir o texto.", "erro");
+    } finally {
+        iaBusy = false;
+        window.portalOcultarCarregando?.();
+    }
+}
 
 function normalizarCabecalho(valor) {
     return String(valor || "")
@@ -725,6 +905,7 @@ function configurarProtocolo(linhas) {
 }
 
 function gerarCorpoPadrao() {
+    if (tipoRelatorio) return gerarTextoModelo(tipoRelatorio, contextoRelatorio());
     const data = normalizarDataInput(campos.data.value);
     const nome = campos.nome.value || "nome do funcionário";
     const registro = campos.registro.value || "registro";
@@ -764,6 +945,7 @@ function montarUsuarioAssinaturaLogado(cadastro, email) {
 
 function atualizarPreview() {
     preview.numero.textContent = formatarNumero(campos.numero.value);
+    if (numeroRelatorioInfo) numeroRelatorioInfo.value = campos.numero.value;
     preview.registro.textContent = campos.registro.value || "";
     preview.nome.textContent = campos.nome.value || "";
     preview.funcao.textContent = campos.funcao.value || "";
@@ -780,13 +962,14 @@ function atualizarPreview() {
             ? ((user.registro ? user.registro + " - " : "") + user.nome)
             : "Assinatura não disponível para este usuário";
     }
-    if (!corpoFoiEditado && campos.registro.value) {
+    if (!corpoFoiEditado && (tipoRelatorio || campos.registro.value || ehInformativo())) {
         corpoRelatorio.value = gerarCorpoPadrao();
         autoGrow();
     }
 }
 
 function preencherFuncionarioPorRegistro() {
+    if (ehInformativo()) return;
     const registro = String(campos.registro.value || "").trim();
     const funcionario = funcionarios.find((item) => item.registro === registro);
     campos.nome.value = funcionario?.nome || "";
@@ -876,11 +1059,11 @@ async function iniciarRelatorio() {
         carregarDadosGerais(cacheGids[GID_DADOS]);
         configurarProtocolo(cacheGids[GID_CONT_PROT]);
         await carregarAssinaturaUsuarioLogado();
+        montarMenuModelos();
+        selecionarModelo("carro_adiantado", { silencioso: true });
         corpoRelatorio.value = gerarCorpoPadrao();
         autoGrow();
         atualizarPreview();
-        setStatus("Base em cache local · atualizando...", "ok");
-        mostrouCache = true;
     }
 
     if (!mostrouCache) window.portalMostrarCarregando?.("Carregando relatório");
@@ -899,7 +1082,9 @@ async function iniciarRelatorio() {
         autoGrow();
         atualizarPreview();
         const protocoloTexto = protocoloAtual ? " Próximo protocolo: " + protocoloAtual.protocolo + "." : "";
-        setStatus("Base carregada." + protocoloTexto + " Digite o registro do funcionário e edite o corpo do relatório.", "ok");
+        setStatus("Base carregada." + protocoloTexto + " Selecione o modelo e preencha os dados.", "ok");
+        montarMenuModelos();
+        selecionarModelo("carro_adiantado", { silencioso: true });
     } catch (error) {
         console.error(error);
         if (!mostrouCache) setStatus("Não foi possível carregar a base da planilha: " + error.message, "erro");
@@ -920,13 +1105,23 @@ document.getElementById("gerarTextoBtn").addEventListener("click", () => {
     corpoRelatorio.value = gerarCorpoPadrao();
     autoGrow();
 });
+document.getElementById("iaGerarBtn").addEventListener("click", executarGeracaoIA);
+document.getElementById("iaCorrigirBtn").addEventListener("click", executarCorrecaoIA);
+modeloBtn?.addEventListener("click", () => {
+    if (modeloMenu?.hidden) abrirMenuModelos();
+    else fecharMenuModelos();
+});
+document.addEventListener("click", (ev) => {
+    if (!ev.target.closest(".modelo-wrap")) fecharMenuModelos();
+});
 function dadosProtocolo() {
     const analista = usuarioCriador;
+    const informativo = ehInformativo();
     return {
         protocolo: campos.numero.value,
         linhaPlanilha: protocoloAtual?.linhaPlanilha || "",
-        tipoDocumento: TIPO_DOCUMENTO_PROTOCOLO,
-        funcionario: String(campos.registro.value || "").trim(),
+        tipoDocumento: informativo ? "R. INFORMATIVO" : TIPO_DOCUMENTO_PROTOCOLO,
+        funcionario: informativo ? "INFORMATIVO" : String(campos.registro.value || "").trim(),
         dataDocumento: normalizarDataInput(campos.data.value),
         analista: analista ? ((analista.registro ? analista.registro + " - " : "") + analista.nome).toUpperCase() : "",
         cargoAnalista: textoCargoAssinatura(analista)
@@ -940,7 +1135,7 @@ async function registrarProtocolo() {
         setStatus("Não foi possível identificar o próximo protocolo livre.", "erro");
         return false;
     }
-    if (!dados.funcionario || !campos.nome.value) {
+    if (!ehInformativo() && (!dados.funcionario || !campos.nome.value)) {
         setStatus("Digite um registro de funcionário válido antes de gerar o PDF.", "erro");
         return false;
     }
@@ -977,9 +1172,11 @@ async function gerarPDF() {
 document.getElementById("pdfTopoBtn").addEventListener("click", gerarPDF);
 window.addEventListener("beforeprint", atualizarCorpoPDF);
 document.getElementById("limparBtn").addEventListener("click", () => {
-    campos.registro.value = "";
-    campos.nome.value = "";
-    campos.funcao.value = "";
+    if (!ehInformativo()) {
+        campos.registro.value = "";
+        campos.nome.value = "";
+        campos.funcao.value = "";
+    }
     campos.carro.value = "";
     campos.linha.value = "";
     corpoFoiEditado = false;
