@@ -1,9 +1,12 @@
 name: Deploy Bus2 Proxy
 
-# Manual apenas: o usuário IAM do GitHub não tem CloudFormation.
-# O proxy já foi implantado via `aws login && bash scripts/deploy-bus2-proxy.sh`.
+# Manual: atualiza código da Lambda (GitHub Actions) ou stack completo (local com admin).
 on:
   workflow_dispatch:
+
+concurrency:
+  group: deploy-bus2-proxy
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -22,14 +25,17 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: sa-east-1
 
-      - name: Implantar proxy Bus2
+      - name: Atualizar Lambda (sem CloudFormation)
         run: bash scripts/deploy-bus2-proxy.sh
         env:
           SKIP_GH_SECRET: "1"
+          BUS2_PROXY_SKIP_CFN: "1"
+          PORTAL_AWS_API_URL: ${{ secrets.PORTAL_AWS_API_URL }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           BUSTIME_API_KEY: ${{ secrets.BUSTIME_API_KEY }}
 
-      - name: Redeploy GitHub Pages (portal-runtime)
+      - name: Redeploy GitHub Pages
+        if: success()
         run: gh workflow run deploy-github-pages.yml
         env:
           GH_TOKEN: ${{ github.token }}

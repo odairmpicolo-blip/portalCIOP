@@ -17,7 +17,7 @@ on:
 
 concurrency:
   group: github-pages-portal
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -99,22 +99,24 @@ jobs:
     needs: build
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deploy_try1.outputs.page_url }}
     steps:
-      - name: Publicar
-        id: deployment
+      - name: Publicar (tentativa 1)
+        id: deploy_try1
         uses: actions/deploy-pages@v4
         continue-on-error: true
 
-      - name: Repetir publicação se deploy simultâneo
-        if: steps.deployment.outcome == 'failure'
-        run: sleep 45
+      - name: Aguardar fila do Pages
+        if: steps.deploy_try1.outcome == 'failure'
+        run: sleep 90
 
-      - name: Publicar (2ª tentativa)
-        if: steps.deployment.outcome == 'failure'
-        id: deployment_retry
+      - name: Publicar (tentativa 2)
+        id: deploy_try2
+        if: steps.deploy_try1.outcome == 'failure'
         uses: actions/deploy-pages@v4
+        continue-on-error: true
 
-      - name: Falhou publicação
-        if: steps.deployment.outcome == 'failure' && steps.deployment_retry.outcome == 'failure'
-        run: exit 1
+      - name: Publicar (tentativa 3)
+        id: deploy_try3
+        if: steps.deploy_try1.outcome == 'failure' && steps.deploy_try2.outcome == 'failure'
+        uses: actions/deploy-pages@v4

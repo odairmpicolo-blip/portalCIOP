@@ -18,6 +18,11 @@ if ! "$AWS" sts get-caller-identity --region "$REGION" >/dev/null 2>&1; then
   exit 1
 fi
 
+if [[ "${BUS2_PROXY_SKIP_CFN:-}" == "1" ]]; then
+  FUNC="${LAMBDA_FUNCTION_NAME:-portal-ciop-bus2-proxy}"
+  API_URL="${PORTAL_AWS_API_URL:-https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com}"
+  echo "==> Modo rápido: atualizar código Lambda $FUNC (sem CloudFormation)"
+else
 echo "==> CloudFormation stack: $STACK ($REGION)"
 if ! "$AWS" cloudformation deploy \
   --template-file "$AWS_DIR/template.yaml" \
@@ -43,6 +48,7 @@ API_URL=$("$AWS" cloudformation describe-stacks \
   --region "$REGION" \
   --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" \
   --output text)
+fi
 
 ZIP="/tmp/portal-bus2-proxy-$$.zip"
 rm -f "$ZIP"
