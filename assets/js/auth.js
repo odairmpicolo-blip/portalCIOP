@@ -11,6 +11,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { app, buscarUsuarioFirestore, normalizarCadastro } from "./portal-firestore.js";
 import { usuarios } from "./usuarios.js";
+import { aplicarSaudacaoHero } from "./portal-saudacao.js";
 
 const auth = getAuth(app);
 const authReady = setPersistence(auth, browserSessionPersistence).catch((error) => {
@@ -165,12 +166,7 @@ function modernizarSessaoUsuario() {
 window.modernizarSessaoUsuario = modernizarSessaoUsuario;
 
 function atualizarSaudacaoHero(nome) {
-  const heroNome = document.getElementById("heroNomeUsuario");
-  if (heroNome) {
-    const texto = String(nome || window.portalUsuario?.nome || "").trim();
-    const partes = texto.split(/\s+/);
-    heroNome.textContent = partes[0] || texto || "usuário";
-  }
+  aplicarSaudacaoHero(nome);
 }
 
 function garantirCssSessao() {
