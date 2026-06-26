@@ -1,46 +1,23 @@
-import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 export const TIPOS_RELATORIO = {
-    carro_adiantado: {
-        id: "carro_adiantado",
-        label: "Carro adiantado",
-        informativo: false
-    },
-    atraso_frequente: {
-        id: "atraso_frequente",
-        label: "Atraso frequente",
-        informativo: false
-    },
-    nao_login_tdm: {
-        id: "nao_login_tdm",
-        label: "Não realizou login no TDM",
-        informativo: false
-    },
-    nao_acatou_ciop: {
-        id: "nao_acatou_ciop",
-        label: "Não acatou ordens do CIOP",
-        informativo: false
-    },
-    supressao_viagem: {
-        id: "supressao_viagem",
-        label: "Supressão de viagem",
-        informativo: false
-    },
-    desvio_itinerario: {
-        id: "desvio_itinerario",
-        label: "Desvio de itinerário (Sem justificativa)",
-        informativo: false
-    },
-    informativo: {
-        id: "informativo",
-        label: "Relatório informativo",
-        informativo: true
-    }
+    carro_adiantado: { id: "carro_adiantado", label: "Carro adiantado", informativo: false },
+    atraso_frequente: { id: "atraso_frequente", label: "Atraso frequente", informativo: false },
+    nao_login_tdm: { id: "nao_login_tdm", label: "Não realizou login no TDM", informativo: false },
+    nao_acatou_ciop: { id: "nao_acatou_ciop", label: "Não acatou ordens do CIOP", informativo: false },
+    supressao_viagem: { id: "supressao_viagem", label: "Supressão de viagem", informativo: false },
+    desvio_itinerario: { id: "desvio_itinerario", label: "Desvio de itinerário (Sem justificativa)", informativo: false },
+    informativo: { id: "informativo", label: "Relatório informativo", informativo: true }
 };
 
-let modeloIa = null;
-let iaIndisponivel = false;
+const MODELOS_GEMINI = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
+const API_PROXY_FALLBACK = "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com";
+
+let ultimoErroIa = "";
+
+export function obterUltimoErroIa() {
+    return ultimoErroIa;
+}
 
 function ctxLinha(ctx) {
     return ctx.linha ? ", linha/rota " + ctx.linha : "";
@@ -94,9 +71,7 @@ export function gerarTextoModelo(tipoId, ctx) {
 
         informativo:
             "No dia " + data + ", o CIOP registra as informações abaixo para conhecimento e providências internas.\n\n" +
-            (ctx.carro || ctx.linha
-                ? "Referência operacional" + ctxCarro(ctx) + ctxLinha(ctx) + ".\n\n"
-                : "") +
+            (ctx.carro || ctx.linha ? "Referência operacional" + ctxCarro(ctx) + ctxLinha(ctx) + ".\n\n" : "") +
             "Descreva os fatos observados, contexto, impactos e encaminhamentos necessários."
     };
 
@@ -115,6 +90,7 @@ function montarPromptGeracao(tipoId, ctx) {
         "Data: " + (ctx.data || "") + ".",
         (ctx.carro ? "Carro: " + ctx.carro + ". " : "") + (ctx.linha ? "Linha: " + ctx.linha + "." : ""),
         "Use o modelo abaixo como base, melhore redação e mantenha parágrafos curtos. Não invente fatos não informados.",
+        "Retorne somente o texto do relatório, sem título e sem comentários.",
         "Modelo:\n" + base
     ].filter(Boolean).join("\n");
 }
@@ -128,50 +104,156 @@ function montarPromptCorrecao(texto) {
     ].join("\n");
 }
 
-async function obterModeloIa() {
-    if (modeloIa) return modeloIa;
-    if (iaIndisponivel) return null;
+function extrairTextoGemini(data) {
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    const texto = parts.map((p) => p.text || "").join("").trim();
+    return texto || null;
+}
+
+async function obterUrlsIa() {
+    const candidatos = [];
+    const path = String(window.location?.pathname || "").replace(/\\/g, "/");
+    const pagesIdx = path.indexOf("/pages/");
+    if (pagesIdx >= 0) candidatos.push(path.slice(0, pagesIdx) + "/assets/data/portal-runtime.json");
     try {
-        const { getAI, GoogleAIBackend, getGenerativeModel } = await import("https://www.gstatic.com/firebasejs/11.6.0/firebase-ai.js");
-        const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-        const ai = getAI(app, { backend: new GoogleAIBackend() });
-        modeloIa = getGenerativeModel(ai, { model: "gemini-2.0-flash" });
-        return modeloIa;
+        candidatos.push(new URL("../assets/data/portal-runtime.json", window.location.href).href);
+    } catch { /* ignore */ }
+
+    let awsApiUrl = API_PROXY_FALLBACK;
+    let relatorioIaScriptUrl = "";
+    for (const url of candidatos) {
+        try {
+            const res = await fetch(url, { cache: "no-store" });
+            if (!res.ok) continue;
+            const cfg = await res.json();
+            const api = String(cfg?.awsApiUrl || "").trim().replace(/\/+$/, "");
+            if (api) awsApiUrl = api;
+            if (cfg?.relatorioIaScriptUrl) relatorioIaScriptUrl = String(cfg.relatorioIaScriptUrl).trim();
+            if (awsApiUrl && relatorioIaScriptUrl) break;
+        } catch { /* tenta próximo */ }
+    }
+    return { awsApiUrl, relatorioIaScriptUrl };
+}
+
+async function chamarGeminiAppsScript(prompt) {
+    try {
+        const { relatorioIaScriptUrl } = await obterUrlsIa();
+        if (!relatorioIaScriptUrl) return null;
+        const res = await fetch(relatorioIaScriptUrl, {
+            method: "POST",
+            mode: "cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ prompt })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data?.texto) {
+            ultimoErroIa = data?.erro || ("Apps Script HTTP " + res.status);
+            return null;
+        }
+        ultimoErroIa = "";
+        return String(data.texto).trim();
     } catch (err) {
-        console.warn("IA indisponível:", err);
-        iaIndisponivel = true;
+        ultimoErroIa = err?.message || "Falha no Apps Script de IA.";
         return null;
     }
 }
 
-async function gerarComGemini(prompt) {
-    const model = await obterModeloIa();
-    if (!model) return null;
-    const result = await model.generateContent(prompt);
-    const text = result?.response?.text?.()?.trim();
-    return text || null;
+async function chamarGeminiProxy(prompt) {
+    try {
+        const { awsApiUrl } = await obterUrlsIa();
+        const res = await fetch(awsApiUrl + "/relatorio-ia", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data?.texto) {
+            ultimoErroIa = data?.erro || data?.message || ("Proxy IA HTTP " + res.status);
+            return null;
+        }
+        ultimoErroIa = "";
+        return String(data.texto).trim();
+    } catch (err) {
+        ultimoErroIa = err?.message || "Falha no proxy de IA.";
+        return null;
+    }
+}
+
+async function chamarGeminiRest(prompt) {
+    const apiKey = String(firebaseConfig?.apiKey || "").trim();
+    if (!apiKey) {
+        ultimoErroIa = "Chave da API não configurada.";
+        return null;
+    }
+
+    const payload = {
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.35, maxOutputTokens: 2048 }
+    };
+
+    for (const model of MODELOS_GEMINI) {
+        try {
+            const url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + encodeURIComponent(apiKey);
+            const res = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                ultimoErroIa = data?.error?.message || ("Gemini HTTP " + res.status);
+                continue;
+            }
+            const texto = extrairTextoGemini(data);
+            if (texto) {
+                ultimoErroIa = "";
+                return texto;
+            }
+        } catch (err) {
+            ultimoErroIa = err?.message || "Falha na chamada Gemini.";
+        }
+    }
+    return null;
+}
+
+async function gerarComIa(prompt) {
+    return (await chamarGeminiAppsScript(prompt))
+        || (await chamarGeminiProxy(prompt))
+        || (await chamarGeminiRest(prompt));
+}
+
+function montarErroIaIndisponivel() {
+    const detalhe = String(ultimoErroIa || "").trim();
+    const orientacao = "Para habilitar a IA: implante scripts/relatorio-ia.gs no Google Apps Script "
+        + "(chave GEMINI_API_KEY nas propriedades) e defina relatorioIaScriptUrl em assets/data/portal-runtime.json, "
+        + "ou rode export GEMINI_API_KEY=sua_chave && bash scripts/deploy-bus2-proxy.sh.";
+    return detalhe ? detalhe + " — " + orientacao : orientacao;
 }
 
 export async function gerarTextoIA(tipoId, ctx) {
+    ultimoErroIa = "";
     try {
-        const ia = await gerarComGemini(montarPromptGeracao(tipoId, ctx));
+        const ia = await gerarComIa(montarPromptGeracao(tipoId, ctx));
         if (ia) return { texto: ia, origem: "ia" };
     } catch (err) {
+        ultimoErroIa = err?.message || "Erro ao gerar com IA.";
         console.warn("Falha IA geração:", err);
     }
-    return { texto: gerarTextoModelo(tipoId, ctx), origem: "modelo" };
+    return { texto: gerarTextoModelo(tipoId, ctx), origem: "modelo", erro: montarErroIaIndisponivel() };
 }
 
 export async function corrigirTextoIA(texto) {
     const base = String(texto || "").trim();
     if (!base) return { texto: "", origem: "vazio" };
+    ultimoErroIa = "";
     try {
-        const ia = await gerarComGemini(montarPromptCorrecao(base));
+        const ia = await gerarComIa(montarPromptCorrecao(base));
         if (ia) return { texto: ia, origem: "ia" };
     } catch (err) {
+        ultimoErroIa = err?.message || "Erro ao corrigir com IA.";
         console.warn("Falha IA correção:", err);
     }
-    return { texto: melhorarTextoLocal(base), origem: "local" };
+    return { texto: melhorarTextoLocal(base), origem: "local", erro: montarErroIaIndisponivel() };
 }
 
 export function melhorarTextoLocal(texto) {

@@ -1,0 +1,142 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Portal CIOP — proxy Bus2/Mobilibus (mapa ao vivo, CORS aberto)
+
+Resources:
+  Bus2ProxyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: portal-ciop-bus2-proxy-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  Bus2ProxyFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: portal-ciop-bus2-proxy
+      Description: Proxy GET para mobilibus.com (legado) e BusTime csr.mov1.com.br
+      Runtime: nodejs20.x
+      Handler: index.handler
+      Role: !GetAtt Bus2ProxyRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          BUSTIME_BASE_URL: https://csr.mov1.com.br/bustime/api/v3
+          BUSTIME_REFERER: https://csr.mov1.com.br/map
+          BUSTIME_API_KEY: ""
+      Code:
+        ZipFile: |
+          export const handler = async () => ({
+            statusCode: 503,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ok: false, erro: "Deploy com scripts/deploy-bus2-proxy.sh" })
+          });
+
+  Bus2ProxyApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: portal-ciop-bus2-proxy
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - "*"
+        MaxAge: 3600
+
+  Bus2ProxyIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref Bus2ProxyApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${Bus2ProxyFunction.Arn}/invocations
+      PayloadFormatVersion: "2.0"
+
+  Bus2ProxyRouteRoot:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApi
+      RouteKey: GET /
+      Target: !Sub integrations/${Bus2ProxyIntegration}
+
+  Bus2ProxyRouteHealth:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApi
+      RouteKey: GET /health
+      Target: !Sub integrations/${Bus2ProxyIntegration}
+
+  Bus2ProxyRouteBus2:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApi
+      RouteKey: "GET /bus2/{proxy+}"
+      Target: !Sub integrations/${Bus2ProxyIntegration}
+
+  Bus2ProxyRouteMov1:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApi
+      RouteKey: "GET /mov1/{proxy+}"
+      Target: !Sub integrations/${Bus2ProxyIntegration}
+
+  Bus2ProxyRouteOptions:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApi
+      RouteKey: "OPTIONS /bus2/{proxy+}"
+      Target: !Sub integrations/${Bus2ProxyIntegration}
+
+  Bus2ProxyRouteMov1Options:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApi
+      RouteKey: "OPTIONS /mov1/{proxy+}"
+      Target: !Sub integrations/${Bus2ProxyIntegration}
+
+  Bus2ProxyRouteRelatorioIa:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApi
+      RouteKey: POST /relatorio-ia
+      Target: !Sub integrations/${Bus2ProxyIntegration}
+
+  Bus2ProxyRouteRelatorioIaOptions:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApi
+      RouteKey: OPTIONS /relatorio-ia
+      Target: !Sub integrations/${Bus2ProxyIntegration}
+
+  Bus2ProxyStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref Bus2ProxyApi
+      StageName: $default
+      AutoDeploy: true
+
+  Bus2ProxyPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Bus2ProxyFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${Bus2ProxyApi}/*/*
+
+Outputs:
+  ApiUrl:
+    Description: URL base para PORTAL_AWS_API_URL (sem barra final)
+    Value: !Sub https://${Bus2ProxyApi}.execute-api.${AWS::Region}.amazonaws.com
+  FunctionName:
+    Value: !Ref Bus2ProxyFunction

@@ -663,7 +663,7 @@ async function executarGeracaoIA() {
         autoGrow();
         setStatus(res.origem === "ia"
             ? "Texto gerado com IA. Revise antes de gerar o PDF."
-            : "Modelo aplicado (IA indisponível). Texto pronto para revisão.", res.origem === "ia" ? "ok" : "ia");
+            : "Modelo padrão aplicado" + (res.erro ? " — " + res.erro : " (IA indisponível)."), res.origem === "ia" ? "ok" : "erro");
     } catch (err) {
         console.error(err);
         corpoRelatorio.value = gerarCorpoPadrao();
@@ -692,7 +692,7 @@ async function executarCorrecaoIA() {
         autoGrow();
         setStatus(res.origem === "ia"
             ? "Texto corrigido com IA."
-            : "Correções básicas aplicadas (IA indisponível).", res.origem === "ia" ? "ok" : "ia");
+            : "Correções básicas aplicadas" + (res.erro ? " — " + res.erro : " (IA indisponível)."), res.origem === "ia" ? "ok" : "erro");
     } catch (err) {
         console.error(err);
         setStatus("Falha ao corrigir o texto.", "erro");

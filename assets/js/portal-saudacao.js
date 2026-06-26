@@ -56,12 +56,12 @@ export const MESES_PORTAL = [
     },
     {
         mes: "Junho",
-        campanha: "Junho Roxo",
-        conscientizacao: "Combate à violência contra o idoso",
-        cor: "#7c3aed",
-        corClara: "#f5f3ff",
-        corEscura: "#5b21b6",
-        gradiente: "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)"
+        campanha: "Junho Violeta",
+        conscientizacao: "Mês de combate à violação dos direitos da pessoa idosa",
+        cor: "#7b2d8e",
+        corClara: "#c084fc",
+        corEscura: "#5b1f73",
+        gradiente: "linear-gradient(135deg, #9d4edd 0%, #6b21a8 100%)"
     },
     {
         mes: "Julho",
@@ -141,19 +141,37 @@ export function temaMesAtual(dataRef) {
     return MESES_PORTAL[d.getMonth()] || MESES_PORTAL[0];
 }
 
-function svgLaco(cor) {
-    return '<svg class="header-hero-ribbon-svg" viewBox="0 0 32 40" aria-hidden="true" focusable="false">' +
-        '<path fill="' + cor + '" d="M16 2c-3.2 5.2-10 8.2-10 16.2 0 5.8 3.6 9.8 7.2 13.2l2.8 2.6 2.8-2.6c3.6-3.4 7.2-7.4 7.2-13.2C26 10.2 19.2 7.2 16 2Z"/>' +
-        '<path fill="rgba(255,255,255,.28)" d="M13 18c1.2-2.4 3-3.8 3-3.8s1.8 1.4 3 3.8"/>' +
-    "</svg>";
+function partesCampanha(tema) {
+    const palavras = String(tema.campanha || "").trim().split(/\s+/);
+    if (palavras.length >= 2 && palavras[0].toLowerCase() === tema.mes.toLowerCase()) {
+        return { mes: palavras[0], destaque: palavras.slice(1).join(" ") };
+    }
+    return { mes: tema.mes, destaque: palavras[palavras.length - 1] || tema.campanha };
+}
+
+function svgLaco(corClara, corEscura) {
+    const uid = "ribbonGrad" + Math.random().toString(36).slice(2, 8);
+    return '<svg class="header-hero-ribbon-svg" viewBox="0 0 56 64" aria-hidden="true" focusable="false">' +
+        "<defs><linearGradient id=\"" + uid + "\" x1=\"18%\" y1=\"0%\" x2=\"82%\" y2=\"100%\">" +
+        "<stop offset=\"0%\" stop-color=\"" + corClara + "\"/>" +
+        "<stop offset=\"55%\" stop-color=\"" + corEscura + "\"/>" +
+        "<stop offset=\"100%\" stop-color=\"" + corEscura + "\"/>" +
+        "</linearGradient></defs>" +
+        "<path fill=\"url(#" + uid + ")\" d=\"M28 4c-2 3.5-8 6.5-12 12.5-3.5 5-3.5 11.5 0 16.5 2.5 3.5 6 6.5 9 9.5l3 2.8 3-2.8c3-3 6.5-6 9-9.5 3.5-5 3.5-11.5 0-16.5C36 10.5 30 7.5 28 4Z\"/>" +
+        "<path fill=\"url(#" + uid + ")\" opacity=\".92\" d=\"M16 38c-4 2.5-8 6-8 11s4 9.5 8 12.5l4 3 4-3c4-3 8-7 8-12.5s-4-8.5-8-11l-4-2.5-4 2.5Z\"/>" +
+        "<path fill=\"rgba(255,255,255,.22)\" d=\"M22 22c1.5-2.5 3.5-4 6-4s4.5 1.5 6 4\"/>" +
+        "</svg>";
 }
 
 export function aplicarSaudacaoHero(nome) {
     const hero = document.getElementById("headerHero");
     const saudacaoEl = document.getElementById("heroSaudacao");
     const nomeEl = document.getElementById("heroNomeUsuario");
+    const mesNomeEl = document.getElementById("heroMesNome");
+    const campanhaDestaqueEl = document.getElementById("heroCampanhaDestaque");
     const mesEl = document.getElementById("heroMesConsciencia");
     const ribbonEl = document.getElementById("heroRibbon");
+    const campanhaEl = document.getElementById("heroCampanha");
     if (!hero || !saudacaoEl || !nomeEl) return;
 
     const texto = String(nome || window.portalUsuario?.nome || "").trim();
@@ -165,20 +183,22 @@ export function aplicarSaudacaoHero(nome) {
     nomeEl.textContent = primeiro;
 
     const tema = temaMesAtual(new Date());
+    const campanha = partesCampanha(tema);
     hero.dataset.mes = tema.mes.toLowerCase();
     hero.style.setProperty("--hero-mes-cor", tema.cor);
     hero.style.setProperty("--hero-mes-escura", tema.corEscura);
-    hero.style.setProperty("--hero-mes-gradiente", tema.gradiente);
-    hero.style.background = tema.gradiente;
-    hero.style.boxShadow = "0 8px 22px " + tema.cor + "33";
+    hero.style.removeProperty("background");
+    hero.style.removeProperty("box-shadow");
 
-    if (mesEl) {
-        mesEl.textContent = tema.mes + " · " + tema.campanha + " — " + tema.conscientizacao;
-        mesEl.style.color = "rgba(255,255,255,.92)";
-    }
+    if (mesNomeEl) mesNomeEl.textContent = campanha.mes;
+    if (campanhaDestaqueEl) campanhaDestaqueEl.textContent = campanha.destaque;
+    if (mesEl) mesEl.textContent = tema.conscientizacao;
 
     if (ribbonEl) {
-        ribbonEl.innerHTML = svgLaco("#ffffff");
+        ribbonEl.innerHTML = svgLaco(tema.corClara, tema.corEscura);
         ribbonEl.title = tema.campanha + ": " + tema.conscientizacao;
+    }
+    if (campanhaEl) {
+        campanhaEl.title = tema.campanha + ": " + tema.conscientizacao;
     }
 }
