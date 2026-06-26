@@ -1,5 +1,3 @@
-import { firebaseConfig } from "./firebase-config.js";
-
 export const TIPOS_RELATORIO = {
     carro_adiantado: { id: "carro_adiantado", label: "Carro adiantado", informativo: false },
     atraso_frequente: { id: "atraso_frequente", label: "Atraso frequente", informativo: false },
@@ -10,13 +8,18 @@ export const TIPOS_RELATORIO = {
     informativo: { id: "informativo", label: "Relatório informativo", informativo: true }
 };
 
-const MODELOS_GEMINI = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
 const API_PROXY_FALLBACK = "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com";
 
 let ultimoErroIa = "";
+let relatorioIaScriptUrlOverride = "";
 
 export function obterUltimoErroIa() {
     return ultimoErroIa;
+}
+
+/** Define URL do Apps Script (prioridade sobre portal-runtime.json). */
+export function configurarRelatorioIa(opts = {}) {
+    relatorioIaScriptUrlOverride = String(opts.scriptUrl || "").trim();
 }
 
 function ctxLinha(ctx) {
@@ -104,12 +107,6 @@ function montarPromptCorrecao(texto) {
     ].join("\n");
 }
 
-function extrairTextoGemini(data) {
-    const parts = data?.candidates?.[0]?.content?.parts || [];
-    const texto = parts.map((p) => p.text || "").join("").trim();
-    return texto || null;
-}
-
 async function obterUrlsIa() {
     const candidatos = [];
     const path = String(window.location?.pathname || "").replace(/\\/g, "/");
@@ -120,7 +117,7 @@ async function obterUrlsIa() {
     } catch { /* ignore */ }
 
     let awsApiUrl = API_PROXY_FALLBACK;
-    let relatorioIaScriptUrl = "";
+    let relatorioIaScriptUrl = relatorioIaScriptUrlOverride;
     for (const url of candidatos) {
         try {
             const res = await fetch(url, { cache: "no-store" });
@@ -128,8 +125,9 @@ async function obterUrlsIa() {
             const cfg = await res.json();
             const api = String(cfg?.awsApiUrl || "").trim().replace(/\/+$/, "");
             if (api) awsApiUrl = api;
-            if (cfg?.relatorioIaScriptUrl) relatorioIaScriptUrl = String(cfg.relatorioIaScriptUrl).trim();
-            if (awsApiUrl && relatorioIaScriptUrl) break;
+            if (!relatorioIaScriptUrl && cfg?.relatorioIaScriptUrl) {
+                relatorioIaScriptUrl = String(cfg.relatorioIaScriptUrl).trim();
+            }
         } catch { /* tenta próximo */ }
     }
     return { awsApiUrl, relatorioIaScriptUrl };
@@ -138,7 +136,10 @@ async function obterUrlsIa() {
 async function chamarGeminiAppsScript(prompt) {
     try {
         const { relatorioIaScriptUrl } = await obterUrlsIa();
-        if (!relatorioIaScriptUrl) return null;
+        if (!relatorioIaScriptUrl) {
+            ultimoErroIa = "relatorioIaScriptUrl não configurada.";
+            return null;
+        }
         const res = await fetch(relatorioIaScriptUrl, {
             method: "POST",
             mode: "cors",
@@ -179,55 +180,30 @@ async function chamarGeminiProxy(prompt) {
     }
 }
 
-async function chamarGeminiRest(prompt) {
-    const apiKey = String(firebaseConfig?.apiKey || "").trim();
-    if (!apiKey) {
-        ultimoErroIa = "Chave da API não configurada.";
-        return null;
-    }
-
-    const payload = {
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.35, maxOutputTokens: 2048 }
-    };
-
-    for (const model of MODELOS_GEMINI) {
-        try {
-            const url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + encodeURIComponent(apiKey);
-            const res = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                ultimoErroIa = data?.error?.message || ("Gemini HTTP " + res.status);
-                continue;
-            }
-            const texto = extrairTextoGemini(data);
-            if (texto) {
-                ultimoErroIa = "";
-                return texto;
-            }
-        } catch (err) {
-            ultimoErroIa = err?.message || "Falha na chamada Gemini.";
-        }
-    }
-    return null;
-}
-
 async function gerarComIa(prompt) {
-    return (await chamarGeminiAppsScript(prompt))
-        || (await chamarGeminiProxy(prompt))
-        || (await chamarGeminiRest(prompt));
+    return (await chamarGeminiAppsScript(prompt)) || (await chamarGeminiProxy(prompt));
 }
 
 function montarErroIaIndisponivel() {
     const detalhe = String(ultimoErroIa || "").trim();
-    const orientacao = "Para habilitar a IA: implante scripts/relatorio-ia.gs no Google Apps Script "
-        + "(chave GEMINI_API_KEY nas propriedades) e defina relatorioIaScriptUrl em assets/data/portal-runtime.json, "
-        + "ou rode export GEMINI_API_KEY=sua_chave && bash scripts/deploy-bus2-proxy.sh.";
-    return detalhe ? detalhe + " — " + orientacao : orientacao;
+    if (/relatorioIaScriptUrl não configurada/i.test(detalhe)) {
+        return "IA não configurada. Implante scripts/relatorio-ia.gs no Google Apps Script "
+            + "(chave GEMINI_API_KEY do AI Studio) e preencha relatorioIaScriptUrl em portal-runtime.json.";
+    }
+    if (/404|Not Found/i.test(detalhe)) {
+        return "Proxy AWS sem rota /relatorio-ia. Rode: export GEMINI_API_KEY=sua_chave && bash scripts/deploy-bus2-proxy.sh";
+    }
+    if (/GEMINI_API_KEY não configurada/i.test(detalhe)) {
+        return "Proxy AWS sem GEMINI_API_KEY. Configure a chave na Lambda ou use Apps Script.";
+    }
+    if (detalhe) return detalhe;
+    return "IA indisponível. Configure Apps Script ou proxy AWS com chave do Gemini (AI Studio).";
+}
+
+export function resumirErroIa(erro) {
+    const texto = String(erro || "").trim();
+    if (!texto) return "IA indisponível.";
+    return texto.length > 160 ? texto.slice(0, 157) + "…" : texto;
 }
 
 export async function gerarTextoIA(tipoId, ctx) {

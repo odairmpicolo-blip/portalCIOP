@@ -516,7 +516,7 @@ select:disabled{
 <script type="module">
 import { buscarUsuarioFirestore, normalizarCadastro } from "../assets/js/portal-firestore.js";
 import { usuarios as usuariosLocais } from "../assets/js/usuarios.js";
-import { TIPOS_RELATORIO, gerarTextoModelo, gerarTextoIA, corrigirTextoIA } from "../assets/js/relatorio-ia.js";
+import { TIPOS_RELATORIO, gerarTextoModelo, gerarTextoIA, corrigirTextoIA, configurarRelatorioIa, resumirErroIa } from "../assets/js/relatorio-ia.js";
 
 const SHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const GID_RO = "665320337";
@@ -526,7 +526,11 @@ const GID_DADOS = "665133219";
 const CACHE_RELATORIO_KEY = "portal_criar_relatorio_csv_v1";
 const CACHE_RELATORIO_TTL_MS = 60 * 60 * 1000;
 const PROTOCOLO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGuAS3XN7FQkaqj2n4pjZTcGOt_mIvdMG1rg14bS9F928A-zMUDEI2nZneKm8vUtCcOA/exec";
+/** Cole aqui a URL /exec do Apps Script (scripts/relatorio-ia.gs) após implantar. */
+const RELATORIO_IA_SCRIPT_URL = "";
 const TIPO_DOCUMENTO_PROTOCOLO = "R. OCORRÊNCIA";
+
+configurarRelatorioIa({ scriptUrl: RELATORIO_IA_SCRIPT_URL });
 
 const assinaturaResponsavel = document.getElementById("assinaturaResponsavel");
 const cargoAssinaturaTexto = document.getElementById("cargoAssinaturaTexto");
@@ -663,7 +667,7 @@ async function executarGeracaoIA() {
         autoGrow();
         setStatus(res.origem === "ia"
             ? "Texto gerado com IA. Revise antes de gerar o PDF."
-            : "Modelo padrão aplicado" + (res.erro ? " — " + res.erro : " (IA indisponível)."), res.origem === "ia" ? "ok" : "erro");
+            : "Modelo padrão aplicado — " + resumirErroIa(res.erro), res.origem === "ia" ? "ok" : "erro");
     } catch (err) {
         console.error(err);
         corpoRelatorio.value = gerarCorpoPadrao();
@@ -692,7 +696,7 @@ async function executarCorrecaoIA() {
         autoGrow();
         setStatus(res.origem === "ia"
             ? "Texto corrigido com IA."
-            : "Correções básicas aplicadas" + (res.erro ? " — " + res.erro : " (IA indisponível)."), res.origem === "ia" ? "ok" : "erro");
+            : "Correções básicas aplicadas — " + resumirErroIa(res.erro), res.origem === "ia" ? "ok" : "erro");
     } catch (err) {
         console.error(err);
         setStatus("Falha ao corrigir o texto.", "erro");
