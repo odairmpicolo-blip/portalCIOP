@@ -61,7 +61,8 @@ export const MESES_PORTAL = [
         cor: "#7b2d8e",
         corClara: "#c084fc",
         corEscura: "#5b1f73",
-        gradiente: "linear-gradient(135deg, #9d4edd 0%, #6b21a8 100%)"
+        gradiente: "linear-gradient(135deg, #9d4edd 0%, #6b21a8 100%)",
+        lacoImg: "assets/img/laco-violeta.png"
     },
     {
         mes: "Julho",
@@ -149,18 +150,36 @@ function partesCampanha(tema) {
     return { mes: tema.mes, destaque: palavras[palavras.length - 1] || tema.campanha };
 }
 
+function resolverAsset(relPath) {
+    const rel = String(relPath || "").replace(/^\//, "");
+    const path = String(window.location?.pathname || "").replace(/\\/g, "/");
+    const pagesIdx = path.indexOf("/pages/");
+    if (pagesIdx >= 0) return path.slice(0, pagesIdx) + "/" + rel;
+    try {
+        return new URL(rel, window.location.href).href;
+    } catch {
+        return rel;
+    }
+}
+
 function svgLaco(corClara, corEscura) {
     const uid = "ribbonGrad" + Math.random().toString(36).slice(2, 8);
-    return '<svg class="header-hero-ribbon-svg" viewBox="0 0 56 64" aria-hidden="true" focusable="false">' +
-        "<defs><linearGradient id=\"" + uid + "\" x1=\"18%\" y1=\"0%\" x2=\"82%\" y2=\"100%\">" +
+    return '<svg class="header-hero-ribbon-svg" viewBox="0 0 35 35" aria-hidden="true" focusable="false">' +
+        "<defs><linearGradient id=\"" + uid + "\" x1=\"20%\" y1=\"0%\" x2=\"80%\" y2=\"100%\">" +
         "<stop offset=\"0%\" stop-color=\"" + corClara + "\"/>" +
-        "<stop offset=\"55%\" stop-color=\"" + corEscura + "\"/>" +
         "<stop offset=\"100%\" stop-color=\"" + corEscura + "\"/>" +
         "</linearGradient></defs>" +
-        "<path fill=\"url(#" + uid + ")\" d=\"M28 4c-2 3.5-8 6.5-12 12.5-3.5 5-3.5 11.5 0 16.5 2.5 3.5 6 6.5 9 9.5l3 2.8 3-2.8c3-3 6.5-6 9-9.5 3.5-5 3.5-11.5 0-16.5C36 10.5 30 7.5 28 4Z\"/>" +
-        "<path fill=\"url(#" + uid + ")\" opacity=\".92\" d=\"M16 38c-4 2.5-8 6-8 11s4 9.5 8 12.5l4 3 4-3c4-3 8-7 8-12.5s-4-8.5-8-11l-4-2.5-4 2.5Z\"/>" +
-        "<path fill=\"rgba(255,255,255,.22)\" d=\"M22 22c1.5-2.5 3.5-4 6-4s4.5 1.5 6 4\"/>" +
+        "<path fill=\"url(#" + uid + ")\" d=\"M17.573 2.811C14.812 6.448 9.867 9.636 5.092 9.636 2.276 9.636 0 11.912 0 14.708c0 3.637 2.761 6.825 5.092 9.637 3.637 4.572 9.092 7.958 12.481 10.769 3.389-2.811 8.844-6.197 12.481-10.769 2.331-2.811 5.092-6 5.092-9.637 0-2.796-2.276-5.072-5.092-5.072-4.775 0-9.72-3.188-12.481-6.817z\"/>" +
+        "<path fill=\"rgba(255,255,255,.18)\" d=\"M12 12c2-2.5 4.5-3.5 5.5-3.5s3.5 1 5.5 3.5\"/>" +
         "</svg>";
+}
+
+function htmlLaco(tema) {
+    if (tema.lacoImg) {
+        const src = resolverAsset(tema.lacoImg);
+        return '<img class="header-hero-ribbon-img" src="' + src + '" alt="" decoding="async">';
+    }
+    return svgLaco(tema.corClara, tema.corEscura);
 }
 
 export function aplicarSaudacaoHero(nome) {
@@ -187,15 +206,14 @@ export function aplicarSaudacaoHero(nome) {
     hero.dataset.mes = tema.mes.toLowerCase();
     hero.style.setProperty("--hero-mes-cor", tema.cor);
     hero.style.setProperty("--hero-mes-escura", tema.corEscura);
-    hero.style.removeProperty("background");
-    hero.style.removeProperty("box-shadow");
+    hero.style.setProperty("--hero-mes-gradiente", tema.gradiente);
 
     if (mesNomeEl) mesNomeEl.textContent = campanha.mes;
     if (campanhaDestaqueEl) campanhaDestaqueEl.textContent = campanha.destaque;
     if (mesEl) mesEl.textContent = tema.conscientizacao;
 
     if (ribbonEl) {
-        ribbonEl.innerHTML = svgLaco(tema.corClara, tema.corEscura);
+        ribbonEl.innerHTML = htmlLaco(tema);
         ribbonEl.title = tema.campanha + ": " + tema.conscientizacao;
     }
     if (campanhaEl) {
