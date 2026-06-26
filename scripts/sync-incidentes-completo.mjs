@@ -115,18 +115,22 @@ export async function syncIncidentes() {
 
   steps.s3Push = await enviarEstadoIncidentesS3(jsonPath);
 
-  if (!skipDsql) {
-    console.log("[sync] Importando incidentes no Aurora DSQL...");
-    const backendScripts = path.join(portalRoot, "backend", "scripts", "importar-planilha-dsql.mjs");
-    run(nodeBin, [backendScripts, "incidentes"], {
-      env: { ...process.env, PORTAL_ROOT: portalRoot, PORTAL_DATA_DIR: dataDir }
-    });
-    steps.dsql = true;
-  }
-
   if (!skipGit) {
     console.log("[sync] Publicando JSON no Git...");
     steps.git = publicarGitIncidentes();
+  }
+
+  if (!skipDsql) {
+    console.log("[sync] Importando incidentes no Aurora DSQL...");
+    const backendScripts = path.join(portalRoot, "backend", "scripts", "importar-planilha-dsql.mjs");
+    try {
+      run(nodeBin, [backendScripts, "incidentes"], {
+        env: { ...process.env, PORTAL_ROOT: portalRoot, PORTAL_DATA_DIR: dataDir }
+      });
+      steps.dsql = true;
+    } catch (err) {
+      console.warn("[sync] AVISO: import DSQL falhou — JSON e git foram mantidos.", err.message);
+    }
   }
 
   return { ok: true, steps };

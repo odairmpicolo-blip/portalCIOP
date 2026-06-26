@@ -2,8 +2,8 @@ name: Atualizar incidentes TCGL
 
 on:
   schedule:
-    # 06:00 UTC = 03:00 horário de Brasília (backup se o PC local falhar)
-    - cron: '0 6 * * *'
+    # 07:00 UTC = 04:00 horário de Brasília
+    - cron: "0 7 * * *"
   workflow_dispatch:
 
 permissions:
@@ -41,6 +41,7 @@ jobs:
         run: bash scripts/ci-git-commit-push.sh "Atualiza incidentes TCGL" assets/data/incidentes-tcgl.json
 
       - name: Importar incidentes no DSQL (planilha → JSON → AWS)
+        continue-on-error: true
         env:
           DSQL_CLUSTER_ID: ${{ secrets.DSQL_CLUSTER_ID }}
           DSQL_REGION: sa-east-1
