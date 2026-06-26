@@ -1,9 +1,11 @@
 name: Atualizar incidentes TCGL
 
+# Produção: replica o JSON já gerado no portal-teste (evita 2º login TCGL e timeouts no runner).
+# O portal-teste busca no TCGL às 07:00 UTC; este workflow roda às 07:30 UTC.
+
 on:
   schedule:
-    # 07:00 UTC = 04:00 horário de Brasília
-    - cron: "0 7 * * *"
+    - cron: "30 7 * * *"
   workflow_dispatch:
 
 permissions:
@@ -12,7 +14,7 @@ permissions:
 jobs:
   atualizar:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 60
 
     steps:
       - name: Baixar portal
@@ -30,12 +32,29 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Atualizar incidentes TCGL
+      - name: Sincronizar JSON do portal-teste
         env:
           CIOP_INCIDENTES_USUARIO: ${{ secrets.CIOP_INCIDENTES_USUARIO }}
           CIOP_INCIDENTES_SENHA: ${{ secrets.CIOP_INCIDENTES_SENHA }}
           PORTAL_ROOT: ${{ github.workspace }}
-        run: node scripts/atualizar-incidentes-tcgl.mjs
+        run: |
+          URL="https://raw.githubusercontent.com/odairmpicolo-blip/portal-teste/main/assets/data/incidentes-tcgl.json"
+          for i in 1 2 3 4 5; do
+            if curl -fsSL --max-time 120 "$URL" -o assets/data/incidentes-tcgl.json; then
+              node -e "
+                const fs = require('fs');
+                const p = 'assets/data/incidentes-tcgl.json';
+                const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+                const n = data.incidentes?.length || data.totalExtraido || 0;
+                console.log('JSON do portal-teste OK:', n, 'incidentes,', fs.statSync(p).size, 'bytes');
+              "
+              exit 0
+            fi
+            echo "Tentativa $i falhou ao baixar $URL — aguardando 20s..."
+            sleep 20
+          done
+          echo "Fallback: buscar direto no TCGL..."
+          node scripts/atualizar-incidentes-tcgl.mjs
 
       - name: Publicar dados atualizados
         run: bash scripts/ci-git-commit-push.sh "Atualiza incidentes TCGL" assets/data/incidentes-tcgl.json
