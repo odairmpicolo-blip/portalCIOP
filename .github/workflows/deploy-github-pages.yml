@@ -102,3 +102,17 @@ jobs:
       - name: Publicar
         id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Repetir publicação se deploy simultâneo
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 45
+
+      - name: Publicar (2ª tentativa)
+        if: steps.deployment.outcome == 'failure'
+        id: deployment_retry
+        uses: actions/deploy-pages@v4
+
+      - name: Falhou publicação
+        if: steps.deployment.outcome == 'failure' && steps.deployment_retry.outcome == 'failure'
+        run: exit 1
