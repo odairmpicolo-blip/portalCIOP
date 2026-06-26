@@ -42,7 +42,7 @@ on run
   set wrapper to "$WRAPPER"
   try
     do shell script quoted form of wrapper
-    display dialog "Incidentes TCGL atualizados com sucesso!" & return & return & "JSON, DSQL e Git (se configurado)." buttons {"OK"} default button "OK"
+    display dialog "Incidentes TCGL atualizados com sucesso!" & return & return & "Dados gravados no banco (Aurora DSQL)." buttons {"OK"} default button "OK"
   on error errMsg number errNum
     display dialog "Falha na atualizacao de incidentes." & return & return & errMsg & return & return & "Log: Library/Logs/ciop-portal/atualizar-incidentes.log" buttons {"OK"} default button "OK" with icon caution
   end try
@@ -57,9 +57,8 @@ echo ""
 echo "Botão instalado na Mesa:"
 echo "  $DESKTOP_APP"
 echo ""
-echo "Duplo clique para atualizar incidentes (pode levar alguns minutos)."
+echo "Duplo clique para atualizar incidentes no TCGL e gravar no banco (pode levar alguns minutos)."
 echo "Log: $HOME/Library/Logs/ciop-portal/atualizar-incidentes.log"
 echo ""
 echo "Credenciais TCGL: $ENV_FILE"
 echo "DSQL: $BACKEND_ENV + aws login (ou ~/.aws/credentials)"
-echo "Git push automático: adicione CIOP_GITHUB_TOKEN em $ENV_FILE"

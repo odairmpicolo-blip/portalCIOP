@@ -1,11 +1,11 @@
 /**
- * Sincroniza incidentes TCGL → JSON → (opcional git) → Aurora DSQL.
- * Usado por Lambda, EC2 e Mac.
+ * Sincroniza incidentes TCGL → JSON local → Aurora DSQL.
+ * Usado por Lambda, EC2, Mac e GitHub Actions.
  *
  * Variáveis:
- *   SYNC_INCIDENTES_SKIP_GIT=1   — não faz commit/push
- *   SYNC_INCIDENTES_SKIP_DSQL=1  — não importa no DSQL
- *   INCIDENTES_STATE_S3_BUCKET   — cache incremental em S3
+ *   SYNC_INCIDENTES_PUBLISH_GIT=1  — commit/push do JSON (opcional, backup)
+ *   SYNC_INCIDENTES_SKIP_DSQL=1    — não importa no DSQL
+ *   INCIDENTES_STATE_S3_BUCKET     — cache incremental em S3
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -93,7 +93,7 @@ function publicarGitIncidentes() {
 }
 
 export async function syncIncidentes() {
-  const skipGit = process.env.SYNC_INCIDENTES_SKIP_GIT === "1";
+  const publishGit = process.env.SYNC_INCIDENTES_PUBLISH_GIT === "1";
   const skipDsql = process.env.SYNC_INCIDENTES_SKIP_DSQL === "1";
   const steps = { s3Pull: false, fetch: false, s3Push: false, dsql: false, git: false };
 
@@ -115,22 +115,18 @@ export async function syncIncidentes() {
 
   steps.s3Push = await enviarEstadoIncidentesS3(jsonPath);
 
-  if (!skipGit) {
-    console.log("[sync] Publicando JSON no Git...");
+  if (publishGit) {
+    console.log("[sync] Publicando JSON no Git (backup)...");
     steps.git = publicarGitIncidentes();
   }
 
   if (!skipDsql) {
     console.log("[sync] Importando incidentes no Aurora DSQL...");
     const backendScripts = path.join(portalRoot, "backend", "scripts", "importar-planilha-dsql.mjs");
-    try {
-      run(nodeBin, [backendScripts, "incidentes"], {
-        env: { ...process.env, PORTAL_ROOT: portalRoot, PORTAL_DATA_DIR: dataDir }
-      });
-      steps.dsql = true;
-    } catch (err) {
-      console.warn("[sync] AVISO: import DSQL falhou — JSON e git foram mantidos.", err.message);
-    }
+    run(nodeBin, [backendScripts, "incidentes"], {
+      env: { ...process.env, PORTAL_ROOT: portalRoot, PORTAL_DATA_DIR: dataDir }
+    });
+    steps.dsql = true;
   }
 
   return { ok: true, steps };

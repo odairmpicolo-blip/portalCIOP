@@ -1,5 +1,5 @@
 #!/bin/bash
-# Atualiza incidentes TCGL e publica no GitHub.
+# Atualiza incidentes TCGL → Aurora DSQL (fonte dos portais).
 # Ignora se a data de hoje (America/Sao_Paulo) já foi atualizada com sucesso.
 set -euo pipefail
 
@@ -32,27 +32,6 @@ already_ran_today() {
   [[ -f "$STATE_FILE" ]] && [[ "$(cat "$STATE_FILE")" == "$(today_sp)" ]]
 }
 
-publish_portal_prod() {
-  local prod_root="${CIOP_PORTAL_PROD:-}"
-  local json="$PORTAL_ROOT/assets/data/incidentes-tcgl.json"
-
-  [[ -n "$prod_root" && -d "$prod_root" ]] || return 0
-  [[ -f "$json" ]] || return 0
-
-  log "Publicando JSON no portal de produção: $prod_root"
-  cp "$json" "$prod_root/assets/data/incidentes-tcgl.json"
-  (
-    cd "$prod_root"
-    git add assets/data/incidentes-tcgl.json
-    if git diff --cached --quiet; then
-      log "portalCIOP: sem alterações no JSON."
-      exit 0
-    fi
-    git commit -m "Atualiza incidentes TCGL - $(TZ="$TZ_SP" date '+%d/%m/%Y %H:%M')"
-    git push
-  )
-}
-
 if [[ "$MODE" != "manual" ]] && already_ran_today; then
   log "Atualização de $(today_sp) já concluída ($MODE)."
   exit 0
@@ -75,9 +54,9 @@ source "$ENV_FILE"
 set +a
 
 export PORTAL_ROOT
-export CIOP_PORTAL_PROD="${CIOP_PORTAL_PROD:-}"
 export CIOP_INCIDENTES_USUARIO="${CIOP_INCIDENTES_USUARIO:-}"
 export CIOP_INCIDENTES_SENHA="${CIOP_INCIDENTES_SENHA:-}"
+export SYNC_INCIDENTES_PUBLISH_GIT="${SYNC_INCIDENTES_PUBLISH_GIT:-}"
 
 if [[ -z "$CIOP_INCIDENTES_USUARIO" || -z "$CIOP_INCIDENTES_SENHA" ]]; then
   log "ERRO: CIOP_INCIDENTES_USUARIO ou CIOP_INCIDENTES_SENHA vazio em $ENV_FILE"
@@ -85,16 +64,20 @@ if [[ -z "$CIOP_INCIDENTES_USUARIO" || -z "$CIOP_INCIDENTES_SENHA" ]]; then
 fi
 
 if "$NODE_BIN" "$PORTAL_ROOT/scripts/sync-incidentes-completo.mjs" >> "$LOG_FILE" 2>&1; then
-  publish_portal_prod
   mark_success
-  log "Atualização concluída com sucesso (TCGL + DSQL + git)."
+  if tail -5 "$LOG_FILE" | grep -q '"dsql":true'; then
+    log "Atualização concluída com sucesso (TCGL → DSQL)."
+  elif tail -8 "$LOG_FILE" | grep -q '"git":true'; then
+    log "Atualização concluída (TCGL → DSQL). JSON publicado no Git (backup)."
+  else
+    log "Atualização concluída com sucesso (TCGL → DSQL)."
+  fi
 else
   log "Primeira tentativa falhou. Nova tentativa em 120 segundos..."
   sleep 120
   if "$NODE_BIN" "$PORTAL_ROOT/scripts/sync-incidentes-completo.mjs" >> "$LOG_FILE" 2>&1; then
-    publish_portal_prod
     mark_success
-    log "Atualização concluída na segunda tentativa."
+    log "Atualização concluída na segunda tentativa (TCGL → DSQL)."
   else
     log "ERRO: falha na atualização após 2 tentativas. Próxima execução amanhã às 04:00 ou manual: bash \"$0\" manual"
     exit 1

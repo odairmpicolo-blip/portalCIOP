@@ -1,7 +1,5 @@
 import { carregarSnapshotAws } from "./portal-aws-config.js";
 
-export const INCIDENTES_JSON_URL = "../assets/data/incidentes-tcgl.json";
-
 export function normalizarDataIsoIncidente(row) {
   if (row?.data_iso) return row.data_iso;
   const br = String(row?.data || "").trim();
@@ -14,26 +12,6 @@ export function idIncidente(row) {
   return String(row?.incidentId || row?.id || "").trim();
 }
 
-function chaveIncidente(row) {
-  return idIncidente(row) || [
-    normalizarDataIsoIncidente(row),
-    row?.hora || "",
-    row?.veiculo || "",
-    row?.linha || ""
-  ].join("|");
-}
-
-function mesclarIncidentes(listas) {
-  const mapa = new Map();
-  listas.forEach((lista) => {
-    (lista || []).forEach((row) => {
-      if (!row) return;
-      mapa.set(chaveIncidente(row), row);
-    });
-  });
-  return [...mapa.values()];
-}
-
 function withTimeout(promise, ms) {
   return Promise.race([
     promise,
@@ -43,69 +21,30 @@ function withTimeout(promise, ms) {
   ]);
 }
 
-async function carregarJsonSnapshot() {
-  try {
-    const res = await fetch(`${INCIDENTES_JSON_URL}?t=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) return { payload: null, incidentes: [] };
-    const payload = await res.json();
-    const incidentes = Array.isArray(payload?.incidentes) ? payload.incidentes : [];
-    return { payload, incidentes };
-  } catch (_) {
-    return { payload: null, incidentes: [] };
-  }
-}
-
-function montarPayload(fontes, incidentes) {
-  const candidatos = fontes.filter(Boolean);
-  const base = candidatos.sort((a, b) => {
-    const ta = Date.parse(a?.atualizadoEm || 0) || 0;
-    const tb = Date.parse(b?.atualizadoEm || 0) || 0;
-    return tb - ta;
-  })[0] || {};
-  const payload = Object.assign({}, base);
-  payload.incidentes = incidentes;
-  payload.totalExtraido = incidentes.length;
-  if (!payload.atualizadoEm) payload.atualizadoEm = new Date().toISOString();
-  payload.fonte = payload.fonte || "Gerenciamento de Incidentes";
-  payload.empresa = payload.empresa || "TCGL";
-  return payload;
-}
-
-async function carregarAws() {
-  const snap = await carregarSnapshotAws("/snapshots/incidentes", { timeoutMs: 12000 });
-  if (!snap?.payload) return { payload: null, incidentes: [], atualizadoEm: null };
+async function carregarDoBanco() {
+  const snap = await carregarSnapshotAws("/snapshots/incidentes", { timeoutMs: 20000 });
+  if (!snap?.payload) return null;
   const incidentes = Array.isArray(snap.payload?.incidentes) ? snap.payload.incidentes : [];
   const atualizadoEm = snap.atualizadoEm || snap.payload?.atualizadoEm || null;
-  return { payload: snap.payload, incidentes, atualizadoEm };
+  const payload = {
+    ...snap.payload,
+    incidentes,
+    totalExtraido: incidentes.length,
+    atualizadoEm
+  };
+  return { payload, incidentes, atualizadoEm };
 }
 
-/** Fluxo de leitura: AWS → JSON (planilha). */
+/** Leitura: Aurora DSQL via API AWS. Cache local fica no dashboard. */
 export async function carregarDadosIncidentes({ onProgress } = {}) {
-  onProgress?.("Consultando AWS e JSON...");
-  const [awsRes, jsonRes] = await Promise.allSettled([
-    withTimeout(carregarAws(), 15000),
-    withTimeout(carregarJsonSnapshot(), 20000)
-  ]);
-
-  const awsPack = awsRes.status === "fulfilled" ? awsRes.value : { payload: null, incidentes: [] };
-  const aws = awsPack.incidentes || [];
-  const jsonPack = jsonRes.status === "fulfilled" ? jsonRes.value : { payload: null, incidentes: [] };
-  const json = jsonPack.incidentes || [];
-
-  const tentativas = [`AWS: ${aws.length}`, `JSON: ${json.length}`];
-  const origens = [];
-  if (aws.length) origens.push("AWS");
-  if (json.length) origens.push("JSON");
-
-  const incidentes = mesclarIncidentes([json, aws]);
-  const payload = montarPayload(
-    [jsonPack.payload, awsPack.payload].filter(Boolean),
-    incidentes
-  );
-
+  onProgress?.("Consultando banco de dados...");
+  const res = await withTimeout(carregarDoBanco(), 22000);
+  if (!res?.incidentes?.length) {
+    throw new Error("Nenhum incidente no banco de dados (AWS/DSQL).");
+  }
   return {
-    payload,
-    origem: origens.join(" · ") || "",
-    tentativas
+    payload: res.payload,
+    origem: "AWS",
+    tentativas: [`DSQL: ${res.incidentes.length}`]
   };
 }
