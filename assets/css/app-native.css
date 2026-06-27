@@ -807,7 +807,14 @@ html.native-app.native-embedded body {
   overflow-x: hidden !important;
   max-width: 100% !important;
   width: 100% !important;
-  background: #f5f7fb !important;
+}
+
+html.native-app.native-embedded body:not(.oa-native-mode) {
+  background:
+    radial-gradient(ellipse 100% 60% at 50% -15%, color-mix(in srgb, var(--app-accent) 18%, transparent), transparent 50%),
+    radial-gradient(ellipse 70% 40% at 100% 0%, color-mix(in srgb, var(--app-accent-2) 10%, transparent), transparent 45%),
+    linear-gradient(180deg, var(--app-bg) 0%, var(--app-bg-2) 100%) !important;
+  color: var(--app-text) !important;
 }
 
 html.native-app.native-embedded .header,
@@ -816,12 +823,34 @@ html.native-app.native-embedded .page-footer {
   display: none !important;
 }
 
+/* Esconde navegação redundante (shell React já tem tab bar + voltar) */
+html.native-app.native-embedded body:not(.oa-native-mode) .btn-portal,
+html.native-app.native-embedded body:not(.oa-native-mode) .toolbar,
+html.native-app.native-embedded body:not(.oa-native-mode) .topbar,
+html.native-app.native-embedded body:not(.oa-native-mode) .nav-actions,
+html.native-app.native-embedded body:not(.oa-native-mode) .portal-return {
+  display: none !important;
+}
+
 html.native-app.native-embedded .container,
-html.native-app.native-embedded main.container {
+html.native-app.native-embedded main.container,
+html.native-app.native-embedded main.wrap,
+html.native-app.native-embedded .main-content {
   max-width: 100% !important;
   width: 100% !important;
   margin: 0 !important;
-  padding: 8px !important;
+  padding: 8px 10px calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+  box-sizing: border-box !important;
+}
+
+html.native-app.native-embedded .main-content {
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+html.native-app.native-embedded .content-body {
+  padding: 0 !important;
+  gap: 10px !important;
 }
 
 html.native-app.native-embedded .table-wrap {
@@ -829,24 +858,190 @@ html.native-app.native-embedded .table-wrap {
   -webkit-overflow-scrolling: touch;
   max-width: 100% !important;
   overscroll-behavior-x: contain;
+  border-radius: 14px;
 }
 
 html.native-app.native-embedded table.planilha {
   min-width: 680px;
 }
 
+/* Títulos PNG dos módulos */
 html.native-app .portal-title-art img,
 html.native-app .liberacao-title-art img,
 html.native-app .patio-title-art img,
 html.native-app .incidentes-title-art img,
 html.native-app .page-title-art img,
-html.native-app .title-wrap h1 img {
+html.native-app .title-wrap h1 img,
+html.native-app .pontualidade-title-art img,
+html.native-app .autuacoes-title-art img,
+html.native-app .km-title-art img,
+html.native-app .relatorio-title-art img,
+html.native-app .fiscais-title-art img,
+html.native-app .usuarios-title-art img {
   display: block !important;
   width: min(260px, 90vw) !important;
   height: auto !important;
   max-height: 34px !important;
-  margin: 0 auto !important;
+  margin: 0 auto 10px !important;
   object-fit: contain !important;
+  filter: drop-shadow(0 0 8px var(--app-glow));
+}
+
+/* ── Legacy embed · vidro futurista (todas as páginas operacionais) ─── */
+
+html.native-app.native-embedded body:not(.oa-native-mode) .card,
+html.native-app.native-embedded body:not(.oa-native-mode) .kpi,
+html.native-app.native-embedded body:not(.oa-native-mode) .kpi-card,
+html.native-app.native-embedded body:not(.oa-native-mode) .panel,
+html.native-app.native-embedded body:not(.oa-native-mode) .table-card,
+html.native-app.native-embedded body:not(.oa-native-mode) .chart-box,
+html.native-app.native-embedded body:not(.oa-native-mode) .chart-card,
+html.native-app.native-embedded body:not(.oa-native-mode) .chart-container,
+html.native-app.native-embedded body:not(.oa-native-mode) .filters-panel,
+html.native-app.native-embedded body:not(.oa-native-mode) .filters,
+html.native-app.native-embedded body:not(.oa-native-mode) .filters-inline,
+html.native-app.native-embedded body:not(.oa-native-mode) .portal-filters-bar,
+html.native-app.native-embedded body:not(.oa-native-mode) .scenario-switch,
+html.native-app.native-embedded body:not(.oa-native-mode) .status-pill,
+html.native-app.native-embedded body:not(.oa-native-mode) .status-bar,
+html.native-app.native-embedded body:not(.oa-native-mode) .local-card,
+html.native-app.native-embedded body:not(.oa-native-mode) .catalogo-panel,
+html.native-app.native-embedded body:not(.oa-native-mode) .lancamento-rapido,
+html.native-app.native-embedded body:not(.oa-native-mode) .workspace,
+html.native-app.native-embedded body:not(.oa-native-mode) .comp,
+html.native-app.native-embedded body:not(.oa-native-mode) .comparisons,
+html.native-app.native-embedded body:not(.oa-native-mode) .viewer,
+html.native-app.native-embedded body:not(.oa-native-mode) .modelo-wrap,
+html.native-app.native-embedded body:not(.oa-native-mode) .kpi-container,
+html.native-app.native-embedded body:not(.oa-native-mode) .dashboard-grid > *,
+html.native-app.native-embedded body:not(.oa-native-mode) .kpi-grid > *,
+html.native-app.native-embedded body:not(.oa-native-mode) .cards-kpi .card,
+html.native-app.native-embedded body:not(.oa-native-mode) .cards .card,
+html.native-app.native-embedded body:not(.oa-native-mode) .charts-layout > *,
+html.native-app.native-embedded body:not(.oa-native-mode) .table-head,
+html.native-app.native-embedded body:not(.oa-native-mode) .legend {
+  background: var(--app-glass-bg) !important;
+  border: 1px solid var(--app-glass-border) !important;
+  backdrop-filter: var(--app-glass-blur) !important;
+  -webkit-backdrop-filter: var(--app-glass-blur) !important;
+  box-shadow: var(--app-glass-shadow) !important;
+  border-radius: var(--app-glass-radius) !important;
+  color: var(--app-text) !important;
+}
+
+html.native-app.native-embedded body:not(.oa-native-mode) h1,
+html.native-app.native-embedded body:not(.oa-native-mode) h2,
+html.native-app.native-embedded body:not(.oa-native-mode) h3,
+html.native-app.native-embedded body:not(.oa-native-mode) .card-title,
+html.native-app.native-embedded body:not(.oa-native-mode) .panel-title,
+html.native-app.native-embedded body:not(.oa-native-mode) .kpi-value,
+html.native-app.native-embedded body:not(.oa-native-mode) .card-value {
+  color: var(--app-text) !important;
+}
+
+html.native-app.native-embedded body:not(.oa-native-mode) .card-sub,
+html.native-app.native-embedded body:not(.oa-native-mode) .kpi-label,
+html.native-app.native-embedded body:not(.oa-native-mode) .kpi-sub,
+html.native-app.native-embedded body:not(.oa-native-mode) .table-sub,
+html.native-app.native-embedded body:not(.oa-native-mode) .subtitle,
+html.native-app.native-embedded body:not(.oa-native-mode) .card-desc,
+html.native-app.native-embedded body:not(.oa-native-mode) .panel-title-note,
+html.native-app.native-embedded body:not(.oa-native-mode) label,
+html.native-app.native-embedded body:not(.oa-native-mode) .field label {
+  color: var(--app-muted) !important;
+}
+
+html.native-app.native-embedded body:not(.oa-native-mode) input:not([type='checkbox']):not([type='radio']),
+html.native-app.native-embedded body:not(.oa-native-mode) select,
+html.native-app.native-embedded body:not(.oa-native-mode) textarea,
+html.native-app.native-embedded body:not(.oa-native-mode) .cell-input,
+html.native-app.native-embedded body:not(.oa-native-mode) .cell-select,
+html.native-app.native-embedded body:not(.oa-native-mode) .filter-select,
+html.native-app.native-embedded body:not(.oa-native-mode) .input {
+  background: color-mix(in srgb, var(--app-glass-bg) 85%, transparent) !important;
+  border: 1px solid var(--app-glass-border) !important;
+  color: var(--app-text) !important;
+  border-radius: 12px !important;
+}
+
+html.native-app.native-embedded body:not(.oa-native-mode) .btn-primary,
+html.native-app.native-embedded body:not(.oa-native-mode) .btn-atualizar-bar {
+  background: linear-gradient(135deg, var(--app-accent), color-mix(in srgb, var(--app-accent-2) 35%, var(--app-accent))) !important;
+  border: 1px solid color-mix(in srgb, var(--app-accent) 40%, transparent) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 20px var(--app-glow) !important;
+  border-radius: 12px !important;
+}
+
+html.native-app.native-embedded body:not(.oa-native-mode) .btn-secondary,
+html.native-app.native-embedded body:not(.oa-native-mode) .card-btn,
+html.native-app.native-embedded body:not(.oa-native-mode) .year-chip,
+html.native-app.native-embedded body:not(.oa-native-mode) .line-btn {
+  background: color-mix(in srgb, var(--app-glass-bg) 80%, transparent) !important;
+  border: 1px solid var(--app-glass-border) !important;
+  color: var(--app-text) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+html.native-app.native-embedded body:not(.oa-native-mode) thead th {
+  background: color-mix(in srgb, var(--app-glass-bg) 88%, var(--app-accent) 12%) !important;
+  color: var(--app-text) !important;
+  border-color: var(--app-glass-border) !important;
+}
+
+html.native-app.native-embedded body:not(.oa-native-mode) tbody td {
+  background: color-mix(in srgb, var(--app-glass-bg) 55%, transparent) !important;
+  color: var(--app-text) !important;
+  border-color: var(--app-glass-border) !important;
+}
+
+html.native-app.native-embedded body:not(.oa-native-mode) tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--app-glass-bg) 72%, transparent) !important;
+}
+
+html.native-app.native-embedded body:not(.oa-native-mode) tbody tr:hover td {
+  background: color-mix(in srgb, var(--app-accent) 12%, var(--app-glass-bg)) !important;
+}
+
+html.native-app.native-embedded body:not(.oa-native-mode) .card-highlight {
+  border-color: color-mix(in srgb, var(--app-accent-2) 55%, transparent) !important;
+  box-shadow: var(--app-glass-shadow), 0 0 24px color-mix(in srgb, var(--app-accent-2) 18%, transparent) !important;
+}
+
+html.native-app.native-embedded body:not(.oa-native-mode) .chart-box::before {
+  opacity: 0.65;
+}
+
+html.native-app .loading-screen {
+  background:
+    radial-gradient(ellipse 100% 60% at 50% -15%, color-mix(in srgb, var(--app-accent) 18%, transparent), transparent 50%),
+    linear-gradient(180deg, var(--app-bg) 0%, var(--app-bg-2) 100%) !important;
+}
+
+html.native-app .loading-box {
+  background: var(--app-glass-bg) !important;
+  border: 1px solid var(--app-glass-border) !important;
+  backdrop-filter: var(--app-glass-blur) !important;
+  -webkit-backdrop-filter: var(--app-glass-blur) !important;
+  box-shadow: var(--app-glass-shadow) !important;
+  color: var(--app-text) !important;
+  border-radius: var(--app-glass-radius) !important;
+}
+
+html.native-app .app-content:has(.legacy-page--native:not(.legacy-page--tracking)) {
+  padding-top: calc(40px + var(--safe-top));
+  padding-left: calc(8px + var(--safe-left));
+  padding-right: calc(8px + var(--safe-right));
+}
+
+html.native-app .legacy-page--native:not(.legacy-page--tracking) .legacy-frame {
+  min-height: calc(100dvh - var(--app-header-h) - var(--app-nav-h) - 16px);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
 }
 
 html.native-app .app-content:has(.legacy-page--tracking) {
@@ -895,12 +1090,6 @@ html.native-app .legacy-page--native.legacy-page--tracking {
 
 html.native-app .app-content:has(.legacy-page--native:not(.legacy-page--tracking)) {
   padding-bottom: calc(12px + var(--app-nav-h));
-}
-
-html.native-app .legacy-page--native:not(.legacy-page--tracking) .legacy-frame {
-  min-height: calc(100dvh - var(--app-header-h) - var(--app-nav-h) - 24px);
-  background: var(--app-surface);
-  border: 1px solid var(--app-border);
 }
 
 html.native-app .legacy-page--tracking .legacy-frame {
