@@ -7,7 +7,7 @@ import { portalAsset } from './portal-origin'
 import { watchNativeTheme } from './native-theme'
 
 const NATIVE_CSS_ID = 'portal-app-native-css'
-const NATIVE_CSS_VERSION = '20260627d'
+const NATIVE_CSS_VERSION = '20260627e'
 
 export function isNativePlatform(): boolean {
   try {
@@ -40,6 +40,8 @@ export function injectLegacyNativeFrame(doc: Document): void {
   if (!isNativePlatform()) return
 
   doc.documentElement.classList.add('native-app', 'native-embedded')
+  doc.documentElement.style.height = '100%'
+  if (doc.body) doc.body.style.height = '100%'
   const dark = window.matchMedia('(prefers-color-scheme: dark)').matches
   doc.documentElement.classList.toggle('native-dark', dark)
   doc.documentElement.classList.toggle('native-light', !dark)

@@ -402,6 +402,24 @@ body.oa-page{
     </div>
 </header>
 
+<div class="oa-native-top" id="oaNativeTop" hidden aria-hidden="true">
+    <header class="oa-hud">
+        <div class="oa-hud-brand">
+            <span class="oa-hud-kicker">Rastreamento · Londrina</span>
+            <strong>Ônibus Agora</strong>
+        </div>
+        <div class="oa-hud-live">
+            <span class="oa-hud-dot" id="oaHudDot"></span>
+            <span id="oaHudLiveText">Conectando...</span>
+        </div>
+    </header>
+    <div class="oa-hud-stats">
+        <div class="oa-hud-stat"><b id="oaStatOnline">0</b><span>Online</span></div>
+        <div class="oa-hud-stat"><b id="oaStatLinhas">0</b><span>Linhas</span></div>
+        <div class="oa-hud-stat"><b id="oaStatVisiveis">0</b><span>Visíveis</span></div>
+    </div>
+</div>
+
 <main class="shell">
     <div class="topbar">
         <div class="topbar-left">
@@ -516,39 +534,26 @@ body.oa-page{
     </div>
 </main>
 
-<div class="oa-native-ui" id="oaNativeUi" hidden aria-hidden="true">
-    <header class="oa-hud">
-        <div class="oa-hud-brand">
-            <span class="oa-hud-kicker">Rastreamento · Londrina</span>
-            <strong>Ônibus Agora</strong>
-        </div>
-        <div class="oa-hud-live">
-            <span class="oa-hud-dot" id="oaHudDot"></span>
-            <span id="oaHudLiveText">Conectando...</span>
-        </div>
-    </header>
-    <div class="oa-hud-stats">
-        <div class="oa-hud-stat"><b id="oaStatOnline">0</b><span>Online</span></div>
-        <div class="oa-hud-stat"><b id="oaStatLinhas">0</b><span>Linhas</span></div>
-        <div class="oa-hud-stat"><b id="oaStatVisiveis">0</b><span>Visíveis</span></div>
-    </div>
-    <div class="oa-search-dock">
-        <div>
+<div class="oa-native-bottom" id="oaNativeBottom" hidden aria-hidden="true">
+    <div class="oa-bottom-pont" id="oaBottomPont"></div>
+    <div class="oa-bottom-search">
+        <div class="oa-search-field">
             <label for="oaBuscaLinhaNative">Linha</label>
-            <input id="oaBuscaLinhaNative" type="search" placeholder="301, Alemanha..." autocomplete="off">
+            <input id="oaBuscaLinhaNative" type="search" placeholder="301…" autocomplete="off">
         </div>
-        <div>
+        <div class="oa-search-field">
             <label for="oaBuscaVeiculoNative">Veículo</label>
             <input id="oaBuscaVeiculoNative" type="search" placeholder="3173" autocomplete="off">
         </div>
     </div>
-    <button type="button" class="oa-fab oa-fab--linhas" id="oaFabLinhas">
+</div>
+
+<div class="oa-native-floats" id="oaNativeFloats" hidden aria-hidden="true">
+    <button type="button" class="oa-fab oa-fab--linhas" id="oaFabLinhas" aria-label="Linhas">
         <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-        Linhas
     </button>
-    <button type="button" class="oa-fab oa-fab--horarios" id="oaFabHorarios">
+    <button type="button" class="oa-fab oa-fab--horarios" id="oaFabHorarios" aria-label="Horários">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        Horários
     </button>
     <div class="oa-backdrop" id="oaBackdrop"></div>
     <aside class="oa-sheet oa-sheet--linhas" id="oaSheetLinhas">
@@ -803,11 +808,16 @@ function abrirHorariosNative(){
 function initNativeAppMode(){
     if (!isNativeEmbedded()) return;
     document.body.classList.add("oa-native-mode");
-    const ui = $("oaNativeUi");
-    if (ui){
-        ui.removeAttribute("hidden");
-        ui.setAttribute("aria-hidden", "false");
-    }
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
+
+    ["oaNativeTop", "oaNativeBottom", "oaNativeFloats"].forEach(id => {
+        const el = $(id);
+        if (el){
+            el.removeAttribute("hidden");
+            el.setAttribute("aria-hidden", "false");
+        }
+    });
 
     const nl = $("oaBuscaLinhaNative");
     const nv = $("oaBuscaVeiculoNative");
@@ -826,6 +836,10 @@ function initNativeAppMode(){
         });
     }
 
+    const pontSlot = $("oaBottomPont");
+    const mapFiltro = $("mapFiltroPont");
+    if (pontSlot && mapFiltro) pontSlot.appendChild(mapFiltro);
+
     $("oaFabHorarios")?.addEventListener("click", abrirHorariosNative);
     $("oaFabLinhas")?.addEventListener("click", abrirSheetLinhas);
     $("oaBackdrop")?.addEventListener("click", () => {
@@ -843,6 +857,7 @@ function initNativeAppMode(){
         sheetBody.appendChild(btnLimpar);
     }
 
+    requestAnimationFrame(() => state.mapa?.invalidateSize());
     syncNativeHud();
 }
 
@@ -1781,6 +1796,10 @@ async function boot(){
     if (BUS2.proxyBase){
         iniciarPoll();
         setTimeout(pollLote, 2500);
+    }
+
+    if (document.body.classList.contains("oa-native-mode")){
+        setTimeout(() => state.mapa?.invalidateSize(), 350);
     }
 }
 

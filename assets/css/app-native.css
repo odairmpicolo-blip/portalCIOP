@@ -669,12 +669,35 @@ html.native-app .title-wrap h1 img {
   object-fit: contain !important;
 }
 
+html.native-app .app-content:has(.legacy-page--tracking) {
+  padding: 0 !important;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+html.native-app .app-main:has(.legacy-page--tracking) {
+  min-height: 0;
+  overflow: hidden;
+}
+
 html.native-app .legacy-page--native.legacy-page--tracking {
-  min-height: calc(100dvh - var(--app-header-h) - var(--app-nav-h));
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  gap: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 html.native-app .legacy-page--tracking .legacy-frame {
-  min-height: calc(100dvh - var(--app-header-h) - var(--app-nav-h));
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
   border-radius: 0;
   box-shadow: none;
   background: #060b14;
@@ -684,26 +707,43 @@ html.native-app .legacy-page--tracking .app-native-back-fab {
   display: none;
 }
 
-/* ── Ônibus Agora · app de rastreamento ─────────────────────────────────── */
+/* ── Ônibus Agora · app de rastreamento (tela cheia) ───────────────────── */
+
+html.native-app.native-embedded,
+html.native-app.native-embedded body.oa-page.oa-native-mode {
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
 
 html.native-app.native-embedded body.oa-page.oa-native-mode {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
   margin: 0;
-  min-height: 100dvh;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(59, 130, 246, 0.22), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(255, 107, 0, 0.12), transparent 50%),
-    #060b14 !important;
+  background: #060b14 !important;
   color: #eef2f8;
+  --oa-bottom-h: 92px;
+}
+
+html.native-app.native-embedded body.oa-native-mode .oa-native-top {
+  grid-row: 1;
+  z-index: 20;
+  padding: 6px 10px 8px;
+  background: rgba(6, 11, 20, 0.97);
+  border-bottom: 1px solid rgba(96, 165, 250, 0.18);
 }
 
 html.native-app.native-embedded body.oa-native-mode .shell {
+  grid-row: 2;
   max-width: none;
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100dvh;
-  flex: 1;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  flex: none;
 }
 
 html.native-app.native-embedded body.oa-native-mode .topbar,
@@ -712,8 +752,10 @@ html.native-app.native-embedded body.oa-native-mode .tabs {
 }
 
 html.native-app.native-embedded body.oa-native-mode .layout {
-  display: block;
-  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
 html.native-app.native-embedded body.oa-native-mode .sidebar {
@@ -721,23 +763,32 @@ html.native-app.native-embedded body.oa-native-mode .sidebar {
 }
 
 html.native-app.native-embedded body.oa-native-mode .main.card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   background: transparent;
   border: 0;
   box-shadow: none;
   border-radius: 0;
-  min-height: 100dvh;
 }
 
 html.native-app.native-embedded body.oa-native-mode .panel-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   padding: 0;
 }
 
 html.native-app.native-embedded body.oa-native-mode #panelMapa {
-  position: fixed;
-  inset: 0;
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   border: 0;
   border-radius: 0;
-  min-height: 100dvh;
   z-index: 1;
 }
 
@@ -747,43 +798,106 @@ html.native-app.native-embedded body.oa-native-mode #panelViagem[hidden] {
 }
 
 html.native-app.native-embedded body.oa-native-mode #mapa {
-  min-height: 100dvh;
-  height: 100dvh;
-  filter: saturate(1.15) contrast(1.05) brightness(0.92);
+  flex: 1;
+  width: 100%;
+  min-height: 0 !important;
+  height: auto !important;
+  filter: saturate(1.12) contrast(1.04) brightness(0.94);
 }
 
-html.native-app.native-embedded body.oa-native-mode .map-filtro-pont {
+html.native-app.native-embedded body.oa-native-mode .oa-native-bottom {
+  grid-row: 3;
+  z-index: 20;
+  padding: 6px 10px 8px;
+  background: rgba(6, 11, 20, 0.97);
+  border-top: 1px solid rgba(96, 165, 250, 0.18);
+}
+
+html.native-app.native-embedded body.oa-native-mode .oa-bottom-pont .map-filtro-pont {
+  position: static;
+  left: auto;
+  right: auto;
   top: auto;
-  bottom: calc(148px + env(safe-area-inset-bottom, 0px));
-  left: 12px;
-  right: 12px;
+  bottom: auto;
   max-width: none;
-  background: rgba(8, 14, 26, 0.88);
-  border-color: rgba(96, 165, 250, 0.25);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 4px 6px;
+  gap: 4px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
-html.native-app.native-embedded body.oa-native-mode .map-filtro-label,
+html.native-app.native-embedded body.oa-native-mode .map-filtro-label {
+  font-size: 8px;
+  margin-right: 0;
+  color: #64748b;
+}
+
 html.native-app.native-embedded body.oa-native-mode .pont-chip {
+  padding: 4px 8px;
+  font-size: 10px;
   color: #eef2f8;
-  background: rgba(12, 22, 40, 0.75);
+  background: rgba(12, 22, 40, 0.85);
   border-color: rgba(96, 165, 250, 0.2);
 }
 
+html.native-app.native-embedded body.oa-native-mode .oa-bottom-search {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+html.native-app.native-embedded body.oa-native-mode .oa-search-field label {
+  display: block;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 3px;
+}
+
+html.native-app.native-embedded body.oa-native-mode .oa-search-field input {
+  width: 100%;
+  height: 34px;
+  border: 1px solid rgba(96, 165, 250, 0.22);
+  border-radius: 9px;
+  padding: 0 9px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(4, 8, 16, 0.65);
+  color: #eef2f8;
+}
+
+html.native-app.native-embedded body.oa-native-mode .oa-search-field input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.22);
+}
+
 html.native-app.native-embedded body.oa-native-mode .map-tools {
-  top: calc(72px + env(safe-area-inset-top, 0px));
-  right: 10px;
+  top: 8px;
+  right: 8px;
 }
 
 html.native-app.native-embedded body.oa-native-mode .map-tools .btn {
-  background: rgba(8, 14, 26, 0.88);
-  border-color: rgba(96, 165, 250, 0.25);
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 10px;
+  background: rgba(8, 14, 26, 0.82);
+  border-color: rgba(96, 165, 250, 0.22);
   color: #eef2f8;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(10px);
+  opacity: 0.92;
 }
 
 html.native-app.native-embedded body.oa-native-mode .shape-picker {
+  bottom: 8px;
+  left: 8px;
   background: rgba(8, 14, 26, 0.94);
   border-color: rgba(96, 165, 250, 0.25);
   color: #eef2f8;
@@ -799,27 +913,41 @@ html.native-app.native-embedded body.oa-native-mode #panelViagem {
   display: none !important;
 }
 
+html.native-app.native-embedded body.oa-native-mode.oa-horarios-open {
+  grid-template-rows: 1fr;
+}
+
+html.native-app.native-embedded body.oa-native-mode.oa-horarios-open .oa-native-top,
+html.native-app.native-embedded body.oa-native-mode.oa-horarios-open .oa-native-bottom,
+html.native-app.native-embedded body.oa-native-mode.oa-horarios-open .oa-native-floats {
+  display: none !important;
+}
+
+html.native-app.native-embedded body.oa-native-mode.oa-horarios-open .shell {
+  grid-row: 1;
+}
+
 html.native-app.native-embedded body.oa-native-mode.oa-horarios-open #panelMapa {
   display: none !important;
 }
 
 html.native-app.native-embedded body.oa-native-mode.oa-horarios-open #panelHorarios {
   display: flex !important;
-  position: fixed;
-  inset: 0;
+  position: relative;
+  flex: 1;
   z-index: 120;
   border: 0;
   border-radius: 0;
-  min-height: 100dvh;
+  min-height: 0;
+  height: 100%;
   background:
     radial-gradient(ellipse 100% 60% at 50% -10%, rgba(59, 130, 246, 0.18), transparent 50%),
     #060b14;
   flex-direction: column;
-  overflow: hidden;
-  padding-top: calc(52px + env(safe-area-inset-top, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  padding-top: calc(44px + env(safe-area-inset-top, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 html.native-app.native-embedded body.oa-native-mode.oa-horarios-open #panelHorarios .empty,
@@ -843,44 +971,18 @@ html.native-app.native-embedded body.oa-native-mode.oa-linhas-open .oa-backdrop 
   pointer-events: auto;
 }
 
-html.native-app.native-embedded body.oa-native-mode.oa-horarios-open .oa-backdrop {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* HUD + dock + FABs */
-.oa-native-ui {
-  position: fixed;
-  inset: 0;
-  z-index: 90;
-  pointer-events: none;
-}
-
-.oa-native-ui > * {
-  pointer-events: auto;
-}
-
+/* HUD topo */
 .oa-hud {
-  position: absolute;
-  top: env(safe-area-inset-top, 0px);
-  left: 12px;
-  right: 12px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 16px;
-  background: rgba(8, 14, 26, 0.82);
-  border: 1px solid rgba(96, 165, 250, 0.28);
-  backdrop-filter: blur(18px) saturate(1.4);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .oa-hud-brand {
   display: grid;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
 }
 
@@ -893,7 +995,7 @@ html.native-app.native-embedded body.oa-native-mode.oa-horarios-open .oa-backdro
 }
 
 .oa-hud-brand strong {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: #fff;
@@ -902,26 +1004,27 @@ html.native-app.native-embedded body.oa-native-mode.oa-horarios-open .oa-backdro
 .oa-hud-live {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 6px 10px;
+  gap: 6px;
+  padding: 5px 9px;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.12);
-  border: 1px solid rgba(96, 165, 250, 0.25);
-  font-size: 10px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.22);
+  font-size: 9px;
   font-weight: 700;
   color: #94a3b8;
-  max-width: 46vw;
+  max-width: 48vw;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .oa-hud-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #22c55e;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
   flex-shrink: 0;
 }
 
@@ -936,105 +1039,66 @@ html.native-app.native-embedded body.oa-native-mode.oa-horarios-open .oa-backdro
 }
 
 .oa-hud-stats {
-  position: absolute;
-  top: calc(58px + env(safe-area-inset-top, 0px));
-  left: 12px;
-  right: 12px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 5px;
 }
 
 .oa-hud-stat {
-  padding: 8px 10px;
-  border-radius: 12px;
+  padding: 6px 8px;
+  border-radius: 10px;
   text-align: center;
-  background: rgba(8, 14, 26, 0.78);
-  border: 1px solid rgba(96, 165, 250, 0.18);
-  backdrop-filter: blur(12px);
+  background: rgba(12, 22, 40, 0.75);
+  border: 1px solid rgba(96, 165, 250, 0.15);
 }
 
 .oa-hud-stat b {
   display: block;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
   color: #fff;
   letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .oa-hud-stat span {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #64748b;
 }
 
-.oa-search-dock {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: calc(78px + env(safe-area-inset-bottom, 0px));
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 10px;
-  border-radius: 16px;
-  background: rgba(8, 14, 26, 0.88);
-  border: 1px solid rgba(96, 165, 250, 0.28);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+/* FABs discretos sobre o mapa */
+.oa-native-floats {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
 }
 
-.oa-search-dock label {
-  display: block;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #64748b;
-  margin-bottom: 4px;
-}
-
-.oa-search-dock input {
-  width: 100%;
-  height: 40px;
-  border: 1px solid rgba(96, 165, 250, 0.22);
-  border-radius: 11px;
-  padding: 0 11px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  background: rgba(4, 8, 16, 0.65);
-  color: #eef2f8;
-}
-
-.oa-search-dock input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+.oa-native-floats > * {
+  pointer-events: auto;
 }
 
 .oa-fab {
-  position: absolute;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 0 18px;
+  position: fixed;
+  z-index: 75;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
   border: 0;
-  border-radius: 999px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 800;
+  border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.4);
-  transition: transform 0.15s ease;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  opacity: 0.88;
 }
 
 .oa-fab:active {
-  transform: scale(0.96);
+  transform: scale(0.94);
 }
 
 .oa-fab svg {
@@ -1048,36 +1112,33 @@ html.native-app.native-embedded body.oa-native-mode.oa-horarios-open .oa-backdro
 }
 
 .oa-fab--horarios {
-  right: 12px;
-  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(135deg, #ff6b00, #ff9f4d);
+  right: 10px;
+  bottom: calc(var(--oa-bottom-h, 92px) + 10px);
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.92), rgba(255, 159, 77, 0.92));
   color: #fff;
-  box-shadow: 0 10px 32px rgba(255, 107, 0, 0.35);
 }
 
 .oa-fab--linhas {
-  left: 12px;
-  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-  background: rgba(8, 14, 26, 0.92);
-  border: 1px solid rgba(96, 165, 250, 0.35);
+  left: 10px;
+  bottom: calc(var(--oa-bottom-h, 92px) + 10px);
+  background: rgba(8, 14, 26, 0.82);
+  border: 1px solid rgba(96, 165, 250, 0.3);
   color: #eef2f8;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(10px);
 }
 
 .oa-fab--close {
   position: fixed;
-  top: calc(10px + env(safe-area-inset-top, 0px));
-  right: 12px;
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  right: 10px;
   z-index: 130;
-  width: 42px;
-  height: 42px;
-  min-height: 42px;
-  padding: 0;
-  border-radius: 50%;
+  width: 38px;
+  height: 38px;
   background: rgba(8, 14, 26, 0.9);
   border: 1px solid rgba(96, 165, 250, 0.3);
   color: #fff;
   font-size: 20px;
+  line-height: 1;
 }
 
 .oa-backdrop {
@@ -1097,52 +1158,52 @@ html.native-app.native-embedded body.oa-native-mode.oa-horarios-open .oa-backdro
   right: 0;
   bottom: 0;
   z-index: 110;
-  max-height: min(78dvh, 640px);
+  max-height: min(72dvh, 560px);
   transform: translateY(100%);
   transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
-  border-radius: 20px 20px 0 0;
+  border-radius: 18px 18px 0 0;
   background:
-    radial-gradient(ellipse 100% 60% at 50% 0%, rgba(59, 130, 246, 0.14), transparent 55%),
-    rgba(8, 14, 26, 0.97);
-  border: 1px solid rgba(96, 165, 250, 0.25);
+    radial-gradient(ellipse 100% 60% at 50% 0%, rgba(59, 130, 246, 0.12), transparent 55%),
+    rgba(8, 14, 26, 0.98);
+  border: 1px solid rgba(96, 165, 250, 0.22);
   border-bottom: 0;
-  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.45);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
 .oa-sheet-handle {
-  width: 36px;
+  width: 32px;
   height: 4px;
   border-radius: 999px;
-  background: rgba(148, 163, 184, 0.45);
-  margin: 10px auto 0;
+  background: rgba(148, 163, 184, 0.4);
+  margin: 8px auto 0;
   flex-shrink: 0;
 }
 
 .oa-sheet-head {
-  padding: 12px 16px 10px;
-  border-bottom: 1px solid rgba(96, 165, 250, 0.15);
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid rgba(96, 165, 250, 0.12);
 }
 
 .oa-sheet-head h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
   color: #fff;
 }
 
 .oa-sheet-head p {
-  margin: 4px 0 0;
-  font-size: 12px;
+  margin: 3px 0 0;
+  font-size: 11px;
   color: #64748b;
 }
 
 .oa-sheet-body {
   flex: 1;
   overflow: auto;
-  padding: 10px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+  padding: 8px 10px calc(12px + env(safe-area-inset-bottom, 0px));
   -webkit-overflow-scrolling: touch;
 }
 
@@ -1167,32 +1228,37 @@ html.native-app.native-embedded body.oa-native-mode.oa-horarios-open .oa-backdro
 
 @media (prefers-color-scheme: light) {
   html.native-app.native-embedded body.oa-page.oa-native-mode {
-    background:
-      radial-gradient(ellipse 120% 80% at 50% -20%, rgba(37, 99, 235, 0.12), transparent 55%),
-      #eef2f8 !important;
+    background: #eef2f8 !important;
   }
 
-  .oa-hud,
-  .oa-hud-stat,
-  .oa-search-dock,
-  .oa-fab--linhas {
-    background: rgba(255, 255, 255, 0.92);
-    border-color: rgba(6, 36, 92, 0.12);
+  html.native-app.native-embedded body.oa-native-mode .oa-native-top,
+  html.native-app.native-embedded body.oa-native-mode .oa-native-bottom {
+    background: rgba(255, 255, 255, 0.97);
+    border-color: rgba(6, 36, 92, 0.1);
   }
 
   .oa-hud-brand strong,
-  .oa-hud-stat b,
-  .oa-search-dock input {
+  .oa-hud-stat b {
     color: #0f172a;
   }
 
-  .oa-search-dock input {
+  .oa-hud-stat {
+    background: rgba(248, 250, 252, 0.95);
+  }
+
+  .oa-search-field input {
     background: #f8fafc;
+    color: #0f172a;
+  }
+
+  .oa-fab--linhas {
+    background: rgba(255, 255, 255, 0.92);
+    color: #06245c;
   }
 
   .oa-sheet {
     background: rgba(255, 255, 255, 0.98);
-    border-color: rgba(6, 36, 92, 0.12);
+    border-color: rgba(6, 36, 92, 0.1);
   }
 
   .oa-sheet-head h2 {
