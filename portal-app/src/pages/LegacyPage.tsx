@@ -9,6 +9,7 @@ export function LegacyPage() {
   const path = params['*'] || ''
   const src = useMemo(() => legacyUrl(`/${path}`), [path])
   const native = isNativeApp()
+  const tracking = path.includes('onibus-agora')
 
   const onFrameLoad = useCallback(
     (event: React.SyntheticEvent<HTMLIFrameElement>) => {
@@ -24,7 +25,9 @@ export function LegacyPage() {
   )
 
   return (
-    <section className={`legacy-page${native ? ' legacy-page--native' : ''}`}>
+    <section
+      className={`legacy-page${native ? ' legacy-page--native' : ''}${tracking ? ' legacy-page--tracking' : ''}`}
+    >
       {!native ? (
         <div className="legacy-toolbar">
           <Link to="/" className="btn-secondary">

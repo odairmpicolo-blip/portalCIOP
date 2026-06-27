@@ -516,6 +516,51 @@ body.oa-page{
     </div>
 </main>
 
+<div class="oa-native-ui" id="oaNativeUi" hidden aria-hidden="true">
+    <header class="oa-hud">
+        <div class="oa-hud-brand">
+            <span class="oa-hud-kicker">Rastreamento · Londrina</span>
+            <strong>Ônibus Agora</strong>
+        </div>
+        <div class="oa-hud-live">
+            <span class="oa-hud-dot" id="oaHudDot"></span>
+            <span id="oaHudLiveText">Conectando...</span>
+        </div>
+    </header>
+    <div class="oa-hud-stats">
+        <div class="oa-hud-stat"><b id="oaStatOnline">0</b><span>Online</span></div>
+        <div class="oa-hud-stat"><b id="oaStatLinhas">0</b><span>Linhas</span></div>
+        <div class="oa-hud-stat"><b id="oaStatVisiveis">0</b><span>Visíveis</span></div>
+    </div>
+    <div class="oa-search-dock">
+        <div>
+            <label for="oaBuscaLinhaNative">Linha</label>
+            <input id="oaBuscaLinhaNative" type="search" placeholder="301, Alemanha..." autocomplete="off">
+        </div>
+        <div>
+            <label for="oaBuscaVeiculoNative">Veículo</label>
+            <input id="oaBuscaVeiculoNative" type="search" placeholder="3173" autocomplete="off">
+        </div>
+    </div>
+    <button type="button" class="oa-fab oa-fab--linhas" id="oaFabLinhas">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        Linhas
+    </button>
+    <button type="button" class="oa-fab oa-fab--horarios" id="oaFabHorarios">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        Horários
+    </button>
+    <div class="oa-backdrop" id="oaBackdrop"></div>
+    <aside class="oa-sheet oa-sheet--linhas" id="oaSheetLinhas">
+        <div class="oa-sheet-handle"></div>
+        <div class="oa-sheet-head">
+            <h2>Linhas</h2>
+            <p>Toque para rastrear no mapa</p>
+        </div>
+        <div class="oa-sheet-body" id="oaSheetLinhasBody"></div>
+    </aside>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
 const BUS2 = {
@@ -703,6 +748,102 @@ function rotasVisiveis(){
 function setLive(texto, busy){
     $("liveText").textContent = texto;
     $("liveDot").classList.toggle("busy", !!busy);
+    syncNativeHud();
+}
+
+function isNativeEmbedded(){
+    return document.documentElement.classList.contains("native-embedded");
+}
+
+function syncNativeHud(){
+    if (!document.body.classList.contains("oa-native-mode")) return;
+    const hudText = $("liveText")?.textContent || "Conectando...";
+    const busy = $("liveDot")?.classList.contains("busy");
+    if ($("oaHudLiveText")) $("oaHudLiveText").textContent = hudText;
+    $("oaHudDot")?.classList.toggle("busy", busy);
+    if ($("oaStatOnline")) $("oaStatOnline").textContent = $("statOnline")?.textContent || "0";
+    if ($("oaStatLinhas")) $("oaStatLinhas").textContent = $("statLinhas")?.textContent || "0";
+    if ($("oaStatVisiveis")) $("oaStatVisiveis").textContent = $("statVisiveis")?.textContent || "0";
+}
+
+function fecharSheetLinhas(){
+    document.body.classList.remove("oa-linhas-open");
+}
+
+function abrirSheetLinhas(){
+    document.body.classList.add("oa-linhas-open");
+}
+
+function fecharHorariosNative(){
+    document.body.classList.remove("oa-horarios-open");
+    $("oaFabCloseHorarios")?.setAttribute("hidden", "");
+    trocarTab("mapa");
+}
+
+function abrirHorariosNative(){
+    if (!state.routeFiltro){
+        abrirSheetLinhas();
+        return;
+    }
+    trocarTab("horarios");
+    document.body.classList.add("oa-horarios-open");
+    if (!$("oaFabCloseHorarios")){
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.id = "oaFabCloseHorarios";
+        btn.className = "oa-fab oa-fab--close";
+        btn.innerHTML = "&times;";
+        btn.setAttribute("aria-label", "Voltar ao mapa");
+        btn.addEventListener("click", fecharHorariosNative);
+        document.body.appendChild(btn);
+    }
+    $("oaFabCloseHorarios")?.removeAttribute("hidden");
+}
+
+function initNativeAppMode(){
+    if (!isNativeEmbedded()) return;
+    document.body.classList.add("oa-native-mode");
+    const ui = $("oaNativeUi");
+    if (ui){
+        ui.removeAttribute("hidden");
+        ui.setAttribute("aria-hidden", "false");
+    }
+
+    const nl = $("oaBuscaLinhaNative");
+    const nv = $("oaBuscaVeiculoNative");
+    const bl = $("buscaLinha");
+    const bv = $("buscaVeiculo");
+    if (nl && bl){
+        nl.addEventListener("input", () => {
+            bl.value = nl.value;
+            bl.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+    }
+    if (nv && bv){
+        nv.addEventListener("input", () => {
+            bv.value = nv.value;
+            bv.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+    }
+
+    $("oaFabHorarios")?.addEventListener("click", abrirHorariosNative);
+    $("oaFabLinhas")?.addEventListener("click", abrirSheetLinhas);
+    $("oaBackdrop")?.addEventListener("click", () => {
+        fecharSheetLinhas();
+        fecharHorariosNative();
+    });
+
+    const sheetBody = $("oaSheetLinhasBody");
+    const lines = $("listaLinhas");
+    const btnLimpar = $("btnLimparFiltro");
+    if (sheetBody && lines) sheetBody.appendChild(lines);
+    if (sheetBody && btnLimpar){
+        btnLimpar.style.marginTop = "10px";
+        btnLimpar.style.width = "100%";
+        sheetBody.appendChild(btnLimpar);
+    }
+
+    syncNativeHud();
 }
 
 function iconeOnibusHtml(corLinha, corOnibus, prefixo, linha, extraClass){
@@ -767,6 +908,7 @@ function renderListaLinhas(){
         btn.addEventListener("click", () => selecionarLinha(Number(btn.dataset.id)));
     });
     $("statLinhas").textContent = state.routes.length;
+    syncNativeHud();
 }
 
 function tipoPontualidadeVeiculo(v){
@@ -849,6 +991,7 @@ function atualizarMarcadores(){
 
     $("statOnline").textContent = state.vehicles.size;
     $("statVisiveis").textContent = countVis;
+    syncNativeHud();
 
     if (state.routeFiltro && countVis > 0){
         const pts = [...state.vehicles.values()].filter(veiculoPassaFiltro).map(v => [v.lat, v.lng]);
@@ -1212,6 +1355,7 @@ async function selecionarLinha(routeId){
         });
         atualizarMarcadores();
     }).catch(() => { /* proxy indisponível — horários ainda funcionam */ });
+    fecharSheetLinhas();
 }
 
 function limparFiltro(){
@@ -1675,6 +1819,7 @@ function bind(){
 }
 
 function iniciar(){
+    initNativeAppMode();
     bind();
     boot().catch(err => {
         setLive(err.message || "Erro ao iniciar", false);

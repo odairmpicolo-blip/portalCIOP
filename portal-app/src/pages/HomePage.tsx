@@ -3,9 +3,11 @@ import { PortalCardItem } from '../components/PortalCard'
 import { NoticeBoardContainer } from '../components/NoticeBoard'
 import { portalCards } from '../lib/navigation'
 import { usuarioPodeAcessar } from '../lib/permissions'
+import { isNativeApp } from '../lib/portal-origin'
 
 export function HomePage() {
   const { user } = useAuth()
+  const native = isNativeApp()
 
   const operacao = portalCards.filter(
     (card) => card.section === 'operacao' && usuarioPodeAcessar(user, card.access),
@@ -24,10 +26,12 @@ export function HomePage() {
             Acesso centralizado aos módulos CIOP/TCGL com perfil <strong>{user?.perfil}</strong>.
           </p>
         </div>
-        <div className="hero-badge">
-          <span>Novo portal</span>
-          <small>React · Firebase · Apps Script</small>
-        </div>
+        {!native ? (
+          <div className="hero-badge">
+            <span>Novo portal</span>
+            <small>React · Firebase · Apps Script</small>
+          </div>
+        ) : null}
       </section>
 
       <NoticeBoardContainer />

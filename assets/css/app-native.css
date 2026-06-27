@@ -395,32 +395,36 @@ html.native-app .cards-section h2 {
 }
 
 html.native-app .cards-grid {
-  grid-template-columns: 1fr;
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 html.native-app .portal-card {
   min-height: 0;
-  padding: 14px 16px;
+  padding: 12px 10px;
   background: var(--app-surface);
   border: 1px solid var(--app-border);
-  border-radius: var(--app-radius);
+  border-radius: var(--app-radius-sm);
   box-shadow: var(--app-shadow);
   color: var(--app-text);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 html.native-app .portal-card .card-top {
-  grid-template-columns: auto 1fr;
-  gap: 14px;
-  align-items: start;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
 }
 
 html.native-app .card-icon-wrap {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
   background: color-mix(in srgb, var(--app-accent) 12%, transparent);
   border: 1px solid var(--app-border);
   color: var(--app-accent);
@@ -434,24 +438,23 @@ html.native-app .card-icon-wrap.theme-teal { color: #14b8a6; }
 html.native-app .card-icon-wrap.theme-amber { color: #f59e0b; }
 
 html.native-app .card-module-icon {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 html.native-app .portal-card h3 {
   color: var(--app-text);
-  font-size: 0.95rem;
+  font-size: 0.76rem;
+  line-height: 1.25;
+  margin: 0;
 }
 
 html.native-app .portal-card p {
-  color: var(--app-muted);
-  font-size: 0.82rem;
+  display: none;
 }
 
 html.native-app .card-action {
-  background: color-mix(in srgb, var(--app-accent) 14%, transparent);
-  color: var(--app-accent);
-  border: 1px solid var(--app-border);
+  display: none;
 }
 
 /* ── Avisos (mobile) ────────────────────────────────────────────────────── */
@@ -664,6 +667,537 @@ html.native-app .title-wrap h1 img {
   max-height: 34px !important;
   margin: 0 auto !important;
   object-fit: contain !important;
+}
+
+html.native-app .legacy-page--native.legacy-page--tracking {
+  min-height: calc(100dvh - var(--app-header-h) - var(--app-nav-h));
+}
+
+html.native-app .legacy-page--tracking .legacy-frame {
+  min-height: calc(100dvh - var(--app-header-h) - var(--app-nav-h));
+  border-radius: 0;
+  box-shadow: none;
+  background: #060b14;
+}
+
+html.native-app .legacy-page--tracking .app-native-back-fab {
+  display: none;
+}
+
+/* ── Ônibus Agora · app de rastreamento ─────────────────────────────────── */
+
+html.native-app.native-embedded body.oa-page.oa-native-mode {
+  margin: 0;
+  min-height: 100dvh;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(59, 130, 246, 0.22), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(255, 107, 0, 0.12), transparent 50%),
+    #060b14 !important;
+  color: #eef2f8;
+}
+
+html.native-app.native-embedded body.oa-native-mode .shell {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100dvh;
+  flex: 1;
+}
+
+html.native-app.native-embedded body.oa-native-mode .topbar,
+html.native-app.native-embedded body.oa-native-mode .tabs {
+  display: none !important;
+}
+
+html.native-app.native-embedded body.oa-native-mode .layout {
+  display: block;
+  height: 100dvh;
+}
+
+html.native-app.native-embedded body.oa-native-mode .sidebar {
+  display: none;
+}
+
+html.native-app.native-embedded body.oa-native-mode .main.card {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  min-height: 100dvh;
+}
+
+html.native-app.native-embedded body.oa-native-mode .panel-wrap {
+  padding: 0;
+}
+
+html.native-app.native-embedded body.oa-native-mode #panelMapa {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  border-radius: 0;
+  min-height: 100dvh;
+  z-index: 1;
+}
+
+html.native-app.native-embedded body.oa-native-mode #panelMapa[hidden],
+html.native-app.native-embedded body.oa-native-mode #panelViagem[hidden] {
+  display: none !important;
+}
+
+html.native-app.native-embedded body.oa-native-mode #mapa {
+  min-height: 100dvh;
+  height: 100dvh;
+  filter: saturate(1.15) contrast(1.05) brightness(0.92);
+}
+
+html.native-app.native-embedded body.oa-native-mode .map-filtro-pont {
+  top: auto;
+  bottom: calc(148px + env(safe-area-inset-bottom, 0px));
+  left: 12px;
+  right: 12px;
+  max-width: none;
+  background: rgba(8, 14, 26, 0.88);
+  border-color: rgba(96, 165, 250, 0.25);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+html.native-app.native-embedded body.oa-native-mode .map-filtro-label,
+html.native-app.native-embedded body.oa-native-mode .pont-chip {
+  color: #eef2f8;
+  background: rgba(12, 22, 40, 0.75);
+  border-color: rgba(96, 165, 250, 0.2);
+}
+
+html.native-app.native-embedded body.oa-native-mode .map-tools {
+  top: calc(72px + env(safe-area-inset-top, 0px));
+  right: 10px;
+}
+
+html.native-app.native-embedded body.oa-native-mode .map-tools .btn {
+  background: rgba(8, 14, 26, 0.88);
+  border-color: rgba(96, 165, 250, 0.25);
+  color: #eef2f8;
+  backdrop-filter: blur(12px);
+}
+
+html.native-app.native-embedded body.oa-native-mode .shape-picker {
+  background: rgba(8, 14, 26, 0.94);
+  border-color: rgba(96, 165, 250, 0.25);
+  color: #eef2f8;
+}
+
+html.native-app.native-embedded body.oa-native-mode .shape-picker-head strong,
+html.native-app.native-embedded body.oa-native-mode .shape-picker-via {
+  color: #eef2f8;
+}
+
+html.native-app.native-embedded body.oa-native-mode #panelHorarios,
+html.native-app.native-embedded body.oa-native-mode #panelViagem {
+  display: none !important;
+}
+
+html.native-app.native-embedded body.oa-native-mode.oa-horarios-open #panelMapa {
+  display: none !important;
+}
+
+html.native-app.native-embedded body.oa-native-mode.oa-horarios-open #panelHorarios {
+  display: flex !important;
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  border: 0;
+  border-radius: 0;
+  min-height: 100dvh;
+  background:
+    radial-gradient(ellipse 100% 60% at 50% -10%, rgba(59, 130, 246, 0.18), transparent 50%),
+    #060b14;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: calc(52px + env(safe-area-inset-top, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.native-app.native-embedded body.oa-native-mode.oa-horarios-open #panelHorarios .empty,
+html.native-app.native-embedded body.oa-native-mode.oa-horarios-open #horariosConteudo {
+  color: #94a3b8;
+}
+
+html.native-app.native-embedded body.oa-native-mode.oa-horarios-open #horariosConteudo .sched-head,
+html.native-app.native-embedded body.oa-native-mode.oa-horarios-open #horariosConteudo .local-card {
+  background: rgba(12, 22, 40, 0.92);
+  border-color: rgba(96, 165, 250, 0.2);
+  color: #eef2f8;
+}
+
+html.native-app.native-embedded body.oa-native-mode.oa-linhas-open .oa-sheet--linhas {
+  transform: translateY(0);
+}
+
+html.native-app.native-embedded body.oa-native-mode.oa-linhas-open .oa-backdrop {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+html.native-app.native-embedded body.oa-native-mode.oa-horarios-open .oa-backdrop {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* HUD + dock + FABs */
+.oa-native-ui {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+}
+
+.oa-native-ui > * {
+  pointer-events: auto;
+}
+
+.oa-hud {
+  position: absolute;
+  top: env(safe-area-inset-top, 0px);
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(8, 14, 26, 0.82);
+  border: 1px solid rgba(96, 165, 250, 0.28);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.oa-hud-brand {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.oa-hud-kicker {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #06b6d4;
+}
+
+.oa-hud-brand strong {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.oa-hud-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  max-width: 46vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.oa-hud-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+  flex-shrink: 0;
+}
+
+.oa-hud-dot.busy {
+  background: #f97316;
+  animation: oa-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes oa-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+.oa-hud-stats {
+  position: absolute;
+  top: calc(58px + env(safe-area-inset-top, 0px));
+  left: 12px;
+  right: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.oa-hud-stat {
+  padding: 8px 10px;
+  border-radius: 12px;
+  text-align: center;
+  background: rgba(8, 14, 26, 0.78);
+  border: 1px solid rgba(96, 165, 250, 0.18);
+  backdrop-filter: blur(12px);
+}
+
+.oa-hud-stat b {
+  display: block;
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.oa-hud-stat span {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.oa-search-dock {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(8, 14, 26, 0.88);
+  border: 1px solid rgba(96, 165, 250, 0.28);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.oa-search-dock label {
+  display: block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.oa-search-dock input {
+  width: 100%;
+  height: 40px;
+  border: 1px solid rgba(96, 165, 250, 0.22);
+  border-radius: 11px;
+  padding: 0 11px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(4, 8, 16, 0.65);
+  color: #eef2f8;
+}
+
+.oa-search-dock input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.oa-fab {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s ease;
+}
+
+.oa-fab:active {
+  transform: scale(0.96);
+}
+
+.oa-fab svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.oa-fab--horarios {
+  right: 12px;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(135deg, #ff6b00, #ff9f4d);
+  color: #fff;
+  box-shadow: 0 10px 32px rgba(255, 107, 0, 0.35);
+}
+
+.oa-fab--linhas {
+  left: 12px;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  background: rgba(8, 14, 26, 0.92);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  color: #eef2f8;
+  backdrop-filter: blur(12px);
+}
+
+.oa-fab--close {
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  right: 12px;
+  z-index: 130;
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(8, 14, 26, 0.9);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  color: #fff;
+  font-size: 20px;
+}
+
+.oa-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(2, 6, 14, 0.55);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.oa-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 110;
+  max-height: min(78dvh, 640px);
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  border-radius: 20px 20px 0 0;
+  background:
+    radial-gradient(ellipse 100% 60% at 50% 0%, rgba(59, 130, 246, 0.14), transparent 55%),
+    rgba(8, 14, 26, 0.97);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  border-bottom: 0;
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.oa-sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.45);
+  margin: 10px auto 0;
+  flex-shrink: 0;
+}
+
+.oa-sheet-head {
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid rgba(96, 165, 250, 0.15);
+}
+
+.oa-sheet-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.oa-sheet-head p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.oa-sheet-body {
+  flex: 1;
+  overflow: auto;
+  padding: 10px 12px calc(16px + env(safe-area-inset-bottom, 0px));
+  -webkit-overflow-scrolling: touch;
+}
+
+.oa-sheet-body .lines {
+  max-height: none;
+}
+
+.oa-sheet-body .line-btn {
+  background: rgba(12, 22, 40, 0.6);
+  border-color: rgba(96, 165, 250, 0.12);
+  color: #eef2f8;
+}
+
+.oa-sheet-body .line-btn.active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
+.oa-sheet-body .line-route {
+  color: #94a3b8;
+}
+
+@media (prefers-color-scheme: light) {
+  html.native-app.native-embedded body.oa-page.oa-native-mode {
+    background:
+      radial-gradient(ellipse 120% 80% at 50% -20%, rgba(37, 99, 235, 0.12), transparent 55%),
+      #eef2f8 !important;
+  }
+
+  .oa-hud,
+  .oa-hud-stat,
+  .oa-search-dock,
+  .oa-fab--linhas {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(6, 36, 92, 0.12);
+  }
+
+  .oa-hud-brand strong,
+  .oa-hud-stat b,
+  .oa-search-dock input {
+    color: #0f172a;
+  }
+
+  .oa-search-dock input {
+    background: #f8fafc;
+  }
+
+  .oa-sheet {
+    background: rgba(255, 255, 255, 0.98);
+    border-color: rgba(6, 36, 92, 0.12);
+  }
+
+  .oa-sheet-head h2 {
+    color: #06245c;
+  }
 }
 
 @media (min-width: 641px) {
