@@ -7,7 +7,7 @@ import { portalAsset } from './portal-origin'
 import { watchNativeTheme } from './native-theme'
 
 const NATIVE_CSS_ID = 'portal-app-native-css'
-const NATIVE_CSS_VERSION = '20260627j'
+const NATIVE_CSS_VERSION = '20260627k'
 
 export function isNativePlatform(): boolean {
   try {

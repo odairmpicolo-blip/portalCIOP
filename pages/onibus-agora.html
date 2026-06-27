@@ -810,7 +810,7 @@ function abrirHorariosNative(){
 }
 
 function initNativeHorariosModule(){
-    document.body.classList.add("oa-horarios-module", "oa-horarios-open");
+    document.body.classList.add("oa-horarios-module");
 
     const brand = document.querySelector(".oa-hud-brand strong");
     const kicker = document.querySelector(".oa-hud-kicker");
@@ -823,6 +823,8 @@ function initNativeHorariosModule(){
     const sheetBody = $("oaSheetLinhasBody");
     const lines = $("listaLinhas");
     const btnLimpar = $("btnLimparFiltro");
+    const buscaField = $("buscaLinha")?.closest(".field");
+    if (sheetBody && buscaField) sheetBody.insertBefore(buscaField, sheetBody.firstChild);
     if (sheetBody && lines) sheetBody.appendChild(lines);
     if (sheetBody && btnLimpar){
         btnLimpar.style.marginTop = "10px";
@@ -833,12 +835,30 @@ function initNativeHorariosModule(){
     $("oaFabLinhas")?.addEventListener("click", abrirSheetLinhas);
     $("oaBackdrop")?.addEventListener("click", fecharSheetLinhas);
 
-    const panel = $("panelHorarios");
     const floats = $("oaNativeFloats");
-    if (panel && floats) panel.appendChild(floats);
+    if (floats) document.body.appendChild(floats);
 
+    setupHorariosEmptyCta();
     trocarTab("horarios");
     syncNativeHud();
+}
+
+function setupHorariosEmptyCta(){
+    if (!OA_HORARIOS) return;
+    const empty = $("horariosEmpty");
+    if (!empty) return;
+    const p = empty.querySelector("p");
+    if (p) p.textContent = "Escolha uma linha para ver as partidas previstas.";
+    let btn = $("oaBtnPickLine");
+    if (!btn){
+        btn = document.createElement("button");
+        btn.type = "button";
+        btn.id = "oaBtnPickLine";
+        btn.className = "btn btn-primary oa-pick-line-btn";
+        btn.textContent = "Escolher linha";
+        btn.addEventListener("click", abrirSheetLinhas);
+        empty.appendChild(btn);
+    }
 }
 
 function initNativeAppMode(){
