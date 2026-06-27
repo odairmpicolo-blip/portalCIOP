@@ -1,0 +1,2 @@
+import{a as e,c as t,n,o as r,s as i}from"./index-CEj_fBkB.js";var a=class extends t{async authenticate(t){try{await this.internalAuthenticate(t)}catch(t){throw t instanceof i&&e(t.code)?new n(t.message,t.code):t}}async addResumeListener(e){return r.addListener(`appStateChange`,({isActive:t})=>{t&&(async()=>{try{e(await this.checkBiometry())}catch(e){console.error(e)}})()})}};export{a as t};
+//# sourceMappingURL=base-6uB7J-om.js.map

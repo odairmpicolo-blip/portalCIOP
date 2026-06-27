@@ -38,12 +38,13 @@ export function AppLayout() {
 
   const inHorarios = pathname.includes('onibus-horarios')
   const inOnibus = pathname.includes('onibus-agora') && !inHorarios
-  const tracking = native && (inOnibus || inHorarios)
+  const tracking = inOnibus || inHorarios
   const inHome = pathname === '/' || pathname === '/modulos'
+  const nativeShell = native || tracking
 
   return (
     <PortalShellContext.Provider value={{ noticeVersion }}>
-      <div className={`app-shell${native ? ' app-shell--native' : ''}`}>
+      <div className={`app-shell${nativeShell ? ' app-shell--native' : ''}`}>
         <Sidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}

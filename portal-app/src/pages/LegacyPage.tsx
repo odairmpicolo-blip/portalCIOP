@@ -4,9 +4,14 @@ import { injectLegacyNativeFrame } from '../lib/native-shell'
 import { useNativeApp } from '../hooks/useNativeApp'
 import { legacyUrl } from '../lib/navigation'
 
-function withNativeEmbed(url: string): string {
-  const sep = url.includes('?') ? '&' : '?'
-  return `${url}${sep}embed=native-app`
+const BUS_FRAME_SRC = legacyUrl('/pages/onibus-agora.html?embed=native-app')
+
+function postBusMode(frame: HTMLIFrameElement | null, horarios: boolean) {
+  if (!frame?.contentWindow) return
+  frame.contentWindow.postMessage(
+    { type: 'oa-set-mode', mode: horarios ? 'horarios' : 'mapa' },
+    '*',
+  )
 }
 
 export function LegacyPage() {
@@ -14,33 +19,53 @@ export function LegacyPage() {
   const path = params['*'] || ''
   const native = useNativeApp()
   const tracking = path.includes('onibus-agora') || path.includes('onibus-horarios')
+  const isHorarios = path.includes('onibus-horarios')
   const src = useMemo(() => {
+    if (tracking) return BUS_FRAME_SRC
     const url = legacyUrl(`/${path}`)
-    return native && tracking ? withNativeEmbed(url) : url
-  }, [path, native, tracking])
+    if (!native) return url
+    const sep = url.includes('?') ? '&' : '?'
+    return `${url}${sep}embed=native-app`
+  }, [path, tracking, native])
   const frameRef = useRef<HTMLIFrameElement>(null)
+  const frameReady = useRef(false)
 
-  const syncNativeFrame = useCallback((frame: HTMLIFrameElement | null) => {
-    if (!native || !frame) return
-    try {
-      const doc = frame.contentDocument
-      if (doc) injectLegacyNativeFrame(doc)
-    } catch {
-      /* mesma origem — falha inesperada */
-    }
-  }, [native])
+  const syncNativeFrame = useCallback(
+    (frame: HTMLIFrameElement | null) => {
+      if (!frame) return
+      try {
+        const doc = frame.contentDocument
+        if (doc) injectLegacyNativeFrame(doc)
+      } catch {
+        /* mesma origem */
+      }
+      if (tracking) postBusMode(frame, isHorarios)
+    },
+    [tracking, isHorarios],
+  )
 
   useEffect(() => {
-    if (!native) return
+    if (!tracking) return
+    if (!frameReady.current) return
+    postBusMode(frameRef.current, isHorarios)
+    const timers = [50, 200, 600].map((ms) =>
+      window.setTimeout(() => postBusMode(frameRef.current, isHorarios), ms),
+    )
+    return () => timers.forEach((id) => window.clearTimeout(id))
+  }, [tracking, isHorarios])
+
+  useEffect(() => {
+    if (!native && !tracking) return
     syncNativeFrame(frameRef.current)
-    const timers = [80, 400, 1200, 2500].map((ms) =>
+    const timers = [80, 400, 1200].map((ms) =>
       window.setTimeout(() => syncNativeFrame(frameRef.current), ms),
     )
     return () => timers.forEach((id) => window.clearTimeout(id))
-  }, [native, src, syncNativeFrame])
+  }, [native, tracking, src, syncNativeFrame])
 
   const onFrameLoad = useCallback(
     (event: React.SyntheticEvent<HTMLIFrameElement>) => {
+      frameReady.current = true
       syncNativeFrame(event.currentTarget)
     },
     [syncNativeFrame],
@@ -48,9 +73,9 @@ export function LegacyPage() {
 
   return (
     <section
-      className={`legacy-page${native ? ' legacy-page--native' : ''}${tracking ? ' legacy-page--tracking' : ''}`}
+      className={`legacy-page${native || tracking ? ' legacy-page--native' : ''}${tracking ? ' legacy-page--tracking' : ''}`}
     >
-      {!native ? (
+      {!native && !tracking ? (
         <div className="legacy-toolbar">
           <Link to="/" className="btn-secondary">
             ← Voltar ao início

@@ -56,7 +56,9 @@ function liberarHtmlValidado() {
   document.documentElement.classList.remove(AUTH_PENDING_CLASS);
 }
 
-bloquearHtmlAteValidar();
+if (!PORTAL_NATIVE_EMBEDDED) {
+  bloquearHtmlAteValidar();
+}
 const loadingExternoMostrar = typeof window.portalMostrarCarregando === "function"
   ? window.portalMostrarCarregando.bind(window)
   : null;
@@ -66,6 +68,7 @@ const loadingExternoOcultar = typeof window.portalOcultarCarregando === "functio
 const loadingGlobalDisponivel = Boolean(loadingExternoMostrar && loadingExternoOcultar);
 
 function mostrarCarregando(texto = "Carregando portal") {
+  if (PORTAL_NATIVE_EMBEDDED) return;
   if (portalCarregamentoEncerrado) return;
   if (loadingGlobalDisponivel) {
     loadingExternoMostrar(texto);
@@ -129,10 +132,14 @@ if (!loadingGlobalDisponivel) {
   window.portalOcultarCarregando = ocultarCarregando;
 }
 
-if (document.body) {
-  mostrarCarregando();
+if (!PORTAL_NATIVE_EMBEDDED) {
+  if (document.body) {
+    mostrarCarregando();
+  } else {
+    document.addEventListener("DOMContentLoaded", () => mostrarCarregando(), { once: true });
+  }
 } else {
-  document.addEventListener("DOMContentLoaded", () => mostrarCarregando(), { once: true });
+  liberarHtmlValidado();
 }
 
 function comTempoLimite(promise, ms, mensagem) {
@@ -521,7 +528,6 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
     if (!user) {
       if (!pagina.endsWith("/login.html") && !pagina.endsWith("login.html")) {
         if (PORTAL_NATIVE_EMBEDDED) {
-          mostrarCarregando("Aguardando sessão…");
           return;
         }
         ocultarCarregando();
@@ -533,10 +539,17 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
       return;
     }
 
+    if (PORTAL_NATIVE_EMBEDDED) liberarHtmlValidado();
+
     const cadastro = { ...await getCadastro(user), email: String(user.email || "").toLowerCase() };
 
     if (cadastro.ativo === false) {
       alert("Seu acesso ao portal esta desativado. Procure um administrador.");
+      if (PORTAL_NATIVE_EMBEDDED) {
+        liberarHtmlValidado();
+        ocultarCarregando();
+        return;
+      }
       await signOut(auth);
       ocultarCarregando();
       window.location.href = portalPath("login.html");

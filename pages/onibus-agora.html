@@ -628,7 +628,7 @@ const OA_MODE = (() => {
     if (new URLSearchParams(location.search).get("modo") === "horarios") return "horarios";
     return "mapa";
 })();
-const OA_HORARIOS = OA_MODE === "horarios";
+let OA_HORARIOS = OA_MODE === "horarios";
 
 const BUS2 = {
     hash: "2fvn7",
@@ -877,6 +877,10 @@ function abrirHorariosNative(){
 }
 
 function initNativeHorariosModule(){
+    if (document.body.classList.contains("oa-horarios-module")) {
+        trocarTab("horarios");
+        return;
+    }
     document.body.classList.add("oa-horarios-module");
 
     const brand = document.querySelector(".oa-hud-brand strong");
@@ -991,6 +995,7 @@ function initNativeAppMode(){
 
     requestAnimationFrame(() => state.mapa?.invalidateSize());
     syncNativeHud();
+    scheduleMapResize();
 }
 
 window.portalReinitNativeMode = initNativeAppMode;
@@ -1040,6 +1045,41 @@ function initPontToggle(){
     mapPanel.appendChild(btn);
 }
 
+function scheduleMapResize(){
+    if (!state.mapa) return;
+    const fix = () => {
+        try { state.mapa.invalidateSize(); } catch (_) {}
+    };
+    requestAnimationFrame(fix);
+    [120, 350, 700, 1400, 2500].forEach(ms => setTimeout(fix, ms));
+}
+
+function applyOaAppMode(mode){
+    const wantHorarios = mode === "horarios";
+    if (wantHorarios === OA_HORARIOS) return;
+    OA_HORARIOS = wantHorarios;
+    if (wantHorarios){
+        if (!document.body.classList.contains("oa-native-mode")) initNativeAppMode();
+        initNativeHorariosModule();
+        return;
+    }
+    document.body.classList.remove("oa-horarios-module", "oa-horarios-open");
+    const brand = document.querySelector(".oa-hud-brand strong");
+    const kicker = document.querySelector(".oa-hud-kicker");
+    if (brand) brand.textContent = "Ônibus Agora";
+    if (kicker) kicker.textContent = "Rastreamento · Londrina";
+    document.querySelector(".oa-hud-stats")?.removeAttribute("hidden");
+    $("oaNativeBottom")?.removeAttribute("hidden");
+    trocarTab("mapa");
+    if (!state.mapa) initMapa();
+    scheduleMapResize();
+}
+
+window.addEventListener("message", (event) => {
+    if (event.data?.type !== "oa-set-mode") return;
+    applyOaAppMode(event.data.mode === "horarios" ? "horarios" : "mapa");
+});
+
 function initMapa(){
     if (state.mapa) return;
     if (typeof L === "undefined") throw new Error("Mapa indisponível: biblioteca Leaflet não carregou.");
@@ -1058,6 +1098,7 @@ function initMapa(){
         subdomains: "abc"
     }).addTo(state.mapa);
     setTimeout(() => state.mapa.invalidateSize(), 200);
+    scheduleMapResize();
 }
 
 function trocarTile(tipo){
@@ -1936,7 +1977,11 @@ function trocarTab(tab){
 
 async function boot(){
     setLive("Carregando linhas...", true);
-    if (!OA_HORARIOS) initMapa();
+    if (!OA_HORARIOS){
+        if (isNativeEmbedded() && !document.body.classList.contains("oa-native-mode")) initNativeAppMode();
+        if (!state.mapa) initMapa();
+        scheduleMapResize();
+    }
     await initBus2Proxy();
 
     try {
@@ -1972,7 +2017,7 @@ async function boot(){
     }
 
     if (document.body.classList.contains("oa-native-mode") && !OA_HORARIOS){
-        setTimeout(() => state.mapa?.invalidateSize(), 350);
+        scheduleMapResize();
     }
 }
 
