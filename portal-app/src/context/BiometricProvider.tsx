@@ -1,7 +1,12 @@
 import { App } from '@capacitor/app'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { promptBiometric } from '../lib/biometric-auth'
-import { consumeBiometricSkip } from '../lib/biometric-session'
+import {
+  BACKGROUND_LOCK_MS,
+  consumeBiometricSkip,
+  isBiometricSessionValid,
+  markBiometricUnlocked,
+} from '../lib/biometric-session'
 import { useAuth } from '../hooks/useAuth'
 import { useNativeApp } from '../hooks/useNativeApp'
 import { BiometricContext, type BiometricContextValue } from './biometric-context'
@@ -12,43 +17,45 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
   const [unlocked, setUnlocked] = useState(() => !native)
   const [locking, setLocking] = useState(false)
   const unlockInFlight = useRef(false)
+  const backgroundedAt = useRef<number | null>(null)
+  const initialUnlockStarted = useRef(false)
 
-  const lock = useCallback(() => {
-    if (!native) return
-    setUnlocked(false)
-  }, [native])
-
-  const tryUnlock = useCallback(async (): Promise<boolean> => {
+  const tryUnlock = useCallback(async (options?: { silent?: boolean }): Promise<boolean> => {
     if (!native) {
       setUnlocked(true)
       return true
     }
     if (unlockInFlight.current) return false
     unlockInFlight.current = true
-    setLocking(true)
+    if (!options?.silent) setLocking(true)
     try {
       const ok = await promptBiometric()
+      if (ok) markBiometricUnlocked()
       setUnlocked(ok)
       return ok
     } finally {
       unlockInFlight.current = false
-      setLocking(false)
+      if (!options?.silent) setLocking(false)
     }
   }, [native])
 
   useEffect(() => {
     if (!native) {
       setUnlocked(true)
+      initialUnlockStarted.current = false
       return
     }
     if (!user) {
       setUnlocked(false)
+      initialUnlockStarted.current = false
       return
     }
-    if (consumeBiometricSkip()) {
+    if (consumeBiometricSkip() || isBiometricSessionValid()) {
       setUnlocked(true)
       return
     }
+    if (initialUnlockStarted.current) return
+    initialUnlockStarted.current = true
     setUnlocked(false)
     void tryUnlock()
   }, [native, user, tryUnlock])
@@ -59,10 +66,22 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
     let handle: { remove: () => Promise<void> } | undefined
 
     void App.addListener('appStateChange', ({ isActive }) => {
-      if (isActive && user) {
-        lock()
-        void tryUnlock()
+      if (!isActive) {
+        backgroundedAt.current = Date.now()
+        return
       }
+      if (!user) return
+
+      const awayMs = backgroundedAt.current ? Date.now() - backgroundedAt.current : 0
+      backgroundedAt.current = null
+
+      if (awayMs < BACKGROUND_LOCK_MS && isBiometricSessionValid()) {
+        setUnlocked(true)
+        return
+      }
+
+      setUnlocked(false)
+      void tryUnlock({ silent: true })
     }).then((listener) => {
       if (removed) {
         void listener.remove()
@@ -75,11 +94,19 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
       removed = true
       void handle?.remove()
     }
-  }, [native, user, lock, tryUnlock])
+  }, [native, user, tryUnlock])
 
   const value = useMemo<BiometricContextValue>(
-    () => ({ unlocked, locking, lock, tryUnlock }),
-    [unlocked, locking, lock, tryUnlock],
+    () => ({
+      unlocked,
+      locking,
+      lock: () => {
+        if (!native) return
+        setUnlocked(false)
+      },
+      tryUnlock: () => tryUnlock(),
+    }),
+    [unlocked, locking, native, tryUnlock],
   )
 
   return <BiometricContext.Provider value={value}>{children}</BiometricContext.Provider>

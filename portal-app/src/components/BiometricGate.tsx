@@ -16,7 +16,8 @@ export function BiometricGate({ children }: BiometricGateProps) {
   const native = useNativeApp()
 
   if (!native || !user) return <>{children}</>
-  if (loading || locking) return <LoadingScreen label={labels.verifyingLabel} />
+
+  if (loading) return <LoadingScreen label="Validando acesso" />
 
   if (!unlocked) {
     return (
@@ -30,10 +31,14 @@ export function BiometricGate({ children }: BiometricGateProps) {
             </svg>
           </div>
           <h1>Portal CIOP</h1>
-          <p>{labels.continueLabel}</p>
-          <button type="button" className="btn-primary" onClick={() => void tryUnlock()}>
-            {labels.unlockButton}
-          </button>
+          <p>{locking ? labels.verifyingLabel : labels.continueLabel}</p>
+          {!locking ? (
+            <button type="button" className="btn-primary" onClick={() => void tryUnlock()}>
+              {labels.unlockButton}
+            </button>
+          ) : (
+            <div className="loading-spinner biometric-lock-spinner" aria-hidden="true" />
+          )}
         </div>
       </div>
     )
