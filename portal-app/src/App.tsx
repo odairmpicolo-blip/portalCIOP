@@ -7,6 +7,11 @@ import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { LegacyPage } from './pages/LegacyPage'
 import { MobileModulesPage } from './pages/MobileModulesPage'
+import { isNativeApp } from './lib/portal-origin'
+
+function IndexPage() {
+  return isNativeApp() ? <MobileModulesPage /> : <HomePage />
+}
 
 export default function App() {
   return (
@@ -20,8 +25,8 @@ export default function App() {
 
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
-              <Route index element={<HomePage />} />
-              <Route path="/modulos" element={<MobileModulesPage />} />
+              <Route index element={<IndexPage />} />
+              <Route path="/modulos" element={<Navigate to="/" replace />} />
               <Route path="/legado/*" element={<LegacyPage />} />
             </Route>
           </Route>

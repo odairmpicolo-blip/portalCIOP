@@ -7,13 +7,16 @@ import { usuarioPodeAcessar } from '../lib/permissions'
 export function MobileModulesPage() {
   const { user } = useAuth()
   const cards = portalCards.filter((c) => usuarioPodeAcessar(user, c.access))
+  const primeiroNome = user?.nome?.split(' ')[0] || 'usuário'
 
   return (
     <div className="mobile-modules-page">
-      <header className="mobile-modules-hero">
-        <p className="mobile-modules-eyebrow">Portal CIOP</p>
-        <h1>Módulos</h1>
-        <p>Acesso rápido à operação e dashboards.</p>
+      <header className="mobile-modules-hero mobile-inicio-hero">
+        <p className="mobile-modules-eyebrow">Portal Operacional</p>
+        <h1>Bem-vindo, {primeiroNome}</h1>
+        <p className="mobile-inicio-sub">
+          Perfil <strong>{user?.perfil}</strong> · módulos CIOP/TCGL
+        </p>
       </header>
       <div className="mobile-modules-grid">
         {cards.map((card) => {

@@ -26,6 +26,9 @@ const icons: Record<string, (p: IconProps) => ReactElement> = {
   linhas: (p) => (
     <Svg {...p}><path d="M4 6h16v8H4z" /><path d="M6 18h2" /><path d="M16 18h2" /><circle cx="8" cy="18" r="2" /><circle cx="16" cy="18" r="2" /><path d="M4 10h16" /></Svg>
   ),
+  onibus: (p) => (
+    <Svg {...p}><path d="M4 6h16v8H4z" /><path d="M6 18h2" /><path d="M16 18h2" /><circle cx="8" cy="18" r="2" /><circle cx="16" cy="18" r="2" /><path d="M4 10h16" /></Svg>
+  ),
   horarios: (p) => (
     <Svg {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></Svg>
   ),
