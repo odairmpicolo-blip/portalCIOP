@@ -18,9 +18,5 @@ export const config = {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean),
-  firebaseCredentials: process.env.GOOGLE_APPLICATION_CREDENTIALS || "",
-  liberacaoApiUrl:
-    process.env.LIBERACAO_API_URL
-    || process.env.FOLHA_SERVICO_API_URL
-    || "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec"
+  firebaseCredentials: process.env.GOOGLE_APPLICATION_CREDENTIALS || ""
 };
