@@ -7,6 +7,7 @@ import { portalAsset } from './portal-origin'
 import { watchNativeTheme } from './native-theme'
 
 const NATIVE_CSS_ID = 'portal-app-native-css'
+const NATIVE_CSS_VERSION = '20260627b'
 
 export function isNativePlatform(): boolean {
   try {
@@ -22,7 +23,7 @@ function injectNativeStylesheet(): void {
   const link = document.createElement('link')
   link.id = NATIVE_CSS_ID
   link.rel = 'stylesheet'
-  link.href = portalAsset('/assets/css/app-native.css')
+  link.href = `${portalAsset('/assets/css/app-native.css')}?v=${NATIVE_CSS_VERSION}`
   document.head.appendChild(link)
 }
 
@@ -55,7 +56,7 @@ export function injectLegacyNativeFrame(doc: Document): void {
     const link = doc.createElement('link')
     link.id = NATIVE_CSS_ID
     link.rel = 'stylesheet'
-    link.href = portalAsset('/assets/css/app-native.css')
+    link.href = `${portalAsset('/assets/css/app-native.css')}?v=${NATIVE_CSS_VERSION}`
     doc.head.appendChild(link)
   }
 }
