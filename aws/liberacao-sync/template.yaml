@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Portal CIOP — sync liberação planilha → DSQL (ao vivo)
+
+Parameters:
+  DsqlClusterId:
+    Type: String
+    Default: ort34httzig7iktrneb4ytcy5u
+  SyncRateMinutes:
+    Type: Number
+    Default: 2
+
+Resources:
+  LiberacaoSyncRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: portal-ciop-liberacao-sync-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: liberacao-sync-dsql
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: dsql:DbConnectAdmin
+                Resource: !Sub "arn:aws:dsql:${AWS::Region}:${AWS::AccountId}:cluster/${DsqlClusterId}"
+
+  LiberacaoSyncFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: portal-ciop-liberacao-sync
+      Description: Sync liberação hoje — planilha → Aurora DSQL
+      Runtime: nodejs20.x
+      Handler: index.handler
+      Role: !GetAtt LiberacaoSyncRole.Arn
+      Timeout: 180
+      MemorySize: 1024
+      Environment:
+        Variables:
+          DSQL_CLUSTER_ID: !Ref DsqlClusterId
+          DSQL_REGION: !Ref AWS::Region
+          DSQL_USER: admin
+          LIBERACAO_API_URL: "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec"
+      Code:
+        ZipFile: |
+          export const handler = async () => ({
+            ok: false,
+            erro: "Deploy com scripts/deploy-liberacao-sync-lambda.sh"
+          });
+
+  LiberacaoSyncSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: portal-ciop-liberacao-sync
+      Description: Planilha → DSQL a cada N minutos (hoje)
+      ScheduleExpression: !Sub rate(${SyncRateMinutes} minutes)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt LiberacaoSyncFunction.Arn
+          Id: LiberacaoSyncTarget
+
+  LiberacaoSyncPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LiberacaoSyncFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt LiberacaoSyncSchedule.Arn
+
+Outputs:
+  FunctionName:
+    Value: !Ref LiberacaoSyncFunction
+  Schedule:
+    Value: !Sub rate(${SyncRateMinutes} minutes)

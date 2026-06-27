@@ -266,7 +266,9 @@ const CAMPOS_HORA = new Set(["horario_saida_da_garagem","horario_de_inicio","sai
 const DIAS_JANELA = 7;
 const CACHE_STORAGE_KEY = "portal_liberacao_lancamento_v2";
 const LIBERACAO_MODO_JSON_HIBRIDO = true;
-const INTERVALO_SYNC_BACKGROUND_MS = 5000;
+const LIBERACAO_FLUXO_AWS = true;
+const INTERVALO_SYNC_BACKGROUND_MS = 8000;
+const LIBERACAO_AWS_JS = "../assets/js/liberacao-aws.js?v=20260627live";
 const LIBERACAO_DATA_BASE = "../assets/data/liberacao";
 const LIBERACAO_MANIFEST_URL = LIBERACAO_DATA_BASE + "/manifest.json";
 const LIBERACAO_ACOMPANHAMENTO_URL = LIBERACAO_DATA_BASE + "/acompanhamento-semana.json";
@@ -283,6 +285,7 @@ let overlayAberturaAtivo = false;
 let eventosTabelaIniciados = false;
 let cabecalhoRenderizado = false;
 let cacheGravacaoTimer = null;
+let awsLiberacaoMod = null;
 const state = {
     colunas: COLUNAS_EXIBICAO,
     semana: [],
@@ -685,6 +688,53 @@ function complementarPlanilhaDiaBackground(data,origem){
 }
 function complementarPlanilhaBackground(origem){
     complementarPlanilhaDiaBackground(isoHoje(),origem||"planilha · hoje");
+}
+
+async function moduloLiberacaoAws(){
+    if(awsLiberacaoMod) return awsLiberacaoMod;
+    try{
+        awsLiberacaoMod=await import(LIBERACAO_AWS_JS);
+        return awsLiberacaoMod;
+    }catch(_){
+        return null;
+    }
+}
+
+async function liberacaoAwsAtiva(){
+    if(!LIBERACAO_FLUXO_AWS) return false;
+    const m=await moduloLiberacaoAws();
+    return !!(m&&await m.liberacaoAwsDisponivel());
+}
+
+async function carregarJanelaAws(dataDe,dataAte){
+    const m=await moduloLiberacaoAws();
+    if(!m||!(await m.liberacaoAwsDisponivel())) return null;
+    try{
+        return await m.carregarJanelaLiberacaoAws(dataDe,dataAte);
+    }catch(_){
+        return null;
+    }
+}
+
+async function sincronizarDsqlDia(data,silencioso){
+    if(!LIBERACAO_FLUXO_AWS||!data) return false;
+    const {dataDe,amanha}=intervaloJanela();
+    if(!dataDentroDaJanela(data,dataDe,amanha)) return false;
+    const pack=await carregarJanelaAws(data,data);
+    if(!pack?.dados?.length) return false;
+    const assinaturaAntes=assinaturaDia(state.semana,data);
+    const qtdAntes=contarLinhasDia(state.semana,data);
+    state.semana=mesclarSemana(state.semana,pack.dados);
+    state.semanaDataDe=state.semanaDataDe||dataDe;
+    state.semanaDataAte=amanha;
+    salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte},true);
+    const alterou=assinaturaAntes!==assinaturaDia(state.semana,data)||contarLinhasDia(state.semana,data)>qtdAntes;
+    if(alterou&&data===$("dataFiltro").value&&!usuarioEditando()){
+        const origem=silencioso?"AWS · ao vivo":"AWS · ao vivo";
+        if(silencioso) aplicarFiltroDataSilencioso(data,origem);
+        else aplicarFiltroData(data,origem);
+    }
+    return alterou;
 }
 
 async function apiGet(params){
@@ -1128,15 +1178,39 @@ async function salvarLinha(i){
     CAMPOS_FORMULA_PLANILHA.forEach(k=>{
         payload[k]=val(row,k)||"";
     });
+    const dataIso=normalizarDataIsoRow(row);
+    const dsqlPayload=Object.assign({},row);
+    delete dsqlPayload._dirty;
+    delete dsqlPayload._syncErro;
+    delete dsqlPayload._ultimoCampoEditado;
+    dsqlPayload._row=row._row;
+    dsqlPayload.data_iso=dataIso;
     try{
-        await apiPost(payload);
+        if(LIBERACAO_FLUXO_AWS&&await liberacaoAwsAtiva()){
+            const aws=await moduloLiberacaoAws();
+            await aws.salvarLinhaLiberacaoAws(dataIso,row._row,dsqlPayload);
+            await apiPost(payload);
+            aws.importarPlanilhaLiberacaoAws(dataIso).catch(()=>{});
+            setTimeout(()=>{
+                aws.carregarJanelaLiberacaoAws(dataIso,dataIso).then(pack=>{
+                    const atualizado=(pack?.dados||[]).find(r=>String(r._row)===String(row._row));
+                    if(!atualizado) return;
+                    Object.assign(row,atualizado);
+                    const idxSem=state.semana.findIndex(r=>r._row===row._row);
+                    if(idxSem>=0) state.semana[idxSem]=row;
+                    atualizarLinhaPosSalvar(i);
+                }).catch(()=>{});
+            },2000);
+        }else{
+            await apiPost(payload);
+        }
         row._dirty=false;
         row._syncErro=false;
         const idxSem=state.semana.findIndex(r=>r._row===row._row);
         if(idxSem>=0) state.semana[idxSem]=row;
         if(state.semana.length) salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte});
         atualizarLinhaPosSalvar(i);
-        if(ehDiaAtual($("dataFiltro").value)) setTimeout(()=>sincronizarJsonHoje(),1500);
+        if(ehDiaAtual($("dataFiltro").value)&&!LIBERACAO_FLUXO_AWS) setTimeout(()=>sincronizarJsonHoje(),1500);
     }catch(err){
         row._syncErro=true;
         document.querySelectorAll('[data-i="'+i+'"]').forEach(el=>{el.classList.remove("saving");el.classList.add("erro");});
@@ -1405,6 +1479,11 @@ async function rodarSyncBackground(){
     const hoje=isoHoje();
     const assinaturaAntes=assinaturaDia(state.semana,hoje);
     try{
+        if(LIBERACAO_FLUXO_AWS&&await liberacaoAwsAtiva()){
+            const alterou=await sincronizarDsqlDia(hoje,true);
+            if(alterou&&!usuarioEditando()) aplicarFiltroDataSilencioso(hoje,"AWS · ao vivo");
+            return;
+        }
         await atualizarFontesHojeSilencioso();
         if(assinaturaAntes!==assinaturaDia(state.semana,hoje)&&!usuarioEditando()){
             aplicarFiltroDataSilencioso(hoje,"sincronizado");
@@ -1619,7 +1698,7 @@ async function iniciarCarregamento(forceRefresh=false){
     if(!forceRefresh&&podeUsarMemoriaParaData(data)){
         aplicarFiltroData(data,"memória");
         finalizarCarregamentoInicial(true);
-        complementarPlanilhaDiaBackground(data);
+        sincronizarDsqlDia(data,true).catch(()=>{});
         return;
     }
     if(state.dados.length&&!semanaTemData(data)){
@@ -1655,11 +1734,26 @@ async function iniciarCarregamento(forceRefresh=false){
         }
     }
 
+    if(LIBERACAO_FLUXO_AWS&&dataDentroDaJanela(data,dataDe,amanha)){
+        try{
+            const tinhaDados=state.dados.length>0;
+            if(!tinhaDados) atualizarOverlayOperacao("Consultando AWS (DSQL)...");
+            await sincronizarDsqlDia(data,!tinhaDados);
+        }catch(e){
+            console.warn("DSQL:",e);
+        }
+    }
+
+    if(state.dados.length){
+        finalizarCarregamentoInicial(true);
+        return;
+    }
+
     if(dataDentroDaJanela(data,dataDe,amanha)){
         try{
             await buscarPlanilhaDiaSelecionado(data,{silencioso:false});
         }catch(e){
-            console.error("Planilha:",e);
+            console.warn("Planilha:",e);
         }
     }
 
@@ -1693,13 +1787,26 @@ async function atualizarPlanilhaRemoto(){
     const btn=$("btn-atualizar-planilha");
     atualizacaoPlanilhaEmAndamento=true;
     if(btn) btn.disabled=true;
-    mostrarOverlayOperacao("Atualizando planilha...");
-    setStatus("Buscando "+rotuloData(data)+" na planilha...","load");
+    mostrarOverlayOperacao("Sincronizando planilha → AWS...");
+    setStatus("Planilha → AWS · "+rotuloData(data)+"...","load");
     try{
-        const alterou=await sincronizarDiaPlanilha(data,false,true);
-        aplicarFiltroData(data,alterou?"planilha · dia":"planilha · dia");
+        if(LIBERACAO_FLUXO_AWS&&await liberacaoAwsAtiva()){
+            const aws=await moduloLiberacaoAws();
+            const pack=await aws.syncDiaLiberacaoAws(data);
+            if(pack?.dados?.length){
+                const {dataDe,amanha}=intervaloJanela();
+                state.semana=mesclarSemana(state.semana,pack.dados);
+                state.semanaDataDe=state.semanaDataDe||dataDe;
+                state.semanaDataAte=amanha;
+                salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte});
+            }
+            aplicarFiltroData(data,"AWS · planilha");
+        }else{
+            await sincronizarDiaPlanilha(data,false,true);
+            aplicarFiltroData(data,"planilha · dia");
+        }
     }catch(error){
-        setStatus(error.message||"Falha ao atualizar a planilha.","erro");
+        setStatus(error.message||"Falha ao sincronizar.","erro");
     }finally{
         atualizacaoPlanilhaEmAndamento=false;
         if(btn) btn.disabled=false;
@@ -1713,7 +1820,7 @@ async function carregar(forceRefresh=false){
 
     if(!forceRefresh&&podeUsarMemoriaParaData(data)){
         aplicarFiltroData(data,"memória");
-        await buscarPlanilhaDiaSelecionado(data,{silencioso:false}).catch(e=>setStatus(e.message,"erro"));
+        sincronizarDsqlDia(data,true).catch(()=>{});
         return;
     }
 
@@ -1728,9 +1835,10 @@ $("dataFiltro").addEventListener("change",()=>{
     }else{
         state.dados=[];
         state.todos=[];
-        iniciarOverlayAbertura();
+        void iniciarCarregamento(false);
+        return;
     }
-    buscarPlanilhaDiaSelecionado(data,{silencioso:false}).catch(e=>setStatus(e.message,"erro"));
+    sincronizarDsqlDia(data,true).catch(()=>{});
 });
 $("maquinaFiltro").addEventListener("change",()=>{aplicarFiltroMaquina();renderTabela();setStatus(formatNumber(state.dados.length)+" registro(s) · "+rotuloData($("dataFiltro").value),"ok");});
 $("btn-atualizar-planilha").addEventListener("click",()=>{atualizarPlanilhaRemoto().catch(()=>{});});
@@ -1779,7 +1887,7 @@ async function iniciar(){
     }else{
         iniciarOverlayAbertura();
     }
-    if(ehDiaAtual($("dataFiltro").value)) complementarPlanilhaBackground("planilha · hoje");
+    if(ehDiaAtual($("dataFiltro").value)&&!LIBERACAO_FLUXO_AWS) complementarPlanilhaBackground("planilha · hoje");
     iniciarCarregamento().catch(e=>{
         setStatus(e.message,"erro");
         encerrarOverlayAbertura();
