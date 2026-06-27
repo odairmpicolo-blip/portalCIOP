@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { useBiometric } from '../context/biometric-context'
 import { useAuth } from '../hooks/useAuth'
 import { useBiometryLabels } from '../hooks/useBiometryLabels'
-import { isNativeApp } from '../lib/portal-origin'
+import { useNativeApp } from '../hooks/useNativeApp'
 import { LoadingScreen } from './LoadingScreen'
 
 type BiometricGateProps = {
@@ -13,7 +13,7 @@ export function BiometricGate({ children }: BiometricGateProps) {
   const { user, loading } = useAuth()
   const { unlocked, locking, tryUnlock } = useBiometric()
   const { labels } = useBiometryLabels()
-  const native = isNativeApp()
+  const native = useNativeApp()
 
   if (!native || !user) return <>{children}</>
   if (loading || locking) return <LoadingScreen label={labels.verifyingLabel} />

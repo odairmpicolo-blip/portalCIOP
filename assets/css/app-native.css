@@ -878,6 +878,8 @@ html.native-app.native-embedded .page-footer {
 }
 
 /* Esconde navegação redundante (shell React já tem tab bar + voltar) */
+html.native-app.native-embedded body.oa-page .topbar,
+html.native-app.native-embedded body.oa-page .layout > .sidebar,
 html.native-app.native-embedded body:not(.oa-native-mode):not(.oa-page) .btn-portal,
 html.native-app.native-embedded body:not(.oa-native-mode):not(.oa-page) .toolbar,
 html.native-app.native-embedded body:not(.oa-native-mode):not(.oa-page) .topbar,
@@ -1201,7 +1203,7 @@ html.native-app.native-embedded body.oa-page.oa-native-mode {
 
 html.native-app.native-embedded body.oa-native-mode .oa-native-top {
   position: absolute;
-  top: calc(8px + env(safe-area-inset-top, 0px));
+  top: calc(10px + var(--safe-top, env(safe-area-inset-top, 44px)));
   left: 10px;
   right: 10px;
   z-index: 700;
@@ -1219,7 +1221,10 @@ html.native-app.native-embedded body.oa-native-mode .shell {
   inset: 0;
   max-width: none;
   margin: 0;
-  padding: calc(52px + env(safe-area-inset-top, 0px)) 0 0;
+  padding:
+    calc(68px + var(--safe-top, env(safe-area-inset-top, 44px)))
+    0
+    calc(var(--oa-tab-bar-h, 72px) + 8px);
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -1229,7 +1234,7 @@ html.native-app.native-embedded body.oa-native-mode .shell {
 }
 
 html.native-app.native-embedded body.oa-native-mode.oa-horarios-module .shell {
-  padding-top: calc(52px + env(safe-area-inset-top, 0px));
+  padding-top: calc(56px + var(--safe-top, env(safe-area-inset-top, 44px)));
 }
 
 html.native-app.native-embedded body.oa-native-mode .topbar,
@@ -1264,7 +1269,12 @@ html.native-app.native-embedded body.oa-native-mode .panel-wrap {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 0;
+  padding: 0 !important;
+}
+
+html.native-app.native-embedded body.oa-native-mode .panel {
+  min-height: 0 !important;
+  background: transparent !important;
 }
 
 html.native-app.native-embedded body.oa-native-mode #panelMapa {
@@ -1292,7 +1302,7 @@ html.native-app.native-embedded body.oa-native-mode #panelMapa .oa-native-bottom
   position: absolute;
   left: 10px;
   right: 10px;
-  bottom: 8px;
+  bottom: calc(var(--oa-tab-bar-h, 72px) + 10px);
   z-index: 600;
   padding: 6px 8px;
   border-radius: 16px;
@@ -1301,7 +1311,7 @@ html.native-app.native-embedded body.oa-native-mode #panelMapa .oa-native-bottom
   backdrop-filter: var(--app-glass-blur);
   -webkit-backdrop-filter: var(--app-glass-blur);
   box-shadow: var(--app-glass-shadow);
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 html.native-app.native-embedded body.oa-native-mode .oa-bottom-pont {
@@ -1557,7 +1567,10 @@ html.native-app.native-embedded body.oa-native-mode.oa-horarios-open #panelHorar
   flex-direction: column;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: calc(52px + env(safe-area-inset-top, 0px)) 10px calc(56px + env(safe-area-inset-bottom, 0px));
+  padding:
+    calc(56px + var(--safe-top, env(safe-area-inset-top, 44px)))
+    10px
+    calc(var(--oa-tab-bar-h, 72px) + 8px);
 }
 
 html.native-app.native-embedded body.oa-native-mode.oa-horarios-open #panelHorarios {
@@ -1828,11 +1841,11 @@ html.native-app.native-embedded body.oa-native-mode #panelHorarios .oa-native-fl
 
 .oa-sheet {
   position: fixed;
-  left: calc(8px + env(safe-area-inset-left, 0px));
-  right: calc(8px + env(safe-area-inset-right, 0px));
-  bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  left: calc(8px + var(--safe-left, env(safe-area-inset-left, 0px)));
+  right: calc(8px + var(--safe-right, env(safe-area-inset-right, 0px)));
+  bottom: calc(var(--oa-tab-bar-h, 72px) + 8px);
   z-index: 110;
-  max-height: min(72dvh, 560px);
+  max-height: min(58dvh, 480px);
   transform: translateY(calc(100% + 16px));
   transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
   border-radius: 22px;

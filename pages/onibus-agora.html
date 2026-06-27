@@ -795,7 +795,14 @@ function setLive(texto, busy){
 }
 
 function isNativeEmbedded(){
-    return document.documentElement.classList.contains("native-embedded");
+    if (document.documentElement.classList.contains("native-embedded")) return true;
+    try {
+        if (window.self !== window.top && window.parent.document.documentElement.classList.contains("native-app")) return true;
+    } catch (e) { /* cross-origin */ }
+    try {
+        if (window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) return true;
+    } catch (e) { /* ignore */ }
+    return false;
 }
 
 function syncNativeHud(){
@@ -899,6 +906,9 @@ function setupHorariosEmptyCta(){
 
 function initNativeAppMode(){
     if (!isNativeEmbedded()) return;
+    if (!document.documentElement.classList.contains("native-embedded")) {
+        document.documentElement.classList.add("native-embedded");
+    }
     if (document.body.classList.contains("oa-native-mode")) return;
     document.body.classList.add("oa-native-mode");
     document.documentElement.style.height = "100%";

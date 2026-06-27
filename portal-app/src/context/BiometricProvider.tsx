@@ -2,14 +2,14 @@ import { App } from '@capacitor/app'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { promptBiometric } from '../lib/biometric-auth'
 import { consumeBiometricSkip } from '../lib/biometric-session'
-import { isNativeApp } from '../lib/portal-origin'
 import { useAuth } from '../hooks/useAuth'
+import { useNativeApp } from '../hooks/useNativeApp'
 import { BiometricContext, type BiometricContextValue } from './biometric-context'
 
 export function BiometricProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  const native = isNativeApp()
-  const [unlocked, setUnlocked] = useState(!native)
+  const native = useNativeApp()
+  const [unlocked, setUnlocked] = useState(() => !native)
   const [locking, setLocking] = useState(false)
   const unlockInFlight = useRef(false)
 
@@ -27,7 +27,7 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
     unlockInFlight.current = true
     setLocking(true)
     try {
-      const ok = await promptBiometric(undefined)
+      const ok = await promptBiometric()
       setUnlocked(ok)
       return ok
     } finally {

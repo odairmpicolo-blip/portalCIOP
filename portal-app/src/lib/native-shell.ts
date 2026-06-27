@@ -7,7 +7,7 @@ import { portalAsset } from './portal-origin'
 import { watchNativeTheme } from './native-theme'
 
 const NATIVE_CSS_ID = 'portal-app-native-css'
-const NATIVE_CSS_VERSION = '20260628g'
+const NATIVE_CSS_VERSION = '20260628h'
 
 export function isNativePlatform(): boolean {
   try {
@@ -42,17 +42,29 @@ export function injectLegacyNativeFrame(doc: Document): void {
   doc.documentElement.classList.add('native-app', 'native-embedded')
   doc.documentElement.style.height = '100%'
   if (doc.body) doc.body.style.height = '100%'
+
+  const parentStyle = getComputedStyle(document.documentElement)
+  const safeTop = parentStyle.getPropertyValue('--safe-top').trim() || 'env(safe-area-inset-top, 0px)'
+  const safeBottom = parentStyle.getPropertyValue('--safe-bottom').trim() || 'env(safe-area-inset-bottom, 0px)'
+  const navH = parentStyle.getPropertyValue('--app-nav-h').trim() || '72px'
+  doc.documentElement.style.setProperty('--oa-parent-safe-top', safeTop)
+  doc.documentElement.style.setProperty('--oa-parent-safe-bottom', safeBottom)
+  doc.documentElement.style.setProperty('--oa-parent-nav-h', navH)
+
   const dark = window.matchMedia('(prefers-color-scheme: dark)').matches
   doc.documentElement.classList.toggle('native-dark', dark)
   doc.documentElement.classList.toggle('native-light', !dark)
 
-  const viewport = doc.querySelector('meta[name="viewport"]')
-  if (viewport) {
-    viewport.setAttribute(
-      'content',
-      'width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1',
-    )
+  let viewport = doc.querySelector('meta[name="viewport"]')
+  if (!viewport) {
+    viewport = doc.createElement('meta')
+    viewport.setAttribute('name', 'viewport')
+    doc.head.appendChild(viewport)
   }
+  viewport.setAttribute(
+    'content',
+    'width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1',
+  )
 
   if (!doc.getElementById(NATIVE_CSS_ID)) {
     const link = doc.createElement('link')
@@ -60,6 +72,19 @@ export function injectLegacyNativeFrame(doc: Document): void {
     link.rel = 'stylesheet'
     link.href = `${portalAsset('/assets/css/app-native.css')}?v=${NATIVE_CSS_VERSION}`
     doc.head.appendChild(link)
+  }
+
+  if (!doc.getElementById('oa-safe-area-bridge')) {
+    const style = doc.createElement('style')
+    style.id = 'oa-safe-area-bridge'
+    style.textContent = `
+      html.native-embedded {
+        --safe-top: max(env(safe-area-inset-top, 0px), var(--oa-parent-safe-top, 44px));
+        --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--oa-parent-safe-bottom, 34px));
+        --oa-tab-bar-h: var(--oa-parent-nav-h, 72px);
+      }
+    `
+    doc.head.appendChild(style)
   }
 
   const frameWin = doc.defaultView as (Window & { portalReinitNativeMode?: () => void }) | null

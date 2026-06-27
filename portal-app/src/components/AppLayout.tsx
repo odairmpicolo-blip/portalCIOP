@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Header } from './Header'
 import { MobileTabBar } from './MobileTabBar'
 import { NoticeModal } from './NoticeModal'
 import { Sidebar } from './Sidebar'
 import { PortalShellContext } from '../context/portal-shell-context'
-import { isNativeApp } from '../lib/portal-origin'
+import { useNativeApp } from '../hooks/useNativeApp'
 import { usuarioPodeEnviarAviso } from '../lib/permissions'
 import { useAuth } from '../hooks/useAuth'
 
@@ -16,11 +16,7 @@ export function AppLayout() {
   const [noticeModalOpen, setNoticeModalOpen] = useState(false)
   const [noticeVersion, setNoticeVersion] = useState(0)
   const [noticeModalKey, setNoticeModalKey] = useState(0)
-  const [native, setNative] = useState(false)
-
-  useEffect(() => {
-    setNative(isNativeApp())
-  }, [])
+  const native = useNativeApp()
 
   const podeAvisos = usuarioPodeEnviarAviso(user)
 

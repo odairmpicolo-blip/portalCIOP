@@ -4,7 +4,17 @@ import {
   BiometryErrorType,
   BiometryType,
 } from '@aparajita/capacitor-biometric-auth'
+import { Capacitor } from '@capacitor/core'
 import { isNativeApp } from './portal-origin'
+
+function isNativeBiometricContext(): boolean {
+  try {
+    if (Capacitor.isNativePlatform()) return true
+  } catch {
+    /* ignore */
+  }
+  return isNativeApp()
+}
 
 export type BiometryLabels = {
   name: string
@@ -89,7 +99,7 @@ let cachedLabels: BiometryLabels | null = null
 
 export async function getBiometryLabels(): Promise<BiometryLabels> {
   if (cachedLabels) return cachedLabels
-  if (!isNativeApp()) {
+  if (!isNativeBiometricContext()) {
     cachedLabels = GENERIC_LABELS
     return cachedLabels
   }
@@ -103,7 +113,7 @@ export async function getBiometryLabels(): Promise<BiometryLabels> {
 }
 
 export async function isBiometricAvailable(): Promise<boolean> {
-  if (!isNativeApp()) return false
+  if (!isNativeBiometricContext()) return false
   try {
     const info = await BiometricAuth.checkBiometry()
     return info.isAvailable
@@ -113,7 +123,7 @@ export async function isBiometricAvailable(): Promise<boolean> {
 }
 
 export async function promptBiometric(reason?: string): Promise<boolean> {
-  if (!isNativeApp()) return true
+  if (!isNativeBiometricContext()) return true
   try {
     const available = await isBiometricAvailable()
     if (!available) return false
