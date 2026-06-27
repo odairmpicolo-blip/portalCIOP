@@ -35,6 +35,10 @@ export function AppLayout() {
     document.body.classList.remove('modal-open')
   }
 
+  function toggleSidebar() {
+    setSidebarOpen((open) => !open)
+  }
+
   return (
     <PortalShellContext.Provider value={{ noticeVersion }}>
       <div className={`app-shell${native ? ' app-shell--native' : ''}`}>
@@ -44,7 +48,7 @@ export function AppLayout() {
           onAvisos={podeAvisos ? abrirAvisos : undefined}
         />
         <div className="app-main">
-          <Header onMenuToggle={() => setSidebarOpen(true)} native={native} />
+          <Header onMenuToggle={toggleSidebar} native={native} />
           <main className="app-content">
             <Outlet />
           </main>
@@ -56,7 +60,11 @@ export function AppLayout() {
             </footer>
           ) : null}
           {native ? (
-            <MobileTabBar onMenuOpen={() => setSidebarOpen(true)} onAvisos={podeAvisos ? abrirAvisos : undefined} />
+            <MobileTabBar
+              sidebarOpen={sidebarOpen}
+              onMenuToggle={toggleSidebar}
+              onAvisos={podeAvisos ? abrirAvisos : undefined}
+            />
           ) : null}
         </div>
         {podeAvisos ? (

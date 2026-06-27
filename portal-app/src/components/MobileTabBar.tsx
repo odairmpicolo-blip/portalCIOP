@@ -5,11 +5,12 @@ import { onibusAgoraCard, onibusAgoraRoute, onibusHorariosCard, onibusHorariosRo
 import { usuarioPodeAcessar } from '../lib/permissions'
 
 type MobileTabBarProps = {
-  onMenuOpen: () => void
+  sidebarOpen?: boolean
+  onMenuToggle: () => void
   onAvisos?: () => void
 }
 
-export function MobileTabBar({ onMenuOpen, onAvisos }: MobileTabBarProps) {
+export function MobileTabBar({ sidebarOpen, onMenuToggle, onAvisos }: MobileTabBarProps) {
   const { user } = useAuth()
   const { pathname } = useLocation()
   const inHorarios = pathname.includes('onibus-horarios')
@@ -43,7 +44,7 @@ export function MobileTabBar({ onMenuOpen, onAvisos }: MobileTabBarProps) {
         <TabIcon name="home" className="mobile-tab-icon" />
         <span>Início</span>
       </NavLink>
-      <button type="button" className="mobile-tab" onClick={onMenuOpen}>
+      <button type="button" className={`mobile-tab${sidebarOpen ? ' active' : ''}`} onClick={onMenuToggle}>
         <TabIcon name="menu" className="mobile-tab-icon" />
         <span>Links</span>
       </button>
