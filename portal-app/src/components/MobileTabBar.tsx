@@ -7,10 +7,9 @@ import { usuarioPodeAcessar } from '../lib/permissions'
 type MobileTabBarProps = {
   sidebarOpen?: boolean
   onMenuToggle: () => void
-  onAvisos?: () => void
 }
 
-export function MobileTabBar({ sidebarOpen, onMenuToggle, onAvisos }: MobileTabBarProps) {
+export function MobileTabBar({ sidebarOpen, onMenuToggle }: MobileTabBarProps) {
   const { user } = useAuth()
   const { pathname } = useLocation()
   const inHorarios = pathname.includes('onibus-horarios')
@@ -48,12 +47,6 @@ export function MobileTabBar({ sidebarOpen, onMenuToggle, onAvisos }: MobileTabB
         <TabIcon name="menu" className="mobile-tab-icon" />
         <span>Links</span>
       </button>
-      {onAvisos ? (
-        <button type="button" className="mobile-tab" onClick={onAvisos}>
-          <TabIcon name="bell" className="mobile-tab-icon" />
-          <span>Avisos</span>
-        </button>
-      ) : null}
     </nav>
   )
 }

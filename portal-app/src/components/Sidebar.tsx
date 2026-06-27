@@ -1,7 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { sidebarLinks } from '../lib/navigation'
-import { isNativeApp } from '../lib/portal-origin'
 import { usuarioPodeAcessar } from '../lib/permissions'
 
 type SidebarProps = {
@@ -12,9 +11,7 @@ type SidebarProps = {
 
 export function Sidebar({ open, onClose, onAvisos }: SidebarProps) {
   const { user } = useAuth()
-  const links = sidebarLinks
-    .filter((item) => usuarioPodeAcessar(user, item.access))
-    .filter((item) => !(isNativeApp() && item.action === 'avisos'))
+  const links = sidebarLinks.filter((item) => usuarioPodeAcessar(user, item.access))
 
   return (
     <>

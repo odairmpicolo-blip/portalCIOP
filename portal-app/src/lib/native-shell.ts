@@ -7,7 +7,7 @@ import { portalAsset } from './portal-origin'
 import { watchNativeTheme } from './native-theme'
 
 const NATIVE_CSS_ID = 'portal-app-native-css'
-const NATIVE_CSS_VERSION = '20260628d'
+const NATIVE_CSS_VERSION = '20260628f'
 
 export function isNativePlatform(): boolean {
   try {
@@ -61,4 +61,7 @@ export function injectLegacyNativeFrame(doc: Document): void {
     link.href = `${portalAsset('/assets/css/app-native.css')}?v=${NATIVE_CSS_VERSION}`
     doc.head.appendChild(link)
   }
+
+  const frameWin = doc.defaultView as (Window & { portalReinitNativeMode?: () => void }) | null
+  frameWin?.portalReinitNativeMode?.()
 }

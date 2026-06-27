@@ -693,6 +693,60 @@ html.native-app .login-remember input {
   accent-color: var(--app-accent);
 }
 
+html.native-app .login-faceid-btn {
+  margin-bottom: 4px;
+}
+
+html.native-app .biometric-lock-page {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding:
+    calc(20px + var(--safe-top))
+    calc(16px + var(--safe-right))
+    calc(20px + var(--safe-bottom) + var(--app-nav-h))
+    calc(16px + var(--safe-left));
+}
+
+html.native-app .biometric-lock-card {
+  width: min(320px, 100%);
+  padding: 28px 22px;
+  border-radius: var(--app-glass-radius);
+  text-align: center;
+  display: grid;
+  gap: 12px;
+}
+
+html.native-app .biometric-lock-card h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--app-text);
+}
+
+html.native-app .biometric-lock-card p {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 0.9rem;
+}
+
+html.native-app .biometric-lock-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto;
+  border-radius: 16px;
+  color: var(--app-accent);
+  background: color-mix(in srgb, var(--app-accent) 14%, transparent);
+  border: 1px solid var(--app-glass-border);
+}
+
+html.native-app .biometric-lock-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
 html.native-app .btn-primary {
   background: linear-gradient(135deg, var(--app-accent), color-mix(in srgb, var(--app-accent-2) 40%, var(--app-accent)));
   box-shadow: 0 8px 24px var(--app-glow);
@@ -701,7 +755,7 @@ html.native-app .btn-primary {
 
 /* ── Sidebar ────────────────────────────────────────────────────────────── */
 
-html.native-app .sidebar {
+html.native-app .app-shell .sidebar {
   top: calc(12px + var(--safe-top));
   left: calc(12px + var(--safe-left));
   bottom: calc(12px + var(--safe-bottom) + var(--app-nav-h));
@@ -718,20 +772,20 @@ html.native-app .sidebar {
   transform: translateX(calc(-100% - 28px));
 }
 
-html.native-app .sidebar.open {
+html.native-app .app-shell .sidebar.open {
   transform: translateX(0);
 }
 
-html.native-app .sidebar-header {
+html.native-app .app-shell .sidebar-header {
   border-bottom: 1px solid var(--app-glass-border);
   padding: 14px 16px;
 }
 
-html.native-app .sidebar-header h2 {
+html.native-app .app-shell .sidebar-header h2 {
   color: var(--app-text);
 }
 
-html.native-app .sidebar-link {
+html.native-app .app-shell .sidebar-link {
   min-height: 48px;
   color: var(--app-text);
   border-radius: 14px;
@@ -739,21 +793,21 @@ html.native-app .sidebar-link {
   border: 1px solid transparent;
 }
 
-html.native-app .sidebar-link:hover,
-html.native-app .sidebar-link.active {
+html.native-app .app-shell .sidebar-link:hover,
+html.native-app .app-shell .sidebar-link.active {
   background: color-mix(in srgb, var(--app-accent) 14%, transparent);
   border-color: color-mix(in srgb, var(--app-accent) 25%, transparent);
   color: var(--app-accent);
 }
 
-html.native-app .sidebar-backdrop.visible {
+html.native-app .app-shell .sidebar-backdrop.visible {
   background: rgba(2, 6, 14, 0.35);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
 @media (prefers-color-scheme: light) {
-  html.native-app .sidebar-backdrop.visible {
+  html.native-app .app-shell .sidebar-backdrop.visible {
     background: rgba(15, 23, 42, 0.35);
   }
 }
@@ -809,7 +863,7 @@ html.native-app.native-embedded body {
   width: 100% !important;
 }
 
-html.native-app.native-embedded body:not(.oa-native-mode) {
+html.native-app.native-embedded body:not(.oa-native-mode):not(.oa-page) {
   background:
     radial-gradient(ellipse 100% 60% at 50% -15%, color-mix(in srgb, var(--app-accent) 18%, transparent), transparent 50%),
     radial-gradient(ellipse 70% 40% at 100% 0%, color-mix(in srgb, var(--app-accent-2) 10%, transparent), transparent 45%),
@@ -824,11 +878,11 @@ html.native-app.native-embedded .page-footer {
 }
 
 /* Esconde navegação redundante (shell React já tem tab bar + voltar) */
-html.native-app.native-embedded body:not(.oa-native-mode) .btn-portal,
-html.native-app.native-embedded body:not(.oa-native-mode) .toolbar,
-html.native-app.native-embedded body:not(.oa-native-mode) .topbar,
-html.native-app.native-embedded body:not(.oa-native-mode) .nav-actions,
-html.native-app.native-embedded body:not(.oa-native-mode) .portal-return {
+html.native-app.native-embedded body:not(.oa-native-mode):not(.oa-page) .btn-portal,
+html.native-app.native-embedded body:not(.oa-native-mode):not(.oa-page) .toolbar,
+html.native-app.native-embedded body:not(.oa-native-mode):not(.oa-page) .topbar,
+html.native-app.native-embedded body:not(.oa-native-mode):not(.oa-page) .nav-actions,
+html.native-app.native-embedded body:not(.oa-native-mode):not(.oa-page) .portal-return {
   display: none !important;
 }
 
@@ -1147,12 +1201,17 @@ html.native-app.native-embedded body.oa-native-mode .shell {
   inset: 0;
   max-width: none;
   margin: 0;
-  padding: 0;
+  padding: 52px 0 0;
   width: 100%;
   height: 100%;
   min-height: 0;
   overflow: hidden;
   flex: none;
+  box-sizing: border-box;
+}
+
+html.native-app.native-embedded body.oa-native-mode.oa-horarios-module .shell {
+  padding-top: 52px;
 }
 
 html.native-app.native-embedded body.oa-native-mode .topbar,

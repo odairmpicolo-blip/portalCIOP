@@ -60,11 +60,7 @@ export function AppLayout() {
             </footer>
           ) : null}
           {native ? (
-            <MobileTabBar
-              sidebarOpen={sidebarOpen}
-              onMenuToggle={toggleSidebar}
-              onAvisos={podeAvisos ? abrirAvisos : undefined}
-            />
+            <MobileTabBar sidebarOpen={sidebarOpen} onMenuToggle={toggleSidebar} />
           ) : null}
         </div>
         {podeAvisos ? (
