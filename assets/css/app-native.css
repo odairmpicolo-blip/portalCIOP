@@ -1,0 +1,563 @@
+/* ==========================================================================
+   Portal CIOP — tema APP NATIVO (Capacitor)
+   Ativo só com html.native-app — web inalterada
+   ========================================================================== */
+
+html.native-app {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --app-header-h: calc(54px + var(--safe-top));
+
+  --app-bg: #070d18;
+  --app-bg-2: #0c1829;
+  --app-surface: rgba(14, 26, 46, 0.92);
+  --app-surface-2: rgba(20, 36, 62, 0.88);
+  --app-border: rgba(96, 165, 250, 0.18);
+  --app-glow: rgba(59, 130, 246, 0.35);
+  --app-accent: #3b82f6;
+  --app-accent-2: #ff6b00;
+  --app-text: #e8eef7;
+  --app-muted: #94a3b8;
+  --app-radius: 14px;
+}
+
+html.native-app,
+html.native-app body {
+  overflow-x: hidden !important;
+  max-width: 100vw;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior-x: none;
+}
+
+html.native-app body {
+  min-height: 100dvh;
+  margin: 0;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(59, 130, 246, 0.14), transparent 55%),
+    radial-gradient(ellipse 80% 50% at 100% 0%, rgba(255, 107, 0, 0.08), transparent 45%),
+    linear-gradient(180deg, var(--app-bg) 0%, #050a12 100%);
+  color: var(--app-text);
+}
+
+html.native-app #root {
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* ── Shell React ─────────────────────────────────────────────────────────── */
+
+html.native-app .app-shell {
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+html.native-app .app-main {
+  min-height: 100dvh;
+  grid-template-rows: auto 1fr;
+}
+
+html.native-app .app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding:
+    calc(10px + var(--safe-top))
+    calc(12px + var(--safe-right))
+    10px
+    calc(12px + var(--safe-left));
+  min-height: var(--app-header-h);
+  background: rgba(7, 13, 24, 0.82);
+  border-bottom: 1px solid var(--app-border);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+html.native-app .header-left .brand {
+  display: none;
+}
+
+html.native-app .header-brand-mobile {
+  display: grid;
+  justify-items: center;
+  min-width: 0;
+}
+
+html.native-app .header-brand-mobile .portal-brand-art {
+  height: 24px;
+  filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.35));
+}
+
+html.native-app .header-brand-mobile .portal-brand-meta {
+  font-size: 0.48rem;
+  letter-spacing: 0.14em;
+  color: var(--app-muted);
+}
+
+html.native-app .btn-legacy-portal,
+html.native-app .session-info {
+  display: none !important;
+}
+
+html.native-app .session-chip-modern {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+html.native-app .session-chip-modern::before {
+  display: none;
+}
+
+html.native-app .session-actions {
+  border: none;
+  padding: 0;
+}
+
+html.native-app .header-right .btn-logout {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(220, 38, 38, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  font-size: 0.72rem;
+}
+
+html.native-app .menu-toggle {
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid var(--app-border);
+}
+
+html.native-app .menu-bars span {
+  background: var(--app-accent);
+}
+
+html.native-app .app-content {
+  padding:
+    14px
+    calc(12px + var(--safe-right))
+    calc(12px + var(--safe-bottom))
+    calc(12px + var(--safe-left));
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+html.native-app .app-footer {
+  display: none;
+}
+
+/* Sidebar */
+html.native-app .sidebar {
+  width: min(300px, 88vw);
+  height: 100dvh;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  background: linear-gradient(180deg, #0a1424 0%, #070d18 100%);
+  border-right: 1px solid var(--app-border);
+  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.45);
+}
+
+html.native-app .sidebar-header {
+  border-bottom-color: var(--app-border);
+  padding-top: calc(14px + var(--safe-top));
+}
+
+html.native-app .sidebar-header h2 {
+  color: var(--app-text);
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+}
+
+html.native-app .sidebar-close {
+  color: var(--app-muted);
+}
+
+html.native-app .sidebar-link {
+  min-height: 48px;
+  color: var(--app-text);
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+
+html.native-app .sidebar-link:hover,
+html.native-app .sidebar-link.active {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: var(--app-border);
+  box-shadow: inset 0 0 20px rgba(59, 130, 246, 0.06);
+}
+
+html.native-app .sidebar-link-muted {
+  color: var(--app-muted);
+}
+
+html.native-app .sidebar-backdrop.visible {
+  background: rgba(2, 6, 14, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+/* Login */
+html.native-app .login-page {
+  min-height: 100dvh;
+  padding:
+    calc(20px + var(--safe-top))
+    16px
+    calc(20px + var(--safe-bottom));
+}
+
+html.native-app .login-card {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  box-shadow:
+    0 0 0 1px rgba(59, 130, 246, 0.08),
+    0 20px 50px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+}
+
+html.native-app .login-card label {
+  color: var(--app-muted);
+}
+
+html.native-app .login-card input {
+  background: rgba(7, 13, 24, 0.6);
+  border-color: var(--app-border);
+  color: var(--app-text);
+}
+
+html.native-app .login-brand .portal-brand-meta {
+  color: var(--app-muted);
+}
+
+html.native-app .btn-primary {
+  background: linear-gradient(135deg, var(--app-accent) 0%, #2563eb 50%, var(--app-accent-2) 100%);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
+}
+
+html.native-app .btn-link {
+  color: var(--app-accent);
+}
+
+/* Home */
+html.native-app .hero-panel {
+  flex-direction: column;
+  padding: 20px 18px;
+  border-radius: var(--app-radius);
+  background:
+    linear-gradient(135deg, rgba(59, 130, 246, 0.22) 0%, rgba(6, 36, 92, 0.95) 45%, rgba(7, 13, 24, 0.98) 100%);
+  border: 1px solid var(--app-border);
+  box-shadow:
+    0 0 40px rgba(59, 130, 246, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+html.native-app .hero-panel h1 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+html.native-app .hero-text {
+  color: rgba(232, 238, 247, 0.88);
+  font-size: 0.92rem;
+}
+
+html.native-app .hero-badge {
+  width: 100%;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.native-app .cards-section h2 {
+  color: var(--app-text);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+  opacity: 0.85;
+}
+
+html.native-app .cards-grid {
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+html.native-app .portal-card {
+  min-height: 0;
+  padding: 16px 18px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+html.native-app .portal-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow:
+    0 8px 28px rgba(59, 130, 246, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+html.native-app .portal-card h3 {
+  color: var(--app-text);
+}
+
+html.native-app .portal-card p {
+  color: var(--app-muted);
+}
+
+html.native-app .card-action {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+/* Legacy iframe shell */
+html.native-app .legacy-page {
+  position: relative;
+  gap: 0;
+  min-height: calc(100dvh - var(--app-header-h) - var(--safe-bottom));
+  overflow: hidden;
+}
+
+html.native-app .legacy-page--native {
+  min-height: calc(100dvh - var(--app-header-h) - var(--safe-bottom));
+}
+
+html.native-app .legacy-frame {
+  width: 100%;
+  max-width: 100%;
+  min-height: calc(100dvh - var(--app-header-h) - var(--safe-bottom) - 8px);
+  border: none;
+  border-radius: var(--app-radius);
+  background: #f5f7fb;
+  box-shadow: inset 0 0 0 1px var(--app-border);
+}
+
+html.native-app .app-native-back-fab {
+  position: fixed;
+  z-index: 60;
+  left: calc(12px + var(--safe-left));
+  bottom: calc(16px + var(--safe-bottom));
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--app-accent), #1d4ed8);
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow:
+    0 8px 24px rgba(59, 130, 246, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+html.native-app .loading-screen {
+  min-height: 100dvh;
+  background: var(--app-bg);
+}
+
+html.native-app .loading-box {
+  background: var(--app-surface);
+  border-color: var(--app-border);
+  color: var(--app-text);
+}
+
+/* ── Páginas legadas (iframe / embed) ────────────────────────────────────── */
+
+html.native-app.native-embedded,
+html.native-app.native-embedded body {
+  overflow-x: hidden !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  min-height: 100%;
+  background: #f5f7fb !important;
+}
+
+/* Remove cabeçalho/rodapé duplicados — o app já tem shell */
+html.native-app.native-embedded .header,
+html.native-app.native-embedded header.header,
+html.native-app.native-embedded .page-footer,
+html.native-app.native-embedded footer.page-footer {
+  display: none !important;
+}
+
+html.native-app.native-embedded .container,
+html.native-app.native-embedded main.container {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 8px 8px 16px !important;
+  box-sizing: border-box !important;
+}
+
+html.native-app.native-embedded .toolbar,
+html.native-app.native-embedded .toolbar-left,
+html.native-app.native-embedded .nav-actions {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+html.native-app.native-embedded .nav-actions {
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+html.native-app.native-embedded .btn-portal,
+html.native-app.native-embedded .btn-primary,
+html.native-app.native-embedded .btn-secondary {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px !important;
+  padding: 10px 12px !important;
+}
+
+html.native-app.native-embedded .filters-inline {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 8px !important;
+}
+
+html.native-app.native-embedded .filter-field {
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
+html.native-app.native-embedded .table-card {
+  max-width: 100% !important;
+  border-radius: 10px !important;
+}
+
+html.native-app.native-embedded .table-wrap {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100% !important;
+  overscroll-behavior-x: contain;
+}
+
+html.native-app.native-embedded table.planilha,
+html.native-app.native-embedded table {
+  min-width: 720px;
+}
+
+html.native-app.native-embedded .table-head {
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px !important;
+}
+
+html.native-app.native-embedded .status-pill,
+html.native-app.native-embedded .status-bar {
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+html.native-app.native-embedded .legend {
+  font-size: 9px;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+/* Títulos PNG — empilhar, sem sobreposição */
+html.native-app.native-embedded .title-wrap,
+html.native-app.native-embedded .header-hero,
+html.native-app.native-embedded .pontualidade-title-wrap,
+html.native-app.native-embedded .autuacoes-title-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  text-align: center !important;
+}
+
+html.native-app .portal-title-art,
+html.native-app .liberacao-title-art,
+html.native-app .patio-title-art,
+html.native-app .incidentes-title-art,
+html.native-app .usuarios-title-art,
+html.native-app .fiscais-title-art,
+html.native-app .page-title-art,
+html.native-app .pontualidade-title-art,
+html.native-app .autuacoes-title-art,
+html.native-app .km-title-art,
+html.native-app .relatorio-title-art,
+html.native-app .saida-carros-title-art,
+html.native-app .escala-title-art,
+html.native-app .title-wrap h1 {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  line-height: 0 !important;
+}
+
+html.native-app .portal-title-art img,
+html.native-app .liberacao-title-art img,
+html.native-app .patio-title-art img,
+html.native-app .incidentes-title-art img,
+html.native-app .usuarios-title-art img,
+html.native-app .fiscais-title-art img,
+html.native-app .page-title-art img,
+html.native-app .pontualidade-title-art img,
+html.native-app .autuacoes-title-art img,
+html.native-app .km-title-art img,
+html.native-app .relatorio-title-art img,
+html.native-app .saida-carros-title-art img,
+html.native-app .escala-title-art img,
+html.native-app .title-wrap h1 img {
+  display: block !important;
+  width: min(280px, 92vw) !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: 36px !important;
+  margin: 0 auto !important;
+  object-fit: contain !important;
+}
+
+html.native-app.native-embedded .header-subtitle {
+  font-size: 10px !important;
+  margin-top: 6px !important;
+  line-height: 1.3 !important;
+}
+
+html.native-app.native-embedded img,
+html.native-app.native-embedded video,
+html.native-app.native-embedded iframe,
+html.native-app.native-embedded table {
+  max-width: 100%;
+}
+
+html.native-app.native-embedded * {
+  box-sizing: border-box;
+}
+
+@media (min-width: 641px) {
+  html.native-app .header-brand-mobile {
+    display: none;
+  }
+
+  html.native-app .header-left .brand {
+    display: grid;
+  }
+}
