@@ -266,6 +266,7 @@ const CAMPOS_HORA = new Set(["horario_saida_da_garagem","horario_de_inicio","sai
 const DIAS_JANELA = 7;
 const CACHE_STORAGE_KEY = "portal_liberacao_lancamento_v2";
 const LIBERACAO_MODO_JSON_HIBRIDO = true;
+const LIBERACAO_FLUXO_DSQL = true;
 const INTERVALO_SYNC_BACKGROUND_MS = 5000;
 const LIBERACAO_DATA_BASE = "../assets/data/liberacao";
 const LIBERACAO_MANIFEST_URL = LIBERACAO_DATA_BASE + "/manifest.json";
@@ -1116,22 +1117,47 @@ async function salvarLinha(i){
     aplicarFormulasLinha(row);
     state.saving[i]=true;
     document.querySelector(".sync-"+i).innerHTML=syncBadge(row,i);
-    const payload={action:"update",_row:row._row};
+    const planilhaPayload={action:"update",_row:row._row};
     CAMPOS_EDITAVEIS.forEach(chave=>{
-        payload[chave]=val(row,chave)||"";
+        planilhaPayload[chave]=val(row,chave)||"";
     });
     CAMPOS_FORMULA_PLANILHA.forEach(k=>{
-        payload[k]=val(row,k)||"";
+        planilhaPayload[k]=val(row,k)||"";
     });
+    const dataIso=normalizarDataIsoRow(row);
+    const dsqlPayload=Object.assign({},row);
+    delete dsqlPayload._dirty;
+    delete dsqlPayload._syncErro;
+    delete dsqlPayload._ultimoCampoEditado;
+    dsqlPayload._row=row._row;
+    dsqlPayload.data_iso=dataIso;
     try{
-        await apiPost(payload);
+        if(LIBERACAO_FLUXO_DSQL){
+            const aws=await import("../assets/js/liberacao-aws.js?v=20260627a");
+            if(await aws.liberacaoAwsDisponivel()){
+                await aws.salvarLinhaLiberacaoAws(dataIso,row._row,dsqlPayload);
+                await apiPost(planilhaPayload);
+                await aws.importarPlanilhaLiberacaoAws(dataIso);
+                const pack=await aws.carregarJanelaLiberacaoAws(dataIso,dataIso);
+                const atualizado=(pack?.dados||[]).find(r=>String(r._row)===String(row._row));
+                if(atualizado){
+                    Object.assign(row,atualizado);
+                    const idxSem=state.semana.findIndex(r=>r._row===row._row);
+                    if(idxSem>=0) state.semana[idxSem]=row;
+                }
+            }else{
+                await apiPost(planilhaPayload);
+            }
+        }else{
+            await apiPost(planilhaPayload);
+        }
         row._dirty=false;
         row._syncErro=false;
         const idxSem=state.semana.findIndex(r=>r._row===row._row);
         if(idxSem>=0) state.semana[idxSem]=row;
         if(state.semana.length) salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte});
         atualizarLinhaPosSalvar(i);
-        if(ehDiaAtual($("dataFiltro").value)) setTimeout(()=>sincronizarJsonHoje(),1500);
+        if(ehDiaAtual($("dataFiltro").value)&&!LIBERACAO_FLUXO_DSQL) setTimeout(()=>sincronizarJsonHoje(),1500);
     }catch(err){
         row._syncErro=true;
         document.querySelectorAll('[data-i="'+i+'"]').forEach(el=>{el.classList.remove("saving");el.classList.add("erro");});
@@ -1357,9 +1383,47 @@ async function carregarSnapshotSemana(dataDe,dataAteJanela,data){
     });
 }
 
+async function carregarDsqlJanela(dataDe,dataAte){
+    if(!LIBERACAO_FLUXO_DSQL) return null;
+    try{
+        const aws=await import("../assets/js/liberacao-aws.js?v=20260627a");
+        if(!(await aws.liberacaoAwsDisponivel())) return null;
+        const pack=await aws.carregarJanelaLiberacaoAws(dataDe,dataAte);
+        if(!pack?.dados?.length) return null;
+        return pack.dados;
+    }catch(_){
+        return null;
+    }
+}
+
+async function sincronizarDsqlHojeSilencioso(){
+    if(!LIBERACAO_FLUXO_DSQL||!ehDiaAtual($("dataFiltro").value)) return false;
+    const hoje=isoHoje();
+    const assinaturaAntes=assinaturaDia(state.semana,hoje);
+    try{
+        const aws=await import("../assets/js/liberacao-aws.js?v=20260627a");
+        if(!(await aws.liberacaoAwsDisponivel())) return false;
+        await aws.importarPlanilhaLiberacaoAws(hoje);
+        const pack=await aws.carregarJanelaLiberacaoAws(hoje,hoje);
+        if(!pack?.dados?.length) return false;
+        const {dataDe,amanha}=intervaloJanela();
+        state.semana=mesclarSemana(state.semana,pack.dados);
+        state.semanaDataDe=state.semanaDataDe||dataDe;
+        state.semanaDataAte=amanha;
+        salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte},true);
+        return assinaturaAntes!==assinaturaDia(state.semana,hoje);
+    }catch(_){
+        return false;
+    }
+}
+
 async function atualizarFontesHojeSilencioso(){
     const hoje=isoHoje();
     const {dataDe,amanha}=intervaloJanela();
+    if(LIBERACAO_FLUXO_DSQL){
+        const mudou=await sincronizarDsqlHojeSilencioso();
+        if(mudou&&!usuarioEditando()) return;
+    }
     try{
         const snap=await carregarSnapshotDia(hoje,true);
         if(snap?.dados?.length){
@@ -1544,6 +1608,14 @@ async function iniciarCarregamento(forceRefresh=false){
     if(!forceRefresh&&!state.dados.length) iniciarOverlayAbertura();
 
     if(!forceRefresh){
+        if(!state.dados.length) atualizarOverlayOperacao("Consultando banco (DSQL)...");
+        const dadosDsql=await carregarDsqlJanela(dataDe,amanha);
+        if(dadosDsql?.length){
+            complementarSemanaCarregada({dados:dadosDsql,dataDe,dataAte:amanha,rotulo:"DSQL"},data);
+            finalizarCarregamentoInicial(true);
+            return;
+        }
+
         if(!state.dados.length&&cache?.dados?.length&&dataDentroDaJanela(data,cache.data_de,cache.data_ate)){
             complementarSemanaCarregada({dados:cache.dados,dataDe:cache.data_de,dataAte:cache.data_ate,rotulo:"cache local"},data);
         }
@@ -1620,9 +1692,21 @@ async function atualizarPlanilhaRemoto(){
     const btn=$("btn-atualizar-planilha");
     atualizacaoPlanilhaEmAndamento=true;
     if(btn) btn.disabled=true;
-    mostrarOverlayOperacao("Atualizando planilha...");
-    setStatus("Buscando hoje na planilha (tempo real)...","load");
+    mostrarOverlayOperacao("Sincronizando planilha → banco...");
+    setStatus("Planilha → DSQL → tela...","load");
     try{
+        if(LIBERACAO_FLUXO_DSQL&&data===hoje){
+            const aws=await import("../assets/js/liberacao-aws.js?v=20260627a");
+            if(await aws.liberacaoAwsDisponivel()){
+                await aws.importarPlanilhaLiberacaoAws(hoje);
+                const pack=await aws.carregarJanelaLiberacaoAws(hoje,hoje);
+                if(pack?.dados?.length){
+                    aplicarPlanilhaHoje(pack.dados,"DSQL");
+                    setStatus("Atualizado: planilha → DSQL · "+rotuloData(hoje),"ok");
+                    return;
+                }
+            }
+        }
         const alterou=await sincronizarDiaAtualPlanilha(false,true);
         if(data===hoje){
             aplicarFiltroData(hoje,alterou?"planilha · hoje":"planilha · hoje");
@@ -1630,7 +1714,7 @@ async function atualizarPlanilhaRemoto(){
             setStatus(alterou?"Hoje atualizado na planilha. Exibindo "+rotuloData(data)+" do JSON.":"Exibindo "+rotuloData(data)+" do JSON.","ok");
         }
     }catch(error){
-        setStatus(error.message||"Falha ao atualizar a planilha.","erro");
+        setStatus(error.message||"Falha ao atualizar.","erro");
     }finally{
         atualizacaoPlanilhaEmAndamento=false;
         if(btn) btn.disabled=false;
@@ -1677,6 +1761,13 @@ async function aplicarPrecargaInicial(){
     const data=$("dataFiltro").value||isoHoje();
     aplicarCacheLocalLiberacao();
     if(state.dados.length) return;
+
+    const {dataDe,amanha}=intervaloJanela();
+    const dadosDsql=await carregarDsqlJanela(dataDe,amanha);
+    if(dadosDsql?.length){
+        complementarSemanaCarregada({dados:dadosDsql,dataDe,dataAte:amanha,rotulo:"DSQL"},data);
+        return;
+    }
 
     const snapDia=await (obterPrecargaHoje()||carregarSnapshotDia(data)).catch(()=>null);
     if(snapDia?.dados?.length){
