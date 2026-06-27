@@ -369,6 +369,17 @@ function salvarCacheLiberacao(dados,meta,deferir){
 function dataDentroDaJanela(data,dataDe,dataAte){
     return data&&dataDe&&dataAte&&data>=dataDe&&data<=dataAte;
 }
+function semanaTemData(data){
+    return (state.semana||[]).some(r=>normalizarDataIsoRow(r)===data);
+}
+function podeUsarMemoriaParaData(data){
+    const {dataDe,amanha}=intervaloJanela();
+    return state.semana.length
+        &&state.semanaDataDe===dataDe
+        &&state.semanaDataAte===amanha
+        &&dataDentroDaJanela(data,dataDe,amanha)
+        &&semanaTemData(data);
+}
 function parseTimestamp(v){
     const n=Date.parse(v||"");
     return Number.isFinite(n)?n:0;
@@ -1531,9 +1542,14 @@ async function iniciarCarregamento(forceRefresh=false){
     const data=$("dataFiltro").value;
     if(!data){setStatus("Informe a data.","erro");finalizarCarregamentoInicial(false);return;}
 
-    if(!forceRefresh&&state.dados.length){
+    if(!forceRefresh&&podeUsarMemoriaParaData(data)){
+        aplicarFiltroData(data,"memória");
         finalizarCarregamentoInicial(true);
         return;
+    }
+    if(state.dados.length&&!semanaTemData(data)){
+        state.dados=[];
+        state.todos=[];
     }
 
     const {dataDe,amanha}=intervaloJanela();
@@ -1644,7 +1660,7 @@ async function carregar(forceRefresh=false){
 
     const {dataDe,amanha}=intervaloJanela();
 
-    if(!forceRefresh&&state.semana.length&&state.semanaDataDe===dataDe&&state.semanaDataAte===amanha){
+    if(!forceRefresh&&podeUsarMemoriaParaData(data)){
         aplicarFiltroData(data,"memória");
         return;
     }
@@ -1654,8 +1670,7 @@ async function carregar(forceRefresh=false){
 
 $("dataFiltro").addEventListener("change",()=>{
     const data=$("dataFiltro").value;
-    const {dataDe,amanha}=intervaloJanela();
-    if(state.semana.length&&state.semanaDataDe===dataDe&&state.semanaDataAte===amanha&&dataDentroDaJanela(data,dataDe,amanha)){
+    if(podeUsarMemoriaParaData(data)){
         aplicarFiltroData(data,"memória");
         return;
     }
