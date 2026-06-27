@@ -87,6 +87,19 @@ export const portalCards: PortalCard[] = [
     section: 'operacao',
   },
   {
+    id: 'onibus-agora',
+    title: 'Ônibus Agora',
+    description: 'Mapa ao vivo, busca por linha e veículo, horários Bus2.',
+    action: 'Abrir',
+    theme: 'cyan',
+    legacyPath: '/pages/onibus-agora.html',
+    access: {
+      usuarios: ['odair.marin@icloud.com'],
+      somenteUsuarios: true,
+    },
+    section: 'operacao',
+  },
+  {
     id: 'criar-relatorio',
     title: 'Criar Relatório',
     description: 'Gerar relatório operacional com protocolo.',

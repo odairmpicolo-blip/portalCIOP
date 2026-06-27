@@ -32,6 +32,9 @@ const icons: Record<string, (p: IconProps) => ReactElement> = {
   'terminais-agora': (p) => (
     <Svg {...p}><path d="M12 21s7-4.5 7-11a7 7 0 1 0-14 0c0 6.5 7 11 7 11z" /><circle cx="12" cy="10" r="2.5" /></Svg>
   ),
+  'onibus-agora': (p) => (
+    <Svg {...p}><path d="M4 6h16v8H4z" /><path d="M6 18h2" /><path d="M16 18h2" /><circle cx="8" cy="18" r="2" /><circle cx="16" cy="18" r="2" /><path d="M4 10h16" /></Svg>
+  ),
   'criar-relatorio': (p) => (
     <Svg {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M8 13h8M8 17h5" /></Svg>
   ),

@@ -4,6 +4,8 @@ export type AccessRule = {
   perfis?: string[]
   usuarios?: string[]
   excluirPerfis?: string[]
+  /** Se true, só os e-mails em `usuarios` veem — administrador não bypassa. */
+  somenteUsuarios?: boolean
 }
 
 export function normalizarPerfil(perfil: string | undefined): string {
@@ -35,11 +37,15 @@ export function usuarioPodeAcessar(
   const perfil = normalizarPerfil(user.perfil)
   const email = String(user.email || '').toLowerCase()
 
+  const usuarios = listaEmails(rule?.usuarios)
+  if (rule?.somenteUsuarios && usuarios.length > 0) {
+    return usuarios.includes(email)
+  }
+
   if (listaPerfis(rule?.excluirPerfis).includes(perfil)) return false
   if (isAdministrador(user)) return true
 
   const perfis = listaPerfis(rule?.perfis)
-  const usuarios = listaEmails(rule?.usuarios)
   const temRegra = perfis.length > 0 || usuarios.length > 0
 
   if (!temRegra) return true
