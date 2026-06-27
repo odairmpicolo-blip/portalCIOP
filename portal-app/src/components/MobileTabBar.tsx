@@ -14,6 +14,7 @@ export function MobileTabBar({ sidebarOpen, onMenuToggle }: MobileTabBarProps) {
   const { pathname } = useLocation()
   const inHorarios = pathname.includes('onibus-horarios')
   const inOnibus = pathname.includes('onibus-agora') && !inHorarios
+  const inAjustes = pathname === '/ajustes'
   const inLegado = pathname.startsWith('/legado')
   const inInicio =
     pathname === '/' ||
@@ -47,6 +48,10 @@ export function MobileTabBar({ sidebarOpen, onMenuToggle }: MobileTabBarProps) {
         <TabIcon name="menu" className="mobile-tab-icon" />
         <span>Links</span>
       </button>
+      <NavLink to="/ajustes" className={() => `mobile-tab${inAjustes ? ' active' : ''}`}>
+        <TabIcon name="settings" className="mobile-tab-icon" />
+        <span>Ajustes</span>
+      </NavLink>
     </nav>
   )
 }

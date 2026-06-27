@@ -1,5 +1,6 @@
 import { App } from '@capacitor/app'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { isBiometricEnabled } from '../lib/app-preferences'
 import { promptBiometric } from '../lib/biometric-auth'
 import {
   BACKGROUND_LOCK_MS,
@@ -7,6 +8,7 @@ import {
   isBiometricSessionValid,
   markBiometricUnlocked,
 } from '../lib/biometric-session'
+import { useAppPreferences } from './app-preferences-context'
 import { useAuth } from '../hooks/useAuth'
 import { useNativeApp } from '../hooks/useNativeApp'
 import { BiometricContext, type BiometricContextValue } from './biometric-context'
@@ -14,6 +16,7 @@ import { BiometricContext, type BiometricContextValue } from './biometric-contex
 export function BiometricProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const native = useNativeApp()
+  const { biometricEnabled } = useAppPreferences()
   const [unlocked, setUnlocked] = useState(() => !native)
   const [locking, setLocking] = useState(false)
   const unlockInFlight = useRef(false)
@@ -21,7 +24,7 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
   const initialUnlockStarted = useRef(false)
 
   const tryUnlock = useCallback(async (options?: { silent?: boolean }): Promise<boolean> => {
-    if (!native) {
+    if (!native || !biometricEnabled || !isBiometricEnabled()) {
       setUnlocked(true)
       return true
     }
@@ -37,10 +40,10 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
       unlockInFlight.current = false
       if (!options?.silent) setLocking(false)
     }
-  }, [native])
+  }, [native, biometricEnabled])
 
   useEffect(() => {
-    if (!native) {
+    if (!native || !biometricEnabled) {
       setUnlocked(true)
       initialUnlockStarted.current = false
       return
@@ -58,10 +61,10 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
     initialUnlockStarted.current = true
     setUnlocked(false)
     void tryUnlock()
-  }, [native, user, tryUnlock])
+  }, [native, user, tryUnlock, biometricEnabled])
 
   useEffect(() => {
-    if (!native || !user) return
+    if (!native || !user || !biometricEnabled) return
     let removed = false
     let handle: { remove: () => Promise<void> } | undefined
 
@@ -94,7 +97,7 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
       removed = true
       void handle?.remove()
     }
-  }, [native, user, tryUnlock])
+  }, [native, user, tryUnlock, biometricEnabled])
 
   const value = useMemo<BiometricContextValue>(
     () => ({

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useAppPreferences } from '../context/app-preferences-context'
 import { useBiometric } from '../context/biometric-context'
 import { useAuth } from '../hooks/useAuth'
 import { useBiometryLabels } from '../hooks/useBiometryLabels'
@@ -12,10 +13,11 @@ type BiometricGateProps = {
 export function BiometricGate({ children }: BiometricGateProps) {
   const { user, loading } = useAuth()
   const { unlocked, locking, tryUnlock } = useBiometric()
+  const { biometricEnabled } = useAppPreferences()
   const { labels } = useBiometryLabels()
   const native = useNativeApp()
 
-  if (!native || !user) return <>{children}</>
+  if (!native || !user || !biometricEnabled) return <>{children}</>
 
   if (loading) return <LoadingScreen label="Validando acesso" />
 

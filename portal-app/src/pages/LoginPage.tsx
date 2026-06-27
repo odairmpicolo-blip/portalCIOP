@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useAppPreferences } from '../context/app-preferences-context'
 import { useBiometryLabels } from '../hooks/useBiometryLabels'
 import { promptBiometric } from '../lib/biometric-auth'
 import { portalAsset, isNativeApp } from '../lib/portal-origin'
@@ -26,6 +27,7 @@ export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const native = isNativeApp()
+  const { biometricEnabled } = useAppPreferences()
   const { labels, available: biometriaDisponivel } = useBiometryLabels()
 
   const [email, setEmail] = useState('')
@@ -115,7 +117,7 @@ export function LoginPage() {
           <span className="portal-brand-meta">TCGL · Operações</span>
         </div>
 
-        {native && temLoginSalvo && biometriaDisponivel ? (
+        {native && temLoginSalvo && biometriaDisponivel && biometricEnabled ? (
           <button
             type="button"
             className="btn-primary login-faceid-btn"
@@ -147,7 +149,7 @@ export function LoginPage() {
           required
         />
 
-        {native && biometriaDisponivel ? (
+        {native && biometriaDisponivel && biometricEnabled ? (
           <label className="login-remember">
             <input
               type="checkbox"

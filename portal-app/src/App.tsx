@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { AppPreferencesProvider } from './context/AppPreferencesProvider'
 import { BiometricProvider } from './context/BiometricProvider'
 import { AppLayout } from './components/AppLayout'
 import { BiometricGate } from './components/BiometricGate'
@@ -9,6 +10,7 @@ import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { LegacyPage } from './pages/LegacyPage'
 import { MobileModulesPage } from './pages/MobileModulesPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { isNativeApp } from './lib/portal-origin'
 
 function IndexPage() {
@@ -18,7 +20,8 @@ function IndexPage() {
 export default function App() {
   return (
     <AuthProvider>
-      <BiometricProvider>
+      <AppPreferencesProvider>
+        <BiometricProvider>
         <BrowserRouter basename="/app">
           <SpaRedirect />
           <Routes>
@@ -36,6 +39,7 @@ export default function App() {
               >
                 <Route index element={<IndexPage />} />
                 <Route path="/modulos" element={<Navigate to="/" replace />} />
+                <Route path="/ajustes" element={<SettingsPage />} />
                 <Route path="/legado/*" element={<LegacyPage />} />
               </Route>
             </Route>
@@ -43,7 +47,8 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
-      </BiometricProvider>
+        </BiometricProvider>
+      </AppPreferencesProvider>
     </AuthProvider>
   )
 }
