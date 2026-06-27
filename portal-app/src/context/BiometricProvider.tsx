@@ -1,9 +1,8 @@
 import { App } from '@capacitor/app'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { getBiometryLabels, isBiometricAvailable, promptBiometric } from '../lib/biometric-auth'
 import { isBiometricEnabled } from '../lib/app-preferences'
-import { promptBiometric } from '../lib/biometric-auth'
 import {
-  BACKGROUND_LOCK_MS,
   consumeBiometricSkip,
   isBiometricSessionValid,
   markBiometricUnlocked,
@@ -20,48 +19,53 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
   const [unlocked, setUnlocked] = useState(() => !native)
   const [locking, setLocking] = useState(false)
   const unlockInFlight = useRef(false)
-  const backgroundedAt = useRef<number | null>(null)
-  const initialUnlockStarted = useRef(false)
 
-  const tryUnlock = useCallback(async (options?: { silent?: boolean }): Promise<boolean> => {
+  const tryUnlock = useCallback(async (): Promise<boolean> => {
     if (!native || !biometricEnabled || !isBiometricEnabled()) {
       setUnlocked(true)
       return true
     }
-    if (unlockInFlight.current) return false
+
+    const available = await isBiometricAvailable()
+    if (!available) {
+      setUnlocked(true)
+      return true
+    }
+
+    if (unlockInFlight.current) {
+      unlockInFlight.current = false
+    }
+
     unlockInFlight.current = true
-    if (!options?.silent) setLocking(true)
+    setLocking(true)
     try {
-      const ok = await promptBiometric()
+      const labels = await getBiometryLabels()
+      const ok = await promptBiometric(labels.promptUnlock)
       if (ok) markBiometricUnlocked()
       setUnlocked(ok)
       return ok
     } finally {
       unlockInFlight.current = false
-      if (!options?.silent) setLocking(false)
+      setLocking(false)
     }
   }, [native, biometricEnabled])
 
   useEffect(() => {
     if (!native || !biometricEnabled) {
       setUnlocked(true)
-      initialUnlockStarted.current = false
       return
     }
     if (!user) {
       setUnlocked(false)
-      initialUnlockStarted.current = false
       return
     }
     if (consumeBiometricSkip() || isBiometricSessionValid()) {
       setUnlocked(true)
       return
     }
-    if (initialUnlockStarted.current) return
-    initialUnlockStarted.current = true
+    // iOS exige gesto do usuário — não abrir Face ID automaticamente.
     setUnlocked(false)
-    void tryUnlock()
-  }, [native, user, tryUnlock, biometricEnabled])
+  }, [native, user, biometricEnabled])
 
   useEffect(() => {
     if (!native || !user || !biometricEnabled) return
@@ -69,22 +73,15 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
     let handle: { remove: () => Promise<void> } | undefined
 
     void App.addListener('appStateChange', ({ isActive }) => {
-      if (!isActive) {
-        backgroundedAt.current = Date.now()
-        return
-      }
+      if (!isActive) return
       if (!user) return
 
-      const awayMs = backgroundedAt.current ? Date.now() - backgroundedAt.current : 0
-      backgroundedAt.current = null
-
-      if (awayMs < BACKGROUND_LOCK_MS && isBiometricSessionValid()) {
+      if (isBiometricSessionValid()) {
         setUnlocked(true)
         return
       }
 
       setUnlocked(false)
-      void tryUnlock({ silent: true })
     }).then((listener) => {
       if (removed) {
         void listener.remove()
@@ -97,19 +94,19 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
       removed = true
       void handle?.remove()
     }
-  }, [native, user, tryUnlock, biometricEnabled])
+  }, [native, user, biometricEnabled])
 
   const value = useMemo<BiometricContextValue>(
     () => ({
       unlocked,
       locking,
       lock: () => {
-        if (!native) return
+        if (!native || !biometricEnabled) return
         setUnlocked(false)
       },
-      tryUnlock: () => tryUnlock(),
+      tryUnlock,
     }),
-    [unlocked, locking, native, tryUnlock],
+    [unlocked, locking, native, biometricEnabled, tryUnlock],
   )
 
   return <BiometricContext.Provider value={value}>{children}</BiometricContext.Provider>

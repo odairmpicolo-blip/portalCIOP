@@ -128,14 +128,18 @@ export async function promptBiometric(reason?: string): Promise<boolean> {
     const available = await isBiometricAvailable()
     if (!available) return false
     const labels = await getBiometryLabels()
-    await BiometricAuth.authenticate({
-      reason: reason ?? labels.promptDefault,
+    const auth = BiometricAuth.authenticate({
+      reason: reason ?? labels.promptUnlock,
       cancelTitle: 'Cancelar',
       allowDeviceCredential: true,
       iosFallbackTitle: 'Usar senha do iPhone',
       androidTitle: 'Portal CIOP',
       androidSubtitle: labels.continueLabel,
     })
+    const timeout = new Promise<never>((_, reject) => {
+      window.setTimeout(() => reject(new Error('biometric-timeout')), 90_000)
+    })
+    await Promise.race([auth, timeout])
     return true
   } catch (error) {
     if (error instanceof BiometryError && error.code === BiometryErrorType.userCancel) {

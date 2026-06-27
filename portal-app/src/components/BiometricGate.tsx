@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useAppPreferences } from '../context/app-preferences-context'
 import { useBiometric } from '../context/biometric-context'
 import { useAuth } from '../hooks/useAuth'
@@ -11,17 +11,24 @@ type BiometricGateProps = {
 }
 
 export function BiometricGate({ children }: BiometricGateProps) {
-  const { user, loading } = useAuth()
+  const { user, loading, logout } = useAuth()
   const { unlocked, locking, tryUnlock } = useBiometric()
   const { biometricEnabled } = useAppPreferences()
   const { labels } = useBiometryLabels()
   const native = useNativeApp()
+  const [failed, setFailed] = useState(false)
 
   if (!native || !user || !biometricEnabled) return <>{children}</>
 
   if (loading) return <LoadingScreen label="Validando acesso" />
 
   if (!unlocked) {
+    async function handleUnlock() {
+      setFailed(false)
+      const ok = await tryUnlock()
+      if (!ok) setFailed(true)
+    }
+
     return (
       <div className="biometric-lock-page">
         <div className="biometric-lock-card app-glass">
@@ -34,13 +41,21 @@ export function BiometricGate({ children }: BiometricGateProps) {
           </div>
           <h1>Portal CIOP</h1>
           <p>{locking ? labels.verifyingLabel : labels.continueLabel}</p>
+          {failed ? (
+            <p className="biometric-lock-error" role="alert">
+              Não foi possível confirmar. Toque de novo ou saia e entre com senha.
+            </p>
+          ) : null}
           {!locking ? (
-            <button type="button" className="btn-primary" onClick={() => void tryUnlock()}>
+            <button type="button" className="btn-primary" onClick={() => void handleUnlock()}>
               {labels.unlockButton}
             </button>
           ) : (
             <div className="loading-spinner biometric-lock-spinner" aria-hidden="true" />
           )}
+          <button type="button" className="btn-link biometric-lock-logout" onClick={() => void logout()}>
+            Sair
+          </button>
         </div>
       </div>
     )
