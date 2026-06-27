@@ -307,32 +307,6 @@ function ensureTipoOriginal(row) {
   return row;
 }
 
-function syncTipoFromTcgl(target, fresh) {
-  const freshTipo = String(fresh?.tipoOriginal || fresh?.tipo || "").trim();
-  if (!freshTipo || freshTipo.toUpperCase() === "VAZIO") return false;
-  const current = String(target?.tipoOriginal || target?.tipo || "").trim();
-  if (current === freshTipo) return false;
-  target.tipo = freshTipo;
-  target.tipoOriginal = freshTipo;
-  return true;
-}
-
-function precisaCorrigirTipo(stored, fresh) {
-  if (!stored || !fresh) return false;
-  const storedTipo = String(stored.tipoOriginal || stored.tipo || "").trim().toUpperCase();
-  const freshTipo = String(fresh.tipoOriginal || fresh.tipo || "").trim();
-  if (!freshTipo || freshTipo.toUpperCase() === "VAZIO") return false;
-  return storedTipo === "VAZIO" || storedTipo !== freshTipo.toUpperCase();
-}
-
-function precisaScanCompletoTipos(existing) {
-  return existing.rows.some((row) => {
-    if (!row.registroVazio) return false;
-    const tipo = String(row.tipoOriginal || row.tipo || "").trim().toUpperCase();
-    return tipo === "VAZIO";
-  });
-}
-
 function vehicleNumber(value) {
   const text = String(value || '').trim();
   const match = text.match(/^([^\s-]+)/);
@@ -436,7 +410,7 @@ function readExistingPayload() {
 async function loadIncidentDetail(jar, incidentId) {
   const body = new URLSearchParams();
   body.set('DataSourceKey', 'CADIncidentManagement.Sql.Unified');
-  ['IncidentID', 'IncidentTypeName', 'NatureOfProblem', 'Instructions'].forEach((column) => body.append('Columns[]', column));
+  ['IncidentID', 'NatureOfProblem', 'Instructions'].forEach((column) => body.append('Columns[]', column));
   body.set('SortColumn', 'IncidentID');
   body.set('ResultType', '1');
   body.set('SortDirection', '1');
@@ -454,7 +428,6 @@ async function loadIncidentDetail(jar, incidentId) {
   const json = JSON.parse(await response.text());
   const row = Array.isArray(json) ? json[0] : null;
   return {
-    incidentTypeName: String(row?.IncidentTypeName || '').trim(),
     natureOfProblem: String(row?.NatureOfProblem || ''),
     instructions: String(row?.Instructions || ''),
   };
@@ -491,7 +464,6 @@ async function enrichDetails(jar, rows, candidateRows = rows) {
         const detail = await loadIncidentDetail(jar, row.incidentId);
         row.natureOfProblem = detail.natureOfProblem;
         row.instructions = detail.instructions;
-        syncTipoFromTcgl(row, { tipo: detail.incidentTypeName, tipoOriginal: detail.incidentTypeName });
         existingPayload.checkedDetailIds.add(rowKey(row));
       } catch (error) {
         console.log(`Detalhes: falha no incidente ${row.incidentId}: ${error.message}`);
@@ -514,9 +486,7 @@ function chunkSemNovidade(chunkRows, existing) {
     if (!key) return true;
     const old = existing.rowMap.get(key);
     if (!old) return false;
-    if (String(old.estado || "") !== String(row.estado || "")) return false;
-    if (precisaCorrigirTipo(old, row)) return false;
-    return true;
+    return String(old.estado || "") === String(row.estado || "");
   });
 }
 
@@ -526,7 +496,6 @@ function mergeRows(newRows, existing) {
   const novosIds = new Set();
   let countNovos = 0;
   let countEstado = 0;
-  let countTipo = 0;
 
   for (const row of newRows) {
     const key = rowKey(row);
@@ -537,7 +506,6 @@ function mergeRows(newRows, existing) {
         old.estado = nextEstado;
         countEstado += 1;
       }
-      if (syncTipoFromTcgl(old, row)) countTipo += 1;
       ensureTipoOriginal(old);
       merged.push(old);
     } else {
@@ -557,15 +525,11 @@ function mergeRows(newRows, existing) {
     if (key) used.add(key);
   }
 
-  console.log(`Merge: ${countNovos} novos, ${countEstado} estados atualizados, ${countTipo} tipos corrigidos, ${merged.length} total.`);
+  console.log(`Merge: ${countNovos} novos, ${countEstado} estados atualizados, ${merged.length} total.`);
   return { merged, countNovos, novosIds };
 }
 
 const existingPayload = readExistingPayload();
-const scanCompletoTipos = precisaScanCompletoTipos(existingPayload);
-if (scanCompletoTipos) {
-  console.log('Atualização: varredura completa para corrigir tipos de registros vazios com tipo VAZIO.');
-}
 const jar = await login();
 fs.mkdirSync(outputDir, { recursive: true });
 
@@ -597,8 +561,8 @@ while (total === null || start < total) {
     console.log(`Atualização: lote anterior a ${DATA_MINIMA_ISO}. Encerrando paginação.`);
     break;
   }
-  if (!scanCompletoTipos && chunkNormalizedAll.length > 0 && chunkSemNovidade(chunkNormalizedAll, existingPayload)) {
-    console.log("Atualização: lote sem incidentes novos nem mudança de estado/tipo. Encerrando paginação.");
+  if (chunkNormalizedAll.length > 0 && chunkSemNovidade(chunkNormalizedAll, existingPayload)) {
+    console.log("Atualização: lote sem incidentes novos nem mudança de estado. Encerrando paginação.");
     break;
   }
   start += pageLength;
@@ -607,11 +571,10 @@ while (total === null || start < total) {
 const { merged: mergedRows, novosIds } = mergeRows(rows, existingPayload);
 const novosParaDetalhe = mergedRows.filter((row) => {
   const key = rowKey(row);
-  const semDetalhe = !String(row.natureOfProblem || "").trim() && !String(row.instructions || "").trim();
-  if (!key || !semDetalhe || existingPayload.checkedDetailIds.has(key)) return false;
-  if (novosIds.has(key)) return true;
-  const tipo = String(row.tipoOriginal || row.tipo || "").trim().toUpperCase();
-  return tipo === "VAZIO";
+  return key && novosIds.has(key)
+    && !existingPayload.checkedDetailIds.has(key)
+    && !String(row.natureOfProblem || "").trim()
+    && !String(row.instructions || "").trim();
 });
 await enrichDetails(jar, mergedRows, novosParaDetalhe);
 mergedRows.forEach((row) => {

@@ -21,7 +21,7 @@ if ! "$AWS" sts get-caller-identity --region "$REGION" >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "==> CloudFormation stack: $STACK"
+echo "==> CloudFormation stack: $STACK (portalCIOP — TCGL → Aurora DSQL)"
 "$AWS" cloudformation deploy \
   --template-file "$AWS_DIR/template.yaml" \
   --stack-name "$STACK" \
@@ -93,8 +93,17 @@ cat /tmp/incidentes-probe.json
 echo ""
 
 if grep -qE '"ok"[[:space:]]*:[[:space:]]*true' /tmp/incidentes-probe.json 2>/dev/null; then
-  echo "==> TCGL acessível pela Lambda. Teste sync completo (opcional):"
-  echo "  aws lambda invoke --function-name $FUNC_NAME --region $REGION --payload '{}' /tmp/incidentes-sync.json"
+  SCHED=$("$AWS" cloudformation describe-stacks \
+    --stack-name "$STACK" \
+    --region "$REGION" \
+    --query "Stacks[0].Outputs[?OutputKey=='ScheduleBrasilia'].OutputValue" \
+    --output text)
+  echo "==> TCGL acessível pela Lambda."
+  echo "Agendamento (Brasília): ${SCHED:-23:00, 05:00, 11:00, 17:00}"
+  echo "portalCIOP lê os dados via API AWS (portal-runtime.json → /snapshots/incidentes)."
+  echo ""
+  echo "Sync manual imediato (opcional):"
+  echo "  aws lambda invoke --function-name $FUNC_NAME --region $REGION --payload '{}' /tmp/incidentes-sync.json && cat /tmp/incidentes-sync.json"
 else
   echo "==> TCGL NÃO acessível pela Lambda. Use fallback EC2:"
   echo "  bash scripts/deploy-incidentes-ec2.sh"

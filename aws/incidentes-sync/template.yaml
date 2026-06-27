@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Portal CIOP — sync incidentes TCGL → S3 cache → Aurora DSQL (sa-east-1)
+Description: Portal CIOP — sync incidentes TCGL → S3 cache → Aurora DSQL (sa-east-1). 4x/dia às 23h, 05h, 11h e 17h (Brasília).
 
 Parameters:
   DsqlClusterId:
@@ -8,10 +8,6 @@ Parameters:
   IncidentesSecretName:
     Type: String
     Default: portal-ciop/incidentes-sync
-  ScheduleExpression:
-    Type: String
-    Default: cron(0 9 * * ? *)
-    Description: "09:00 UTC = 06:00 horário de Brasília"
 
 Resources:
   IncidentesStateBucket:
@@ -87,23 +83,78 @@ Resources:
         ZipFile: |
           export const handler = async () => ({ ok: false, error: "Deploy o pacote com scripts/build-incidentes-lambda.sh" });
 
-  IncidentesSchedule:
+  # EventBridge cron em UTC (Brasília = UTC−3): 23h, 05h, 11h, 17h → 02h, 08h, 14h, 20h UTC
+  IncidentesSchedule2300BRT:
     Type: AWS::Events::Rule
     Properties:
-      Description: Sync diário incidentes TCGL → DSQL
-      ScheduleExpression: !Ref ScheduleExpression
+      Description: Sync incidentes TCGL → DSQL — 23:00 Brasília
+      ScheduleExpression: cron(0 2 * * ? *)
       State: ENABLED
       Targets:
         - Arn: !GetAtt IncidentesSyncFunction.Arn
-          Id: IncidentesSyncTarget
+          Id: IncidentesSync2300
 
-  IncidentesSchedulePermission:
+  IncidentesSchedule0500BRT:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Sync incidentes TCGL → DSQL — 05:00 Brasília
+      ScheduleExpression: cron(0 8 * * ? *)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt IncidentesSyncFunction.Arn
+          Id: IncidentesSync0500
+
+  IncidentesSchedule1100BRT:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Sync incidentes TCGL → DSQL — 11:00 Brasília
+      ScheduleExpression: cron(0 14 * * ? *)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt IncidentesSyncFunction.Arn
+          Id: IncidentesSync1100
+
+  IncidentesSchedule1700BRT:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Sync incidentes TCGL → DSQL — 17:00 Brasília
+      ScheduleExpression: cron(0 20 * * ? *)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt IncidentesSyncFunction.Arn
+          Id: IncidentesSync1700
+
+  IncidentesSchedule2300Permission:
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !Ref IncidentesSyncFunction
       Action: lambda:InvokeFunction
       Principal: events.amazonaws.com
-      SourceArn: !GetAtt IncidentesSchedule.Arn
+      SourceArn: !GetAtt IncidentesSchedule2300BRT.Arn
+
+  IncidentesSchedule0500Permission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IncidentesSyncFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt IncidentesSchedule0500BRT.Arn
+
+  IncidentesSchedule1100Permission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IncidentesSyncFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt IncidentesSchedule1100BRT.Arn
+
+  IncidentesSchedule1700Permission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IncidentesSyncFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt IncidentesSchedule1700BRT.Arn
 
 Outputs:
   FunctionName:
@@ -112,3 +163,5 @@ Outputs:
     Value: !Ref IncidentesStateBucket
   StateBucketArn:
     Value: !GetAtt IncidentesStateBucket.Arn
+  ScheduleBrasilia:
+    Value: "23:00, 05:00, 11:00, 17:00 (4x/dia, a cada 6h)"

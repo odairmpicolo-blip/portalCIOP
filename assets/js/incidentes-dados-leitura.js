@@ -14,6 +14,26 @@ export function idIncidente(row) {
   return String(row?.incidentId || row?.id || "").trim();
 }
 
+function chaveIncidente(row) {
+  return idIncidente(row) || [
+    normalizarDataIsoIncidente(row),
+    row?.hora || "",
+    row?.veiculo || "",
+    row?.linha || ""
+  ].join("|");
+}
+
+function mesclarIncidentes(listas) {
+  const mapa = new Map();
+  listas.forEach((lista) => {
+    (lista || []).forEach((row) => {
+      if (!row) return;
+      mapa.set(chaveIncidente(row), row);
+    });
+  });
+  return [...mapa.values()];
+}
+
 function withTimeout(promise, ms) {
   return Promise.race([
     promise,
@@ -26,76 +46,66 @@ function withTimeout(promise, ms) {
 async function carregarJsonSnapshot() {
   try {
     const res = await fetch(`${INCIDENTES_JSON_URL}?t=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) return null;
+    if (!res.ok) return { payload: null, incidentes: [] };
     const payload = await res.json();
     const incidentes = Array.isArray(payload?.incidentes) ? payload.incidentes : [];
-    if (!incidentes.length) return null;
-    return {
-      payload,
-      incidentes,
-      atualizadoEm: payload.atualizadoEm || null
-    };
+    return { payload, incidentes };
   } catch (_) {
-    return null;
+    return { payload: null, incidentes: [] };
   }
 }
 
-async function carregarDoBanco() {
-  const snap = await carregarSnapshotAws("/snapshots/incidentes", { timeoutMs: 20000 });
-  if (!snap?.payload) return null;
+function montarPayload(fontes, incidentes) {
+  const candidatos = fontes.filter(Boolean);
+  const base = candidatos.sort((a, b) => {
+    const ta = Date.parse(a?.atualizadoEm || 0) || 0;
+    const tb = Date.parse(b?.atualizadoEm || 0) || 0;
+    return tb - ta;
+  })[0] || {};
+  const payload = Object.assign({}, base);
+  payload.incidentes = incidentes;
+  payload.totalExtraido = incidentes.length;
+  if (!payload.atualizadoEm) payload.atualizadoEm = new Date().toISOString();
+  payload.fonte = payload.fonte || "Gerenciamento de Incidentes";
+  payload.empresa = payload.empresa || "TCGL";
+  return payload;
+}
+
+async function carregarAws() {
+  const snap = await carregarSnapshotAws("/snapshots/incidentes", { timeoutMs: 12000 });
+  if (!snap?.payload) return { payload: null, incidentes: [], atualizadoEm: null };
   const incidentes = Array.isArray(snap.payload?.incidentes) ? snap.payload.incidentes : [];
-  if (!incidentes.length) return null;
   const atualizadoEm = snap.atualizadoEm || snap.payload?.atualizadoEm || null;
-  return {
-    payload: {
-      ...snap.payload,
-      incidentes,
-      totalExtraido: incidentes.length,
-      atualizadoEm
-    },
-    incidentes,
-    atualizadoEm
-  };
+  return { payload: snap.payload, incidentes, atualizadoEm };
 }
 
-function timestampFonte(pack) {
-  return Date.parse(pack?.atualizadoEm || pack?.payload?.atualizadoEm || 0) || 0;
-}
-
-function escolherFonte(awsPack, jsonPack) {
-  const aws = awsPack?.incidentes?.length ? awsPack : null;
-  const json = jsonPack?.incidentes?.length ? jsonPack : null;
-  if (aws && !json) return { pack: aws, origem: "AWS" };
-  if (json && !aws) return { pack: json, origem: "JSON" };
-  if (!aws && !json) return null;
-  return timestampFonte(aws) >= timestampFonte(json)
-    ? { pack: aws, origem: "AWS" }
-    : { pack: json, origem: "JSON" };
-}
-
-/** Leitura: Aurora DSQL via API AWS; JSON estático no GitHub Pages como fallback. */
+/** Fluxo de leitura: AWS → JSON (planilha). */
 export async function carregarDadosIncidentes({ onProgress } = {}) {
-  onProgress?.("Consultando banco e arquivo...");
+  onProgress?.("Consultando AWS e JSON...");
   const [awsRes, jsonRes] = await Promise.allSettled([
-    withTimeout(carregarDoBanco(), 20000),
-    withTimeout(carregarJsonSnapshot(), 15000)
+    withTimeout(carregarAws(), 15000),
+    withTimeout(carregarJsonSnapshot(), 20000)
   ]);
 
-  const awsPack = awsRes.status === "fulfilled" ? awsRes.value : null;
-  const jsonPack = jsonRes.status === "fulfilled" ? jsonRes.value : null;
-  const tentativas = [
-    `AWS: ${awsPack?.incidentes?.length || 0}`,
-    `JSON: ${jsonPack?.incidentes?.length || 0}`
-  ];
+  const awsPack = awsRes.status === "fulfilled" ? awsRes.value : { payload: null, incidentes: [] };
+  const aws = awsPack.incidentes || [];
+  const jsonPack = jsonRes.status === "fulfilled" ? jsonRes.value : { payload: null, incidentes: [] };
+  const json = jsonPack.incidentes || [];
 
-  const escolhida = escolherFonte(awsPack, jsonPack);
-  if (!escolhida?.pack?.incidentes?.length) {
-    throw new Error("Nenhum incidente encontrado (AWS/JSON).");
-  }
+  const tentativas = [`AWS: ${aws.length}`, `JSON: ${json.length}`];
+  const origens = [];
+  if (aws.length) origens.push("AWS");
+  if (json.length) origens.push("JSON");
+
+  const incidentes = mesclarIncidentes([json, aws]);
+  const payload = montarPayload(
+    [jsonPack.payload, awsPack.payload].filter(Boolean),
+    incidentes
+  );
 
   return {
-    payload: escolhida.pack.payload,
-    origem: escolhida.origem,
+    payload,
+    origem: origens.join(" · ") || "",
     tentativas
   };
 }
