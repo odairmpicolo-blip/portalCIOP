@@ -128,6 +128,23 @@ body.oa-page{
   max-width:min(420px,calc(100% - 24px));padding:8px 10px;border-radius:14px;
   background:rgba(255,255,255,.97);border:1px solid var(--border);box-shadow:0 8px 24px rgba(15,23,42,.14);backdrop-filter:blur(8px);
 }
+body.oa-native-mode .map-filtro-pont.oa-pont-stack{
+  left:10px;top:50%;transform:translateY(-50%);
+  flex-direction:column;flex-wrap:nowrap;align-items:stretch;align-content:stretch;
+  gap:6px;width:auto;min-width:112px;max-width:none;
+  padding:8px;border-radius:12px;
+  background:rgba(8,14,26,.88);border:1px solid rgba(96,165,250,.24);
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+}
+body.oa-native-mode .map-filtro-pont.oa-pont-stack .map-filtro-label{
+  display:block;width:100%;margin:0 0 2px;text-align:center;font-size:8px;color:#64748b;
+}
+body.oa-native-mode .map-filtro-pont.oa-pont-stack .pont-chip{
+  display:flex !important;width:100%;box-sizing:border-box;justify-content:flex-start;
+  padding:7px 10px;font-size:10px;border-radius:9px;
+  color:#eef2f8;background:rgba(12,22,40,.85);border-color:rgba(96,165,250,.2);
+}
+body.oa-native-mode .map-filtro-pont.oa-pont-stack .pont-chip[data-pont="atrasado"]{color:#fef08a}
 .map-filtro-label{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-right:2px}
 .pont-chip{
   display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:#fff;
@@ -895,7 +912,10 @@ function initNativeAppMode(){
     const mapFiltro = $("mapFiltroPont");
     if (panel && bottom) panel.appendChild(bottom);
     if (panel && floats) panel.appendChild(floats);
-    if (panel && mapFiltro) panel.appendChild(mapFiltro);
+    if (panel && mapFiltro){
+        mapFiltro.classList.add("oa-pont-stack");
+        panel.appendChild(mapFiltro);
+    }
 
     $("oaFabHorarios")?.setAttribute("hidden", "");
     $("oaFabLinhas")?.addEventListener("click", abrirSheetLinhas);
