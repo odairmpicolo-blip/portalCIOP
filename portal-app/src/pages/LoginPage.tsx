@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useAppPreferences } from '../context/app-preferences-context'
 import { useBiometryLabels } from '../hooks/useBiometryLabels'
-import { promptBiometric } from '../lib/biometric-auth'
+import { promptBiometricFromGesture } from '../lib/biometric-auth'
 import { portalAsset, isNativeApp } from '../lib/portal-origin'
 import {
   canSaveLoginLocally,
@@ -12,6 +12,7 @@ import {
   saveLoginLocally,
 } from '../lib/saved-login'
 import { markBiometricSatisfied } from '../lib/biometric-session'
+import { setBiometricEnabled } from '../lib/app-preferences'
 
 function mensagemErro(code: string, message: string): string {
   if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
@@ -46,6 +47,7 @@ export function LoginPage() {
       await login(emailValue, senhaValue)
       if (native && usarBiometria && canSaveLoginLocally()) {
         saveLoginLocally(emailValue, senhaValue)
+        setBiometricEnabled(true)
       } else if (canSaveLoginLocally()) {
         clearSavedLogin()
       }
@@ -66,7 +68,7 @@ export function LoginPage() {
       return
     }
     setErro('')
-    const ok = await promptBiometric(labels.promptLogin)
+    const ok = await promptBiometricFromGesture(labels.promptLogin)
     if (!ok) return
     await entrar(saved.email, saved.senha)
   }

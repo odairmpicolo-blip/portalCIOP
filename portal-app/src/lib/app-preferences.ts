@@ -11,9 +11,9 @@ export type ThemeMode = 'light' | 'dark'
 
 export function isBiometricEnabled(): boolean {
   try {
-    return localStorage.getItem(BIOMETRIC_KEY) !== '0'
+    return localStorage.getItem(BIOMETRIC_KEY) === '1'
   } catch {
-    return true
+    return false
   }
 }
 

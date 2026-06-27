@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { preloadBiometricAuth } from '../lib/biometric-auth'
 import { useAppPreferences } from '../context/app-preferences-context'
 import { useBiometric } from '../context/biometric-context'
 import { useAuth } from '../hooks/useAuth'
@@ -12,21 +13,26 @@ type BiometricGateProps = {
 
 export function BiometricGate({ children }: BiometricGateProps) {
   const { user, loading, logout } = useAuth()
-  const { unlocked, locking, tryUnlock } = useBiometric()
+  const { unlocked, locking, tryUnlock, skipBiometric } = useBiometric()
   const { biometricEnabled } = useAppPreferences()
   const { labels } = useBiometryLabels()
   const native = useNativeApp()
   const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    if (native) preloadBiometricAuth()
+  }, [native])
 
   if (!native || !user || !biometricEnabled) return <>{children}</>
 
   if (loading) return <LoadingScreen label="Validando acesso" />
 
   if (!unlocked) {
-    async function handleUnlock() {
+    function handleUnlock() {
       setFailed(false)
-      const ok = await tryUnlock()
-      if (!ok) setFailed(true)
+      void tryUnlock().then((ok) => {
+        if (!ok) setFailed(true)
+      })
     }
 
     return (
@@ -43,19 +49,25 @@ export function BiometricGate({ children }: BiometricGateProps) {
           <p>{locking ? labels.verifyingLabel : labels.continueLabel}</p>
           {failed ? (
             <p className="biometric-lock-error" role="alert">
-              Não foi possível confirmar. Toque de novo ou saia e entre com senha.
+              Não foi possível confirmar. Tente de novo ou use uma opção abaixo.
             </p>
           ) : null}
-          {!locking ? (
-            <button type="button" className="btn-primary" onClick={() => void handleUnlock()}>
-              {labels.unlockButton}
+          <div className="biometric-lock-actions">
+            <button
+              type="button"
+              className="btn-primary biometric-lock-unlock"
+              disabled={locking}
+              onClick={handleUnlock}
+            >
+              {locking ? labels.verifyingLabel : labels.unlockButton}
             </button>
-          ) : (
-            <div className="loading-spinner biometric-lock-spinner" aria-hidden="true" />
-          )}
-          <button type="button" className="btn-link biometric-lock-logout" onClick={() => void logout()}>
-            Sair
-          </button>
+            <button type="button" className="btn-secondary biometric-lock-skip" onClick={skipBiometric}>
+              Continuar sem biometria
+            </button>
+            <button type="button" className="btn-logout biometric-lock-logout" onClick={() => void logout()}>
+              Sair da conta
+            </button>
+          </div>
         </div>
       </div>
     )

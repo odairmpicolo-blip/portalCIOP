@@ -5,6 +5,7 @@ export type BiometricContextValue = {
   locking: boolean
   lock: () => void
   tryUnlock: () => Promise<boolean>
+  skipBiometric: () => void
 }
 
 export const BiometricContext = createContext<BiometricContextValue | null>(null)

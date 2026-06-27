@@ -1,7 +1,11 @@
 import { App } from '@capacitor/app'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { getBiometryLabels, isBiometricAvailable, promptBiometric } from '../lib/biometric-auth'
-import { isBiometricEnabled } from '../lib/app-preferences'
+import {
+  isBiometricAvailable,
+  preloadBiometricAuth,
+  promptBiometricFromGesture,
+} from '../lib/biometric-auth'
+import { isBiometricEnabled, setBiometricEnabled as persistBiometricEnabled } from '../lib/app-preferences'
 import {
   consumeBiometricSkip,
   isBiometricSessionValid,
@@ -15,40 +19,53 @@ import { BiometricContext, type BiometricContextValue } from './biometric-contex
 export function BiometricProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const native = useNativeApp()
-  const { biometricEnabled } = useAppPreferences()
+  const { biometricEnabled, setBiometricEnabled } = useAppPreferences()
   const [unlocked, setUnlocked] = useState(() => !native)
   const [locking, setLocking] = useState(false)
   const unlockInFlight = useRef(false)
+  const hardwareUnavailable = useRef(false)
 
-  const tryUnlock = useCallback(async (): Promise<boolean> => {
-    if (!native || !biometricEnabled || !isBiometricEnabled()) {
-      setUnlocked(true)
-      return true
-    }
+  useEffect(() => {
+    if (!native) return
+    preloadBiometricAuth()
+    void isBiometricAvailable().then((available) => {
+      hardwareUnavailable.current = !available
+      if (!available && biometricEnabled) setUnlocked(true)
+    })
+  }, [native, biometricEnabled])
 
-    const available = await isBiometricAvailable()
-    if (!available) {
+  const tryUnlock = useCallback((): Promise<boolean> => {
+    if (!native || !biometricEnabled || !isBiometricEnabled() || hardwareUnavailable.current) {
       setUnlocked(true)
-      return true
+      return Promise.resolve(true)
     }
 
     if (unlockInFlight.current) {
-      unlockInFlight.current = false
+      return Promise.resolve(false)
     }
 
     unlockInFlight.current = true
     setLocking(true)
-    try {
-      const labels = await getBiometryLabels()
-      const ok = await promptBiometric(labels.promptUnlock)
-      if (ok) markBiometricUnlocked()
-      setUnlocked(ok)
-      return ok
-    } finally {
-      unlockInFlight.current = false
-      setLocking(false)
-    }
+
+    // Sem await antes de authenticate — exigência do iOS.
+    return promptBiometricFromGesture()
+      .then((ok) => {
+        if (ok) markBiometricUnlocked()
+        setUnlocked(ok)
+        return ok
+      })
+      .finally(() => {
+        unlockInFlight.current = false
+        setLocking(false)
+      })
   }, [native, biometricEnabled])
+
+  const skipBiometric = useCallback(() => {
+    persistBiometricEnabled(false)
+    setBiometricEnabled(false)
+    markBiometricUnlocked()
+    setUnlocked(true)
+  }, [setBiometricEnabled])
 
   useEffect(() => {
     if (!native || !biometricEnabled) {
@@ -63,7 +80,6 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
       setUnlocked(true)
       return
     }
-    // iOS exige gesto do usuário — não abrir Face ID automaticamente.
     setUnlocked(false)
   }, [native, user, biometricEnabled])
 
@@ -75,12 +91,10 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
     void App.addListener('appStateChange', ({ isActive }) => {
       if (!isActive) return
       if (!user) return
-
       if (isBiometricSessionValid()) {
         setUnlocked(true)
         return
       }
-
       setUnlocked(false)
     }).then((listener) => {
       if (removed) {
@@ -105,8 +119,9 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
         setUnlocked(false)
       },
       tryUnlock,
+      skipBiometric,
     }),
-    [unlocked, locking, native, biometricEnabled, tryUnlock],
+    [unlocked, locking, native, biometricEnabled, tryUnlock, skipBiometric],
   )
 
   return <BiometricContext.Provider value={value}>{children}</BiometricContext.Provider>

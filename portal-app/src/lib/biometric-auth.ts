@@ -96,6 +96,39 @@ function labelsForType(type: BiometryType): BiometryLabels {
 }
 
 let cachedLabels: BiometryLabels | null = null
+let cachedAvailable: boolean | null = null
+let cachedUnlockReason = GENERIC_LABELS.promptUnlock
+
+const AUTH_OPTIONS = {
+  cancelTitle: 'Cancelar',
+  allowDeviceCredential: true,
+  iosFallbackTitle: 'Usar senha do iPhone',
+  androidTitle: 'Portal CIOP',
+  androidSubtitle: GENERIC_LABELS.continueLabel,
+} as const
+
+const AUTH_TIMEOUT_MS = 15_000
+
+function raceAuth(auth: Promise<unknown>): Promise<boolean> {
+  const timeout = new Promise<never>((_, reject) => {
+    window.setTimeout(() => reject(new Error('biometric-timeout')), AUTH_TIMEOUT_MS)
+  })
+  return Promise.race([auth, timeout])
+    .then(() => true)
+    .catch((error) => {
+      if (error instanceof BiometryError && error.code === BiometryErrorType.userCancel) {
+        return false
+      }
+      return false
+    })
+}
+
+/** Pré-carrega labels/disponibilidade — nunca chamar no clique do usuário. */
+export function preloadBiometricAuth(): void {
+  if (!isNativeBiometricContext()) return
+  void getBiometryLabels()
+  void isBiometricAvailable()
+}
 
 export async function getBiometryLabels(): Promise<BiometryLabels> {
   if (cachedLabels) return cachedLabels
@@ -106,45 +139,50 @@ export async function getBiometryLabels(): Promise<BiometryLabels> {
   try {
     const info = await BiometricAuth.checkBiometry()
     cachedLabels = labelsForType(info.biometryType)
+    cachedUnlockReason = cachedLabels.promptUnlock
   } catch {
     cachedLabels = GENERIC_LABELS
+    cachedUnlockReason = GENERIC_LABELS.promptUnlock
   }
   return cachedLabels
 }
 
 export async function isBiometricAvailable(): Promise<boolean> {
-  if (!isNativeBiometricContext()) return false
-  try {
-    const info = await BiometricAuth.checkBiometry()
-    return info.isAvailable
-  } catch {
+  if (cachedAvailable !== null) return cachedAvailable
+  if (!isNativeBiometricContext()) {
+    cachedAvailable = false
     return false
   }
+  try {
+    const info = await BiometricAuth.checkBiometry()
+    cachedAvailable = info.isAvailable
+  } catch {
+    cachedAvailable = false
+  }
+  return cachedAvailable
+}
+
+/**
+ * Chamada direta no gesto do usuário (sem await antes).
+ * iOS rejeita Face ID se houver awaits antes de authenticate().
+ */
+export function promptBiometricFromGesture(reason?: string): Promise<boolean> {
+  if (!isNativeBiometricContext()) return Promise.resolve(true)
+  const auth = BiometricAuth.authenticate({
+    reason: reason ?? cachedUnlockReason,
+    ...AUTH_OPTIONS,
+    androidSubtitle: cachedLabels?.continueLabel ?? GENERIC_LABELS.continueLabel,
+  })
+  return raceAuth(auth)
 }
 
 export async function promptBiometric(reason?: string): Promise<boolean> {
   if (!isNativeBiometricContext()) return true
-  try {
-    const available = await isBiometricAvailable()
-    if (!available) return false
-    const labels = await getBiometryLabels()
-    const auth = BiometricAuth.authenticate({
-      reason: reason ?? labels.promptUnlock,
-      cancelTitle: 'Cancelar',
-      allowDeviceCredential: true,
-      iosFallbackTitle: 'Usar senha do iPhone',
-      androidTitle: 'Portal CIOP',
-      androidSubtitle: labels.continueLabel,
-    })
-    const timeout = new Promise<never>((_, reject) => {
-      window.setTimeout(() => reject(new Error('biometric-timeout')), 90_000)
-    })
-    await Promise.race([auth, timeout])
-    return true
-  } catch (error) {
-    if (error instanceof BiometryError && error.code === BiometryErrorType.userCancel) {
-      return false
-    }
-    return false
-  }
+  await getBiometryLabels()
+  if (!(await isBiometricAvailable())) return false
+  return promptBiometricFromGesture(reason ?? cachedUnlockReason)
+}
+
+export function getCachedUnlockReason(): string {
+  return cachedUnlockReason
 }
