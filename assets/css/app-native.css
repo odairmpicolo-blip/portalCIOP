@@ -1391,14 +1391,14 @@ html.native-app.native-embedded body.oa-native-mode #panelHorarios:not([hidden])
   overflow-y: auto;
 }
 
-/* Dock dentro do mapa: pontualidade + veículo */
+/* Dock abaixo do mapa: pontualidade */
 html.native-app.native-embedded body.oa-native-mode #panelMapa .oa-native-bottom {
   position: absolute;
   left: 10px;
   right: 10px;
   bottom: calc(var(--oa-tab-bar-h, 72px) + 10px);
   z-index: 600;
-  padding: 6px 8px;
+  padding: 8px 10px;
   border-radius: 16px;
   background: var(--app-glass-bg);
   border: 1px solid var(--app-glass-border);
@@ -1409,76 +1409,46 @@ html.native-app.native-embedded body.oa-native-mode #panelMapa .oa-native-bottom
 }
 
 html.native-app.native-embedded body.oa-native-mode .oa-bottom-pont {
-  display: none;
+  display: flex;
+  width: 100%;
+}
+
+html.native-app.native-embedded body.oa-native-mode .oa-map-dock {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  pointer-events: auto;
 }
 
 html.native-app.native-embedded body.oa-native-mode #panelMapa > .map-filtro-pont,
-html.native-app.native-embedded body.oa-native-mode .map-filtro-pont.oa-pont-stack {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 620;
+html.native-app.native-embedded body.oa-native-mode .map-filtro-pont.oa-pont-dock {
+  position: static;
+  transform: none;
+  z-index: auto;
   display: flex !important;
-  flex-direction: column !important;
-  flex-wrap: nowrap !important;
-  align-items: stretch !important;
-  align-content: stretch !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  align-content: center !important;
   gap: 6px;
-  width: auto;
-  min-width: 112px;
+  width: 100%;
+  min-width: 0;
   max-width: none;
   margin: 0;
-  padding: 8px;
-  border-radius: 14px;
-  background: var(--app-glass-bg);
-  border: 1px solid var(--app-glass-border);
-  box-shadow: var(--app-glass-shadow);
-  backdrop-filter: var(--app-glass-blur);
-  -webkit-backdrop-filter: var(--app-glass-blur);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
-}
-
-html.native-app.native-embedded body.oa-native-mode .map-filtro-pont.oa-pont-stack.oa-pont-visible {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
-  left: 58px;
 }
 
 html.native-app.native-embedded body.oa-native-mode .oa-pont-toggle {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 621;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  height: 36px;
-  padding: 0 10px;
-  border-radius: 12px;
-  border: 1px solid var(--app-glass-border);
-  background: var(--app-glass-bg);
-  color: var(--app-text);
-  font: inherit;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-  backdrop-filter: var(--app-glass-blur);
-  -webkit-backdrop-filter: var(--app-glass-blur);
-  box-shadow: var(--app-glass-shadow);
-}
-
-html.native-app.native-embedded body.oa-native-mode .oa-pont-toggle.oa-pont-toggle--active {
-  border-color: color-mix(in srgb, var(--app-accent) 55%, transparent);
-  color: var(--app-accent);
+  display: none !important;
 }
 
 html.native-app.native-embedded body.oa-native-mode #mapa {
@@ -1486,61 +1456,36 @@ html.native-app.native-embedded body.oa-native-mode #mapa {
 }
 
 html.native-app.native-embedded body.oa-native-mode #panelMapa > .map-filtro-pont .map-filtro-label,
-html.native-app.native-embedded body.oa-native-mode .map-filtro-pont.oa-pont-stack .map-filtro-label {
+html.native-app.native-embedded body.oa-native-mode .map-filtro-pont.oa-pont-dock .map-filtro-label {
   display: block !important;
   width: 100%;
+  flex: 0 0 100%;
   margin: 0 0 2px !important;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  text-align: center;
-  color: #64748b;
+  text-align: left;
+  color: var(--app-muted, #64748b);
 }
 
 html.native-app.native-embedded body.oa-native-mode #panelMapa > .map-filtro-pont .pont-chip,
-html.native-app.native-embedded body.oa-native-mode .map-filtro-pont.oa-pont-stack .pont-chip {
-  display: flex !important;
-  width: 100%;
+html.native-app.native-embedded body.oa-native-mode .map-filtro-pont.oa-pont-dock .pont-chip {
+  display: inline-flex !important;
+  flex: 1 1 calc(33.333% - 6px);
+  width: auto;
+  min-width: 0;
   box-sizing: border-box;
-  justify-content: flex-start;
-  padding: 7px 10px;
+  justify-content: center;
+  padding: 8px 8px;
   font-size: 10px;
   font-weight: 700;
   white-space: nowrap;
-  border-radius: 9px;
-}
-
-html.native-app.native-embedded body.oa-native-mode .oa-map-dock {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 5px;
-  pointer-events: auto;
+  border-radius: 10px;
 }
 
 html.native-app.native-embedded body.oa-native-mode .oa-veiculo-quick {
-  flex: 1 1 auto;
-  min-width: 58px;
-  max-width: 120px;
-  height: 32px;
-  border: 1px solid var(--app-glass-border);
-  border-radius: 10px;
-  padding: 0 8px;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 600;
-  background: color-mix(in srgb, var(--app-glass-bg) 45%, transparent);
-  color: var(--app-text);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-html.native-app.native-embedded body.oa-native-mode .oa-veiculo-quick:focus {
-  outline: none;
-  border-color: #3b82f6;
-  flex: 0 0 72px;
-  width: 72px;
+  display: none !important;
 }
 
 html.native-app.native-embedded body.oa-native-mode #panelMapa[hidden],
@@ -2015,21 +1960,20 @@ html.native-app.native-embedded body.oa-native-mode #panelHorarios .oa-native-fl
   }
 
   html.native-app.native-embedded body.oa-native-mode .oa-native-top,
-  html.native-app.native-embedded body.oa-native-mode #panelMapa > .map-filtro-pont.oa-pont-visible,
-  html.native-app.native-embedded body.oa-native-mode .map-filtro-pont.oa-pont-stack.oa-pont-visible {
+  html.native-app.native-embedded body.oa-native-mode #panelMapa .oa-native-bottom {
     background: var(--app-glass-bg);
     border-color: var(--app-glass-border);
   }
 
   html.native-app.native-embedded body.oa-native-mode #panelMapa > .map-filtro-pont .pont-chip,
-  html.native-app.native-embedded body.oa-native-mode .map-filtro-pont.oa-pont-stack .pont-chip {
+  html.native-app.native-embedded body.oa-native-mode .map-filtro-pont.oa-pont-dock .pont-chip {
     background: rgba(248, 250, 252, 0.98);
     color: #0f172a;
     border-color: rgba(6, 36, 92, 0.12);
   }
 
   html.native-app.native-embedded body.oa-native-mode #panelMapa > .map-filtro-pont .pont-chip[data-pont="atrasado"],
-  html.native-app.native-embedded body.oa-native-mode .map-filtro-pont.oa-pont-stack .pont-chip[data-pont="atrasado"] {
+  html.native-app.native-embedded body.oa-native-mode .map-filtro-pont.oa-pont-dock .pont-chip[data-pont="atrasado"] {
     color: #854d0e;
   }
 
@@ -2040,11 +1984,6 @@ html.native-app.native-embedded body.oa-native-mode #panelHorarios .oa-native-fl
 
   .oa-hud-stat {
     background: rgba(248, 250, 252, 0.95);
-  }
-
-  .oa-veiculo-quick {
-    background: #f8fafc;
-    color: #0f172a;
   }
 
   .oa-fab--linhas {
@@ -2068,14 +2007,13 @@ html.native-app.native-light.native-embedded body.oa-page.oa-native-mode {
 }
 
 html.native-app.native-light.native-embedded body.oa-native-mode .oa-native-top,
-html.native-app.native-light.native-embedded body.oa-native-mode #panelMapa > .map-filtro-pont,
-html.native-app.native-light.native-embedded body.oa-native-mode .map-filtro-pont.oa-pont-stack {
+html.native-app.native-light.native-embedded body.oa-native-mode #panelMapa .oa-native-bottom {
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(6, 36, 92, 0.12);
 }
 
 html.native-app.native-light.native-embedded body.oa-native-mode #panelMapa > .map-filtro-pont .pont-chip,
-html.native-app.native-light.native-embedded body.oa-native-mode .map-filtro-pont.oa-pont-stack .pont-chip {
+html.native-app.native-light.native-embedded body.oa-native-mode .map-filtro-pont.oa-pont-dock .pont-chip {
   background: rgba(248, 250, 252, 0.98);
   color: #0f172a;
   border-color: rgba(6, 36, 92, 0.12);
