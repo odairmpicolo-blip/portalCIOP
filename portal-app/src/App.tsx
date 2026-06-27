@@ -6,6 +6,7 @@ import { SpaRedirect } from './components/SpaRedirect'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { LegacyPage } from './pages/LegacyPage'
+import { MobileModulesPage } from './pages/MobileModulesPage'
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route index element={<HomePage />} />
+              <Route path="/modulos" element={<MobileModulesPage />} />
               <Route path="/legado/*" element={<LegacyPage />} />
             </Route>
           </Route>

@@ -68,6 +68,13 @@ export function Sidebar({ open, onClose, onAvisos }: SidebarProps) {
               </NavLink>
             )
           })}
+          <a
+            className="sidebar-link sidebar-link-muted"
+            href="https://www.portalciop.com.br/"
+            onClick={onClose}
+          >
+            Portal clássico
+          </a>
         </nav>
       </aside>
     </>

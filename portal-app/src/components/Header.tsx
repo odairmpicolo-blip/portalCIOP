@@ -1,23 +1,32 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { portalAsset } from '../lib/portal-origin'
 
-export function Header({ onMenuToggle }: { onMenuToggle: () => void }) {
+export function Header({ onMenuToggle, native = false }: { onMenuToggle: () => void; native?: boolean }) {
   const { user, logout } = useAuth()
+  const brandSrc = portalAsset('/assets/img/titulo-portal-ciop.png')
 
   return (
     <header className="app-header">
       <div className="header-left">
-        <button type="button" className="menu-toggle" onClick={onMenuToggle} aria-label="Abrir menu">
-          <span className="menu-bars" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </span>
-        </button>
+        {!native ? (
+          <button type="button" className="menu-toggle" onClick={onMenuToggle} aria-label="Abrir menu">
+            <span className="menu-bars" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+          </button>
+        ) : null}
         <div className="brand portal-brand-mark" aria-label="Portal CIOP TCGL Operações">
-          <img className="portal-brand-art" src="/assets/img/titulo-portal-ciop.png" alt="Portal CIOP" />
+          <img className="portal-brand-art" src={brandSrc} alt="Portal CIOP" />
           <span className="portal-brand-meta">TCGL · Operações</span>
         </div>
+      </div>
+
+      <div className="header-brand-mobile portal-brand-mark" aria-hidden="true">
+        <img className="portal-brand-art" src={brandSrc} alt="" />
+        <span className="portal-brand-meta">TCGL · Operações</span>
       </div>
 
       <div className="header-right">

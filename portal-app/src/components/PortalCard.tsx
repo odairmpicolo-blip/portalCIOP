@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import type { PortalCard } from '../lib/navigation'
 import { cardRoute } from '../lib/navigation'
+import { ModuleIcon } from '../lib/mobile-icons'
+import { isNativeApp } from '../lib/portal-origin'
 
 type PortalCardItemProps = {
   card: PortalCard
@@ -8,10 +10,17 @@ type PortalCardItemProps = {
 
 export function PortalCardItem({ card }: PortalCardItemProps) {
   const internalRoute = cardRoute(card)
+  const native = isNativeApp()
   const content = (
     <>
       <div className="card-top">
-        <div className={`card-accent theme-${card.theme}`} aria-hidden="true" />
+        {native ? (
+          <span className={`card-icon-wrap theme-${card.theme}`}>
+            <ModuleIcon id={card.id} className="card-module-icon" />
+          </span>
+        ) : (
+          <div className={`card-accent theme-${card.theme}`} aria-hidden="true" />
+        )}
         <div>
           <h3>{card.title}</h3>
           <p>{card.description}</p>

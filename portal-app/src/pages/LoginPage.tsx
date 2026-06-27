@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { portalAsset } from '../lib/portal-origin'
 
 function mensagemErro(code: string, message: string): string {
   if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
@@ -60,7 +61,7 @@ export function LoginPage() {
     <div className="login-page">
       <form className="login-card" onSubmit={onSubmit}>
         <div className="login-brand portal-brand-mark portal-brand-mark--center" aria-label="Portal CIOP TCGL Operações">
-          <img className="portal-brand-art" src="/assets/img/titulo-portal-ciop.png" alt="Portal CIOP" />
+          <img className="portal-brand-art" src={portalAsset('/assets/img/titulo-portal-ciop.png')} alt="Portal CIOP" />
           <span className="portal-brand-meta">TCGL · Operações</span>
         </div>
 
