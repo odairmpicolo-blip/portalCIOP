@@ -11,7 +11,7 @@ html.native-app {
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --app-nav-h: calc(56px + var(--safe-bottom));
-  --app-header-h: calc(50px + var(--safe-top));
+  --app-header-h: calc(28px + var(--safe-top));
   --app-radius: 16px;
   --app-radius-sm: 12px;
 
@@ -116,15 +116,15 @@ html.native-app .app-header {
   position: sticky;
   top: 0;
   z-index: 50;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 8px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0;
   padding:
-    calc(8px + var(--safe-top))
-    calc(14px + var(--safe-right))
-    8px
-    calc(14px + var(--safe-left));
+    calc(1px + var(--safe-top))
+    calc(48px + var(--safe-right))
+    4px
+    calc(8px + var(--safe-left));
   min-height: var(--app-header-h);
   background: var(--app-header-bg);
   border-bottom: 1px solid var(--app-border);
@@ -140,21 +140,42 @@ html.native-app .menu-toggle {
 }
 
 html.native-app .header-brand-mobile {
-  display: grid;
-  justify-items: start;
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 56;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 0;
+  padding:
+    var(--safe-top)
+    calc(2px + var(--safe-right))
+    0
+    0;
+  pointer-events: none;
   min-width: 0;
 }
 
 html.native-app .header-brand-mobile .portal-brand-art {
-  height: 26px;
-  filter: drop-shadow(0 0 14px var(--app-glow));
+  height: 12px;
+  width: auto;
+  max-width: 64px;
+  margin: 0;
+  object-fit: contain;
+  object-position: right top;
+  filter: drop-shadow(0 0 5px var(--app-glow));
+  opacity: 0.9;
 }
 
 html.native-app .header-brand-mobile .portal-brand-meta {
-  font-size: 0.5rem;
-  letter-spacing: 0.16em;
-  color: var(--app-muted);
-  text-transform: uppercase;
+  display: none;
+}
+
+html.native-app .header-right {
+  width: 100%;
+  justify-content: flex-start;
 }
 
 html.native-app .session-chip-modern {
@@ -692,20 +713,14 @@ html.native-app .app-main:has(.legacy-page--tracking) {
 }
 
 html.native-app .app-main:has(.legacy-page--tracking) .app-header {
-  padding-top: calc(2px + var(--safe-top));
-  padding-bottom: 3px;
-  min-height: 0;
-  gap: 4px;
+  padding-top: calc(1px + var(--safe-top));
+  padding-bottom: 2px;
+  min-height: calc(24px + var(--safe-top));
 }
 
 html.native-app .app-main:has(.legacy-page--tracking) .header-brand-mobile .portal-brand-art {
-  height: 20px;
-}
-
-html.native-app .app-main:has(.legacy-page--tracking) .header-brand-mobile .portal-brand-meta {
-  font-size: 0.42rem;
-  line-height: 1.1;
-  margin-top: 1px;
+  height: 11px;
+  max-width: 58px;
 }
 
 html.native-app .app-main:has(.legacy-page--tracking) .session-chip-modern {
@@ -1359,6 +1374,6 @@ html.native-app.native-embedded body.oa-native-mode #panelHorarios .oa-native-fl
 
 @media (min-width: 641px) {
   html.native-app .header-brand-mobile {
-    justify-items: center;
+    align-items: flex-end;
   }
 }
