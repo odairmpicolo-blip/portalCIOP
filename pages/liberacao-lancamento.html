@@ -270,6 +270,7 @@ const INTERVALO_SYNC_BACKGROUND_MS = 5000;
 const LIBERACAO_DATA_BASE = "../assets/data/liberacao";
 const LIBERACAO_MANIFEST_URL = LIBERACAO_DATA_BASE + "/manifest.json";
 const LIBERACAO_ACOMPANHAMENTO_URL = LIBERACAO_DATA_BASE + "/acompanhamento-semana.json";
+const PLANILHA_FETCH_TIMEOUT_MS = 120000;
 let liberacaoManifest = null;
 let carregamentoEmAndamento = false;
 let atualizacaoPlanilhaEmAndamento = false;
@@ -680,11 +681,7 @@ function encerrarOverlayAbertura(){
 }
 function complementarPlanilhaDiaBackground(data,origem){
     if(!data||usuarioEditando()) return;
-    const {dataDe,amanha}=intervaloJanela();
-    if(!dataDentroDaJanela(data,dataDe,amanha)) return;
-    setTimeout(()=>{
-        complementarDiaDaPlanilha(data,{silencioso:true,origem:origem||"planilha · dia"}).catch(()=>{});
-    },400);
+    buscarPlanilhaDiaSelecionado(data,{silencioso:true,origem:origem||"planilha · dia"}).catch(()=>{});
 }
 function complementarPlanilhaBackground(origem){
     complementarPlanilhaDiaBackground(isoHoje(),origem||"planilha · hoje");
@@ -693,7 +690,11 @@ function complementarPlanilhaBackground(origem){
 async function apiGet(params){
     const p=Object.assign({liberacao:"1"},params);
     if(p.vivo==="1") p._=String(Date.now());
-    const res=await fetch(API_URL+"?"+new URLSearchParams(p),{cache:"no-store",redirect:"follow"});
+    const res=await fetch(API_URL+"?"+new URLSearchParams(p),{
+        cache:"no-store",
+        redirect:"follow",
+        signal:AbortSignal.timeout(PLANILHA_FETCH_TIMEOUT_MS)
+    });
     const texto=await res.text();
     let data;
     try{ data=JSON.parse(texto); }catch(_){ throw new Error("Resposta inválida da planilha."); }
@@ -1412,41 +1413,83 @@ async function rodarSyncBackground(){
     finally{ syncBackgroundEmAndamento=false; }
 }
 
+function linhasPlanilhaDoDia(dados,data){
+    return (dados||[]).map(r=>{
+        const row=Object.assign({},r);
+        if(!row.data_iso) row.data_iso=normalizarDataIsoRow(row)||data;
+        return row;
+    }).filter(r=>{
+        const iso=normalizarDataIsoRow(r);
+        return iso===data||(!iso&&data);
+    });
+}
+
 async function complementarDiaDaPlanilha(data,opts={}){
     const {dataDe,amanha}=intervaloJanela();
-    if(!dataDentroDaJanela(data,dataDe,amanha)) return {alterou:false};
+    if(!dataDentroDaJanela(data,dataDe,amanha)) return {alterou:false,erro:"Data fora da janela da semana"};
 
     const qtdAntes=contarLinhasDia(state.semana,data);
+    const filledAntes=contarLancamentosDia(state.semana,data);
     const assinaturaAntes=assinaturaDia(state.semana,data);
+    const vivo=opts.vivo!==undefined?!!opts.vivo:true;
 
-    const dados=await obterPlanilhaDia(data,!!opts.force,opts.vivo??ehDiaAtual(data));
-    const dadosDia=(dados||[]).filter(r=>normalizarDataIsoRow(r)===data);
-    if(!dadosDia.length) return {alterou:false};
-
-    const qtdPlanilha=dadosDia.length;
-    if(!opts.force&&qtdAntes>=qtdPlanilha&&qtdAntes>0) return {alterou:false};
+    const dados=await obterPlanilhaDia(data,true,vivo);
+    const dadosDia=linhasPlanilhaDoDia(dados,data);
+    if(!dadosDia.length){
+        return {alterou:false,erro:"Planilha sem registros para "+rotuloData(data)};
+    }
 
     state.semana=mesclarSemana(state.semana,dadosDia);
     state.semanaDataDe=state.semanaDataDe||dataDe;
     state.semanaDataAte=amanha;
     salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte},true);
 
-    const alterou=assinaturaAntes!==assinaturaDia(state.semana,data)||contarLinhasDia(state.semana,data)>qtdAntes;
-    if(alterou&&data===$("dataFiltro").value&&!usuarioEditando()){
-        const origem=opts.origem||(qtdAntes>0?"JSON + planilha":"planilha · dia");
-        if(opts.silencioso) aplicarFiltroDataSilencioso(data,origem);
-        else aplicarFiltroData(data,origem);
+    const qtdDepois=contarLinhasDia(state.semana,data);
+    const filledDepois=contarLancamentosDia(state.semana,data);
+    const alterou=assinaturaAntes!==assinaturaDia(state.semana,data)
+        ||qtdDepois>qtdAntes
+        ||filledDepois>filledAntes;
+
+    if(data===$("dataFiltro").value&&!usuarioEditando()){
+        const origem=opts.origem||(qtdAntes>0||filledAntes>0?"JSON + planilha":"planilha · dia");
+        if(alterou||!opts.silencioso){
+            if(opts.silencioso) aplicarFiltroDataSilencioso(data,origem);
+            else aplicarFiltroData(data,origem);
+        }
     }
     if(ehDiaAtual(data)) planilhaHojeComplementada=true;
-    return {alterou};
+    return {alterou,total:qtdDepois};
+}
+
+async function buscarPlanilhaDiaSelecionado(data,opts={}){
+    if(!data) return {alterou:false};
+    const {dataDe,amanha}=intervaloJanela();
+    if(!dataDentroDaJanela(data,dataDe,amanha)){
+        setStatus("Data fora da janela (últimos "+DIAS_JANELA+" dias).","erro");
+        return {alterou:false};
+    }
+    if(!opts.silencioso){
+        mostrarOverlayOperacao("Buscando lançamentos na planilha...");
+        setStatus("Buscando planilha · "+rotuloData(data)+"...","load");
+    }
+    try{
+        const r=await complementarDiaDaPlanilha(data,{force:true,vivo:true,silencioso:!!opts.silencioso,origem:opts.origem});
+        if(!r.alterou&&r.erro&&!state.dados.length) setStatus(r.erro,"erro");
+        return r;
+    }catch(e){
+        if(!opts.silencioso&&!state.dados.length) setStatus(e.message||"Falha ao buscar planilha","erro");
+        throw e;
+    }finally{
+        if(!opts.silencioso) ocultarOverlayOperacao();
+    }
 }
 
 async function sincronizarDiaPlanilha(data,silencioso,force){
-    if(carregamentoEmAndamento||atualizacaoPlanilhaEmAndamento) return false;
+    if(atualizacaoPlanilhaEmAndamento) return false;
     const assinaturaAntes=assinaturaDia(state.semana,data);
     const qtdAntes=contarLinhasDia(state.semana,data);
-    const novos=await obterPlanilhaDia(data,!!force,ehDiaAtual(data));
-    const dadosDia=(novos||[]).filter(r=>normalizarDataIsoRow(r)===data);
+    const novos=await obterPlanilhaDia(data,true,true);
+    const dadosDia=linhasPlanilhaDoDia(novos,data);
     if(!dadosDia.length) return false;
     const {dataDe,amanha}=intervaloJanela();
     state.semana=mesclarSemana(state.semana,dadosDia);
@@ -1614,13 +1657,10 @@ async function iniciarCarregamento(forceRefresh=false){
 
     if(dataDentroDaJanela(data,dataDe,amanha)){
         try{
-            const qtdAntes=contarLinhasDia(state.semana,data);
-            if(!state.dados.length){
-                atualizarOverlayOperacao("Buscando lançamentos na planilha...");
-                setStatus("Buscando planilha...","load");
-            }
-            await complementarDiaDaPlanilha(data,{force:qtdAntes===0});
-        }catch(_){}
+            await buscarPlanilhaDiaSelecionado(data,{silencioso:false});
+        }catch(e){
+            console.error("Planilha:",e);
+        }
     }
 
     if(state.dados.length){
@@ -1634,7 +1674,7 @@ async function iniciarCarregamento(forceRefresh=false){
         const dados=await carregarSemanaRemotoFallback(dataDe,amanha);
         if(dados.length){
             complementarSemanaCarregada({dados,dataDe:dataDe,dataAte:amanha,rotulo:"planilha · semana"},data);
-            try{ await complementarDiaDaPlanilha(data,{force:true}); }catch(_){}
+            try{ await buscarPlanilhaDiaSelecionado(data,{silencioso:true}); }catch(_){}
             finalizarCarregamentoInicial(true);
         }else{
             setStatus("Sem dados para "+rotuloData(data)+".","erro");
@@ -1671,10 +1711,9 @@ async function carregar(forceRefresh=false){
     const data=$("dataFiltro").value;
     if(!data){setStatus("Informe a data.","erro");return;}
 
-    const {dataDe,amanha}=intervaloJanela();
-
     if(!forceRefresh&&podeUsarMemoriaParaData(data)){
         aplicarFiltroData(data,"memória");
+        await buscarPlanilhaDiaSelecionado(data,{silencioso:false}).catch(e=>setStatus(e.message,"erro"));
         return;
     }
 
@@ -1683,12 +1722,15 @@ async function carregar(forceRefresh=false){
 
 $("dataFiltro").addEventListener("change",()=>{
     const data=$("dataFiltro").value;
+    if(!data) return;
     if(podeUsarMemoriaParaData(data)){
         aplicarFiltroData(data,"memória");
-        complementarPlanilhaDiaBackground(data);
-        return;
+    }else{
+        state.dados=[];
+        state.todos=[];
+        iniciarOverlayAbertura();
     }
-    carregar().catch(e=>setStatus(e.message,"erro"));
+    buscarPlanilhaDiaSelecionado(data,{silencioso:false}).catch(e=>setStatus(e.message,"erro"));
 });
 $("maquinaFiltro").addEventListener("change",()=>{aplicarFiltroMaquina();renderTabela();setStatus(formatNumber(state.dados.length)+" registro(s) · "+rotuloData($("dataFiltro").value),"ok");});
 $("btn-atualizar-planilha").addEventListener("click",()=>{atualizarPlanilhaRemoto().catch(()=>{});});
