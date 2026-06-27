@@ -561,6 +561,15 @@ body.oa-page{
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
+const OA_MODE = (() => {
+    if (window.OA_APP_MODE === "horarios" || window.OA_APP_MODE === "mapa") return window.OA_APP_MODE;
+    const path = (location.pathname || "").toLowerCase();
+    if (path.includes("onibus-horarios")) return "horarios";
+    if (new URLSearchParams(location.search).get("modo") === "horarios") return "horarios";
+    return "mapa";
+})();
+const OA_HORARIOS = OA_MODE === "horarios";
+
 const BUS2 = {
     hash: "2fvn7",
     proxyFallback: "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com",
@@ -588,7 +597,7 @@ const state = {
     veiculoFiltro: "",
     filtroPontualidade: { adiantado: true, no_horario: true, atrasado: true, sem_dado: true },
     buscaLinha: "",
-    tab: "mapa",
+    tab: OA_HORARIOS ? "horarios" : "mapa",
     vehicles: new Map(),
     markers: new Map(),
     timetableCache: new Map(),
@@ -773,12 +782,14 @@ function abrirSheetLinhas(){
 }
 
 function fecharHorariosNative(){
+    if (OA_HORARIOS) return;
     document.body.classList.remove("oa-horarios-open");
     $("oaFabCloseHorarios")?.setAttribute("hidden", "");
     trocarTab("mapa");
 }
 
 function abrirHorariosNative(){
+    if (OA_HORARIOS) return;
     if (!state.routeFiltro){
         abrirSheetLinhas();
         return;
@@ -798,6 +809,38 @@ function abrirHorariosNative(){
     $("oaFabCloseHorarios")?.removeAttribute("hidden");
 }
 
+function initNativeHorariosModule(){
+    document.body.classList.add("oa-horarios-module", "oa-horarios-open");
+
+    const brand = document.querySelector(".oa-hud-brand strong");
+    const kicker = document.querySelector(".oa-hud-kicker");
+    if (brand) brand.textContent = "Horários Bus2";
+    if (kicker) kicker.textContent = "Partidas · Londrina";
+    document.querySelector(".oa-hud-stats")?.setAttribute("hidden", "");
+    $("oaNativeBottom")?.setAttribute("hidden", "");
+    $("oaFabHorarios")?.setAttribute("hidden", "");
+
+    const sheetBody = $("oaSheetLinhasBody");
+    const lines = $("listaLinhas");
+    const btnLimpar = $("btnLimparFiltro");
+    if (sheetBody && lines) sheetBody.appendChild(lines);
+    if (sheetBody && btnLimpar){
+        btnLimpar.style.marginTop = "10px";
+        btnLimpar.style.width = "100%";
+        sheetBody.appendChild(btnLimpar);
+    }
+
+    $("oaFabLinhas")?.addEventListener("click", abrirSheetLinhas);
+    $("oaBackdrop")?.addEventListener("click", fecharSheetLinhas);
+
+    const panel = $("panelHorarios");
+    const floats = $("oaNativeFloats");
+    if (panel && floats) panel.appendChild(floats);
+
+    trocarTab("horarios");
+    syncNativeHud();
+}
+
 function initNativeAppMode(){
     if (!isNativeEmbedded()) return;
     document.body.classList.add("oa-native-mode");
@@ -811,6 +854,11 @@ function initNativeAppMode(){
             el.setAttribute("aria-hidden", "false");
         }
     });
+
+    if (OA_HORARIOS){
+        initNativeHorariosModule();
+        return;
+    }
 
     const nv = $("oaBuscaVeiculoNative");
     const bv = $("buscaVeiculo");
@@ -831,7 +879,7 @@ function initNativeAppMode(){
     const mapFiltro = $("mapFiltroPont");
     if (pontSlot && mapFiltro) pontSlot.appendChild(mapFiltro);
 
-    $("oaFabHorarios")?.addEventListener("click", abrirHorariosNative);
+    $("oaFabHorarios")?.setAttribute("hidden", "");
     $("oaFabLinhas")?.addEventListener("click", abrirSheetLinhas);
     $("oaBackdrop")?.addEventListener("click", () => {
         fecharSheetLinhas();
@@ -1346,7 +1394,7 @@ async function selecionarLinha(routeId){
     state.schedule.route = route;
     state.schedule.timetable = null;
     renderListaLinhas();
-    atualizarMarcadores();
+    if (!OA_HORARIOS) atualizarMarcadores();
     const tt = await obterTimetable(routeId);
     state.schedule.timetable = tt;
     state.schedule.cardKey = null;
@@ -1354,14 +1402,17 @@ async function selecionarLinha(routeId){
     await configurarTrajetoLinha(route, tt);
     renderHorarios();
     if (state.tab === "viagem") renderViagem();
-    buscarVeiculosRota(route).then(list => {
-        list.forEach(v => {
-            v.lastSeen = Date.now();
-            state.vehicles.set(v.key, v);
-        });
-        atualizarMarcadores();
-    }).catch(() => { /* proxy indisponível — horários ainda funcionam */ });
+    if (!OA_HORARIOS){
+        buscarVeiculosRota(route).then(list => {
+            list.forEach(v => {
+                v.lastSeen = Date.now();
+                state.vehicles.set(v.key, v);
+            });
+            atualizarMarcadores();
+        }).catch(() => { /* proxy indisponível — horários ainda funcionam */ });
+    }
     fecharSheetLinhas();
+    if (OA_HORARIOS) trocarTab("horarios");
 }
 
 function limparFiltro(){
@@ -1373,11 +1424,13 @@ function limparFiltro(){
     $("buscaVeiculo").value = "";
     syncFiltroPontualidadeUI();
     renderListaLinhas();
-    limparShapes();
-    limparShapesViagem();
-    ocultarShapePicker();
-    state.mapa?.setView(BUS2.centro, BUS2.zoom);
-    atualizarMarcadores();
+    if (!OA_HORARIOS){
+        limparShapes();
+        limparShapesViagem();
+        ocultarShapePicker();
+        state.mapa?.setView(BUS2.centro, BUS2.zoom);
+        atualizarMarcadores();
+    }
     if (state.tab === "viagem") renderViagem();
     if (state.tab === "horarios") renderHorarios();
 }
@@ -1758,7 +1811,7 @@ function trocarTab(tab){
 
 async function boot(){
     setLive("Carregando linhas...", true);
-    initMapa();
+    if (!OA_HORARIOS) initMapa();
     await initBus2Proxy();
 
     try {
@@ -1778,20 +1831,38 @@ async function boot(){
         : "";
     setLive(state.routes.length + " linhas" + manifestTxt, false);
 
+    if (OA_HORARIOS && !state.routeFiltro && isNativeEmbedded()){
+        setTimeout(abrirSheetLinhas, 450);
+    }
+
     const linhaParam = new URLSearchParams(location.search).get("linha");
     if (linhaParam){
         const alvo = state.routes.find(r => String(r.shortName) === linhaParam || String(r.routeId) === linhaParam);
         if (alvo) await selecionarLinha(alvo.routeId);
     }
 
-    if (BUS2.proxyBase){
+    if (BUS2.proxyBase && !OA_HORARIOS){
         iniciarPoll();
         setTimeout(pollLote, 2500);
     }
 
-    if (document.body.classList.contains("oa-native-mode")){
+    if (document.body.classList.contains("oa-native-mode") && !OA_HORARIOS){
         setTimeout(() => state.mapa?.invalidateSize(), 350);
     }
+}
+
+function aplicarModoHorariosWeb(){
+    if (!OA_HORARIOS || isNativeEmbedded()) return;
+    document.querySelectorAll('.tab[data-tab="mapa"], .tab[data-tab="viagem"]').forEach(el => {
+        el.setAttribute("hidden", "");
+    });
+    const title = document.querySelector(".page-title");
+    const desc = document.querySelector(".page-desc");
+    const kicker = document.querySelector(".page-kicker");
+    if (title) title.textContent = "Horários Bus2";
+    if (desc) desc.textContent = "Partidas previstas por linha e local · dados Bus2";
+    if (kicker) kicker.textContent = "Consulta de horários";
+    trocarTab("horarios");
 }
 
 function bind(){
@@ -1831,6 +1902,7 @@ function bind(){
 function iniciar(){
     initNativeAppMode();
     bind();
+    aplicarModoHorariosWeb();
     boot().catch(err => {
         setLive(err.message || "Erro ao iniciar", false);
         $("listaLinhas").innerHTML = '<div class="empty"><h3>Falha ao carregar</h3><p>' + esc(err.message || "Não foi possível carregar os dados Bus2.") + '</p></div>';

@@ -9,7 +9,7 @@ export function LegacyPage() {
   const path = params['*'] || ''
   const src = useMemo(() => legacyUrl(`/${path}`), [path])
   const native = isNativeApp()
-  const tracking = path.includes('onibus-agora')
+  const tracking = path.includes('onibus-agora') || path.includes('onibus-horarios')
 
   const onFrameLoad = useCallback(
     (event: React.SyntheticEvent<HTMLIFrameElement>) => {

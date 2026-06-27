@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { TabIcon } from '../lib/mobile-icons'
-import { onibusAgoraCard, onibusAgoraRoute } from '../lib/navigation'
+import { onibusAgoraCard, onibusAgoraRoute, onibusHorariosCard, onibusHorariosRoute } from '../lib/navigation'
 import { usuarioPodeAcessar } from '../lib/permissions'
 
 type MobileTabBarProps = {
@@ -12,9 +12,12 @@ type MobileTabBarProps = {
 export function MobileTabBar({ onMenuOpen, onAvisos }: MobileTabBarProps) {
   const { user } = useAuth()
   const { pathname } = useLocation()
-  const inOnibus = pathname.includes('onibus-agora')
-  const inLegado = pathname.startsWith('/legado') && !inOnibus
-  const podeLinhas = onibusAgoraCard && onibusAgoraRoute && usuarioPodeAcessar(user, onibusAgoraCard.access)
+  const inHorarios = pathname.includes('onibus-horarios')
+  const inOnibus = pathname.includes('onibus-agora') && !inHorarios
+  const inLegado = pathname.startsWith('/legado') && !inOnibus && !inHorarios
+  const podeBus2 = onibusAgoraCard && usuarioPodeAcessar(user, onibusAgoraCard.access)
+  const podeLinhas = podeBus2 && onibusAgoraRoute
+  const podeHorarios = onibusHorariosCard && onibusHorariosRoute && usuarioPodeAcessar(user, onibusHorariosCard.access)
 
   return (
     <nav className="mobile-tab-bar" aria-label="Navegação principal">
@@ -41,13 +44,22 @@ export function MobileTabBar({ onMenuOpen, onAvisos }: MobileTabBarProps) {
         <TabIcon name="menu" className="mobile-tab-icon" />
         <span>Links</span>
       </button>
-      {podeLinhas && onibusAgoraRoute ? (
+      {podeLinhas ? (
         <NavLink
-          to={onibusAgoraRoute}
+          to={onibusAgoraRoute!}
           className={() => `mobile-tab${inOnibus ? ' active' : ''}`}
         >
           <TabIcon name="linhas" className="mobile-tab-icon" />
           <span>Linhas</span>
+        </NavLink>
+      ) : null}
+      {podeHorarios ? (
+        <NavLink
+          to={onibusHorariosRoute!}
+          className={() => `mobile-tab${inHorarios ? ' active' : ''}`}
+        >
+          <TabIcon name="horarios" className="mobile-tab-icon" />
+          <span>Horários</span>
         </NavLink>
       ) : null}
       {onAvisos ? (

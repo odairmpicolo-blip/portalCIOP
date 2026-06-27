@@ -26,6 +26,9 @@ const icons: Record<string, (p: IconProps) => ReactElement> = {
   linhas: (p) => (
     <Svg {...p}><path d="M4 6h16v8H4z" /><path d="M6 18h2" /><path d="M16 18h2" /><circle cx="8" cy="18" r="2" /><circle cx="16" cy="18" r="2" /><path d="M4 10h16" /></Svg>
   ),
+  horarios: (p) => (
+    <Svg {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></Svg>
+  ),
   'folha-lancamento': (p) => (
     <Svg {...p}><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><path d="M9 12h6M9 16h6" /></Svg>
   ),
@@ -37,6 +40,9 @@ const icons: Record<string, (p: IconProps) => ReactElement> = {
   ),
   'onibus-agora': (p) => (
     <Svg {...p}><path d="M4 6h16v8H4z" /><path d="M6 18h2" /><path d="M16 18h2" /><circle cx="8" cy="18" r="2" /><circle cx="16" cy="18" r="2" /><path d="M4 10h16" /></Svg>
+  ),
+  'onibus-horarios': (p) => (
+    <Svg {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></Svg>
   ),
   'criar-relatorio': (p) => (
     <Svg {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M8 13h8M8 17h5" /></Svg>
