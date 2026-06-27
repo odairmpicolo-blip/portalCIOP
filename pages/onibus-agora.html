@@ -142,7 +142,9 @@ body.oa-native-mode .map-filtro-pont.oa-pont-dock .pont-chip{
   padding:8px 6px;font-size:10px;border-radius:10px;
 }
 body.oa-native-mode .map-filtro-pont.oa-pont-dock .pont-chip[data-pont="atrasado"]{color:#fef08a}
-body.oa-native-mode #mapa{min-height:0!important;height:auto!important;flex:1 1 0}
+body.oa-native-mode #mapa{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;flex:none!important}
+body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;order:1;width:100%;overflow:hidden}
+body.oa-native-mode .oa-native-bottom{position:relative!important;flex:0 0 auto;order:2;width:100%;left:auto!important;right:auto!important;bottom:auto!important;top:auto!important;transform:none!important}
 body.oa-native-mode .oa-map-dock{
   display:flex;flex-direction:column;gap:0;width:100%;pointer-events:auto;
 }
@@ -519,27 +521,35 @@ body.oa-native-mode .oa-bottom-pont{
             </div>
             <div class="panel-wrap">
                 <div class="panel" id="panelMapa">
-                    <div id="mapa"></div>
-                    <div class="map-filtro-pont" id="mapFiltroPont" aria-label="Filtro de pontualidade">
-                        <span class="map-filtro-label">Pontualidade</span>
-                        <button type="button" class="pont-chip active" data-pont="adiantado" style="--pont-cor:#D30000">Adiantado</button>
-                        <button type="button" class="pont-chip active" data-pont="no_horario" style="--pont-cor:#8FD400">No horário</button>
-                        <button type="button" class="pont-chip active" data-pont="atrasado" style="--pont-cor:#FFFF00">Atrasado</button>
-                    </div>
-                    <div class="shape-picker" id="shapePicker" hidden>
-                        <div class="shape-picker-head">
-                            <strong id="shapePickerTitle">Trajeto da linha</strong>
-                            <button type="button" class="shape-picker-close" id="shapePickerClose" aria-label="Fechar">×</button>
+                    <div class="oa-map-shell" id="oaMapShell">
+                        <div id="mapa"></div>
+                        <div class="shape-picker" id="shapePicker" hidden>
+                            <div class="shape-picker-head">
+                                <strong id="shapePickerTitle">Trajeto da linha</strong>
+                                <button type="button" class="shape-picker-close" id="shapePickerClose" aria-label="Fechar">×</button>
+                            </div>
+                            <p class="shape-picker-sub" id="shapePickerSub"></p>
+                            <div class="shape-picker-list" id="shapePickerList"></div>
+                            <button type="button" class="btn btn-ghost shape-picker-all" id="shapePickerTodos">Ver todas as vias</button>
                         </div>
-                        <p class="shape-picker-sub" id="shapePickerSub"></p>
-                        <div class="shape-picker-list" id="shapePickerList"></div>
-                        <button type="button" class="btn btn-ghost shape-picker-all" id="shapePickerTodos">Ver todas as vias</button>
+                        <div class="map-tools">
+                            <button type="button" class="btn btn-ghost" id="btnMapaClaro">Mapa claro</button>
+                            <button type="button" class="btn btn-ghost" id="btnMapaBus2">Estilo Bus2</button>
+                            <button type="button" class="btn btn-ghost" id="btnMapaSat">Satélite</button>
+                            <button type="button" class="btn btn-ghost" id="btnCentralizar">Centralizar</button>
+                        </div>
                     </div>
-                    <div class="map-tools">
-                        <button type="button" class="btn btn-ghost" id="btnMapaClaro">Mapa claro</button>
-                        <button type="button" class="btn btn-ghost" id="btnMapaBus2">Estilo Bus2</button>
-                        <button type="button" class="btn btn-ghost" id="btnMapaSat">Satélite</button>
-                        <button type="button" class="btn btn-ghost" id="btnCentralizar">Centralizar</button>
+                    <div class="oa-native-bottom" id="oaNativeBottom" hidden aria-hidden="true">
+                        <div class="oa-map-dock">
+                            <div class="oa-bottom-pont" id="oaBottomPont">
+                                <div class="map-filtro-pont oa-pont-dock" id="mapFiltroPont" aria-label="Filtro de pontualidade">
+                                    <span class="map-filtro-label">Pontualidade</span>
+                                    <button type="button" class="pont-chip active" data-pont="adiantado" style="--pont-cor:#D30000">Adiantado</button>
+                                    <button type="button" class="pont-chip active" data-pont="no_horario" style="--pont-cor:#8FD400">No horário</button>
+                                    <button type="button" class="pont-chip active" data-pont="atrasado" style="--pont-cor:#FFFF00">Atrasado</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="panel" id="panelViagem" hidden>
@@ -578,12 +588,6 @@ body.oa-native-mode .oa-bottom-pont{
         </section>
     </div>
 </main>
-
-<div class="oa-native-bottom" id="oaNativeBottom" hidden aria-hidden="true">
-    <div class="oa-map-dock">
-        <div class="oa-bottom-pont" id="oaBottomPont"></div>
-    </div>
-</div>
 
 <div class="oa-native-floats" id="oaNativeFloats" hidden aria-hidden="true">
     <button type="button" class="oa-fab oa-fab--linhas" id="oaFabLinhas" aria-label="Linhas">
@@ -916,17 +920,47 @@ function setupHorariosEmptyCta(){
     }
 }
 
+function ensureNativeMapLayout(){
+    if (!isNativeEmbedded() || OA_HORARIOS) return;
+    const panel = $("panelMapa");
+    const bottom = $("oaNativeBottom");
+    const mapFiltro = $("mapFiltroPont");
+    const bottomPont = $("oaBottomPont");
+    const floats = $("oaNativeFloats");
+    if (bottom){
+        bottom.removeAttribute("hidden");
+        bottom.setAttribute("aria-hidden", "false");
+    }
+    if (bottomPont && mapFiltro && !bottomPont.contains(mapFiltro)){
+        bottomPont.appendChild(mapFiltro);
+    }
+    mapFiltro?.classList.add("oa-pont-dock");
+    if (panel && bottom && bottom.parentNode !== panel){
+        panel.appendChild(bottom);
+    }
+    const shell = $("oaMapShell");
+    if (shell && floats && floats.parentNode !== shell){
+        shell.appendChild(floats);
+    } else if (panel && floats && floats.parentNode !== panel){
+        panel.appendChild(floats);
+    }
+    $("oaPontToggle")?.remove();
+    scheduleMapResize();
+}
+
 function initNativeAppMode(){
     if (!isNativeEmbedded()) return;
     if (!document.documentElement.classList.contains("native-embedded")) {
         document.documentElement.classList.add("native-embedded");
     }
-    if (document.body.classList.contains("oa-native-mode")) return;
-    document.body.classList.add("oa-native-mode");
-    document.documentElement.style.height = "100%";
-    document.body.style.height = "100%";
+    const firstRun = !document.body.classList.contains("oa-native-mode");
+    if (firstRun){
+        document.body.classList.add("oa-native-mode");
+        document.documentElement.style.height = "100%";
+        document.body.style.height = "100%";
+    }
 
-    ["oaNativeTop", "oaNativeBottom", "oaNativeFloats"].forEach(id => {
+    ["oaNativeTop", "oaNativeFloats"].forEach(id => {
         const el = $(id);
         if (el){
             el.removeAttribute("hidden");
@@ -935,26 +969,13 @@ function initNativeAppMode(){
     });
 
     if (OA_HORARIOS){
-        initNativeHorariosModule();
+        if (firstRun) initNativeHorariosModule();
         return;
     }
 
-    const panel = $("panelMapa");
-    const bottom = $("oaNativeBottom");
-    const bottomPont = $("oaBottomPont");
-    const floats = $("oaNativeFloats");
-    const mapFiltro = $("mapFiltroPont");
-    if (panel && bottom) {
-        const mapa = $("mapa");
-        if (mapa?.parentNode === panel) panel.insertBefore(bottom, mapa.nextSibling);
-        else panel.appendChild(bottom);
-    }
-    if (panel && floats) panel.appendChild(floats);
-    if (bottomPont && mapFiltro){
-        bottomPont.appendChild(mapFiltro);
-        mapFiltro.classList.add("oa-pont-dock");
-    }
-    $("oaPontToggle")?.remove();
+    ensureNativeMapLayout();
+
+    if (!firstRun) return;
 
     $("oaFabHorarios")?.setAttribute("hidden", "");
     $("oaFabLinhas")?.addEventListener("click", abrirSheetLinhas);
@@ -978,7 +999,10 @@ function initNativeAppMode(){
     scheduleMapResize();
 }
 
-window.portalReinitNativeMode = initNativeAppMode;
+window.portalReinitNativeMode = function(){
+    initNativeAppMode();
+    ensureNativeMapLayout();
+};
 
 function iconeOnibusHtml(corLinha, corOnibus, prefixo, linha, extraClass){
     const cl = esc(corCss(corLinha));
@@ -1031,7 +1055,7 @@ function applyOaAppMode(mode){
     if (brand) brand.textContent = "Ônibus Agora";
     if (kicker) kicker.textContent = "Rastreamento · Londrina";
     document.querySelector(".oa-hud-stats")?.removeAttribute("hidden");
-    $("oaNativeBottom")?.removeAttribute("hidden");
+    ensureNativeMapLayout();
     trocarTab("mapa");
     if (!state.mapa) initMapa();
     scheduleMapResize();

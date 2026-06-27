@@ -1424,12 +1424,22 @@ html.native-app.native-embedded body.oa-native-mode #panelMapa {
   overflow: hidden;
 }
 
-html.native-app.native-embedded body.oa-native-mode #mapa {
-  flex: 1 1 0 !important;
+html.native-app.native-embedded body.oa-native-mode .oa-map-shell {
+  flex: 1 1 0;
+  min-height: 0;
+  position: relative;
   order: 1;
+  width: 100%;
+  overflow: hidden;
+}
+
+html.native-app.native-embedded body.oa-native-mode #mapa {
+  position: absolute !important;
+  inset: 0 !important;
   width: 100% !important;
+  height: 100% !important;
   min-height: 0 !important;
-  height: auto !important;
+  flex: none !important;
   filter: saturate(1.12) contrast(1.04) brightness(0.94);
 }
 
@@ -1447,10 +1457,17 @@ html.native-app.native-embedded body.oa-native-mode #panelHorarios:not([hidden])
 }
 
 /* Dock fixo abaixo do mapa, acima da tab bar */
-html.native-app.native-embedded body.oa-native-mode #panelMapa .oa-native-bottom {
-  position: relative;
+html.native-app.native-embedded body.oa-native-mode #panelMapa .oa-native-bottom,
+html.native-app.native-embedded body.oa-native-mode .oa-native-bottom {
+  position: relative !important;
   flex: 0 0 auto;
   order: 2;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  width: auto;
   margin: 4px 10px 2px;
   z-index: 600;
   padding: 8px 10px;
@@ -1461,6 +1478,11 @@ html.native-app.native-embedded body.oa-native-mode #panelMapa .oa-native-bottom
   -webkit-backdrop-filter: var(--app-glass-blur);
   box-shadow: var(--app-glass-shadow);
   pointer-events: auto;
+}
+
+/* Pontualidade nunca flutuando sobre o mapa no app nativo */
+html.native-app.native-embedded body.oa-native-mode #panelMapa > .map-filtro-pont:not(.oa-pont-dock) {
+  display: none !important;
 }
 
 html.native-app.native-embedded body.oa-native-mode .oa-bottom-pont {
@@ -1834,17 +1856,16 @@ html.native-app.native-embedded body.oa-native-mode.oa-horarios-module .oa-sheet
 }
 
 /* FABs discretos dentro do mapa */
+html.native-app.native-embedded body.oa-native-mode .oa-map-shell .oa-native-floats,
 html.native-app.native-embedded body.oa-native-mode #panelMapa .oa-native-floats,
 html.native-app.native-embedded body.oa-native-mode #panelHorarios .oa-native-floats {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: calc(var(--oa-dock-h, 78px) + 8px);
+  inset: 0;
   z-index: 650;
   pointer-events: none;
 }
 
+html.native-app.native-embedded body.oa-native-mode .oa-map-shell .oa-native-floats > *,
 html.native-app.native-embedded body.oa-native-mode #panelMapa .oa-native-floats > *,
 html.native-app.native-embedded body.oa-native-mode #panelHorarios .oa-native-floats > * {
   pointer-events: auto;
