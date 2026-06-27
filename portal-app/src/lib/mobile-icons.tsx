@@ -23,6 +23,9 @@ const icons: Record<string, (p: IconProps) => ReactElement> = {
   bell: (p) => (
     <Svg {...p}><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" /><path d="M10 21a2 2 0 0 0 4 0" /></Svg>
   ),
+  linhas: (p) => (
+    <Svg {...p}><path d="M4 6h16v8H4z" /><path d="M6 18h2" /><path d="M16 18h2" /><circle cx="8" cy="18" r="2" /><circle cx="16" cy="18" r="2" /><path d="M4 10h16" /></Svg>
+  ),
   'folha-lancamento': (p) => (
     <Svg {...p}><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><path d="M9 12h6M9 16h6" /></Svg>
   ),

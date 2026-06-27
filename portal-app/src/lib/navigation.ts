@@ -394,3 +394,7 @@ export function cardRoute(card: PortalCard): string | null {
   if (card.legacyPath) return `/legado${card.legacyPath}`
   return null
 }
+
+export const onibusAgoraCard = portalCards.find((c) => c.id === 'onibus-agora')
+
+export const onibusAgoraRoute = onibusAgoraCard ? cardRoute(onibusAgoraCard) : null

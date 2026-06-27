@@ -5,6 +5,7 @@ import {
   type ReactNode,
 } from 'react'
 import {
+  browserLocalPersistence,
   browserSessionPersistence,
   onAuthStateChanged,
   setPersistence,
@@ -14,6 +15,7 @@ import {
   type User,
 } from 'firebase/auth'
 import { auth } from '../lib/firebase'
+import { isNativeApp } from '../lib/portal-origin'
 import { buscarUsuarioFirestore, mapFirebaseUser } from '../lib/users'
 import type { PortalUser } from '../types/user'
 import { AuthContext } from './auth-context'
@@ -27,9 +29,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true
 
-    void setPersistence(auth, browserSessionPersistence).catch((error) =>
-      console.warn('Sessão Firebase:', error),
-    )
+    void setPersistence(
+      auth,
+      isNativeApp() ? browserLocalPersistence : browserSessionPersistence,
+    ).catch((error) => console.warn('Sessão Firebase:', error))
 
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
       if (!active) return

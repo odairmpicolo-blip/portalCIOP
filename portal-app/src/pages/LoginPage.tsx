@@ -1,7 +1,13 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { portalAsset } from '../lib/portal-origin'
+import { portalAsset, isNativeApp } from '../lib/portal-origin'
+import {
+  canSaveLoginLocally,
+  clearSavedLogin,
+  loadSavedLogin,
+  saveLoginLocally,
+} from '../lib/saved-login'
 
 function mensagemErro(code: string, message: string): string {
   if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
@@ -16,19 +22,27 @@ export function LoginPage() {
   const { login, resetPassword } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const native = isNativeApp()
+  const autoLoginStarted = useRef(false)
+
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
+  const [lembrar, setLembrar] = useState(native && canSaveLoginLocally())
   const [erro, setErro] = useState('')
   const [loading, setLoading] = useState(false)
 
   const destino = (location.state as { from?: string } | null)?.from || '/'
 
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault()
+  async function entrar(emailValue: string, senhaValue: string) {
     setErro('')
     setLoading(true)
     try {
-      await login(email, senha)
+      await login(emailValue, senhaValue)
+      if (native && lembrar && canSaveLoginLocally()) {
+        saveLoginLocally(emailValue, senhaValue)
+      } else if (canSaveLoginLocally()) {
+        clearSavedLogin()
+      }
       navigate(destino, { replace: true })
     } catch (error) {
       const err = error as { code?: string; message?: string }
@@ -36,6 +50,33 @@ export function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  useEffect(() => {
+    if (!canSaveLoginLocally()) return
+    const saved = loadSavedLogin()
+    if (!saved) return
+    setEmail(saved.email)
+    setSenha(saved.senha)
+    setLembrar(true)
+  }, [])
+
+  useEffect(() => {
+    if (!native || !lembrar || !email || !senha || autoLoginStarted.current) return
+    autoLoginStarted.current = true
+    void entrar(email, senha)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-login once on mount
+  }, [native, lembrar, email, senha])
+
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault()
+    autoLoginStarted.current = true
+    await entrar(email, senha)
+  }
+
+  function onLembrarChange(checked: boolean) {
+    setLembrar(checked)
+    if (!checked) clearSavedLogin()
   }
 
   async function onReset() {
@@ -80,11 +121,22 @@ export function LoginPage() {
         <input
           id="senha"
           type="password"
-          autoComplete="current-password"
+          autoComplete={native ? 'current-password' : 'current-password'}
           value={senha}
           onChange={(e) => setSenha(e.target.value)}
           required
         />
+
+        {native ? (
+          <label className="login-remember">
+            <input
+              type="checkbox"
+              checked={lembrar}
+              onChange={(e) => onLembrarChange(e.target.checked)}
+            />
+            <span>Lembrar login neste aparelho</span>
+          </label>
+        ) : null}
 
         {erro ? <p className="login-error" role="alert">{erro}</p> : null}
 
@@ -96,9 +148,11 @@ export function LoginPage() {
           Esqueci minha senha
         </button>
 
-        <a href="/login.html" className="btn-link login-classic-link">
-          Login clássico
-        </a>
+        {!native ? (
+          <a href="/login.html" className="btn-link login-classic-link">
+            Login clássico
+          </a>
+        ) : null}
       </form>
     </div>
   )
