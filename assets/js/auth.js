@@ -7,14 +7,31 @@ import {
   reauthenticateWithCredential,
   updatePassword,
   setPersistence,
-  browserSessionPersistence
+  browserSessionPersistence,
+  browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { app, buscarUsuarioFirestore, normalizarCadastro } from "./portal-firestore.js";
 import { usuarios } from "./usuarios.js";
 import { aplicarSaudacaoHero } from "./portal-saudacao.js";
 
 const auth = getAuth(app);
-const authReady = setPersistence(auth, browserSessionPersistence).catch((error) => {
+
+function isPortalNativeEmbedded() {
+  if (new URLSearchParams(window.location.search).get("embed") === "native-app") return true;
+  try {
+    if (window.self !== window.top && window.parent.document.documentElement.classList.contains("native-app")) {
+      return true;
+    }
+  } catch (_) {}
+  return document.documentElement.classList.contains("native-embedded");
+}
+
+const PORTAL_NATIVE_EMBEDDED = isPortalNativeEmbedded();
+
+const authReady = setPersistence(
+  auth,
+  PORTAL_NATIVE_EMBEDDED ? browserLocalPersistence : browserSessionPersistence
+).catch((error) => {
   console.warn("Nao foi possivel ajustar a sessao do portal:", error);
 });
 
@@ -128,6 +145,21 @@ function comTempoLimite(promise, ms, mensagem) {
 function portalPath(file) {
   const inPages = window.location.pathname.includes("/pages/");
   return inPages ? "../" + file : file;
+}
+
+function negarAcessoPagina() {
+  if (PORTAL_NATIVE_EMBEDDED) {
+    liberarHtmlValidado();
+    ocultarCarregando();
+    const main = document.querySelector(".shell") || document.body;
+    const aviso = document.createElement("div");
+    aviso.className = "empty";
+    aviso.innerHTML = "<h3>Acesso restrito</h3><p>Seu usuário não tem permissão para este módulo no app.</p>";
+    main.prepend(aviso);
+    return false;
+  }
+  window.location.href = portalPath("index.html");
+  return false;
 }
 
 function modernizarSessaoUsuario() {
@@ -463,8 +495,7 @@ function aplicarPermissoes(cadastro) {
   const perfilAtual = normalizarPerfil(cadastro.perfil || "Usuario");
   const perfisBloqueadosPagina = listaAtributo(document.body?.dataset.excluirPerfis);
   if (perfisBloqueadosPagina.includes(perfilAtual)) {
-    window.location.href = portalPath("index.html");
-    return false;
+    return negarAcessoPagina();
   }
 
   const perfisObrigatorios = listaAtributo(document.body?.dataset.requirePerfis);
@@ -472,14 +503,12 @@ function aplicarPermissoes(cadastro) {
   const email = String(cadastro.email || "").toLowerCase();
   if (document.body?.dataset.requireSomenteUsuarios === "true" && usuariosObrigatorios.length) {
     if (!usuariosObrigatorios.includes(email)) {
-      window.location.href = portalPath("index.html");
-      return false;
+      return negarAcessoPagina();
     }
   } else if ((perfisObrigatorios.length || usuariosObrigatorios.length) && !isAdministrador(cadastro)) {
     const permitido = perfisObrigatorios.includes(perfilAtual) || usuariosObrigatorios.includes(email);
     if (!permitido) {
-      window.location.href = portalPath("index.html");
-      return false;
+      return negarAcessoPagina();
     }
   }
   return true;
@@ -491,6 +520,10 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
   try {
     if (!user) {
       if (!pagina.endsWith("/login.html") && !pagina.endsWith("login.html")) {
+        if (PORTAL_NATIVE_EMBEDDED) {
+          mostrarCarregando("Aguardando sessão…");
+          return;
+        }
         ocultarCarregando();
         window.location.href = portalPath("login.html");
       } else {
@@ -532,6 +565,12 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
     }
   } catch (error) {
     console.error("Erro ao validar usuario:", error);
+    if (PORTAL_NATIVE_EMBEDDED) {
+      liberarHtmlValidado();
+      ocultarCarregando();
+      alert("Não foi possível validar seu acesso neste módulo. Volte ao Início e tente novamente.");
+      return;
+    }
     alert("Nao foi possivel validar seu acesso. Entre novamente no portal.");
     await signOut(auth).catch(() => {});
     liberarHtmlValidado();

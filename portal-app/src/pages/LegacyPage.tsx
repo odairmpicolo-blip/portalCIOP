@@ -4,12 +4,20 @@ import { injectLegacyNativeFrame } from '../lib/native-shell'
 import { useNativeApp } from '../hooks/useNativeApp'
 import { legacyUrl } from '../lib/navigation'
 
+function withNativeEmbed(url: string): string {
+  const sep = url.includes('?') ? '&' : '?'
+  return `${url}${sep}embed=native-app`
+}
+
 export function LegacyPage() {
   const params = useParams()
   const path = params['*'] || ''
-  const src = useMemo(() => legacyUrl(`/${path}`), [path])
   const native = useNativeApp()
   const tracking = path.includes('onibus-agora') || path.includes('onibus-horarios')
+  const src = useMemo(() => {
+    const url = legacyUrl(`/${path}`)
+    return native && tracking ? withNativeEmbed(url) : url
+  }, [path, native, tracking])
   const frameRef = useRef<HTMLIFrameElement>(null)
 
   const syncNativeFrame = useCallback((frame: HTMLIFrameElement | null) => {
@@ -25,12 +33,10 @@ export function LegacyPage() {
   useEffect(() => {
     if (!native) return
     syncNativeFrame(frameRef.current)
-    const t1 = window.setTimeout(() => syncNativeFrame(frameRef.current), 80)
-    const t2 = window.setTimeout(() => syncNativeFrame(frameRef.current), 400)
-    return () => {
-      window.clearTimeout(t1)
-      window.clearTimeout(t2)
-    }
+    const timers = [80, 400, 1200, 2500].map((ms) =>
+      window.setTimeout(() => syncNativeFrame(frameRef.current), ms),
+    )
+    return () => timers.forEach((id) => window.clearTimeout(id))
   }, [native, src, syncNativeFrame])
 
   const onFrameLoad = useCallback(
@@ -59,7 +65,7 @@ export function LegacyPage() {
         title="Módulo legado do portal"
         src={src}
         className="legacy-frame"
-        loading="lazy"
+        loading="eager"
         onLoad={onFrameLoad}
       />
     </section>

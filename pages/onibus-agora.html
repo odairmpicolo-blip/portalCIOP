@@ -414,6 +414,30 @@ body.oa-native-mode .map-filtro-pont.oa-pont-stack .pont-chip[data-pont="atrasad
 <link rel="stylesheet" href="../assets/css/portal-brand.css">
 <link rel="stylesheet" href="../assets/css/portal-header.css">
 <link rel="stylesheet" href="../assets/css/portal-session.css">
+<script>
+(function () {
+  try {
+    if (new URLSearchParams(location.search).get("embed") === "native-app") {
+      document.documentElement.classList.add("native-app", "native-embedded");
+    }
+    if (window.self !== window.top && window.parent.document.documentElement.classList.contains("native-app")) {
+      document.documentElement.classList.add("native-app", "native-embedded");
+    }
+  } catch (e) {}
+  document.addEventListener("DOMContentLoaded", function () {
+    if (!document.documentElement.classList.contains("native-embedded")) return;
+    var tries = 0;
+    var timer = window.setInterval(function () {
+      if (typeof window.portalReinitNativeMode === "function") {
+        window.portalReinitNativeMode();
+        window.clearInterval(timer);
+      } else if (++tries > 50) {
+        window.clearInterval(timer);
+      }
+    }, 100);
+  }, { once: true });
+})();
+</script>
 <script src="../assets/js/loading.js"></script>
 <script type="module" src="../assets/js/auth.js"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
@@ -968,6 +992,8 @@ function initNativeAppMode(){
     requestAnimationFrame(() => state.mapa?.invalidateSize());
     syncNativeHud();
 }
+
+window.portalReinitNativeMode = initNativeAppMode;
 
 function iconeOnibusHtml(corLinha, corOnibus, prefixo, linha, extraClass){
     const cl = esc(corCss(corLinha));
@@ -1999,7 +2025,6 @@ function bind(){
 }
 
 function iniciar(){
-    window.portalReinitNativeMode = initNativeAppMode;
     initNativeAppMode();
     bind();
     aplicarModoHorariosWeb();
