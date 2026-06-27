@@ -683,6 +683,28 @@ html.native-app .app-main:has(.legacy-page--tracking) {
   overflow: hidden;
 }
 
+html.native-app .app-main:has(.legacy-page--tracking) .app-header {
+  padding-top: calc(2px + var(--safe-top));
+  padding-bottom: 3px;
+  min-height: 0;
+  gap: 4px;
+}
+
+html.native-app .app-main:has(.legacy-page--tracking) .header-brand-mobile .portal-brand-art {
+  height: 20px;
+}
+
+html.native-app .app-main:has(.legacy-page--tracking) .header-brand-mobile .portal-brand-meta {
+  font-size: 0.42rem;
+  line-height: 1.1;
+  margin-top: 1px;
+}
+
+html.native-app .app-main:has(.legacy-page--tracking) .session-chip-modern {
+  transform: scale(0.92);
+  transform-origin: right center;
+}
+
 html.native-app .legacy-page--native.legacy-page--tracking {
   flex: 1;
   min-height: 0;
@@ -719,19 +741,19 @@ html.native-app.native-embedded body.oa-page.oa-native-mode {
 
 html.native-app.native-embedded body.oa-page.oa-native-mode {
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto 1fr;
   margin: 0;
   background: #060b14 !important;
   color: #eef2f8;
-  --oa-bottom-h: 92px;
+  --oa-dock-h: 38px;
 }
 
 html.native-app.native-embedded body.oa-native-mode .oa-native-top {
   grid-row: 1;
   z-index: 20;
-  padding: 6px 10px 8px;
+  padding: 3px 8px 4px;
   background: rgba(6, 11, 20, 0.97);
-  border-bottom: 1px solid rgba(96, 165, 250, 0.18);
+  border-bottom: 1px solid rgba(96, 165, 250, 0.15);
 }
 
 html.native-app.native-embedded body.oa-native-mode .shell {
@@ -790,11 +812,7 @@ html.native-app.native-embedded body.oa-native-mode #panelMapa {
   border: 0;
   border-radius: 0;
   z-index: 1;
-}
-
-html.native-app.native-embedded body.oa-native-mode #panelMapa[hidden],
-html.native-app.native-embedded body.oa-native-mode #panelViagem[hidden] {
-  display: none !important;
+  overflow: hidden;
 }
 
 html.native-app.native-embedded body.oa-native-mode #mapa {
@@ -805,78 +823,91 @@ html.native-app.native-embedded body.oa-native-mode #mapa {
   filter: saturate(1.12) contrast(1.04) brightness(0.94);
 }
 
-html.native-app.native-embedded body.oa-native-mode .oa-native-bottom {
-  grid-row: 3;
-  z-index: 20;
-  padding: 6px 10px 8px;
-  background: rgba(6, 11, 20, 0.97);
-  border-top: 1px solid rgba(96, 165, 250, 0.18);
+/* Dock dentro do mapa: pontualidade + veículo */
+html.native-app.native-embedded body.oa-native-mode #panelMapa .oa-native-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 600;
+  padding: 0 6px 5px;
+  background: linear-gradient(to top, rgba(6, 11, 20, 0.94) 55%, transparent);
+  border: 0;
+  pointer-events: none;
+}
+
+html.native-app.native-embedded body.oa-native-mode .oa-map-dock {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  pointer-events: auto;
+}
+
+html.native-app.native-embedded body.oa-native-mode .oa-bottom-pont {
+  flex: 1;
+  min-width: 0;
 }
 
 html.native-app.native-embedded body.oa-native-mode .oa-bottom-pont .map-filtro-pont {
   position: static;
-  left: auto;
-  right: auto;
-  top: auto;
-  bottom: auto;
-  max-width: none;
   width: 100%;
-  margin: 0 0 6px;
-  padding: 4px 6px;
-  gap: 4px;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  backdrop-filter: none;
+  margin: 0;
+  padding: 3px 5px;
+  gap: 3px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  background: rgba(8, 14, 26, 0.82);
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+html.native-app.native-embedded body.oa-native-mode .oa-bottom-pont .map-filtro-pont::-webkit-scrollbar {
+  display: none;
+}
+
+html.native-app.native-embedded body.oa-native-mode .oa-veiculo-quick {
+  flex: 0 0 58px;
+  width: 58px;
+  height: 28px;
+  border: 1px solid rgba(96, 165, 250, 0.22);
+  border-radius: 9px;
+  padding: 0 7px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(4, 8, 16, 0.82);
+  color: #eef2f8;
+}
+
+html.native-app.native-embedded body.oa-native-mode .oa-veiculo-quick:focus {
+  outline: none;
+  border-color: #3b82f6;
+  flex: 0 0 72px;
+  width: 72px;
+}
+
+html.native-app.native-embedded body.oa-native-mode #panelMapa[hidden],
+html.native-app.native-embedded body.oa-native-mode #panelViagem[hidden] {
+  display: none !important;
 }
 
 html.native-app.native-embedded body.oa-native-mode .map-filtro-label {
-  font-size: 8px;
+  font-size: 7px;
   margin-right: 0;
   color: #64748b;
+  flex-shrink: 0;
 }
 
 html.native-app.native-embedded body.oa-native-mode .pont-chip {
-  padding: 4px 8px;
-  font-size: 10px;
+  padding: 3px 7px;
+  font-size: 9px;
   color: #eef2f8;
   background: rgba(12, 22, 40, 0.85);
   border-color: rgba(96, 165, 250, 0.2);
-}
-
-html.native-app.native-embedded body.oa-native-mode .oa-bottom-search {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-
-html.native-app.native-embedded body.oa-native-mode .oa-search-field label {
-  display: block;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #64748b;
-  margin-bottom: 3px;
-}
-
-html.native-app.native-embedded body.oa-native-mode .oa-search-field input {
-  width: 100%;
-  height: 34px;
-  border: 1px solid rgba(96, 165, 250, 0.22);
-  border-radius: 9px;
-  padding: 0 9px;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  background: rgba(4, 8, 16, 0.65);
-  color: #eef2f8;
-}
-
-html.native-app.native-embedded body.oa-native-mode .oa-search-field input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.22);
+  flex-shrink: 0;
 }
 
 html.native-app.native-embedded body.oa-native-mode .map-tools {
@@ -896,7 +927,7 @@ html.native-app.native-embedded body.oa-native-mode .map-tools .btn {
 }
 
 html.native-app.native-embedded body.oa-native-mode .shape-picker {
-  bottom: 8px;
+  bottom: calc(var(--oa-dock-h, 38px) + 6px);
   left: 8px;
   background: rgba(8, 14, 26, 0.94);
   border-color: rgba(96, 165, 250, 0.25);
@@ -971,48 +1002,50 @@ html.native-app.native-embedded body.oa-native-mode.oa-linhas-open .oa-backdrop 
   pointer-events: auto;
 }
 
-/* HUD topo */
+/* HUD topo compacto */
 .oa-hud {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
+  gap: 6px;
+  margin-bottom: 3px;
 }
 
 .oa-hud-brand {
   display: grid;
-  gap: 1px;
+  gap: 0;
   min-width: 0;
 }
 
 .oa-hud-kicker {
-  font-size: 9px;
+  font-size: 7px;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #06b6d4;
+  line-height: 1.2;
 }
 
 .oa-hud-brand strong {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: #fff;
+  line-height: 1.15;
 }
 
 .oa-hud-live {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 9px;
+  gap: 5px;
+  padding: 3px 7px;
   border-radius: 999px;
   background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(96, 165, 250, 0.22);
-  font-size: 9px;
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  font-size: 8px;
   font-weight: 700;
   color: #94a3b8;
-  max-width: 48vw;
+  max-width: 44vw;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1041,39 +1074,52 @@ html.native-app.native-embedded body.oa-native-mode.oa-linhas-open .oa-backdrop 
 .oa-hud-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
+  gap: 4px;
 }
 
 .oa-hud-stat {
-  padding: 6px 8px;
-  border-radius: 10px;
-  text-align: center;
-  background: rgba(12, 22, 40, 0.75);
-  border: 1px solid rgba(96, 165, 250, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 3px 5px;
+  border-radius: 8px;
+  background: rgba(12, 22, 40, 0.7);
+  border: 1px solid rgba(96, 165, 250, 0.12);
 }
 
 .oa-hud-stat b {
-  display: block;
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 800;
   color: #fff;
   letter-spacing: -0.02em;
-  line-height: 1.1;
+  line-height: 1;
 }
 
 .oa-hud-stat span {
-  font-size: 8px;
+  font-size: 7px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: #64748b;
 }
 
-/* FABs discretos sobre o mapa */
-.oa-native-floats {
-  position: fixed;
+/* FABs discretos dentro do mapa */
+html.native-app.native-embedded body.oa-native-mode #panelMapa .oa-native-floats {
+  position: absolute;
   inset: 0;
-  z-index: 70;
+  z-index: 650;
+  pointer-events: none;
+}
+
+html.native-app.native-embedded body.oa-native-mode #panelMapa .oa-native-floats > * {
+  pointer-events: auto;
+}
+
+.oa-native-floats {
+  position: absolute;
+  inset: 0;
+  z-index: 650;
   pointer-events: none;
 }
 
@@ -1082,19 +1128,19 @@ html.native-app.native-embedded body.oa-native-mode.oa-linhas-open .oa-backdrop 
 }
 
 .oa-fab {
-  position: fixed;
-  z-index: 75;
+  position: absolute;
+  z-index: 660;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: 0;
   border-radius: 50%;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
   transition: transform 0.15s ease, opacity 0.15s ease;
-  opacity: 0.88;
+  opacity: 0.9;
 }
 
 .oa-fab:active {
@@ -1112,17 +1158,17 @@ html.native-app.native-embedded body.oa-native-mode.oa-linhas-open .oa-backdrop 
 }
 
 .oa-fab--horarios {
-  right: 10px;
-  bottom: calc(var(--oa-bottom-h, 92px) + 10px);
+  right: 8px;
+  bottom: calc(var(--oa-dock-h, 38px) + 6px);
   background: linear-gradient(135deg, rgba(255, 107, 0, 0.92), rgba(255, 159, 77, 0.92));
   color: #fff;
 }
 
 .oa-fab--linhas {
-  left: 10px;
-  bottom: calc(var(--oa-bottom-h, 92px) + 10px);
-  background: rgba(8, 14, 26, 0.82);
-  border: 1px solid rgba(96, 165, 250, 0.3);
+  left: 8px;
+  bottom: calc(var(--oa-dock-h, 38px) + 6px);
+  background: rgba(8, 14, 26, 0.78);
+  border: 1px solid rgba(96, 165, 250, 0.28);
   color: #eef2f8;
   backdrop-filter: blur(10px);
 }
@@ -1232,8 +1278,8 @@ html.native-app.native-embedded body.oa-native-mode.oa-linhas-open .oa-backdrop 
   }
 
   html.native-app.native-embedded body.oa-native-mode .oa-native-top,
-  html.native-app.native-embedded body.oa-native-mode .oa-native-bottom {
-    background: rgba(255, 255, 255, 0.97);
+  html.native-app.native-embedded body.oa-native-mode .oa-map-dock .map-filtro-pont {
+    background: rgba(255, 255, 255, 0.95);
     border-color: rgba(6, 36, 92, 0.1);
   }
 
@@ -1246,13 +1292,13 @@ html.native-app.native-embedded body.oa-native-mode.oa-linhas-open .oa-backdrop 
     background: rgba(248, 250, 252, 0.95);
   }
 
-  .oa-search-field input {
+  .oa-veiculo-quick {
     background: #f8fafc;
     color: #0f172a;
   }
 
   .oa-fab--linhas {
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(255, 255, 255, 0.88);
     color: #06245c;
   }
 

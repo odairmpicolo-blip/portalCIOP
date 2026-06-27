@@ -535,16 +535,9 @@ body.oa-page{
 </main>
 
 <div class="oa-native-bottom" id="oaNativeBottom" hidden aria-hidden="true">
-    <div class="oa-bottom-pont" id="oaBottomPont"></div>
-    <div class="oa-bottom-search">
-        <div class="oa-search-field">
-            <label for="oaBuscaLinhaNative">Linha</label>
-            <input id="oaBuscaLinhaNative" type="search" placeholder="301…" autocomplete="off">
-        </div>
-        <div class="oa-search-field">
-            <label for="oaBuscaVeiculoNative">Veículo</label>
-            <input id="oaBuscaVeiculoNative" type="search" placeholder="3173" autocomplete="off">
-        </div>
+    <div class="oa-map-dock">
+        <div class="oa-bottom-pont" id="oaBottomPont"></div>
+        <input id="oaBuscaVeiculoNative" class="oa-veiculo-quick" type="search" placeholder="Veíc." autocomplete="off" aria-label="Buscar veículo">
     </div>
 </div>
 
@@ -819,22 +812,20 @@ function initNativeAppMode(){
         }
     });
 
-    const nl = $("oaBuscaLinhaNative");
     const nv = $("oaBuscaVeiculoNative");
-    const bl = $("buscaLinha");
     const bv = $("buscaVeiculo");
-    if (nl && bl){
-        nl.addEventListener("input", () => {
-            bl.value = nl.value;
-            bl.dispatchEvent(new Event("input", { bubbles: true }));
-        });
-    }
     if (nv && bv){
         nv.addEventListener("input", () => {
             bv.value = nv.value;
             bv.dispatchEvent(new Event("input", { bubbles: true }));
         });
     }
+
+    const panel = $("panelMapa");
+    const bottom = $("oaNativeBottom");
+    const floats = $("oaNativeFloats");
+    if (panel && bottom) panel.appendChild(bottom);
+    if (panel && floats) panel.appendChild(floats);
 
     const pontSlot = $("oaBottomPont");
     const mapFiltro = $("mapFiltroPont");
