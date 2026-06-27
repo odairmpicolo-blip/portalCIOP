@@ -2,7 +2,15 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { portalAsset } from '../lib/portal-origin'
 
-export function Header({ onMenuToggle, native = false }: { onMenuToggle: () => void; native?: boolean }) {
+export function Header({
+  onMenuToggle,
+  native = false,
+  home = false,
+}: {
+  onMenuToggle: () => void
+  native?: boolean
+  home?: boolean
+}) {
   const { user, logout } = useAuth()
   const brandSrc = portalAsset('/assets/img/titulo-portal-ciop.png')
 
@@ -24,7 +32,7 @@ export function Header({ onMenuToggle, native = false }: { onMenuToggle: () => v
         </div>
       </div>
 
-      <div className="header-brand-mobile portal-brand-mark" aria-hidden="true">
+      <div className={`header-brand-mobile portal-brand-mark${home ? ' header-brand-mobile--hidden' : ''}`} aria-hidden="true">
         <img className="portal-brand-art" src={brandSrc} alt="" />
         <span className="portal-brand-meta">TCGL · Operações</span>
       </div>

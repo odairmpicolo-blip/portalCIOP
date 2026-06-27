@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { Header } from './Header'
 import { MobileTabBar } from './MobileTabBar'
 import { NoticeModal } from './NoticeModal'
@@ -11,6 +11,7 @@ import { useAuth } from '../hooks/useAuth'
 
 export function AppLayout() {
   const { user } = useAuth()
+  const { pathname } = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [noticeModalOpen, setNoticeModalOpen] = useState(false)
   const [noticeVersion, setNoticeVersion] = useState(0)
@@ -39,6 +40,11 @@ export function AppLayout() {
     setSidebarOpen((open) => !open)
   }
 
+  const inHorarios = pathname.includes('onibus-horarios')
+  const inOnibus = pathname.includes('onibus-agora') && !inHorarios
+  const tracking = native && (inOnibus || inHorarios)
+  const inHome = pathname === '/' || pathname === '/modulos'
+
   return (
     <PortalShellContext.Provider value={{ noticeVersion }}>
       <div className={`app-shell${native ? ' app-shell--native' : ''}`}>
@@ -47,8 +53,10 @@ export function AppLayout() {
           onClose={() => setSidebarOpen(false)}
           onAvisos={podeAvisos ? abrirAvisos : undefined}
         />
-        <div className="app-main">
-          <Header onMenuToggle={toggleSidebar} native={native} />
+        <div
+          className={`app-main${tracking ? ' app-main--tracking' : ''}${native && inHome ? ' app-main--home' : ''}`}
+        >
+          {tracking ? null : <Header onMenuToggle={toggleSidebar} native={native} home={native && inHome} />}
           <main className="app-content">
             <Outlet />
           </main>

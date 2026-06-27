@@ -27,6 +27,10 @@ export function MobileTabBar({ sidebarOpen, onMenuToggle }: MobileTabBarProps) {
 
   return (
     <nav className="mobile-tab-bar" aria-label="Navegação principal">
+      <NavLink to="/" className={() => `mobile-tab${inInicio ? ' active' : ''}`} end>
+        <TabIcon name="home" className="mobile-tab-icon" />
+        <span>Início</span>
+      </NavLink>
       {podeOnibus ? (
         <NavLink to={onibusAgoraRoute!} className={() => `mobile-tab${inOnibus ? ' active' : ''}`}>
           <TabIcon name="onibus" className="mobile-tab-icon" />
@@ -39,10 +43,6 @@ export function MobileTabBar({ sidebarOpen, onMenuToggle }: MobileTabBarProps) {
           <span>Horários</span>
         </NavLink>
       ) : null}
-      <NavLink to="/" className={() => `mobile-tab${inInicio ? ' active' : ''}`} end>
-        <TabIcon name="home" className="mobile-tab-icon" />
-        <span>Início</span>
-      </NavLink>
       <button type="button" className={`mobile-tab${sidebarOpen ? ' active' : ''}`} onClick={onMenuToggle}>
         <TabIcon name="menu" className="mobile-tab-icon" />
         <span>Links</span>

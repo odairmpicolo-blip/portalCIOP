@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useBiometryLabels } from '../hooks/useBiometryLabels'
+import { promptBiometric } from '../lib/biometric-auth'
 import { portalAsset, isNativeApp } from '../lib/portal-origin'
 import {
   canSaveLoginLocally,
@@ -8,6 +10,7 @@ import {
   loadSavedLogin,
   saveLoginLocally,
 } from '../lib/saved-login'
+import { markBiometricSatisfied } from '../lib/biometric-session'
 
 function mensagemErro(code: string, message: string): string {
   if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
@@ -23,11 +26,12 @@ export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const native = isNativeApp()
-  const autoLoginStarted = useRef(false)
+  const { labels, available: biometriaDisponivel } = useBiometryLabels()
 
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
-  const [lembrar, setLembrar] = useState(native && canSaveLoginLocally())
+  const [usarBiometria, setUsarBiometria] = useState(false)
+  const [temLoginSalvo, setTemLoginSalvo] = useState(false)
   const [erro, setErro] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -38,11 +42,12 @@ export function LoginPage() {
     setLoading(true)
     try {
       await login(emailValue, senhaValue)
-      if (native && lembrar && canSaveLoginLocally()) {
+      if (native && usarBiometria && canSaveLoginLocally()) {
         saveLoginLocally(emailValue, senhaValue)
       } else if (canSaveLoginLocally()) {
         clearSavedLogin()
       }
+      markBiometricSatisfied()
       navigate(destino, { replace: true })
     } catch (error) {
       const err = error as { code?: string; message?: string }
@@ -52,30 +57,34 @@ export function LoginPage() {
     }
   }
 
+  async function entrarComBiometria() {
+    const saved = loadSavedLogin()
+    if (!saved) {
+      setErro('Nenhum acesso salvo neste aparelho. Entre com e-mail e senha.')
+      return
+    }
+    setErro('')
+    const ok = await promptBiometric(labels.promptLogin)
+    if (!ok) return
+    await entrar(saved.email, saved.senha)
+  }
+
   useEffect(() => {
     if (!canSaveLoginLocally()) return
     const saved = loadSavedLogin()
     if (!saved) return
     setEmail(saved.email)
-    setSenha(saved.senha)
-    setLembrar(true)
+    setUsarBiometria(true)
+    setTemLoginSalvo(true)
   }, [])
-
-  useEffect(() => {
-    if (!native || !lembrar || !email || !senha || autoLoginStarted.current) return
-    autoLoginStarted.current = true
-    void entrar(email, senha)
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-login once on mount
-  }, [native, lembrar, email, senha])
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
-    autoLoginStarted.current = true
     await entrar(email, senha)
   }
 
-  function onLembrarChange(checked: boolean) {
-    setLembrar(checked)
+  function onBiometriaChange(checked: boolean) {
+    setUsarBiometria(checked)
     if (!checked) clearSavedLogin()
   }
 
@@ -106,6 +115,17 @@ export function LoginPage() {
           <span className="portal-brand-meta">TCGL · Operações</span>
         </div>
 
+        {native && temLoginSalvo && biometriaDisponivel ? (
+          <button
+            type="button"
+            className="btn-primary login-faceid-btn"
+            disabled={loading}
+            onClick={() => void entrarComBiometria()}
+          >
+            {loading ? 'Entrando…' : labels.loginButton}
+          </button>
+        ) : null}
+
         <label htmlFor="email">E-mail</label>
         <input
           id="email"
@@ -121,27 +141,27 @@ export function LoginPage() {
         <input
           id="senha"
           type="password"
-          autoComplete={native ? 'current-password' : 'current-password'}
+          autoComplete="current-password"
           value={senha}
           onChange={(e) => setSenha(e.target.value)}
           required
         />
 
-        {native ? (
+        {native && biometriaDisponivel ? (
           <label className="login-remember">
             <input
               type="checkbox"
-              checked={lembrar}
-              onChange={(e) => onLembrarChange(e.target.checked)}
+              checked={usarBiometria}
+              onChange={(e) => onBiometriaChange(e.target.checked)}
             />
-            <span>Lembrar login neste aparelho</span>
+            <span>{labels.saveAccessLabel}</span>
           </label>
         ) : null}
 
         {erro ? <p className="login-error" role="alert">{erro}</p> : null}
 
         <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? 'Entrando…' : 'Entrar'}
+          {loading ? 'Entrando…' : 'Entrar com senha'}
         </button>
 
         <button type="button" className="btn-link" onClick={() => void onReset()}>
