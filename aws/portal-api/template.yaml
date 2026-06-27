@@ -1,0 +1,135 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Portal CIOP — API DSQL (liberação, snapshots, terminais)
+
+Parameters:
+  DsqlClusterId:
+    Type: String
+    Default: ort34httzig7iktrneb4ytcy5u
+  Bus2ProxyApiId:
+    Type: String
+    Default: 62wvo4yk9b
+    Description: API Gateway HTTP existente (portal-ciop-bus2-proxy)
+  CorsOrigins:
+    Type: String
+    Default: "https://www.portalciop.com.br,https://portalciop.com.br,https://odairmpicolo-blip.github.io,http://localhost:5173,http://127.0.0.1:5500"
+
+Resources:
+  PortalApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: portal-ciop-api-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: portal-api-dsql
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: dsql:DbConnectAdmin
+                Resource: !Sub "arn:aws:dsql:${AWS::Region}:${AWS::AccountId}:cluster/${DsqlClusterId}"
+
+  PortalApiFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: portal-ciop-api
+      Description: Portal CIOP API — liberação, snapshots, terminais (Aurora DSQL)
+      Runtime: nodejs20.x
+      Handler: index.handler
+      Role: !GetAtt PortalApiRole.Arn
+      Timeout: 120
+      MemorySize: 1024
+      Environment:
+        Variables:
+          DSQL_CLUSTER_ID: !Ref DsqlClusterId
+          DSQL_REGION: !Ref AWS::Region
+          DSQL_USER: admin
+          FIREBASE_PROJECT_ID: portal-ciop
+          CORS_ORIGINS: !Ref CorsOrigins
+          LIBERACAO_API_URL: "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec"
+      Code:
+        ZipFile: |
+          export const handler = async () => ({
+            statusCode: 503,
+            body: JSON.stringify({ ok: false, erro: "Deploy com scripts/deploy-portal-api.sh" })
+          });
+
+  PortalApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref Bus2ProxyApiId
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PortalApiFunction.Arn}/invocations
+      PayloadFormatVersion: "2.0"
+
+  PortalApiRouteLiberacao:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApiId
+      RouteKey: ANY /liberacao
+      Target: !Sub integrations/${PortalApiIntegration}
+
+  PortalApiRouteLiberacaoProxy:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApiId
+      RouteKey: "ANY /liberacao/{proxy+}"
+      Target: !Sub integrations/${PortalApiIntegration}
+
+  PortalApiRouteSnapshots:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApiId
+      RouteKey: ANY /snapshots
+      Target: !Sub integrations/${PortalApiIntegration}
+
+  PortalApiRouteSnapshotsProxy:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApiId
+      RouteKey: "ANY /snapshots/{proxy+}"
+      Target: !Sub integrations/${PortalApiIntegration}
+
+  PortalApiRouteTerminais:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApiId
+      RouteKey: ANY /terminais
+      Target: !Sub integrations/${PortalApiIntegration}
+
+  PortalApiRouteTerminaisProxy:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApiId
+      RouteKey: "ANY /terminais/{proxy+}"
+      Target: !Sub integrations/${PortalApiIntegration}
+
+  PortalApiRouteDbHealth:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApiId
+      RouteKey: GET /db-health
+      Target: !Sub integrations/${PortalApiIntegration}
+
+  PortalApiPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PortalApiFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${Bus2ProxyApiId}/*/*
+
+Outputs:
+  FunctionName:
+    Value: !Ref PortalApiFunction
+  ApiUrl:
+    Value: !Sub https://${Bus2ProxyApiId}.execute-api.${AWS::Region}.amazonaws.com
+  DbHealthUrl:
+    Value: !Sub https://${Bus2ProxyApiId}.execute-api.${AWS::Region}.amazonaws.com/db-health
