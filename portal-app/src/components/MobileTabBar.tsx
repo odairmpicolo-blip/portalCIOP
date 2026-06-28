@@ -20,6 +20,7 @@ export function MobileTabBar({ sidebarOpen, onMenuToggle }: MobileTabBarProps) {
     pathname === '/' ||
     pathname === '/modulos' ||
     (inLegado && !inOnibus && !inHorarios)
+  const routeTabActive = !sidebarOpen
 
   const podeBus2 = onibusAgoraCard && usuarioPodeAcessar(user, onibusAgoraCard.access)
   const podeOnibus = podeBus2 && onibusAgoraRoute
@@ -28,18 +29,18 @@ export function MobileTabBar({ sidebarOpen, onMenuToggle }: MobileTabBarProps) {
 
   return (
     <nav className="mobile-tab-bar" aria-label="Navegação principal">
-      <NavLink to="/" className={() => `mobile-tab${inInicio ? ' active' : ''}`} end>
+      <NavLink to="/" className={() => `mobile-tab${routeTabActive && inInicio ? ' active' : ''}`} end>
         <TabIcon name="home" className="mobile-tab-icon" />
         <span>Início</span>
       </NavLink>
       {podeOnibus ? (
-        <NavLink to={onibusAgoraRoute!} className={() => `mobile-tab${inOnibus ? ' active' : ''}`}>
+        <NavLink to={onibusAgoraRoute!} className={() => `mobile-tab${routeTabActive && inOnibus ? ' active' : ''}`}>
           <TabIcon name="onibus" className="mobile-tab-icon" />
           <span>Ônibus</span>
         </NavLink>
       ) : null}
       {podeHorarios ? (
-        <NavLink to={onibusHorariosRoute!} className={() => `mobile-tab${inHorarios ? ' active' : ''}`}>
+        <NavLink to={onibusHorariosRoute!} className={() => `mobile-tab${routeTabActive && inHorarios ? ' active' : ''}`}>
           <TabIcon name="horarios" className="mobile-tab-icon" />
           <span>Horários</span>
         </NavLink>
@@ -48,7 +49,7 @@ export function MobileTabBar({ sidebarOpen, onMenuToggle }: MobileTabBarProps) {
         <TabIcon name="menu" className="mobile-tab-icon" />
         <span>Links</span>
       </button>
-      <NavLink to="/ajustes" className={() => `mobile-tab${inAjustes ? ' active' : ''}`}>
+      <NavLink to="/ajustes" className={() => `mobile-tab${routeTabActive && inAjustes ? ' active' : ''}`}>
         <TabIcon name="settings" className="mobile-tab-icon" />
         <span>Ajustes</span>
       </NavLink>
