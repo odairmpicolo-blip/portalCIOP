@@ -168,7 +168,7 @@ export const portalCards: PortalCard[] = [
     description: 'Consulta web das tabelas por linha (úteis, sábado e domingo).',
     action: 'Acessar',
     theme: 'teal',
-    legacyPath: '/pages/tabelas-horarias.html',
+    legacyPath: '/pages/onibus-horarios.html',
     section: 'operacao',
   },
   {
