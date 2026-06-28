@@ -7,11 +7,14 @@ import {
 import {
   browserLocalPersistence,
   browserSessionPersistence,
+  EmailAuthProvider,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   setPersistence,
   signInWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
+  updatePassword,
   type User,
 } from 'firebase/auth'
 import { auth } from '../lib/firebase'
@@ -83,6 +86,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async resetPassword(email) {
         await sendPasswordResetEmail(auth, email.trim())
+      },
+      async changePassword(senhaAtual, novaSenha) {
+        const currentUser = auth.currentUser
+        if (!currentUser?.email) {
+          throw new Error('Sessão expirada. Entre novamente para trocar a senha.')
+        }
+        const credential = EmailAuthProvider.credential(currentUser.email, senhaAtual)
+        await reauthenticateWithCredential(currentUser, credential)
+        await updatePassword(currentUser, novaSenha)
       },
     }),
     [user, firebaseUser, loading],

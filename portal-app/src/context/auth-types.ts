@@ -8,4 +8,5 @@ export type AuthContextValue = {
   login: (email: string, senha: string) => Promise<void>
   logout: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
+  changePassword: (senhaAtual: string, novaSenha: string) => Promise<void>
 }
