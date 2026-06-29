@@ -64,9 +64,30 @@ jobs:
           fi
           node scripts/sync-incidentes-completo.mjs
 
+      - name: Importar último JSON válido no DSQL
+        id: import_cached
+        if: steps.sync_runner.outcome == 'failure'
+        continue-on-error: true
+        env:
+          DSQL_CLUSTER_ID: ${{ secrets.DSQL_CLUSTER_ID }}
+          DSQL_REGION: sa-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          PORTAL_ROOT: ${{ github.workspace }}
+          PORTAL_DATA_DIR: ${{ github.workspace }}/assets/data
+        run: |
+          set -euo pipefail
+          if [ ! -s assets/data/incidentes-tcgl.json ]; then
+            echo "Sem JSON local de incidentes para importar." >&2
+            exit 1
+          fi
+          echo "TCGL indisponível no runner; importando último JSON válido no DSQL."
+          node backend/scripts/importar-planilha-dsql.mjs incidentes
+          echo "TCGL indisponível; DSQL atualizado com o último JSON válido." >> "$GITHUB_STEP_SUMMARY"
+
       - name: Fallback pela Lambda na AWS
         id: sync_lambda
-        if: steps.sync_runner.outcome == 'failure'
+        if: steps.sync_runner.outcome == 'failure' && steps.import_cached.outcome == 'failure'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
