@@ -57,14 +57,17 @@ function gitOutput(repoRoot, args) {
   }).stdout.trim();
 }
 
+function compactError(error) {
+  return String(error?.message || error || "erro desconhecido").replace(/\s+/g, " ").slice(0, 500);
+}
+
 function parseGithubRepo(remote) {
   const match = String(remote).match(/github\.com[/:]([^/]+\/[^/.]+)/);
   return match ? match[1] : "";
 }
 
-function gitPush(repoRoot) {
+function gitPushOnce(repoRoot, branch) {
   const token = (process.env.CIOP_GITHUB_TOKEN || "").trim();
-  const branch = gitOutput(repoRoot, ["branch", "--show-current"]) || "main";
   if (token) {
     const remote = gitOutput(repoRoot, ["remote", "get-url", "origin"]);
     const repo = parseGithubRepo(remote);
@@ -74,6 +77,24 @@ function gitPush(repoRoot) {
     return;
   }
   run("git", ["push"], { cwd: repoRoot, silent: true });
+}
+
+function gitPush(repoRoot) {
+  const branch = gitOutput(repoRoot, ["branch", "--show-current"]) || "main";
+  try {
+    gitPushOnce(repoRoot, branch);
+    return;
+  } catch (error) {
+    console.log(`[git] push falhou; sincronizando com origin/${branch} e tentando novamente...`);
+    run("git", ["fetch", "origin", branch], { cwd: repoRoot, silent: true });
+    run("git", ["rebase", `origin/${branch}`], { cwd: repoRoot, silent: true });
+    gitPushOnce(repoRoot, branch);
+  }
+}
+
+function gitAheadCount(repoRoot) {
+  const count = Number(gitOutput(repoRoot, ["rev-list", "--count", "@{u}..HEAD"]));
+  return Number.isFinite(count) ? count : 0;
 }
 
 function publicarGitIncidentesEm(repoRoot, rotulo) {
@@ -93,6 +114,12 @@ function publicarGitIncidentesEm(repoRoot, rotulo) {
     stdio: "pipe"
   }).stdout.trim();
   if (!changed) {
+    const ahead = gitAheadCount(repoRoot);
+    if (ahead > 0) {
+      console.log(`[git] ${rotulo}: ${ahead} commit(s) pendente(s); enviando agora.`);
+      gitPush(repoRoot);
+      return true;
+    }
     console.log(`[git] ${rotulo}: sem alterações em incidentes-tcgl.json.`);
     return false;
   }
@@ -123,6 +150,7 @@ export async function syncIncidentes() {
   const publishGit = process.env.SYNC_INCIDENTES_PUBLISH_GIT === "1";
   const skipDsql = process.env.SYNC_INCIDENTES_SKIP_DSQL === "1";
   const steps = { s3Pull: false, fetch: false, s3Push: false, dsql: false, git: false };
+  const gitFatal = process.env.SYNC_INCIDENTES_GIT_FATAL === "1";
 
   process.env.PORTAL_ROOT = portalRoot;
 
@@ -142,19 +170,39 @@ export async function syncIncidentes() {
 
   steps.s3Push = await enviarEstadoIncidentesS3(jsonPath);
 
-  if (publishGit) {
-    const destino = portalProd ? `portalCIOP (${portalProd})` : portalRoot;
-    console.log(`[sync] Publicando JSON no Git → ${destino}...`);
-    steps.git = publicarGitIncidentes();
-  }
-
   if (!skipDsql) {
     console.log("[sync] Importando incidentes no Aurora DSQL...");
     const backendScripts = path.join(portalRoot, "backend", "scripts", "importar-planilha-dsql.mjs");
-    run(nodeBin, [backendScripts, "incidentes"], {
-      env: { ...process.env, PORTAL_ROOT: portalRoot, PORTAL_DATA_DIR: dataDir }
-    });
-    steps.dsql = true;
+    try {
+      run(nodeBin, [backendScripts, "incidentes"], {
+        env: { ...process.env, PORTAL_ROOT: portalRoot, PORTAL_DATA_DIR: dataDir }
+      });
+      steps.dsql = true;
+    } catch (error) {
+      steps.dsqlError = compactError(error);
+      console.error("[sync] AVISO: falha ao importar no Aurora DSQL:", steps.dsqlError);
+    }
+  }
+
+  if (publishGit) {
+    const destino = portalProd ? `portalCIOP (${portalProd})` : portalRoot;
+    console.log(`[sync] Publicando JSON no Git → ${destino}...`);
+    try {
+      steps.git = publicarGitIncidentes();
+    } catch (error) {
+      steps.gitError = compactError(error);
+      console.error("[sync] AVISO: falha ao publicar JSON no Git:", steps.gitError);
+      if (gitFatal) throw error;
+    }
+  }
+
+  if (!skipDsql && !steps.dsql) {
+    if (publishGit && steps.git) {
+      console.log("[sync] DSQL não atualizou, mas o JSON foi publicado no Git como backup.");
+    } else {
+      const gitInfo = steps.gitError ? ` | Git: ${steps.gitError}` : "";
+      throw new Error(`Falha na atualização principal do Aurora DSQL: ${steps.dsqlError || "erro desconhecido"}${gitInfo}`);
+    }
   }
 
   return { ok: true, steps };

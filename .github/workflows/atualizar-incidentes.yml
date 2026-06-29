@@ -1,0 +1,99 @@
+name: Atualizar incidentes TCGL
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 23h, 05h, 11h e 17h no horário de Brasília.
+    - cron: "0 2,8,14,20 * * *"
+
+concurrency:
+  group: incidentes-tcgl
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Baixar portal
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Instalar dependências do backend
+        run: |
+          cd backend
+          npm ci --omit=dev 2>/dev/null || npm ci
+
+      - name: Sincronizar TCGL no runner do GitHub
+        id: sync_runner
+        continue-on-error: true
+        env:
+          CIOP_INCIDENTES_USUARIO: ${{ secrets.CIOP_INCIDENTES_USUARIO }}
+          CIOP_INCIDENTES_SENHA: ${{ secrets.CIOP_INCIDENTES_SENHA }}
+          CIOP_INCIDENTES_RETRIES: "5"
+          CIOP_INCIDENTES_TIMEOUT_MS: "30000"
+          DSQL_CLUSTER_ID: ${{ secrets.DSQL_CLUSTER_ID }}
+          DSQL_REGION: sa-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          PORTAL_ROOT: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CIOP_INCIDENTES_USUARIO:-}" ] || [ -z "${CIOP_INCIDENTES_SENHA:-}" ]; then
+            echo "Secrets CIOP_INCIDENTES_USUARIO/CIOP_INCIDENTES_SENHA ausentes." >&2
+            exit 1
+          fi
+          if [ -z "${DSQL_CLUSTER_ID:-}" ]; then
+            echo "Secret DSQL_CLUSTER_ID ausente." >&2
+            exit 1
+          fi
+          node scripts/sync-incidentes-completo.mjs
+
+      - name: Fallback pela Lambda na AWS
+        id: sync_lambda
+        if: steps.sync_runner.outcome == 'failure'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: sa-east-1
+          INCIDENTES_LAMBDA_NAME: portal-ciop-incidentes-sync
+        run: |
+          set -euo pipefail
+          if ! command -v aws >/dev/null 2>&1; then
+            echo "AWS CLI não disponível no runner." >&2
+            exit 1
+          fi
+          aws lambda invoke \
+            --function-name "$INCIDENTES_LAMBDA_NAME" \
+            --payload '{}' \
+            --cli-binary-format raw-in-base64-out \
+            /tmp/incidentes-sync.json
+          cat /tmp/incidentes-sync.json
+          node - <<'NODE'
+          const fs = require('fs');
+          const payload = JSON.parse(fs.readFileSync('/tmp/incidentes-sync.json', 'utf8'));
+          if (!payload.ok) {
+            console.error(payload.error || 'Lambda retornou falha.');
+            process.exit(1);
+          }
+          NODE
+
+      - name: Configurar git
+        if: steps.sync_runner.outcome == 'success' && hashFiles('assets/data/incidentes-tcgl.json') != ''
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Publicar JSON no GitHub Pages
+        if: steps.sync_runner.outcome == 'success' && hashFiles('assets/data/incidentes-tcgl.json') != ''
+        run: bash scripts/ci-git-commit-push.sh "Atualiza incidentes TCGL" assets/data/incidentes-tcgl.json

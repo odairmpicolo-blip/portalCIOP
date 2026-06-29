@@ -76,6 +76,11 @@ check_aws_session() {
   if aws sts get-caller-identity >/dev/null 2>&1; then
     return 0
   fi
+  if [[ "${SYNC_INCIDENTES_PUBLISH_GIT:-}" == "1" ]]; then
+    export SYNC_INCIDENTES_SKIP_DSQL=1
+    log "AVISO: sessão AWS expirada. Vou atualizar o JSON no Git como backup; rode 'aws login' para voltar a atualizar o DSQL."
+    return 0
+  fi
   log "ERRO: sessão AWS expirada. Abra o Terminal, execute 'aws login' e clique no botão novamente."
   exit 1
 }
@@ -95,7 +100,7 @@ if run_sync; then
   if tail -5 "$LOG_FILE" | grep -q '"dsql":true'; then
     log "Atualização concluída com sucesso (TCGL → DSQL)."
   elif tail -8 "$LOG_FILE" | grep -q '"git":true'; then
-    log "Atualização concluída (TCGL → DSQL). JSON publicado no Git (backup)."
+    log "Atualização concluída via Git backup. AWS/DSQL não atualizou neste clique."
   else
     log "Atualização concluída com sucesso (TCGL → DSQL)."
   fi
