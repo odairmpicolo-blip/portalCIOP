@@ -3,8 +3,9 @@ name: Atualizar incidentes TCGL
 on:
   workflow_dispatch:
   schedule:
-    # 23h, 05h, 11h e 17h no horário de Brasília.
-    - cron: "0 2,8,14,20 * * *"
+    # 01h30, 05h, 10h, 15h e 20h no horário de Brasília.
+    - cron: "30 4 * * *"
+    - cron: "0 8,13,18,23 * * *"
 
 concurrency:
   group: incidentes-tcgl
@@ -63,8 +64,15 @@ jobs:
           fi
           if node scripts/sync-incidentes-completo.mjs; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
+            if git diff --quiet -- assets/data/incidentes-tcgl.json; then
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+              echo "Nenhum incidente novo ou atualizado; publicação ignorada." >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+            fi
           else
             echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "TCGL indisponível no runner; tentando importar o último JSON válido." >> "$GITHUB_STEP_SUMMARY"
           fi
 
@@ -125,24 +133,24 @@ jobs:
           NODE
 
       - name: Configurar git
-        if: steps.sync_runner.outputs.ok == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
+        if: steps.sync_runner.outputs.ok == 'true' && steps.sync_runner.outputs.changed == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Publicar JSON no GitHub Pages
-        if: steps.sync_runner.outputs.ok == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
+        if: steps.sync_runner.outputs.ok == 'true' && steps.sync_runner.outputs.changed == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
         run: bash scripts/ci-git-commit-push.sh "Atualiza incidentes TCGL" assets/data/incidentes-tcgl.json
 
       - name: Build do app React
-        if: steps.sync_runner.outputs.ok == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
+        if: steps.sync_runner.outputs.ok == 'true' && steps.sync_runner.outputs.changed == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
         run: |
           cd portal-app
           npm ci
           npm run build
 
       - name: Preparar site estático
-        if: steps.sync_runner.outputs.ok == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
+        if: steps.sync_runner.outputs.ok == 'true' && steps.sync_runner.outputs.changed == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
         env:
           CUSTOM_DOMAIN: ${{ vars.PORTAL_CUSTOM_DOMAIN }}
           PORTAL_AWS_API_URL: ${{ secrets.PORTAL_AWS_API_URL }}
@@ -175,18 +183,18 @@ jobs:
           "
 
       - name: Configurar GitHub Pages
-        if: steps.sync_runner.outputs.ok == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
+        if: steps.sync_runner.outputs.ok == 'true' && steps.sync_runner.outputs.changed == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
         uses: actions/configure-pages@v5
 
       - name: Enviar artefato
-        if: steps.sync_runner.outputs.ok == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
+        if: steps.sync_runner.outputs.ok == 'true' && steps.sync_runner.outputs.changed == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
 
       - name: Publicar Pages (tentativa 1)
         id: deploy_try1
-        if: steps.sync_runner.outputs.ok == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
+        if: steps.sync_runner.outputs.ok == 'true' && steps.sync_runner.outputs.changed == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
         uses: actions/deploy-pages@v4
         continue-on-error: true
 

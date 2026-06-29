@@ -9,6 +9,7 @@
  *   INCIDENTES_STATE_S3_BUCKET     — cache incremental em S3
  */
 import { spawnSync } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -59,6 +60,11 @@ function gitOutput(repoRoot, args) {
 
 function compactError(error) {
   return String(error?.message || error || "erro desconhecido").replace(/\s+/g, " ").slice(0, 500);
+}
+
+function fileHash(filePath) {
+  if (!fs.existsSync(filePath)) return "";
+  return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
 }
 
 function parseGithubRepo(remote) {
@@ -161,11 +167,19 @@ export async function syncIncidentes() {
   steps.s3Pull = await baixarEstadoIncidentesS3(jsonPath);
 
   console.log("[sync] Buscando incidentes no TCGL...");
+  const hashAntes = fileHash(jsonPath);
   run(nodeBin, [path.join(scriptDir, "atualizar-incidentes-tcgl.mjs")]);
   steps.fetch = true;
 
   if (!fs.existsSync(jsonPath)) {
     throw new Error(`JSON não gerado: ${jsonPath}`);
+  }
+
+  const hashDepois = fileHash(jsonPath);
+  steps.fetchChanged = hashAntes !== hashDepois;
+  if (!steps.fetchChanged) {
+    console.log("[sync] Nenhum incidente novo ou atualizado; DSQL, Git e Pages não precisam ser alterados.");
+    return { ok: true, steps };
   }
 
   steps.s3Push = await enviarEstadoIncidentesS3(jsonPath);

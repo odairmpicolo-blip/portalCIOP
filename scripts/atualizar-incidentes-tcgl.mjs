@@ -366,6 +366,42 @@ function rowKey(row) {
   return String(row?.incidentId || row?.id || '').trim();
 }
 
+const summaryFields = [
+  'id',
+  'data',
+  'hora',
+  'veiculo',
+  'linha',
+  'criadoPor',
+  'tipo',
+  'tipoOriginal',
+  'proprietario',
+  'estado',
+  'empresa',
+  'veiculoDescricao',
+];
+
+function applySummaryUpdates(oldRow, newRow) {
+  let estadoAtualizado = false;
+  let dadosAtualizados = false;
+  for (const field of summaryFields) {
+    const before = String(oldRow[field] ?? '');
+    const after = String(newRow[field] ?? '');
+    if (before === after) continue;
+    oldRow[field] = newRow[field] ?? '';
+    if (field === 'estado') estadoAtualizado = true;
+    else dadosAtualizados = true;
+  }
+  return { estadoAtualizado, dadosAtualizados };
+}
+
+function hasSummaryUpdate(row, existing) {
+  const key = rowKey(row);
+  const old = key ? existing.rowMap.get(key) : null;
+  if (!old) return true;
+  return summaryFields.some((field) => String(old[field] ?? '') !== String(row[field] ?? ''));
+}
+
 function readExistingPayload() {
   const empty = {
     rows: [],
@@ -481,31 +517,28 @@ async function enrichDetails(jar, rows, candidateRows = rows) {
 
 function chunkSemNovidade(chunkRows, existing) {
   if (!chunkRows.length) return false;
-  return chunkRows.every((row) => {
-    const key = rowKey(row);
-    if (!key) return true;
-    const old = existing.rowMap.get(key);
-    if (!old) return false;
-    return String(old.estado || "") === String(row.estado || "");
-  });
+  return chunkRows.every((row) => !hasSummaryUpdate(row, existing));
 }
 
 function mergeRows(newRows, existing) {
   const merged = [];
   const used = new Set();
   const novosIds = new Set();
+  const atualizadosIds = new Set();
   let countNovos = 0;
   let countEstado = 0;
+  let countDados = 0;
 
   for (const row of newRows) {
     const key = rowKey(row);
     const old = key ? existing.rowMap.get(key) : null;
     if (old) {
-      const nextEstado = String(row.estado || "");
-      if (nextEstado && nextEstado !== String(old.estado || "")) {
-        old.estado = nextEstado;
+      const updates = applySummaryUpdates(old, row);
+      if (updates.estadoAtualizado) {
         countEstado += 1;
       }
+      if (updates.dadosAtualizados) countDados += 1;
+      if (key && (updates.estadoAtualizado || updates.dadosAtualizados)) atualizadosIds.add(key);
       ensureTipoOriginal(old);
       merged.push(old);
     } else {
@@ -525,8 +558,8 @@ function mergeRows(newRows, existing) {
     if (key) used.add(key);
   }
 
-  console.log(`Merge: ${countNovos} novos, ${countEstado} estados atualizados, ${merged.length} total.`);
-  return { merged, countNovos, novosIds };
+  console.log(`Merge incremental: ${countNovos} novos, ${countEstado} estados atualizados, ${countDados} dados atualizados, ${merged.length} total.`);
+  return { merged, countNovos, countEstado, countDados, novosIds, atualizadosIds };
 }
 
 const existingPayload = readExistingPayload();
@@ -568,7 +601,12 @@ while (total === null || start < total) {
   start += pageLength;
 }
 
-const { merged: mergedRows, novosIds } = mergeRows(rows, existingPayload);
+const { merged: mergedRows, countNovos, countEstado, countDados, novosIds, atualizadosIds } = mergeRows(rows, existingPayload);
+if (fs.existsSync(outputFile) && countNovos === 0 && countEstado === 0 && countDados === 0) {
+  fs.rmSync(partialFile, { force: true });
+  console.log('Atualização incremental: nenhum incidente novo ou atualizado. JSON mantido sem alterações.');
+  process.exit(0);
+}
 const novosParaDetalhe = mergedRows.filter((row) => {
   const key = rowKey(row);
   return key && novosIds.has(key)
@@ -594,6 +632,13 @@ const payload = {
   totalServidor: total ?? rows.length,
   totalExtraido: finalRows.length,
   totalComEmpresa: mergedRows.length,
+  ultimaMudanca: {
+    novos: countNovos,
+    estadosAtualizados: countEstado,
+    dadosAtualizados: countDados,
+    idsNovos: Array.from(novosIds),
+    idsAtualizados: Array.from(atualizadosIds),
+  },
   idsProcessados: processedIds,
   idsDetalhesConsultados: checkedDetailIds,
   incidentes: finalRows,
