@@ -593,10 +593,44 @@ body.oa-native-mode .oa-bottom-pont{
     <button type="button" class="oa-fab oa-fab--linhas" id="oaFabLinhas" aria-label="Linhas">
         <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
     </button>
+    <button type="button" class="oa-fab oa-fab--mapa" id="oaFabMapa" aria-label="Controles do mapa">
+        <svg viewBox="0 0 24 24"><path d="M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3z"/><path d="M9 3v15M15 6v15"/></svg>
+    </button>
     <button type="button" class="oa-fab oa-fab--horarios" id="oaFabHorarios" aria-label="Horários">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
     </button>
     <div class="oa-backdrop" id="oaBackdrop"></div>
+    <aside class="oa-sheet oa-sheet--mapa" id="oaSheetMapa" aria-label="Controles do mapa">
+        <div class="oa-sheet-handle"></div>
+        <div class="oa-sheet-head">
+            <h2>Mapa</h2>
+            <p>Estilo, foco e atualização</p>
+        </div>
+        <div class="oa-sheet-body">
+            <div class="oa-map-actions-mobile">
+                <button type="button" class="oa-map-action" id="oaMapaClaro">
+                    <span>Mapa claro</span>
+                    <small>Ruas e bairros</small>
+                </button>
+                <button type="button" class="oa-map-action" id="oaMapaBus2">
+                    <span>Estilo Bus2</span>
+                    <small>Visual do rastreador</small>
+                </button>
+                <button type="button" class="oa-map-action" id="oaMapaSat">
+                    <span>Satélite</span>
+                    <small>Imagem aérea</small>
+                </button>
+                <button type="button" class="oa-map-action" id="oaMapaCentralizar">
+                    <span>Centralizar</span>
+                    <small>Londrina</small>
+                </button>
+                <button type="button" class="oa-map-action oa-map-action--wide" id="oaMapaAtualizar">
+                    <span>Atualizar agora</span>
+                    <small>Recarrega os ônibus no mapa</small>
+                </button>
+            </div>
+        </div>
+    </aside>
     <aside class="oa-sheet oa-sheet--linhas" id="oaSheetLinhas">
         <div class="oa-sheet-handle"></div>
         <div class="oa-sheet-head">
@@ -828,12 +862,39 @@ function syncNativeHud(){
     if ($("oaStatVisiveis")) $("oaStatVisiveis").textContent = $("statVisiveis")?.textContent || "0";
 }
 
+function setSheetAberta(id, aberta){
+    const sheet = $(id);
+    if (!sheet) return;
+    if (aberta) sheet.style.transform = "translateY(0)";
+    else sheet.style.removeProperty("transform");
+}
+
 function fecharSheetLinhas(){
     document.body.classList.remove("oa-linhas-open");
+    setSheetAberta("oaSheetLinhas", false);
 }
 
 function abrirSheetLinhas(){
+    fecharSheetMapa();
     document.body.classList.add("oa-linhas-open");
+    setSheetAberta("oaSheetLinhas", true);
+}
+
+function fecharSheetMapa(){
+    document.body.classList.remove("oa-mapa-open");
+    setSheetAberta("oaSheetMapa", false);
+}
+
+function abrirSheetMapa(){
+    fecharSheetLinhas();
+    document.body.classList.add("oa-mapa-open");
+    setSheetAberta("oaSheetMapa", true);
+}
+
+function acaoMapaMobile(fn){
+    if (typeof fn === "function") fn();
+    fecharSheetMapa();
+    scheduleMapResize();
 }
 
 function fecharHorariosNative(){
@@ -979,8 +1040,10 @@ function initNativeAppMode(){
 
     $("oaFabHorarios")?.setAttribute("hidden", "");
     $("oaFabLinhas")?.addEventListener("click", abrirSheetLinhas);
+    $("oaFabMapa")?.addEventListener("click", abrirSheetMapa);
     $("oaBackdrop")?.addEventListener("click", () => {
         fecharSheetLinhas();
+        fecharSheetMapa();
         fecharHorariosNative();
     });
 
@@ -2039,6 +2102,14 @@ function bind(){
     $("btnMapaBus2").addEventListener("click", () => trocarTile("bus2"));
     $("btnMapaSat").addEventListener("click", () => trocarTile("sat"));
     $("btnCentralizar").addEventListener("click", () => state.mapa?.setView(BUS2.centro, BUS2.zoom));
+    $("oaMapaClaro")?.addEventListener("click", () => acaoMapaMobile(() => trocarTile("light")));
+    $("oaMapaBus2")?.addEventListener("click", () => acaoMapaMobile(() => trocarTile("bus2")));
+    $("oaMapaSat")?.addEventListener("click", () => acaoMapaMobile(() => trocarTile("sat")));
+    $("oaMapaCentralizar")?.addEventListener("click", () => acaoMapaMobile(() => state.mapa?.setView(BUS2.centro, BUS2.zoom)));
+    $("oaMapaAtualizar")?.addEventListener("click", () => acaoMapaMobile(() => {
+        state.vehicles.clear();
+        pollLote();
+    }));
     $("shapePickerClose")?.addEventListener("click", ocultarShapePicker);
     $("btnViagemTodas")?.addEventListener("click", async () => {
         if (!state.routeFiltro || !state.viagemOpcoes.length) return;

@@ -1621,22 +1621,7 @@ html.native-app.native-embedded body.oa-native-mode #panelMapa > .map-filtro-pon
 }
 
 html.native-app.native-embedded body.oa-native-mode .map-tools {
-  top: 8px;
-  right: 8px;
-}
-
-html.native-app.native-embedded body.oa-native-mode .map-tools .btn {
-  min-height: 32px;
-  padding: 0 10px;
-  font-size: 10px;
-  background: var(--app-glass-bg);
-  border: 1px solid var(--app-glass-border);
-  color: var(--app-text);
-  backdrop-filter: var(--app-glass-blur);
-  -webkit-backdrop-filter: var(--app-glass-blur);
-  box-shadow: var(--app-glass-shadow);
-  border-radius: 12px;
-  opacity: 0.95;
+  display: none !important;
 }
 
 html.native-app.native-embedded body.oa-native-mode .shape-picker {
@@ -1664,6 +1649,11 @@ html.native-app.native-embedded body.oa-native-mode #panelViagem {
 }
 
 html.native-app.native-embedded body.oa-native-mode:not(.oa-horarios-module) .oa-fab--horarios {
+  display: none !important;
+}
+
+html.native-app.native-embedded body.oa-native-mode.oa-horarios-module .oa-fab--mapa,
+html.native-app.native-embedded body.oa-native-mode.oa-horarios-open .oa-fab--mapa {
   display: none !important;
 }
 
@@ -1746,9 +1736,20 @@ html.native-app.native-embedded body.oa-native-mode.oa-linhas-open .oa-sheet--li
   transform: translateY(0);
 }
 
-html.native-app.native-embedded body.oa-native-mode.oa-linhas-open .oa-backdrop {
+html.native-app.native-embedded body.oa-native-mode.oa-mapa-open .oa-sheet--mapa {
+  transform: translateY(0);
+}
+
+html.native-app.native-embedded body.oa-native-mode.oa-linhas-open .oa-backdrop,
+html.native-app.native-embedded body.oa-native-mode.oa-mapa-open .oa-backdrop {
   opacity: 1;
   pointer-events: auto;
+}
+
+html.native-app.native-embedded body.oa-native-mode.oa-linhas-open .oa-fab,
+html.native-app.native-embedded body.oa-native-mode.oa-mapa-open .oa-fab {
+  opacity: 0;
+  pointer-events: none;
 }
 
 html.native-app.native-embedded body.oa-native-mode.oa-horarios-module .oa-pick-line-btn {
@@ -1915,8 +1916,8 @@ html.native-app.native-embedded body.oa-native-mode #panelHorarios .oa-native-fl
   z-index: 660;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 46px;
+  height: 46px;
   padding: 0;
   border: 1px solid var(--app-glass-border);
   border-radius: 50%;
@@ -1934,8 +1935,8 @@ html.native-app.native-embedded body.oa-native-mode #panelHorarios .oa-native-fl
 }
 
 .oa-fab svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   stroke: currentColor;
   fill: none;
   stroke-width: 2;
@@ -1955,6 +1956,14 @@ html.native-app.native-embedded body.oa-native-mode #panelHorarios .oa-native-fl
   left: 10px;
   bottom: 14px;
   color: var(--app-text, #eef2f8);
+}
+
+.oa-fab--mapa {
+  right: 10px;
+  bottom: 14px;
+  background: color-mix(in srgb, var(--app-accent, #2563eb) 78%, var(--app-glass-bg));
+  color: #fff;
+  border-color: color-mix(in srgb, var(--app-accent, #2563eb) 42%, transparent);
 }
 
 .oa-fab--close {
@@ -2061,6 +2070,78 @@ html.native-app.native-embedded body.oa-native-mode #panelHorarios .oa-native-fl
   color: #94a3b8;
 }
 
+.oa-map-actions-mobile {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.oa-map-action {
+  display: flex;
+  min-width: 0;
+  min-height: 58px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-glass-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--app-glass-bg) 45%, transparent);
+  color: var(--app-text, #eef2f8);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(2, 6, 14, 0.14);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.oa-map-action:active {
+  transform: scale(0.98);
+}
+
+.oa-map-action span {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.oa-map-action small {
+  max-width: 100%;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.oa-map-action--wide {
+  grid-column: 1 / -1;
+  min-height: 52px;
+}
+
+html.native-app.native-embedded body.oa-native-mode.oa-linhas-open .oa-sheet--linhas,
+html.native-app.native-embedded body.oa-native-mode.oa-mapa-open .oa-sheet--mapa {
+  transform: translateY(0) !important;
+}
+
+body.oa-native-mode.oa-linhas-open .oa-sheet--linhas,
+body.oa-native-mode.oa-mapa-open .oa-sheet--mapa {
+  transform: none !important;
+}
+
+html.native-app.native-embedded body.oa-native-mode.oa-linhas-open .oa-backdrop,
+html.native-app.native-embedded body.oa-native-mode.oa-mapa-open .oa-backdrop {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+html.native-app.native-embedded body.oa-native-mode.oa-linhas-open .oa-fab,
+html.native-app.native-embedded body.oa-native-mode.oa-mapa-open .oa-fab {
+  opacity: 0;
+  pointer-events: none;
+}
+
 @media (prefers-color-scheme: light) {
   html.native-app.native-embedded body.oa-page.oa-native-mode {
     background: var(--app-bg) !important;
@@ -2096,6 +2177,16 @@ html.native-app.native-embedded body.oa-native-mode #panelHorarios .oa-native-fl
   .oa-fab--linhas {
     background: rgba(255, 255, 255, 0.88);
     color: #06245c;
+  }
+
+  .oa-map-action {
+    background: rgba(248, 250, 252, 0.96);
+    color: #0f172a;
+    border-color: rgba(6, 36, 92, 0.12);
+  }
+
+  .oa-map-action small {
+    color: #64748b;
   }
 
   .oa-sheet {
@@ -2156,6 +2247,16 @@ html.native-app.native-light.native-embedded .oa-sheet-body .line-btn {
   background: color-mix(in srgb, var(--app-glass-bg) 40%, transparent);
   color: var(--app-text);
   border-color: var(--app-glass-border);
+}
+
+html.native-app.native-light.native-embedded .oa-map-action {
+  background: rgba(248, 250, 252, 0.96);
+  color: #0f172a;
+  border-color: rgba(6, 36, 92, 0.12);
+}
+
+html.native-app.native-light.native-embedded .oa-map-action small {
+  color: #64748b;
 }
 
 /* ── Modal avisos · vidro ───────────────────────────────────────────────── */
