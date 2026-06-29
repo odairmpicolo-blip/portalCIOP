@@ -12,11 +12,16 @@ concurrency:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
   atualizar:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy_try1.outputs.page_url }}
 
     steps:
       - name: Baixar portal
@@ -97,3 +102,73 @@ jobs:
       - name: Publicar JSON no GitHub Pages
         if: steps.sync_runner.outcome == 'success' && hashFiles('assets/data/incidentes-tcgl.json') != ''
         run: bash scripts/ci-git-commit-push.sh "Atualiza incidentes TCGL" assets/data/incidentes-tcgl.json
+
+      - name: Build do app React
+        if: steps.sync_runner.outcome == 'success' && hashFiles('assets/data/incidentes-tcgl.json') != ''
+        run: |
+          cd portal-app
+          npm ci
+          npm run build
+
+      - name: Preparar site estático
+        if: steps.sync_runner.outcome == 'success' && hashFiles('assets/data/incidentes-tcgl.json') != ''
+        env:
+          CUSTOM_DOMAIN: ${{ vars.PORTAL_CUSTOM_DOMAIN }}
+          PORTAL_AWS_API_URL: ${{ secrets.PORTAL_AWS_API_URL }}
+          RELATORIO_IA_SCRIPT_URL: ${{ secrets.RELATORIO_IA_SCRIPT_URL }}
+        run: |
+          set -euo pipefail
+          mkdir site
+          cp index.html login.html site/
+          cp -r pages assets app site/
+          cp hosting/404.html site/404.html
+          touch site/.nojekyll
+
+          if [ -n "${CUSTOM_DOMAIN:-}" ]; then
+            echo "$CUSTOM_DOMAIN" > site/CNAME
+          elif [ -f hosting/CNAME ]; then
+            cp hosting/CNAME site/CNAME
+          fi
+
+          export PORTAL_AWS_API_URL RELATORIO_IA_SCRIPT_URL
+          node -e "
+            const fs = require('fs');
+            const path = 'site/assets/data/portal-runtime.json';
+            const cfg = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const api = (process.env.PORTAL_AWS_API_URL || '').replace(/\\/$/, '');
+            const ia = (process.env.RELATORIO_IA_SCRIPT_URL || '').trim();
+            if (api) cfg.awsApiUrl = api;
+            if (ia) cfg.relatorioIaScriptUrl = ia;
+            delete cfg.devApiKey;
+            fs.writeFileSync(path, JSON.stringify(cfg, null, 2) + '\n');
+          "
+
+      - name: Configurar GitHub Pages
+        if: steps.sync_runner.outcome == 'success' && hashFiles('assets/data/incidentes-tcgl.json') != ''
+        uses: actions/configure-pages@v5
+
+      - name: Enviar artefato
+        if: steps.sync_runner.outcome == 'success' && hashFiles('assets/data/incidentes-tcgl.json') != ''
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Publicar Pages (tentativa 1)
+        id: deploy_try1
+        if: steps.sync_runner.outcome == 'success' && hashFiles('assets/data/incidentes-tcgl.json') != ''
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Aguardar fila do Pages
+        if: steps.deploy_try1.outcome == 'failure'
+        run: sleep 90
+
+      - name: Publicar Pages (tentativa 2)
+        id: deploy_try2
+        if: steps.deploy_try1.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Publicar Pages (tentativa 3)
+        if: steps.deploy_try1.outcome == 'failure' && steps.deploy_try2.outcome == 'failure'
+        uses: actions/deploy-pages@v4
