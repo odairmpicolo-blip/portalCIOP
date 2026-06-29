@@ -1,0 +1,2 @@
+import{a as e,c as t,n,o as r,s as i}from"./index-BaNiAgMB.js";var a=class extends t{async authenticate(t){try{await this.internalAuthenticate(t)}catch(t){throw t instanceof i&&e(t.code)?new n(t.message,t.code):t}}async addResumeListener(e){return r.addListener(`appStateChange`,({isActive:t})=>{t&&(async()=>{try{e(await this.checkBiometry())}catch(e){console.error(e)}})()})}};export{a as t};
+//# sourceMappingURL=base-CDgZq0ij.js.map

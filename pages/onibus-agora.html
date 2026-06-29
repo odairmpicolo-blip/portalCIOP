@@ -98,6 +98,11 @@ body.oa-page{
 .panel[hidden]{display:none!important}
 
 #mapa,#mapaViagem{width:100%;height:100%;min-height:520px;background:#dbeafe}
+#mapa.leaflet-container,#mapaViagem.leaflet-container,
+#mapa .leaflet-map-pane,#mapa .leaflet-pane,#mapa .leaflet-tile-pane,#mapa .leaflet-marker-pane,
+#mapaViagem .leaflet-map-pane,#mapaViagem .leaflet-pane,#mapaViagem .leaflet-tile-pane,#mapaViagem .leaflet-marker-pane{
+  touch-action:none;pointer-events:auto;-webkit-user-select:none;user-select:none
+}
 .map-tools{position:absolute;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:8px}
 .shape-picker{
   position:absolute;left:12px;bottom:12px;z-index:500;width:min(320px,calc(100% - 24px));
@@ -143,6 +148,7 @@ body.oa-native-mode .map-filtro-pont.oa-pont-dock .pont-chip{
 }
 body.oa-native-mode .map-filtro-pont.oa-pont-dock .pont-chip[data-pont="atrasado"]{color:#fef08a}
 body.oa-native-mode #mapa{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;flex:none!important}
+body.oa-native-mode #mapa,body.oa-native-mode .oa-map-shell{touch-action:none;overscroll-behavior:contain;-webkit-user-select:none;user-select:none}
 body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;order:1;width:100%;overflow:hidden}
 body.oa-native-mode .oa-native-bottom{position:relative!important;flex:0 0 auto;order:2;width:100%;left:auto!important;right:auto!important;bottom:auto!important;top:auto!important;transform:none!important}
 body.oa-native-mode .oa-map-dock{
@@ -1124,6 +1130,45 @@ function applyOaAppMode(mode){
     scheduleMapResize();
 }
 
+function ativarGestosMapa(mapa){
+    if (!mapa) return;
+    const container = mapa.getContainer?.();
+    if (container){
+        container.style.touchAction = "none";
+        container.style.webkitUserSelect = "none";
+        container.style.userSelect = "none";
+        container.style.pointerEvents = "auto";
+        container.classList.add("oa-touch-map");
+        if (!container.dataset.oaTouchBound){
+            const stopTouch = (ev) => ev.stopPropagation();
+            const keepPinchOnMap = (ev) => {
+                ev.stopPropagation();
+                if (ev.touches && ev.touches.length > 1) ev.preventDefault();
+            };
+            const stopGesture = (ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+            };
+            container.addEventListener("touchstart", stopTouch, { passive: true });
+            container.addEventListener("touchmove", keepPinchOnMap, { passive: false });
+            container.addEventListener("gesturestart", stopGesture, { passive: false });
+            container.addEventListener("gesturechange", stopGesture, { passive: false });
+            container.dataset.oaTouchBound = "1";
+        }
+    }
+    mapa.dragging?.enable?.();
+    mapa.touchZoom?.enable?.();
+    mapa.doubleClickZoom?.enable?.();
+    mapa.scrollWheelZoom?.disable?.();
+    mapa.boxZoom?.disable?.();
+    mapa.keyboard?.disable?.();
+    setTimeout(() => {
+        mapa.dragging?.enable?.();
+        mapa.touchZoom?.enable?.();
+        mapa.invalidateSize?.();
+    }, 120);
+}
+
 window.addEventListener("message", (event) => {
     if (event.data?.type !== "oa-set-mode") return;
     applyOaAppMode(event.data.mode === "horarios" ? "horarios" : "mapa");
@@ -1135,10 +1180,12 @@ function initMapa(){
     const nativeMap = isNativeEmbedded() && !OA_HORARIOS;
     state.mapa = L.map("mapa", {
         zoomControl: true,
+        dragging: true,
         touchZoom: true,
-        pinchZoom: true,
+        inertia: true,
         scrollWheelZoom: !nativeMap,
         doubleClickZoom: true,
+        tap: true,
         boxZoom: false
     }).setView(BUS2.centro, BUS2.zoom);
     state.tileLayer = L.tileLayer(BUS2.tiles.light, {
@@ -1146,6 +1193,7 @@ function initMapa(){
         attribution: "© OpenStreetMap",
         subdomains: "abc"
     }).addTo(state.mapa);
+    ativarGestosMapa(state.mapa);
     setTimeout(() => state.mapa.invalidateSize(), 200);
     scheduleMapResize();
 }
@@ -1442,12 +1490,22 @@ function destacarViaViagem(tripId){
 function initMapaViagem(){
     if (state.mapaViagem) return;
     if (typeof L === "undefined") return;
-    state.mapaViagem = L.map("mapaViagem", { zoomControl: true }).setView(BUS2.centro, BUS2.zoom);
+    state.mapaViagem = L.map("mapaViagem", {
+        zoomControl: true,
+        dragging: true,
+        touchZoom: true,
+        inertia: true,
+        scrollWheelZoom: false,
+        doubleClickZoom: true,
+        tap: true,
+        boxZoom: false
+    }).setView(BUS2.centro, BUS2.zoom);
     state.tileLayerViagem = L.tileLayer(BUS2.tiles.light, {
         maxZoom: 18,
         attribution: "© OpenStreetMap",
         subdomains: "abc"
     }).addTo(state.mapaViagem);
+    ativarGestosMapa(state.mapaViagem);
 }
 
 function renderViagem(){
