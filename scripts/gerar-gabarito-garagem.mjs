@@ -169,16 +169,20 @@ function infoMerge(r, c) {
 }
 
 const colWidths = [];
+const COL_LARGURA_PADRAO = 24;
+const COL_LARGURA_FAIXA = 10;
 for (let c = 0; c < GRADE_COLS; c += 1) {
-  const wch = ws["!cols"]?.[c]?.wch ?? 3.5;
-  let px = Math.max(18, Math.round(wch * 7.2));
-  if (c >= 43 && c <= 45) px = 8;
-  colWidths.push(px);
+  colWidths.push(c >= 43 && c <= 45 ? COL_LARGURA_FAIXA : COL_LARGURA_PADRAO);
+}
+
+function alturaLinhaGrade(r) {
+  if (r === 0 || r === 12) return 36;
+  if (r === 13) return 24;
+  return 30;
 }
 
 const linhasGrade = [];
 for (let r = 0; r < GRADE_ROWS; r += 1) {
-  const rowH = ws["!rows"]?.[r]?.hpt ?? (r === 0 || r === 12 ? 20 : 46.5);
   const celulas = [];
 
   for (let c = 0; c < GRADE_COLS; c += 1) {
@@ -212,7 +216,7 @@ for (let r = 0; r < GRADE_ROWS; r += 1) {
     });
   }
 
-  linhasGrade.push({ r, h: Math.round(rowH * 1.15), celulas });
+  linhasGrade.push({ r, h: alturaLinhaGrade(r), celulas });
 }
 
 const messias = cellText(0, 0) || "Messias Wilmar de Souza";
@@ -220,21 +224,26 @@ const tiete = cellText(12, 0) || "Rua Tietê";
 
 linhasGrade.forEach((linha) => {
   linha.celulas.forEach((cel) => {
-    if (linha.r === 0 && cel.col === 0) {
-      cel.text = `→ Leste — ${messias}`;
-      cel.cor = "#FFFFFF";
-      cel.tipo = "via";
-    }
-    if (linha.r === 12 && cel.col === 0) {
-      cel.text = `← Oeste — ${tiete}`;
-      cel.cor = "#FFFFFF";
-      cel.tipo = "via";
-    }
-    if (linha.r === 1 && cel.col === 72 && cel.rowSpan > 1) {
+    if (linha.r === 0 && cel.c === 0) {
       cel.text = "↑ Norte — Duque de Caxias";
       cel.bg = "#1E3A5F";
       cel.cor = "#FFFFFF";
       cel.tipo = "via";
+      cel.viaPos = "topo";
+    }
+    if (linha.r === 12 && cel.c === 0) {
+      cel.text = `← Oeste — ${tiete}`;
+      cel.bg = "#1E3A5F";
+      cel.cor = "#FFFFFF";
+      cel.tipo = "via";
+      cel.viaPos = "base";
+    }
+    if (linha.r === 1 && cel.c === 72 && cel.rowSpan > 1) {
+      cel.text = `→ Leste — ${messias}`;
+      cel.bg = "#1E3A5F";
+      cel.cor = "#FFFFFF";
+      cel.tipo = "via";
+      cel.viaPos = "leste";
     }
     if (linha.r === 13 && cel.text === "LIVRE") {
       cel.text = "1º";

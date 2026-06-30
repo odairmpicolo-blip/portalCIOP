@@ -914,7 +914,7 @@
   }
 
   function avancarCelulaGabarito(input, sentido = 1) {
-    const scroll = input.closest(".gab-scroll-horizontal");
+    const scroll = input.closest(".gab-viewport-fit");
     if (!scroll) return;
     const inputs = [...scroll.querySelectorAll(".gab-cel-input")];
     const i = inputs.indexOf(input);
@@ -1365,11 +1365,6 @@
     const wrap = document.createElement("div");
     wrap.className = "gab-td-vaga-inner";
 
-    const rotulo = document.createElement("div");
-    rotulo.className = "gab-td-rotulo";
-    rotulo.textContent = obterRotuloVaga(filaKey, indice) || cel.rotulo || "";
-    wrap.appendChild(rotulo);
-
     const corpo = document.createElement("div");
     corpo.className = "gab-td-corpo";
 
@@ -1425,6 +1420,48 @@
     return wrap;
   }
 
+  let gabaritoResizeObserver = null;
+
+  function ajustarEscalaGabarito(scroll, tabela, skipObserve = false) {
+    if (!scroll || !tabela) return;
+    const aplicar = () => {
+      if (modoVisualizacaoMapa !== "gabarito") return;
+      tabela.style.transform = "none";
+      const padX = 8;
+      const padY = 8;
+      const availW = Math.max(320, scroll.clientWidth - padX);
+      const availH = Math.max(240, scroll.clientHeight - padY);
+      const naturalW = tabela.offsetWidth;
+      const naturalH = tabela.offsetHeight;
+      if (!naturalW || !naturalH) return;
+      const scale = Math.min(1, availW / naturalW, availH / naturalH);
+      tabela.style.transform = `scale(${scale})`;
+      tabela.style.transformOrigin = "top center";
+      scroll.style.overflow = "hidden";
+      scroll.style.display = "flex";
+      scroll.style.justifyContent = "center";
+      scroll.style.alignItems = "flex-start";
+      scroll.dataset.gabScale = String(scale);
+    };
+
+    aplicar();
+    if (!skipObserve) {
+      if (gabaritoResizeObserver) gabaritoResizeObserver.disconnect();
+      gabaritoResizeObserver = new ResizeObserver(() => aplicar());
+      gabaritoResizeObserver.observe(scroll);
+      if (scroll.parentElement) gabaritoResizeObserver.observe(scroll.parentElement);
+    }
+  }
+
+  if (!window.__gabAjustarEscalaResize) {
+    window.__gabAjustarEscalaResize = () => {
+      const scroll = document.querySelector(".gab-viewport-fit");
+      const tabela = scroll?.querySelector(".gab-tabela-excel");
+      if (scroll && tabela) ajustarEscalaGabarito(scroll, tabela, true);
+    };
+    window.addEventListener("resize", window.__gabAjustarEscalaResize);
+  }
+
   function renderizarGabaritoCompleto() {
     const mapa = document.getElementById("patioMap");
     if (!mapa) return;
@@ -1440,7 +1477,7 @@
     mapa.className = "patio-map gabarito-completo";
 
     const scroll = document.createElement("div");
-    scroll.className = "gab-scroll-horizontal";
+    scroll.className = "gab-viewport-fit";
     scroll.setAttribute("tabindex", "0");
     scroll.setAttribute("aria-label", "Gabarito da garagem — planilha editável");
 
@@ -1460,6 +1497,7 @@
     grade.linhas.forEach((linha) => {
       const tr = document.createElement("tr");
       tr.style.height = `${linha.h}px`;
+      tr.dataset.gabRow = String(linha.r);
 
       linha.celulas.forEach((cel) => {
         const td = document.createElement("td");
@@ -1478,6 +1516,9 @@
           td.classList.add("gab-td--faixa");
         } else if (cel.tipo === "via") {
           td.classList.add("gab-td--via");
+          if (cel.viaPos === "topo") td.classList.add("gab-td--via-topo");
+          if (cel.viaPos === "base") td.classList.add("gab-td--via-base");
+          if (cel.viaPos === "leste") td.classList.add("gab-td--via-leste");
           td.textContent = cel.text;
           td.style.backgroundColor = cel.bg;
           td.style.color = cel.cor;
@@ -1501,6 +1542,7 @@
     configurarPlanilhaGabarito(scroll, tabela);
     anexarOuvintesMapa(mapa);
     restaurarFocoGabarito(foco);
+    requestAnimationFrame(() => ajustarEscalaGabarito(scroll, tabela));
   }
 
   function renderizarGabaritoEspacial() {
