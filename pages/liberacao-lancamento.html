@@ -752,7 +752,7 @@ async function apiGet(params){
     return data;
 }
 async function apiPost(payload){
-    const p=Object.assign({liberacao:"1"},payload);
+    const p=Object.assign({liberacao:"1",_:String(Date.now())},payload);
     const res=await fetch(API_URL+"?"+new URLSearchParams(p),{
         cache:"no-store",
         redirect:"follow",
@@ -766,18 +766,13 @@ async function apiPost(payload){
 }
 
 async function salvarPlanilhaLinha(payload){
+    await apiPost(payload);
     try{
         const mod=await moduloLiberacaoAws();
         if(mod&&await mod.liberacaoAwsDisponivel()){
-            await mod.salvarLinhaPlanilhaAws(payload);
-            return;
+            mod.salvarLinhaPlanilhaAws(payload).catch(()=>{});
         }
-    }catch(err){
-        const msg=String(err?.message||"");
-        if(msg==="Sessão expirada"||msg==="API AWS não configurada") throw err;
-        if(!/404|não encontrada|Rota/i.test(msg)) throw err;
-    }
-    await apiPost(payload);
+    }catch(_){}
 }
 
 function aplicarFiltroMaquina(){
@@ -1187,7 +1182,7 @@ async function salvarLinha(i){
     aplicarFormulasLinha(row);
     state.saving[i]=true;
     document.querySelector(".sync-"+i).innerHTML=syncBadge(row,i);
-    const payload={action:"update",_row:row._row};
+    const payload={action:"update",_row:String(row._row)};
     CAMPOS_EDITAVEIS.forEach(chave=>{
         payload[chave]=val(row,chave)||"";
     });
