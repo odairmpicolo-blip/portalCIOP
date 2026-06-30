@@ -268,7 +268,7 @@ const CACHE_STORAGE_KEY = "portal_liberacao_lancamento_v2";
 const LIBERACAO_MODO_JSON_HIBRIDO = true;
 const LIBERACAO_FLUXO_AWS = true;
 const INTERVALO_SYNC_BACKGROUND_MS = 8000;
-const LIBERACAO_AWS_JS = "../assets/js/liberacao-aws.js?v=20260630a";
+const LIBERACAO_AWS_JS = "../assets/js/liberacao-aws.js?v=20260630b";
 const LIBERACAO_DATA_BASE = "../assets/data/liberacao";
 const LIBERACAO_MANIFEST_URL = LIBERACAO_DATA_BASE + "/manifest.json";
 const LIBERACAO_ACOMPANHAMENTO_URL = LIBERACAO_DATA_BASE + "/acompanhamento-semana.json";
@@ -752,16 +752,32 @@ async function apiGet(params){
     return data;
 }
 async function apiPost(payload){
-    const res=await fetch(API_URL,{
-        method:"POST",
-        body:new URLSearchParams(Object.assign({liberacao:"1"},payload)),
-        redirect:"follow"
+    const p=Object.assign({liberacao:"1"},payload);
+    const res=await fetch(API_URL+"?"+new URLSearchParams(p),{
+        cache:"no-store",
+        redirect:"follow",
+        signal:AbortSignal.timeout(PLANILHA_FETCH_TIMEOUT_MS)
     });
     const texto=await res.text();
     let data;
     try{ data=JSON.parse(texto); }catch(_){ throw new Error("Resposta inválida da planilha ao salvar."); }
     if(!data.ok) throw new Error(data.erro||"Erro ao salvar.");
     return data;
+}
+
+async function salvarPlanilhaLinha(payload){
+    try{
+        const mod=await moduloLiberacaoAws();
+        if(mod&&await mod.liberacaoAwsDisponivel()){
+            await mod.salvarLinhaPlanilhaAws(payload);
+            return;
+        }
+    }catch(err){
+        const msg=String(err?.message||"");
+        if(msg==="Sessão expirada"||msg==="API AWS não configurada") throw err;
+        if(!/404|não encontrada|Rota/i.test(msg)) throw err;
+    }
+    await apiPost(payload);
 }
 
 function aplicarFiltroMaquina(){
@@ -1186,9 +1202,10 @@ async function salvarLinha(i){
     dsqlPayload._row=row._row;
     dsqlPayload.data_iso=dataIso;
     try{
+        await salvarPlanilhaLinha(payload);
         if(LIBERACAO_FLUXO_AWS&&await liberacaoAwsAtiva()){
             const aws=await moduloLiberacaoAws();
-            await aws.salvarLinhaLiberacaoAws(dataIso,row._row,dsqlPayload);
+            aws.salvarLinhaLiberacaoAws(dataIso,row._row,dsqlPayload).catch(()=>{});
             aws.importarPlanilhaLiberacaoAws(dataIso).catch(()=>{});
             setTimeout(()=>{
                 aws.carregarJanelaLiberacaoAws(dataIso,dataIso).then(pack=>{
@@ -1200,13 +1217,6 @@ async function salvarLinha(i){
                     atualizarLinhaPosSalvar(i);
                 }).catch(()=>{});
             },2000);
-        }else{
-            if(await liberacaoAwsAtiva()){
-                const aws=await moduloLiberacaoAws();
-                await aws.salvarLinhaPlanilhaAws(payload);
-            }else{
-                await apiPost(payload);
-            }
         }
         row._dirty=false;
         row._syncErro=false;

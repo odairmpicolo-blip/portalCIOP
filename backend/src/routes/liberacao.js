@@ -4,8 +4,7 @@ import { requireApiKey, requireFirebaseUser } from "../middleware/auth.js";
 import {
   buscarLiberacaoPlanilhaDia,
   enviarLinhaPlanilha,
-  listarDatasIso,
-  montarPayloadUpdatePlanilha
+  listarDatasIso
 } from "../lib/liberacao-planilha.js";
 
 const router = Router();
@@ -80,8 +79,7 @@ router.put("/:dataIso/:rowId", requireFirebaseUser, async (req, res) => {
     clean._row = rowId;
     clean.origem = "portal";
     await upsertLinha(dataIso, rowId, clean, req.user?.email || null);
-    const planilha = await enviarLinhaPlanilha(montarPayloadUpdatePlanilha(rowId, clean));
-    res.json({ ok: true, planilha });
+    res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ ok: false, erro: err.message });
   }

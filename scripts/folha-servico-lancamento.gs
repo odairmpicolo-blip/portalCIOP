@@ -75,6 +75,10 @@ function doGet(e) {
   try {
     const params = e && e.parameter ? e.parameter : {};
     if (String(params.liberacao || "") === "1") {
+      const action = String(params.action || "").toLowerCase();
+      if (action === "update" || action === "upsert" || action === "create") {
+        return json_(montarRespostaLiberacaoPost_(params));
+      }
       return json_(montarRespostaLiberacaoGet_(params));
     }
   if (String(params.somente_opcoes || "") === "1") {
