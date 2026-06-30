@@ -268,7 +268,7 @@ const CACHE_STORAGE_KEY = "portal_liberacao_lancamento_v2";
 const LIBERACAO_MODO_JSON_HIBRIDO = true;
 const LIBERACAO_FLUXO_AWS = true;
 const INTERVALO_SYNC_BACKGROUND_MS = 8000;
-const LIBERACAO_AWS_JS = "../assets/js/liberacao-aws.js?v=20260627live";
+const LIBERACAO_AWS_JS = "../assets/js/liberacao-aws.js?v=20260630a";
 const LIBERACAO_DATA_BASE = "../assets/data/liberacao";
 const LIBERACAO_MANIFEST_URL = LIBERACAO_DATA_BASE + "/manifest.json";
 const LIBERACAO_ACOMPANHAMENTO_URL = LIBERACAO_DATA_BASE + "/acompanhamento-semana.json";
@@ -1189,7 +1189,6 @@ async function salvarLinha(i){
         if(LIBERACAO_FLUXO_AWS&&await liberacaoAwsAtiva()){
             const aws=await moduloLiberacaoAws();
             await aws.salvarLinhaLiberacaoAws(dataIso,row._row,dsqlPayload);
-            await apiPost(payload);
             aws.importarPlanilhaLiberacaoAws(dataIso).catch(()=>{});
             setTimeout(()=>{
                 aws.carregarJanelaLiberacaoAws(dataIso,dataIso).then(pack=>{
@@ -1202,7 +1201,12 @@ async function salvarLinha(i){
                 }).catch(()=>{});
             },2000);
         }else{
-            await apiPost(payload);
+            if(await liberacaoAwsAtiva()){
+                const aws=await moduloLiberacaoAws();
+                await aws.salvarLinhaPlanilhaAws(payload);
+            }else{
+                await apiPost(payload);
+            }
         }
         row._dirty=false;
         row._syncErro=false;

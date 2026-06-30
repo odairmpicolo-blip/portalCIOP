@@ -57,6 +57,37 @@ export async function buscarLiberacaoPlanilhaPeriodo(dataDe, dataAte) {
   return data.dados || [];
 }
 
+const CAMPOS_EDITAVEIS = [
+  "carro",
+  "motorista",
+  "saida_real",
+  "trajeto_ocioso_correto",
+  "inicio_real",
+  "observacoes"
+];
+
+const CAMPOS_FORMULA_PLANILHA = [
+  "saiu_no_horario",
+  "saiu_no_horaro",
+  "saida_atrasado_adiantado",
+  "minutos_atrasado_garagem",
+  "minutos_adiantado_garagem",
+  "inicio_no_horario",
+  "minutos_atrasado_no_inicio",
+  "minutos_adiantado_no_inicio"
+];
+
+export function montarPayloadUpdatePlanilha(rowId, row) {
+  const payload = { action: "update", _row: String(rowId) };
+  CAMPOS_EDITAVEIS.forEach((chave) => {
+    payload[chave] = String(row?.[chave] ?? "");
+  });
+  CAMPOS_FORMULA_PLANILHA.forEach((chave) => {
+    payload[chave] = String(row?.[chave] ?? "");
+  });
+  return payload;
+}
+
 export async function enviarLinhaPlanilha(payload) {
   const body = new URLSearchParams({ liberacao: "1", ...payload });
   const res = await fetch(config.liberacaoApiUrl, {

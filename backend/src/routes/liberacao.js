@@ -3,7 +3,9 @@ import { query } from "../db.js";
 import { requireApiKey, requireFirebaseUser } from "../middleware/auth.js";
 import {
   buscarLiberacaoPlanilhaDia,
-  listarDatasIso
+  enviarLinhaPlanilha,
+  listarDatasIso,
+  montarPayloadUpdatePlanilha
 } from "../lib/liberacao-planilha.js";
 
 const router = Router();
@@ -78,7 +80,22 @@ router.put("/:dataIso/:rowId", requireFirebaseUser, async (req, res) => {
     clean._row = rowId;
     clean.origem = "portal";
     await upsertLinha(dataIso, rowId, clean, req.user?.email || null);
-    res.json({ ok: true });
+    const planilha = await enviarLinhaPlanilha(montarPayloadUpdatePlanilha(rowId, clean));
+    res.json({ ok: true, planilha });
+  } catch (err) {
+    res.status(500).json({ ok: false, erro: err.message });
+  }
+});
+
+router.post("/planilha-linha", requireFirebaseUser, async (req, res) => {
+  const payload = req.body;
+  if (!payload || typeof payload !== "object") {
+    res.status(400).json({ ok: false, erro: "Payload inválido" });
+    return;
+  }
+  try {
+    const planilha = await enviarLinhaPlanilha(payload);
+    res.json({ ok: true, planilha });
   } catch (err) {
     res.status(500).json({ ok: false, erro: err.message });
   }

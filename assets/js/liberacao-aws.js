@@ -37,6 +37,16 @@ export async function salvarLinhaLiberacaoAws(dataIso, rowId, payload) {
   });
 }
 
+/** Salva na planilha Google via API AWS (POST direto do browser falha no redirect do Apps Script). */
+export async function salvarLinhaPlanilhaAws(payload) {
+  const headers = await authHeaders();
+  return awsFetch("/liberacao/planilha-linha", {
+    method: "POST",
+    body: payload,
+    ...headers
+  });
+}
+
 export async function importarPlanilhaLiberacaoAws(dataIso) {
   const headers = await authHeaders();
   const qs = new URLSearchParams({ data: dataIso });
