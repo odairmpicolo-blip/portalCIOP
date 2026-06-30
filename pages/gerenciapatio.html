@@ -247,7 +247,7 @@ h1 {
 }
 .patio-acoes-linha {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
     align-items: stretch;
     flex-shrink: 0;
@@ -277,9 +277,20 @@ h1 {
 .patio-acoes-linha .lancamento-form-centro .form-control {
     text-align: left;
 }
+@media (max-width: 1180px) {
+    .patio-acoes-linha {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .patio-acoes-linha .lancamento-card {
+        grid-column: 1 / -1;
+    }
+}
 @media (max-width: 900px) {
     .patio-acoes-linha {
         grid-template-columns: 1fr;
+    }
+    .patio-acoes-linha .lancamento-card {
+        grid-column: auto;
     }
 }
 .patio-acoes-linha > .card {
@@ -293,6 +304,9 @@ h1 {
 .patio-acoes-linha .consulta-hint,
 .patio-acoes-linha .lancamento-dica {
     display: none;
+}
+.patio-acoes-linha .lancamento-card .lancamento-form-centro {
+    flex: 0 0 auto;
 }
 .patio-gabarito-full {
     width: 100%;
@@ -1064,6 +1078,28 @@ h1 {
 }
 .gab-td-lista-titulo:hover {
     background: rgba(0,0,0,0.12);
+}
+.gab-td-lista-lancamento {
+    flex: 0 0 auto;
+}
+.gab-lista-input {
+    width: 100%;
+    min-height: 24px;
+    border: 1px solid rgba(15, 23, 42, 0.18);
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.88);
+    color: var(--blue);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    text-align: center;
+    outline: none;
+    padding: 3px 5px;
+}
+.gab-lista-input:focus {
+    background: #fff;
+    border-color: var(--orange);
+    box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.14);
 }
 .gab-td-lista-carros {
     display: flex;
@@ -1873,9 +1909,13 @@ h1 {
     gap: 8px;
     margin-bottom: 14px;
 }
+.lancamento-card .lancamento-atalhos {
+    gap: 6px;
+    margin-bottom: 8px;
+}
 .btn-atalho-fila {
-    flex: 1 1 calc(50% - 4px);
-    min-width: 120px;
+    flex: 1 1 86px;
+    min-width: 82px;
     border: 1px solid var(--border);
     border-radius: 8px;
     background: #fff;
@@ -1885,6 +1925,11 @@ h1 {
     padding: 10px 8px;
     cursor: pointer;
     font-family: inherit;
+}
+.lancamento-card .btn-atalho-fila {
+    min-height: 30px;
+    padding: 7px 8px;
+    font-size: 11px;
 }
 .btn-atalho-fila:hover { background: #f1f5f9; }
 .btn-atalho-fila.bloqueado {
@@ -2419,13 +2464,38 @@ h1 {
                 <div id="pedidoErro" class="lancamento-erro" role="alert"></div>
                 <div id="pedidoOk" class="lancamento-ok" aria-live="polite"></div>
             </div>
-        </div>
 
-        <div hidden aria-hidden="true">
-            <select id="selectFila"></select>
-            <input type="text" id="inputFilaBus" tabindex="-1">
-            <div id="lancamentoErro"></div>
-            <div id="lancamentoOk"></div>
+            <div class="card lancamento-rapido lancamento-card">
+                <div class="card-title">📍 Lançamento rápido</div>
+                <div class="lancamento-atalhos" aria-label="Atalhos de fileiras do pátio">
+                    <button type="button" class="btn-atalho-fila" data-atalho-fila="mistos_f1">Mistos F1</button>
+                    <button type="button" class="btn-atalho-fila" data-atalho-fila="mistos_f2">Mistos F2</button>
+                    <button type="button" class="btn-atalho-fila" data-atalho-fila="mistos_f3">Mistos F3</button>
+                    <button type="button" class="btn-atalho-fila" data-atalho-fila="mistos_f4">Mistos F4</button>
+                    <button type="button" class="btn-atalho-fila" data-atalho-fila="pesados_f1">Pesados F1</button>
+                    <button type="button" class="btn-atalho-fila" data-atalho-fila="pesados_f2">Pesados F2</button>
+                    <button type="button" class="btn-atalho-fila" data-atalho-fila="pesados_f3">Pesados F3</button>
+                    <button type="button" class="btn-atalho-fila" data-atalho-fila="pesados_f4">Pesados F4</button>
+                    <button type="button" class="btn-atalho-fila" data-atalho-fila="leves_f1">Leves</button>
+                    <button type="button" class="btn-atalho-fila" data-atalho-fila="corujao">Corujão</button>
+                    <button type="button" class="btn-atalho-fila" data-atalho-fila="cot">COT</button>
+                    <button type="button" class="btn-atalho-fila" data-atalho-fila="latavador_f1">Lavador</button>
+                    <button type="button" class="btn-atalho-fila bloqueado" data-atalho-fila="reforma">Reforma</button>
+                    <button type="button" class="btn-atalho-fila bloqueado" data-atalho-fila="oficina">Oficina</button>
+                </div>
+                <div class="lancamento-form-centro">
+                    <div class="form-group">
+                        <label for="selectFila">Fila de destino</label>
+                        <select id="selectFila" class="form-control"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="inputFilaBus">Prefixo do veículo</label>
+                        <input type="text" id="inputFilaBus" class="form-control" placeholder="Ex.: 3105 + Enter" autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="6">
+                    </div>
+                </div>
+                <div id="lancamentoErro" class="lancamento-erro" role="alert"></div>
+                <div id="lancamentoOk" class="lancamento-ok" aria-live="polite"></div>
+            </div>
         </div>
 
         <div class="card patio-gabarito-full">
@@ -2478,7 +2548,7 @@ h1 {
 </footer>
 
 <script src="../assets/js/frota-patio-data.js"></script>
-<script src="../assets/js/gabarito-garagem-data.js?v=20260630rotacionado1"></script>
-<script src="../assets/js/gerenciapatio-app.js?v=20260630rotacionado1"></script>
+<script src="../assets/js/gabarito-garagem-data.js?v=20260630edicao1"></script>
+<script src="../assets/js/gerenciapatio-app.js?v=20260630edicao1"></script>
 </body>
 </html>

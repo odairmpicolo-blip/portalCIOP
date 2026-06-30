@@ -1021,6 +1021,24 @@
       });
     });
 
+    tabela.querySelectorAll(".gab-lista-input").forEach((input) => {
+      input.addEventListener("input", () => {
+        normalizarPrefixoInput(input);
+        limparFeedbackLancamento();
+      });
+      input.addEventListener("focus", () => {
+        definirFilaSelecionada(input.dataset.fila);
+        input.select();
+      });
+      input.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter") return;
+        e.preventDefault();
+        const prefixo = normalizarPrefixoInput(input);
+        definirFilaSelecionada(input.dataset.fila);
+        lancarPrefixoEmFila(prefixo, input.dataset.fila, input);
+      });
+    });
+
     function tdClassAdd(inp) {
       inp.closest(".gab-td--vaga")?.classList.add("gab-td--ativa");
     }
@@ -1412,6 +1430,22 @@
     titulo.textContent = cel.text || FILA_MAP[filaKey]?.label || filaKey;
     wrap.appendChild(titulo);
 
+    const lancamento = document.createElement("div");
+    lancamento.className = "gab-td-lista-lancamento";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "gab-lista-input";
+    input.inputMode = "numeric";
+    input.pattern = "[0-9]*";
+    input.maxLength = 6;
+    input.autocomplete = "off";
+    input.spellcheck = false;
+    input.placeholder = "Prefixo";
+    input.dataset.fila = filaKey;
+    input.setAttribute("aria-label", `Lançar veículo em ${obterNomeFila(filaKey)}`);
+    lancamento.appendChild(input);
+    wrap.appendChild(lancamento);
+
     const lista = document.createElement("div");
     lista.className = "gab-td-lista-carros";
     const carros = (patio.filas[filaKey] || []).filter((p) => p != null && String(p).trim());
@@ -1749,6 +1783,11 @@
     const prefixo = normalizarPrefixoInput(input);
     const filaKey = select?.value;
 
+    lancarPrefixoEmFila(prefixo, filaKey, input);
+  }
+
+  function lancarPrefixoEmFila(prefixo, filaKey, input) {
+    if (lancamentoEmAndamento) return false;
     limparFeedbackLancamento();
 
     if (!prefixo) {
@@ -1788,6 +1827,7 @@
     }
 
     aplicarAlocacao(prefixo, filaKey, input);
+    return true;
   }
 
   function togglePedido(prefixo) {

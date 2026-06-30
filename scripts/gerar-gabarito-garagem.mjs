@@ -22,6 +22,14 @@ const GRADE_COLS = ehPlanilhaRotacionada ? 13 : 74;
 const GRADE_START_ROW = ehPlanilhaRotacionada ? 1 : 0;
 const GRADE_END_ROW = ehPlanilhaRotacionada ? 73 : 13;
 const GRADE_ROWS = GRADE_END_ROW - GRADE_START_ROW + 1;
+const mergesSinteticosRotacionados = ehPlanilhaRotacionada
+  ? [
+      { s: { r: 3, c: 1 }, e: { r: 5, c: 4 }, text: "OFICINA" },
+      { s: { r: 3, c: 6 }, e: { r: 5, c: 8 }, text: "COT" },
+      { s: { r: 3, c: 10 }, e: { r: 5, c: 11 }, text: "REFORMA" },
+      { s: { r: 13, c: 11 }, e: { r: 17, c: 11 }, text: "LAVADOR" }
+    ]
+  : [];
 
 function cellText(r, c) {
   const v = ws[XLSX.utils.encode_cell({ r, c })]?.v;
@@ -199,6 +207,16 @@ allSlots.forEach((s) => {
 });
 
 function infoMerge(r, c) {
+  for (const m of mergesSinteticosRotacionados) {
+    if (r >= m.s.r && r <= m.e.r && c >= m.s.c && c <= m.e.c) {
+      return {
+        master: r === m.s.r && c === m.s.c,
+        colSpan: m.e.c - m.s.c + 1,
+        rowSpan: m.e.r - m.s.r + 1,
+        text: m.text
+      };
+    }
+  }
   const merges = ws["!merges"] || [];
   for (const m of merges) {
     if (r >= m.s.r && r <= m.e.r && c >= m.s.c && c <= m.e.c) {
@@ -241,7 +259,7 @@ for (let r = GRADE_START_ROW; r <= GRADE_END_ROW; r += 1) {
     if (!merge.master) continue;
 
     const cell = ws[XLSX.utils.encode_cell({ r, c })];
-    const text = cellText(r, c);
+    const text = merge.text || cellText(r, c);
     let bg = resolveHexRgb(cell);
     if (!bg) {
       if (r === 0 || r === 12) bg = "#000000";
