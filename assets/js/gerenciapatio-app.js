@@ -139,10 +139,10 @@
 
   const PLANTA_GARAGEM = {
     saidas: {
-      norte: { titulo: "Norte", via: "Messias Wilmar de Souza", icone: "↑" },
-      oeste: { titulo: "Oeste", via: "José Dias Aro", icone: "←" },
-      leste: { titulo: "Leste", via: "Duque de Caxias", icone: "→" },
-      sul: { titulo: "Sul", via: "Rua Tietê", icone: "↓" }
+      norte: { titulo: "Norte", via: "Duque de Caxias", icone: "↑" },
+      leste: { titulo: "Leste", via: "Messias Wilmar de Souza", icone: "→" },
+      oeste: { titulo: "Oeste", via: "Rua Tietê", icone: "←" },
+      sul: { titulo: "Sul", via: "José Dias Aro", icone: "↓" }
     },
     faixaNorte: [
       { key: "muro", label: "Muro", layout: "horizontal" },
@@ -281,12 +281,17 @@
     return "";
   }
 
+  function classeBadgeOrdemSaida(ordemSaida) {
+    return ordemSaida === "1º" || ordemSaida === "LIVRE" ? "livre" : "seq";
+  }
+
   function rotuloOrdemSaidaFila(filaKey, filaCfg) {
     const gab = window.GABARITO_GARAGEM?.ordemSaida?.[filaKey];
-    if (gab) return gab;
-    if (filaCfg.horarioMinimo || filaCfg.saidaLivre) return "LIVRE";
+    if (gab) return gab === "LIVRE" ? "1º" : gab;
+    if (filaCfg.horarioMinimo || filaCfg.saidaLivre) return "1º";
     const ordem = filaCfg.ordem || 0;
     if (ordem >= 2) return `${ordem}º`;
+    if (ordem === 1) return "1º";
     return "";
   }
 
@@ -676,7 +681,7 @@
       : "";
     const ordemSaida = rotuloOrdemSaidaFila(filaKey, filaCfg);
     const ordemBadge = ordemSaida
-      ? `<span class="patio-ordem-saida patio-ordem-saida--${ordemSaida === "LIVRE" ? "livre" : "seq"}" title="Ordem de saída">${ordemSaida}</span>`
+      ? `<span class="patio-ordem-saida patio-ordem-saida--${classeBadgeOrdemSaida(ordemSaida)}" title="Ordem de saída">${ordemSaida}</span>`
       : "";
 
     const head = document.createElement("button");
@@ -750,7 +755,7 @@
     mapa.querySelectorAll(".patio-fila-head, .garagem-col-head, .gab-faixa-head, .gab-td-lista-titulo").forEach((btn) => {
       btn.addEventListener("click", () => {
         definirFilaSelecionada(btn.dataset.fila);
-        document.getElementById("inputFilaBus")?.focus();
+        focarPrimeiraCelulaFila(btn.dataset.fila);
       });
     });
 
@@ -767,6 +772,257 @@
         togglePedido(btn.dataset.prefixo);
       });
     });
+  }
+
+  function mostrarStatusGabarito(msg, tipo = "ok") {
+    const el = document.getElementById("gabaritoStatus");
+    if (!el) return;
+    el.textContent = msg || "";
+    el.className = "gab-status-bar";
+    if (!msg) return;
+    if (tipo === "erro") el.classList.add("gab-status--erro");
+    else if (tipo === "ok") el.classList.add("gab-status--ok");
+    if (tipo !== "erro") {
+      clearTimeout(mostrarStatusGabarito._timer);
+      mostrarStatusGabarito._timer = setTimeout(() => {
+        el.textContent = "";
+        el.className = "gab-status-bar";
+      }, 2800);
+    }
+  }
+
+  function lerPrefixoCelula(input) {
+    return String(input?.value || "").replace(/\D/g, "").trim();
+  }
+
+  function aplicarEstiloCelulaInput(input, filaKey, prefixo) {
+    const p = String(prefixo || "");
+    input.classList.toggle("is-pedido", Boolean(p && patio.pedidos.includes(p)));
+    input.classList.toggle("is-bloq", ehFilaBloqueada(filaKey));
+  }
+
+  function removerVeiculoDoSlot(filaKey, indice) {
+    const grade = patio.filas[filaKey];
+    if (!grade) return null;
+    const p = grade[indice];
+    if (!p) return null;
+    if (filaUsaGrade(filaKey)) grade[indice] = null;
+    else grade.splice(indice, 1);
+    return String(p);
+  }
+
+  function colocarVeiculoNoSlot(prefixo, filaKey, indice) {
+    if (!Array.isArray(patio.filas[filaKey])) patio.filas[filaKey] = criarGradeVazia(filaKey);
+    patio.filas[filaKey][indice] = String(prefixo);
+  }
+
+  function sincronizarInputGabarito(filaKey, indice) {
+    const input = document.querySelector(
+      `td.gab-td--vaga[data-fila="${filaKey}"][data-indice="${indice}"] .gab-cel-input`
+    );
+    if (!input) return;
+    const grade = patio.filas[filaKey] || [];
+    const val = grade[indice] ? String(grade[indice]) : "";
+    input.value = val;
+    input.dataset.valorAnterior = val;
+    aplicarEstiloCelulaInput(input, filaKey, val);
+  }
+
+  function commitCelulaGabarito(input) {
+    const td = input.closest(".gab-td--vaga");
+    if (!td) return true;
+    const filaKey = td.dataset.fila;
+    const indice = Number(td.dataset.indice);
+    const anterior = input.dataset.valorAnterior || "";
+    const novo = lerPrefixoCelula(input);
+    input.value = novo;
+
+    if (novo === anterior) return true;
+
+    if (!novo) {
+      if (anterior) {
+        removerVeiculoDoSlot(filaKey, indice);
+        patio.pedidos = patio.pedidos.filter((p) => p !== anterior);
+      }
+      input.dataset.valorAnterior = "";
+      aplicarEstiloCelulaInput(input, filaKey, "");
+      salvarEstado();
+      atualizarResumo();
+      renderizarListaNaoUtilizados();
+      return true;
+    }
+
+    if (!veiculoExisteNaFrota(novo)) {
+      input.value = anterior;
+      mostrarStatusGabarito(`Veículo ${novo} não existe na frota.`, "erro");
+      input.select();
+      return false;
+    }
+
+    const loc = localizarVeiculo(novo);
+    if (loc && (loc.filaKey !== filaKey || loc.posicao !== indice)) {
+      removerVeiculoDoSlot(loc.filaKey, loc.posicao);
+      sincronizarInputGabarito(loc.filaKey, loc.posicao);
+    } else if (anterior && anterior !== novo) {
+      removerVeiculoDoSlot(filaKey, indice);
+    }
+
+    colocarVeiculoNoSlot(novo, filaKey, indice);
+    if (ehFilaBloqueada(filaKey)) {
+      patio.pedidos = patio.pedidos.filter((p) => p !== novo);
+    }
+    input.dataset.valorAnterior = novo;
+    aplicarEstiloCelulaInput(input, filaKey, novo);
+    salvarEstado();
+    atualizarResumo();
+    renderizarListaNaoUtilizados();
+    mostrarStatusGabarito(`✓ ${novo} — ${obterNomeFila(filaKey)}`);
+    return true;
+  }
+
+  function construirMatrizInputsGabarito(tabela) {
+    const matriz = [];
+    tabela.querySelectorAll("tr").forEach((tr) => {
+      const row = [...tr.querySelectorAll(".gab-cel-input")];
+      if (row.length) matriz.push(row);
+    });
+    return matriz;
+  }
+
+  function acharPosicaoInputGabarito(matriz, input) {
+    for (let r = 0; r < matriz.length; r += 1) {
+      const c = matriz[r].indexOf(input);
+      if (c >= 0) return { r, c };
+    }
+    return null;
+  }
+
+  function focarCelulaRelativaGabarito(input, dr, dc) {
+    const tabela = input.closest(".gab-tabela-excel");
+    if (!tabela) return;
+    const matriz = construirMatrizInputsGabarito(tabela);
+    const pos = acharPosicaoInputGabarito(matriz, input);
+    if (!pos) return;
+    const nr = pos.r + dr;
+    if (nr < 0 || nr >= matriz.length) return;
+    const nc = Math.max(0, Math.min(matriz[nr].length - 1, pos.c + dc));
+    const alvo = matriz[nr][nc];
+    if (alvo) {
+      alvo.focus();
+      alvo.select();
+    }
+  }
+
+  function avancarCelulaGabarito(input, sentido = 1) {
+    const scroll = input.closest(".gab-scroll-horizontal");
+    if (!scroll) return;
+    const inputs = [...scroll.querySelectorAll(".gab-cel-input")];
+    const i = inputs.indexOf(input);
+    const alvo = inputs[i + sentido];
+    if (alvo) {
+      alvo.focus();
+      alvo.select();
+    }
+  }
+
+  function focarPrimeiraCelulaFila(filaKey) {
+    const input = document.querySelector(
+      `td.gab-td--vaga[data-fila="${filaKey}"] .gab-cel-input`
+    );
+    if (input) {
+      input.focus();
+      input.select();
+      input.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+  }
+
+  function obterFocoGabarito() {
+    const td = document.activeElement?.closest?.(".gab-td--vaga");
+    if (!td) return null;
+    return { fila: td.dataset.fila, indice: td.dataset.indice };
+  }
+
+  function restaurarFocoGabarito(ref) {
+    if (!ref?.fila) return;
+    const input = document.querySelector(
+      `td.gab-td--vaga[data-fila="${ref.fila}"][data-indice="${ref.indice}"] .gab-cel-input`
+    );
+    input?.focus();
+  }
+
+  function configurarPlanilhaGabarito(scroll, tabela) {
+    tabela.querySelectorAll(".gab-td--vaga").forEach((td) => {
+      td.addEventListener("dblclick", (e) => {
+        e.preventDefault();
+        const filaKey = td.dataset.fila;
+        const indice = Number(td.dataset.indice);
+        if (td.querySelector(".gab-cel-bloq")) {
+          toggleBloqueioVaga(filaKey, indice);
+          return;
+        }
+        const input = td.querySelector(".gab-cel-input");
+        if (input && !input.value.trim()) {
+          toggleBloqueioVaga(filaKey, indice);
+        }
+      });
+    });
+
+    tabela.querySelectorAll(".gab-cel-input").forEach((input) => {
+      input.addEventListener("input", () => {
+        input.value = input.value.replace(/\D/g, "");
+      });
+      input.addEventListener("focus", () => {
+        tdClassAdd(input);
+        input.select();
+      });
+      input.addEventListener("blur", () => {
+        tdClassRemove(input);
+        commitCelulaGabarito(input);
+      });
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === "Tab") {
+          e.preventDefault();
+          if (commitCelulaGabarito(input)) {
+            avancarCelulaGabarito(input, e.shiftKey ? -1 : 1);
+          }
+          return;
+        }
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          commitCelulaGabarito(input);
+          focarCelulaRelativaGabarito(input, 1, 0);
+          return;
+        }
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          commitCelulaGabarito(input);
+          focarCelulaRelativaGabarito(input, -1, 0);
+          return;
+        }
+        if (e.key === "ArrowRight" && input.selectionStart === input.value.length) {
+          e.preventDefault();
+          commitCelulaGabarito(input);
+          focarCelulaRelativaGabarito(input, 0, 1);
+          return;
+        }
+        if (e.key === "ArrowLeft" && input.selectionStart === 0) {
+          e.preventDefault();
+          commitCelulaGabarito(input);
+          focarCelulaRelativaGabarito(input, 0, -1);
+        }
+        if (e.key === "Escape") {
+          input.value = input.dataset.valorAnterior || "";
+          input.blur();
+        }
+      });
+    });
+
+    function tdClassAdd(inp) {
+      inp.closest(".gab-td--vaga")?.classList.add("gab-td--ativa");
+    }
+    function tdClassRemove(inp) {
+      inp.closest(".gab-td--vaga")?.classList.remove("gab-td--ativa");
+    }
   }
 
   function renderizarMapaProfissional() {
@@ -924,7 +1180,7 @@
     if (!filaUsaGrade(filaKey)) return;
     const grade = patio.filas[filaKey] || [];
     if (grade[indice]) {
-      mostrarErroLancamento("Remova o carro antes de bloquear a vaga.");
+      mostrarStatusGabarito("Remova o carro antes de bloquear a vaga.", "erro");
       return;
     }
     if (!patio.bloqueioVagas) patio.bloqueioVagas = criarBloqueioPadrao();
@@ -933,7 +1189,9 @@
     else lista.add(indice);
     patio.bloqueioVagas[filaKey] = [...lista].sort((a, b) => a - b);
     salvarEstado();
-    renderizarPatio();
+    const foco = obterFocoGabarito();
+    renderizarMapa();
+    restaurarFocoGabarito(foco);
   }
 
   function criarColunaGaragem(filaKey, label, extraClass = "") {
@@ -1009,7 +1267,7 @@
     head.className = `gab-faixa-head${classeSaidaFila(filaCfg)}${filaCfg.bloqueado ? " bloqueado-lane" : ""}`;
     head.dataset.fila = filaKey;
     head.innerHTML = `
-      ${ordemSaida ? `<span class="patio-ordem-saida patio-ordem-saida--${ordemSaida === "LIVRE" ? "livre" : "seq"}">${ordemSaida}</span>` : ""}
+      ${ordemSaida ? `<span class="patio-ordem-saida patio-ordem-saida--${classeBadgeOrdemSaida(ordemSaida)}">${ordemSaida}</span>` : ""}
       <span class="gab-faixa-nome">${label}</span>
       <span class="gab-faixa-meta">${cap ? `${qtd}/${cap}` : `${qtd} veíc.`}</span>
     `;
@@ -1112,14 +1370,35 @@
     rotulo.textContent = obterRotuloVaga(filaKey, indice) || cel.rotulo || "";
     wrap.appendChild(rotulo);
 
-    const grade = patio.filas[filaKey] || [];
+    const corpo = document.createElement("div");
+    corpo.className = "gab-td-corpo";
+
     if (ehVagaBloqueada(filaKey, indice)) {
-      wrap.appendChild(criarSlotBloqueado(filaKey, indice));
-    } else if (grade[indice]) {
-      wrap.appendChild(criarQuadroCarro(grade[indice], filaKey));
+      const bloq = document.createElement("div");
+      bloq.className = "gab-cel-bloq";
+      bloq.title = "Vaga bloqueada — duplo clique para liberar";
+      corpo.appendChild(bloq);
     } else {
-      wrap.appendChild(criarSlotVazio(filaKey, indice));
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "gab-cel-input";
+      input.inputMode = "numeric";
+      input.pattern = "[0-9]*";
+      input.maxLength = 6;
+      input.autocomplete = "off";
+      input.spellcheck = false;
+      const grade = patio.filas[filaKey] || [];
+      const prefixo = grade[indice] ? String(grade[indice]) : "";
+      input.value = prefixo;
+      input.dataset.valorAnterior = prefixo;
+      input.setAttribute(
+        "aria-label",
+        `Vaga ${obterRotuloVaga(filaKey, indice) || cel.rotulo || ""} — ${obterNomeFila(filaKey)}`
+      );
+      aplicarEstiloCelulaInput(input, filaKey, prefixo);
+      corpo.appendChild(input);
     }
+    wrap.appendChild(corpo);
     return wrap;
   }
 
@@ -1156,19 +1435,14 @@
       return;
     }
 
+    const foco = obterFocoGabarito();
     mapa.innerHTML = "";
     mapa.className = "patio-map gabarito-completo";
-
-    const fonte = document.createElement("div");
-    fonte.className = "gab-fonte";
-    fonte.textContent = window.GABARITO_GARAGEM?.source
-      ? `Gabarito completo — ${window.GABARITO_GARAGEM.source} (role horizontalmente se necessário)`
-      : "Gabarito completo da garagem";
 
     const scroll = document.createElement("div");
     scroll.className = "gab-scroll-horizontal";
     scroll.setAttribute("tabindex", "0");
-    scroll.setAttribute("aria-label", "Planta da garagem — use a barra de rolagem para os lados");
+    scroll.setAttribute("aria-label", "Gabarito da garagem — planilha editável");
 
     const tabela = document.createElement("table");
     tabela.className = "gab-tabela-excel";
@@ -1200,6 +1474,13 @@
           td.dataset.fila = cel.filaKey;
           td.dataset.indice = String(cel.slotIndex);
           td.appendChild(criarConteudoCelulaVagaExcel(cel.filaKey, cel.slotIndex, cel));
+        } else if (cel.tipo === "faixa") {
+          td.classList.add("gab-td--faixa");
+        } else if (cel.tipo === "via") {
+          td.classList.add("gab-td--via");
+          td.textContent = cel.text;
+          td.style.backgroundColor = cel.bg;
+          td.style.color = cel.cor;
         } else if (cel.tipo === "lista" && cel.filaKey) {
           td.classList.add("gab-td--lista");
           td.dataset.fila = cel.filaKey;
@@ -1216,8 +1497,10 @@
     });
 
     scroll.appendChild(tabela);
-    mapa.append(fonte, scroll);
+    mapa.appendChild(scroll);
+    configurarPlanilhaGabarito(scroll, tabela);
     anexarOuvintesMapa(mapa);
+    restaurarFocoGabarito(foco);
   }
 
   function renderizarGabaritoEspacial() {
@@ -1308,9 +1591,9 @@
     const legenda = document.createElement("div");
     legenda.className = "gab-legenda-ordem";
     legenda.setAttribute("aria-label", "Ordem de saída");
-    (plantaCfg.legendaOrdemSaida || ["LIVRE", "2º", "3º", "4º"]).forEach((item) => {
+    (plantaCfg.legendaOrdemSaida || ["1º", "2º", "3º", "4º"]).forEach((item) => {
       const chip = document.createElement("span");
-      chip.className = `gab-legenda-chip${item === "LIVRE" ? " is-livre" : ""}`;
+      chip.className = `gab-legenda-chip${item === "1º" ? " is-livre" : ""}`;
       chip.textContent = item;
       legenda.appendChild(chip);
     });
@@ -1358,6 +1641,17 @@
     popularDatalist();
     atualizarResumo();
     renderizarListaNaoUtilizados();
+    if (modoVisualizacaoMapa === "gabarito") {
+      sincronizarTodosInputsGabarito();
+    }
+  }
+
+  function sincronizarTodosInputsGabarito() {
+    document.querySelectorAll(".gab-cel-input").forEach((input) => {
+      const td = input.closest(".gab-td--vaga");
+      if (!td) return;
+      sincronizarInputGabarito(td.dataset.fila, Number(td.dataset.indice));
+    });
   }
 
   function removerVeiculoDasFilas(prefixo) {
@@ -1482,7 +1776,9 @@
       patio.pedidos.push(prefixo);
     }
     salvarEstado();
-    renderizarPatio();
+    if (loc) sincronizarInputGabarito(loc.filaKey, loc.posicao);
+    renderizarListaNaoUtilizados();
+    atualizarResumo();
   }
 
   function marcarPedido() {
@@ -1502,7 +1798,9 @@
     try {
       patio.pedidos.push(prefixo);
       salvarEstado();
-      renderizarPatio();
+      sincronizarInputGabarito(val.loc.filaKey, val.loc.posicao);
+      renderizarListaNaoUtilizados();
+      atualizarResumo();
       mostrarOkPedido(`✓ ${prefixo} marcado como Pedido.`);
       if (input) {
         input.value = "";
@@ -1524,9 +1822,13 @@
   }
 
   function liberarCarro(prefixo) {
+    const loc = localizarVeiculo(prefixo);
     removerVeiculoDeTudo(prefixo);
     salvarEstado();
-    renderizarPatio();
+    if (loc) sincronizarInputGabarito(loc.filaKey, loc.posicao);
+    renderizarListaNaoUtilizados();
+    atualizarResumo();
+    if (modoVisualizacaoMapa === "zonas") renderizarMapa();
   }
 
   function limparTudo() {
@@ -1540,12 +1842,21 @@
     };
     salvarEstado();
     renderizarPatio();
+    focarPrimeiraCelulaGabarito();
     const resultBox = document.getElementById("resultOutput");
     if (resultBox) {
       resultBox.className = "result-box";
       resultBox.innerHTML = "";
     }
     document.getElementById("inputFilaBus")?.focus();
+  }
+
+  function focarPrimeiraCelulaGabarito() {
+    const input = document.querySelector(".gab-cel-input");
+    if (input) {
+      input.focus();
+      input.select();
+    }
   }
 
   function consultarFila() {
@@ -1586,7 +1897,68 @@
     input.focus();
   }
 
-  function exportarExcel() {
+  function formatarValorExportCarro(prefixo) {
+    const p = String(prefixo);
+    const tags = [];
+    if (patio.pedidos.includes(p)) tags.push("PEDIDO");
+    if (tags.length) return `${p} [${tags.join(" · ")}]`;
+    return p;
+  }
+
+  function valorCelulaExportGabarito(cel) {
+    if (cel.tipo === "vaga" && cel.filaKey && cel.slotIndex >= 0) {
+      if (ehVagaBloqueada(cel.filaKey, cel.slotIndex)) return "X";
+      const prefixo = patio.filas[cel.filaKey]?.[cel.slotIndex];
+      if (prefixo) return formatarValorExportCarro(prefixo);
+      return cel.rotulo || cel.text || "";
+    }
+    if (cel.tipo === "lista" && cel.filaKey) {
+      const carros = (patio.filas[cel.filaKey] || []).filter((p) => p != null && String(p).trim());
+      if (carros.length) return carros.map((p) => formatarValorExportCarro(p)).join(", ");
+      return cel.text || "";
+    }
+    if (cel.tipo === "faixa") return "";
+    return cel.text || "";
+  }
+
+  function corFundoExportGabarito(cel, valor) {
+    if (cel.tipo === "vaga" && cel.filaKey && cel.slotIndex >= 0) {
+      if (ehVagaBloqueada(cel.filaKey, cel.slotIndex)) return "#FEF2F2";
+      const prefixo = patio.filas[cel.filaKey]?.[cel.slotIndex];
+      if (prefixo && patio.pedidos.includes(String(prefixo))) return "#0B3A8A";
+    }
+    return cel.bg || "#FFFFFF";
+  }
+
+  function hexArgbExport(hex) {
+    if (!hex || !String(hex).startsWith("#")) return undefined;
+    return (`FF${String(hex).slice(1)}`).toUpperCase();
+  }
+
+  function prefixoDoValorExport(valor) {
+    const m = String(valor || "").match(/^(\d+)/);
+    return m ? m[1] : "";
+  }
+
+  function estiloCelulaExportGabarito(cel, valor) {
+    const bg = corFundoExportGabarito(cel, valor);
+    const prefixo = prefixoDoValorExport(valor);
+    const cor = prefixo && patio.pedidos.includes(prefixo)
+      ? "#FFFFFF"
+      : (cel.cor || "#1F2937");
+    const estilo = {
+      alignment: { horizontal: "center", vertical: "center", wrapText: true },
+      font: {
+        sz: cel.tipo === "via" ? 10 : 9,
+        bold: cel.tipo === "via" || cel.tipo === "rotulo",
+        color: hexArgbExport(cor) ? { rgb: hexArgbExport(cor) } : undefined
+      },
+      fill: hexArgbExport(bg) ? { patternType: "solid", fgColor: { rgb: hexArgbExport(bg) } } : undefined
+    };
+    return estilo;
+  }
+
+  function exportarExcelTabela() {
     const headers = TODAS_FILAS.map((f) => obterNomeFila(f.key).toUpperCase());
     const maxLinhas = Math.max(
       ...TODAS_FILAS.map((f) => {
@@ -1603,7 +1975,7 @@
       headers
     ];
 
-    for (let i = 0; i < maxLinhas; i++) {
+    for (let i = 0; i < maxLinhas; i += 1) {
       dadosExcel.push(
         TODAS_FILAS.map((f) => {
           const p = patio.filas[f.key]?.[i];
@@ -1621,6 +1993,64 @@
     ws["!cols"] = headers.map(() => ({ wch: 22 }));
     XLSX.utils.book_append_sheet(wb, ws, "Patio");
     XLSX.writeFile(wb, "Gabarito_Patio_CIOP_TCGL.xlsx");
+  }
+
+  function exportarExcel() {
+    const grade = window.GABARITO_GARAGEM?.gradeCompleta;
+    if (!grade?.linhas?.length) {
+      exportarExcelTabela();
+      return;
+    }
+
+    const ws = {};
+    const merges = [];
+    let maxR = 0;
+    const maxC = (grade.colWidths?.length || grade.cols || 1) - 1;
+
+    grade.linhas.forEach((linha) => {
+      maxR = Math.max(maxR, linha.r);
+      linha.celulas.forEach((cel) => {
+        const valor = valorCelulaExportGabarito(cel);
+        const ref = XLSX.utils.encode_cell({ r: linha.r, c: cel.c });
+        ws[ref] = {
+          v: valor,
+          t: "s",
+          s: estiloCelulaExportGabarito(cel, valor)
+        };
+        const rowSpan = cel.rowSpan || 1;
+        const colSpan = cel.colSpan || 1;
+        if (rowSpan > 1 || colSpan > 1) {
+          merges.push({
+            s: { r: linha.r, c: cel.c },
+            e: { r: linha.r + rowSpan - 1, c: cel.c + colSpan - 1 }
+          });
+        }
+      });
+    });
+
+    ws["!ref"] = XLSX.utils.encode_range({ r: 0, c: 0 }, { r: maxR, c: maxC });
+    ws["!merges"] = merges;
+    if (grade.colWidths?.length) {
+      ws["!cols"] = grade.colWidths.map((w) => ({ wpx: w }));
+    }
+    ws["!rows"] = grade.linhas.map((linha) => ({ hpt: Math.max(12, Math.round((linha.h || 40) * 0.72)) }));
+
+    const info = XLSX.utils.aoa_to_sheet([
+      ["Gabarito da Garagem — CIOP / TCGL"],
+      ["Gerado em", new Date().toLocaleString("pt-BR")],
+      ["Fonte", window.GABARITO_GARAGEM?.source || "Gabarito Garagem.xlsx"],
+      ["Veículos alocados", totalAlocados()],
+      ["Pedidos", patio.pedidos.length]
+    ]);
+    info["!cols"] = [{ wch: 22 }, { wch: 36 }];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Gabarito");
+    XLSX.utils.book_append_sheet(wb, info, "Info");
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `Gabarito_Garagem_${stamp}.xlsx`, { cellStyles: true });
+    mostrarStatusGabarito("Excel do gabarito completo gerado.");
   }
 
   function configurarInputs() {
@@ -1686,7 +2116,7 @@
     popularDatalist();
     atualizarResumo();
     renderizarListaNaoUtilizados();
-    document.getElementById("inputFilaBus")?.focus();
+    focarPrimeiraCelulaGabarito();
     if (window.portalLoading) window.portalLoading.hide();
   }
 

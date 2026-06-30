@@ -49,57 +49,32 @@ body {
     flex-direction: column;
     min-height: 100vh;
 }
-.consulta-panel {
-    display: grid;
-    grid-template-columns: minmax(260px, 360px) minmax(280px, 1fr);
-    gap: 12px;
-    align-items: stretch;
-    flex: 1;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.98);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    box-shadow: 0 10px 24px rgba(16, 24, 40, 0.08);
+body.patio-planilha-mode {
+    height: 100vh;
+    overflow: hidden;
 }
-.consulta-field label {
-    display: block;
-    font-size: 10px;
-    line-height: 1;
-    color: var(--muted);
-    font-weight: 800;
-    text-transform: uppercase;
-    margin-bottom: 6px;
+body.patio-planilha-mode footer {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    font-size: 11px;
 }
-.consulta-field input {
-    width: 100%;
-    min-height: 40px;
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    background: #fff;
-    color: var(--blue);
-    font-size: 16px;
-    font-weight: 800;
-    outline: none;
-    padding: 0 12px;
-}
-.consulta-field input:focus {
-    border-color: var(--blue2);
-    box-shadow: 0 0 0 3px rgba(11, 58, 138, 0.10);
-}
-.consulta-panel .result-box {
-    margin: 0;
-    min-height: 40px;
+.consulta-card .result-box {
+    margin-top: 8px;
+    min-height: 0;
     display: flex;
     align-items: center;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.35;
 }
-.consulta-panel .result-box:empty {
+.consulta-card .result-box:empty {
     display: none;
 }
-@media (max-width: 820px) {
-    .consulta-panel {
-        width: 100%;
-        grid-template-columns: 1fr;
-    }
+.consulta-card .consulta-hint {
+    font-size: 11px;
+    color: var(--muted);
+    margin: 8px 0 0;
+    line-height: 1.3;
 }
 .header {
     background: white;
@@ -110,6 +85,7 @@ body {
     align-items: center;
     border-bottom: 1px solid #e8edf6;
     box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    flex-shrink: 0;
 }
 .logo-ciop {
     height: 48px;
@@ -206,6 +182,12 @@ h1 {
 }
 .container.patio-container-wide {
     max-width: min(1920px, 100%);
+    margin: 10px auto;
+    padding: 0 14px;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .portal-toolbar {
@@ -214,7 +196,8 @@ h1 {
     justify-content: space-between;
     gap: 14px;
     flex-wrap: wrap;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
 }
 .btn-back {
     background: white;
@@ -242,44 +225,83 @@ h1 {
     gap: 25px;
 }
 
-/* Pátio: lançamento em cima, gabarito completo embaixo */
+/* Pátio: consulta + pedidos compactos; gabarito planilha ocupa o restante */
 .patio-page-layout {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
 }
-.patio-lancamento-top {
+.patio-acoes-linha {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-}
-@media (min-width: 900px) {
-    .patio-lancamento-top {
-        grid-template-columns: 1fr 1fr;
-        align-items: start;
-    }
-}
-.patio-lancamento-top .card {
-    margin-bottom: 0;
-}
-.patio-lancamento-extra {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+    align-items: stretch;
+    flex-shrink: 0;
 }
-@media (min-width: 900px) {
-    .patio-lancamento-extra {
-        grid-template-columns: auto 1fr;
-        align-items: start;
+.patio-acoes-linha > .card {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+.patio-acoes-linha .card-title {
+    text-align: left;
+    justify-content: flex-start;
+}
+.patio-acoes-linha .lancamento-form-centro {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    flex: 1;
+}
+.patio-acoes-linha .lancamento-form-centro .form-group {
+    text-align: left;
+}
+.patio-acoes-linha .lancamento-form-centro .form-group label {
+    text-align: left;
+}
+.patio-acoes-linha .lancamento-form-centro .form-control {
+    text-align: left;
+}
+@media (max-width: 900px) {
+    .patio-acoes-linha {
+        grid-template-columns: 1fr;
     }
+}
+.patio-acoes-linha > .card {
+    padding: 12px 16px;
+}
+.patio-acoes-linha .card-title {
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    font-size: 15px;
+}
+.patio-acoes-linha .consulta-hint,
+.patio-acoes-linha .lancamento-dica {
+    display: none;
 }
 .patio-gabarito-full {
     width: 100%;
     margin-bottom: 0;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 12px 16px 14px;
 }
 .patio-gabarito-full .patio-map {
     width: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+.patio-gabarito-full .patio-map.gabarito-completo {
+    flex: 1;
+    min-height: 0;
 }
 .patio-gabarito-full .garagem-planta-inner {
     width: 100%;
@@ -649,17 +671,46 @@ h1 {
 /* —— Gabarito completo (tabela Excel) —— */
 .gabarito-completo {
     width: 100%;
+    flex: 1;
+    min-height: 0;
 }
 .gab-scroll-horizontal {
     width: 100%;
-    overflow-x: auto;
-    overflow-y: auto;
-    max-height: min(78vh, 720px);
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
     border: 1px solid #94a3b8;
-    border-radius: 10px;
+    border-radius: 8px;
     background: #e5e7eb;
     box-shadow: inset 0 2px 8px rgba(15, 23, 42, 0.08);
     -webkit-overflow-scrolling: touch;
+}
+.gab-status-bar {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    min-height: 18px;
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+.gab-status-bar:empty { display: none; }
+.gab-status-bar.gab-status--erro { color: #991b1b; }
+.gab-status-bar.gab-status--ok { color: #065f46; }
+.gab-card-head--compact {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    flex-shrink: 0;
+}
+.gab-card-head--compact .gab-card-sub { display: none; }
+.gab-card-head-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+}
+.gab-legenda-bar--compact {
+    margin-bottom: 8px;
+    flex-shrink: 0;
 }
 .gab-scroll-horizontal:focus {
     outline: 2px solid var(--blue2);
@@ -690,8 +741,22 @@ h1 {
     white-space: nowrap;
 }
 .gab-td--vaga {
-    padding: 1px;
+    padding: 0;
     min-width: 0;
+    vertical-align: stretch;
+}
+.gab-td--faixa {
+    border: none !important;
+    background: #e8eef4 !important;
+    padding: 0;
+    min-width: 8px;
+}
+.gab-td--via {
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    padding: 4px 6px;
+    white-space: nowrap;
 }
 .gab-td--lista {
     vertical-align: top;
@@ -701,50 +766,141 @@ h1 {
 .gab-td-vaga-inner {
     display: flex;
     flex-direction: column;
-    align-items: stretch;
     height: 100%;
-    min-height: 44px;
+    min-height: 100%;
 }
 .gab-td-rotulo {
-    font-size: 7px;
+    font-size: 5px;
     font-weight: 800;
-    color: #374151;
+    color: #6b7280;
     line-height: 1;
-    padding: 1px 2px 0;
+    padding: 0 1px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex: 0 0 auto;
+    opacity: 0.85;
 }
-.gab-td-corpo,
-.gab-td-vaga-inner .garagem-slot,
-.gab-td-vaga-inner .garagem-slot-vazio,
-.gab-td-vaga-inner .garagem-slot-bloqueada {
+.gab-td--vaga.gab-td--ativa {
+    outline: 2px solid var(--orange);
+    outline-offset: -2px;
+    z-index: 2;
+}
+.gab-cel-input {
     flex: 1 1 auto;
-    width: 100% !important;
-    min-width: 0 !important;
-    min-height: 36px !important;
-    padding: 1px 1px 12px !important;
-    border-radius: 2px;
-    border-width: 1px;
-    border-top-width: 2px;
+    width: 100%;
+    min-height: 100%;
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 0 1px;
+    background: rgba(255, 255, 255, 0.45);
+    color: var(--blue);
+    font-family: inherit;
+    font-size: clamp(7px, 0.85vw, 11px);
+    font-weight: 800;
+    text-align: center;
+    outline: none;
+    box-sizing: border-box;
 }
-.gab-td-vaga-inner .garagem-slot-prefixo {
-    font-size: 10px;
+.gab-cel-input:focus {
+    background: #fff;
 }
-.gab-td-vaga-inner .garagem-slot-tech {
-    font-size: 6px;
-    display: none;
+.gab-cel-input.is-pedido {
+    background: var(--pedidos);
+    color: #fff;
 }
-.gab-td-vaga-inner .garagem-slot-actions {
+.gab-cel-input.is-pedido:focus {
+    background: #0a3270;
+}
+.gab-td-corpo {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    align-items: stretch;
+}
+.gab-cel-vazio,
+.gab-cel-bloq,
+.gab-cel-carro {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 100%;
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 0;
+    font-family: inherit;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.gab-cel-vazio {
+    background: rgba(255, 255, 255, 0.35);
+    cursor: pointer;
+}
+.gab-cel-vazio:hover { background: rgba(255, 255, 255, 0.55); }
+.gab-cel-bloq {
+    background: #fef2f2;
+    cursor: pointer;
+}
+.gab-cel-bloq::before,
+.gab-cel-bloq::after {
+    content: "";
+    position: absolute;
+    width: 70%;
+    height: 2px;
+    background: #dc2626;
+    border-radius: 1px;
+}
+.gab-cel-bloq::before { transform: rotate(35deg); }
+.gab-cel-bloq::after { transform: rotate(-35deg); }
+.gab-cel-carro {
+    background: rgba(255, 255, 255, 0.92);
+    border-top: 2px solid var(--blue2);
+}
+.gab-cel-carro.is-pedido {
+    background: var(--pedidos);
+    border-top-color: #031b44;
+}
+.gab-cel-carro.is-pedido .gab-cel-carro-num { color: #fff; }
+.gab-cel-carro.is-bloq {
+    background: #1f2937;
+    border-top-color: #000;
+}
+.gab-cel-carro-num {
+    font-size: clamp(8px, 1.8vw, 11px);
+    font-weight: 900;
+    color: var(--blue);
+    line-height: 1;
+}
+.gab-cel-carro-acoes {
+    position: absolute;
     bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
     gap: 1px;
+    line-height: 1;
 }
-.gab-td-vaga-inner .btn-pedido,
-.gab-td-vaga-inner .remove-btn {
-    font-size: 8px;
-    padding: 0 3px;
-    min-width: 14px;
-    line-height: 14px;
+.gab-cel-carro-acoes .btn-pedido,
+.gab-cel-carro-acoes .remove-btn {
+    border: none;
+    background: rgba(0, 0, 0, 0.08);
+    color: inherit;
+    font-size: 7px;
+    font-weight: 800;
+    padding: 0 2px;
+    min-width: 12px;
+    line-height: 12px;
+    cursor: pointer;
+    border-radius: 2px;
+}
+.gab-cel-carro.is-pedido .gab-cel-carro-acoes .btn-pedido,
+.gab-cel-carro.is-pedido .gab-cel-carro-acoes .remove-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
 }
 .gab-td-lista-inner {
     display: flex;
@@ -1526,31 +1682,11 @@ h1 {
 }
 
 .lancamento-rapido .form-control { font-size: 16px; font-weight: 700; }
-.lancamento-form-centro {
-    max-width: 300px;
-    margin: 0 auto;
-}
-.lancamento-form-centro .form-group {
-    text-align: center;
-}
-.lancamento-form-centro .form-group label {
-    text-align: center;
-}
-.lancamento-form-centro .form-control {
-    text-align: center;
-}
-.lancamento-pedidos .card-title {
-    text-align: center;
-    justify-content: center;
-}
-.lancamento-pedidos .lancamento-form-centro {
-    max-width: 280px;
-}
 .lancamento-dica {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--muted);
-    margin: -6px 0 12px;
-    line-height: 1.4;
+    margin: 8px 0 0;
+    line-height: 1.3;
 }
 .lancamento-erro {
     margin-top: 8px;
@@ -1603,13 +1739,9 @@ h1 {
 .btn-atalho-fila.bloqueado:hover { background: #fee2e2; }
 .lancamento-pedidos {
     border-top: 3px solid var(--pedidos);
-    margin-bottom: 16px;
 }
-.consulta-panel .consulta-hint {
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 4px;
-    line-height: 1.3;
+.consulta-card {
+    border-top: 3px solid var(--blue2);
 }
 
 /* Car Tag Style */
@@ -1787,6 +1919,28 @@ h1 {
     max-height: 220px;
     overflow-y: auto;
     align-content: flex-start;
+}
+.patio-nao-utilizados-inline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #f8fafc;
+    max-width: min(420px, 100%);
+}
+.patio-nao-utilizados-inline .patio-nao-utilizados-titulo {
+    margin: 0;
+    font-size: 11px;
+    gap: 4px;
+}
+.patio-nao-utilizados-inline .patio-nao-utilizados-lista {
+    max-height: 28px;
+    overflow: auto;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 .patio-nao-util-chip {
     font-size: 12px;
@@ -2015,7 +2169,7 @@ h1 {
 
 </style>
 </head>
-<body data-require-perfis="Administrador,Supervisor" data-require-usuarios="pedroisrael2009@gmail.com">
+<body class="patio-planilha-mode" data-require-perfis="Administrador,Supervisor" data-require-usuarios="pedroisrael2009@gmail.com">
 
 <div class="header">
     <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
@@ -2040,34 +2194,20 @@ h1 {
 <div class="container patio-container-wide">
     <div class="portal-toolbar">
         <a href="../index.html" class="btn-portal">Portal CIOP</a>
-        <div class="consulta-panel" aria-label="Consulta de fila">
-            <div class="consulta-field">
-                <label for="searchBus">Consulta de fila</label>
-                <input type="text" id="searchBus" placeholder="Prefixo + Enter" autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="6">
-                <p class="consulta-hint">Somente consulta — mostra em qual fila o veículo está.</p>
-            </div>
-            <div id="resultOutput" class="result-box"></div>
-        </div>
     </div>
 
-
     <div class="patio-page-layout">
-        <div class="patio-lancamento-top">
-            <div class="card lancamento-rapido">
-                <div class="card-title">📍 Lançamento rápido</div>
-                <p class="lancamento-dica">Escolha a fila, digite o prefixo (só números da frota) e pressione <b>Enter uma vez</b>.</p>
+        <div class="patio-acoes-linha">
+            <div class="card consulta-card lancamento-rapido" aria-label="Consulta de fila">
+                <div class="card-title">🔍 Consulta de fila</div>
                 <div class="lancamento-form-centro">
                     <div class="form-group">
-                        <label for="selectFila">Fila de destino</label>
-                        <select id="selectFila" class="form-control"></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="inputFilaBus">Prefixo do veículo</label>
-                        <input type="text" id="inputFilaBus" class="form-control" placeholder="Ex.: 3105 + Enter" autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="6">
+                        <label for="searchBus">Prefixo do veículo</label>
+                        <input type="text" id="searchBus" class="form-control" placeholder="Ex.: 3105 + Enter" autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="6">
                     </div>
                 </div>
-                <div id="lancamentoErro" class="lancamento-erro" role="alert"></div>
-                <div id="lancamentoOk" class="lancamento-ok" aria-live="polite"></div>
+                <div id="resultOutput" class="result-box"></div>
+                <p class="consulta-hint">Somente consulta — mostra em qual fila o veículo está.</p>
             </div>
 
             <div class="card lancamento-rapido lancamento-pedidos">
@@ -2081,38 +2221,37 @@ h1 {
                 <div id="pedidoErro" class="lancamento-erro" role="alert"></div>
                 <div id="pedidoOk" class="lancamento-ok" aria-live="polite"></div>
             </div>
+        </div>
 
-            <div class="patio-lancamento-extra">
-                <div class="clear-data clear-data-compact">
-                    <div class="clear-data-actions">
-                        <button class="btn btn-excel" type="button" onclick="exportarExcel()">📊 Exportar Excel</button>
-                        <button class="btn-text" type="button" onclick="limparTudo()">Resetar tudo</button>
-                    </div>
-                </div>
-                <div class="patio-nao-utilizados" aria-label="Carros não utilizados no pátio">
-                    <div class="patio-nao-utilizados-titulo">
-                        <span>Carros não utilizados</span>
-                        <span id="naoUtilizadosQtd" class="patio-nao-utilizados-qtd">0</span>
-                    </div>
-                    <div id="listaNaoUtilizados" class="patio-nao-utilizados-lista"></div>
-                </div>
-            </div>
+        <div hidden aria-hidden="true">
+            <select id="selectFila"></select>
+            <input type="text" id="inputFilaBus" tabindex="-1">
+            <div id="lancamentoErro"></div>
+            <div id="lancamentoOk"></div>
         </div>
 
         <div class="card patio-gabarito-full">
-            <div class="gab-card-head">
+            <div class="gab-card-head gab-card-head--compact">
                 <div>
                     <div class="card-title">Gabarito da Garagem</div>
-                    <p class="gab-card-sub">Gabarito completo do Excel — mesmas cores e proporções das células. Use a barra de rolagem para ver toda a planta.</p>
+                    <p class="gab-card-sub">Digite os prefixos nas células — Enter/Tab avança, setas navegam, duplo clique em vaga vazia bloqueia.</p>
                 </div>
-                <div class="gab-view-toolbar" role="tablist" aria-label="Modo de visualização do mapa">
-                    <button type="button" id="btnViewGabarito" class="gab-view-btn is-active" role="tab" aria-selected="true">Gabarito Excel</button>
-                    <button type="button" id="btnViewZonas" class="gab-view-btn" role="tab" aria-selected="false">Visão por zonas</button>
+                <div class="gab-card-head-actions">
+                    <div class="gab-view-toolbar" role="tablist" aria-label="Modo de visualização do mapa">
+                        <button type="button" id="btnViewGabarito" class="gab-view-btn is-active" role="tab" aria-selected="true">Planilha</button>
+                        <button type="button" id="btnViewZonas" class="gab-view-btn" role="tab" aria-selected="false">Zonas</button>
+                    </div>
+                    <button class="btn btn-excel" type="button" onclick="exportarExcel()">📊 Excel</button>
+                    <button class="btn-text" type="button" onclick="limparTudo()">Resetar</button>
+                    <div class="patio-nao-utilizados patio-nao-utilizados-inline" aria-label="Carros não utilizados">
+                        <span class="patio-nao-utilizados-titulo">Não utilizados <span id="naoUtilizadosQtd" class="patio-nao-utilizados-qtd">0</span></span>
+                        <div id="listaNaoUtilizados" class="patio-nao-utilizados-lista"></div>
+                    </div>
                 </div>
             </div>
-            <div id="patioResumo" class="patio-resumo gab-resumo"></div>
-            <div class="gab-legenda-bar" aria-label="Legenda do mapa">
-                <span class="gab-legenda-item gab-legenda-item--livre"><i></i> Saída livre</span>
+            <div id="patioResumo" class="patio-resumo gab-resumo" hidden></div>
+            <div class="gab-legenda-bar gab-legenda-bar--compact" aria-label="Legenda do mapa">
+                <span class="gab-legenda-item gab-legenda-item--livre"><i></i> 1º fila</span>
                 <span class="gab-legenda-item gab-legenda-item--seq"><i></i> 2º · 3º · 4º</span>
                 <span class="gab-legenda-item gab-legenda-item--bloq"><i></i> Vaga bloqueada</span>
                 <span class="gab-legenda-item gab-legenda-item--pedido"><i></i> Pedido</span>
@@ -2121,6 +2260,7 @@ h1 {
                 <span class="gab-legenda-item gab-legenda-item--leves"><i></i> Leves</span>
             </div>
             <div id="patioMap" class="patio-map" aria-live="polite"></div>
+            <div id="gabaritoStatus" class="gab-status-bar" role="status" aria-live="polite"></div>
         </div>
     </div>
 </div>
@@ -2132,7 +2272,7 @@ h1 {
 </footer>
 
 <script src="../assets/js/frota-patio-data.js"></script>
-<script src="../assets/js/gabarito-garagem-data.js?v=20260625grade"></script>
-<script src="../assets/js/gerenciapatio-app.js?v=20260625lanc"></script>
+<script src="../assets/js/gabarito-garagem-data.js?v=20260625vias"></script>
+<script src="../assets/js/gerenciapatio-app.js?v=20260625excel"></script>
 </body>
 </html>

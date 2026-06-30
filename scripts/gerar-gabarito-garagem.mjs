@@ -51,6 +51,16 @@ function corTextoCelula(cell, bg) {
   return "#1F2937";
 }
 
+function ehFaixaMeioPatio(r, c, text) {
+  if (r < 8 || r > 11) return false;
+  const t = String(text || "").trim();
+  if (t.toLowerCase() === "x") return true;
+  if (c === 43 && /^Fila \d$/i.test(t)) return true;
+  if (c === 44 && /Carros Mistos/i.test(t)) return true;
+  if (c === 45) return true;
+  return false;
+}
+
 function filaListaPorTexto(text) {
   const t = String(text || "").toUpperCase();
   if (t.includes("REFORMA")) return "reforma";
@@ -161,7 +171,9 @@ function infoMerge(r, c) {
 const colWidths = [];
 for (let c = 0; c < GRADE_COLS; c += 1) {
   const wch = ws["!cols"]?.[c]?.wch ?? 3.5;
-  colWidths.push(Math.max(18, Math.round(wch * 7.2)));
+  let px = Math.max(18, Math.round(wch * 7.2));
+  if (c >= 43 && c <= 45) px = 8;
+  colWidths.push(px);
 }
 
 const linhasGrade = [];
@@ -183,14 +195,15 @@ for (let r = 0; r < GRADE_ROWS; r += 1) {
 
     const slot = slotPorCelula.get(`${r},${c}`);
     const filaLista = slot ? "" : filaListaPorTexto(text);
-    const tipo = slot ? "vaga" : filaLista ? "lista" : "rotulo";
+    let tipo = slot ? "vaga" : filaLista ? "lista" : "rotulo";
+    if (ehFaixaMeioPatio(r, c, text)) tipo = "faixa";
 
     celulas.push({
       c,
       colSpan: merge.colSpan,
       rowSpan: merge.rowSpan,
-      text,
-      bg,
+      text: tipo === "faixa" ? "" : text,
+      bg: tipo === "faixa" ? "#E8EEF4" : bg,
       cor: corTextoCelula(cell, bg),
       tipo,
       filaKey: slot?.filaKey || filaLista || "",
@@ -202,12 +215,39 @@ for (let r = 0; r < GRADE_ROWS; r += 1) {
   linhasGrade.push({ r, h: Math.round(rowH * 1.15), celulas });
 }
 
+const messias = cellText(0, 0) || "Messias Wilmar de Souza";
+const tiete = cellText(12, 0) || "Rua Tietê";
+
+linhasGrade.forEach((linha) => {
+  linha.celulas.forEach((cel) => {
+    if (linha.r === 0 && cel.col === 0) {
+      cel.text = `→ Leste — ${messias}`;
+      cel.cor = "#FFFFFF";
+      cel.tipo = "via";
+    }
+    if (linha.r === 12 && cel.col === 0) {
+      cel.text = `← Oeste — ${tiete}`;
+      cel.cor = "#FFFFFF";
+      cel.tipo = "via";
+    }
+    if (linha.r === 1 && cel.col === 72 && cel.rowSpan > 1) {
+      cel.text = "↑ Norte — Duque de Caxias";
+      cel.bg = "#1E3A5F";
+      cel.cor = "#FFFFFF";
+      cel.tipo = "via";
+    }
+    if (linha.r === 13 && cel.text === "LIVRE") {
+      cel.text = "1º";
+    }
+  });
+});
+
 const layout = {
   saidas: {
-    norte: { titulo: "Norte", via: cellText(0, 0) || "Messias Wilmar de Souza", icone: "↑" },
-    oeste: { titulo: "Oeste", via: "José Dias Aro", icone: "←" },
-    leste: { titulo: "Leste", via: "Duque de Caxias", icone: "→" },
-    sul: { titulo: "Sul", via: cellText(12, 0) || "Rua Tietê", icone: "↓" }
+    norte: { titulo: "Norte", via: "Duque de Caxias", icone: "↑" },
+    leste: { titulo: "Leste", via: messias, icone: "→" },
+    oeste: { titulo: "Oeste", via: tiete, icone: "←" },
+    sul: { titulo: "Sul", via: "José Dias Aro", icone: "↓" }
   },
   faixaNorte: [
     { key: "muro", label: "Muro", layout: "horizontal" },
@@ -244,30 +284,30 @@ const layout = {
     { key: "leves_f3", label: "Lev. Fila 3" },
     { key: "leves_f4", label: "Lev. Fila 4" }
   ],
-  legendaOrdemSaida: ["LIVRE", "2º", "3º", "4º"]
+  legendaOrdemSaida: ["1º", "2º", "3º", "4º"]
 };
 
 const ORDEM_SAIDA_POR_FILA = {
-  corujao: "LIVRE",
-  muro: "LIVRE",
-  bomba: "LIVRE",
-  latavador_f1: "LIVRE",
-  cot: "LIVRE",
-  corredor_c1: "LIVRE",
-  corredor_c2: "LIVRE",
-  corredor_c3: "LIVRE",
-  corredor_c4: "LIVRE",
-  corredor_c5: "LIVRE",
-  corredor_c6: "LIVRE",
-  pesados_f1: "LIVRE",
+  corujao: "1º",
+  muro: "1º",
+  bomba: "1º",
+  latavador_f1: "1º",
+  cot: "1º",
+  corredor_c1: "1º",
+  corredor_c2: "1º",
+  corredor_c3: "1º",
+  corredor_c4: "1º",
+  corredor_c5: "1º",
+  corredor_c6: "1º",
+  pesados_f1: "1º",
   pesados_f2: "2º",
   pesados_f3: "3º",
   pesados_f4: "4º",
-  mistos_f1: "LIVRE",
+  mistos_f1: "1º",
   mistos_f2: "2º",
   mistos_f3: "3º",
   mistos_f4: "4º",
-  leves_f1: "LIVRE",
+  leves_f1: "1º",
   leves_f2: "2º",
   leves_f3: "3º",
   leves_f4: "4º"

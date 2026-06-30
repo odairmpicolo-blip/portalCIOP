@@ -462,16 +462,14 @@ export function corujaoDisponivel(agora = horaAtualMinutos()) {
   return agora >= horaTextoParaMinutos(HORA_MINIMA_CORUJAO);
 }
 
-/** Rótulo de ordem de saída conforme legenda do Gabarito (linha 14: LIVRE · 2º · 3º · 4º). */
+/** Rótulo de ordem de saída conforme legenda do Gabarito (1º · 2º · 3º · 4º). */
 export function obterRotuloOrdemSaida(filaKey) {
   const cfg = FILA_MAP[filaKey];
   if (!cfg || FILAS_NAO_UTILIZAVEIS.has(filaKey)) return "";
-  if (cfg.horarioMinimo) return "LIVRE";
-  if (ehSaidaLivre(filaKey)) return "LIVRE";
+  if (cfg.horarioMinimo) return "1º";
+  if (ehSaidaLivre(filaKey)) return "1º";
   const ordem = cfg.ordem || 0;
-  if (ordem === 2) return "2º";
-  if (ordem === 3) return "3º";
-  if (ordem === 4) return "4º";
+  if (ordem >= 1 && ordem <= 4) return `${ordem}º`;
   if (ordem >= 5) return `${ordem}º`;
   return "";
 }
