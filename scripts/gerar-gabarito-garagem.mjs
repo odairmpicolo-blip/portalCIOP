@@ -16,8 +16,12 @@ const xlsxPath = process.argv[2] || defaultXlsx;
 const wb = XLSX.readFile(xlsxPath, { cellStyles: true });
 const ws = wb.Sheets["Planilha1"] || wb.Sheets[wb.SheetNames[0]];
 
-const GRADE_ROWS = 14;
-const GRADE_COLS = 74;
+const ref = XLSX.utils.decode_range(ws["!ref"] || "A1:A1");
+const ehPlanilhaRotacionada = ref.e.c <= 15 && ref.e.r >= 60;
+const GRADE_COLS = ehPlanilhaRotacionada ? 13 : 74;
+const GRADE_START_ROW = ehPlanilhaRotacionada ? 1 : 0;
+const GRADE_END_ROW = ehPlanilhaRotacionada ? 73 : 13;
+const GRADE_ROWS = GRADE_END_ROW - GRADE_START_ROW + 1;
 
 function cellText(r, c) {
   const v = ws[XLSX.utils.encode_cell({ r, c })]?.v;
@@ -83,6 +87,18 @@ function coletarSlots(r, c0, c1, filaKey, skipCols = new Set()) {
   return slots;
 }
 
+function coletarSlotsVert(c, r0, r1, filaKey, skipRows = new Set()) {
+  const slots = [];
+  for (let r = r0; r <= r1; r += 1) {
+    if (skipRows.has(r)) continue;
+    const text = cellText(r, c);
+    const n = parseNumeroVaga(text);
+    if (n == null) continue;
+    slots.push({ filaKey, slotIndex: n - 1, label: text, col: c, row: r });
+  }
+  return slots;
+}
+
 function registrarCapacidades(slots, cap) {
   slots.forEach((s) => {
     cap[s.filaKey] = Math.max(cap[s.filaKey] || 0, s.slotIndex + 1);
@@ -92,39 +108,67 @@ function registrarCapacidades(slots, cap) {
 const capacidades = {};
 const allSlots = [];
 
-for (let r = 2; r <= 6; r += 1) {
-  const n = parseNumeroVaga(cellText(r, 0));
-  if (n != null) allSlots.push({ filaKey: "corujao", slotIndex: n - 1, label: cellText(r, 0), row: r, col: 0 });
-}
+if (ehPlanilhaRotacionada) {
+  allSlots.push(...coletarSlots(1, 6, 10, "corujao"));
+  allSlots.push(...coletarSlotsVert(11, 36, 70, "muro"));
+  allSlots.push(...coletarSlotsVert(8, 24, 36, "bomba"));
 
-allSlots.push(...coletarSlots(1, 35, 69, "muro"));
-allSlots.push(...coletarSlots(4, 23, 35, "bomba"));
+  const corredorPorColuna = [
+    [5, "corredor_c6"],
+    [6, "corredor_c5"],
+    [7, "corredor_c4"],
+    [8, "corredor_c3"],
+    [9, "corredor_c2"],
+    [10, "corredor_c1"]
+  ];
+  corredorPorColuna.forEach(([c, filaKey]) => {
+    allSlots.push(...coletarSlotsVert(c, 68, 70, filaKey));
+  });
 
-for (let r = 2; r <= 7; r += 1) {
-  const cor = r - 2 + 1;
-  for (let c = 67; c <= 69; c += 1) {
-    const n = parseNumeroVaga(cellText(r, c));
-    if (n != null) {
-      allSlots.push({
-        filaKey: `corredor_c${cor}`,
-        slotIndex: n - 1,
-        label: cellText(r, c),
-        row: r,
-        col: c
-      });
+  allSlots.push(...coletarSlotsVert(4, 30, 44, "mistos_f1"));
+  allSlots.push(...coletarSlotsVert(3, 30, 44, "mistos_f2"));
+  allSlots.push(...coletarSlotsVert(2, 13, 44, "mistos_f3"));
+  allSlots.push(...coletarSlotsVert(1, 6, 44, "mistos_f4"));
+  allSlots.push(...coletarSlotsVert(3, 21, 27, "leves_f1"));
+  allSlots.push(...coletarSlotsVert(4, 47, 70, "pesados_f1"));
+  allSlots.push(...coletarSlotsVert(3, 47, 70, "pesados_f2"));
+  allSlots.push(...coletarSlotsVert(2, 47, 70, "pesados_f3"));
+  allSlots.push(...coletarSlotsVert(1, 47, 70, "pesados_f4"));
+} else {
+  for (let r = 2; r <= 6; r += 1) {
+    const n = parseNumeroVaga(cellText(r, 0));
+    if (n != null) allSlots.push({ filaKey: "corujao", slotIndex: n - 1, label: cellText(r, 0), row: r, col: 0 });
+  }
+
+  allSlots.push(...coletarSlots(1, 35, 69, "muro"));
+  allSlots.push(...coletarSlots(4, 23, 35, "bomba"));
+
+  for (let r = 2; r <= 7; r += 1) {
+    const cor = r - 2 + 1;
+    for (let c = 67; c <= 69; c += 1) {
+      const n = parseNumeroVaga(cellText(r, c));
+      if (n != null) {
+        allSlots.push({
+          filaKey: `corredor_c${cor}`,
+          slotIndex: n - 1,
+          label: cellText(r, c),
+          row: r,
+          col: c
+        });
+      }
     }
   }
-}
 
-allSlots.push(...coletarSlots(8, 28, 42, "mistos_f1"));
-allSlots.push(...coletarSlots(8, 46, 65, "pesados_f1"));
-allSlots.push(...coletarSlots(9, 20, 26, "leves_f1"));
-allSlots.push(...coletarSlots(9, 28, 42, "mistos_f2"));
-allSlots.push(...coletarSlots(9, 46, 67, "pesados_f2"));
-allSlots.push(...coletarSlots(10, 12, 41, "mistos_f3"));
-allSlots.push(...coletarSlots(10, 46, 68, "pesados_f3"));
-allSlots.push(...coletarSlots(11, 5, 41, "mistos_f4", new Set([18])));
-allSlots.push(...coletarSlots(11, 46, 69, "pesados_f4"));
+  allSlots.push(...coletarSlots(8, 28, 42, "mistos_f1"));
+  allSlots.push(...coletarSlots(8, 46, 65, "pesados_f1"));
+  allSlots.push(...coletarSlots(9, 20, 26, "leves_f1"));
+  allSlots.push(...coletarSlots(9, 28, 42, "mistos_f2"));
+  allSlots.push(...coletarSlots(9, 46, 67, "pesados_f2"));
+  allSlots.push(...coletarSlots(10, 12, 41, "mistos_f3"));
+  allSlots.push(...coletarSlots(10, 46, 68, "pesados_f3"));
+  allSlots.push(...coletarSlots(11, 5, 41, "mistos_f4", new Set([18])));
+  allSlots.push(...coletarSlots(11, 46, 69, "pesados_f4"));
+}
 
 registrarCapacidades(allSlots, capacidades);
 
@@ -172,17 +216,24 @@ const colWidths = [];
 const COL_LARGURA_PADRAO = 24;
 const COL_LARGURA_FAIXA = 10;
 for (let c = 0; c < GRADE_COLS; c += 1) {
-  colWidths.push(c >= 43 && c <= 45 ? COL_LARGURA_FAIXA : COL_LARGURA_PADRAO);
+  if (ehPlanilhaRotacionada) {
+    colWidths.push(Math.max(42, Math.round(ws["!cols"]?.[c]?.wpx || 62)));
+  } else {
+    colWidths.push(c >= 43 && c <= 45 ? COL_LARGURA_FAIXA : COL_LARGURA_PADRAO);
+  }
 }
 
 function alturaLinhaGrade(r) {
+  if (ehPlanilhaRotacionada) {
+    return Math.max(18, Math.round(ws["!rows"]?.[r]?.hpx || 26));
+  }
   if (r === 0 || r === 12) return 36;
   if (r === 13) return 24;
   return 30;
 }
 
 const linhasGrade = [];
-for (let r = 0; r < GRADE_ROWS; r += 1) {
+for (let r = GRADE_START_ROW; r <= GRADE_END_ROW; r += 1) {
   const celulas = [];
 
   for (let c = 0; c < GRADE_COLS; c += 1) {
@@ -198,9 +249,9 @@ for (let r = 0; r < GRADE_ROWS; r += 1) {
     }
 
     const slot = slotPorCelula.get(`${r},${c}`);
-    const filaLista = slot ? "" : filaListaPorTexto(text);
+    const filaLista = slot || (ehPlanilhaRotacionada && /CORUJ/i.test(text)) ? "" : filaListaPorTexto(text);
     let tipo = slot ? "vaga" : filaLista ? "lista" : "rotulo";
-    if (ehFaixaMeioPatio(r, c, text)) tipo = "faixa";
+    if (!ehPlanilhaRotacionada && ehFaixaMeioPatio(r, c, text)) tipo = "faixa";
 
     celulas.push({
       c,
@@ -219,44 +270,54 @@ for (let r = 0; r < GRADE_ROWS; r += 1) {
   linhasGrade.push({ r, h: alturaLinhaGrade(r), celulas });
 }
 
-const messias = cellText(0, 0) || "Messias Wilmar de Souza";
-const tiete = cellText(12, 0) || "Rua Tietê";
+const messias = ehPlanilhaRotacionada ? "BR 369" : cellText(0, 0) || "Messias Wilmar de Souza";
+const tiete = ehPlanilhaRotacionada ? "R. Tietê" : cellText(12, 0) || "Rua Tietê";
 
 linhasGrade.forEach((linha) => {
   linha.celulas.forEach((cel) => {
-    if (linha.r === 0 && cel.c === 0) {
-      cel.text = "↑ Norte — Duque de Caxias";
-      cel.bg = "#1E3A5F";
-      cel.cor = "#FFFFFF";
-      cel.tipo = "via";
-      cel.viaPos = "topo";
-    }
-    if (linha.r === 12 && cel.c === 0) {
-      cel.text = `← Oeste — ${tiete}`;
-      cel.bg = "#1E3A5F";
-      cel.cor = "#FFFFFF";
-      cel.tipo = "via";
-      cel.viaPos = "base";
-    }
-    if (linha.r === 1 && cel.c === 72 && cel.rowSpan > 1) {
-      cel.text = `→ Leste — ${messias}`;
-      cel.bg = "#1E3A5F";
-      cel.cor = "#FFFFFF";
-      cel.tipo = "via";
-      cel.viaPos = "leste";
-    }
-    if (linha.r === 13 && cel.text === "LIVRE") {
-      cel.text = "1º";
+    if (ehPlanilhaRotacionada) {
+      if ((linha.r === 2 && cel.c === 5) || (linha.r === 54 && cel.c === 0) || (linha.r === 54 && cel.c === 12) || (linha.r === 73 && cel.c === 5)) {
+        cel.bg = "#1E3A5F";
+        cel.cor = "#FFFFFF";
+        cel.tipo = "via";
+        if (linha.r === 2) cel.viaPos = "topo";
+        if (linha.r === 73) cel.viaPos = "base";
+      }
+    } else {
+      if (linha.r === 0 && cel.c === 0) {
+        cel.text = "↑ Norte — Duque de Caxias";
+        cel.bg = "#1E3A5F";
+        cel.cor = "#FFFFFF";
+        cel.tipo = "via";
+        cel.viaPos = "topo";
+      }
+      if (linha.r === 12 && cel.c === 0) {
+        cel.text = `← Oeste — ${tiete}`;
+        cel.bg = "#1E3A5F";
+        cel.cor = "#FFFFFF";
+        cel.tipo = "via";
+        cel.viaPos = "base";
+      }
+      if (linha.r === 1 && cel.c === 72 && cel.rowSpan > 1) {
+        cel.text = `→ Leste — ${messias}`;
+        cel.bg = "#1E3A5F";
+        cel.cor = "#FFFFFF";
+        cel.tipo = "via";
+        cel.viaPos = "leste";
+      }
+      if (linha.r === 13 && cel.text === "LIVRE") {
+        cel.text = "1º";
+      }
     }
   });
 });
 
 const layout = {
   saidas: {
-    norte: { titulo: "Norte", via: "Duque de Caxias", icone: "↑" },
+    norte: { titulo: "Norte", via: ehPlanilhaRotacionada ? "José Dias Aro" : "Duque de Caxias", icone: "↑" },
     leste: { titulo: "Leste", via: messias, icone: "→" },
     oeste: { titulo: "Oeste", via: tiete, icone: "←" },
-    sul: { titulo: "Sul", via: "José Dias Aro", icone: "↓" }
+    sul: { titulo: "Sul", via: ehPlanilhaRotacionada ? "Duque de Caxias" : "José Dias Aro", icone: "↓" }
   },
   faixaNorte: [
     { key: "muro", label: "Muro", layout: "horizontal" },
@@ -323,7 +384,7 @@ const ORDEM_SAIDA_POR_FILA = {
 };
 
 const gabarito = {
-  version: 3,
+  version: ehPlanilhaRotacionada ? 4 : 3,
   source: path.basename(xlsxPath),
   capacidades,
   ordemSaida: ORDEM_SAIDA_POR_FILA,

@@ -1457,22 +1457,29 @@
     tabela.setAttribute("role", "grid");
     tabela.setAttribute("aria-label", "Gabarito da garagem TCGL");
 
+    const linhasVisiveis = grade.linhas.filter((linha) => !ehLinhaLegendaInternaGabarito(linha));
+    const totalRowH = linhasVisiveis.reduce((s, l) => s + (l.h || 30), 0) || 1;
     const colgroup = document.createElement("colgroup");
     const colWidths = grade.colWidths || [];
     const totalColW = colWidths.reduce((s, w) => s + w, 0) || 1;
+    const layoutRetrato = (grade.cols || colWidths.length) <= 20 && linhasVisiveis.length >= 40;
+    const larguraTabela = layoutRetrato
+      ? Math.max(totalColW, 840)
+      : Math.max(totalColW, 1480);
+    tabela.classList.toggle("gab-tabela-excel--retrato", layoutRetrato);
+    tabela.style.width = `${larguraTabela}px`;
+    tabela.style.minWidth = `${larguraTabela}px`;
+    tabela.style.height = `${totalRowH}px`;
     colWidths.forEach((w) => {
       const col = document.createElement("col");
-      col.style.width = `${((w / totalColW) * 100).toFixed(4)}%`;
+      col.style.width = `${w}px`;
       colgroup.appendChild(col);
     });
     tabela.appendChild(colgroup);
 
-    const linhasVisiveis = grade.linhas.filter((linha) => !ehLinhaLegendaInternaGabarito(linha));
-    const totalRowH = linhasVisiveis.reduce((s, l) => s + (l.h || 30), 0) || 1;
-
     linhasVisiveis.forEach((linha) => {
       const tr = document.createElement("tr");
-      tr.style.height = `${((linha.h / totalRowH) * 100).toFixed(4)}%`;
+      tr.style.height = `${linha.h || 30}px`;
       tr.dataset.gabRow = String(linha.r);
 
       linha.celulas.forEach((cel) => {
