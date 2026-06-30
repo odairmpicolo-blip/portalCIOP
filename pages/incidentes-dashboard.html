@@ -826,10 +826,14 @@ async function carregarIncidentes(forcar) {
     const cacheLocal = !forcar ? lerCacheIncidentes() : null;
     if (cacheLocal) {
         aplicarPayloadIncidentes(cacheLocal);
-        status.textContent = "Cache local · atualizando em segundo plano...";
-    } else {
-        status.textContent = forcar ? "Atualizando tabela..." : "Carregando incidentes...";
+        atualizarStatusLinha(cacheLocal, state.all.length);
+        status.textContent += " · clique em Atualizar para buscar novos dados";
+        carregandoIncidentes = false;
+        btn.disabled = false;
+        return;
     }
+
+    status.textContent = forcar ? "Atualizando tabela..." : "Carregando incidentes...";
 
     try {
         const mod = await import("../assets/js/incidentes-dados-leitura.js?v=20260627a");

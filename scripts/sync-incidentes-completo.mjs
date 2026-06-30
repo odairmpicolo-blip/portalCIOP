@@ -1,15 +1,13 @@
 /**
  * Sincroniza incidentes TCGL → JSON local → Aurora DSQL.
- * Usado pelo botão na Mesa do Mac (principal), Lambda e EC2.
+ * Usado por Lambda, EC2, Mac e GitHub Actions.
  *
  * Variáveis:
- *   SYNC_INCIDENTES_PUBLISH_GIT=1  — commit/push do JSON no portalCIOP (CIOP_PORTAL_PROD) ou PORTAL_ROOT
- *   CIOP_PORTAL_PROD               — pasta portalCIOP (produção) para git push
+ *   SYNC_INCIDENTES_PUBLISH_GIT=1  — commit/push do JSON (opcional, backup)
  *   SYNC_INCIDENTES_SKIP_DSQL=1    — não importa no DSQL
  *   INCIDENTES_STATE_S3_BUCKET     — cache incremental em S3
  */
 import { spawnSync } from "node:child_process";
-import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,16 +15,14 @@ import { baixarEstadoIncidentesS3, enviarEstadoIncidentesS3 } from "./lib/incide
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const portalRoot = process.env.PORTAL_ROOT || path.resolve(scriptDir, "..");
-const portalProd = (process.env.CIOP_PORTAL_PROD || "").trim();
 const nodeBin = process.env.CIOP_NODE_BIN || process.execPath;
 const jsonRel = "assets/data/incidentes-tcgl.json";
 const dataDir = process.env.PORTAL_DATA_DIR || path.join(portalRoot, "assets", "data");
 const jsonPath = path.join(dataDir, "incidentes-tcgl.json");
 
 function run(command, args, options = {}) {
-  const cwd = options.cwd || portalRoot;
   const result = spawnSync(command, args, {
-    cwd,
+    cwd: portalRoot,
     env: process.env,
     encoding: "utf8",
     stdio: options.silent ? "pipe" : "inherit",
@@ -49,22 +45,13 @@ function gitEnv() {
   };
 }
 
-function gitOutput(repoRoot, args) {
+function gitOutput(args) {
   return spawnSync("git", args, {
-    cwd: repoRoot,
+    cwd: portalRoot,
     env: gitEnv(),
     encoding: "utf8",
     stdio: "pipe"
   }).stdout.trim();
-}
-
-function compactError(error) {
-  return String(error?.message || error || "erro desconhecido").replace(/\s+/g, " ").slice(0, 500);
-}
-
-function fileHash(filePath) {
-  if (!fs.existsSync(filePath)) return "";
-  return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
 }
 
 function parseGithubRepo(remote) {
@@ -72,91 +59,54 @@ function parseGithubRepo(remote) {
   return match ? match[1] : "";
 }
 
-function gitPushOnce(repoRoot, branch) {
+function gitPush() {
   const token = (process.env.CIOP_GITHUB_TOKEN || "").trim();
+  const branch = gitOutput(["branch", "--show-current"]) || "main";
   if (token) {
-    const remote = gitOutput(repoRoot, ["remote", "get-url", "origin"]);
+    const remote = gitOutput(["remote", "get-url", "origin"]);
     const repo = parseGithubRepo(remote);
     if (!repo) throw new Error("Repositório GitHub não identificado em origin.");
     const pushUrl = `https://x-access-token:${token}@github.com/${repo}.git`;
-    run("git", ["push", pushUrl, `HEAD:${branch}`], { cwd: repoRoot, silent: true });
+    run("git", ["push", pushUrl, `HEAD:${branch}`], { silent: true });
     return;
   }
-  run("git", ["push"], { cwd: repoRoot, silent: true });
+  run("git", ["push"], { silent: true });
 }
 
-function gitPush(repoRoot) {
-  const branch = gitOutput(repoRoot, ["branch", "--show-current"]) || "main";
-  try {
-    gitPushOnce(repoRoot, branch);
-    return;
-  } catch (error) {
-    console.log(`[git] push falhou; sincronizando com origin/${branch} e tentando novamente...`);
-    run("git", ["fetch", "origin", branch], { cwd: repoRoot, silent: true });
-    run("git", ["rebase", `origin/${branch}`], { cwd: repoRoot, silent: true });
-    gitPushOnce(repoRoot, branch);
-  }
-}
-
-function gitAheadCount(repoRoot) {
-  const count = Number(gitOutput(repoRoot, ["rev-list", "--count", "@{u}..HEAD"]));
-  return Number.isFinite(count) ? count : 0;
-}
-
-function publicarGitIncidentesEm(repoRoot, rotulo) {
-  if (!repoRoot || !fs.existsSync(repoRoot)) {
-    console.log(`[git] ${rotulo}: pasta ausente (${repoRoot || "?"}) — ignorado.`);
-    return false;
-  }
-  const destJson = path.join(repoRoot, jsonRel);
-  fs.mkdirSync(path.dirname(destJson), { recursive: true });
-  fs.copyFileSync(jsonPath, destJson);
-
-  run("git", ["add", jsonRel], { cwd: repoRoot, silent: true });
+function publicarGitIncidentes() {
+  run("git", ["add", jsonRel], { silent: true });
   const changed = spawnSync("git", ["status", "--short", "--", jsonRel], {
-    cwd: repoRoot,
+    cwd: portalRoot,
     env: gitEnv(),
     encoding: "utf8",
     stdio: "pipe"
   }).stdout.trim();
   if (!changed) {
-    const ahead = gitAheadCount(repoRoot);
-    if (ahead > 0) {
-      console.log(`[git] ${rotulo}: ${ahead} commit(s) pendente(s); enviando agora.`);
-      gitPush(repoRoot);
-      return true;
-    }
-    console.log(`[git] ${rotulo}: sem alterações em incidentes-tcgl.json.`);
+    console.log("[git] Sem alterações em incidentes-tcgl.json.");
     return false;
   }
   const stamp = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-  run("git", ["commit", "-m", `Atualiza incidentes TCGL - ${stamp}`], { cwd: repoRoot, silent: true });
-  gitPush(repoRoot);
-  console.log(`[git] ${rotulo}: incidentes-tcgl.json publicado.`);
+  run("git", ["commit", "-m", `Atualiza incidentes TCGL - ${stamp}`], { silent: true });
+  gitPush();
+  console.log("[git] incidentes-tcgl.json publicado.");
   return true;
 }
 
-function publicarGitIncidentes() {
-  const alvos = [];
-  if (portalProd && path.resolve(portalProd) !== path.resolve(portalRoot)) {
-    alvos.push({ root: portalProd, rotulo: "portalCIOP (produção)" });
-  } else if (portalProd) {
-    alvos.push({ root: portalProd, rotulo: "portalCIOP" });
-  } else {
-    alvos.push({ root: portalRoot, rotulo: path.basename(portalRoot) });
+function runOpcional(etapa, fn) {
+  try {
+    return fn();
+  } catch (err) {
+    const msg = err?.message || String(err);
+    console.warn(`[sync] Aviso (${etapa}):`, msg);
+    return { ok: false, error: msg };
   }
-  let publicou = false;
-  for (const { root, rotulo } of alvos) {
-    if (publicarGitIncidentesEm(root, rotulo)) publicou = true;
-  }
-  return publicou;
 }
 
 export async function syncIncidentes() {
   const publishGit = process.env.SYNC_INCIDENTES_PUBLISH_GIT === "1";
   const skipDsql = process.env.SYNC_INCIDENTES_SKIP_DSQL === "1";
   const steps = { s3Pull: false, fetch: false, s3Push: false, dsql: false, git: false };
-  const gitFatal = process.env.SYNC_INCIDENTES_GIT_FATAL === "1";
+  const warnings = [];
 
   process.env.PORTAL_ROOT = portalRoot;
 
@@ -167,7 +117,6 @@ export async function syncIncidentes() {
   steps.s3Pull = await baixarEstadoIncidentesS3(jsonPath);
 
   console.log("[sync] Buscando incidentes no TCGL...");
-  const hashAntes = fileHash(jsonPath);
   run(nodeBin, [path.join(scriptDir, "atualizar-incidentes-tcgl.mjs")]);
   steps.fetch = true;
 
@@ -175,51 +124,30 @@ export async function syncIncidentes() {
     throw new Error(`JSON não gerado: ${jsonPath}`);
   }
 
-  const hashDepois = fileHash(jsonPath);
-  steps.fetchChanged = hashAntes !== hashDepois;
-  if (!steps.fetchChanged) {
-    console.log("[sync] Nenhum incidente novo ou atualizado; DSQL, Git e Pages não precisam ser alterados.");
-    return { ok: true, steps };
-  }
-
   steps.s3Push = await enviarEstadoIncidentesS3(jsonPath);
 
+  if (publishGit) {
+    const gitRes = runOpcional("git", () => {
+      steps.git = publicarGitIncidentes();
+      return { ok: true };
+    });
+    if (gitRes?.error) warnings.push(`Git: ${gitRes.error}`);
+  }
+
   if (!skipDsql) {
-    console.log("[sync] Importando incidentes no Aurora DSQL...");
-    const backendScripts = path.join(portalRoot, "backend", "scripts", "importar-planilha-dsql.mjs");
-    try {
+    const dsqlRes = runOpcional("DSQL", () => {
+      console.log("[sync] Importando incidentes no Aurora DSQL...");
+      const backendScripts = path.join(portalRoot, "backend", "scripts", "importar-planilha-dsql.mjs");
       run(nodeBin, [backendScripts, "incidentes"], {
         env: { ...process.env, PORTAL_ROOT: portalRoot, PORTAL_DATA_DIR: dataDir }
       });
       steps.dsql = true;
-    } catch (error) {
-      steps.dsqlError = compactError(error);
-      console.error("[sync] AVISO: falha ao importar no Aurora DSQL:", steps.dsqlError);
-    }
+      return { ok: true };
+    });
+    if (dsqlRes?.error) warnings.push(`DSQL: ${dsqlRes.error}`);
   }
 
-  if (publishGit) {
-    const destino = portalProd ? `portalCIOP (${portalProd})` : portalRoot;
-    console.log(`[sync] Publicando JSON no Git → ${destino}...`);
-    try {
-      steps.git = publicarGitIncidentes();
-    } catch (error) {
-      steps.gitError = compactError(error);
-      console.error("[sync] AVISO: falha ao publicar JSON no Git:", steps.gitError);
-      if (gitFatal) throw error;
-    }
-  }
-
-  if (!skipDsql && !steps.dsql) {
-    if (publishGit && steps.git) {
-      console.log("[sync] DSQL não atualizou, mas o JSON foi publicado no Git como backup.");
-    } else {
-      const gitInfo = steps.gitError ? ` | Git: ${steps.gitError}` : "";
-      throw new Error(`Falha na atualização principal do Aurora DSQL: ${steps.dsqlError || "erro desconhecido"}${gitInfo}`);
-    }
-  }
-
-  return { ok: true, steps };
+  return { ok: true, steps, warnings };
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
@@ -228,6 +156,9 @@ if (isMain) {
   syncIncidentes()
     .then((result) => {
       console.log("[sync] Concluído:", JSON.stringify(result.steps));
+      if (result.warnings?.length) {
+        console.warn("[sync] Etapas opcionais com aviso:", result.warnings.join(" | "));
+      }
     })
     .catch((err) => {
       console.error("[sync] ERRO:", err.message);

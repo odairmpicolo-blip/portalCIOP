@@ -53,73 +53,35 @@ set -a
 source "$ENV_FILE"
 set +a
 
-PORTAL_ROOT="${CIOP_PORTAL_ROOT:-$PORTAL_ROOT}"
 export PORTAL_ROOT
-export CIOP_PORTAL_PROD="${CIOP_PORTAL_PROD:-}"
 export CIOP_INCIDENTES_USUARIO="${CIOP_INCIDENTES_USUARIO:-}"
 export CIOP_INCIDENTES_SENHA="${CIOP_INCIDENTES_SENHA:-}"
 export SYNC_INCIDENTES_PUBLISH_GIT="${SYNC_INCIDENTES_PUBLISH_GIT:-}"
-export CIOP_GITHUB_TOKEN="${CIOP_GITHUB_TOKEN:-}"
-
-log "Repositório scripts/JSON: $PORTAL_ROOT${CIOP_PORTAL_PROD:+ | git produção: $CIOP_PORTAL_PROD}${SYNC_INCIDENTES_PUBLISH_GIT:+ | publish git ON}"
 
 if [[ -z "$CIOP_INCIDENTES_USUARIO" || -z "$CIOP_INCIDENTES_SENHA" ]]; then
   log "ERRO: CIOP_INCIDENTES_USUARIO ou CIOP_INCIDENTES_SENHA vazio em $ENV_FILE"
   exit 1
 fi
 
-check_aws_session() {
-  if [[ "${SYNC_INCIDENTES_SKIP_DSQL:-}" == "1" ]]; then
-    return 0
-  fi
-  export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${PATH:-}"
-  if aws sts get-caller-identity >/dev/null 2>&1; then
-    return 0
-  fi
-  if [[ "${SYNC_INCIDENTES_PUBLISH_GIT:-}" == "1" ]]; then
-    export SYNC_INCIDENTES_SKIP_DSQL=1
-    log "AVISO: sessão AWS expirada. Vou atualizar o JSON no Git como backup; rode 'aws login' para voltar a atualizar o DSQL."
-    return 0
-  fi
-  log "ERRO: sessão AWS expirada. Abra o Terminal, execute 'aws login' e clique no botão novamente."
-  exit 1
-}
-
-aws_auth_error_in_log() {
-  tail -40 "$LOG_FILE" | grep -qiE 'session has expired|reauthenticate|CredentialsProviderError|Failed to generate DSQL token'
-}
-
-run_sync() {
-  "$NODE_BIN" "$PORTAL_ROOT/scripts/sync-incidentes-completo.mjs" >> "$LOG_FILE" 2>&1
-}
-
-check_aws_session
-
-if run_sync; then
+if "$NODE_BIN" "$PORTAL_ROOT/scripts/sync-incidentes-completo.mjs" >> "$LOG_FILE" 2>&1; then
   mark_success
-  if tail -5 "$LOG_FILE" | grep -q '"dsql":true'; then
+  if tail -20 "$LOG_FILE" | grep -q '\[sync\] Etapas opcionais com aviso'; then
+    log "Atualização TCGL concluída (JSON local). Algumas etapas opcionais falharam — veja o log."
+  elif tail -5 "$LOG_FILE" | grep -q '"dsql":true'; then
     log "Atualização concluída com sucesso (TCGL → DSQL)."
   elif tail -8 "$LOG_FILE" | grep -q '"git":true'; then
-    log "Atualização concluída via Git backup. AWS/DSQL não atualizou neste clique."
+    log "Atualização concluída (TCGL → JSON). Backup Git publicado."
   else
-    log "Atualização concluída com sucesso (TCGL → DSQL)."
+    log "Atualização concluída com sucesso (TCGL → JSON local)."
   fi
 else
-  if aws_auth_error_in_log; then
-    log "ERRO: sessão AWS expirada. Rode 'aws login' no Terminal antes de tentar de novo."
-    exit 1
-  fi
   log "Primeira tentativa falhou. Nova tentativa em 120 segundos..."
   sleep 120
-  if run_sync; then
+  if "$NODE_BIN" "$PORTAL_ROOT/scripts/sync-incidentes-completo.mjs" >> "$LOG_FILE" 2>&1; then
     mark_success
     log "Atualização concluída na segunda tentativa (TCGL → DSQL)."
   else
-    if aws_auth_error_in_log; then
-      log "ERRO: sessão AWS expirada. Rode 'aws login' no Terminal antes de tentar de novo."
-    else
-      log "ERRO: falha na atualização após 2 tentativas. Tente novamente pelo botão na Mesa ou: bash \"$0\" manual"
-    fi
+    log "ERRO: falha na atualização após 2 tentativas. Próxima execução amanhã às 04:00 ou manual: bash \"$0\" manual"
     exit 1
   fi
 fi

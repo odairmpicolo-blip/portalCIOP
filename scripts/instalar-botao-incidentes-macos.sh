@@ -42,7 +42,7 @@ on run
   set wrapper to "$WRAPPER"
   try
     do shell script quoted form of wrapper
-    display dialog "Incidentes TCGL atualizados com sucesso!" & return & return & "Dados gravados no banco (Aurora DSQL)." buttons {"OK"} default button "OK"
+    display dialog "Incidentes TCGL atualizados!" & return & return & "Dados baixados do TCGL e gravados no JSON local." & return & "Se DSQL ou Git falharem, veja o log (etapas opcionais)." buttons {"OK"} default button "OK"
   on error errMsg number errNum
     display dialog "Falha na atualizacao de incidentes." & return & return & errMsg & return & return & "Log: Library/Logs/ciop-portal/atualizar-incidentes.log" buttons {"OK"} default button "OK" with icon caution
   end try

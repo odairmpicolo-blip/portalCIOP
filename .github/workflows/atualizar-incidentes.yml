@@ -1,213 +1,63 @@
 name: Atualizar incidentes TCGL
 
+# TCGL → Aurora DSQL + JSON no git (leitura no GitHub Pages; API AWS quando disponível).
+# Janela 04:48–01:28 BRT, a cada 1h02. Silêncio: 01:30–04:48.
+
 on:
   workflow_dispatch:
-  schedule:
-    # 01h30, 05h, 10h, 15h e 20h no horário de Brasília.
-    - cron: "30 4 * * *"
-    - cron: "0 8,13,18,23 * * *"
-
-concurrency:
-  group: incidentes-tcgl
-  cancel-in-progress: false
+  # Agendamento automático desativado — use workflow_dispatch ou o botão no Mac.
+  # schedule:
+  #   - cron: "48 4 * * *"
+  #     timezone: America/Sao_Paulo
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
   atualizar:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy_try1.outputs.page_url }}
+    timeout-minutes: 30
 
     steps:
       - name: Baixar portal
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Configurar Node
         uses: actions/setup-node@v4
         with:
           node-version: "24"
 
-      - name: Instalar dependências do backend
+      - name: Instalar dependências do backend (DSQL)
         run: |
           cd backend
           npm ci --omit=dev 2>/dev/null || npm ci
 
-      - name: Sincronizar TCGL no runner do GitHub
-        id: sync_runner
+      - name: Sincronizar TCGL → DSQL
         env:
           CIOP_INCIDENTES_USUARIO: ${{ secrets.CIOP_INCIDENTES_USUARIO }}
           CIOP_INCIDENTES_SENHA: ${{ secrets.CIOP_INCIDENTES_SENHA }}
-          CIOP_INCIDENTES_RETRIES: "5"
-          CIOP_INCIDENTES_TIMEOUT_MS: "30000"
+          CIOP_INCIDENTES_RETRIES: "3"
+          CIOP_INCIDENTES_TIMEOUT_MS: "15000"
           DSQL_CLUSTER_ID: ${{ secrets.DSQL_CLUSTER_ID }}
           DSQL_REGION: sa-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           PORTAL_ROOT: ${{ github.workspace }}
         run: |
-          set -euo pipefail
-          if [ -z "${CIOP_INCIDENTES_USUARIO:-}" ] || [ -z "${CIOP_INCIDENTES_SENHA:-}" ]; then
-            echo "Secrets CIOP_INCIDENTES_USUARIO/CIOP_INCIDENTES_SENHA ausentes." >&2
+          if [ -z "$DSQL_CLUSTER_ID" ]; then
+            echo "ERRO: DSQL_CLUSTER_ID não configurado nos secrets." >&2
             exit 1
           fi
-          if [ -z "${DSQL_CLUSTER_ID:-}" ]; then
-            echo "Secret DSQL_CLUSTER_ID ausente." >&2
+          if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+            echo "ERRO: credenciais AWS ausentes nos secrets." >&2
             exit 1
           fi
-          if node scripts/sync-incidentes-completo.mjs; then
-            echo "ok=true" >> "$GITHUB_OUTPUT"
-            if git diff --quiet -- assets/data/incidentes-tcgl.json; then
-              echo "changed=false" >> "$GITHUB_OUTPUT"
-              echo "Nenhum incidente novo ou atualizado; publicação ignorada." >> "$GITHUB_STEP_SUMMARY"
-            else
-              echo "changed=true" >> "$GITHUB_OUTPUT"
-            fi
-          else
-            echo "ok=false" >> "$GITHUB_OUTPUT"
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "TCGL indisponível no runner; tentando importar o último JSON válido." >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-      - name: Importar último JSON válido no DSQL
-        id: import_cached
-        if: steps.sync_runner.outputs.ok == 'false'
-        env:
-          DSQL_CLUSTER_ID: ${{ secrets.DSQL_CLUSTER_ID }}
-          DSQL_REGION: sa-east-1
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          PORTAL_ROOT: ${{ github.workspace }}
-          PORTAL_DATA_DIR: ${{ github.workspace }}/assets/data
-        run: |
-          set -euo pipefail
-          if [ ! -s assets/data/incidentes-tcgl.json ]; then
-            echo "Sem JSON local de incidentes para importar." >&2
-            echo "ok=false" >> "$GITHUB_OUTPUT"
-            echo "Sem JSON local de incidentes; tentando fallback pela Lambda." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          echo "TCGL indisponível no runner; importando último JSON válido no DSQL."
-          if node backend/scripts/importar-planilha-dsql.mjs incidentes; then
-            echo "ok=true" >> "$GITHUB_OUTPUT"
-            echo "TCGL indisponível; DSQL atualizado com o último JSON válido." >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "ok=false" >> "$GITHUB_OUTPUT"
-            echo "Falha também ao importar o JSON local no DSQL." >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-      - name: Fallback pela Lambda na AWS
-        id: sync_lambda
-        if: steps.sync_runner.outputs.ok == 'false' && steps.import_cached.outputs.ok == 'false'
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: sa-east-1
-          INCIDENTES_LAMBDA_NAME: portal-ciop-incidentes-sync
-        run: |
-          set -euo pipefail
-          if ! command -v aws >/dev/null 2>&1; then
-            echo "AWS CLI não disponível no runner." >&2
-            exit 1
-          fi
-          aws lambda invoke \
-            --function-name "$INCIDENTES_LAMBDA_NAME" \
-            --payload '{}' \
-            --cli-binary-format raw-in-base64-out \
-            /tmp/incidentes-sync.json
-          cat /tmp/incidentes-sync.json
-          node - <<'NODE'
-          const fs = require('fs');
-          const payload = JSON.parse(fs.readFileSync('/tmp/incidentes-sync.json', 'utf8'));
-          if (!payload.ok) {
-            console.error(payload.error || 'Lambda retornou falha.');
-            process.exit(1);
-          }
-          NODE
+          node scripts/sync-incidentes-completo.mjs
 
       - name: Configurar git
-        if: steps.sync_runner.outputs.ok == 'true' && steps.sync_runner.outputs.changed == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Publicar JSON no GitHub Pages
-        if: steps.sync_runner.outputs.ok == 'true' && steps.sync_runner.outputs.changed == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
         run: bash scripts/ci-git-commit-push.sh "Atualiza incidentes TCGL" assets/data/incidentes-tcgl.json
-
-      - name: Build do app React
-        if: steps.sync_runner.outputs.ok == 'true' && steps.sync_runner.outputs.changed == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
-        run: |
-          cd portal-app
-          npm ci
-          npm run build
-
-      - name: Preparar site estático
-        if: steps.sync_runner.outputs.ok == 'true' && steps.sync_runner.outputs.changed == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
-        env:
-          CUSTOM_DOMAIN: ${{ vars.PORTAL_CUSTOM_DOMAIN }}
-          PORTAL_AWS_API_URL: ${{ secrets.PORTAL_AWS_API_URL }}
-          RELATORIO_IA_SCRIPT_URL: ${{ secrets.RELATORIO_IA_SCRIPT_URL }}
-        run: |
-          set -euo pipefail
-          mkdir site
-          cp index.html login.html site/
-          cp -r pages assets app site/
-          cp hosting/404.html site/404.html
-          touch site/.nojekyll
-
-          if [ -n "${CUSTOM_DOMAIN:-}" ]; then
-            echo "$CUSTOM_DOMAIN" > site/CNAME
-          elif [ -f hosting/CNAME ]; then
-            cp hosting/CNAME site/CNAME
-          fi
-
-          export PORTAL_AWS_API_URL RELATORIO_IA_SCRIPT_URL
-          node -e "
-            const fs = require('fs');
-            const path = 'site/assets/data/portal-runtime.json';
-            const cfg = JSON.parse(fs.readFileSync(path, 'utf8'));
-            const api = (process.env.PORTAL_AWS_API_URL || '').replace(/\\/$/, '');
-            const ia = (process.env.RELATORIO_IA_SCRIPT_URL || '').trim();
-            if (api) cfg.awsApiUrl = api;
-            if (ia) cfg.relatorioIaScriptUrl = ia;
-            delete cfg.devApiKey;
-            fs.writeFileSync(path, JSON.stringify(cfg, null, 2) + '\n');
-          "
-
-      - name: Configurar GitHub Pages
-        if: steps.sync_runner.outputs.ok == 'true' && steps.sync_runner.outputs.changed == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
-        uses: actions/configure-pages@v5
-
-      - name: Enviar artefato
-        if: steps.sync_runner.outputs.ok == 'true' && steps.sync_runner.outputs.changed == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-
-      - name: Publicar Pages (tentativa 1)
-        id: deploy_try1
-        if: steps.sync_runner.outputs.ok == 'true' && steps.sync_runner.outputs.changed == 'true' && hashFiles('assets/data/incidentes-tcgl.json') != ''
-        uses: actions/deploy-pages@v4
-        continue-on-error: true
-
-      - name: Aguardar fila do Pages
-        if: steps.deploy_try1.outcome == 'failure'
-        run: sleep 90
-
-      - name: Publicar Pages (tentativa 2)
-        id: deploy_try2
-        if: steps.deploy_try1.outcome == 'failure'
-        uses: actions/deploy-pages@v4
-        continue-on-error: true
-
-      - name: Publicar Pages (tentativa 3)
-        if: steps.deploy_try1.outcome == 'failure' && steps.deploy_try2.outcome == 'failure'
-        uses: actions/deploy-pages@v4
