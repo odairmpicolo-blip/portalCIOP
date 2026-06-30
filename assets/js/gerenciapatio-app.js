@@ -1424,6 +1424,15 @@
     return wrap;
   }
 
+  function ehLinhaLegendaInternaGabarito(linha) {
+    const textos = (linha.celulas || [])
+      .map((cel) => String(cel.text || "").trim().toUpperCase())
+      .filter(Boolean);
+    if (!textos.length) return false;
+    const legendas = new Set(["LIVRE", "1º", "2º", "3º", "4º"]);
+    return textos.every((txt) => legendas.has(txt));
+  }
+
   function renderizarGabaritoCompleto() {
     const mapa = document.getElementById("patioMap");
     if (!mapa) return;
@@ -1458,9 +1467,10 @@
     });
     tabela.appendChild(colgroup);
 
-    const totalRowH = grade.linhas.reduce((s, l) => s + (l.h || 30), 0) || 1;
+    const linhasVisiveis = grade.linhas.filter((linha) => !ehLinhaLegendaInternaGabarito(linha));
+    const totalRowH = linhasVisiveis.reduce((s, l) => s + (l.h || 30), 0) || 1;
 
-    grade.linhas.forEach((linha) => {
+    linhasVisiveis.forEach((linha) => {
       const tr = document.createElement("tr");
       tr.style.height = `${((linha.h / totalRowH) * 100).toFixed(4)}%`;
       tr.dataset.gabRow = String(linha.r);
