@@ -13,8 +13,11 @@ const defaultXlsx =
   "/Users/odairpicolo/Library/CloudStorage/OneDrive-Pessoal/Documentos/03 - Doc. TCGL/Gabarito Garagem.xlsx";
 const xlsxPath = process.argv[2] || defaultXlsx;
 
-const wb = XLSX.readFile(xlsxPath);
+const wb = XLSX.readFile(xlsxPath, { cellStyles: true });
 const ws = wb.Sheets["Planilha1"] || wb.Sheets[wb.SheetNames[0]];
+
+const GRADE_ROWS = 14;
+const GRADE_COLS = 74;
 
 function cellText(r, c) {
   const v = ws[XLSX.utils.encode_cell({ r, c })]?.v;
@@ -24,6 +27,38 @@ function cellText(r, c) {
 function parseNumeroVaga(text) {
   const m = String(text).match(/(?:vaga|muro|bomba)\s*(\d+)/i);
   return m ? Number(m[1]) : null;
+}
+
+function resolveHexRgb(cell) {
+  const fg = cell?.s?.fgColor;
+  if (!fg) return "";
+  if (fg.rgb) {
+    let rgb = String(fg.rgb);
+    if (rgb.length === 8) rgb = rgb.slice(2);
+    if (rgb.length === 6) return `#${rgb.toUpperCase()}`;
+  }
+  return "";
+}
+
+function corTextoCelula(cell, bg) {
+  const font = cell?.s?.font?.color?.rgb;
+  if (font) {
+    let rgb = String(font);
+    if (rgb.length === 8) rgb = rgb.slice(2);
+    if (rgb.length === 6) return `#${rgb}`;
+  }
+  if (bg === "#000000") return "#FFFFFF";
+  return "#1F2937";
+}
+
+function filaListaPorTexto(text) {
+  const t = String(text || "").toUpperCase();
+  if (t.includes("REFORMA")) return "reforma";
+  if (t === "COT" || t.includes("COT")) return "cot";
+  if (t.includes("OFICINA")) return "oficina";
+  if (t.includes("LAVADOR")) return "latavador_f1";
+  if (t.includes("CORUJ")) return "corujao";
+  return "";
 }
 
 function coletarSlots(r, c0, c1, filaKey, skipCols = new Set()) {
@@ -43,22 +78,18 @@ function registrarCapacidades(slots, cap) {
     cap[s.filaKey] = Math.max(cap[s.filaKey] || 0, s.slotIndex + 1);
   });
 }
+
 const capacidades = {};
 const allSlots = [];
 
-// Corujão — col A, linhas 3–7 (índice r 2–6)
 for (let r = 2; r <= 6; r += 1) {
   const n = parseNumeroVaga(cellText(r, 0));
   if (n != null) allSlots.push({ filaKey: "corujao", slotIndex: n - 1, label: cellText(r, 0), row: r, col: 0 });
 }
 
-// Muro — linha 2, cols AJ–BR (MURO 35 … MURO 1)
 allSlots.push(...coletarSlots(1, 35, 69, "muro"));
-
-// Bomba — linha 5, cols X–AJ
 allSlots.push(...coletarSlots(4, 23, 35, "bomba"));
 
-// Corredor — cols BP–BR, linhas 3–8
 for (let r = 2; r <= 7; r += 1) {
   const cor = r - 2 + 1;
   for (let c = 67; c <= 69; c += 1) {
@@ -75,26 +106,18 @@ for (let r = 2; r <= 7; r += 1) {
   }
 }
 
-// Linha 9 — mistos F1 | pesados F1
 allSlots.push(...coletarSlots(8, 28, 42, "mistos_f1"));
 allSlots.push(...coletarSlots(8, 46, 65, "pesados_f1"));
-
-// Linha 10 — leves F1 (U–AA) + mistos F2 (AC–AQ) | pesados F2
 allSlots.push(...coletarSlots(9, 20, 26, "leves_f1"));
 allSlots.push(...coletarSlots(9, 28, 42, "mistos_f2"));
 allSlots.push(...coletarSlots(9, 46, 67, "pesados_f2"));
-
-// Linha 11 — mistos F3 | pesados F3
 allSlots.push(...coletarSlots(10, 12, 41, "mistos_f3"));
 allSlots.push(...coletarSlots(10, 46, 68, "pesados_f3"));
-
-// Linha 12 — mistos F4 (pula caixa d'água col S) | pesados F4
 allSlots.push(...coletarSlots(11, 5, 41, "mistos_f4", new Set([18])));
 allSlots.push(...coletarSlots(11, 46, 69, "pesados_f4"));
 
 registrarCapacidades(allSlots, capacidades);
 
-// Índice interno 0…n-1 na ordem das colunas; rótulo do Excel preservado em label
 const porFila = {};
 allSlots.forEach((s) => {
   if (!porFila[s.filaKey]) porFila[s.filaKey] = [];
@@ -109,6 +132,75 @@ Object.keys(porFila).forEach((filaKey) => {
     });
   capacidades[filaKey] = porFila[filaKey].length;
 });
+
+const slotPorCelula = new Map();
+allSlots.forEach((s) => {
+  if (s.row != null && s.col != null) {
+    slotPorCelula.set(`${s.row},${s.col}`, {
+      filaKey: s.filaKey,
+      slotIndex: s.slotIndex,
+      rotulo: s.rotulo
+    });
+  }
+});
+
+function infoMerge(r, c) {
+  const merges = ws["!merges"] || [];
+  for (const m of merges) {
+    if (r >= m.s.r && r <= m.e.r && c >= m.s.c && c <= m.e.c) {
+      return {
+        master: r === m.s.r && c === m.s.c,
+        colSpan: m.e.c - m.s.c + 1,
+        rowSpan: m.e.r - m.s.r + 1
+      };
+    }
+  }
+  return { master: true, colSpan: 1, rowSpan: 1 };
+}
+
+const colWidths = [];
+for (let c = 0; c < GRADE_COLS; c += 1) {
+  const wch = ws["!cols"]?.[c]?.wch ?? 3.5;
+  colWidths.push(Math.max(18, Math.round(wch * 7.2)));
+}
+
+const linhasGrade = [];
+for (let r = 0; r < GRADE_ROWS; r += 1) {
+  const rowH = ws["!rows"]?.[r]?.hpt ?? (r === 0 || r === 12 ? 20 : 46.5);
+  const celulas = [];
+
+  for (let c = 0; c < GRADE_COLS; c += 1) {
+    const merge = infoMerge(r, c);
+    if (!merge.master) continue;
+
+    const cell = ws[XLSX.utils.encode_cell({ r, c })];
+    const text = cellText(r, c);
+    let bg = resolveHexRgb(cell);
+    if (!bg) {
+      if (r === 0 || r === 12) bg = "#000000";
+      else bg = "#FFFFFF";
+    }
+
+    const slot = slotPorCelula.get(`${r},${c}`);
+    const filaLista = slot ? "" : filaListaPorTexto(text);
+    const tipo = slot ? "vaga" : filaLista ? "lista" : "rotulo";
+
+    celulas.push({
+      c,
+      colSpan: merge.colSpan,
+      rowSpan: merge.rowSpan,
+      text,
+      bg,
+      cor: corTextoCelula(cell, bg),
+      tipo,
+      filaKey: slot?.filaKey || filaLista || "",
+      slotIndex: slot?.slotIndex ?? -1,
+      rotulo: slot?.rotulo || text
+    });
+  }
+
+  linhasGrade.push({ r, h: Math.round(rowH * 1.15), celulas });
+}
 
 const layout = {
   saidas: {
@@ -182,11 +274,16 @@ const ORDEM_SAIDA_POR_FILA = {
 };
 
 const gabarito = {
-  version: 2,
+  version: 3,
   source: path.basename(xlsxPath),
   capacidades,
   ordemSaida: ORDEM_SAIDA_POR_FILA,
   layout,
+  gradeCompleta: {
+    cols: GRADE_COLS,
+    colWidths,
+    linhas: linhasGrade
+  },
   slots: allSlots
 };
 
@@ -195,4 +292,5 @@ const outPath = path.join(process.cwd(), "assets/js/gabarito-garagem-data.js");
 fs.writeFileSync(outPath, outJs);
 
 console.log("Capacidades:", capacidades);
+console.log("Grade:", GRADE_ROWS, "x", GRADE_COLS);
 console.log("Escrito:", outPath);

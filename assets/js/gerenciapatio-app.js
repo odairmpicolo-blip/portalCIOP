@@ -747,7 +747,7 @@
   }
 
   function anexarOuvintesMapa(mapa) {
-    mapa.querySelectorAll(".patio-fila-head, .garagem-col-head").forEach((btn) => {
+    mapa.querySelectorAll(".patio-fila-head, .garagem-col-head, .gab-faixa-head, .gab-td-lista-titulo").forEach((btn) => {
       btn.addEventListener("click", () => {
         definirFilaSelecionada(btn.dataset.fila);
         document.getElementById("inputFilaBus")?.focus();
@@ -981,7 +981,7 @@
     if (modoVisualizacaoMapa === "zonas") {
       renderizarMapaProfissional();
     } else {
-      renderizarGabaritoEspacial();
+      renderizarGabaritoCompleto();
     }
   }
 
@@ -1101,6 +1101,123 @@
 
     row.appendChild(corpo);
     return row;
+  }
+
+  function criarConteudoCelulaVagaExcel(filaKey, indice, cel) {
+    const wrap = document.createElement("div");
+    wrap.className = "gab-td-vaga-inner";
+
+    const rotulo = document.createElement("div");
+    rotulo.className = "gab-td-rotulo";
+    rotulo.textContent = obterRotuloVaga(filaKey, indice) || cel.rotulo || "";
+    wrap.appendChild(rotulo);
+
+    const grade = patio.filas[filaKey] || [];
+    if (ehVagaBloqueada(filaKey, indice)) {
+      wrap.appendChild(criarSlotBloqueado(filaKey, indice));
+    } else if (grade[indice]) {
+      wrap.appendChild(criarQuadroCarro(grade[indice], filaKey));
+    } else {
+      wrap.appendChild(criarSlotVazio(filaKey, indice));
+    }
+    return wrap;
+  }
+
+  function criarConteudoCelulaListaExcel(filaKey, cel) {
+    const wrap = document.createElement("div");
+    wrap.className = "gab-td-lista-inner";
+
+    const titulo = document.createElement("button");
+    titulo.type = "button";
+    titulo.className = "gab-td-lista-titulo";
+    titulo.dataset.fila = filaKey;
+    titulo.textContent = cel.text || FILA_MAP[filaKey]?.label || filaKey;
+    wrap.appendChild(titulo);
+
+    const lista = document.createElement("div");
+    lista.className = "gab-td-lista-carros";
+    const carros = (patio.filas[filaKey] || []).filter((p) => p != null && String(p).trim());
+    if (!carros.length) {
+      lista.innerHTML = "<span class=\"gab-lista-vazio\">—</span>";
+    } else {
+      carros.forEach((prefixo) => lista.appendChild(criarQuadroCarro(prefixo, filaKey)));
+    }
+    wrap.appendChild(lista);
+    return wrap;
+  }
+
+  function renderizarGabaritoCompleto() {
+    const mapa = document.getElementById("patioMap");
+    if (!mapa) return;
+
+    const grade = window.GABARITO_GARAGEM?.gradeCompleta;
+    if (!grade?.linhas?.length) {
+      renderizarGabaritoEspacial();
+      return;
+    }
+
+    mapa.innerHTML = "";
+    mapa.className = "patio-map gabarito-completo";
+
+    const fonte = document.createElement("div");
+    fonte.className = "gab-fonte";
+    fonte.textContent = window.GABARITO_GARAGEM?.source
+      ? `Gabarito completo — ${window.GABARITO_GARAGEM.source} (role horizontalmente se necessário)`
+      : "Gabarito completo da garagem";
+
+    const scroll = document.createElement("div");
+    scroll.className = "gab-scroll-horizontal";
+    scroll.setAttribute("tabindex", "0");
+    scroll.setAttribute("aria-label", "Planta da garagem — use a barra de rolagem para os lados");
+
+    const tabela = document.createElement("table");
+    tabela.className = "gab-tabela-excel";
+    tabela.setAttribute("role", "grid");
+    tabela.setAttribute("aria-label", "Gabarito da garagem TCGL");
+
+    const colgroup = document.createElement("colgroup");
+    (grade.colWidths || []).forEach((w) => {
+      const col = document.createElement("col");
+      col.style.width = `${w}px`;
+      colgroup.appendChild(col);
+    });
+    tabela.appendChild(colgroup);
+
+    grade.linhas.forEach((linha) => {
+      const tr = document.createElement("tr");
+      tr.style.height = `${linha.h}px`;
+
+      linha.celulas.forEach((cel) => {
+        const td = document.createElement("td");
+        td.className = "gab-td";
+        td.style.backgroundColor = cel.bg;
+        td.style.color = cel.cor;
+        if (cel.colSpan > 1) td.colSpan = cel.colSpan;
+        if (cel.rowSpan > 1) td.rowSpan = cel.rowSpan;
+
+        if (cel.tipo === "vaga" && cel.filaKey && cel.slotIndex >= 0) {
+          td.classList.add("gab-td--vaga");
+          td.dataset.fila = cel.filaKey;
+          td.dataset.indice = String(cel.slotIndex);
+          td.appendChild(criarConteudoCelulaVagaExcel(cel.filaKey, cel.slotIndex, cel));
+        } else if (cel.tipo === "lista" && cel.filaKey) {
+          td.classList.add("gab-td--lista");
+          td.dataset.fila = cel.filaKey;
+          td.appendChild(criarConteudoCelulaListaExcel(cel.filaKey, cel));
+        } else {
+          td.classList.add("gab-td--rotulo");
+          td.textContent = cel.text;
+        }
+
+        tr.appendChild(td);
+      });
+
+      tabela.appendChild(tr);
+    });
+
+    scroll.appendChild(tabela);
+    mapa.append(fonte, scroll);
+    anexarOuvintesMapa(mapa);
   }
 
   function renderizarGabaritoEspacial() {
