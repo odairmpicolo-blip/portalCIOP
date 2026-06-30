@@ -33,7 +33,7 @@ function coletarSlots(r, c0, c1, filaKey, skipCols = new Set()) {
     const text = cellText(r, c);
     const n = parseNumeroVaga(text);
     if (n == null) continue;
-    slots.push({ filaKey, slotIndex: n - 1, label: text, col: c });
+    slots.push({ filaKey, slotIndex: n - 1, label: text, col: c, row: r });
   }
   return slots;
 }

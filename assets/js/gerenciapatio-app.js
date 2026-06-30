@@ -362,6 +362,11 @@
   const FROTA_SET = new Set(frotaDados.map((item) => String(item.veiculo)));
   let lancamentoEmAndamento = false;
   let pedidoEmAndamento = false;
+  let modoVisualizacaoMapa = "gabarito";
+  try {
+    const salvo = localStorage.getItem("patio_modo_mapa_v1");
+    if (salvo === "zonas" || salvo === "gabarito") modoVisualizacaoMapa = salvo;
+  } catch (_) { /* ignore */ }
 
   function veiculoExisteNaFrota(prefixo) {
     return FROTA_SET.has(String(prefixo));
@@ -973,7 +978,261 @@
   }
 
   function renderizarMapa() {
-    renderizarMapaProfissional();
+    if (modoVisualizacaoMapa === "zonas") {
+      renderizarMapaProfissional();
+    } else {
+      renderizarGabaritoEspacial();
+    }
+  }
+
+  function definirModoVisualizacaoMapa(modo) {
+    modoVisualizacaoMapa = modo === "zonas" ? "zonas" : "gabarito";
+    try {
+      localStorage.setItem("patio_modo_mapa_v1", modoVisualizacaoMapa);
+    } catch (_) { /* ignore */ }
+    const btnGab = document.getElementById("btnViewGabarito");
+    const btnZon = document.getElementById("btnViewZonas");
+    btnGab?.classList.toggle("is-active", modoVisualizacaoMapa === "gabarito");
+    btnZon?.classList.toggle("is-active", modoVisualizacaoMapa === "zonas");
+    btnGab?.setAttribute("aria-selected", modoVisualizacaoMapa === "gabarito" ? "true" : "false");
+    btnZon?.setAttribute("aria-selected", modoVisualizacaoMapa === "zonas" ? "true" : "false");
+    renderizarMapa();
+  }
+
+  function criarCabecalhoGabarito(filaKey, label) {
+    const filaCfg = FILA_MAP[filaKey] || {};
+    const qtd = contarCarrosFila(filaKey);
+    const cap = obterCapacidadeFila(filaKey);
+    const ordemSaida = rotuloOrdemSaidaFila(filaKey, filaCfg);
+    const head = document.createElement("button");
+    head.type = "button";
+    head.className = `gab-faixa-head${classeSaidaFila(filaCfg)}${filaCfg.bloqueado ? " bloqueado-lane" : ""}`;
+    head.dataset.fila = filaKey;
+    head.innerHTML = `
+      ${ordemSaida ? `<span class="patio-ordem-saida patio-ordem-saida--${ordemSaida === "LIVRE" ? "livre" : "seq"}">${ordemSaida}</span>` : ""}
+      <span class="gab-faixa-nome">${label}</span>
+      <span class="gab-faixa-meta">${cap ? `${qtd}/${cap}` : `${qtd} veíc.`}</span>
+    `;
+    return head;
+  }
+
+  function criarGabVaga(filaKey, indice) {
+    const celula = criarCelulaVaga(filaKey, indice);
+    celula.className = "gab-vaga";
+    return celula;
+  }
+
+  function criarFaixaGabarito(filaKey, label, zonaCls = "") {
+    if (!filaVisivelNoMapa(filaKey)) return null;
+    const cap = obterCapacidadeFila(filaKey);
+    const faixa = document.createElement("div");
+    faixa.className = `gab-faixa${zonaCls ? ` ${zonaCls}` : ""}`;
+    faixa.appendChild(criarCabecalhoGabarito(filaKey, label));
+
+    const vagas = document.createElement("div");
+    vagas.className = "gab-faixa-vagas";
+    vagas.id = `fila_${filaKey}`;
+    if (filaUsaGrade(filaKey)) {
+      for (let i = 0; i < cap; i += 1) {
+        vagas.appendChild(criarGabVaga(filaKey, i));
+      }
+    } else {
+      const carros = (patio.filas[filaKey] || []).filter((p) => p != null && String(p).trim());
+      if (!carros.length) {
+        vagas.innerHTML = "<span class=\"gab-lista-vazio\">—</span>";
+      } else {
+        carros.forEach((prefixo) => vagas.appendChild(criarQuadroCarro(prefixo, filaKey)));
+      }
+    }
+    faixa.appendChild(vagas);
+    return faixa;
+  }
+
+  function criarZonaListaGabarito(filaKey, label) {
+    const zona = document.createElement("div");
+    zona.className = "gab-zona-lista";
+    zona.appendChild(criarCabecalhoGabarito(filaKey, label));
+    const lista = document.createElement("div");
+    lista.className = "gab-zona-lista-corpo";
+    lista.id = `fila_${filaKey}`;
+    const carros = (patio.filas[filaKey] || []).filter((p) => p != null && String(p).trim());
+    if (!carros.length) {
+      lista.innerHTML = "<span class=\"gab-lista-vazio\">Sem veículos</span>";
+    } else {
+      carros.forEach((prefixo) => lista.appendChild(criarQuadroCarro(prefixo, filaKey)));
+    }
+    zona.appendChild(lista);
+    return zona;
+  }
+
+  function criarColunaCorujaoGabarito() {
+    const col = document.createElement("div");
+    col.className = "gab-corujao-col";
+    const faixa = criarFaixaGabarito("corujao", "Corujão", "gab-zona--corujao");
+    if (faixa) col.appendChild(faixa);
+    return col;
+  }
+
+  function criarLinhaPatioGabarito(linhaCfg) {
+    const row = document.createElement("div");
+    row.className = "gab-patio-linha";
+    row.dataset.excelRow = String(linhaCfg.excelRow || "");
+
+    const rotulo = document.createElement("div");
+    rotulo.className = "gab-patio-linha-rotulo";
+    rotulo.innerHTML = `<span>Linha ${linhaCfg.excelRow || ""}</span>`;
+    row.appendChild(rotulo);
+
+    const corpo = document.createElement("div");
+    corpo.className = "gab-patio-linha-corpo";
+
+    if (linhaCfg.leves) {
+      const lev = criarFaixaGabarito(linhaCfg.leves.key, linhaCfg.leves.label, "gab-zona--leves");
+      if (lev) corpo.appendChild(lev);
+    }
+    if (linhaCfg.mistos) {
+      const mis = criarFaixaGabarito(linhaCfg.mistos.key, linhaCfg.mistos.label, "gab-zona--mistos");
+      if (mis) corpo.appendChild(mis);
+    }
+    if (linhaCfg.pesados) {
+      const pes = criarFaixaGabarito(linhaCfg.pesados.key, linhaCfg.pesados.label, "gab-zona--pesados");
+      if (pes) corpo.appendChild(pes);
+    }
+
+    row.appendChild(corpo);
+    return row;
+  }
+
+  function renderizarGabaritoEspacial() {
+    const mapa = document.getElementById("patioMap");
+    if (!mapa) return;
+
+    mapa.innerHTML = "";
+    mapa.className = "patio-map gabarito-espacial";
+
+    const gab = window.GABARITO_GARAGEM;
+    const plantaCfg = obterPlantaGaragem();
+    const S = plantaCfg.saidas || PLANTA_GARAGEM.saidas;
+
+    const planta = document.createElement("div");
+    planta.className = "gab-planta";
+
+    const fonte = document.createElement("div");
+    fonte.className = "gab-fonte";
+    fonte.textContent = gab?.source
+      ? `Planta baseada em: ${gab.source}`
+      : "Planta operacional TCGL";
+    planta.appendChild(fonte);
+
+    planta.appendChild(criarFaixaSaida("norte", S.norte));
+
+    const corpo = document.createElement("div");
+    corpo.className = "gab-corpo";
+
+    const viaOeste = criarFaixaSaida("oeste", S.oeste);
+    viaOeste.classList.add("gab-via-lateral");
+    corpo.appendChild(viaOeste);
+
+    const area = document.createElement("div");
+    area.className = "gab-area-principal";
+
+    const faixaMuro = document.createElement("div");
+    faixaMuro.className = "gab-linha-superior";
+    const lavador = criarZonaListaGabarito("latavador_f1", "Lavador");
+    faixaMuro.appendChild(lavador);
+    const muro = criarFaixaGabarito("muro", "Muro", "gab-zona--muro");
+    if (muro) faixaMuro.appendChild(muro);
+    area.appendChild(faixaMuro);
+
+    const meio = document.createElement("div");
+    meio.className = "gab-meio";
+
+    const oeste = document.createElement("div");
+    oeste.className = "gab-bloco-oeste";
+    oeste.appendChild(criarZonaListaGabarito("reforma", "Reforma"));
+    oeste.appendChild(criarColunaCorujaoGabarito());
+    oeste.appendChild(criarZonaListaGabarito("cot", "COT"));
+    oeste.appendChild(criarZonaListaGabarito("oficina", "Oficina"));
+    meio.appendChild(oeste);
+
+    const centro = document.createElement("div");
+    centro.className = "gab-bloco-centro";
+
+    const bomba = criarFaixaGabarito("bomba", "Bomba", "gab-zona--bomba");
+    if (bomba) {
+      const bombaWrap = document.createElement("div");
+      bombaWrap.className = "gab-linha-bomba";
+      bombaWrap.appendChild(bomba);
+      centro.appendChild(bombaWrap);
+    }
+
+    const patioTitulo = document.createElement("div");
+    patioTitulo.className = "gab-patio-titulo";
+    patioTitulo.textContent = "Pátio principal — disposição conforme gabarito Excel";
+    centro.appendChild(patioTitulo);
+
+    const patioLinhas = document.createElement("div");
+    patioLinhas.className = "gab-patio-linhas";
+    const linhas = plantaCfg.linhasPatio || [];
+    if (linhas.length) {
+      linhas.forEach((linha) => patioLinhas.appendChild(criarLinhaPatioGabarito(linha)));
+    } else {
+      (plantaCfg.mistos || []).forEach(({ key, label }) => {
+        const f = criarFaixaGabarito(key, label, "gab-zona--mistos");
+        if (f) patioLinhas.appendChild(f);
+      });
+      (plantaCfg.pesados || []).forEach(({ key, label }) => {
+        const f = criarFaixaGabarito(key, label, "gab-zona--pesados");
+        if (f) patioLinhas.appendChild(f);
+      });
+    }
+    centro.appendChild(patioLinhas);
+
+    const legenda = document.createElement("div");
+    legenda.className = "gab-legenda-ordem";
+    legenda.setAttribute("aria-label", "Ordem de saída");
+    (plantaCfg.legendaOrdemSaida || ["LIVRE", "2º", "3º", "4º"]).forEach((item) => {
+      const chip = document.createElement("span");
+      chip.className = `gab-legenda-chip${item === "LIVRE" ? " is-livre" : ""}`;
+      chip.textContent = item;
+      legenda.appendChild(chip);
+    });
+    legenda.insertAdjacentHTML("beforeend", "<span class=\"gab-legenda-hint\">Ordem de saída entre filas (conforme gabarito)</span>");
+    centro.appendChild(legenda);
+
+    meio.appendChild(centro);
+
+    const corredor = document.createElement("div");
+    corredor.className = "gab-bloco-corredor";
+    const corTitulo = document.createElement("div");
+    corTitulo.className = "gab-corredor-titulo";
+    corTitulo.textContent = "Corredor";
+    corredor.appendChild(corTitulo);
+    const corCorpo = document.createElement("div");
+    corCorpo.className = "gab-corredor-colunas";
+    (plantaCfg.corredor || []).forEach(({ key, label }) => {
+      if (!filaVisivelNoMapa(key)) return;
+      const col = document.createElement("div");
+      col.className = "gab-corredor-item";
+      const faixa = criarFaixaGabarito(key, label, "gab-zona--corredor");
+      if (faixa) col.appendChild(faixa);
+      corCorpo.appendChild(col);
+    });
+    corredor.appendChild(corCorpo);
+    meio.appendChild(corredor);
+
+    area.appendChild(meio);
+    corpo.appendChild(area);
+
+    const viaLeste = criarFaixaSaida("leste", S.leste);
+    viaLeste.classList.add("gab-via-lateral");
+    corpo.appendChild(viaLeste);
+
+    planta.appendChild(corpo);
+    planta.appendChild(criarFaixaSaida("sul", S.sul));
+
+    mapa.appendChild(planta);
+    anexarOuvintesMapa(mapa);
   }
 
   function renderizarPatio() {
@@ -1292,13 +1551,24 @@
         consultarFila();
       });
     }
+
+    document.getElementById("btnViewGabarito")?.addEventListener("click", () => {
+      definirModoVisualizacaoMapa("gabarito");
+    });
+    document.getElementById("btnViewZonas")?.addEventListener("click", () => {
+      definirModoVisualizacaoMapa("zonas");
+    });
   }
 
   function inicializar() {
     popularSelectFila();
     configurarInputs();
     configurarAtalhosLancamento();
-    renderizarPatio();
+    definirModoVisualizacaoMapa(modoVisualizacaoMapa);
+    popularSelectFila();
+    popularDatalist();
+    atualizarResumo();
+    renderizarListaNaoUtilizados();
     document.getElementById("inputFilaBus")?.focus();
     if (window.portalLoading) window.portalLoading.hide();
   }
