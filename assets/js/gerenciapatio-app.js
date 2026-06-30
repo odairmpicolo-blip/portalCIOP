@@ -282,7 +282,11 @@
   }
 
   function classeBadgeOrdemSaida(ordemSaida) {
-    return ordemSaida === "1º" || ordemSaida === "LIVRE" ? "livre" : "seq";
+    if (ordemSaida === "1º" || ordemSaida === "LIVRE") return "livre";
+    if (ordemSaida === "2º") return "ordem-2";
+    if (ordemSaida === "3º") return "ordem-3";
+    if (ordemSaida === "4º") return "ordem-4";
+    return "seq";
   }
 
   function rotuloOrdemSaidaFila(filaKey, filaCfg) {
