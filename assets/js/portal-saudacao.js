@@ -275,22 +275,33 @@ export function aplicarSaudacaoHero(nome, opts = {}) {
     if (mesEl) mesEl.textContent = tema.conscientizacao;
 
     if (logoSrc && bannerEl && logoMes) {
-        const src = resolverAsset(logoSrc);
-        if (bannerEl.dataset.mesAtual !== tema.mes) {
-            bannerEl.dataset.mesAtual = tema.mes;
-            bannerEl.removeAttribute("src");
-            bannerEl.src = src;
-        }
+        const src = resolverAsset(logoSrc) + "?v=" + encodeURIComponent(tema.mes.toLowerCase());
+        bannerEl.onerror = () => {
+            logoMes.hidden = true;
+            if (ribbonEl) {
+                ribbonEl.innerHTML = htmlLaco(tema);
+                ribbonEl.classList.add("hero-pro-ribbon-fallback");
+                ribbonEl.title = tituloCampanha;
+            }
+        };
+        bannerEl.onload = () => {
+            logoMes.hidden = false;
+            if (ribbonEl) {
+                ribbonEl.innerHTML = "";
+                ribbonEl.classList.remove("hero-pro-ribbon-fallback");
+            }
+        };
         bannerEl.alt = tituloCampanha;
-        logoMes.hidden = false;
+        bannerEl.dataset.mesAtual = tema.mes;
+        if (bannerEl.getAttribute("src") !== src) bannerEl.src = src;
         logoMes.classList.remove("hero-pro-logo--banner");
         logoMes.classList.add("hero-pro-logo--emblem");
+        logoMes.hidden = false;
         if (campanhaMeta) campanhaMeta.hidden = false;
         if (campanhaEl) {
             campanhaEl.hidden = false;
             campanhaEl.title = tituloCampanha;
         }
-        if (ribbonEl) ribbonEl.innerHTML = "";
         return;
     }
 
@@ -306,6 +317,7 @@ export function aplicarSaudacaoHero(nome, opts = {}) {
     }
     if (ribbonEl) {
         ribbonEl.innerHTML = htmlLaco(tema);
+        ribbonEl.classList.add("hero-pro-ribbon-fallback");
         ribbonEl.title = tituloCampanha;
     }
 }
