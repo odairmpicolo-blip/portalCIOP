@@ -1420,48 +1420,6 @@
     return wrap;
   }
 
-  let gabaritoResizeObserver = null;
-
-  function ajustarEscalaGabarito(scroll, tabela, skipObserve = false) {
-    if (!scroll || !tabela) return;
-    const aplicar = () => {
-      if (modoVisualizacaoMapa !== "gabarito") return;
-      tabela.style.transform = "none";
-      const padX = 8;
-      const padY = 8;
-      const availW = Math.max(320, scroll.clientWidth - padX);
-      const availH = Math.max(240, scroll.clientHeight - padY);
-      const naturalW = tabela.offsetWidth;
-      const naturalH = tabela.offsetHeight;
-      if (!naturalW || !naturalH) return;
-      const scale = Math.min(1, availW / naturalW, availH / naturalH);
-      tabela.style.transform = `scale(${scale})`;
-      tabela.style.transformOrigin = "top center";
-      scroll.style.overflow = "hidden";
-      scroll.style.display = "flex";
-      scroll.style.justifyContent = "center";
-      scroll.style.alignItems = "flex-start";
-      scroll.dataset.gabScale = String(scale);
-    };
-
-    aplicar();
-    if (!skipObserve) {
-      if (gabaritoResizeObserver) gabaritoResizeObserver.disconnect();
-      gabaritoResizeObserver = new ResizeObserver(() => aplicar());
-      gabaritoResizeObserver.observe(scroll);
-      if (scroll.parentElement) gabaritoResizeObserver.observe(scroll.parentElement);
-    }
-  }
-
-  if (!window.__gabAjustarEscalaResize) {
-    window.__gabAjustarEscalaResize = () => {
-      const scroll = document.querySelector(".gab-viewport-fit");
-      const tabela = scroll?.querySelector(".gab-tabela-excel");
-      if (scroll && tabela) ajustarEscalaGabarito(scroll, tabela, true);
-    };
-    window.addEventListener("resize", window.__gabAjustarEscalaResize);
-  }
-
   function renderizarGabaritoCompleto() {
     const mapa = document.getElementById("patioMap");
     if (!mapa) return;
@@ -1487,16 +1445,20 @@
     tabela.setAttribute("aria-label", "Gabarito da garagem TCGL");
 
     const colgroup = document.createElement("colgroup");
-    (grade.colWidths || []).forEach((w) => {
+    const colWidths = grade.colWidths || [];
+    const totalColW = colWidths.reduce((s, w) => s + w, 0) || 1;
+    colWidths.forEach((w) => {
       const col = document.createElement("col");
-      col.style.width = `${w}px`;
+      col.style.width = `${((w / totalColW) * 100).toFixed(4)}%`;
       colgroup.appendChild(col);
     });
     tabela.appendChild(colgroup);
 
+    const totalRowH = grade.linhas.reduce((s, l) => s + (l.h || 30), 0) || 1;
+
     grade.linhas.forEach((linha) => {
       const tr = document.createElement("tr");
-      tr.style.height = `${linha.h}px`;
+      tr.style.height = `${((linha.h / totalRowH) * 100).toFixed(4)}%`;
       tr.dataset.gabRow = String(linha.r);
 
       linha.celulas.forEach((cel) => {
@@ -1542,7 +1504,6 @@
     configurarPlanilhaGabarito(scroll, tabela);
     anexarOuvintesMapa(mapa);
     restaurarFocoGabarito(foco);
-    requestAnimationFrame(() => ajustarEscalaGabarito(scroll, tabela));
   }
 
   function renderizarGabaritoEspacial() {
