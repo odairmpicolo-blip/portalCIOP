@@ -448,6 +448,10 @@ select:disabled{
                     <input id="linhaRelatorio" list="listaLinhas" type="text">
                     <datalist id="listaLinhas"></datalist>
                 </div>
+                <div class="full" id="wrapAgenteOrgaoGestor" hidden>
+                    <label for="agenteOrgaoGestor">Agente do órgão gestor (CMTU)</label>
+                    <input id="agenteOrgaoGestor" type="text" placeholder="Nome do agente que repassou a ordem">
+                </div>
             </div>
 
             <label>Assinatura</label>
@@ -516,7 +520,7 @@ select:disabled{
 <script type="module">
 import { buscarUsuarioFirestore, normalizarCadastro } from "../assets/js/portal-firestore.js";
 import { usuarios as usuariosLocais } from "../assets/js/usuarios.js";
-import { TIPOS_RELATORIO, gerarTextoModelo, gerarTextoIA, corrigirTextoIA, configurarRelatorioIa, resumirErroIa } from "../assets/js/relatorio-ia.js";
+import { TIPOS_RELATORIO, gerarTextoModelo, gerarTextoIA, corrigirTextoIA, configurarRelatorioIa, resumirErroIa } from "../assets/js/relatorio-ia.js?v=20260701b";
 
 const SHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const GID_RO = "665320337";
@@ -545,7 +549,7 @@ const campos = {
     data: document.getElementById("dataRelatorio"),
     carro: document.getElementById("carroRelatorio"),
     linha: document.getElementById("linhaRelatorio"),
-
+    agenteOrgaoGestor: document.getElementById("agenteOrgaoGestor")
 };
 const preview = {
     titulo: document.getElementById("previewTitulo"),
@@ -582,13 +586,16 @@ function ehInformativo() {
 }
 
 function contextoRelatorio() {
+    const params = new URLSearchParams(window.location.search);
     return {
         data: normalizarDataInput(campos.data.value),
         nome: campos.nome.value,
         registro: campos.registro.value,
         funcao: campos.funcao.value,
         carro: campos.carro.value,
-        linha: campos.linha.value
+        linha: campos.linha.value,
+        quantidade: params.get("quantidade") || params.get("minutos") || "",
+        agenteOrgaoGestor: campos.agenteOrgaoGestor?.value || params.get("agente") || params.get("agenteCmtu") || ""
     };
 }
 
@@ -615,6 +622,11 @@ function abrirMenuModelos() {
     modeloBtn.setAttribute("aria-expanded", "true");
 }
 
+function aplicarCamposModelo() {
+    const wrap = document.getElementById("wrapAgenteOrgaoGestor");
+    if (wrap) wrap.hidden = tipoRelatorio !== "nao_acatou_cmtu";
+}
+
 function aplicarModoInformativo() {
     const informativo = ehInformativo();
     blocoFuncionario?.classList.toggle("oculto", informativo);
@@ -637,6 +649,7 @@ function selecionarModelo(tipoId, opts) {
     tipoRelatorio = tipoId;
     if (modeloBtnLabel) modeloBtnLabel.textContent = TIPOS_RELATORIO[tipoId].label;
     aplicarModoInformativo();
+    aplicarCamposModelo();
     fecharMenuModelos();
     if (!opts?.silencioso) {
         corpoFoiEditado = false;

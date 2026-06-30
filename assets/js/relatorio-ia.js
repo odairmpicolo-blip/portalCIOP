@@ -3,6 +3,7 @@ export const TIPOS_RELATORIO = {
     atraso_frequente: { id: "atraso_frequente", label: "Atraso frequente", informativo: false },
     nao_login_tdm: { id: "nao_login_tdm", label: "Não realizou login no TDM", informativo: false },
     nao_acatou_ciop: { id: "nao_acatou_ciop", label: "Não acatou ordens do CIOP", informativo: false },
+    nao_acatou_cmtu: { id: "nao_acatou_cmtu", label: "Não acatou ordens vindas da CMTU", informativo: false },
     supressao_viagem: { id: "supressao_viagem", label: "Supressão de viagem", informativo: false },
     desvio_itinerario: { id: "desvio_itinerario", label: "Desvio de itinerário (Sem justificativa)", informativo: false },
     informativo: { id: "informativo", label: "Relatório informativo", informativo: true }
@@ -42,10 +43,18 @@ export function gerarTextoModelo(tipoId, ctx) {
     const f = blocoFuncionario(ctx);
 
     const modelos = {
-        carro_adiantado:
-            "No dia " + data + ", " + f + ", apresentou saída adiantada em relação ao horário previsto, comprometendo a regularidade do serviço.\n\n" +
-            "Conforme monitoramento e registros operacionais, o veículo iniciou a viagem antes do horário programado, sem autorização prévia do CIOP.\n\n" +
-            "Providências: orientação formal ao funcionário, reforço das normas de pontualidade e registro da ocorrência para acompanhamento.",
+        carro_adiantado: (() => {
+            const funcao = (ctx.funcao || "função").toLowerCase();
+            const nome = ctx.nome || "nome do funcionário";
+            const registro = ctx.registro || "registro";
+            const quantidade = String(ctx.quantidade || ctx.minutos || "").trim() || "___";
+            return (
+                "No dia " + data + ", o(a) " + funcao + " " + nome + ", registro " + registro +
+                ", apresentou saída adiantada de " + quantidade + " minutos em relação ao horário previsto, comprometendo a regularidade do serviço.\n\n" +
+                "Conforme monitoramento e registros operacionais, o veículo iniciou a viagem antes do horário programado, sem autorização prévia do CIOP.\n\n" +
+                "Providências: orientação formal ao funcionário, reforço das normas de pontualidade e registro da ocorrência para acompanhamento."
+            );
+        })(),
 
         atraso_frequente:
             "No dia " + data + ", " + f + ", foi identificado histórico de atrasos frequentes no cumprimento dos horários da linha.\n\n" +
@@ -61,6 +70,17 @@ export function gerarTextoModelo(tipoId, ctx) {
             "No dia " + data + ", " + f + ", deixou de acatar ordens emitidas pelo CIOP durante a operação.\n\n" +
             "O não cumprimento das determinações do centro de controle compromete a segurança, a regularidade e a padronização do serviço.\n\n" +
             "Providências: registro formal da ocorrência, ciência ao funcionário e encaminhamento à supervisão para as medidas cabíveis.",
+
+        nao_acatou_cmtu: (() => {
+            const agente = String(ctx.agenteOrgaoGestor || ctx.agenteCmtu || "").trim() || "nome do agente do órgão gestor";
+            return (
+                "No dia " + data + ", " + f + ", deixou de acatar ordens transmitidas pela CMTU (órgão gestor), em desacordo com as determinações recebidas durante a operação.\n\n" +
+                "Conforme registros e monitoramento, a ordem foi repassada pelo(a) agente do órgão gestor " + agente +
+                ", não sendo cumprida pelo funcionário.\n\n" +
+                "Ressalta-se que ordens vindas do órgão gestor não cumpridas configuram infração passível de autuação, nos termos da regulamentação aplicável.\n\n" +
+                "Providências: ciência ao funcionário, registro formal da ocorrência e encaminhamento à supervisão para as providências cabíveis, inclusive comunicação ao órgão gestor quando aplicável."
+            );
+        })(),
 
         supressao_viagem:
             "No dia " + data + ", " + f + ", houve supressão de viagem prevista no horário de operação.\n\n" +
@@ -92,6 +112,10 @@ function montarPromptGeracao(tipoId, ctx) {
             : "Funcionário: " + (ctx.funcao || "") + " " + (ctx.nome || "") + ", registro " + (ctx.registro || "") + ".",
         "Data: " + (ctx.data || "") + ".",
         (ctx.carro ? "Carro: " + ctx.carro + ". " : "") + (ctx.linha ? "Linha: " + ctx.linha + "." : ""),
+        (ctx.quantidade || ctx.minutos ? "Minutos de adiantamento: " + (ctx.quantidade || ctx.minutos) + "." : ""),
+        (ctx.agenteOrgaoGestor || ctx.agenteCmtu
+            ? "Agente do órgão gestor (CMTU): " + (ctx.agenteOrgaoGestor || ctx.agenteCmtu) + "."
+            : ""),
         "Use o modelo abaixo como base, melhore redação e mantenha parágrafos curtos. Não invente fatos não informados.",
         "Retorne somente o texto do relatório, sem título e sem comentários.",
         "Modelo:\n" + base
