@@ -236,9 +236,75 @@ function dataIsoPadrao(offsetDias) {
   return d.toISOString().slice(0, 10);
 }
 
+function formatarDataBr(iso) {
+  const [y, m, d] = String(iso || "").split("-");
+  if (!y || !m || !d) return iso;
+  return `${d}/${m}/${y}`;
+}
+
 let dadosBrutos = null;
 let colunasMarcadas = new Set();
 let awsAtivo = false;
+let abaDataAtiva = "todas";
+let sortCol = null;
+let sortDir = "asc";
+
+function garantirSortPadrao() {
+  if (!dadosBrutos) {
+    sortCol = null;
+    sortDir = "asc";
+    return;
+  }
+  const colsValidas = new Set([dadosBrutos.colVeiculo, ...dadosBrutos.headers]);
+  if (!sortCol || !colsValidas.has(sortCol)) {
+    sortCol = dadosBrutos.colVeiculo;
+    sortDir = "asc";
+  }
+}
+
+function iconeSort(col) {
+  if (sortCol !== col) return "↕";
+  return sortDir === "asc" ? "↑" : "↓";
+}
+
+function valorOrdenacao(row, col) {
+  const colVeiculo = dadosBrutos.colVeiculo;
+  const raw = String(row[col] ?? "").trim();
+  if (col === colVeiculo) return normVeiculo(raw);
+  if (col === dadosBrutos.colData) return parseDataCsv(raw) || raw;
+  const num = Number(raw.replace(/\./g, "").replace(",", "."));
+  if (raw && !Number.isNaN(num) && /^-?[\d.,\s]+$/.test(raw)) return num;
+  return raw.toLowerCase();
+}
+
+function ordenarRows(rows, col, dir) {
+  const colVeiculo = dadosBrutos.colVeiculo;
+  const mul = dir === "desc" ? -1 : 1;
+  return rows.slice().sort((a, b) => {
+    const va = valorOrdenacao(a, col);
+    const vb = valorOrdenacao(b, col);
+    let cmp = 0;
+    if (typeof va === "number" && typeof vb === "number") cmp = va - vb;
+    else cmp = String(va).localeCompare(String(vb), "pt-BR", { numeric: true, sensitivity: "base" });
+    if (cmp !== 0) return cmp * mul;
+    return normVeiculo(a[colVeiculo]).localeCompare(normVeiculo(b[colVeiculo]), "pt-BR", { numeric: true });
+  });
+}
+
+function cabecalhoOrdenavel(col, label, extraClass = "") {
+  const ativo = sortCol === col ? " sort-ativo" : "";
+  return `<th class="sortable${extraClass}${ativo}" data-sort-col="${escapeHtml(col)}" title="Ordenar ${escapeHtml(label)}" aria-sort="${sortCol === col ? (sortDir === "asc" ? "ascending" : "descending") : "none"}">${escapeHtml(label)}<span class="sort-seta">${iconeSort(col)}</span></th>`;
+}
+
+function alternarOrdenacao(col) {
+  if (!dadosBrutos || !col) return;
+  if (sortCol === col) sortDir = sortDir === "asc" ? "desc" : "asc";
+  else {
+    sortCol = col;
+    sortDir = "asc";
+  }
+  renderTabelaDados(rowsFiltradas(), colunasSelecionadas());
+}
 
 function colunasSelecionadas() {
   if (!dadosBrutos) return [];
@@ -247,13 +313,62 @@ function colunasSelecionadas() {
   return todas.filter((c) => colunasMarcadas.has(c));
 }
 
-function rowsFiltradas() {
+function rowsBaseFiltro() {
   if (!dadosBrutos) return [];
   let rows = dadosBrutos.rows.slice();
   rows = filtrarRowsPorData(rows, dadosBrutos.colData, $("filtroDataDe").value, $("filtroDataAte").value);
   const veicFiltro = $("filtroVeiculo").value;
   if (veicFiltro) rows = rows.filter((r) => normVeiculo(r[dadosBrutos.colVeiculo]) === veicFiltro);
   return rows;
+}
+
+function rowsFiltradas() {
+  let rows = rowsBaseFiltro();
+  if (abaDataAtiva && abaDataAtiva !== "todas") {
+    rows = rows.filter((r) => parseDataCsv(r[dadosBrutos.colData]) === abaDataAtiva);
+  }
+  return rows;
+}
+
+function renderAbasData(baseRows) {
+  const wrap = $("abasDataWrap");
+  const container = $("abasData");
+  if (!wrap || !container || !dadosBrutos) return;
+
+  const contagem = new Map();
+  baseRows.forEach((r) => {
+    const iso = parseDataCsv(r[dadosBrutos.colData]);
+    if (!iso) return;
+    contagem.set(iso, (contagem.get(iso) || 0) + 1);
+  });
+
+  const datas = [...contagem.keys()].sort((a, b) => b.localeCompare(a));
+  if (!datas.length) {
+    wrap.hidden = true;
+    container.innerHTML = "";
+    abaDataAtiva = "todas";
+    return;
+  }
+
+  wrap.hidden = false;
+  if (abaDataAtiva !== "todas" && !contagem.has(abaDataAtiva)) abaDataAtiva = "todas";
+
+  const botoes = [`<button type="button" role="tab" data-aba-data="todas" class="${abaDataAtiva === "todas" ? "ativo" : ""}" aria-selected="${abaDataAtiva === "todas"}">Todas (${baseRows.length})</button>`];
+  datas.forEach((iso) => {
+    const ativo = abaDataAtiva === iso;
+    botoes.push(`<button type="button" role="tab" data-aba-data="${iso}" class="${ativo ? "ativo" : ""}" aria-selected="${ativo}">${formatarDataBr(iso)} (${contagem.get(iso)})</button>`);
+  });
+
+  container.innerHTML = botoes.join("");
+  container.querySelectorAll("[data-aba-data]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      abaDataAtiva = btn.getAttribute("data-aba-data") || "todas";
+      renderizar();
+    });
+  });
+
+  const ativoEl = container.querySelector(".ativo");
+  if (ativoEl) ativoEl.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
 
 function atualizarRotuloColunas() {
@@ -385,26 +500,28 @@ function renderTabelaDados(rows, cols) {
   const corpo = $("tabelaDadosCorpo");
   const colunasKpi = dadosBrutos.colunasKpi || {};
   const colVeiculo = dadosBrutos.colVeiculo;
+  garantirSortPadrao();
 
   const colsVisiveis = cols.length ? cols : dadosBrutos.headers.filter((h) => h !== colVeiculo);
   head.innerHTML = `<tr>
-    <th class="col-fix">${escapeHtml(colVeiculo || "Veículo")}</th>
-    ${colsVisiveis.map((c) => `<th title="${escapeHtml(c)}">${escapeHtml(c)}</th>`).join("")}
+    ${cabecalhoOrdenavel(colVeiculo, colVeiculo || "Veículo", " col-fix")}
+    ${colsVisiveis.map((c) => cabecalhoOrdenavel(c, c)).join("")}
   </tr>`;
 
-  $("contagemDados").textContent = `${rows.length} registro(s)`;
+  head.querySelectorAll("th[data-sort-col]").forEach((th) => {
+    th.addEventListener("click", () => alternarOrdenacao(th.getAttribute("data-sort-col")));
+  });
+
+  $("contagemDados").textContent = abaDataAtiva !== "todas"
+    ? `${rows.length} registro(s) · ${formatarDataBr(abaDataAtiva)}`
+    : `${rows.length} registro(s)`;
 
   if (!rows.length) {
     corpo.innerHTML = `<tr><td colspan="${colsVisiveis.length + 1}">Nenhum registro no período selecionado.</td></tr>`;
     return;
   }
 
-  const sorted = rows.slice().sort((a, b) => {
-    const da = parseDataCsv(a[dadosBrutos.colData]) || "";
-    const db = parseDataCsv(b[dadosBrutos.colData]) || "";
-    if (da !== db) return db.localeCompare(da);
-    return normVeiculo(a[colVeiculo]).localeCompare(normVeiculo(b[colVeiculo]), "pt-BR", { numeric: true });
-  });
+  const sorted = ordenarRows(rows, sortCol, sortDir);
 
   corpo.innerHTML = sorted.map((row) => {
     const rowCls = classeLinhaDado(row, colunasKpi);
@@ -422,6 +539,8 @@ function renderTabelaDados(rows, cols) {
 function renderizar() {
   if (!dadosBrutos) return;
   const cols = colunasSelecionadas();
+  const baseRows = rowsBaseFiltro();
+  renderAbasData(baseRows);
   const rows = rowsFiltradas();
   const stats = calcularStats(rows, dadosBrutos.colVeiculo, dadosBrutos.colunasKpi);
   const totalLinhas = dadosBrutos.rows.length;
@@ -436,6 +555,9 @@ function renderizar() {
 
 function limparFiltros() {
   if (!dadosBrutos) return;
+  abaDataAtiva = "todas";
+  sortCol = dadosBrutos.colVeiculo;
+  sortDir = "asc";
   $("filtroVeiculo").value = "";
   montarFiltroDatas(true);
   const cols = dadosBrutos.headers.filter((h) => h !== dadosBrutos.colVeiculo);

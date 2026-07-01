@@ -118,6 +118,20 @@ Resources:
       RouteKey: GET /db-health
       Target: !Sub integrations/${PortalApiIntegration}
 
+  PortalApiRouteTelemetria:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApiId
+      RouteKey: ANY /telemetria
+      Target: !Sub integrations/${PortalApiIntegration}
+
+  PortalApiRouteTelemetriaProxy:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApiId
+      RouteKey: "ANY /telemetria/{proxy+}"
+      Target: !Sub integrations/${PortalApiIntegration}
+
   PortalApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
