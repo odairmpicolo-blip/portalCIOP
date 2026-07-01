@@ -80,11 +80,14 @@ table.relatorio tbody tr.row-div td{box-shadow:inset 3px 0 0 var(--orange)}
 .toolbar-filtros-linha .filter-field--md{width:118px!important}
 .toolbar-filtros-linha .filter-field--lg{width:132px!important}
 .toolbar-filtros-linha input:not([type="checkbox"]),.toolbar-filtros-linha select{min-height:32px!important;height:32px!important;padding:4px 6px!important;font-size:11px!important;font-weight:700!important;border-radius:8px!important;padding-right:28px!important}
-.filter-field--inicio{width:auto!important;min-width:168px!important}
-.filter-checkbox-box{display:flex;flex-direction:column;gap:2px;min-height:32px;padding:4px 6px;border:1.5px solid #dce3ef;border-radius:8px;background:#fff}
-.filter-checkbox-opt{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;cursor:pointer;line-height:1.2;white-space:nowrap;color:#0f172a}
-.filter-checkbox-opt:hover{color:var(--blue)}
-.filter-checkbox-box input[type="checkbox"]{width:14px!important;min-width:14px!important;height:14px!important;min-height:14px!important;padding:0!important;margin:0!important;border:none!important;border-radius:3px!important;box-shadow:none!important;background:transparent!important;appearance:auto!important;-webkit-appearance:checkbox!important;accent-color:var(--blue);cursor:pointer;flex:0 0 auto}
+.filter-field--inicio{width:132px!important;overflow:visible!important}
+.filter-multi{position:relative;overflow:visible}
+.filter-multi-btn{width:100%;min-height:32px;height:32px;padding:4px 28px 4px 6px;font-size:11px;font-weight:700;border-radius:8px;border:1.5px solid #dce3ef;background:#fff;text-align:left;cursor:pointer;font-family:inherit;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2306245c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+.filter-multi-panel{position:fixed;z-index:9999;min-width:148px;padding:8px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(16,24,40,.16);display:flex;flex-direction:column;gap:4px}
+.filter-multi-panel[hidden]{display:none!important}
+.filter-checkbox-opt{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;cursor:pointer;line-height:1.3;white-space:nowrap;color:#0f172a;padding:4px 6px;border-radius:6px}
+.filter-checkbox-opt:hover{background:#f8fafc;color:var(--blue)}
+.filter-multi-panel input[type="checkbox"],.filter-checkbox-box input[type="checkbox"]{width:14px!important;min-width:14px!important;height:14px!important;min-height:14px!important;padding:0!important;margin:0!important;border:none!important;border-radius:3px!important;box-shadow:none!important;background:transparent!important;appearance:auto!important;-webkit-appearance:checkbox!important;accent-color:var(--blue);cursor:pointer;flex:0 0 auto}
 .toolbar-left{align-items:flex-end;flex-wrap:nowrap;gap:10px}
 .toolbar-left .nav-actions{flex:0 0 auto}
 .toolbar-left .nav-actions .btn-portal,.toolbar-left .nav-actions .btn-secondary{min-height:32px;padding:6px 10px;font-size:12px}
@@ -154,11 +157,14 @@ table.relatorio tbody tr.row-div td{box-shadow:inset 3px 0 0 var(--orange)}
                     <select id="filtroTrajeto"><option value="">Todos</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option><option value="SEM COMUNICAÇÃO">SEM COMUNICAÇÃO</option></select>
                 </div>
                 <div class="filter-field filter-field--inicio">
-                    <label>Início no horário</label>
-                    <div class="filter-checkbox-box" id="filtroInicioPanel" role="group" aria-label="Início no horário">
-                        <label class="filter-checkbox-opt"><input type="checkbox" value="NO HORARIO"> NO HORÁRIO</label>
-                        <label class="filter-checkbox-opt"><input type="checkbox" value="ATRASADO"> ATRASADO</label>
-                        <label class="filter-checkbox-opt"><input type="checkbox" value="ADIANTADO"> ADIANTADO</label>
+                    <label for="filtroInicioTrigger">Início no horário</label>
+                    <div class="filter-multi" id="filtroInicioMulti">
+                        <button type="button" class="filter-multi-btn" id="filtroInicioTrigger" aria-haspopup="listbox" aria-expanded="false">Todos</button>
+                        <div class="filter-multi-panel" id="filtroInicioPanel" hidden role="group" aria-label="Início no horário">
+                            <label class="filter-checkbox-opt"><input type="checkbox" value="NO HORARIO"> NO HORÁRIO</label>
+                            <label class="filter-checkbox-opt"><input type="checkbox" value="ATRASADO"> ATRASADO</label>
+                            <label class="filter-checkbox-opt"><input type="checkbox" value="ADIANTADO"> ADIANTADO</label>
+                        </div>
                     </div>
                 </div>
                 <div class="filter-field filter-field--md"><label for="filtroSaidaColM">Saída atr./adi.</label>
@@ -280,11 +286,62 @@ function valoresFiltroInicio(){
     return [...document.querySelectorAll("#filtroInicioPanel input[type=checkbox]:checked")]
         .map((cb)=>normalizarOpcaoFiltro(cb.value));
 }
+function rotuloFiltroInicio(valor){
+    if(valor==="NO HORARIO") return "NO HORÁRIO";
+    return valor;
+}
+function atualizarRotuloFiltroInicio(){
+    const vals=valoresFiltroInicio();
+    const btn=$("filtroInicioTrigger");
+    if(!btn) return;
+    if(!vals.length) btn.textContent="Todos";
+    else if(vals.length===1) btn.textContent=rotuloFiltroInicio(vals[0]);
+    else btn.textContent=`${vals.length} selecionados`;
+}
+function posicionarPainelFiltroInicio(){
+    const trigger=$("filtroInicioTrigger");
+    const panel=$("filtroInicioPanel");
+    if(!trigger||!panel||panel.hidden) return;
+    const r=trigger.getBoundingClientRect();
+    panel.style.left=`${Math.max(8,r.left)}px`;
+    panel.style.top=`${r.bottom+4}px`;
+    panel.style.minWidth=`${Math.max(148,r.width)}px`;
+}
+function fecharPainelFiltroInicio(){
+    const panel=$("filtroInicioPanel");
+    const trigger=$("filtroInicioTrigger");
+    if(!panel||!trigger) return;
+    panel.hidden=true;
+    trigger.setAttribute("aria-expanded","false");
+}
 function configurarFiltroInicioMulti(){
     const panel=$("filtroInicioPanel");
-    if(!panel) return;
+    const trigger=$("filtroInicioTrigger");
+    const wrap=$("filtroInicioMulti");
+    if(!panel||!trigger||!wrap) return;
     panel.querySelectorAll('input[type="checkbox"]').forEach((cb)=>{
-        cb.addEventListener("change",reaplicarFiltrosLocais);
+        cb.addEventListener("change",()=>{
+            atualizarRotuloFiltroInicio();
+            reaplicarFiltrosLocais();
+        });
+    });
+    trigger.addEventListener("click",(e)=>{
+        e.stopPropagation();
+        const abrir=panel.hidden;
+        if(abrir){
+            panel.hidden=false;
+            trigger.setAttribute("aria-expanded","true");
+            posicionarPainelFiltroInicio();
+        }else{
+            fecharPainelFiltroInicio();
+        }
+    });
+    panel.addEventListener("click",(e)=>e.stopPropagation());
+    document.addEventListener("click",()=>fecharPainelFiltroInicio());
+    window.addEventListener("resize",()=>posicionarPainelFiltroInicio());
+    window.addEventListener("scroll",()=>posicionarPainelFiltroInicio(),true);
+    document.addEventListener("keydown",(e)=>{
+        if(e.key==="Escape") fecharPainelFiltroInicio();
     });
 }
 function normalizarOpcaoFiltro(v){
