@@ -393,21 +393,28 @@ function aplicarFiltrosColunas(dados){
         return true;
     });
 }
+function rotuloTrajetoFiltro(chaveNorm){
+    if(chaveNorm==="SIM") return "SIM";
+    if(chaveNorm==="NAO") return "NÃO";
+    if(chaveNorm==="SEM COMUNICACAO") return "SEM COMUNICAÇÃO";
+    return chaveNorm;
+}
 function popularOpcoesTrajeto(dados){
     const sel=$("filtroTrajeto");
-    const atual=sel.value;
-    const fixas=["","SIM","NÃO","SEM COMUNICAÇÃO"];
+    const atualNorm=normalizarOpcaoFiltro(sel.value);
+    const fixasNorm=["SIM","NAO","SEM COMUNICACAO"];
     const extras=new Set();
     (dados||[]).forEach((row)=>{
         const v=valorFiltroTrajeto(row);
-        if(v&&!fixas.includes(v)) extras.add(v);
+        if(v&&!fixasNorm.includes(v)) extras.add(v);
     });
-    const opcoes=[...fixas.filter(Boolean),...[...extras].sort((a,b)=>a.localeCompare(b,"pt-BR"))];
-    sel.innerHTML=opcoes.map((op)=>{
-        const label=op||"Todos";
-        return `<option value="${escapeHtml(op)}">${escapeHtml(label)}</option>`;
-    }).join("");
-    if(opcoes.includes(atual)) sel.value=atual;
+    const opcoesNorm=[...fixasNorm,...[...extras].sort((a,b)=>a.localeCompare(b,"pt-BR"))];
+    sel.innerHTML=`<option value="">Todos</option>${opcoesNorm.map((op)=>{
+        const label=rotuloTrajetoFiltro(op);
+        return `<option value="${escapeHtml(label)}">${escapeHtml(label)}</option>`;
+    }).join("")}`;
+    const opt=[...sel.options].find((o)=>normalizarOpcaoFiltro(o.value)===atualNorm);
+    if(opt) sel.value=opt.value;
 }
 function reaplicarFiltrosLocais(){
     if(!state.bruto.length) return;
