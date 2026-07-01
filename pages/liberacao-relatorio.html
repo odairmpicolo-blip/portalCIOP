@@ -402,15 +402,23 @@ function rotuloTrajetoFiltro(chaveNorm){
 function popularOpcoesTrajeto(dados){
     const sel=$("filtroTrajeto");
     const atualNorm=normalizarOpcaoFiltro(sel.value);
-    const fixasNorm=["SIM","NAO","SEM COMUNICACAO"];
-    const extras=new Set();
-    (dados||[]).forEach((row)=>{
-        const v=valorFiltroTrajeto(row);
-        if(v&&!fixasNorm.includes(v)) extras.add(v);
-    });
-    const opcoesNorm=[...fixasNorm,...[...extras].sort((a,b)=>a.localeCompare(b,"pt-BR"))];
-    sel.innerHTML=`<option value="">Todos</option>${opcoesNorm.map((op)=>{
-        const label=rotuloTrajetoFiltro(op);
+    const porNorm=new Map();
+    const registrar=(raw)=>{
+        const norm=normalizarOpcaoFiltro(raw);
+        if(!norm||porNorm.has(norm)) return;
+        porNorm.set(norm,rotuloTrajetoFiltro(norm));
+    };
+    registrar("SIM");
+    registrar("NÃO");
+    registrar("SEM COMUNICAÇÃO");
+    (dados||[]).forEach((row)=>registrar(val(row,"trajeto_ocioso_correto")));
+    const ordem=["SIM","NAO","SEM COMUNICACAO"];
+    const chaves=[
+        ...ordem.filter((k)=>porNorm.has(k)),
+        ...[...porNorm.keys()].filter((k)=>!ordem.includes(k)).sort((a,b)=>a.localeCompare(b,"pt-BR"))
+    ];
+    sel.innerHTML=`<option value="">Todos</option>${chaves.map((norm)=>{
+        const label=porNorm.get(norm);
         return `<option value="${escapeHtml(label)}">${escapeHtml(label)}</option>`;
     }).join("")}`;
     const opt=[...sel.options].find((o)=>normalizarOpcaoFiltro(o.value)===atualNorm);
