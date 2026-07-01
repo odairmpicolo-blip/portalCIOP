@@ -22,6 +22,40 @@ const KPI_DEFS = [
   { id: "kmPercorrido", rotulos: ["km percorrido"] }
 ];
 
+const COLUNAS_OCULTAS = [
+  "cliente",
+  "temperatura cabine media"
+];
+
+function colunaOculta(nome) {
+  const n = normChave(nome);
+  return COLUNAS_OCULTAS.some((k) => n === k || n.includes(k));
+}
+
+function colunasExibiveis(headers, colVeiculo) {
+  return (headers || []).filter((h) => h !== colVeiculo && !colunaOculta(h));
+}
+
+function colunaTemperatura(nome) {
+  return normChave(nome).includes("temperatura");
+}
+
+function formatarTemperatura(val) {
+  const s = String(val ?? "").trim();
+  if (!s) return "";
+  const num = Number(s.replace(",", "."));
+  if (Number.isNaN(num)) return s;
+  const formatted = num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${formatted}ºC`;
+}
+
+function formatarCelula(col, val) {
+  const s = String(val ?? "").trim();
+  if (!s) return "";
+  if (colunaTemperatura(col)) return formatarTemperatura(s);
+  return s;
+}
+
 function $(id) { return document.getElementById(id); }
 
 function escapeHtml(s) {
@@ -308,7 +342,7 @@ function alternarOrdenacao(col) {
 
 function colunasSelecionadas() {
   if (!dadosBrutos) return [];
-  const todas = dadosBrutos.headers.filter((h) => h !== dadosBrutos.colVeiculo);
+  const todas = colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo);
   if (!colunasMarcadas.size) return todas;
   return todas.filter((c) => colunasMarcadas.has(c));
 }
@@ -374,7 +408,7 @@ function renderAbasData(baseRows) {
 function atualizarRotuloColunas() {
   const btn = $("filtroColunasBtn");
   if (!btn || !dadosBrutos) return;
-  const total = dadosBrutos.headers.filter((h) => h !== dadosBrutos.colVeiculo).length;
+  const total = colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo).length;
   const n = colunasSelecionadas().length;
   if (!n || n === total) btn.textContent = "Todas as colunas";
   else if (n === 1) btn.textContent = colunasSelecionadas()[0];
@@ -402,7 +436,7 @@ function fecharPainelColunas() {
 function montarPainelColunas() {
   const panel = $("filtroColunasPanel");
   if (!dadosBrutos || !panel) return;
-  const cols = dadosBrutos.headers.filter((h) => h !== dadosBrutos.colVeiculo);
+  const cols = colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo);
   if (!colunasMarcadas.size) cols.forEach((c) => colunasMarcadas.add(c));
   panel.innerHTML = `<div class="filtro-colunas-acoes">
       <button type="button" data-col-acao="todas">Todas</button>
@@ -476,7 +510,7 @@ function hintFiltrosAtivos() {
   const de = $("filtroDataDe").value;
   const ate = $("filtroDataAte").value;
   const veic = $("filtroVeiculo").value;
-  const totalCol = dadosBrutos.headers.filter((h) => h !== dadosBrutos.colVeiculo).length;
+  const totalCol = colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo).length;
   const nCol = colunasSelecionadas().length;
   if (de || ate) partes.push(`período ${de || "…"} a ${ate || "…"}`);
   if (veic) partes.push(`carro ${veic}`);
@@ -502,7 +536,7 @@ function renderTabelaDados(rows, cols) {
   const colVeiculo = dadosBrutos.colVeiculo;
   garantirSortPadrao();
 
-  const colsVisiveis = cols.length ? cols : dadosBrutos.headers.filter((h) => h !== colVeiculo);
+  const colsVisiveis = cols.length ? cols : colunasExibiveis(dadosBrutos.headers, colVeiculo);
   head.innerHTML = `<tr>
     ${cabecalhoOrdenavel(colVeiculo, colVeiculo || "Veículo", " col-fix")}
     ${colsVisiveis.map((c) => cabecalhoOrdenavel(c, c)).join("")}
@@ -526,7 +560,7 @@ function renderTabelaDados(rows, cols) {
   corpo.innerHTML = sorted.map((row) => {
     const rowCls = classeLinhaDado(row, colunasKpi);
     const cells = colsVisiveis.map((col) => {
-      const val = row[col] ?? "";
+      const val = formatarCelula(col, row[col] ?? "");
       return `<td>${escapeHtml(val) || "<span class=\"cell-vazio\">—</span>"}</td>`;
     }).join("");
     return `<tr${rowCls ? ` class="${rowCls}"` : ""}>
@@ -560,7 +594,7 @@ function limparFiltros() {
   sortDir = "asc";
   $("filtroVeiculo").value = "";
   montarFiltroDatas(true);
-  const cols = dadosBrutos.headers.filter((h) => h !== dadosBrutos.colVeiculo);
+  const cols = colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo);
   colunasMarcadas = new Set(cols);
   montarPainelColunas();
   fecharPainelColunas();
@@ -603,7 +637,7 @@ async function carregarAws() {
       colunasKpi: detectarColunasKpi(headers),
       arquivos: ["AWS"]
     };
-    colunasMarcadas = new Set(dadosBrutos.headers.filter((h) => h !== colVeiculo));
+    colunasMarcadas = new Set(colunasExibiveis(dadosBrutos.headers, colVeiculo));
     montarFiltroVeiculos();
     montarFiltroDatas(true);
     montarPainelColunas();
@@ -637,7 +671,7 @@ function incorporarCsv(parsed, nomeArquivo) {
     if (!dadosBrutos.arquivos.includes(nomeArquivo)) dadosBrutos.arquivos.push(nomeArquivo);
   }
 
-  colunasMarcadas = new Set(dadosBrutos.headers.filter((h) => h !== dadosBrutos.colVeiculo));
+  colunasMarcadas = new Set(colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo));
   montarFiltroVeiculos();
   montarFiltroDatas(false);
   montarPainelColunas();
