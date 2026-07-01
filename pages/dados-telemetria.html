@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dados de telemetria | Portal CIOP</title>
+<style>
+:root{--blue:#06245c;--blue2:#0b3a8a;--bg:#f5f7fb;--border:#dfe5ef;--text:#101828;--muted:#667085;--red:#dc2626;--green:#16a34a;--amber:#d97706;--white:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.header{background:#fff;display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);gap:16px;align-items:center;padding:8px 20px;border-bottom:1px solid #e8edf6}
+.header > a:first-child.portal-brand-mark{justify-self:start}
+.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.subtitle{text-align:center;font-size:13px;margin-top:4px;color:var(--muted);font-weight:700}
+.telemetria-title{font-size:clamp(1.1rem,2.2vw,1.45rem);font-weight:900;color:var(--blue);letter-spacing:.02em;margin:0}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.ciop-session{display:flex;align-items:center;gap:6px;max-width:260px;padding:4px 8px;border:1px solid rgba(6,36,92,.12);border-radius:6px;background:#fff;color:var(--blue);font-size:11px}
+.ciop-session-user{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.ciop-session .btn-logout{background:var(--red);color:#fff;border:none;border-radius:5px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer}
+.container{max-width:1680px;margin:20px auto 32px;padding:0 20px;flex:1;width:100%}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.nav-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn-portal{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;border:0;cursor:pointer;font-family:inherit;background:var(--blue);color:#fff}
+.btn-icon{display:inline-flex;width:16px;height:16px}
+.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:0 8px 24px rgba(16,24,40,.06);margin-bottom:16px}
+.panel h2{font-size:15px;color:var(--blue);margin:0 0 12px}
+.upload-zona{border:2px dashed #b8c5d9;border-radius:12px;padding:28px 20px;text-align:center;background:linear-gradient(180deg,#fafcff,#f4f8ff);cursor:pointer;transition:border-color .2s,background .2s}
+.upload-zona:hover,.upload-zona.drag{border-color:var(--blue2);background:#eef4ff}
+.upload-zona strong{display:block;font-size:15px;color:var(--blue);margin-bottom:6px}
+.upload-zona span{font-size:13px;color:var(--muted);font-weight:600}
+.upload-zona input[type=file]{display:none}
+.info-upload{margin-top:10px;font-size:12px;color:var(--muted);font-weight:700;min-height:18px}
+.legenda-celulas{margin-top:8px;font-size:11px;color:var(--muted);font-weight:700}
+.legenda-celulas span{margin-right:4px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.stat-card{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.stat-card .lbl{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.stat-card .val{font-size:22px;font-weight:900;color:var(--blue);margin-top:4px;line-height:1.1}
+.filtros-frota{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.filtros-frota button{border:1px solid var(--border);background:#fff;color:var(--blue);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit}
+.filtros-frota button.ativo{background:var(--blue);color:#fff;border-color:var(--blue)}
+.filtros-grid{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px}
+.filtros-grid .filter-field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.filtros-grid .filter-field label{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.filtros-grid input[type=date],.filtros-grid select{min-height:36px;height:36px;padding:6px 10px;font-size:12px;font-weight:700;border:1.5px solid #dce3ef;border-radius:8px;background:#fff;color:#0f172a;font-family:inherit}
+.filtros-grid .filter-field--data{width:148px}
+.filtros-grid .filter-field--carro{width:132px}
+.filtros-grid .filter-field--colunas{position:relative;min-width:168px}
+.filtro-colunas-btn{width:100%;min-height:36px;padding:6px 28px 6px 10px;font-size:12px;font-weight:700;border:1.5px solid #dce3ef;border-radius:8px;background:#fff;text-align:left;cursor:pointer;font-family:inherit;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2306245c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+.filtro-colunas-panel{position:fixed;z-index:9999;min-width:220px;max-width:min(360px,92vw);max-height:min(52vh,420px);overflow:auto;padding:8px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(16,24,40,.16);display:flex;flex-direction:column;gap:2px}
+.filtro-colunas-panel[hidden]{display:none!important}
+.filtro-colunas-acoes{display:flex;gap:6px;padding:4px 2px 6px;border-bottom:1px solid #eef2f7;margin-bottom:4px}
+.filtro-colunas-acoes button{flex:1;border:1px solid var(--border);background:#f8fafc;color:var(--blue);border-radius:6px;padding:5px 8px;font-size:10px;font-weight:800;cursor:pointer;font-family:inherit}
+.filtro-colunas-opt{display:flex;align-items:flex-start;gap:6px;padding:5px 6px;font-size:11px;font-weight:700;cursor:pointer;border-radius:6px;line-height:1.3}
+.filtro-colunas-opt:hover{background:#f8fafc}
+.filtro-colunas-opt input{margin:2px 0 0;flex:0 0 auto;width:13px;height:13px;accent-color:var(--blue)}
+.btn-limpar-filtros{margin-top:12px;border:1px solid var(--border);background:#fff;color:var(--blue);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit}
+.filtro-ativo-hint{font-size:11px;color:var(--amber);font-weight:700;margin-top:8px}
+.table-wrap{overflow:auto;max-height:min(62vh,640px);border:1px solid var(--border);border-radius:10px}
+table.telemetria{width:100%;border-collapse:collapse;font-size:12px}
+table.telemetria thead th{position:sticky;top:0;background:#2c3e50;color:#fff;padding:8px 10px;text-align:left;font-weight:700;white-space:nowrap;z-index:2}
+table.telemetria tbody td{padding:7px 10px;border-bottom:1px solid #eef2f7;vertical-align:middle}
+table.telemetria tbody tr:nth-child(even){background:#fafbfc}
+table.telemetria tbody tr:hover{background:#eef5ff}
+table.telemetria tbody tr.row-sem-dados{background:#fee2e2}
+table.telemetria tbody tr.row-sem-dados:nth-child(even){background:#fecaca}
+table.telemetria tbody tr.row-sem-dados:hover{background:#fca5a5}
+table.telemetria tbody tr.row-incoerente{background:#fef3c7}
+table.telemetria tbody tr.row-incoerente:nth-child(even){background:#fde68a}
+table.telemetria tbody tr.row-incoerente:hover{background:#fcd34d}
+table.telemetria .num{text-align:right;font-variant-numeric:tabular-nums}
+table.telemetria .col-fix{position:sticky;left:0;background:inherit;z-index:1;box-shadow:2px 0 4px rgba(0,0,0,.04)}
+table.telemetria thead .col-fix{z-index:3;background:#2c3e50}
+table.telemetria tbody tr.row-sem-dados .col-fix{background:inherit}
+table.telemetria tbody tr.row-incoerente .col-fix{background:inherit}
+table.telemetria .veiculo{font-weight:800;color:var(--blue);min-width:72px}
+table.telemetria tr.row-sem-dados .veiculo{color:#991b1b}
+table.telemetria tr.row-incoerente .veiculo{color:#92400e}
+table.telemetria .perfil{min-width:140px;max-width:200px;font-size:11px;color:var(--muted)}
+.cell-ok{color:var(--green);font-weight:900;text-align:center}
+.cell-part{color:var(--amber);font-weight:900;text-align:center}
+.cell-bad{color:var(--red);font-weight:900;text-align:center}
+.cell-miss{color:#94a3b8;text-align:center}
+.pct-ok{color:var(--green);font-weight:800}
+.pct-warn{color:var(--amber);font-weight:800}
+.pct-bad{color:var(--red);font-weight:800}
+.status-pill{display:inline-block;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:800;white-space:nowrap}
+.st-ok{background:#dcfce7;color:#166534}
+.st-warn{background:#fef3c7;color:#92400e}
+.st-bad{background:#fee2e2;color:#991b1b}
+.st-muted{background:#f1f5f9;color:#475569}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-weight:700;font-size:14px}
+.contagem{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:8px}
+.tags-fora{display:flex;flex-wrap:wrap;gap:6px}
+.tag-fora{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:800}
+.page-footer{padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-top:1px solid var(--border);background:var(--white)}
+@media(max-width:720px){.header{grid-template-columns:1fr;text-align:center}}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css">
+<link rel="stylesheet" href="../assets/css/portal-brand.css">
+<link rel="stylesheet" href="../assets/css/portal-header.css">
+<link rel="stylesheet" href="../assets/css/portal-session.css">
+<script type="module" src="../assets/js/auth.js"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+<script src="../assets/js/frota-patio-data.js" defer></script>
+</head>
+<body data-require-perfis="Administrador,Supervisor,Gerência,Gerencia,Analista">
+<header class="header">
+  <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
+  <div class="title-wrap">
+    <h1 class="telemetria-title" aria-label="Dados de telemetria">Dados de telemetria</h1>
+    <div class="subtitle">Cobertura da frota · 250 veículos</div>
+  </div>
+  <div class="header-actions">
+    <div class="ciop-session" aria-label="Usuário logado">
+      <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
+      <span class="ciop-session-cargo" id="perfilUsuario" hidden></span>
+      <button class="btn-logout" type="button" onclick="logout()">Sair</button>
+    </div>
+    <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+  </div>
+</header>
+
+<main class="container">
+  <div class="toolbar">
+    <div class="nav-actions">
+      <a class="btn-portal" href="../index.html" aria-label="Voltar ao portal">
+        <span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>
+        <span>Portal</span>
+      </a>
+    </div>
+  </div>
+
+  <section class="panel" aria-label="Envio de CSV">
+    <h2>Enviar CSV de telemetria</h2>
+    <div class="upload-zona" id="uploadZona" tabindex="0" role="button" aria-label="Clique ou arraste um arquivo CSV">
+      <strong>Clique ou arraste o arquivo CSV aqui</strong>
+      <span>Formato Clever / TCGL · várias linhas por veículo (por data) · compara com os 250 da frota</span>
+      <input type="file" id="csvInput" accept=".csv,text/csv">
+    </div>
+    <p class="info-upload" id="infoUpload"></p>
+    <p class="legenda-celulas"><span class="cell-ok">✓</span> em todos os registros · <span class="cell-part">◐</span> em parte · <span class="cell-bad">✗</span> ausente · <span class="cell-miss">—</span> veículo fora do CSV · linha <span style="background:#fee2e2;padding:0 6px;border-radius:4px">vermelha</span> sem dados · <span style="background:#fef3c7;padding:0 6px;border-radius:4px">amarela</span> dados incoerentes</p>
+  </section>
+
+  <div id="painelVazio" class="panel empty-state">
+    <p id="msgVazio">Envie um arquivo CSV para analisar quais veículos têm dados consistentes e quais campos estão faltando.</p>
+  </div>
+
+  <div id="painelResultado" hidden>
+    <section class="panel" id="painelFiltros" aria-label="Filtros">
+      <h2>Filtros</h2>
+      <div class="filtros-grid">
+        <div class="filter-field filter-field--data">
+          <label for="filtroDataDe">Data de</label>
+          <input type="date" id="filtroDataDe">
+        </div>
+        <div class="filter-field filter-field--data">
+          <label for="filtroDataAte">Data até</label>
+          <input type="date" id="filtroDataAte">
+        </div>
+        <div class="filter-field filter-field--carro">
+          <label for="filtroVeiculo">Carro</label>
+          <select id="filtroVeiculo">
+            <option value="">Todos (250)</option>
+          </select>
+        </div>
+        <div class="filter-field filter-field--colunas">
+          <label for="filtroColunasBtn">Colunas</label>
+          <button type="button" class="filtro-colunas-btn" id="filtroColunasBtn" aria-haspopup="listbox" aria-expanded="false">Todas as colunas</button>
+          <div class="filtro-colunas-panel" id="filtroColunasPanel" hidden role="group" aria-label="Colunas visíveis"></div>
+        </div>
+      </div>
+      <button type="button" class="btn-limpar-filtros" id="btnLimparFiltros">Limpar filtros</button>
+      <p class="filtro-ativo-hint" id="filtroAtivoHint" hidden></p>
+    </section>
+
+    <div class="stats-grid" aria-label="Resumo">
+      <div class="stat-card"><div class="lbl">Frota TCGL</div><div class="val" id="statFrota">—</div></div>
+      <div class="stat-card"><div class="lbl">No CSV</div><div class="val" id="statNoCsv">—</div></div>
+      <div class="stat-card"><div class="lbl">Completos</div><div class="val" id="statCompletos">—</div></div>
+      <div class="stat-card"><div class="lbl">Parciais</div><div class="val" id="statParciais">—</div></div>
+      <div class="stat-card"><div class="lbl">Sem registro</div><div class="val" id="statSemRegistro">—</div></div>
+      <div class="stat-card"><div class="lbl">Colunas</div><div class="val" id="statColunas">—</div></div>
+      <div class="stat-card"><div class="lbl">Linhas CSV</div><div class="val" id="statLinhasCsv">—</div></div>
+      <div class="stat-card"><div class="lbl">Veíc. no arquivo</div><div class="val" id="statVeiculosCsv">—</div></div>
+      <div class="stat-card"><div class="lbl">Fora da frota</div><div class="val" id="statForaFrota">—</div></div>
+    </div>
+
+    <section class="panel">
+      <h2>Cobertura por coluna</h2>
+      <div class="table-wrap">
+        <table class="telemetria">
+          <thead><tr><th>Coluna</th><th>Com dado</th><th>Sem dado</th><th>% frota</th></tr></thead>
+          <tbody id="tabelaColunasCorpo"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Frota — campo a campo</h2>
+      <div class="filtros-frota">
+        <button type="button" class="ativo" data-filtro-frota="todos">Todos</button>
+        <button type="button" data-filtro-frota="completo">Completos</button>
+        <button type="button" data-filtro-frota="parcial">Parciais</button>
+        <button type="button" data-filtro-frota="vazio">No CSV, vazios</button>
+        <button type="button" data-filtro-frota="sem_registro">Sem registro no CSV</button>
+      </div>
+      <p class="contagem" id="contagemFrota"></p>
+      <div class="table-wrap">
+        <table class="telemetria">
+          <thead id="tabelaFrotaHead"></thead>
+          <tbody id="tabelaFrotaCorpo"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" id="blocoForaFrota" hidden>
+      <h2>Veículos no CSV fora da frota (250)</h2>
+      <div class="tags-fora" id="listaForaFrota"></div>
+    </section>
+  </div>
+</main>
+
+<footer class="page-footer">Portal CIOP · Dados de telemetria · TCGL</footer>
+<script src="../assets/js/dados-telemetria.js" defer></script>
+</body>
+</html>
