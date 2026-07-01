@@ -38,6 +38,12 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
 .status-aws.ok{background:#dcfce7;color:#166534}
 .status-aws.warn{background:#fef3c7;color:#92400e}
 .status-aws.muted{background:#f1f5f9;color:#475569}
+.status-upload{font-size:11px;font-weight:800;padding:4px 8px;border-radius:6px;white-space:nowrap}
+.status-upload.ok{background:#dcfce7;color:#166534}
+.status-upload.warn{background:#fef3c7;color:#92400e}
+.status-upload.muted{background:#f1f5f9;color:#475569}
+.info-banco{margin:10px 0 0;font-size:12px;color:var(--blue);font-weight:700;line-height:1.4}
+.info-banco-hint{margin:4px 0 0;font-size:11px;color:var(--muted);font-weight:600;line-height:1.35}
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
 .stat-card{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px}
 .stat-card .lbl{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;line-height:1.3}
@@ -126,14 +132,15 @@ table.telemetria tr.row-incoerente .veiculo{color:#92400e}
     </div>
   </div>
 
-  <section class="panel panel-upload" aria-label="Envio de CSV">
-    <div class="upload-compact" id="uploadZona" tabindex="0" role="button" aria-label="Adicionar arquivo CSV">
+  <section class="panel panel-upload" aria-label="Lançamento de CSV">
+    <div class="upload-compact" id="uploadZona" tabindex="0" role="button" aria-label="Lançar novo arquivo CSV">
       <strong>+ CSV</strong>
-      <span>Clever / TCGL · acumula no banco AWS</span>
+      <span>Novo lançamento · Clever / TCGL</span>
       <input type="file" id="csvInput" accept=".csv,text/csv">
-      <div class="upload-meta" id="infoUpload">Carregando…</div>
-      <span class="status-aws muted" id="statusAws">—</span>
+      <div class="upload-meta"><span class="status-upload muted" id="statusUpload">Pronto para lançar</span></div>
     </div>
+    <p class="info-banco" id="infoBanco">Carregando dados do banco AWS…</p>
+    <p class="info-banco-hint">Um registro por veículo e dia (00:00–23:59). Novos CSVs atualizam dias existentes e acrescentam dias novos.</p>
   </section>
 
   <div id="painelResultado">
@@ -187,7 +194,7 @@ table.telemetria tr.row-incoerente .veiculo{color:#92400e}
         </table>
       </div>
       <div id="painelVazio" class="empty-state" hidden>
-        <p id="msgVazio">Nenhum dado ainda. Adicione um CSV acima — cada arquivo é acumulado e salvo na AWS.</p>
+        <p id="msgVazio">Nenhum registro no banco. Use + CSV para lançar novos dados.</p>
       </div>
     </section>
   </div>

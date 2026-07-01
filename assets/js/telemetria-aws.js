@@ -42,3 +42,17 @@ export async function telemetriaAwsDisponivel() {
   await initPortalAwsRuntime();
   return awsApiEnabled();
 }
+
+export async function aguardarAuthTelemetria(tentativas = 10, intervaloMs = 400) {
+  await initPortalAwsRuntime();
+  if (!awsApiEnabled()) return false;
+  for (let i = 0; i < tentativas; i++) {
+    try {
+      await firebaseIdToken();
+      return true;
+    } catch (_) {
+      await new Promise((r) => setTimeout(r, intervaloMs));
+    }
+  }
+  return false;
+}

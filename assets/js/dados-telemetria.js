@@ -1,7 +1,8 @@
 import {
   carregarTelemetriaAws,
   importarTelemetriaAws,
-  telemetriaAwsDisponivel
+  telemetriaAwsDisponivel,
+  aguardarAuthTelemetria
 } from "./telemetria-aws.js";
 
 const FROTA = (window.FROTA_PATIO || []).slice().sort((a, b) =>
@@ -190,11 +191,30 @@ function mesclarHeaders(atual, novo) {
   return [...set];
 }
 
-function mesclarRows(atual, novas, colVeiculo, colData) {
+function mesclarLinhaTelemetria(atual, nova) {
+  const base = atual && typeof atual === "object" ? { ...atual } : {};
+  const inc = nova && typeof nova === "object" ? { ...nova } : {};
+  const out = { ...base };
+  Object.keys(inc).forEach((k) => {
+    if (valorPreenchido(inc[k])) out[k] = inc[k];
+    else if (!(k in out)) out[k] = inc[k];
+  });
+  return out;
+}
+
+function unificarLinhasPorVeiculoData(rows, colVeiculo, colData) {
   const map = new Map();
-  (atual || []).forEach((r) => map.set(chaveLinha(r, colVeiculo, colData), r));
-  novas.forEach((r) => map.set(chaveLinha(r, colVeiculo, colData), r));
+  (rows || []).forEach((row) => {
+    const key = chaveLinha(row, colVeiculo, colData);
+    if (!key || key.includes("undefined") || key.startsWith("|") || key.endsWith("|")) return;
+    const prev = map.get(key);
+    map.set(key, prev ? mesclarLinhaTelemetria(prev, row) : { ...row });
+  });
   return [...map.values()];
+}
+
+function mesclarRows(atual, novas, colVeiculo, colData) {
+  return unificarLinhasPorVeiculoData([...(atual || []), ...(novas || [])], colVeiculo, colData);
 }
 
 function payloadParaLinha(row, colVeiculo, colData) {
@@ -205,7 +225,8 @@ function payloadParaLinha(row, colVeiculo, colData) {
 }
 
 function linhasAwsParaRows(dados, headers, colVeiculo, colData) {
-  return (dados || []).map((item) => {
+  const map = new Map();
+  (dados || []).forEach((item) => {
     const row = { ...(item.payload || item) };
     const veiculo = item.veiculo || item.veiculo_norm || row.veiculo_norm;
     const dataIso = item.data_iso || row.data_iso;
@@ -214,8 +235,11 @@ function linhasAwsParaRows(dados, headers, colVeiculo, colData) {
       const [y, m, d] = String(dataIso).split("-");
       row[colData] = `${d}-${m}-${y}`;
     }
-    return row;
+    const key = chaveLinha(row, colVeiculo, colData);
+    const prev = map.get(key);
+    map.set(key, prev ? mesclarLinhaTelemetria(prev, row) : row);
   });
+  return [...map.values()];
 }
 
 function arquivosDosRegistrosAws(dados) {
@@ -224,7 +248,17 @@ function arquivosDosRegistrosAws(dados) {
     const nome = String(item?.origem_arquivo || "").trim();
     if (nome) nomes.add(nome);
   });
-  return nomes.size ? [...nomes] : ["AWS"];
+  return [...nomes];
+}
+
+function headersDoPayload(payload) {
+  const ignore = new Set(["data_iso", "veiculo_norm"]);
+  return Object.keys(payload || {}).filter((k) => !ignore.has(k));
+}
+
+function dataMaisRecente(rows, colData) {
+  const datas = rows.map((r) => parseDataCsv(r[colData])).filter(Boolean).sort();
+  return datas.length ? datas[datas.length - 1] : "";
 }
 
 function filtrarRowsPorData(rows, colData, dataDe, dataAte) {
@@ -297,6 +331,36 @@ let awsAtivo = false;
 let abaDataAtiva = "todas";
 let sortCol = null;
 let sortDir = "asc";
+let primeiraCarga = true;
+
+function atualizarInfoBanco() {
+  const el = $("infoBanco");
+  if (!el) return;
+  if (!dadosBrutos?.rows?.length) {
+    el.textContent = "Nenhum registro salvo no banco AWS ainda.";
+    return;
+  }
+  const arquivos = dadosBrutos.arquivos?.length ? dadosBrutos.arquivos.join(", ") : "—";
+  const datas = dadosBrutos.rows.map((r) => parseDataCsv(r[dadosBrutos.colData])).filter(Boolean).sort();
+  const periodo = datas.length ? `${formatarDataBr(datas[0])} a ${formatarDataBr(datas[datas.length - 1])}` : "—";
+  el.textContent = `${dadosBrutos.rows.length} registro(s) unificado(s) por veículo e data · ${periodo} · arquivos: ${arquivos}${awsAtivo ? " · AWS" : ""}`;
+}
+
+function renderResumoVazio() {
+  $("statFrota").textContent = FROTA.length;
+  ["statNoArquivo", "statCan", "statKmInicial", "statKmFinal", "statKmPercorrido"].forEach((id) => {
+    $(id).textContent = "—";
+  });
+}
+
+function renderTabelaVazia(msg) {
+  const head = $("tabelaDadosHead");
+  const corpo = $("tabelaDadosCorpo");
+  if (head) head.innerHTML = "<tr><th>Veículo</th></tr>";
+  if (corpo) corpo.innerHTML = `<tr><td>${escapeHtml(msg || "Nenhum dado carregado.")}</td></tr>`;
+  if ($("contagemDados")) $("contagemDados").textContent = "0 registro(s)";
+  if ($("abasDataWrap")) $("abasDataWrap").hidden = true;
+}
 
 function garantirSortPadrao() {
   if (!dadosBrutos) {
@@ -405,7 +469,8 @@ function renderAbasData(baseRows) {
   const botoes = [`<button type="button" role="tab" data-aba-data="todas" class="${abaDataAtiva === "todas" ? "ativo" : ""}" aria-selected="${abaDataAtiva === "todas"}">Todas (${baseRows.length})</button>`];
   datas.forEach((iso) => {
     const ativo = abaDataAtiva === iso;
-    botoes.push(`<button type="button" role="tab" data-aba-data="${iso}" class="${ativo ? "ativo" : ""}" aria-selected="${ativo}">${formatarDataBr(iso)} (${contagem.get(iso)})</button>`);
+    const carros = new Set(baseRows.filter((r) => parseDataCsv(r[dadosBrutos.colData]) === iso).map((r) => normVeiculo(r[dadosBrutos.colVeiculo]))).size;
+    botoes.push(`<button type="button" role="tab" data-aba-data="${iso}" class="${ativo ? "ativo" : ""}" aria-selected="${ativo}" title="Dia completo 00:00–23:59">${formatarDataBr(iso)} · ${carros} carro(s)</button>`);
   });
 
   container.innerHTML = botoes.join("");
@@ -565,7 +630,7 @@ function renderTabelaDados(rows, cols) {
   });
 
   $("contagemDados").textContent = abaDataAtiva !== "todas"
-    ? `${rows.length} registro(s) · ${formatarDataBr(abaDataAtiva)}`
+    ? `${rows.length} registro(s) · ${formatarDataBr(abaDataAtiva)} (00:00–23:59)`
     : `${rows.length} registro(s)`;
 
   if (!rows.length) {
@@ -589,20 +654,23 @@ function renderTabelaDados(rows, cols) {
 }
 
 function renderizar() {
-  if (!dadosBrutos) return;
+  $("painelResultado").hidden = false;
+  if (!dadosBrutos?.rows?.length) {
+    renderResumoVazio();
+    renderTabelaVazia("Nenhum registro no período. Use + CSV para lançar novos dados.");
+    atualizarInfoBanco();
+    return;
+  }
   const cols = colunasSelecionadas();
   const baseRows = rowsBaseFiltro();
   renderAbasData(baseRows);
   const rows = rowsFiltradas();
   const stats = calcularStats(rows, dadosBrutos.colVeiculo, dadosBrutos.colunasKpi);
-  const totalLinhas = dadosBrutos.rows.length;
-  const arquivos = dadosBrutos.arquivos?.length ? dadosBrutos.arquivos.join(", ") : "—";
-  $("infoUpload").textContent = `${totalLinhas} linha(s) acumulada(s) · ${stats.veiculosArquivo} veículo(s) · arquivos: ${arquivos}${awsAtivo ? " · AWS" : ""}`;
+  atualizarInfoBanco();
   hintFiltrosAtivos();
   renderResumo(stats);
   renderTabelaDados(rows, cols);
-  $("painelVazio").hidden = totalLinhas > 0;
-  $("painelResultado").hidden = false;
+  $("painelVazio").hidden = true;
 }
 
 function limparFiltros() {
@@ -619,8 +687,12 @@ function limparFiltros() {
   renderizar();
 }
 
-async function salvarAws(linhasImport, nomeArquivo) {
-  const payload = linhasImport.map((r) => payloadParaLinha(r, dadosBrutos.colVeiculo, dadosBrutos.colData)).filter(Boolean);
+async function salvarAws(linhasImport, nomeArquivo, meta) {
+  const colVeiculo = meta?.colVeiculo || dadosBrutos?.colVeiculo;
+  const colData = meta?.colData || dadosBrutos?.colData;
+  if (!colVeiculo || !colData) return { ok: false, motivo: "colunas veículo/data não detectadas" };
+  const unificadas = unificarLinhasPorVeiculoData(linhasImport, colVeiculo, colData);
+  const payload = unificadas.map((r) => payloadParaLinha(r, colVeiculo, colData)).filter(Boolean);
   if (!payload.length) return { ok: false, motivo: "sem linhas válidas" };
   try {
     awsAtivo = await telemetriaAwsDisponivel();
@@ -632,38 +704,60 @@ async function salvarAws(linhasImport, nomeArquivo) {
   }
 }
 
-async function carregarAws() {
+function aplicarRegistrosAws(res) {
+  const sample = res.dados[0]?.payload || res.dados[0];
+  const headers = headersDoPayload(sample);
+  const colVeiculo = detectarColunaVeiculo(headers);
+  const colData = detectarColunaData(headers);
+  const rows = linhasAwsParaRows(res.dados, headers, colVeiculo, colData);
+
+  dadosBrutos = {
+    headers: mesclarHeaders([], headers),
+    rows,
+    colVeiculo,
+    colData,
+    colunasKpi: detectarColunasKpi(headers),
+    arquivos: arquivosDosRegistrosAws(res.dados)
+  };
+  colunasMarcadas = new Set(colunasExibiveis(dadosBrutos.headers, colVeiculo));
+  montarFiltroVeiculos();
+  montarFiltroDatas(true);
+  montarPainelColunas();
+  if (primeiraCarga) {
+    const recente = dataMaisRecente(rows, colData);
+    if (recente) abaDataAtiva = recente;
+    primeiraCarga = false;
+  }
+  renderizar();
+  return rows.length;
+}
+
+async function carregarAws(opcoes = {}) {
+  const tentativas = opcoes.tentativas ?? 4;
+  let ultimoErro = "erro ao carregar AWS";
   try {
     awsAtivo = await telemetriaAwsDisponivel();
     if (!awsAtivo) return { ok: false, motivo: "API AWS não configurada" };
 
+    const autenticou = await aguardarAuthTelemetria();
+    if (!autenticou) return { ok: false, motivo: "sessão não autenticada" };
+
     const { de, ate } = periodoBuscaAws();
-    const res = await carregarTelemetriaAws(de, ate);
-    if (!res?.dados?.length) return { ok: false, motivo: "nenhum registro na AWS" };
-
-    const sample = res.dados[0]?.payload || res.dados[0];
-    const headers = Object.keys(sample);
-    const colVeiculo = detectarColunaVeiculo(headers);
-    const colData = detectarColunaData(headers);
-    const rows = linhasAwsParaRows(res.dados, headers, colVeiculo, colData);
-
-    dadosBrutos = {
-      headers: mesclarHeaders([], headers),
-      rows,
-      colVeiculo,
-      colData,
-      colunasKpi: detectarColunasKpi(headers),
-      arquivos: arquivosDosRegistrosAws(res.dados)
-    };
-    colunasMarcadas = new Set(colunasExibiveis(dadosBrutos.headers, colVeiculo));
-    montarFiltroVeiculos();
-    montarFiltroDatas(true);
-    montarPainelColunas();
-    renderizar();
-    return { ok: true, total: rows.length };
+    for (let i = 0; i < tentativas; i++) {
+      try {
+        const res = await carregarTelemetriaAws(de, ate);
+        if (!res?.dados?.length) return { ok: false, motivo: "nenhum registro na AWS" };
+        const total = aplicarRegistrosAws(res);
+        return { ok: true, total };
+      } catch (err) {
+        ultimoErro = err.message || ultimoErro;
+        await new Promise((r) => setTimeout(r, 600));
+      }
+    }
+    return { ok: false, motivo: ultimoErro };
   } catch (err) {
     awsAtivo = false;
-    return { ok: false, motivo: err.message || "erro ao carregar AWS" };
+    return { ok: false, motivo: err.message || ultimoErro };
   }
 }
 
@@ -701,20 +795,28 @@ async function processarTextoCsv(texto, nomeArquivo) {
   if (!parsed.headers.length) throw new Error("CSV sem cabeçalho válido.");
   if (!parsed.rows.length) throw new Error("CSV sem linhas de dados.");
 
-  incorporarCsv(parsed, nomeArquivo);
+  const colVeiculo = detectarColunaVeiculo(parsed.headers);
+  const colData = detectarColunaData(parsed.headers);
+  parsed.rows = unificarLinhasPorVeiculoData(parsed.rows, colVeiculo, colData);
 
-  $("infoUpload").textContent = `Salvando ${nomeArquivo} na AWS...`;
-  const salvo = await salvarAws(parsed.rows, nomeArquivo);
+  $("statusUpload").textContent = `Salvando ${nomeArquivo} na AWS (${parsed.rows.length} veículo(s)/dia)...`;
+  const salvo = await salvarAws(parsed.rows, nomeArquivo, { colVeiculo, colData });
   if (salvo.ok) {
-    $("statusAws").textContent = `Salvo na AWS (${salvo.inseridos} linha(s))`;
-    $("statusAws").className = "status-aws ok";
+    $("statusUpload").textContent = `Arquivo ${nomeArquivo} salvo (${salvo.inseridos} linha(s))`;
+    $("statusUpload").className = "status-upload ok";
+    const recarregou = await carregarAws({ tentativas: 3 });
+    if (!recarregou.ok) {
+      incorporarCsv(parsed, nomeArquivo);
+      $("statusUpload").textContent += ` · recarregar falhou (${recarregou.motivo})`;
+      $("statusUpload").className = "status-upload warn";
+    }
   } else {
-    $("statusAws").textContent = salvo.motivo === "aws indisponível"
-      ? "Dados acumulados localmente (AWS indisponível)"
-      : `Acumulado localmente (${salvo.motivo})`;
-    $("statusAws").className = "status-aws warn";
+    incorporarCsv(parsed, nomeArquivo);
+    $("statusUpload").textContent = salvo.motivo === "aws indisponível"
+      ? `${nomeArquivo} só local (AWS indisponível)`
+      : `${nomeArquivo} só local (${salvo.motivo})`;
+    $("statusUpload").className = "status-upload warn";
   }
-  renderizar();
 }
 
 function lerArquivo(file) {
@@ -723,16 +825,21 @@ function lerArquivo(file) {
     $("msgVazio").textContent = "Selecione um arquivo .csv";
     return;
   }
-  $("infoUpload").textContent = `Lendo ${file.name}...`;
+  $("statusUpload").textContent = `Lendo ${file.name}...`;
+  $("statusUpload").className = "status-upload muted";
   const reader = new FileReader();
   reader.onload = async () => {
     try {
       await processarTextoCsv(String(reader.result || ""), file.name);
     } catch (err) {
-      $("infoUpload").textContent = err.message || "Falha ao processar o CSV.";
+      $("statusUpload").textContent = err.message || "Falha ao processar o CSV.";
+      $("statusUpload").className = "status-upload warn";
     }
   };
-  reader.onerror = () => { $("infoUpload").textContent = "Não foi possível ler o arquivo."; };
+  reader.onerror = () => {
+    $("statusUpload").textContent = "Não foi possível ler o arquivo.";
+    $("statusUpload").className = "status-upload warn";
+  };
   reader.readAsText(file, "UTF-8");
 }
 
@@ -742,8 +849,11 @@ async function iniciar() {
     return;
   }
 
+  $("painelResultado").hidden = false;
   montarFiltroVeiculos();
   $("statFrota").textContent = FROTA.length;
+  renderResumoVazio();
+  renderTabelaVazia("Carregando dados do banco AWS…");
 
   const input = $("csvInput");
   const zona = $("uploadZona");
@@ -790,17 +900,19 @@ async function iniciar() {
 
   $("btnLimparFiltros")?.addEventListener("click", () => limparFiltros());
 
-  $("infoUpload").textContent = "Carregando dados da AWS...";
-  const carregou = await carregarAws();
+  $("statusUpload").textContent = "Pronto para lançar novo CSV";
+  $("statusUpload").className = "status-upload muted";
+  atualizarInfoBanco();
+  const carregou = await carregarAws({ tentativas: 5 });
   if (carregou.ok) {
-    $("statusAws").textContent = `Carregado da AWS (${carregou.total} linha(s))`;
-    $("statusAws").className = "status-aws ok";
+    $("statusUpload").textContent = "Pronto para lançar novo CSV";
+    $("statusUpload").className = "status-upload muted";
   } else {
-    $("infoUpload").textContent = "Adicione um CSV — os dados serão acumulados e salvos na AWS.";
-    $("statusAws").textContent = carregou.motivo === "nenhum registro na AWS"
-      ? "Nenhum dado salvo ainda"
-      : `Sem carregar da AWS (${carregou.motivo})`;
-    $("statusAws").className = "status-aws muted";
+    renderResumoVazio();
+    renderTabelaVazia(`Sem dados no banco (${carregou.motivo}). Use + CSV para lançar.`);
+    atualizarInfoBanco();
+    $("statusUpload").textContent = "Pronto para lançar novo CSV";
+    $("statusUpload").className = "status-upload muted";
   }
 }
 
