@@ -21,7 +21,7 @@ router.get("/", requireFirebaseUser, async (req, res) => {
   }
   try {
     const params = [dataDe, dataAte];
-    let sql = `SELECT payload, origem_arquivo, atualizado_em
+    let sql = `SELECT data_iso, veiculo, payload, origem_arquivo, atualizado_em
                FROM telemetria_linhas
                WHERE data_iso >= $1::date AND data_iso <= $2::date`;
     if (veiculo) {
@@ -30,7 +30,12 @@ router.get("/", requireFirebaseUser, async (req, res) => {
     }
     sql += ` ORDER BY data_iso DESC, veiculo`;
     const result = await query(sql, params);
-    const dados = result.rows.map((r) => r.payload);
+    const dados = result.rows.map((r) => ({
+      data_iso: r.data_iso,
+      veiculo: r.veiculo,
+      payload: r.payload,
+      origem_arquivo: r.origem_arquivo
+    }));
     res.json({
       ok: true,
       dados,

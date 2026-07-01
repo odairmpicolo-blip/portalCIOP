@@ -207,13 +207,24 @@ function payloadParaLinha(row, colVeiculo, colData) {
 function linhasAwsParaRows(dados, headers, colVeiculo, colData) {
   return (dados || []).map((item) => {
     const row = { ...(item.payload || item) };
-    if (colVeiculo && !row[colVeiculo] && item.veiculo) row[colVeiculo] = item.veiculo;
-    if (colData && !row[colData] && item.data_iso) {
-      const [y, m, d] = String(item.data_iso).split("-");
+    const veiculo = item.veiculo || item.veiculo_norm || row.veiculo_norm;
+    const dataIso = item.data_iso || row.data_iso;
+    if (colVeiculo && !row[colVeiculo] && veiculo) row[colVeiculo] = veiculo;
+    if (colData && !row[colData] && dataIso) {
+      const [y, m, d] = String(dataIso).split("-");
       row[colData] = `${d}-${m}-${y}`;
     }
     return row;
   });
+}
+
+function arquivosDosRegistrosAws(dados) {
+  const nomes = new Set();
+  (dados || []).forEach((item) => {
+    const nome = String(item?.origem_arquivo || "").trim();
+    if (nome) nomes.add(nome);
+  });
+  return nomes.size ? [...nomes] : ["AWS"];
 }
 
 function filtrarRowsPorData(rows, colData, dataDe, dataAte) {
@@ -268,6 +279,10 @@ function dataIsoPadrao(offsetDias) {
   const d = new Date();
   d.setDate(d.getDate() + offsetDias);
   return d.toISOString().slice(0, 10);
+}
+
+function periodoBuscaAws() {
+  return { de: dataIsoPadrao(-730), ate: dataIsoPadrao(60) };
 }
 
 function formatarDataBr(iso) {
@@ -497,9 +512,12 @@ function montarFiltroDatas(forceReset) {
   de.max = max;
   ate.min = min;
   ate.max = max;
-  if (forceReset || !de.value) {
+  if (forceReset || !de.value || !ate.value) {
     de.value = min;
     ate.value = max;
+  } else {
+    if (de.value > min) de.value = min;
+    if (ate.value < max) ate.value = max;
   }
 }
 
@@ -617,11 +635,11 @@ async function salvarAws(linhasImport, nomeArquivo) {
 async function carregarAws() {
   try {
     awsAtivo = await telemetriaAwsDisponivel();
-    if (!awsAtivo) return false;
-    const de = $("filtroDataDe").value || dataIsoPadrao(-90);
-    const ate = $("filtroDataAte").value || dataIsoPadrao(0);
+    if (!awsAtivo) return { ok: false, motivo: "API AWS não configurada" };
+
+    const { de, ate } = periodoBuscaAws();
     const res = await carregarTelemetriaAws(de, ate);
-    if (!res?.dados?.length) return false;
+    if (!res?.dados?.length) return { ok: false, motivo: "nenhum registro na AWS" };
 
     const sample = res.dados[0]?.payload || res.dados[0];
     const headers = Object.keys(sample);
@@ -635,17 +653,17 @@ async function carregarAws() {
       colVeiculo,
       colData,
       colunasKpi: detectarColunasKpi(headers),
-      arquivos: ["AWS"]
+      arquivos: arquivosDosRegistrosAws(res.dados)
     };
     colunasMarcadas = new Set(colunasExibiveis(dadosBrutos.headers, colVeiculo));
     montarFiltroVeiculos();
     montarFiltroDatas(true);
     montarPainelColunas();
     renderizar();
-    return true;
-  } catch (_) {
+    return { ok: true, total: rows.length };
+  } catch (err) {
     awsAtivo = false;
-    return false;
+    return { ok: false, motivo: err.message || "erro ao carregar AWS" };
   }
 }
 
@@ -726,8 +744,6 @@ async function iniciar() {
 
   montarFiltroVeiculos();
   $("statFrota").textContent = FROTA.length;
-  $("filtroDataDe").value = dataIsoPadrao(-90);
-  $("filtroDataAte").value = dataIsoPadrao(0);
 
   const input = $("csvInput");
   const zona = $("uploadZona");
@@ -751,20 +767,7 @@ async function iniciar() {
 
   ["filtroDataDe", "filtroDataAte", "filtroVeiculo"].forEach((id) => {
     const el = $(id);
-    if (el) el.addEventListener("change", async () => {
-      if (awsAtivo) {
-        const de = $("filtroDataDe").value;
-        const ate = $("filtroDataAte").value;
-        try {
-          const res = await carregarTelemetriaAws(de, ate, $("filtroVeiculo").value || undefined);
-          if (res?.dados?.length && dadosBrutos) {
-            const extra = linhasAwsParaRows(res.dados, dadosBrutos.headers, dadosBrutos.colVeiculo, dadosBrutos.colData);
-            dadosBrutos.rows = mesclarRows(dadosBrutos.rows, extra, dadosBrutos.colVeiculo, dadosBrutos.colData);
-          }
-        } catch (_) { /* mantém dados locais */ }
-      }
-      renderizar();
-    });
+    if (el) el.addEventListener("change", () => renderizar());
   });
 
   const btnCol = $("filtroColunasBtn");
@@ -789,9 +792,14 @@ async function iniciar() {
 
   $("infoUpload").textContent = "Carregando dados da AWS...";
   const carregou = await carregarAws();
-  if (!carregou) {
+  if (carregou.ok) {
+    $("statusAws").textContent = `Carregado da AWS (${carregou.total} linha(s))`;
+    $("statusAws").className = "status-aws ok";
+  } else {
     $("infoUpload").textContent = "Adicione um CSV — os dados serão acumulados e salvos na AWS.";
-    $("statusAws").textContent = "Aguardando primeiro arquivo";
+    $("statusAws").textContent = carregou.motivo === "nenhum registro na AWS"
+      ? "Nenhum dado salvo ainda"
+      : `Sem carregar da AWS (${carregou.motivo})`;
     $("statusAws").className = "status-aws muted";
   }
 }
