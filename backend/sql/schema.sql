@@ -44,3 +44,13 @@ CREATE TABLE IF NOT EXISTS pontualidade_snapshot (
   atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (cenario)
 );
+
+CREATE TABLE IF NOT EXISTS telemetria_linhas (
+  data_iso DATE NOT NULL,
+  veiculo TEXT NOT NULL,
+  payload JSONB NOT NULL,
+  origem_arquivo TEXT,
+  atualizado_por TEXT,
+  atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (data_iso, veiculo)
+);
