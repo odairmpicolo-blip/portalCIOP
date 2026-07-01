@@ -80,12 +80,11 @@ table.relatorio tbody tr.row-div td{box-shadow:inset 3px 0 0 var(--orange)}
 .toolbar-filtros-linha .filter-field--md{width:118px!important}
 .toolbar-filtros-linha .filter-field--lg{width:132px!important}
 .toolbar-filtros-linha input,.toolbar-filtros-linha select{min-height:32px!important;height:32px!important;padding:4px 6px!important;font-size:11px!important;font-weight:700!important;border-radius:8px!important;padding-right:28px!important}
-.filter-multi{position:relative}
-.filter-multi-btn{width:100%;min-height:32px;height:32px;padding:4px 28px 4px 6px;font-size:11px;font-weight:700;border-radius:8px;border:1.5px solid #dce3ef;background:#fff;text-align:left;cursor:pointer;font-family:inherit;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2306245c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
-.filter-multi-panel{position:absolute;top:calc(100% + 4px);left:0;z-index:40;min-width:100%;padding:6px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(16,24,40,.12)}
-.filter-multi-opt{display:flex;align-items:center;gap:6px;padding:5px 6px;font-size:11px;font-weight:700;cursor:pointer;border-radius:6px;white-space:nowrap}
-.filter-multi-opt:hover{background:#f8fafc}
-.filter-multi-opt input{margin:0;flex:0 0 auto}
+.filter-field--inicio{width:auto!important;min-width:168px!important}
+.filter-checkbox-box{display:flex;flex-direction:column;gap:2px;min-height:32px;padding:4px 6px;border:1.5px solid #dce3ef;border-radius:8px;background:#fff}
+.filter-checkbox-opt{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;cursor:pointer;line-height:1.2;white-space:nowrap;color:#0f172a}
+.filter-checkbox-opt:hover{color:var(--blue)}
+.filter-checkbox-opt input{margin:0;flex:0 0 auto;width:12px;height:12px;accent-color:var(--blue)}
 .toolbar-left{align-items:flex-end;flex-wrap:nowrap;gap:10px}
 .toolbar-left .nav-actions{flex:0 0 auto}
 .toolbar-left .nav-actions .btn-portal,.toolbar-left .nav-actions .btn-secondary{min-height:32px;padding:6px 10px;font-size:12px}
@@ -154,15 +153,12 @@ table.relatorio tbody tr.row-div td{box-shadow:inset 3px 0 0 var(--orange)}
                 <div class="filter-field filter-field--lg"><label for="filtroTrajeto">Trajeto ocioso</label>
                     <select id="filtroTrajeto"><option value="">Todos</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option><option value="SEM COMUNICAÇÃO">SEM COMUNICAÇÃO</option></select>
                 </div>
-                <div class="filter-field filter-field--md">
-                    <label for="filtroInicioTrigger">Início no horário</label>
-                    <div class="filter-multi" id="filtroInicioMulti">
-                        <button type="button" class="filter-multi-btn" id="filtroInicioTrigger" aria-haspopup="listbox" aria-expanded="false">Todos</button>
-                        <div class="filter-multi-panel" id="filtroInicioPanel" hidden>
-                            <label class="filter-multi-opt"><input type="checkbox" value="NO HORARIO"> NO HORÁRIO</label>
-                            <label class="filter-multi-opt"><input type="checkbox" value="ATRASADO"> ATRASADO</label>
-                            <label class="filter-multi-opt"><input type="checkbox" value="ADIANTADO"> ADIANTADO</label>
-                        </div>
+                <div class="filter-field filter-field--inicio">
+                    <label>Início no horário</label>
+                    <div class="filter-checkbox-box" id="filtroInicioPanel" role="group" aria-label="Início no horário">
+                        <label class="filter-checkbox-opt"><input type="checkbox" value="NO HORARIO"> NO HORÁRIO</label>
+                        <label class="filter-checkbox-opt"><input type="checkbox" value="ATRASADO"> ATRASADO</label>
+                        <label class="filter-checkbox-opt"><input type="checkbox" value="ADIANTADO"> ADIANTADO</label>
                     </div>
                 </div>
                 <div class="filter-field filter-field--md"><label for="filtroSaidaColM">Saída atr./adi.</label>
@@ -283,40 +279,11 @@ function situacaoSaidaGaragem(diff){
 function valoresFiltroInicio(){
     return [...document.querySelectorAll("#filtroInicioPanel input[type=checkbox]:checked")].map((cb)=>cb.value);
 }
-function rotuloFiltroInicio(valor){
-    if(valor==="NO HORARIO") return "NO HORÁRIO";
-    return valor;
-}
-function atualizarRotuloFiltroInicio(){
-    const vals=valoresFiltroInicio();
-    const btn=$("filtroInicioTrigger");
-    if(!btn) return;
-    if(!vals.length) btn.textContent="Todos";
-    else if(vals.length===1) btn.textContent=rotuloFiltroInicio(vals[0]);
-    else btn.textContent=`${vals.length} selecionados`;
-}
 function configurarFiltroInicioMulti(){
     const panel=$("filtroInicioPanel");
-    const trigger=$("filtroInicioTrigger");
-    const wrap=$("filtroInicioMulti");
-    if(!panel||!trigger||!wrap) return;
+    if(!panel) return;
     panel.querySelectorAll('input[type="checkbox"]').forEach((cb)=>{
-        cb.addEventListener("change",()=>{
-            atualizarRotuloFiltroInicio();
-            reaplicarFiltrosLocais();
-        });
-    });
-    trigger.addEventListener("click",(e)=>{
-        e.stopPropagation();
-        const abrir=panel.hidden;
-        panel.hidden=!abrir;
-        trigger.setAttribute("aria-expanded",String(abrir));
-    });
-    document.addEventListener("click",(e)=>{
-        if(!wrap.contains(e.target)){
-            panel.hidden=true;
-            trigger.setAttribute("aria-expanded","false");
-        }
+        cb.addEventListener("change",reaplicarFiltrosLocais);
     });
 }
 function normalizarOpcaoFiltro(v){
