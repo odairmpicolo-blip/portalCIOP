@@ -79,12 +79,12 @@ table.relatorio tbody tr.row-div td{box-shadow:inset 3px 0 0 var(--orange)}
 .toolbar-filtros-linha .filter-field--sm{width:92px!important}
 .toolbar-filtros-linha .filter-field--md{width:118px!important}
 .toolbar-filtros-linha .filter-field--lg{width:132px!important}
-.toolbar-filtros-linha input,.toolbar-filtros-linha select{min-height:32px!important;height:32px!important;padding:4px 6px!important;font-size:11px!important;font-weight:700!important;border-radius:8px!important;padding-right:28px!important}
+.toolbar-filtros-linha input:not([type="checkbox"]),.toolbar-filtros-linha select{min-height:32px!important;height:32px!important;padding:4px 6px!important;font-size:11px!important;font-weight:700!important;border-radius:8px!important;padding-right:28px!important}
 .filter-field--inicio{width:auto!important;min-width:168px!important}
 .filter-checkbox-box{display:flex;flex-direction:column;gap:2px;min-height:32px;padding:4px 6px;border:1.5px solid #dce3ef;border-radius:8px;background:#fff}
 .filter-checkbox-opt{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;cursor:pointer;line-height:1.2;white-space:nowrap;color:#0f172a}
 .filter-checkbox-opt:hover{color:var(--blue)}
-.filter-checkbox-opt input{margin:0;flex:0 0 auto;width:12px;height:12px;accent-color:var(--blue)}
+.filter-checkbox-box input[type="checkbox"]{width:14px!important;min-width:14px!important;height:14px!important;min-height:14px!important;padding:0!important;margin:0!important;border:none!important;border-radius:3px!important;box-shadow:none!important;background:transparent!important;appearance:auto!important;-webkit-appearance:checkbox!important;accent-color:var(--blue);cursor:pointer;flex:0 0 auto}
 .toolbar-left{align-items:flex-end;flex-wrap:nowrap;gap:10px}
 .toolbar-left .nav-actions{flex:0 0 auto}
 .toolbar-left .nav-actions .btn-portal,.toolbar-left .nav-actions .btn-secondary{min-height:32px;padding:6px 10px;font-size:12px}
@@ -277,7 +277,8 @@ function situacaoSaidaGaragem(diff){
     return diff>SAIU_SIM_MAX?"ATRASADO":"ADIANTADO";
 }
 function valoresFiltroInicio(){
-    return [...document.querySelectorAll("#filtroInicioPanel input[type=checkbox]:checked")].map((cb)=>cb.value);
+    return [...document.querySelectorAll("#filtroInicioPanel input[type=checkbox]:checked")]
+        .map((cb)=>normalizarOpcaoFiltro(cb.value));
 }
 function configurarFiltroInicioMulti(){
     const panel=$("filtroInicioPanel");
