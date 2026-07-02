@@ -74,7 +74,7 @@ export async function telemetriaAwsDisponivel() {
   return awsApiEnabled();
 }
 
-export async function aguardarAuthTelemetria(tentativas = 40, intervaloMs = 500) {
+export async function aguardarAuthTelemetria(tentativas = 12, intervaloMs = 300) {
   await initPortalAwsRuntime();
   if (!awsApiEnabled()) return false;
   try {

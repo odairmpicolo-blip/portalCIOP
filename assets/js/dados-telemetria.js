@@ -17,8 +17,8 @@ const FROTA = (window.FROTA_PATIO || []).slice().sort((a, b) =>
 );
 
 const CHAVES_VEICULO = [
-  "veiculo", "veículo", "prefixo", "carro", "numero", "número", "n°", "nº",
-  "frota", "id_veiculo", "vehicle id", "codigo", "código", "placa", "vehicle", "bus"
+  "veiculo", "veículo", "vehicle id", "vehicle_id", "prefixo", "carro", "numero", "número", "n°", "nº",
+  "frota", "id_veiculo", "codigo", "código", "placa", "vehicle", "bus"
 ];
 
 const CHAVES_DATA = ["data", "date", "dia", "dt", "data_ref", "data referencia"];
@@ -33,8 +33,10 @@ const KPI_DEFS = [
 const COLUNAS_OCULTAS = [
   "cliente",
   "customer id",
+  "customer_id",
   "temperatura cabine",
   "avg cabin temp",
+  "avg_cabin_temp",
   "temp cabine"
 ];
 
@@ -350,10 +352,22 @@ function dataIsoPadrao(offsetDias) {
 }
 
 function periodoBuscaAws() {
-  const de = $("filtroDataDe")?.value?.slice(0, 10) || "";
-  const ate = $("filtroDataAte")?.value?.slice(0, 10) || "";
-  if (de && ate) return { de, ate };
-  return { de: "2020-01-01", ate: "2030-12-31" };
+  return { de: dataIsoPadrao(-120), ate: dataIsoPadrao(30) };
+}
+
+function headersVisiveis(headers, colVeiculo) {
+  const ignore = new Set(["data_iso", "veiculo_norm"]);
+  return (headers || []).filter((h) => h !== colVeiculo && !ignore.has(h) && !colunaOculta(h));
+}
+
+function rowsFromSource(src, headersIniciais, colVeiculoGuess, colDataGuess) {
+  const lista = src.rows || [];
+  if (!lista.length) return [];
+  const first = lista[0];
+  if (first?.payload || (first?.veiculo && !first?.[colVeiculoGuess])) {
+    return linhasAwsParaRows(lista, headersIniciais, colVeiculoGuess, colDataGuess);
+  }
+  return lista.map((r) => ({ ...r }));
 }
 
 function aguardar(ms) {
@@ -373,8 +387,8 @@ let abaDataAtiva = "todas";
 let sortCol = null;
 let sortDir = "asc";
 let primeiraCarga = true;
-const CACHE_STORAGE_KEY = "portal_telemetria_v2";
-const CACHE_LEGACY_KEYS = ["portal_telemetria_v1"];
+const CACHE_STORAGE_KEY = "portal_telemetria_v3";
+const CACHE_LEGACY_KEYS = ["portal_telemetria_v1", "portal_telemetria_v2"];
 
 function limparCacheTelemetriaLegado() {
   CACHE_LEGACY_KEYS.forEach((k) => {
@@ -426,20 +440,19 @@ function aplicarDadosBrutos(src, opcoes = {}) {
   const headersIniciais = src.headers?.length ? src.headers : detectarHeadersTelemetria(src.rows);
   const colVeiculoGuess = src.colVeiculo || detectarColunaVeiculo(headersIniciais);
   const colDataGuess = src.colData || detectarColunaData(headersIniciais);
-  let rows = Array.isArray(src.rows) && src.rows[0]?.[colVeiculoGuess]
-    ? src.rows
-    : linhasAwsParaRows(src.rows, headersIniciais, colVeiculoGuess, colDataGuess);
+  let rows = rowsFromSource(src, headersIniciais, colVeiculoGuess, colDataGuess);
   rows = rows.map((r) => normalizarLinhaTelemetria(r));
-  const headers = [...new Set(rows.flatMap((r) => Object.keys(r)))];
-  const colVeiculo = detectarColunaVeiculo(headers) || colVeiculoGuess;
-  const colData = detectarColunaData(headers) || colDataGuess;
+  const headers = headersVisiveis([...new Set(rows.flatMap((r) => Object.keys(r)))], null);
+  const colVeiculo = detectarColunaVeiculo(headers) || detectarColunaVeiculo(rows.flatMap((r) => Object.keys(r))) || colVeiculoGuess;
+  const colData = detectarColunaData(headers) || detectarColunaData(rows.flatMap((r) => Object.keys(r))) || colDataGuess;
+  const headersFinal = headersVisiveis([...new Set(rows.flatMap((r) => Object.keys(r)))], colVeiculo);
 
   dadosBrutos = {
-    headers: mesclarHeaders([], headers),
+    headers: mesclarHeaders([], headersFinal),
     rows: unificarLinhasPorVeiculoData(rows, colVeiculo, colData),
     colVeiculo,
     colData,
-    colunasKpi: src.colunasKpi || detectarColunasKpi(headers),
+    colunasKpi: detectarColunasKpi(headersFinal),
     arquivos: src.arquivos || []
   };
   colunasMarcadas = new Set(colunasExibiveis(dadosBrutos.headers, colVeiculo));
@@ -861,30 +874,12 @@ function aplicarRegistrosAws(res) {
 }
 
 async function recarregarComFiltroDatas() {
-  const de = $("filtroDataDe")?.value?.slice(0, 10);
-  const ate = $("filtroDataAte")?.value?.slice(0, 10);
-  if (!de || !ate || de > ate) {
-    renderizar();
-    return;
-  }
-  if (!awsAtivo) {
-    renderizar();
-    return;
-  }
-  atualizarInfoBanco(`Carregando ${formatarDataBr(de)} a ${formatarDataBr(ate)} (00:00–23:59)…`);
-  const res = await carregarAws({ tentativas: 4, permitirVazio: true });
-  if (!res.ok && dadosBrutos?.rows?.length) {
-    atualizarInfoBanco();
-    renderizar();
-    return;
-  }
-  if (res.ok) atualizarInfoBanco();
   renderizar();
 }
 
 async function carregarAws(opcoes = {}) {
-  const tentativas = opcoes.tentativas ?? 6;
-  const authTentativas = opcoes.authTentativas ?? 40;
+  const tentativas = opcoes.tentativas ?? 3;
+  const authTentativas = opcoes.authTentativas ?? 12;
   let ultimoErro = "erro ao carregar AWS";
   try {
     await initPortalAwsRuntime();
@@ -926,17 +921,11 @@ async function carregarAws(opcoes = {}) {
 
 async function carregarAwsInicial() {
   atualizarInfoBanco("Carregando dados do banco AWS…");
-  let result = await carregarAws({
-    tentativas: 8,
-    authTentativas: 50,
-    onProgress: (n, total) => {
-      if (n > 1) atualizarInfoBanco(`Carregando dados do banco AWS… (tentativa ${n}/${total})`);
-    }
-  });
+  let result = await carregarAws({ tentativas: 3, authTentativas: 15 });
   if (!result.ok && /autentic|401|403|sessão|token/i.test(result.motivo)) {
-    atualizarInfoBanco("Aguardando sessão… recarregando dados.");
-    await aguardar(1500);
-    result = await carregarAws({ tentativas: 6, authTentativas: 30 });
+    atualizarInfoBanco("Renovando sessão…");
+    await aguardar(400);
+    result = await carregarAws({ tentativas: 2, authTentativas: 8 });
   }
   return result;
 }
