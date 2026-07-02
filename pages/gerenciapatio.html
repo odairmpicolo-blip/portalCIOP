@@ -34,6 +34,10 @@ document.documentElement.classList.add("portal-auth-pending");
     --rpl: #0b3a8a; /* Azul mais escuro conforme solicitado */
 }
 * { box-sizing: border-box; }
+html {
+    min-height: 100%;
+    overflow-y: auto;
+}
 body {
     margin: 0;
     background: var(--bg);
@@ -42,6 +46,8 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 .consulta-panel {
     display: grid;
@@ -231,10 +237,14 @@ h1 {
     display: grid;
     grid-template-columns: 1fr;
     gap: 25px;
+    align-items: start;
+}
+.dashboard-grid > div {
+    min-width: 0;
 }
 @media (min-width: 992px) {
     .dashboard-grid {
-        grid-template-columns: 350px 1fr;
+        grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
     }
 }
 
@@ -245,6 +255,7 @@ h1 {
     padding: 20px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     margin-bottom: 20px;
+    min-width: 0;
 }
 .card-title {
     font-size: 18px;
@@ -314,56 +325,212 @@ h1 {
     background: #0b592e;
 }
 
-/* Patio Visual Layout */
+.patio-board-card {
+    padding: 0;
+    overflow: hidden;
+    width: 100%;
+    min-width: 0;
+}
+.patio-board-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid #e8edf6;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+.patio-board-title {
+    margin-bottom: 6px;
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+.patio-board-subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0;
+}
+.patio-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(82px, 1fr));
+    gap: 8px;
+    min-width: 290px;
+}
+.summary-item {
+    border: 1px solid #dbe4f0;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 9px 10px;
+    text-align: center;
+    box-shadow: 0 8px 18px rgba(16, 24, 40, 0.05);
+}
+.summary-item strong {
+    display: block;
+    color: var(--blue);
+    font-size: 20px;
+    line-height: 1;
+}
+.summary-item small {
+    display: block;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 800;
+    margin-top: 5px;
+    text-transform: uppercase;
+}
+.status-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-bottom: 1px solid #e8edf6;
+    background: #ffffff;
+}
+.legend-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #dbe4f0;
+    border-radius: 999px;
+    color: #344054;
+    background: #f8fafc;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 6px 10px;
+}
+.legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--blue2);
+}
+.legend-dot.normal { background: var(--blue2); }
+.legend-dot.analisado { background: var(--danger); }
+.legend-dot.rpl { background: var(--rpl); }
+.legend-dot.oficina { background: #111827; }
+.patio-board {
+    width: 100%;
+    max-height: calc(100vh - 260px);
+    min-height: 520px;
+    overflow: auto;
+    padding: 14px;
+    background:
+        linear-gradient(90deg, rgba(6, 36, 92, 0.045) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(6, 36, 92, 0.045) 1px, transparent 1px),
+        #f5f7fb;
+    background-size: 28px 28px;
+}
+.patio-board:focus {
+    outline: 3px solid rgba(11, 58, 138, 0.18);
+    outline-offset: -3px;
+}
 .patio-container {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(6, minmax(150px, 1fr));
     gap: 12px;
-}
-@media (min-width: 768px) {
-    .patio-container {
-        grid-template-columns: repeat(6, 1fr);
-    }
+    min-width: 1040px;
+    align-items: stretch;
 }
 .fila-col {
-    background: #f8fafc;
-    border: 2px dashed #e2e8f0;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid #d8e0ec;
+    border-top: 5px solid var(--blue2);
     border-radius: 10px;
-    padding: 12px;
+    padding: 10px;
     min-height: 480px;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    box-shadow: 0 10px 24px rgba(16, 24, 40, 0.08);
+}
+.lane-oficina {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    border-top-color: #111827;
 }
 .fila-header {
-    font-weight: bold;
-    text-align: center;
-    font-size: 13px;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-weight: 800;
     color: var(--blue);
-    background: #edf2f7;
-    padding: 6px;
-    border-radius: 6px;
-    margin-bottom: 5px;
-    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    padding: 9px 10px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    border: 1px solid #dbe4f0;
+    box-shadow: 0 8px 16px rgba(16, 24, 40, 0.06);
 }
-.fila-header.muro { background: #344054; color: white; }
+.fila-header small {
+    display: block;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.2;
+    margin-top: 2px;
+    text-transform: uppercase;
+}
+.fila-header.muro { background: #f8fafc; }
 .fila-header.free { border-left: 4px solid var(--success); }
 .fila-header.blocked-lane { border-left: 4px solid var(--warning); }
-.fila-header.oficina-header { background: #111827; color: white; border-left: 4px solid #000; }
+.fila-header.oficina-header {
+    background: #111827;
+    color: #ffffff;
+    border-left: 4px solid #000;
+}
+.fila-header.oficina-header small { color: #cbd5e1; }
+.lane-count {
+    min-width: 30px;
+    height: 26px;
+    border-radius: 999px;
+    background: rgba(6, 36, 92, 0.09);
+    color: var(--blue);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+}
+.fila-header.oficina-header .lane-count {
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+}
+.lane-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 380px;
+}
+.lane-empty {
+    border: 1px dashed #c8d3e2;
+    color: #718096;
+    background: rgba(255, 255, 255, 0.72);
+    border-radius: 8px;
+    padding: 18px 10px;
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
+}
 
 /* Car Tag Style */
 .car-tag {
     background: white;
     border: 1px solid var(--border);
     border-left: 4px solid var(--blue2);
-    padding: 8px 10px;
-    border-radius: 6px;
+    padding: 9px 10px;
+    border-radius: 8px;
     font-size: 13px;
     font-weight: bold;
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
     align-items: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 12px rgba(16, 24, 40, 0.07);
     transition: transform 0.1s, box-shadow 0.1s;
 }
 .car-tag:hover {
@@ -397,27 +564,136 @@ h1 {
     background-color: #374151;
     color: #d1d5db;
 }
-
+.car-info {
+    min-width: 0;
+}
+.car-position {
+    font-size: 10px;
+    display: block;
+    font-weight: 800;
+    opacity: 0.78;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+}
+.car-prefix {
+    display: block;
+    font-size: 16px;
+    line-height: 1.1;
+    color: inherit;
+}
+.car-status {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: #eef4ff;
+    color: var(--blue2);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0;
+    margin-top: 6px;
+    padding: 3px 7px;
+    text-transform: uppercase;
+}
+.car-tag.analisado .car-status {
+    background: #fee4e2;
+    color: var(--danger);
+}
+.car-tag.rpl-status .car-status {
+    background: #1149ab;
+    color: #ffffff;
+}
+.car-tag.oficina-status .car-status {
+    background: #374151;
+    color: #ffffff;
+}
 .car-tag .tech {
+    grid-column: 1 / 2;
+    min-width: 0;
+    width: fit-content;
+    max-width: 100%;
     font-size: 10px;
     color: var(--muted);
-    font-weight: normal;
+    font-weight: 800;
     background: #f1f5f9;
-    padding: 2px 6px;
-    border-radius: 4px;
-    max-width: 90px;
+    padding: 4px 7px;
+    border-radius: 999px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 .car-tag .remove-btn {
+    grid-column: 2 / 3;
+    grid-row: 1 / span 2;
+    width: 28px;
+    height: 28px;
+    border: 1px solid #f3c6c1;
+    border-radius: 7px;
+    background: #fff5f4;
     color: var(--danger);
     cursor: pointer;
-    font-size: 14px;
-    margin-left: 5px;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1;
+}
+.car-tag .remove-btn:hover {
+    background: #fee4e2;
 }
 .car-tag.oficina-status .remove-btn, .car-tag.rpl-status .remove-btn {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.22);
     color: #fca5a5;
+}
+@media (max-width: 1100px) {
+    .patio-board-head {
+        flex-direction: column;
+    }
+    .patio-summary {
+        width: 100%;
+        min-width: 0;
+    }
+    .patio-board {
+        max-height: none;
+        min-height: 520px;
+    }
+}
+@media (max-width: 991px) {
+    .patio-board {
+        min-height: auto;
+        overflow-x: hidden;
+    }
+    .patio-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        min-width: 0;
+        width: 100%;
+    }
+    .fila-col {
+        min-height: auto;
+    }
+    .lane-body {
+        min-height: 0;
+    }
+}
+@media (max-width: 680px) {
+    .container {
+        margin: 16px auto;
+        padding: 0 12px;
+    }
+    .patio-board-head,
+    .status-legend {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+    .patio-summary {
+        grid-template-columns: 1fr;
+    }
+    .patio-board {
+        min-height: auto;
+        padding: 10px;
+    }
+    .patio-container {
+        grid-template-columns: 1fr;
+        min-width: 0;
+    }
 }
 
 /* Result Box */
@@ -727,41 +1003,84 @@ h1 {
         </div>
 
         <div>
-            <div class="card" style="margin-bottom: 0;">
-                <div class="card-title">🚘 Distribuição das Filas no Pátio (Visual Dinâmico)</div>
-                <p style="font-size: 13px; color: var(--muted); margin-top: -10px; margin-bottom: 15px;">
-                    Legenda de Cores: <span style="color:var(--blue2)">● Normal</span> | <span style="color:var(--danger)">● Já Analisado/Utilizado</span> | <span style="color:var(--rpl)">● RPL</span> | <span style="color:#000">● Oficina</span>
-                </p>
-                
-                <div class="patio-container">
-                    <div class="fila-col">
-                        <div class="fila-header muro free">Fila do Muro<br><small>🟢 Livre</small></div>
-                        <div id="filaMuro" style="min-height:300px;"></div>
+            <div class="card patio-board-card">
+                <div class="patio-board-head">
+                    <div>
+                        <div class="card-title patio-board-title">Gabarito Operacional do Pátio</div>
+                        <p class="patio-board-subtitle">Controle visual por fila, com contadores, status e leitura rápida para tomada de decisão.</p>
                     </div>
-
-                    <div class="fila-col">
-                        <div class="fila-header free">1ª Fila<br><small>🟢 Saída Direta</small></div>
-                        <div id="fila1" style="min-height:300px;"></div>
+                    <div class="patio-summary" aria-label="Resumo do pátio">
+                        <div class="summary-item">
+                            <strong id="totalPatio">0</strong>
+                            <small>No pátio</small>
+                        </div>
+                        <div class="summary-item">
+                            <strong id="totalRpl">0</strong>
+                            <small>RPL</small>
+                        </div>
+                        <div class="summary-item">
+                            <strong id="totalOficina">0</strong>
+                            <small>Oficina</small>
+                        </div>
                     </div>
+                </div>
 
-                    <div class="fila-col">
-                        <div class="fila-header blocked-lane">2ª Fila<br><small>⚠️ Requer 1ª</small></div>
-                        <div id="fila2" style="min-height:300px;"></div>
-                    </div>
+                <div class="status-legend" aria-label="Legenda de status">
+                    <span class="legend-chip"><span class="legend-dot normal"></span>Normal</span>
+                    <span class="legend-chip"><span class="legend-dot analisado"></span>Utilizado</span>
+                    <span class="legend-chip"><span class="legend-dot rpl"></span>RPL</span>
+                    <span class="legend-chip"><span class="legend-dot oficina"></span>Oficina</span>
+                </div>
 
-                    <div class="fila-col">
-                        <div class="fila-header blocked-lane">3ª Fila<br><small>⚠️ Requer 1ª/2ª</small></div>
-                        <div id="fila3" style="min-height:300px;"></div>
-                    </div>
+                <div class="patio-board" tabindex="0" aria-label="Gabarito rolável do pátio">
+                    <div class="patio-container">
+                        <section class="fila-col">
+                            <div class="fila-header muro free">
+                                <div>Fila do Muro<small>Livre</small></div>
+                                <span class="lane-count" id="contador-filaMuro">0</span>
+                            </div>
+                            <div id="filaMuro" class="lane-body"></div>
+                        </section>
 
-                    <div class="fila-col">
-                        <div class="fila-header blocked-lane">4ª Fila<br><small>⚠️ Fundo</small></div>
-                        <div id="fila4" style="min-height:300px;"></div>
-                    </div>
+                        <section class="fila-col">
+                            <div class="fila-header free">
+                                <div>1ª Fila<small>Saída direta</small></div>
+                                <span class="lane-count" id="contador-fila1">0</span>
+                            </div>
+                            <div id="fila1" class="lane-body"></div>
+                        </section>
 
-                    <div class="fila-col" style="background: #f1f5f9; border-color: #94a3b8;">
-                        <div class="fila-header oficina-header">🛠️ Oficina<br><small>⚫ Retido/Bloqueado</small></div>
-                        <div id="oficina" style="min-height:300px;"></div>
+                        <section class="fila-col">
+                            <div class="fila-header blocked-lane">
+                                <div>2ª Fila<small>Requer 1ª</small></div>
+                                <span class="lane-count" id="contador-fila2">0</span>
+                            </div>
+                            <div id="fila2" class="lane-body"></div>
+                        </section>
+
+                        <section class="fila-col">
+                            <div class="fila-header blocked-lane">
+                                <div>3ª Fila<small>Requer 1ª/2ª</small></div>
+                                <span class="lane-count" id="contador-fila3">0</span>
+                            </div>
+                            <div id="fila3" class="lane-body"></div>
+                        </section>
+
+                        <section class="fila-col">
+                            <div class="fila-header blocked-lane">
+                                <div>4ª Fila<small>Fundo</small></div>
+                                <span class="lane-count" id="contador-fila4">0</span>
+                            </div>
+                            <div id="fila4" class="lane-body"></div>
+                        </section>
+
+                        <section class="fila-col lane-oficina">
+                            <div class="fila-header oficina-header">
+                                <div>Oficina<small>Retido ou bloqueado</small></div>
+                                <span class="lane-count" id="contador-oficina">0</span>
+                            </div>
+                            <div id="oficina" class="lane-body"></div>
+                        </section>
                     </div>
                 </div>
             </div>
@@ -789,6 +1108,21 @@ let patio = JSON.parse(localStorage.getItem('patio_tcgl_v2')) || {
     analisados: [], // Array para guardar os que ficaram vermelhos
     rpl: []         // Array para guardar os que ficaram azuis
 };
+
+const FILAS_PATIO = [
+    { key: 'filaMuro', nome: 'Fila do Muro' },
+    { key: 'fila1', nome: '1ª Fila' },
+    { key: 'fila2', nome: '2ª Fila' },
+    { key: 'fila3', nome: '3ª Fila' },
+    { key: 'fila4', nome: '4ª Fila' },
+    { key: 'oficina', nome: 'Oficina' }
+];
+
+[...FILAS_PATIO.map(fila => fila.key), 'analisados', 'rpl'].forEach(chave => {
+    if (!Array.isArray(patio[chave])) {
+        patio[chave] = [];
+    }
+});
 
 function inicializarGerenciamentoPatio() {
     popularDatalist();
@@ -958,54 +1292,102 @@ function removerVeiculoDeTudo(prefixo) {
 }
 
 function obterNomeFila(chave) {
-    const nomes = {
-        filaMuro: "Fila do Muro",
-        fila1: "1ª Fila",
-        fila2: "2ª Fila",
-        fila3: "3ª Fila",
-        fila4: "4ª Fila",
-        oficina: "Oficina"
-    };
-    return nomes[chave] || chave;
+    const fila = FILAS_PATIO.find(item => item.key === chave);
+    return fila ? fila.nome : chave;
+}
+
+function obterStatusVeiculo(prefixo, filaKey) {
+    if (filaKey === 'oficina' || patio.oficina.includes(prefixo)) {
+        return { classe: 'oficina-status', rotulo: 'Oficina' };
+    }
+    if (patio.analisados.includes(prefixo)) {
+        return { classe: 'analisado', rotulo: 'Utilizado' };
+    }
+    if (patio.rpl.includes(prefixo)) {
+        return { classe: 'rpl-status', rotulo: 'RPL' };
+    }
+    return { classe: '', rotulo: 'Normal' };
+}
+
+function atualizarResumoPatio() {
+    const totalPatio = FILAS_PATIO.reduce((total, fila) => total + patio[fila.key].length, 0);
+    const totalRpl = FILAS_PATIO
+        .filter(fila => fila.key !== 'oficina')
+        .reduce((total, fila) => total + patio[fila.key].filter(prefixo => patio.rpl.includes(prefixo)).length, 0);
+
+    document.getElementById('totalPatio').textContent = totalPatio;
+    document.getElementById('totalRpl').textContent = totalRpl;
+    document.getElementById('totalOficina').textContent = patio.oficina.length;
+
+    FILAS_PATIO.forEach(fila => {
+        const contador = document.getElementById(`contador-${fila.key}`);
+        if (contador) {
+            contador.textContent = patio[fila.key].length;
+        }
+    });
+}
+
+function criarCardVeiculo(prefixo, index, filaKey) {
+    const tech = obterTecnologia(prefixo);
+    const status = obterStatusVeiculo(prefixo, filaKey);
+    const card = document.createElement('div');
+    card.className = `car-tag ${status.classe}`.trim();
+
+    const info = document.createElement('div');
+    info.className = 'car-info';
+
+    const posicao = document.createElement('span');
+    posicao.className = 'car-position';
+    posicao.textContent = `Posição ${index + 1}`;
+
+    const numero = document.createElement('span');
+    numero.className = 'car-prefix';
+    numero.textContent = prefixo;
+
+    const statusPill = document.createElement('span');
+    statusPill.className = 'car-status';
+    statusPill.textContent = status.rotulo;
+
+    info.append(posicao, numero, statusPill);
+
+    const techEl = document.createElement('div');
+    techEl.className = 'tech';
+    techEl.title = tech;
+    techEl.textContent = tech;
+
+    const remover = document.createElement('button');
+    remover.type = 'button';
+    remover.className = 'remove-btn';
+    remover.title = 'Remover das filas';
+    remover.setAttribute('aria-label', `Remover veículo ${prefixo}`);
+    remover.textContent = 'x';
+    remover.addEventListener('click', () => liberarCarro(prefixo));
+
+    card.append(info, remover, techEl);
+    return card;
 }
 
 function renderizarPatio() {
-    const chavesFilas = ['filaMuro', 'fila1', 'fila2', 'fila3', 'fila4', 'oficina'];
-    
-    chavesFilas.forEach(filaKey => {
+    atualizarResumoPatio();
+
+    FILAS_PATIO.forEach(fila => {
+        const filaKey = fila.key;
         const container = document.getElementById(filaKey);
         container.innerHTML = '';
-        
-        patio[filaKey].forEach((prefixo, index) => {
-            const tech = obterTecnologia(prefixo);
-            const card = document.createElement('div');
-            
-            // Define a classe de cor com base nos status e regras solicitadas
-            let statusClass = '';
-            let textoPrefixo = prefixo;
 
-            if (filaKey === 'oficina') {
-                statusClass = 'oficina-status';
-            } else if (patio.analisados.includes(prefixo)) {
-                statusClass = 'analisado'; // Vermelho
-            } else if (patio.rpl.includes(prefixo)) {
-                statusClass = 'rpl-status'; // Azul Escuro
-                textoPrefixo = prefixo + " - RPL"; // Escreve RPL nele conforme solicitado
-            }
-            
-            card.className = `car-tag ${statusClass}`;
-            card.innerHTML = `
-                <div>
-                    <span style="font-size:10px; display:block; font-weight:normal; opacity: 0.8;">Posição ${index+1}</span>
-                    <span>${textoPrefixo}</span>
-                </div>
-                <div class="tech" title="${tech}">${tech}</div>
-                <span class="remove-btn" onclick="liberarCarro('${prefixo}')" title="Remover das Filas">×</span>
-            `;
-            container.appendChild(card);
+        if (patio[filaKey].length === 0) {
+            const vazio = document.createElement('div');
+            vazio.className = 'lane-empty';
+            vazio.textContent = filaKey === 'oficina' ? 'Sem veículos retidos' : 'Fila livre';
+            container.appendChild(vazio);
+            return;
+        }
+
+        patio[filaKey].forEach((prefixo, index) => {
+            container.appendChild(criarCardVeiculo(prefixo, index, filaKey));
         });
     });
-    
+
     // Atualiza a lista de opções para sumir com os carros analisados
     popularDatalist();
 }
@@ -1127,47 +1509,32 @@ function verificarAcessibilidade() {
 
 // Nova Função de Exportação para Excel (.xlsx)
 function exportarExcel() {
-    const maxLinhas = Math.max(
-        patio.filaMuro.length,
-        patio.fila1.length,
-        patio.fila2.length,
-        patio.fila3.length,
-        patio.fila4.length,
-        patio.oficina.length
-    );
-    
+    const maxLinhas = Math.max(...FILAS_PATIO.map(fila => patio[fila.key].length), 1);
+    const totalPatio = FILAS_PATIO.reduce((total, fila) => total + patio[fila.key].length, 0);
+    const totalRpl = FILAS_PATIO
+        .filter(fila => fila.key !== 'oficina')
+        .reduce((total, fila) => total + patio[fila.key].filter(prefixo => patio.rpl.includes(prefixo)).length, 0);
+
     const dadosExcel = [
         ["GERENCIAMENTO DO PATIO - CIOP / TCGL"],
         ["Gerado em", new Date().toLocaleString('pt-BR')],
+        ["Total no patio", totalPatio, "RPL", totalRpl, "Oficina", patio.oficina.length],
         [],
-        ["FILA DO MURO", "1ª FILA", "2ª FILA", "3ª FILA", "4ª FILA", "OFICINA"]
+        FILAS_PATIO.map(fila => fila.nome.toUpperCase())
     ];
-    
+
     for(let i = 0; i < maxLinhas; i++) {
-        let linha = [
-            obterTextoCel(patio.filaMuro[i]),
-            obterTextoCel(patio.fila1[i]),
-            obterTextoCel(patio.fila2[i]),
-            obterTextoCel(patio.fila3[i]),
-            obterTextoCel(patio.fila4[i]),
-            obterTextoCel(patio.oficina[i])
-        ];
-        dadosExcel.push(linha);
+        dadosExcel.push(FILAS_PATIO.map(fila => obterTextoCel(patio[fila.key][i])));
     }
-    
+
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(dadosExcel);
-    ws['!cols'] = [
-        { wch: 28 },
-        { wch: 28 },
-        { wch: 28 },
-        { wch: 28 },
-        { wch: 28 },
-        { wch: 28 }
-    ];
-    
+    ws['!cols'] = FILAS_PATIO.map(() => ({ wch: 32 }));
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: FILAS_PATIO.length - 1 } }];
+    ws['!autofilter'] = { ref: `A5:F${dadosExcel.length}` };
+
     XLSX.utils.book_append_sheet(wb, ws, "Gabarito Patio");
-    XLSX.writeFile(wb, "Gabarito_Patio_CIOP_TCGL.xlsx");
+    XLSX.writeFile(wb, "Gabarito_Patio_CIOP_TCGL.xlsx", { compression: true });
 }
 
 function obterTextoCel(prefixo) {
