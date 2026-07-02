@@ -53,6 +53,16 @@ jobs:
       - name: Publicar outros snapshots JSON
         run: bash scripts/ci-git-commit-push.sh "Atualiza snapshots JSON (pontualidade, autuações, liberação)" assets/data/pontualidade/*.json assets/data/autuacoes/*.json assets/data/liberacao/*.json
 
+      - name: Gerar JSON do ICV
+        env:
+          PORTAL_ROOT: ${{ github.workspace }}
+          ICV_TIMEOUT_MS: 120000
+        run: node scripts/atualizar-icv-json.mjs
+        continue-on-error: true
+
+      - name: Publicar JSON do ICV
+        run: bash scripts/ci-git-commit-push.sh "Atualiza JSON do ICV" assets/data/icv/*.json
+
       - name: Importar snapshots no DSQL (planilha → JSON → AWS)
         env:
           DSQL_CLUSTER_ID: ${{ secrets.DSQL_CLUSTER_ID }}

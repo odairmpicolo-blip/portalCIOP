@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important;}</style>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Índice de Cumprimento de Viagem - ICV - Portal CIOP</title>
+<style>
+:root { --blue:#06245c; --blue2:#0b3a8a; --bg:#f5f7fb; --border:#dfe5ef; --text:#101828; --muted:#667085; --icv:#0f766e; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); font-family:Arial,Helvetica,sans-serif; color:var(--text); display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+.header { background:#fff; padding:6px 20px; display:grid; grid-template-columns:180px 1fr minmax(300px,auto); gap:15px; align-items:center; border-bottom:1px solid #e8edf6; }
+.logo-tcgl { height:45px; object-fit:contain; justify-self:end; }
+.main-content { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.content-body { padding:12px; display:flex; flex-direction:column; gap:12px; overflow-y:auto; }
+.icv-title-wrap { justify-self:center; text-align:center; }
+.icv-title-wrap h1 { margin:0; color:#071f57; font-size:20px; font-weight:800; line-height:1.15; }
+.subtitle { color:var(--muted); font-size:13px; margin-top:4px; }
+.toolbar { background:#fff; border:1px solid var(--border); border-radius:6px; padding:10px 12px; display:flex; align-items:center; gap:12px; box-shadow:0 8px 24px rgba(16,24,40,.05); }
+.btn-portal { display:inline-flex; align-items:center; gap:6px; background:var(--blue); color:#fff; text-decoration:none; padding:7px 12px; border-radius:6px; font-weight:700; font-size:12px; }
+.btn-portal:hover { background:var(--blue2); }
+.kpi-container { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; }
+.kpi-card { background:#fff; border-radius:6px; padding:10px 14px; border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,.01); }
+.kpi-card.highlight { border-left:4px solid var(--icv); background:linear-gradient(to right,#f0fdfa,#fff); }
+.kpi-title { font-size:11px; color:var(--muted); font-weight:600; margin-bottom:2px; text-transform:uppercase; }
+.kpi-value { font-size:18px; font-weight:bold; color:var(--text); }
+.kpi-card.highlight .kpi-value { color:var(--icv); font-size:22px; }
+.kpi-sub { margin-top:4px; font-size:11px; color:var(--muted); font-weight:600; }
+.chart-card, .table-card { background:#fff; border:1px solid var(--border); border-radius:6px; box-shadow:0 8px 24px rgba(16,24,40,.05); }
+.chart-header { padding:12px 14px 0; display:flex; justify-content:space-between; align-items:center; }
+.chart-title { font-size:14px; font-weight:800; color:var(--blue); }
+.chart-container { height:320px; padding:8px 12px 12px; }
+.table-card-header { padding:12px 14px; font-weight:800; color:var(--blue); border-bottom:1px solid var(--border); }
+.table-wrapper { overflow:auto; max-height:360px; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th, td { padding:10px 12px; border-bottom:1px solid #eef2f7; text-align:center; }
+th { background:#f8fafc; color:var(--muted); font-size:11px; text-transform:uppercase; position:sticky; top:0; }
+td:first-child, th:first-child { text-align:left; }
+.icv-cell { color:var(--icv); font-weight:700; }
+.no-data { text-align:center; color:var(--muted); padding:24px; }
+@media(max-width:1100px){ .kpi-container{grid-template-columns:repeat(2,minmax(0,1fr));} .header{grid-template-columns:1fr;} }
+</style>
+<script src="../assets/js/loading.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<link rel="stylesheet" href="../assets/css/portal-senha.css">
+<link rel="stylesheet" href="../assets/css/portal-titulos.css">
+<link rel="stylesheet" href="../assets/css/portal-brand.css">
+<link rel="stylesheet" href="../assets/css/portal-header.css">
+<link rel="stylesheet" href="../assets/css/portal-session.css">
+<link rel="stylesheet" href="../assets/css/portal-filtros.css">
+<script type="module" src="../assets/js/auth.js"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+</head>
+<body>
+<div class="header">
+    <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
+    <div class="icv-title-wrap">
+        <h1>Índice de Cumprimento de Viagem - ICV</h1>
+        <div class="subtitle" id="dashboardSubtitle">CIOP / TCGL</div>
+    </div>
+    <div class="header-actions">
+        <div class="ciop-session" aria-label="Sessão do usuário">
+            <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+            <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+            <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+        </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" style="display:flex;"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+    </div>
+</div>
+<div class="main-content">
+    <div class="content-body">
+        <div class="toolbar">
+            <a href="../index.html" class="btn-portal">Portal</a>
+        </div>
+
+        <div class="kpi-container">
+            <div class="kpi-card highlight">
+                <div class="kpi-title">Melhor mês de ICV</div>
+                <div class="kpi-value" id="kpiMelhorMes">-</div>
+                <div class="kpi-sub" id="kpiMelhorMesLabel">--</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Viagens programadas</div>
+                <div class="kpi-value" id="kpiViagProg">-</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Viagens realizadas</div>
+                <div class="kpi-value" id="kpiViagens">-</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Supressão</div>
+                <div class="kpi-value" id="kpiSupressao">-</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">% Supressão</div>
+                <div class="kpi-value" id="kpiPctSupressao">-</div>
+            </div>
+        </div>
+
+        <div class="sidebar portal-filters-bar">
+            <div class="filter-group">
+                <label for="anoFilter">Filtrar por Ano</label>
+                <select id="anoFilter" class="filter-select" onchange="updateFilters('ano')"><option value="todos">Todos os Anos</option></select>
+            </div>
+            <div class="filter-group">
+                <label for="trimestreFilter">Filtrar por Trimestre</label>
+                <select id="trimestreFilter" class="filter-select" onchange="updateFilters('trimestre')">
+                    <option value="todos">Todos os Trimestres</option>
+                    <option value="Q1">1º Trimestre (Jan - Mar)</option>
+                    <option value="Q2">2º Trimestre (Abr - Jun)</option>
+                    <option value="Q3">3º Trimestre (Jul - Set)</option>
+                    <option value="Q4">4º Trimestre (Out - Dez)</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="mesFilter">Filtrar por Mês</label>
+                <select id="mesFilter" class="filter-select" onchange="updateFilters('mes')">
+                    <option value="todos">Todos os Meses</option>
+                    <option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option>
+                    <option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option>
+                    <option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option>
+                    <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="diaFilter">Filtrar por Dia</label>
+                <select id="diaFilter" class="filter-select" onchange="updateFilters('dia')"><option value="todos">Todos os Dias</option></select>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-header"><div class="chart-title" id="chartDynamicTitle">ICV</div></div>
+            <div class="chart-container"><canvas id="barChartCanvas"></canvas></div>
+        </div>
+
+        <div class="table-card">
+            <div class="table-card-header"><span id="tableDynamicTitle">Detalhamento dos Dados</span></div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th id="thColPeriodo">Período</th>
+                            <th>Viag. Prog</th>
+                            <th>Viagens</th>
+                            <th>Supressão</th>
+                            <th>ICV</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="module">
+import { iniciarIcvDashboard } from "../assets/js/icv-dashboard.js?v=20260702a";
+window.onload = () => window.portalAguardarUsuario?.(iniciarIcvDashboard);
+</script>
+</body>
+</html>

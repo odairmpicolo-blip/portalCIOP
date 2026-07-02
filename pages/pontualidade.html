@@ -158,7 +158,7 @@ h1 { margin: 0; text-align: center; color: #071f57; font-size: 22px; font-weight
 
 .kpi-container {
     display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 12px;
 }
 .kpi-card {
@@ -787,17 +787,6 @@ body {
     color: #2563eb;
 }
 
-.kpi-card.kpi-icv {
-    border-left: 4px solid #0f766e;
-    background: linear-gradient(to right, #f0fdfa, #ffffff);
-}
-.kpi-card.kpi-icv .kpi-value {
-    color: #0f766e;
-}
-.kpi-card.kpi-icv .kpi-title {
-    line-height: 1.2;
-}
-
 
 
 
@@ -1008,10 +997,6 @@ h1 {
                 <div class="kpi-title">🟡 Atrasado</div>
                 <div class="kpi-value" id="kpiAtrasado" style="color: var(--yellow);">-</div>
             </div>
-            <div class="kpi-card kpi-icv" title="Índice de Cumprimento de Viagem">
-                <div class="kpi-title">ICV</div>
-                <div class="kpi-value" id="kpiIcv">-</div>
-            </div>
             <div class="kpi-card">
                 <div class="kpi-title">Media 2025</div>
                 <div class="kpi-value" id="diasMeta">0</div>
@@ -1095,7 +1080,6 @@ h1 {
                             <th class="highlight-cell">No Horário</th>
                             <th>Adiantado</th>
                             <th>Atrasado</th>
-                            <th title="Índice de Cumprimento de Viagem">ICV</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -1163,12 +1147,6 @@ function parsePercentValue(value) {
     return number > 1 ? number / 100 : number;
 }
 
-function valorIcvLinha(row) {
-    if (!row) return 0;
-    if (row.icv != null && Number.isFinite(row.icv)) return row.icv;
-    return (row.no_horario || 0) + (row.adiantado || 0);
-}
-
 function formatarPercentual(val) {
     return (Number(val) * 100).toFixed(2) + '%';
 }
@@ -1222,17 +1200,12 @@ function normalizeApiData(payload) {
         const no_horario = parsePercentValue(pickValue(row, ['no_horario', 'noHorario', 'No Horário', 'No horario', 'NO HORARIO', 'Pontualidade', 'pontualidade']));
         const adiantado = parsePercentValue(pickValue(row, ['adiantado', 'Adiantado', 'ADIANTADO']));
         const atrasado = parsePercentValue(pickValue(row, ['atrasado', 'Atrasado', 'ATRASADO']));
-        const icvInformado = pickValue(row, ['icv', 'ICV', 'Icv', 'indice_cumprimento_viagem', 'Índice de Cumprimento de Viagem', 'Indice de Cumprimento de Viagem']);
-        const icv = icvInformado != null && icvInformado !== ''
-            ? parsePercentValue(icvInformado)
-            : (no_horario + adiantado);
 
         return {
             date,
             no_horario,
             adiantado,
-            atrasado,
-            icv
+            atrasado
         };
     }).filter(Boolean).sort((a, b) => a.date.localeCompare(b.date));
 }
@@ -1409,8 +1382,7 @@ function montarVisualizacaoPontualidade(filteredData, anoSel, mesSel, diaSel) {
             periodo,
             no_horario: d.no_horario * 100,
             adiantado: d.adiantado * 100,
-            atrasado: d.atrasado * 100,
-            icv: valorIcvLinha(d) * 100
+            atrasado: d.atrasado * 100
         }];
         return {
             tituloGrafico: 'Evolução Temporal - Dia ' + periodo,
@@ -1430,8 +1402,7 @@ function montarVisualizacaoPontualidade(filteredData, anoSel, mesSel, diaSel) {
             periodo: formatDateBR(d.date),
             no_horario: d.no_horario * 100,
             adiantado: d.adiantado * 100,
-            atrasado: d.atrasado * 100,
-            icv: valorIcvLinha(d) * 100
+            atrasado: d.atrasado * 100
         }));
         return {
             tituloGrafico: 'Evolução Diária - Mês de ' + fullMonthNames[mesSel],
@@ -1456,11 +1427,10 @@ function montarVisualizacaoPontualidade(filteredData, anoSel, mesSel, diaSel) {
     filteredData.forEach((d) => {
         const parts = d.date.split('-');
         const key = (anoSel === 'todos') ? parts[0] + '-' + parts[1] : parts[1];
-        if (!groupKey[key]) groupKey[key] = { no_horario: 0, adiantado: 0, atrasado: 0, icv: 0, count: 0 };
+        if (!groupKey[key]) groupKey[key] = { no_horario: 0, adiantado: 0, atrasado: 0, count: 0 };
         groupKey[key].no_horario += d.no_horario;
         groupKey[key].adiantado += d.adiantado;
         groupKey[key].atrasado += d.atrasado;
-        groupKey[key].icv += valorIcvLinha(d);
         groupKey[key].count++;
     });
 
@@ -1486,8 +1456,7 @@ function montarVisualizacaoPontualidade(filteredData, anoSel, mesSel, diaSel) {
             periodo,
             no_horario: (groupKey[key].no_horario / count) * 100,
             adiantado: (groupKey[key].adiantado / count) * 100,
-            atrasado: (groupKey[key].atrasado / count) * 100,
-            icv: (groupKey[key].icv / count) * 100
+            atrasado: (groupKey[key].atrasado / count) * 100
         });
         chartLabels.push(labelGrafico);
         chartNoHorario.push((groupKey[key].no_horario / count) * 100);
@@ -1517,7 +1486,7 @@ function renderizarTabelaFiltrada(visual) {
     if (thPeriodo) thPeriodo.innerText = visual.colunaPeriodo;
 
     if (!visual.linhas.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="no-data">Nenhum dado encontrado para os filtros aplicados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="no-data">Nenhum dado encontrado para os filtros aplicados.</td></tr>';
         if (btnPdf) btnPdf.disabled = true;
         pontualidadeExportState = { linhas: [] };
         return;
@@ -1529,7 +1498,6 @@ function renderizarTabelaFiltrada(visual) {
             <td class="highlight-cell">${row.no_horario.toFixed(2)}%</td>
             <td style="color: var(--red); font-weight: 500;">${row.adiantado.toFixed(2)}%</td>
             <td style="color: var(--yellow); font-weight: 500;">${row.atrasado.toFixed(2)}%</td>
-            <td style="color: #0f766e; font-weight: 700;">${row.icv.toFixed(2)}%</td>
         </tr>`;
     }).join('');
 
@@ -1709,17 +1677,14 @@ function renderDashboard() {
         const sumNoHorario = filteredData.reduce((acc, curr) => acc + curr.no_horario, 0);
         const sumAdiantado = filteredData.reduce((acc, curr) => acc + curr.adiantado, 0);
         const sumAtrasado = filteredData.reduce((acc, curr) => acc + curr.atrasado, 0);
-        const sumIcv = filteredData.reduce((acc, curr) => acc + valorIcvLinha(curr), 0);
 
         document.getElementById('kpiNoHorario').innerText = ((sumNoHorario / filteredData.length) * 100).toFixed(2) + '%';
         document.getElementById('kpiAdiantado').innerText = ((sumAdiantado / filteredData.length) * 100).toFixed(2) + '%';
         document.getElementById('kpiAtrasado').innerText = ((sumAtrasado / filteredData.length) * 100).toFixed(2) + '%';
-        document.getElementById('kpiIcv').innerText = ((sumIcv / filteredData.length) * 100).toFixed(2) + '%';
     } else {
         document.getElementById('kpiNoHorario').innerText = '-';
         document.getElementById('kpiAdiantado').innerText = '-';
         document.getElementById('kpiAtrasado').innerText = '-';
-        document.getElementById('kpiIcv').innerText = '-';
     }
 
     const visual = montarVisualizacaoPontualidade(filteredData, anoSel, mesSel, diaSel);

@@ -112,13 +112,12 @@ export async function exportarPdfPontualidade({ meta, chartImageBase64, linhas, 
   startY = await desenharGraficoPdf(doc, pageW, margin, startY, chartImageBase64, null);
 
   const colPeriodo = meta.colunaPeriodo || "Período";
-  const head = [[colPeriodo, "No Horário", "Adiantado", "Atrasado", "ICV - Índice de Cumprimento de Viagem"]];
+  const head = [[colPeriodo, "No Horário", "Adiantado", "Atrasado"]];
   const body = (linhas || []).map((row) => [
     row.periodo,
     pct(row.no_horario),
     pct(row.adiantado),
-    pct(row.atrasado),
-    pct(row.icv)
+    pct(row.atrasado)
   ]);
 
   doc.setFont("helvetica", "bold");
@@ -150,8 +149,7 @@ export async function exportarPdfPontualidade({ meta, chartImageBase64, linhas, 
       0: { halign: "left", cellWidth: 40 },
       1: { halign: "center", textColor: [37, 99, 235] },
       2: { halign: "center", textColor: [222, 27, 27] },
-      3: { halign: "center", textColor: [180, 130, 10] },
-      4: { halign: "center", textColor: [15, 118, 110], fontStyle: "bold" }
+      3: { halign: "center", textColor: [180, 130, 10] }
     },
     didDrawPage: (data) => {
       const pg = doc.internal.getNumberOfPages();
