@@ -27,7 +27,8 @@ async function verifyFirebaseToken(token) {
   }
   const ticket = await oauthClient.verifyIdToken({
     idToken: token,
-    audience: config.firebaseProjectId
+    audience: config.firebaseProjectId,
+    clockTolerance: 120
   });
   const payload = ticket.getPayload();
   if (!payload?.email) throw new Error("Token sem e-mail");

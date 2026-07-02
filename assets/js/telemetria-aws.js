@@ -4,38 +4,44 @@
 import {
   awsFetch,
   awsApiEnabled,
-  firebaseIdToken,
   initPortalAwsRuntime
 } from "./portal-aws-config.js";
+import { app } from "./portal-firestore.js";
 
 function erroAuth(msg) {
-  return /401|403|token|inválido|invalid|expirad|ausente|unauthorized/i.test(String(msg || ""));
+  return /401|403|token|inválido|invalid|expirad|ausente|unauthorized|sessão|sessao/i.test(String(msg || ""));
+}
+
+async function obterTokenFirebase(forceRefresh = false) {
+  const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+  const auth = getAuth(app);
+  if (typeof auth.authStateReady === "function") {
+    await auth.authStateReady();
+  }
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Sessão expirada — saia e entre novamente no portal");
+  }
+  return user.getIdToken(forceRefresh);
 }
 
 async function authHeaders(forceRefresh = false) {
   await initPortalAwsRuntime();
   if (!awsApiEnabled()) throw new Error("API AWS não configurada");
-  const headers = {};
-  try {
-    headers.token = await firebaseIdToken({ forceRefresh });
-  } catch (_) {
-    const devKey = typeof window !== "undefined" ? window.PORTAL_DEV_API_KEY : "";
-    if (devKey) headers.apiKey = devKey;
-    else throw new Error("Sessão expirada — faça login novamente");
-  }
-  return headers;
+  const token = await obterTokenFirebase(forceRefresh);
+  return { token };
 }
 
 async function telemetriaFetch(path, options = {}) {
   let ultimoErro = "erro na API";
-  for (let tentativa = 0; tentativa < 3; tentativa++) {
+  for (let tentativa = 0; tentativa < 5; tentativa++) {
     try {
       const headers = await authHeaders(tentativa > 0);
       return await awsFetch(path, { ...options, ...headers });
     } catch (err) {
       ultimoErro = err.message || ultimoErro;
-      if (erroAuth(ultimoErro) && tentativa < 2) {
-        await new Promise((r) => setTimeout(r, 500));
+      if (erroAuth(ultimoErro) && tentativa < 4) {
+        await new Promise((r) => setTimeout(r, 350 + tentativa * 250));
         continue;
       }
       throw err;
@@ -74,30 +80,25 @@ export async function telemetriaAwsDisponivel() {
   return awsApiEnabled();
 }
 
-export async function aguardarAuthTelemetria(tentativas = 12, intervaloMs = 300) {
+export async function aguardarAuthTelemetria(tentativas = 20, intervaloMs = 250) {
   await initPortalAwsRuntime();
   if (!awsApiEnabled()) return false;
-  try {
-    const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
-    const { app } = await import("./portal-firestore.js");
-    const auth = getAuth(app);
-    if (typeof auth.authStateReady === "function") {
-      await auth.authStateReady();
-      if (auth.currentUser) {
-        try {
-          await auth.currentUser.getIdToken(true);
-          return true;
-        } catch (_) { /* retry abaixo */ }
-      }
-    }
-  } catch (_) { /* retry abaixo */ }
   for (let i = 0; i < tentativas; i++) {
     try {
-      await firebaseIdToken({ forceRefresh: i === 0 });
+      await obterTokenFirebase(i === 0 || i % 4 === 0);
       return true;
     } catch (_) {
       await new Promise((r) => setTimeout(r, intervaloMs));
     }
   }
   return false;
+}
+
+export async function renovarSessaoTelemetria() {
+  try {
+    await obterTokenFirebase(true);
+    return true;
+  } catch (_) {
+    return false;
+  }
 }

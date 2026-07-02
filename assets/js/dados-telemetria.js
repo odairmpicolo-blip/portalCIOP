@@ -2,8 +2,10 @@ import {
   carregarTelemetriaAws,
   importarTelemetriaAws,
   telemetriaAwsDisponivel,
-  aguardarAuthTelemetria
+  aguardarAuthTelemetria,
+  renovarSessaoTelemetria
 } from "./telemetria-aws.js";
+import { carregarSnapshotTelemetriaJson } from "./telemetria-dados-leitura.js";
 import { initPortalAwsRuntime } from "./portal-aws-config.js";
 import {
   agregarLinhasTelemetria,
@@ -372,6 +374,26 @@ function rowsFromSource(src, headersIniciais, colVeiculoGuess, colDataGuess) {
 
 function aguardar(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function formatarDataHoraBr(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+}
+
+async function carregarSnapshotInicial() {
+  const snap = await carregarSnapshotTelemetriaJson();
+  if (!snap?.dados?.length) return false;
+  aplicarRegistrosAws({ dados: snap.dados });
+  const quando = snap.atualizadoEm ? formatarDataHoraBr(snap.atualizadoEm) : "—";
+  const periodo = snap.data_de && snap.data_ate
+    ? `${formatarDataBr(snap.data_de)} a ${formatarDataBr(snap.data_ate)}`
+    : "";
+  atualizarInfoBanco(
+    `Exibindo snapshot JSON (${snap.total || snap.dados.length} registros${periodo ? ` · ${periodo}` : ""} · ${quando}) · sincronizando AWS…`
+  );
+  return true;
 }
 
 function formatarDataBr(iso) {
@@ -921,13 +943,43 @@ async function carregarAws(opcoes = {}) {
 
 async function carregarAwsInicial() {
   atualizarInfoBanco("Carregando dados do banco AWS…");
-  let result = await carregarAws({ tentativas: 3, authTentativas: 15 });
-  if (!result.ok && /autentic|401|403|sessão|token/i.test(result.motivo)) {
+  await renovarSessaoTelemetria();
+  let result = await carregarAws({ tentativas: 4, authTentativas: 20 });
+  if (!result.ok && /token|sessão|sessao|401|403|autentic|expirad/i.test(result.motivo)) {
     atualizarInfoBanco("Renovando sessão…");
-    await aguardar(400);
-    result = await carregarAws({ tentativas: 2, authTentativas: 8 });
+    await renovarSessaoTelemetria();
+    await aguardar(500);
+    result = await carregarAws({ tentativas: 3, authTentativas: 12 });
   }
   return result;
+}
+
+function mostrarErroCarregamento(motivo) {
+  const msg = String(motivo || "erro desconhecido");
+  const auth = /token|sessão|sessao|401|403|autentic|expirad/i.test(msg);
+  renderResumoVazio();
+  renderTabelaVazia(auth
+    ? "Sessão expirada. Saia, entre de novo e clique em Tentar novamente."
+    : `Sem dados no banco (${msg}). Use + CSV para lançar.`);
+  const el = $("infoBanco");
+  if (el) {
+    if (auth) {
+      el.innerHTML = `${escapeHtml(msg)} — <button type="button" id="btnRetryTelemetria" class="btn-limpar-filtros" style="margin:6px 0 0;display:inline-block">Tentar novamente</button>`;
+    } else {
+      el.textContent = `Não foi possível carregar: ${msg}`;
+    }
+  }
+  $("btnRetryTelemetria")?.addEventListener("click", async () => {
+    atualizarInfoBanco("Carregando dados do banco AWS…");
+    const ok = await renovarSessaoTelemetria();
+    const res = await carregarAws({ tentativas: 4, authTentativas: 15 });
+    if (res.ok) {
+      atualizarInfoBanco();
+      renderizar();
+      return;
+    }
+    mostrarErroCarregamento(res.motivo || (ok ? "erro ao carregar" : "sessão inválida"));
+  });
 }
 
 function incorporarCsv(parsed, nomeArquivo) {
@@ -1048,8 +1100,14 @@ async function iniciar() {
   $("statFrota").textContent = FROTA.length;
   limparCacheTelemetriaLegado();
   renderResumoVazio();
-  renderTabelaVazia("Carregando dados do banco AWS…");
-  atualizarInfoBanco("Carregando dados do banco AWS…");
+  renderTabelaVazia("Carregando dados…");
+  atualizarInfoBanco("Carregando snapshot…");
+
+  const temSnapshot = await carregarSnapshotInicial();
+  if (!temSnapshot) {
+    renderTabelaVazia("Carregando dados do banco AWS…");
+    atualizarInfoBanco("Carregando dados do banco AWS…");
+  }
 
   const input = $("csvInput");
   const zona = $("uploadZona");
@@ -1110,21 +1168,26 @@ async function iniciar() {
       : carregou.motivo;
     atualizarInfoBanco(`Dados locais exibidos · AWS: ${hint}`);
   } else {
-    renderResumoVazio();
-    renderTabelaVazia(`Sem dados no banco (${carregou.motivo}). Use + CSV para lançar.`);
-    atualizarInfoBanco(`Não foi possível carregar: ${carregou.motivo}`);
+    mostrarErroCarregamento(carregou.motivo);
     $("statusUpload").textContent = "Pronto para lançar novo CSV";
     $("statusUpload").className = "status-upload muted";
   }
 }
 
 function bootstrapTelemetria() {
-  if (typeof window.portalAguardarUsuario === "function") {
-    window.portalAguardarUsuario(() => { iniciar(); });
-  } else if (window.portalUsuarioValidado) {
+  let iniciou = false;
+  const start = () => {
+    if (iniciou) return;
+    iniciou = true;
     iniciar();
-  } else {
-    window.addEventListener("portal:usuario-validado", () => { iniciar(); }, { once: true });
+  };
+  if (window.portalUsuarioValidado) {
+    start();
+    return;
+  }
+  window.addEventListener("portal:usuario-validado", start, { once: true });
+  if (typeof window.portalAguardarUsuario === "function") {
+    window.portalAguardarUsuario(start);
   }
 }
 

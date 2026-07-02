@@ -7,6 +7,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { query, closePool } from "../src/db.js";
 import {
   agregarLinhasTelemetria,
@@ -16,6 +17,8 @@ import {
 } from "../src/lib/telemetria-merge.js";
 
 const LOTE_UPSERT = 80;
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(SCRIPT_DIR, "../..");
 
 function normChave(s) {
   return normChaveMerge(s);
@@ -227,6 +230,14 @@ async function main() {
   const res = await query("SELECT COUNT(*)::int AS n FROM telemetria_linhas");
   console.log(`Concluído: ${total} upsert(s) · total no banco: ${res.rows[0].n}`);
   await closePool();
+
+  const jsonScript = path.join(REPO_ROOT, "scripts/atualizar-telemetria-json.mjs");
+  if (fs.existsSync(jsonScript)) {
+    console.log("Atualizando snapshot JSON para GitHub Pages…");
+    const { spawnSync } = await import("node:child_process");
+    const r = spawnSync(process.execPath, [jsonScript], { cwd: REPO_ROOT, stdio: "inherit", env: process.env });
+    if (r.status !== 0) console.warn("Aviso: snapshot JSON não foi gerado (import no DSQL concluído).");
+  }
 }
 
 main().catch((err) => {
