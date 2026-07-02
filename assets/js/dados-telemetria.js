@@ -1027,7 +1027,10 @@ async function iniciar() {
     $("statusUpload").textContent = "Pronto para lançar novo CSV";
     $("statusUpload").className = "status-upload muted";
   } else if (tinhaCache) {
-    atualizarInfoBanco(`Dados locais exibidos · AWS: ${carregou.motivo}`);
+    const hint = /token|sessão|expirad/i.test(carregou.motivo)
+      ? `${carregou.motivo} — saia e entre de novo no portal`
+      : carregou.motivo;
+    atualizarInfoBanco(`Dados locais exibidos · AWS: ${hint}`);
   } else {
     renderResumoVazio();
     renderTabelaVazia(`Sem dados no banco (${carregou.motivo}). Use + CSV para lançar.`);

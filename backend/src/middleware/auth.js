@@ -31,6 +31,8 @@ async function verifyFirebaseToken(token) {
   });
   const payload = ticket.getPayload();
   if (!payload?.email) throw new Error("Token sem e-mail");
+  const issOk = !payload.iss || payload.iss === `https://securetoken.google.com/${config.firebaseProjectId}`;
+  if (!issOk) throw new Error("Emissor do token inválido");
   return { email: payload.email, uid: payload.sub };
 }
 
@@ -62,7 +64,10 @@ export async function requireFirebaseUser(req, res, next) {
   try {
     req.user = await verifyFirebaseToken(token);
     next();
-  } catch (_) {
-    res.status(401).json({ ok: false, erro: "Token inválido" });
+  } catch (err) {
+    const msg = String(err?.message || "");
+    const erro = /expired|expir/i.test(msg) ? "Token expirado" : "Token inválido";
+    console.warn("auth:", erro, msg.slice(0, 120));
+    res.status(401).json({ ok: false, erro });
   }
 }

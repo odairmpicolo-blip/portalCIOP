@@ -41,14 +41,15 @@ export async function awsFetch(path, { method = "GET", body, token, apiKey } = {
   return data;
 }
 
-export async function firebaseIdToken() {
+export async function firebaseIdToken(options = {}) {
+  const forceRefresh = options === true || options?.forceRefresh === true;
   const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
   const { app } = await import("./portal-firestore.js");
   const auth = getAuth(app);
   if (typeof auth.authStateReady === "function") await auth.authStateReady();
   const user = auth.currentUser;
   if (!user) throw new Error("Usuário não autenticado");
-  return user.getIdToken();
+  return user.getIdToken(forceRefresh);
 }
 
 function runtimeConfigUrls() {
