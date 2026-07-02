@@ -52,22 +52,10 @@ const METRICAS_COMPARACAO = [
 
 const COLUNAS_TABELA = [
   "Data",
-  "Inicio",
-  "Fim",
-  "Registros CAN",
   "Km Inicial",
   "Km Final",
   "Km Percorrido",
-  "Consumo Combustivel (L)",
-  "Horas Motor",
-  "Media Km/L",
-  "Velocidade Media",
-  "Velocidade Maxima",
-  "Temperatura Motor Media",
-  "Temperatura Motor Maxima",
-  "Temperatura Ambiente Media",
-  "Pressao Ar Media",
-  "Pressao Ar Maxima"
+  "Consumo Combustivel (L)"
 ];
 
 function colunaOculta(nome) {
@@ -76,14 +64,13 @@ function colunaOculta(nome) {
 }
 
 function colunasExibiveis(headers, colVeiculo) {
-  const set = new Set(
-    (headers || []).filter((h) => h !== colVeiculo && !colunaOculta(h))
-  );
-  const ordenadas = COLUNAS_TABELA.filter((c) => set.has(c));
-  set.forEach((c) => {
-    if (!ordenadas.includes(c)) ordenadas.push(c);
-  });
-  return ordenadas;
+  const headerList = headers || [];
+  const isComparacao = headerList.includes("Status")
+    || headerList.some((h) => /\((Clever|TCGL)\)$/.test(h));
+  if (isComparacao) {
+    return headerList.filter((h) => h !== colVeiculo && !colunaOculta(h));
+  }
+  return COLUNAS_TABELA.slice();
 }
 
 function colunaComparacaoLado(col) {
