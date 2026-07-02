@@ -46,7 +46,10 @@ function parseDate(value) {
 function parseViagensCount(value) {
   if (value == null || value === "") return 0;
   if (typeof value === "number" && Number.isFinite(value)) {
-    return value > 0 && value < 500 ? Math.round(value * 1000) : Math.round(value);
+    if (value > 0 && value < 500 && !Number.isInteger(value)) {
+      return Math.round(value * 1000);
+    }
+    return Math.round(value);
   }
   let text = String(value).trim().replace(/\s/g, "");
   if (!text) return 0;
@@ -122,9 +125,13 @@ function normalizeRows(rows) {
     const viagens = parseViagensCount(pick(row, ["viagens", "Viagens", "Viagens Realizadas"]));
     const supressao = parseSupressaoCount(pick(row, ["supressao", "Supressão", "Supressao"]));
     const icvRaw = pick(row, ["icv", "ICV", "Índice de Cumprimento de Viagem"]);
-    const icv = icvRaw != null && icvRaw !== ""
+    let icv = icvRaw != null && icvRaw !== ""
       ? parsePercent(icvRaw)
       : (viag_prog > 0 ? viagens / viag_prog : 0);
+    if (viag_prog > 0 && icvRaw != null && icvRaw !== "" && viagens > viag_prog * 1.05) {
+      const esperado = Math.round(viag_prog * icv);
+      if (esperado <= viag_prog) viagens = esperado;
+    }
     if (!viag_prog && !viagens && !supressao && !icv) return null;
     return { date, viag_prog, viagens, supressao, icv };
   }).filter(Boolean).sort((a, b) => a.date.localeCompare(b.date));
