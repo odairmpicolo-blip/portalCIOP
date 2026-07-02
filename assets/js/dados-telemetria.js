@@ -48,16 +48,14 @@ const COLUNAS_OCULTAS = [
 const METRICAS_COMPARACAO = [
   "Km Inicial",
   "Km Final",
-  "Km Percorrido",
-  "Consumo Combustivel (L)"
+  "Km Percorrido"
 ];
 
 const COLUNAS_TABELA = [
   "Data",
   "Km Inicial",
   "Km Final",
-  "Km Percorrido",
-  "Consumo Combustivel (L)"
+  "Km Percorrido"
 ];
 
 function colunaOculta(nome) {
@@ -80,9 +78,7 @@ function colunaComparacaoLado(col) {
   return m ? { metrica: m[1], lado: m[2] } : null;
 }
 
-function toleranciaMetrica(metrica) {
-  const n = normChave(metrica);
-  if (n.includes("consumo combustivel")) return 0.5;
+function toleranciaMetrica() {
   return 1;
 }
 
@@ -96,7 +92,7 @@ function metricasDivergentes(clever, tcgl) {
     const temT = valorPreenchido(valT) && Number.isFinite(nT);
     if (!temC && !temT) return false;
     if (!temC || !temT) return true;
-    return Math.abs(nT - nC) > toleranciaMetrica(metrica);
+    return Math.abs(nT - nC) > toleranciaMetrica();
   });
 }
 
@@ -152,13 +148,6 @@ function colunaTemperatura(nome) {
   return n.includes("temperatura");
 }
 
-function formatarConsumoLitros(val) {
-  let n = parseNumero(val);
-  if (Number.isNaN(n)) return String(val ?? "").trim();
-  if (n > 100) n /= 1000;
-  return `${formatarDecimal(n)} L`;
-}
-
 function formatarCelula(col, val, row) {
   if (row?.__semDados) {
     if (col === dadosBrutos?.colData && !String(val ?? "").trim()) return "Sem dados";
@@ -171,7 +160,6 @@ function formatarCelula(col, val, row) {
       const s = String(val ?? "").trim();
       const semLado = info.lado === "Clever" ? row.__semDadosClever : row.__semDadosTcgl;
       if (!s) return semLado ? "Sem dados" : "";
-      if (normChave(info.metrica).includes("consumo combustivel")) return formatarConsumoLitros(s);
       if (normChave(info.metrica).includes("km")) return formatarInteiro(s);
       return formatarDecimal(s);
     }
@@ -195,7 +183,6 @@ function formatarCelula(col, val, row) {
   if (n === "km inicial" || n === "km final" || n === "km percorrido" || n === "distancia") {
     return formatarInteiro(s);
   }
-  if (n.includes("consumo combustivel")) return formatarConsumoLitros(s);
   if (n === "horas motor") return formatarDecimal(s, 1);
   if (n.includes("media km")) return `${formatarDecimal(s)} km/l`;
   if (n.includes("velocidade")) return `${formatarInteiro(s)} Km/h`;
