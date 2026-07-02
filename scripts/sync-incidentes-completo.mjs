@@ -1,6 +1,6 @@
 /**
  * Sincroniza incidentes TCGL → JSON local → Aurora DSQL.
- * Usado por Lambda, EC2, Mac e GitHub Actions.
+ * Usado pelo Mac (launchd / botão na Mesa) e scripts locais opcionais (EC2/Lambda).
  *
  * Variáveis:
  *   SYNC_INCIDENTES_PUBLISH_GIT=1  — commit/push do JSON (opcional, backup)

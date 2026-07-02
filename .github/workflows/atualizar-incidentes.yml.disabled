@@ -1,12 +1,11 @@
 name: Atualizar incidentes TCGL
 
-# Produção (portalCIOP): TCGL → Aurora DSQL + JSON no git (GitHub Pages).
-# GitHub Actions agenda em UTC. Equivalente BRT: 03:00, 09:00, 15:00 e 21:00.
-# portal-teste: incidentes desativados.
+# DESATIVADO — incidentes TCGL são atualizados somente pelo Mac (portalCIOP).
+#   bash scripts/instalar-agendamento-incidentes.sh   — todo dia às 04:00 + ao ligar
+#   bash scripts/instalar-botao-incidentes-macos.sh   — botão manual na Mesa
+# Arquivo mantido como histórico (.disabled) para o GitHub Actions ignorar.
 
 on:
-  schedule:
-    - cron: "0 0,6,12,18 * * *"
   workflow_dispatch:
 
 permissions:
@@ -66,7 +65,6 @@ jobs:
       - name: Publicar JSON no GitHub Pages
         run: bash scripts/ci-git-commit-push.sh "Atualiza incidentes TCGL" assets/data/incidentes-tcgl.json
 
-      # Push com GITHUB_TOKEN não dispara deploy-github-pages.yml automaticamente.
       - name: Republicar GitHub Pages
         if: success()
         run: gh workflow run deploy-github-pages.yml
