@@ -118,15 +118,13 @@ function formatarCelula(col, val, row) {
   }
   const s = String(val ?? "").trim();
   const n = colunaChave(col);
-  const dataIso = row && dadosBrutos?.colData ? parseDataCsv(row[dadosBrutos.colData]) : "";
 
-  if (n === "inicio") {
-    return dataIso ? `${formatarDataBr(dataIso)} 00:00` : s;
-  }
-  if (n === "fim") {
-    return dataIso ? `${formatarDataBr(dataIso)} 23:59` : s;
+  if (n === "inicio" || n === "fim") {
+    return s ? formatarDataHoraBr(s) : "";
   }
   if (!s) return "";
+
+  const dataIso = row && dadosBrutos?.colData ? parseDataCsv(row[dadosBrutos.colData]) : "";
 
   if (n === "data" || col === dadosBrutos?.colData) {
     const iso = parseDataCsv(s) || dataIso;
@@ -502,6 +500,16 @@ function formatarDataBr(iso) {
   const [y, m, d] = String(iso || "").split("-");
   if (!y || !m || !d) return iso;
   return `${d}/${m}/${y}`;
+}
+
+function formatarDataHoraBr(val) {
+  const s = String(val ?? "").trim();
+  if (!s) return "";
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (m) return `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}`;
+  m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})[ T](\d{2}):(\d{2})/);
+  if (m) return `${m[1].padStart(2, "0")}/${m[2].padStart(2, "0")}/${m[3]} ${m[4]}:${m[5]}`;
+  return s;
 }
 
 let dadosBrutos = null;

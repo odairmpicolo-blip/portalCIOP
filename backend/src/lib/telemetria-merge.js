@@ -29,7 +29,20 @@ export function parseNumeroMerge(val) {
 export function estrategiaColunaTelemetria(col) {
   const n = normChaveMerge(col);
   if (["cliente", "veiculo", "data", "data iso", "veiculo norm"].includes(n)) return "fixo";
+  if (n === "inicio" || n === "start time local") return "min";
+  if (n === "fim" || n === "end time local") return "max";
   return "soma";
+}
+
+function parseDataHoraMerge(val) {
+  const s = String(val ?? "").trim();
+  if (!s) return NaN;
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (m) return new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6] || "00"}`).getTime();
+  m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})[ T](\d{2}):(\d{2})/);
+  if (m) return new Date(`${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}T${m[4]}:${m[5]}:00`).getTime();
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? NaN : d.getTime();
 }
 
 function formatarNumeroSaida(n) {
@@ -43,6 +56,22 @@ function agregarValoresColuna(col, valores) {
   if (!preenchidos.length) return "";
 
   if (estrategiaColunaTelemetria(col) === "fixo") {
+    return preenchidos[preenchidos.length - 1];
+  }
+
+  const estrategia = estrategiaColunaTelemetria(col);
+  if (estrategia === "min" || estrategia === "max") {
+    let melhor = null;
+    let melhorTs = estrategia === "min" ? Infinity : -Infinity;
+    preenchidos.forEach((v) => {
+      const ts = parseDataHoraMerge(v);
+      if (Number.isNaN(ts)) return;
+      if ((estrategia === "min" && ts < melhorTs) || (estrategia === "max" && ts > melhorTs)) {
+        melhorTs = ts;
+        melhor = v;
+      }
+    });
+    if (melhor) return melhor;
     return preenchidos[preenchidos.length - 1];
   }
 
