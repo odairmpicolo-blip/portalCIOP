@@ -21,6 +21,7 @@ const fullMonthNames = {
 
 let rawData = [];
 let chartInstance = null;
+let icvExportState = { linhas: [] };
 
 function pick(row, keys) {
   for (const key of keys) {
@@ -158,6 +159,12 @@ function formatarSubtitulo(anoSel, trimSel, mesSel, diaSel) {
   return "ICV — Histórico Completo";
 }
 
+function calcPctSupressao(viagProg, supressao) {
+  const prog = Number(viagProg) || 0;
+  const sup = Number(supressao) || 0;
+  return prog > 0 ? (sup / prog) * 100 : 0;
+}
+
 function agregarLinhas(rows) {
   const total = rows.reduce((acc, row) => {
     acc.viag_prog += row.viag_prog;
@@ -177,7 +184,8 @@ function montarVisualizacao(filteredData, anoSel, mesSel, diaSel) {
       colunaPeriodo: "Período",
       linhas: [],
       chartLabels: [],
-      chartIcv: []
+      chartIcv: [],
+      chartPctSupressao: []
     };
   }
 
@@ -196,7 +204,8 @@ function montarVisualizacao(filteredData, anoSel, mesSel, diaSel) {
       colunaPeriodo: "Data",
       linhas,
       chartLabels: [formatDateBR(diaSel)],
-      chartIcv: [d.icv * 100]
+      chartIcv: [d.icv * 100],
+      chartPctSupressao: [calcPctSupressao(d.viag_prog, d.supressao)]
     };
   }
 
@@ -215,7 +224,8 @@ function montarVisualizacao(filteredData, anoSel, mesSel, diaSel) {
       colunaPeriodo: "Data",
       linhas,
       chartLabels: ordenados.map((d) => `${d.date.split("-")[2]}/${d.date.split("-")[1]}`),
-      chartIcv: ordenados.map((d) => d.icv * 100)
+      chartIcv: ordenados.map((d) => d.icv * 100),
+      chartPctSupressao: ordenados.map((d) => calcPctSupressao(d.viag_prog, d.supressao))
     };
   }
 
@@ -230,6 +240,7 @@ function montarVisualizacao(filteredData, anoSel, mesSel, diaSel) {
   const linhas = [];
   const chartLabels = [];
   const chartIcv = [];
+  const chartPctSupressao = [];
 
   Object.keys(groupKey).sort().forEach((key) => {
     const agg = agregarLinhas(groupKey[key]);
@@ -252,6 +263,7 @@ function montarVisualizacao(filteredData, anoSel, mesSel, diaSel) {
     });
     chartLabels.push(labelGrafico);
     chartIcv.push(agg.icv * 100);
+    chartPctSupressao.push(calcPctSupressao(agg.viag_prog, agg.supressao));
   });
 
   const tituloGrafico = anoSel !== "todos"
@@ -261,7 +273,7 @@ function montarVisualizacao(filteredData, anoSel, mesSel, diaSel) {
     ? `Resumo Mensal — Ano ${anoSel}`
     : "Resumo Mensal — Histórico Completo";
 
-  return { tituloGrafico, tituloTabela, colunaPeriodo: "Período", linhas, chartLabels, chartIcv };
+  return { tituloGrafico, tituloTabela, colunaPeriodo: "Período", linhas, chartLabels, chartIcv, chartPctSupressao };
 }
 
 function calcularMelhorMes(dados) {
@@ -353,11 +365,14 @@ function updateFilters(trigger) {
 function renderizarTabela(visual) {
   const tbody = document.getElementById("tableBody");
   const thPeriodo = document.getElementById("thColPeriodo");
+  const btnPdf = document.getElementById("btnExportarPdf");
   document.getElementById("tableDynamicTitle").innerText = visual.tituloTabela;
   if (thPeriodo) thPeriodo.innerText = visual.colunaPeriodo;
 
   if (!visual.linhas.length) {
     tbody.innerHTML = '<tr><td colspan="5" class="no-data">Nenhum dado encontrado para os filtros aplicados.</td></tr>';
+    if (btnPdf) btnPdf.disabled = true;
+    icvExportState = { linhas: [] };
     return;
   }
 
@@ -369,6 +384,9 @@ function renderizarTabela(visual) {
       <td>${formatInt(row.supressao)}</td>
       <td class="icv-cell">${row.icv.toFixed(2)}%</td>
     </tr>`).join("");
+
+  if (btnPdf) btnPdf.disabled = false;
+  icvExportState = { ...visual };
 }
 
 function renderChart(visual) {
@@ -381,26 +399,67 @@ function renderChart(visual) {
     type: "bar",
     data: {
       labels: visual.chartLabels,
-      datasets: [{
-        label: "ICV",
-        data: visual.chartIcv,
-        backgroundColor: "rgba(15, 118, 110, 0.75)",
-        borderColor: "#0f766e",
-        borderWidth: 1.5,
-        borderRadius: 4,
-        maxBarThickness: 42
-      }]
+      datasets: [
+        {
+          type: "bar",
+          label: "ICV",
+          data: visual.chartIcv,
+          yAxisID: "y",
+          backgroundColor: "rgba(15, 118, 110, 0.75)",
+          borderColor: "#0f766e",
+          borderWidth: 1.5,
+          borderRadius: 4,
+          maxBarThickness: 42,
+          order: 2
+        },
+        {
+          type: "line",
+          label: "% Supressão",
+          data: visual.chartPctSupressao,
+          yAxisID: "y1",
+          borderColor: "#dc2626",
+          backgroundColor: "#dc2626",
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointHoverRadius: 5,
+          tension: 0.25,
+          fill: false,
+          order: 1
+        }
+      ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
       scales: {
         y: {
+          position: "left",
           beginAtZero: false,
           suggestedMin: 70,
           suggestedMax: 100,
+          title: {
+            display: true,
+            text: "ICV (%)",
+            color: "#0f766e",
+            font: { weight: "700", size: 11 }
+          },
           ticks: {
             callback: (v) => `${v}%`
+          }
+        },
+        y1: {
+          position: "right",
+          beginAtZero: true,
+          grid: { drawOnChartArea: false },
+          title: {
+            display: true,
+            text: "% Supressão",
+            color: "#dc2626",
+            font: { weight: "700", size: 11 }
+          },
+          ticks: {
+            callback: (v) => `${Number(v).toFixed(1)}%`
           }
         },
         x: {
@@ -408,18 +467,36 @@ function renderChart(visual) {
         }
       },
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          position: "top",
+          align: "end",
+          labels: {
+            boxWidth: 12,
+            boxHeight: 12,
+            font: { size: 11, weight: "700" }
+          }
+        },
         tooltip: {
           callbacks: {
-            label: (ctx) => ` ICV: ${ctx.raw.toFixed(2)}%`
+            label: (ctx) => {
+              const val = Number(ctx.raw) || 0;
+              if (ctx.datasetIndex === 0) return ` ICV: ${val.toFixed(2)}%`;
+              return ` % Supressão: ${val.toFixed(2)}%`;
+            }
           }
         },
         datalabels: {
-          anchor: "end",
-          align: "top",
-          color: "#0f766e",
+          display: (ctx) => ctx.datasetIndex === 0 || ctx.datasetIndex === 1,
+          anchor: (ctx) => (ctx.datasetIndex === 0 ? "end" : "start"),
+          align: (ctx) => (ctx.datasetIndex === 0 ? "top" : "bottom"),
+          color: (ctx) => (ctx.datasetIndex === 0 ? "#0f766e" : "#dc2626"),
           font: { weight: "700", size: 9 },
-          formatter: (v) => `${v.toFixed(1)}%`
+          formatter: (v, ctx) => {
+            const val = Number(v) || 0;
+            if (ctx.datasetIndex === 0) return `${val.toFixed(1)}%`;
+            return `${val.toFixed(2)}%`;
+          }
         }
       }
     }
@@ -537,9 +614,86 @@ async function loadDashboardData() {
 
 window.updateFilters = updateFilters;
 
+export async function gerarPdfIcv() {
+  const statusEl = document.getElementById("pdfStatus");
+  const btn = document.getElementById("btnExportarPdf");
+  const state = icvExportState || {};
+
+  if (!state.linhas?.length) {
+    if (statusEl) {
+      statusEl.hidden = false;
+      statusEl.textContent = "Nenhum dado filtrado para exportar.";
+    }
+    return;
+  }
+  if (!window.exportarPdfIcv) {
+    if (statusEl) {
+      statusEl.hidden = false;
+      statusEl.textContent = "Módulo de exportação não carregado.";
+    }
+    return;
+  }
+
+  const agora = new Date();
+  const geradoEm = agora.toLocaleString("pt-BR");
+  const anoSel = document.getElementById("anoFilter")?.value;
+  const trimSel = document.getElementById("trimestreFilter")?.value;
+  const mesSel = document.getElementById("mesFilter")?.value;
+  const diaSel = document.getElementById("diaFilter")?.value;
+  const subtituloPdf = formatarSubtitulo(anoSel, trimSel, mesSel, diaSel).toUpperCase();
+  const slug = subtituloPdf
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
+
+  if (btn) btn.disabled = true;
+  if (statusEl) {
+    statusEl.hidden = false;
+    statusEl.textContent = "Gerando PDF…";
+  }
+  window.portalMostrarCarregando?.("Gerando PDF");
+
+  try {
+    await new Promise((r) => setTimeout(r, 80));
+    const chartImageBase64 = chartInstance?.toBase64Image?.("image/png", 2) || null;
+    await window.exportarPdfIcv({
+      meta: {
+        subtitulo: subtituloPdf,
+        tituloTabela: state.tituloTabela,
+        colunaPeriodo: state.colunaPeriodo,
+        geradoEm,
+        arquivoBase: "icv-" + slug + "-" + agora.toISOString().slice(0, 10)
+      },
+      chartImageBase64,
+      linhas: state.linhas,
+      assets: {
+        logoCiop: "../assets/img/CIOP Sem Fundo.png",
+        logoTcgl: "../assets/img/LOGO_TCGL-removebg-preview.png",
+        tituloIcv: "../assets/img/icv-titulo.png"
+      }
+    });
+    if (statusEl) statusEl.textContent = "PDF gerado com sucesso.";
+  } catch (err) {
+    if (statusEl) statusEl.textContent = err.message || "Falha ao gerar PDF.";
+  } finally {
+    window.portalOcultarCarregando?.();
+    if (btn) btn.disabled = !state.linhas?.length;
+  }
+}
+
 export function iniciarIcvDashboard() {
   if (typeof Chart !== "undefined" && typeof ChartDataLabels !== "undefined") {
     Chart.register(ChartDataLabels);
   }
+  document.getElementById("btnExportarPdf")?.addEventListener("click", () => {
+    gerarPdfIcv().catch((err) => {
+      const statusEl = document.getElementById("pdfStatus");
+      if (statusEl) {
+        statusEl.hidden = false;
+        statusEl.textContent = err.message || "Falha ao gerar PDF.";
+      }
+    });
+  });
   loadDashboardData();
 }
