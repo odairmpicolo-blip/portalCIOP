@@ -1,24 +1,21 @@
 name: Atualizar incidentes TCGL
 
 # Produção (portalCIOP): TCGL → Aurora DSQL + JSON no git (GitHub Pages).
-# Horários: 03:00, 09:00, 15:00 e 21:00 (America/Sao_Paulo).
-# portal-teste: workflow desativado — só manual se necessário.
+# GitHub Actions agenda em UTC. Equivalente BRT: 03:00, 09:00, 15:00 e 21:00.
+# portal-teste: incidentes desativados.
 
 on:
   schedule:
-    - cron: "0 3 * * *"
-      timezone: America/Sao_Paulo
-    - cron: "0 9 * * *"
-      timezone: America/Sao_Paulo
-    - cron: "0 15 * * *"
-      timezone: America/Sao_Paulo
-    - cron: "0 21 * * *"
-      timezone: America/Sao_Paulo
+    - cron: "0 0,6,12,18 * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
   actions: write
+
+concurrency:
+  group: atualizar-incidentes-tcgl
+  cancel-in-progress: false
 
 jobs:
   atualizar:
