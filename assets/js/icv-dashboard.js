@@ -1,4 +1,5 @@
 const ICV_DATA_BASE = "../assets/data/icv";
+const ICV_API_URL = "https://script.google.com/macros/s/AKfycbwp-s3tzcxQl0gsm20zSfBb7Rw0bQwKnIX0hB9j_nLDIALZKvu3xeGL9G1jo-SSsXhQ9A/exec";
 const ICV_CSV_URL = "https://docs.google.com/spreadsheets/d/1g-CaJQF2iDK04HiAcD0OM0ilS_eZ4rGppWq6saHO0Do/export?format=csv&gid=0";
 
 const monthToQuarter = {
@@ -41,15 +42,41 @@ function parseDate(value) {
   return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
 }
 
-function parseNumber(value) {
+function parseViagensCount(value) {
   if (value == null || value === "") return 0;
-  const n = Number(String(value).replace(/\./g, "").replace(",", ".").replace("%", "").trim());
-  return Number.isFinite(n) ? n : 0;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value > 0 && value < 500 ? Math.round(value * 1000) : Math.round(value);
+  }
+  let text = String(value).trim().replace(/\s/g, "");
+  if (!text) return 0;
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(text)) {
+    text = text.replace(/\./g, "").replace(",", ".");
+  } else if (text.includes(",") && !text.includes(".")) {
+    text = text.replace(",", ".");
+  } else if (/^\d+\.\d{1,3}$/.test(text)) {
+    return Math.round(Number(text) * 1000);
+  } else {
+    text = text.replace(/\./g, "").replace(",", ".");
+  }
+  const n = Number(text);
+  return Number.isFinite(n) ? Math.round(n) : 0;
+}
+
+function parseSupressaoCount(value) {
+  if (value == null || value === "") return 0;
+  if (typeof value === "number" && Number.isFinite(value)) return Math.round(value);
+  const n = Number(String(value).trim().replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(n) ? Math.round(n) : 0;
 }
 
 function parsePercent(value) {
-  const n = parseNumber(value);
-  if (!n) return 0;
+  if (value == null || value === "") return 0;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value > 1 ? value / 100 : value;
+  }
+  const text = String(value).trim().replace("%", "").replace(",", ".");
+  const n = Number(text);
+  if (!Number.isFinite(n)) return 0;
   return n > 1 ? n / 100 : n;
 }
 
@@ -90,13 +117,14 @@ function normalizeRows(rows) {
   return rows.map((row) => {
     const date = parseDate(pick(row, ["date", "data", "Data", "DATA", "Dia", "dia"]));
     if (!date) return null;
-    const viag_prog = parseNumber(pick(row, ["viag_prog", "Viag. Prog", "Viag Prog", "Viagens Programadas"]));
-    const viagens = parseNumber(pick(row, ["viagens", "Viagens", "Viagens Realizadas"]));
-    const supressao = parseNumber(pick(row, ["supressao", "Supressão", "Supressao"]));
+    const viag_prog = parseViagensCount(pick(row, ["viag_prog", "Viag. Prog", "Viag Prog", "Viagens Programadas"]));
+    const viagens = parseViagensCount(pick(row, ["viagens", "Viagens", "Viagens Realizadas"]));
+    const supressao = parseSupressaoCount(pick(row, ["supressao", "Supressão", "Supressao"]));
     const icvRaw = pick(row, ["icv", "ICV", "Índice de Cumprimento de Viagem"]);
     const icv = icvRaw != null && icvRaw !== ""
       ? parsePercent(icvRaw)
       : (viag_prog > 0 ? viagens / viag_prog : 0);
+    if (!viag_prog && !viagens && !supressao && !icv) return null;
     return { date, viag_prog, viagens, supressao, icv };
   }).filter(Boolean).sort((a, b) => a.date.localeCompare(b.date));
 }
@@ -447,6 +475,15 @@ async function carregarSnapshot() {
   }
 }
 
+async function carregarApi() {
+  const sep = ICV_API_URL.includes("?") ? "&" : "?";
+  const response = await fetch(`${ICV_API_URL}${sep}_=${Date.now()}`, { cache: "no-store" });
+  if (!response.ok) throw new Error(`HTTP ${response.status} na API ICV`);
+  const payload = await response.json();
+  const rows = Array.isArray(payload) ? payload : (payload.dados || payload.data || payload.rows || []);
+  return normalizeRows(rows);
+}
+
 async function carregarCsv() {
   const response = await fetch(`${ICV_CSV_URL}&_=${Date.now()}`, { cache: "no-store" });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -469,14 +506,20 @@ async function loadDashboardData() {
   }
 
   try {
-    const novos = await carregarCsv();
+    let novos = [];
+    try {
+      novos = await carregarApi();
+    } catch (apiError) {
+      console.warn("API ICV:", apiError);
+      novos = await carregarCsv();
+    }
     if (novos.length) {
       rawData = novos;
       initFilters();
       renderDashboard();
     } else if (!snapshot?.length) {
       rawData = [];
-      document.getElementById("dashboardSubtitle").innerText = "Sem dados — publique a planilha ou rode atualizar-icv-json.mjs";
+      document.getElementById("dashboardSubtitle").innerText = "Sem dados ICV disponíveis";
       initFilters();
       renderDashboard();
     }
