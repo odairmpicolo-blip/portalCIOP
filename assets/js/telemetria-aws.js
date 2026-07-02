@@ -43,9 +43,23 @@ export async function telemetriaAwsDisponivel() {
   return awsApiEnabled();
 }
 
-export async function aguardarAuthTelemetria(tentativas = 10, intervaloMs = 400) {
+export async function aguardarAuthTelemetria(tentativas = 40, intervaloMs = 500) {
   await initPortalAwsRuntime();
   if (!awsApiEnabled()) return false;
+  try {
+    const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+    const { app } = await import("./portal-firestore.js");
+    const auth = getAuth(app);
+    if (typeof auth.authStateReady === "function") {
+      await auth.authStateReady();
+      if (auth.currentUser) {
+        try {
+          await auth.currentUser.getIdToken();
+          return true;
+        } catch (_) { /* retry abaixo */ }
+      }
+    }
+  } catch (_) { /* retry abaixo */ }
   for (let i = 0; i < tentativas; i++) {
     try {
       await firebaseIdToken();

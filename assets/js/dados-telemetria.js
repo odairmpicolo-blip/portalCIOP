@@ -4,6 +4,7 @@ import {
   telemetriaAwsDisponivel,
   aguardarAuthTelemetria
 } from "./telemetria-aws.js";
+import { initPortalAwsRuntime } from "./portal-aws-config.js";
 
 const FROTA = (window.FROTA_PATIO || []).slice().sort((a, b) =>
   String(a.veiculo).localeCompare(String(b.veiculo), "pt-BR", { numeric: true })
@@ -256,11 +257,6 @@ function headersDoPayload(payload) {
   return Object.keys(payload || {}).filter((k) => !ignore.has(k));
 }
 
-function dataMaisRecente(rows, colData) {
-  const datas = rows.map((r) => parseDataCsv(r[colData])).filter(Boolean).sort();
-  return datas.length ? datas[datas.length - 1] : "";
-}
-
 function filtrarRowsPorData(rows, colData, dataDe, dataAte) {
   if (!colData || (!dataDe && !dataAte)) return rows;
   return rows.filter((row) => {
@@ -316,7 +312,11 @@ function dataIsoPadrao(offsetDias) {
 }
 
 function periodoBuscaAws() {
-  return { de: dataIsoPadrao(-730), ate: dataIsoPadrao(60) };
+  return { de: "2020-01-01", ate: "2030-12-31" };
+}
+
+function aguardar(ms) {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 function formatarDataBr(iso) {
@@ -333,9 +333,13 @@ let sortCol = null;
 let sortDir = "asc";
 let primeiraCarga = true;
 
-function atualizarInfoBanco() {
+function atualizarInfoBanco(extra) {
   const el = $("infoBanco");
   if (!el) return;
+  if (extra) {
+    el.textContent = extra;
+    return;
+  }
   if (!dadosBrutos?.rows?.length) {
     el.textContent = "Nenhum registro salvo no banco AWS ainda.";
     return;
@@ -724,8 +728,7 @@ function aplicarRegistrosAws(res) {
   montarFiltroDatas(true);
   montarPainelColunas();
   if (primeiraCarga) {
-    const recente = dataMaisRecente(rows, colData);
-    if (recente) abaDataAtiva = recente;
+    abaDataAtiva = "todas";
     primeiraCarga = false;
   }
   renderizar();
@@ -733,25 +736,31 @@ function aplicarRegistrosAws(res) {
 }
 
 async function carregarAws(opcoes = {}) {
-  const tentativas = opcoes.tentativas ?? 4;
+  const tentativas = opcoes.tentativas ?? 6;
+  const authTentativas = opcoes.authTentativas ?? 40;
   let ultimoErro = "erro ao carregar AWS";
   try {
+    await initPortalAwsRuntime();
     awsAtivo = await telemetriaAwsDisponivel();
     if (!awsAtivo) return { ok: false, motivo: "API AWS não configurada" };
 
-    const autenticou = await aguardarAuthTelemetria();
+    const autenticou = await aguardarAuthTelemetria(authTentativas);
     if (!autenticou) return { ok: false, motivo: "sessão não autenticada" };
 
     const { de, ate } = periodoBuscaAws();
     for (let i = 0; i < tentativas; i++) {
       try {
+        if (opcoes.onProgress) opcoes.onProgress(i + 1, tentativas);
         const res = await carregarTelemetriaAws(de, ate);
         if (!res?.dados?.length) return { ok: false, motivo: "nenhum registro na AWS" };
         const total = aplicarRegistrosAws(res);
         return { ok: true, total };
       } catch (err) {
         ultimoErro = err.message || ultimoErro;
-        await new Promise((r) => setTimeout(r, 600));
+        if (/401|403|autentic|sessão|token/i.test(ultimoErro)) {
+          await aguardarAuthTelemetria(8, 400);
+        }
+        await aguardar(700 + i * 300);
       }
     }
     return { ok: false, motivo: ultimoErro };
@@ -759,6 +768,23 @@ async function carregarAws(opcoes = {}) {
     awsAtivo = false;
     return { ok: false, motivo: err.message || ultimoErro };
   }
+}
+
+async function carregarAwsInicial() {
+  atualizarInfoBanco("Carregando dados do banco AWS…");
+  let result = await carregarAws({
+    tentativas: 8,
+    authTentativas: 50,
+    onProgress: (n, total) => {
+      if (n > 1) atualizarInfoBanco(`Carregando dados do banco AWS… (tentativa ${n}/${total})`);
+    }
+  });
+  if (!result.ok && /autentic|401|403|sessão|token/i.test(result.motivo)) {
+    atualizarInfoBanco("Aguardando sessão… recarregando dados.");
+    await aguardar(1500);
+    result = await carregarAws({ tentativas: 6, authTentativas: 30 });
+  }
+  return result;
 }
 
 function incorporarCsv(parsed, nomeArquivo) {
@@ -849,11 +875,16 @@ async function iniciar() {
     return;
   }
 
+  await initPortalAwsRuntime();
+
   $("painelResultado").hidden = false;
   montarFiltroVeiculos();
+  $("filtroDataDe").value = "";
+  $("filtroDataAte").value = "";
   $("statFrota").textContent = FROTA.length;
   renderResumoVazio();
   renderTabelaVazia("Carregando dados do banco AWS…");
+  atualizarInfoBanco("Carregando dados do banco AWS…");
 
   const input = $("csvInput");
   const zona = $("uploadZona");
@@ -902,19 +933,27 @@ async function iniciar() {
 
   $("statusUpload").textContent = "Pronto para lançar novo CSV";
   $("statusUpload").className = "status-upload muted";
-  atualizarInfoBanco();
-  const carregou = await carregarAws({ tentativas: 5 });
+  const carregou = await carregarAwsInicial();
   if (carregou.ok) {
     $("statusUpload").textContent = "Pronto para lançar novo CSV";
     $("statusUpload").className = "status-upload muted";
   } else {
     renderResumoVazio();
     renderTabelaVazia(`Sem dados no banco (${carregou.motivo}). Use + CSV para lançar.`);
-    atualizarInfoBanco();
+    atualizarInfoBanco(`Não foi possível carregar: ${carregou.motivo}`);
     $("statusUpload").textContent = "Pronto para lançar novo CSV";
     $("statusUpload").className = "status-upload muted";
   }
 }
 
-if (window.portalUsuarioValidado) iniciar();
-else window.addEventListener("portal:usuario-validado", iniciar, { once: true });
+function bootstrapTelemetria() {
+  if (typeof window.portalAguardarUsuario === "function") {
+    window.portalAguardarUsuario(() => { iniciar(); });
+  } else if (window.portalUsuarioValidado) {
+    iniciar();
+  } else {
+    window.addEventListener("portal:usuario-validado", () => { iniciar(); }, { once: true });
+  }
+}
+
+bootstrapTelemetria();
