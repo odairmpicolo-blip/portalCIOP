@@ -243,8 +243,45 @@ h1 { margin: 0; text-align: center; color: #071f57; font-size: 22px; font-weight
     overflow: hidden;
 }
 .table-wrapper {
-    max-height: 200px;
+    max-height: 280px;
     overflow-y: auto;
+}
+.table-card-header {
+    padding: 10px 12px;
+    font-weight: bold;
+    color: var(--blue);
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.btn-export-pdf {
+    border: 1px solid #c7d7f5;
+    background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
+    color: var(--blue);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 7px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.btn-export-pdf:hover {
+    background: #eef4ff;
+    border-color: #9db7ea;
+}
+.btn-export-pdf:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+}
+.pdf-status {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
 }
 table {
     width: 100%;
@@ -869,6 +906,8 @@ h1 {
 <script src="../assets/js/loading.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
 
 <link rel="stylesheet" href="../assets/css/portal-senha.css">
 <link rel="stylesheet" href="../assets/css/portal-titulos.css">
@@ -995,7 +1034,13 @@ h1 {
                         <option value="todos">Todos os Dias</option>
                     </select>
                 </div>
+
+                <div class="filter-group filter-group--action">
+                    <label>&nbsp;</label>
+                    <button type="button" class="btn-export-pdf" id="btnExportarPdf" disabled>Exportar PDF</button>
+                </div>
             </div>
+            <p class="pdf-status" id="pdfStatus" hidden></p>
 
         <div class="chart-card">
             <div class="chart-header">
@@ -1008,14 +1053,14 @@ h1 {
         </div>
 
         <div class="table-card">
-            <div style="padding: 10px 12px; font-weight: bold; color: var(--blue); background: #f8fafc; border-bottom: 1px solid var(--border); font-size: 13px;">
-                Detalhamento dos Dados Diários
+            <div class="table-card-header">
+                <span id="tableDynamicTitle">Detalhamento dos Dados</span>
             </div>
             <div class="table-wrapper">
                 <table>
                     <thead>
                         <tr>
-                            <th>Data</th>
+                            <th id="thColPeriodo">Período</th>
                             <th class="highlight-cell">No Horário</th>
                             <th>Adiantado</th>
                             <th>Atrasado</th>
@@ -1264,8 +1309,168 @@ function formatDateBR(dateValue) {
 }
 
 let chartInstance = null;
+let pontualidadeExportState = { linhas: [] };
 
 Chart.register(ChartDataLabels);
+
+function formatarResumoFiltro(anoSel, trimSel, mesSel, diaSel) {
+    if (diaSel !== 'todos') return 'Dia ' + formatDateBR(diaSel);
+    if (mesSel !== 'todos') {
+        const mes = fullMonthNames[mesSel] || mesSel;
+        return anoSel !== 'todos' ? mes + ' de ' + anoSel : mes;
+    }
+    const partes = [];
+    if (trimSel !== 'todos') {
+        const nomes = { Q1: '1º Trimestre', Q2: '2º Trimestre', Q3: '3º Trimestre', Q4: '4º Trimestre' };
+        partes.push(nomes[trimSel] || trimSel);
+    }
+    if (anoSel !== 'todos') partes.push('Ano ' + anoSel);
+    return partes.length ? partes.join(' · ') : 'Histórico completo';
+}
+
+function montarVisualizacaoPontualidade(filteredData, anoSel, mesSel, diaSel) {
+    if (!filteredData.length) {
+        return {
+            tituloGrafico: 'Nenhum dado para exibir',
+            tituloTabela: 'Nenhum dado para exibir',
+            colunaPeriodo: 'Período',
+            linhas: [],
+            chartLabels: [],
+            chartNoHorario: [],
+            chartAdiantado: [],
+            chartAtrasado: []
+        };
+    }
+
+    if (diaSel !== 'todos') {
+        const d = filteredData[0];
+        const periodo = formatDateBR(diaSel);
+        const linhas = [{
+            periodo,
+            no_horario: d.no_horario * 100,
+            adiantado: d.adiantado * 100,
+            atrasado: d.atrasado * 100
+        }];
+        return {
+            tituloGrafico: 'Evolução Temporal - Dia ' + periodo,
+            tituloTabela: 'Detalhamento — Dia ' + periodo,
+            colunaPeriodo: 'Data',
+            linhas,
+            chartLabels: [periodo],
+            chartNoHorario: linhas.map((l) => l.no_horario),
+            chartAdiantado: linhas.map((l) => l.adiantado),
+            chartAtrasado: linhas.map((l) => l.atrasado)
+        };
+    }
+
+    if (mesSel !== 'todos') {
+        const ordenados = filteredData.slice().sort((a, b) => a.date.localeCompare(b.date));
+        const linhas = ordenados.map((d) => ({
+            periodo: formatDateBR(d.date),
+            no_horario: d.no_horario * 100,
+            adiantado: d.adiantado * 100,
+            atrasado: d.atrasado * 100
+        }));
+        return {
+            tituloGrafico: 'Evolução Diária - Mês de ' + fullMonthNames[mesSel],
+            tituloTabela: 'Detalhamento Diário — ' + fullMonthNames[mesSel] + (anoSel !== 'todos' ? ' de ' + anoSel : ''),
+            colunaPeriodo: 'Data',
+            linhas,
+            chartLabels: ordenados.map((d) => d.date.split('-')[2] + '/' + d.date.split('-')[1]),
+            chartNoHorario: ordenados.map((d) => d.no_horario * 100),
+            chartAdiantado: ordenados.map((d) => d.adiantado * 100),
+            chartAtrasado: ordenados.map((d) => d.atrasado * 100)
+        };
+    }
+
+    const tituloGrafico = anoSel !== 'todos'
+        ? 'Evolução Mensal - Ano ' + anoSel
+        : 'Evolução Anual/Mensal de Pontualidade';
+    const tituloTabela = anoSel !== 'todos'
+        ? 'Resumo Mensal — Ano ' + anoSel
+        : 'Resumo Mensal — Histórico Completo';
+
+    const groupKey = {};
+    filteredData.forEach((d) => {
+        const parts = d.date.split('-');
+        const key = (anoSel === 'todos') ? parts[0] + '-' + parts[1] : parts[1];
+        if (!groupKey[key]) groupKey[key] = { no_horario: 0, adiantado: 0, atrasado: 0, count: 0 };
+        groupKey[key].no_horario += d.no_horario;
+        groupKey[key].adiantado += d.adiantado;
+        groupKey[key].atrasado += d.atrasado;
+        groupKey[key].count++;
+    });
+
+    const linhas = [];
+    const chartLabels = [];
+    const chartNoHorario = [];
+    const chartAdiantado = [];
+    const chartAtrasado = [];
+
+    Object.keys(groupKey).sort().forEach((key) => {
+        const count = groupKey[key].count;
+        let periodo;
+        let labelGrafico;
+        if (anoSel === 'todos') {
+            const [yr, mn] = key.split('-');
+            periodo = fullMonthNames[mn] + '/' + yr;
+            labelGrafico = monthNames[mn] + '/' + yr.substring(2);
+        } else {
+            periodo = fullMonthNames[key] || monthNames[key] || key;
+            labelGrafico = monthNames[key] || key;
+        }
+        linhas.push({
+            periodo,
+            no_horario: (groupKey[key].no_horario / count) * 100,
+            adiantado: (groupKey[key].adiantado / count) * 100,
+            atrasado: (groupKey[key].atrasado / count) * 100
+        });
+        chartLabels.push(labelGrafico);
+        chartNoHorario.push((groupKey[key].no_horario / count) * 100);
+        chartAdiantado.push((groupKey[key].adiantado / count) * 100);
+        chartAtrasado.push((groupKey[key].atrasado / count) * 100);
+    });
+
+    return {
+        tituloGrafico,
+        tituloTabela,
+        colunaPeriodo: 'Período',
+        linhas,
+        chartLabels,
+        chartNoHorario,
+        chartAdiantado,
+        chartAtrasado
+    };
+}
+
+function renderizarTabelaFiltrada(visual) {
+    const tbody = document.getElementById('tableBody');
+    const thPeriodo = document.getElementById('thColPeriodo');
+    const tituloTabela = document.getElementById('tableDynamicTitle');
+    const btnPdf = document.getElementById('btnExportarPdf');
+
+    if (tituloTabela) tituloTabela.innerText = visual.tituloTabela;
+    if (thPeriodo) thPeriodo.innerText = visual.colunaPeriodo;
+
+    if (!visual.linhas.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="no-data">Nenhum dado encontrado para os filtros aplicados.</td></tr>';
+        if (btnPdf) btnPdf.disabled = true;
+        pontualidadeExportState = { linhas: [] };
+        return;
+    }
+
+    tbody.innerHTML = visual.linhas.map((row) => {
+        return `<tr>
+            <td>${row.periodo}</td>
+            <td class="highlight-cell">${row.no_horario.toFixed(2)}%</td>
+            <td style="color: var(--red); font-weight: 500;">${row.adiantado.toFixed(2)}%</td>
+            <td style="color: var(--yellow); font-weight: 500;">${row.atrasado.toFixed(2)}%</td>
+        </tr>`;
+    }).join('');
+
+    if (btnPdf) btnPdf.disabled = false;
+    pontualidadeExportState = { ...visual };
+}
 
 // Dynamically populate Year and Day options based on the actual rawData entries
 function initFilters() {
@@ -1454,80 +1659,30 @@ function renderDashboard() {
         document.getElementById('kpiAtrasado').innerText = '-';
     }
 
-    const tbody = document.getElementById('tableBody');
-    if (filteredData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="no-data">Nenhum dado encontrado para os filtros aplicados.</td></tr>';
-    } else {
-        tbody.innerHTML = filteredData.map(d => {
-            return `<tr>
-                <td>${d.date.split('-').reverse().join('/')}</td>
-                <td class="highlight-cell">${(d.no_horario * 100).toFixed(2)}%</td>
-                <td style="color: var(--red); font-weight: 500;">${(d.adiantado * 100).toFixed(2)}%</td>
-                <td style="color: var(--yellow); font-weight: 500;">${(d.atrasado * 100).toFixed(2)}%</td>
-            </tr>`;
-        }).join('');
-    }
+    const visual = montarVisualizacaoPontualidade(filteredData, anoSel, mesSel, diaSel);
+    pontualidadeExportState = {
+        ...visual,
+        selecao: formatarResumoFiltro(anoSel, trimSel, mesSel, diaSel),
+        cenario: CENARIOS[cenarioAtual].nome
+    };
+
+    renderizarTabelaFiltrada(visual);
 
     if (filteredData.length === 0) {
         document.getElementById('melhorHorario').innerHTML='0%';
         document.getElementById('melhorData').innerHTML='--';
         document.getElementById('diasMeta').innerHTML='--';
         document.getElementById('diasAbaixo').innerHTML='--';
-        document.getElementById('chartDynamicTitle').innerText = 'Nenhum dado para exibir';
+        document.getElementById('chartDynamicTitle').innerText = visual.tituloGrafico;
         if (chartInstance) chartInstance.destroy();
         return;
     }
 
-    let chartLabels = [];
-    let chartNoHorario = [];
-    let chartAdiantado = [];
-    let chartAtrasado = [];
-
-    if (diaSel !== 'todos') {
-        document.getElementById('chartDynamicTitle').innerText = `Evolução Temporal - Dia ${diaSel.split('-').reverse().join('/')}`;
-        chartLabels = [diaSel.split('-').reverse().join('/')];
-        chartNoHorario = [filteredData[0].no_horario * 100];
-        chartAdiantado = [filteredData[0].adiantado * 100];
-        chartAtrasado = [filteredData[0].atrasado * 100];
-    } else if (mesSel !== 'todos') {
-        document.getElementById('chartDynamicTitle').innerText = `Evolução Diária - Mês de ${fullMonthNames[mesSel]}`;
-        chartLabels = filteredData.map(d => d.date.split('-')[2] + '/' + d.date.split('-')[1]);
-        chartNoHorario = filteredData.map(d => d.no_horario * 100);
-        chartAdiantado = filteredData.map(d => d.adiantado * 100);
-        chartAtrasado = filteredData.map(d => d.atrasado * 100);
-    } else {
-        // Year overview or global overview
-        if (anoSel !== 'todos') {
-            document.getElementById('chartDynamicTitle').innerText = `Evolução Mensal - Ano ${anoSel}`;
-        } else {
-            document.getElementById('chartDynamicTitle').innerText = 'Evolução Anual/Mensal de Pontualidade';
-        }
-
-        const groupKey = {};
-        filteredData.forEach(d => {
-            const parts = d.date.split('-');
-            // If viewing all years, group by Year-Month, otherwise just Month
-            const key = (anoSel === 'todos') ? parts[0] + '-' + parts[1] : parts[1];
-            if (!groupKey[key]) groupKey[key] = { no_horario: 0, adiantado: 0, atrasado: 0, count: 0 };
-            groupKey[key].no_horario += d.no_horario;
-            groupKey[key].adiantado += d.adiantado;
-            groupKey[key].atrasado += d.atrasado;
-            groupKey[key].count++;
-        });
-
-        Object.keys(groupKey).sort().forEach(key => {
-            if (anoSel === 'todos') {
-                const [yr, mn] = key.split('-');
-                chartLabels.push(monthNames[mn] + '/' + yr.substring(2));
-            } else {
-                chartLabels.push(monthNames[key]);
-            }
-            const count = groupKey[key].count;
-            chartNoHorario.push((groupKey[key].no_horario / count) * 100);
-            chartAdiantado.push((groupKey[key].adiantado / count) * 100);
-            chartAtrasado.push((groupKey[key].atrasado / count) * 100);
-        });
-    }
+    const chartLabels = visual.chartLabels;
+    const chartNoHorario = visual.chartNoHorario;
+    const chartAdiantado = visual.chartAdiantado;
+    const chartAtrasado = visual.chartAtrasado;
+    document.getElementById('chartDynamicTitle').innerText = visual.tituloGrafico;
 
     
     // Indicadores executivos
@@ -1675,8 +1830,81 @@ const ctx = document.getElementById('lineChartCanvas').getContext('2d');
 
 window.trocarCenario = trocarCenario;
 
+async function gerarPdfPontualidade() {
+    const statusEl = document.getElementById('pdfStatus');
+    const btn = document.getElementById('btnExportarPdf');
+    const state = pontualidadeExportState || {};
+
+    if (!state.linhas?.length) {
+        if (statusEl) {
+            statusEl.hidden = false;
+            statusEl.textContent = 'Nenhum dado filtrado para exportar.';
+        }
+        return;
+    }
+    if (!window.exportarPdfPontualidade) {
+        if (statusEl) {
+            statusEl.hidden = false;
+            statusEl.textContent = 'Módulo de exportação não carregado.';
+        }
+        return;
+    }
+
+    const agora = new Date();
+    const geradoEm = agora.toLocaleString('pt-BR');
+    const slug = (state.selecao || 'pontualidade')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .toLowerCase();
+
+    if (btn) btn.disabled = true;
+    if (statusEl) {
+        statusEl.hidden = false;
+        statusEl.textContent = 'Gerando PDF…';
+    }
+    window.portalMostrarCarregando?.('Gerando PDF');
+
+    try {
+        await new Promise((r) => setTimeout(r, 80));
+        const chartImageBase64 = chartInstance?.toBase64Image?.('image/png', 1.5) || null;
+        await window.exportarPdfPontualidade({
+            meta: {
+                cenario: state.cenario,
+                selecao: state.selecao,
+                tituloGrafico: state.tituloGrafico,
+                tituloTabela: state.tituloTabela,
+                colunaPeriodo: state.colunaPeriodo,
+                geradoEm,
+                arquivoBase: 'pontualidade-' + slug + '-' + agora.toISOString().slice(0, 10)
+            },
+            chartImageBase64,
+            linhas: state.linhas,
+            assets: {
+                logoCiop: '../assets/img/CIOP Sem Fundo.png',
+                logoTcgl: '../assets/img/LOGO_TCGL-removebg-preview.png'
+            }
+        });
+        if (statusEl) statusEl.textContent = 'PDF gerado com sucesso.';
+    } catch (err) {
+        if (statusEl) statusEl.textContent = err.message || 'Falha ao gerar PDF.';
+    } finally {
+        window.portalOcultarCarregando?.();
+        if (btn) btn.disabled = !state.linhas?.length;
+    }
+}
+
 function iniciarPontualidadeValidada() {
     atualizarBotoesCenario();
+    document.getElementById('btnExportarPdf')?.addEventListener('click', () => {
+        gerarPdfPontualidade().catch((err) => {
+            const statusEl = document.getElementById('pdfStatus');
+            if (statusEl) {
+                statusEl.hidden = false;
+                statusEl.textContent = err.message || 'Falha ao gerar PDF.';
+            }
+        });
+    });
     loadDashboardData();
 }
 
@@ -1685,6 +1913,10 @@ window.onload = function() {
 };
 </script>
 
+<script type="module">
+import { exportarPdfPontualidade } from '../assets/js/pontualidade-relatorio-export.js?v=20260712';
+window.exportarPdfPontualidade = exportarPdfPontualidade;
+</script>
 
 <script>
 function atualizarIndicadoresExecutivos(dados){
