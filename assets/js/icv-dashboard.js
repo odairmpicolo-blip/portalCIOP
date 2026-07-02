@@ -395,6 +395,11 @@ function renderChart(visual) {
   if (chartInstance) chartInstance.destroy();
   if (!visual.chartLabels.length) return;
 
+  const maxSupressao = visual.chartPctSupressao?.length
+    ? Math.max(...visual.chartPctSupressao)
+    : 1;
+  const supressaoAxisMax = Math.max(12, Math.ceil(maxSupressao * 6));
+
   chartInstance = new Chart(ctx, {
     type: "bar",
     data: {
@@ -451,6 +456,7 @@ function renderChart(visual) {
         y1: {
           position: "right",
           beginAtZero: true,
+          suggestedMax: supressaoAxisMax,
           grid: { drawOnChartArea: false },
           title: {
             display: true,
@@ -488,8 +494,9 @@ function renderChart(visual) {
         },
         datalabels: {
           display: (ctx) => ctx.datasetIndex === 0 || ctx.datasetIndex === 1,
-          anchor: (ctx) => (ctx.datasetIndex === 0 ? "end" : "start"),
+          anchor: (ctx) => (ctx.datasetIndex === 0 ? "end" : "center"),
           align: (ctx) => (ctx.datasetIndex === 0 ? "top" : "bottom"),
+          offset: (ctx) => (ctx.datasetIndex === 1 ? 10 : 4),
           color: (ctx) => (ctx.datasetIndex === 0 ? "#0f766e" : "#dc2626"),
           font: { weight: "700", size: 9 },
           formatter: (v, ctx) => {

@@ -11,8 +11,36 @@
 :root { --blue:#06245c; --blue2:#0b3a8a; --orange:#ff6b00; --bg:#f5f7fb; --border:#dfe5ef; --text:#101828; --muted:#667085; --icv:#0f766e; }
 * { box-sizing:border-box; }
 body { margin:0; background:var(--bg); font-family:Arial,Helvetica,sans-serif; color:var(--text); display:flex; flex-direction:column; height:100vh; overflow:hidden; }
-.header { background:#fff; padding:6px 20px; display:grid; grid-template-columns:180px 1fr minmax(300px,auto); gap:15px; align-items:center; border-bottom:1px solid #e8edf6; }
-.logo-tcgl { height:45px; object-fit:contain; justify-self:end; }
+.header-actions {
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    min-width: 0;
+}
+.header-actions .ciop-session { flex: 0 1 auto; }
+.header-actions .logo-tcgl-link { display: flex; align-items: center; flex: 0 0 auto; }
+.logo-tcgl { height: 52px; max-height: 52px; width: auto; object-fit: contain; background: transparent; }
+@media (min-width: 1101px) {
+    .header {
+        grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr) !important;
+    }
+    .header > a:first-child { justify-self: start !important; }
+    .header > .icv-title-wrap {
+        justify-self: center !important;
+        text-align: center !important;
+    }
+    .header-actions { justify-self: end !important; }
+}
+@media (max-width: 900px) {
+    .header-actions {
+        justify-self: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        width: 100%;
+    }
+}
 .main-content { flex:1; display:flex; flex-direction:column; overflow:hidden; }
 .content-body { padding:12px; display:flex; flex-direction:column; gap:12px; overflow-y:auto; }
 .icv-title-wrap {
@@ -29,7 +57,15 @@ h1.icv-title-art {
     justify-content: center;
     line-height: 0;
 }
-.icv-title-art img { display:block; width:min(340px,30vw); height:40px; object-fit:contain; }
+.icv-title-art img {
+    display: block;
+    width: min(340px, 30vw) !important;
+    height: 40px !important;
+    max-height: 40px !important;
+    max-width: 100% !important;
+    object-fit: contain !important;
+    background: transparent;
+}
 .icv-title-wrap .subtitle {
     margin-top: 4px;
     color: var(--blue);
@@ -66,7 +102,21 @@ th { background:#f8fafc; color:var(--muted); font-size:11px; text-transform:uppe
 td:first-child, th:first-child { text-align:left; }
 .icv-cell { color:var(--icv); font-weight:700; }
 .no-data { text-align:center; color:var(--muted); padding:24px; }
-@media(max-width:1100px){ .kpi-container{grid-template-columns:repeat(2,minmax(0,1fr));} .header{grid-template-columns:1fr;} }
+@media(max-width:1100px){
+    .kpi-container{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .icv-title-art img {
+        width: min(340px, 84vw) !important;
+        height: 38px !important;
+        max-height: 38px !important;
+    }
+}
+@media(max-width:560px){
+    .icv-title-art img {
+        width: min(290px, 88vw) !important;
+        height: 34px !important;
+        max-height: 34px !important;
+    }
+}
 </style>
 <script src="../assets/js/loading.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -87,7 +137,7 @@ td:first-child, th:first-child { text-align:left; }
     <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
     <div class="icv-title-wrap">
         <h1 class="icv-title-art" aria-label="Índice de Cumprimento de Viagem - ICV">
-            <img src="../assets/img/icv-titulo.png" alt="Cumprimento de Viagem - ICV">
+            <img src="../assets/img/icv-titulo.png?v=20260702e" alt="Cumprimento de Viagem - ICV">
         </h1>
         <div class="subtitle" id="dashboardSubtitle">CIOP / TCGL</div>
     </div>
@@ -97,7 +147,9 @@ td:first-child, th:first-child { text-align:left; }
             <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
             <button onclick="logout()" class="btn-logout" type="button">Sair</button>
         </div>
-        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" style="display:flex;"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener" class="logo-tcgl-link" aria-label="Site TCGL">
+            <img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+        </a>
     </div>
 </div>
 <div class="main-content">
@@ -200,7 +252,7 @@ td:first-child, th:first-child { text-align:left; }
     </div>
 </div>
 <script type="module">
-import { iniciarIcvDashboard } from "../assets/js/icv-dashboard.js?v=20260702d";
+import { iniciarIcvDashboard } from "../assets/js/icv-dashboard.js?v=20260702f";
 import { exportarPdfIcv } from "../assets/js/icv-relatorio-export.js?v=20260702d";
 window.exportarPdfIcv = exportarPdfIcv;
 window.onload = () => window.portalAguardarUsuario?.(iniciarIcvDashboard);
