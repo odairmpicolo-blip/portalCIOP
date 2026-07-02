@@ -48,6 +48,14 @@ export async function obterUrlTelemetriaScript() {
   return "";
 }
 
+export function mesclarRegistrosTelemetria(atual, novos) {
+  const mapa = new Map();
+  const key = (r) => `${r.data_iso}|${r.fonte || "tcgl"}|${String(r.veiculo || "").trim()}`;
+  (atual || []).forEach((r) => mapa.set(key(r), r));
+  (novos || []).forEach((r) => mapa.set(key(r), r));
+  return [...mapa.values()];
+}
+
 export function filtrarSnapshotRegistros(snap, { fonte = "todos", de = "", ate = "" } = {}) {
   if (!snap?.dados?.length) return snap;
   let dados = snap.dados;
@@ -103,6 +111,25 @@ function gravarCacheSnapshot(snap, opcoes, origem) {
   }
 }
 
+function combinarSnapshotsPlanilha(cleverSnap, tcglSnap, de, ate) {
+  const dados = [...(cleverSnap?.dados || []), ...(tcglSnap?.dados || [])];
+  if (!dados.length) return null;
+  const datas = dados.map((d) => d.data_iso).filter(Boolean).sort();
+  return {
+    ok: true,
+    script_versao: cleverSnap?.script_versao || tcglSnap?.script_versao,
+    atualizadoEm: cleverSnap?.atualizadoEm || tcglSnap?.atualizadoEm || new Date().toISOString(),
+    origem: "google-sheets",
+    total: dados.length,
+    total_clever: (cleverSnap?.dados || []).length,
+    total_tcgl: (tcglSnap?.dados || []).length,
+    data_de: datas[0] || de || null,
+    data_ate: datas[datas.length - 1] || ate || null,
+    dados,
+    origem_carregamento: "planilha"
+  };
+}
+
 export async function carregarManifestTelemetria() {
   try {
     const res = await fetch(`${TELEMETRIA_MANIFEST_URL}?t=${Date.now()}`, { cache: "no-store" });
@@ -139,7 +166,7 @@ export async function carregarResumoTelemetriaPlanilha() {
   }
 }
 
-export async function carregarSnapshotTelemetriaPlanilha({ fonte = "todos", de = "", ate = "" } = {}) {
+async function carregarSnapshotTelemetriaPlanilhaFonte(fonte, de, ate) {
   const opcoes = { fonte, de, ate };
   const cached = lerCacheSnapshot(opcoes);
   if (cached) return cached;
@@ -147,7 +174,7 @@ export async function carregarSnapshotTelemetriaPlanilha({ fonte = "todos", de =
   const base = await obterUrlTelemetriaScript();
   if (!base) return null;
   const params = new URLSearchParams();
-  params.set("fonte", fonte || "todos");
+  params.set("fonte", fonte);
   if (de) params.set("de", de);
   if (ate) params.set("ate", ate);
   const sep = base.includes("?") ? "&" : "?";
@@ -166,8 +193,28 @@ export async function carregarSnapshotTelemetriaPlanilha({ fonte = "todos", de =
 }
 
 /**
+ * fonte=todos busca Clever e TCGL em paralelo (fonte=todos no Apps Script estoura timeout).
+ */
+export async function carregarSnapshotTelemetriaPlanilha({ fonte = "todos", de = "", ate = "" } = {}) {
+  if (fonte === "todos") {
+    const opcoes = { fonte: "todos", de, ate };
+    const cached = lerCacheSnapshot(opcoes);
+    if (cached) return cached;
+
+    const [cleverSnap, tcglSnap] = await Promise.all([
+      carregarSnapshotTelemetriaPlanilhaFonte("clever", de, ate),
+      carregarSnapshotTelemetriaPlanilhaFonte("tcgl", de, ate)
+    ]);
+    const comb = combinarSnapshotsPlanilha(cleverSnap, tcglSnap, de, ate);
+    if (comb) gravarCacheSnapshot(comb, opcoes, "planilha");
+    return comb;
+  }
+
+  return carregarSnapshotTelemetriaPlanilhaFonte(fonte, de, ate);
+}
+
+/**
  * JSON local primeiro (rápido), depois planilha com período limitado.
- * @param {{ fonte?: string, de?: string, ate?: string }} opcoes
  */
 export async function carregarSnapshotTelemetria(opcoes = {}) {
   const { fonte = "todos", de = "", ate = "" } = opcoes;
