@@ -5,6 +5,10 @@ import {
   aguardarAuthTelemetria
 } from "./telemetria-aws.js";
 import { initPortalAwsRuntime } from "./portal-aws-config.js";
+import {
+  agregarLinhasTelemetria,
+  nomeColunaClever
+} from "./telemetria-merge.js";
 
 const FROTA = (window.FROTA_PATIO || []).slice().sort((a, b) =>
   String(a.veiculo).localeCompare(String(b.veiculo), "pt-BR", { numeric: true })
@@ -12,21 +16,24 @@ const FROTA = (window.FROTA_PATIO || []).slice().sort((a, b) =>
 
 const CHAVES_VEICULO = [
   "veiculo", "veículo", "prefixo", "carro", "numero", "número", "n°", "nº",
-  "frota", "id_veiculo", "codigo", "código", "placa", "vehicle", "bus"
+  "frota", "id_veiculo", "vehicle id", "codigo", "código", "placa", "vehicle", "bus"
 ];
 
 const CHAVES_DATA = ["data", "date", "dia", "dt", "data_ref", "data referencia"];
 
 const KPI_DEFS = [
-  { id: "can", rotulos: ["registros can", "registro can"] },
-  { id: "kmInicial", rotulos: ["km inicial"] },
-  { id: "kmFinal", rotulos: ["km final"] },
-  { id: "kmPercorrido", rotulos: ["km percorrido"] }
+  { id: "can", rotulos: ["eventos", "registros can", "number of events"] },
+  { id: "kmInicial", rotulos: ["km/inicial", "km inicial", "start distance"] },
+  { id: "kmFinal", rotulos: ["km/final", "km final", "end distance"] },
+  { id: "kmPercorrido", rotulos: ["distancia", "distância", "km percorrido", "daily distance"] }
 ];
 
 const COLUNAS_OCULTAS = [
   "cliente",
-  "temperatura cabine media"
+  "customer id",
+  "temperatura cabine",
+  "avg cabin temp",
+  "temp cabine"
 ];
 
 function colunaOculta(nome) {
@@ -39,7 +46,8 @@ function colunasExibiveis(headers, colVeiculo) {
 }
 
 function colunaTemperatura(nome) {
-  return normChave(nome).includes("temperatura");
+  const n = normChave(nome);
+  return n.includes("temp.") || n.includes("temperatura");
 }
 
 function formatarTemperatura(val) {
@@ -73,8 +81,13 @@ function normChave(s) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
+    .replace(/_/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function nomeColunaPadrao(nome) {
+  return nomeColunaClever(nome);
 }
 
 function normVeiculo(v) {
@@ -134,10 +147,17 @@ function parseCsv(texto) {
 
 function converterLinhasCsv(linhas) {
   if (!linhas.length) return { headers: [], rows: [] };
-  const headers = linhas[0].map((h) => String(h).trim());
+  const pares = [];
+  linhas[0].forEach((h, i) => {
+    const col = nomeColunaPadrao(String(h).trim());
+    if (col) pares.push({ i, col });
+  });
+  const headers = [...new Set(pares.map((p) => p.col))];
   const rows = linhas.slice(1).map((cols) => {
     const obj = {};
-    headers.forEach((h, i) => { obj[h] = cols[i] != null ? String(cols[i]).trim() : ""; });
+    pares.forEach(({ i, col }) => {
+      obj[col] = cols[i] != null ? String(cols[i]).trim() : "";
+    });
     return obj;
   });
   return { headers, rows };
@@ -180,6 +200,13 @@ function parseDataCsv(val) {
   if (m) return `${m[1]}-${m[2]}-${m[3]}`;
   m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
   if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  const d = new Date(s);
+  if (!Number.isNaN(d.getTime())) {
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${mo}-${day}`;
+  }
   return "";
 }
 
@@ -196,26 +223,15 @@ function mesclarHeaders(atual, novo) {
   return [...set];
 }
 
-function mesclarLinhaTelemetria(atual, nova) {
-  const base = atual && typeof atual === "object" ? { ...atual } : {};
-  const inc = nova && typeof nova === "object" ? { ...nova } : {};
-  const out = { ...base };
-  Object.keys(inc).forEach((k) => {
-    if (valorPreenchido(inc[k])) out[k] = inc[k];
-    else if (!(k in out)) out[k] = inc[k];
-  });
-  return out;
-}
-
 function unificarLinhasPorVeiculoData(rows, colVeiculo, colData) {
-  const map = new Map();
+  const grupos = new Map();
   (rows || []).forEach((row) => {
     const key = chaveLinha(row, colVeiculo, colData);
     if (!key || key.includes("undefined") || key.startsWith("|") || key.endsWith("|")) return;
-    const prev = map.get(key);
-    map.set(key, prev ? mesclarLinhaTelemetria(prev, row) : { ...row });
+    if (!grupos.has(key)) grupos.set(key, []);
+    grupos.get(key).push(row);
   });
-  return [...map.values()];
+  return [...grupos.values()].map((grupo) => agregarLinhasTelemetria(grupo));
 }
 
 function mesclarRows(atual, novas, colVeiculo, colData) {
@@ -236,7 +252,7 @@ function linhasAwsParaRows(dados, headers, colVeiculo, colData) {
     if (typeof payload === "string") {
       try { payload = JSON.parse(payload); } catch (_) { payload = {}; }
     }
-    const row = { ...payload };
+    const row = limparColunasExcluidas({ ...payload });
     const veiculo = item.veiculo || item.veiculo_norm || row.veiculo_norm;
     const dataIso = normalizarDataIsoApi(item.data_iso || row.data_iso);
     if (colVeiculo && !row[colVeiculo] && veiculo) row[colVeiculo] = veiculo;
@@ -248,9 +264,13 @@ function linhasAwsParaRows(dados, headers, colVeiculo, colData) {
     const key = chaveLinha(row, colVeiculo, colData);
     if (!key || key.startsWith("|") || key.endsWith("|")) return;
     const prev = map.get(key);
-    map.set(key, prev ? mesclarLinhaTelemetria(prev, row) : row);
+    if (prev) prev.push(row);
+    else map.set(key, [row]);
   });
-  return [...map.values()];
+  return [...map.values()].flatMap((grupo) => {
+    const agregado = agregarLinhasTelemetria(grupo);
+    return agregado && Object.keys(agregado).length ? [agregado] : [];
+  });
 }
 
 function arquivosDosRegistrosAws(dados) {
@@ -264,16 +284,26 @@ function arquivosDosRegistrosAws(dados) {
 
 function headersDoPayload(payload) {
   const ignore = new Set(["data_iso", "veiculo_norm"]);
-  return Object.keys(payload || {}).filter((k) => !ignore.has(k));
+  return Object.keys(payload || {}).filter((k) => !ignore.has(k) && !colunaOculta(k));
+}
+
+function limparColunasExcluidas(row) {
+  const out = {};
+  Object.keys(row || {}).forEach((k) => {
+    if (!colunaOculta(k)) out[k] = row[k];
+  });
+  return out;
 }
 
 function filtrarRowsPorData(rows, colData, dataDe, dataAte) {
   if (!colData || (!dataDe && !dataAte)) return rows;
+  const de = dataDe ? String(dataDe).slice(0, 10) : "";
+  const ate = dataAte ? String(dataAte).slice(0, 10) : "";
   return rows.filter((row) => {
     const iso = parseDataCsv(row[colData]);
     if (!iso) return false;
-    if (dataDe && iso < dataDe) return false;
-    if (dataAte && iso > dataAte) return false;
+    if (de && iso < de) return false;
+    if (ate && iso > ate) return false;
     return true;
   });
 }
@@ -322,6 +352,9 @@ function dataIsoPadrao(offsetDias) {
 }
 
 function periodoBuscaAws() {
+  const de = $("filtroDataDe")?.value?.slice(0, 10) || "";
+  const ate = $("filtroDataAte")?.value?.slice(0, 10) || "";
+  if (de && ate) return { de, ate };
   return { de: "2020-01-01", ate: "2030-12-31" };
 }
 
@@ -665,8 +698,11 @@ function montarFiltroDatas(forceReset) {
     de.value = min;
     ate.value = max;
   } else {
-    if (de.value > min) de.value = min;
-    if (ate.value < max) ate.value = max;
+    if (de.value < min) de.value = min;
+    if (de.value > max) de.value = max;
+    if (ate.value < min) ate.value = min;
+    if (ate.value > max) ate.value = max;
+    if (de.value > ate.value) ate.value = de.value;
   }
 }
 
@@ -679,7 +715,7 @@ function hintFiltrosAtivos() {
   const veic = $("filtroVeiculo").value;
   const totalCol = colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo).length;
   const nCol = colunasSelecionadas().length;
-  if (de || ate) partes.push(`período ${de || "…"} a ${ate || "…"}`);
+  if (de || ate) partes.push(`período ${de || "…"} a ${ate || "…"} (00:00–23:59)`);
   if (veic) partes.push(`carro ${veic}`);
   if (nCol && nCol < totalCol) partes.push(`${nCol} coluna(s)`);
   if (!partes.length) { hint.hidden = true; return; }
@@ -815,6 +851,28 @@ function aplicarRegistrosAws(res) {
   });
 }
 
+async function recarregarComFiltroDatas() {
+  const de = $("filtroDataDe")?.value?.slice(0, 10);
+  const ate = $("filtroDataAte")?.value?.slice(0, 10);
+  if (!de || !ate || de > ate) {
+    renderizar();
+    return;
+  }
+  if (!awsAtivo) {
+    renderizar();
+    return;
+  }
+  atualizarInfoBanco(`Carregando ${formatarDataBr(de)} a ${formatarDataBr(ate)} (00:00–23:59)…`);
+  const res = await carregarAws({ tentativas: 4, permitirVazio: true });
+  if (!res.ok && dadosBrutos?.rows?.length) {
+    atualizarInfoBanco();
+    renderizar();
+    return;
+  }
+  if (res.ok) atualizarInfoBanco();
+  renderizar();
+}
+
 async function carregarAws(opcoes = {}) {
   const tentativas = opcoes.tentativas ?? 6;
   const authTentativas = opcoes.authTentativas ?? 40;
@@ -832,7 +890,14 @@ async function carregarAws(opcoes = {}) {
       try {
         if (opcoes.onProgress) opcoes.onProgress(i + 1, tentativas);
         const res = await carregarTelemetriaAws(de, ate);
-        if (!res?.dados?.length) return { ok: false, motivo: "nenhum registro na AWS" };
+        if (!res?.dados?.length) {
+          if (opcoes.permitirVazio && dadosBrutos) {
+            dadosBrutos.rows = [];
+            persistirCacheTelemetria();
+            return { ok: true, total: 0 };
+          }
+          return { ok: false, motivo: "nenhum registro na AWS" };
+        }
         const total = aplicarRegistrosAws(res);
         return { ok: true, total };
       } catch (err) {
@@ -929,7 +994,26 @@ async function processarTextoCsv(texto, nomeArquivo) {
   }
 }
 
-function lerArquivo(file) {
+function lerArquivos(fileList) {
+  const files = [...(fileList || [])].filter((f) => f && (/\.csv$/i.test(f.name) || f.type === "text/csv"));
+  if (!files.length) {
+    $("msgVazio").textContent = "Selecione um ou mais arquivos .csv";
+    return;
+  }
+  (async () => {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      $("statusUpload").textContent = `Processando ${i + 1}/${files.length}: ${file.name}…`;
+      $("statusUpload").className = "status-upload muted";
+      await lerArquivo(file);
+    }
+  })().catch((err) => {
+    $("statusUpload").textContent = err.message || "Falha ao processar arquivos.";
+    $("statusUpload").className = "status-upload warn";
+  });
+}
+
+async function lerArquivo(file) {
   if (!file) return;
   if (!/\.csv$/i.test(file.name) && file.type !== "text/csv") {
     $("msgVazio").textContent = "Selecione um arquivo .csv";
@@ -938,19 +1022,17 @@ function lerArquivo(file) {
   $("statusUpload").textContent = `Lendo ${file.name}...`;
   $("statusUpload").className = "status-upload muted";
   const reader = new FileReader();
-  reader.onload = async () => {
-    try {
-      await processarTextoCsv(String(reader.result || ""), file.name);
-    } catch (err) {
-      $("statusUpload").textContent = err.message || "Falha ao processar o CSV.";
-      $("statusUpload").className = "status-upload warn";
-    }
-  };
-  reader.onerror = () => {
-    $("statusUpload").textContent = "Não foi possível ler o arquivo.";
+  await new Promise((resolve, reject) => {
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Não foi possível ler o arquivo."));
+    reader.readAsText(file, "UTF-8");
+  });
+  try {
+    await processarTextoCsv(String(reader.result || ""), file.name);
+  } catch (err) {
+    $("statusUpload").textContent = err.message || "Falha ao processar o CSV.";
     $("statusUpload").className = "status-upload warn";
-  };
-  reader.readAsText(file, "UTF-8");
+  }
 }
 
 async function iniciar() {
@@ -979,7 +1061,7 @@ async function iniciar() {
   const zona = $("uploadZona");
 
   input.addEventListener("change", () => {
-    lerArquivo(input.files && input.files[0]);
+    lerArquivos(input.files);
     input.value = "";
   });
 
@@ -988,17 +1070,19 @@ async function iniciar() {
   zona.addEventListener("drop", (e) => {
     e.preventDefault();
     zona.classList.remove("drag");
-    lerArquivo(e.dataTransfer?.files?.[0]);
+    lerArquivos(e.dataTransfer?.files);
   });
   zona.addEventListener("click", () => input.click());
   zona.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); }
   });
 
-  ["filtroDataDe", "filtroDataAte", "filtroVeiculo"].forEach((id) => {
+  ["filtroDataDe", "filtroDataAte"].forEach((id) => {
     const el = $(id);
-    if (el) el.addEventListener("change", () => renderizar());
+    if (el) el.addEventListener("change", () => { recarregarComFiltroDatas(); });
   });
+  const filtroVeic = $("filtroVeiculo");
+  if (filtroVeic) filtroVeic.addEventListener("change", () => renderizar());
 
   const btnCol = $("filtroColunasBtn");
   const panelCol = $("filtroColunasPanel");

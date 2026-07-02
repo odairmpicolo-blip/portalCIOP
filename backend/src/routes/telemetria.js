@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { query } from "../db.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
+import { mesclarLinhasTelemetria, agregarLinhasTelemetria } from "../lib/telemetria-merge.js";
 
 const router = Router();
 const LOTE_UPSERT = 80;
@@ -13,24 +14,8 @@ function sanitizarLinha(row, dataIso, veiculo) {
   return payload;
 }
 
-function valorPreenchidoPayload(v) {
-  const s = String(v ?? "").trim();
-  if (!s) return false;
-  const low = s.toLowerCase();
-  return !["-", "—", "n/a", "na", "null", "undefined", "#n/a"].includes(low);
-}
-
 function mesclarPayloadTelemetria(atual, novo) {
-  const base = atual && typeof atual === "object" ? { ...atual } : {};
-  const inc = novo && typeof novo === "object" ? { ...novo } : {};
-  const out = { ...base };
-  Object.keys(inc).forEach((k) => {
-    if (valorPreenchidoPayload(inc[k])) out[k] = inc[k];
-    else if (!(k in out)) out[k] = inc[k];
-  });
-  if (inc.data_iso) out.data_iso = inc.data_iso;
-  if (inc.veiculo_norm) out.veiculo_norm = inc.veiculo_norm;
-  return out;
+  return mesclarLinhasTelemetria(atual, novo);
 }
 
 function normalizarDataIsoResposta(val) {
@@ -133,7 +118,7 @@ router.post("/import", requireFirebaseUser, async (req, res) => {
     return;
   }
   try {
-    const mapaImport = new Map();
+    const gruposImport = new Map();
     for (const item of linhas) {
       const dataIso = String(item?.data_iso || "").slice(0, 10);
       const veiculo = String(item?.veiculo || "").trim();
@@ -141,8 +126,13 @@ router.post("/import", requireFirebaseUser, async (req, res) => {
       if (!dataIso || !veiculo || !payload || typeof payload !== "object") continue;
       const clean = sanitizarLinha(payload, dataIso, veiculo);
       const key = `${dataIso}|${veiculo}`;
-      const prev = mapaImport.get(key);
-      mapaImport.set(key, prev ? mesclarPayloadTelemetria(prev, clean) : clean);
+      if (!gruposImport.has(key)) gruposImport.set(key, []);
+      gruposImport.get(key).push(clean);
+    }
+
+    const mapaImport = new Map();
+    for (const [key, grupo] of gruposImport) {
+      mapaImport.set(key, agregarLinhasTelemetria(grupo));
     }
 
     const chaves = [...mapaImport.entries()].map(([key]) => {
@@ -153,8 +143,9 @@ router.post("/import", requireFirebaseUser, async (req, res) => {
 
     const registros = [...mapaImport.entries()].map(([key, mergedIncoming]) => {
       const [dataIso, veiculo] = key.split("|");
-      const payloadFinal = existentes.has(key)
-        ? mesclarPayloadTelemetria(existentes.get(key), mergedIncoming)
+      const existente = existentes.get(key);
+      const payloadFinal = existente
+        ? mesclarPayloadTelemetria(existente, mergedIncoming)
         : mergedIncoming;
       return { dataIso, veiculo, payloadFinal };
     });
