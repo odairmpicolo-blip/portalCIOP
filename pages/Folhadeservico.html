@@ -1469,6 +1469,10 @@ h1 {
                 <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span>Queda de Cliente por Mês</span></div>
                 <div class="chart-container"><canvas id="chartQuedaMes"></canvas></div>
             </div>
+            <div class="chart-card accent-amber chart-wide">
+                <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg></span><span>Não Realizou Login por Mês</span></div>
+                <div class="chart-container"><canvas id="chartLoginMes"></canvas></div>
+            </div>
         </div>
         <div class="analytics-grid-5">
             <div class="chart-card accent-sky">
@@ -1515,6 +1519,14 @@ h1 {
                 <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m19 12-7 7-7-7"/><path d="M12 5v14"/></svg></span><span>Motoristas com Mais Atrasos</span></div>
                 <div class="chart-container"><canvas id="chartMotoristasAtrasos"></canvas></div>
             </div>
+            <div class="chart-card accent-amber">
+                <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span><span>Motoristas — Não Realizou Login</span></div>
+                <div class="chart-container"><canvas id="chartMotoristasLogin"></canvas></div>
+            </div>
+            <div class="chart-card accent-orange">
+                <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15h16"/><path d="m10 11 4 4 4-4"/><path d="M12 3v12"/></svg></span><span>Linhas com Mais Não Realizou Login</span></div>
+                <div class="chart-container"><canvas id="chartLinhasLogin"></canvas></div>
+            </div>
         </div>
     </section>
 
@@ -1526,7 +1538,7 @@ h1 {
 
 <script>
     const URL_DO_SCRIPT_GOOGLE = "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
-    const DASHBOARD_VERSAO = "2026-06-23-dashboard-anos-planilha";
+    const DASHBOARD_VERSAO = "20260702-login-dashboard";
     const DASHBOARD_POR_PAGINA = 3500;
     const ANO_ATUAL = new Date().getFullYear();
     const ANO_TODOS = "todos";
@@ -1581,7 +1593,9 @@ h1 {
         "MOTORISTA PASSANDO MAL": "#db2777",
         "TROCA": "#64748b",
         "BALDEACAO": "#65a30d",
-        "BORRACHARIA": "#14b8a6"
+        "BORRACHARIA": "#14b8a6",
+        "NAO REALIZOU LOGIN": "#b45309",
+        "NÃO REALIZOU LOGIN": "#b45309"
     };
     const CORES_OCORRENCIA_RESERVA = [
         "#6366f1", "#8b5cf6", "#ec4899", "#f97316", "#22c55e", "#eab308",
@@ -1802,6 +1816,19 @@ h1 {
             const alvo = normTexto(tipo);
             return base === alvo || base.includes(alvo);
         });
+    }
+
+    function ocorrenciaNaoLogin(valor) {
+        const base = normTexto(valor);
+        if (!base) return false;
+        return ocorrenciaEh(valor,
+            "NAO REALIZOU LOGIN",
+            "NÃO REALIZOU LOGIN",
+            "NAO REALIZOU LOGIN NO TDM",
+            "NÃO REALIZOU LOGIN NO TDM",
+            "NAO FEZ LOGIN",
+            "NÃO FEZ LOGIN"
+        );
     }
 
     function minutosDaHora(hora) {
@@ -3669,6 +3696,7 @@ h1 {
         const corQueda = corAssunto("QUEDA DE CLIENTE", "QUEDA DE PASSAGEIRO");
         const corAdiantado = corAssunto("ADIANTADO");
         const corAtrasado = corAssunto("ATRASADO");
+        const corLogin = corAssunto("NAO REALIZOU LOGIN", "NÃO REALIZOU LOGIN");
 
         criarGraficoAnalytics("chartOcorrencias", {
             labels: labelsOcorrencias,
@@ -3702,6 +3730,14 @@ h1 {
             values: quedaMes.length ? quedaMes.map(i => i.qtd) : [0],
             horizontal: false,
             corTema: corQueda
+        });
+
+        const loginMes = contagemPorMes(dados, item => ocorrenciaNaoLogin(item.ocorrencia));
+        criarGraficoAnalytics("chartLoginMes", {
+            labels: loginMes.length ? loginMes.map(i => i.label) : ["Sem dados"],
+            values: loginMes.length ? loginMes.map(i => i.qtd) : [0],
+            horizontal: false,
+            corTema: corLogin
         });
 
         const linhasAtrasos = topContagem(contarPor(dados, d => d.linha, item =>
@@ -3817,6 +3853,24 @@ h1 {
             values: motAtrasos.length ? motAtrasos.map(i => i.qtd) : [0],
             horizontal: true,
             corTema: corAtrasado
+        });
+
+        const motLogin = topContagem(contarPor(dados, d => d.motorista, item =>
+            ocorrenciaNaoLogin(item.ocorrencia)), 8);
+        criarGraficoAnalytics("chartMotoristasLogin", {
+            labels: motLogin.length ? motLogin.map(i => i.label) : ["Sem dados"],
+            values: motLogin.length ? motLogin.map(i => i.qtd) : [0],
+            horizontal: true,
+            corTema: corLogin
+        });
+
+        const linhasLogin = topContagem(contarPor(dados, d => d.linha, item =>
+            ocorrenciaNaoLogin(item.ocorrencia)), 8);
+        criarGraficoAnalytics("chartLinhasLogin", {
+            labels: linhasLogin.length ? linhasLogin.map(i => "Linha " + i.label) : ["Sem dados"],
+            values: linhasLogin.length ? linhasLogin.map(i => i.qtd) : [0],
+            horizontal: true,
+            corTema: corLogin
         });
     }
 
