@@ -1297,10 +1297,6 @@ async function loadDashboardData() {
         mostrouSnapshot = true;
         initFilters();
         renderDashboard();
-        const extra = pontualidadeManifest?.atualizadoEm
-            ? ' · snapshot: ' + new Date(pontualidadeManifest.atualizadoEm).toLocaleString('pt-BR')
-            : '';
-        document.getElementById('dashboardSubtitle').innerText = cenario.nome + ' · arquivo JSON' + extra;
     }
 
     if (!mostrouSnapshot) {
@@ -1314,9 +1310,6 @@ async function loadDashboardData() {
             rawData = mostrouSnapshot ? mesclarPontualidade(rawData, novos) : novos;
             initFilters();
             renderDashboard();
-            if (mostrouSnapshot) {
-                document.getElementById('dashboardSubtitle').innerText = cenario.nome + ' · JSON + planilha atualizada';
-            }
         } else if (!mostrouSnapshot) {
             rawData = [];
             document.getElementById('dashboardSubtitle').innerText = cenario.nome + ' · sem dados';
@@ -1942,7 +1935,7 @@ async function gerarPdfPontualidade() {
         await window.exportarPdfPontualidade({
             meta: {
                 cenario: state.cenario,
-                subtitulo: state.subtitulo || document.getElementById('dashboardSubtitle')?.innerText,
+                subtitulo: state.tituloGrafico || state.subtitulo || document.getElementById('chartDynamicTitle')?.innerText,
                 selecao: state.selecao,
                 tituloGrafico: state.tituloGrafico,
                 tituloTabela: state.tituloTabela,
