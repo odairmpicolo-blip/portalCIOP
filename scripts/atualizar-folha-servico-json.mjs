@@ -3,7 +3,7 @@ import path from "node:path";
 
 const APPS_SCRIPT_URL = process.env.FOLHA_SERVICO_API_URL
   || "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
-const DASHBOARD_VERSAO = process.env.FOLHA_SERVICO_VERSAO || "2026-06-23-dashboard-anos-planilha";
+const DASHBOARD_VERSAO = process.env.FOLHA_SERVICO_VERSAO || "2026-07-02-dashboard-marco-zero";
 const PAGE_SIZE = Number(process.env.FOLHA_SERVICO_PAGINA || 3500);
 const TIMEOUT_MS = Number(process.env.FOLHA_SERVICO_TIMEOUT_MS || 120000);
 const FETCH_RETRIES = Number(process.env.FOLHA_SERVICO_RETRIES || 5);
@@ -134,6 +134,38 @@ function escreverJson(arquivo, payload) {
   console.log(`  salvo ${path.basename(arquivo)} (${kb} KB, ${payload.total?.toLocaleString("pt-BR") || 0} registros)`);
 }
 
+function limparSnapshotsDeAnos() {
+  if (!fs.existsSync(outputDir)) return;
+  for (const nome of fs.readdirSync(outputDir)) {
+    if (/^ano-\d{4}\.json$/.test(nome)) {
+      fs.unlinkSync(path.join(outputDir, nome));
+      console.log(`  removido ${nome} (planilha sem anos)`);
+    }
+  }
+}
+
+function escreverMarcoZero(motivo) {
+  const atualizadoEm = new Date().toISOString();
+  limparSnapshotsDeAnos();
+  escreverJson(path.join(outputDir, "todos.json"), {
+    ano: "todos",
+    versao: DASHBOARD_VERSAO,
+    atualizadoEm,
+    total: 0,
+    total_planilha: 0,
+    dados: []
+  });
+  escreverJson(path.join(outputDir, "manifest.json"), {
+    versao: DASHBOARD_VERSAO,
+    atualizadoEm,
+    anos: [],
+    totais: { todos: 0 },
+    marco_zero: true,
+    motivo
+  });
+  console.warn("Folha de serviço sem anos/dados. Snapshot vazio gerado como marco zero.");
+}
+
 function lerManifestExistente() {
   const arquivo = path.join(outputDir, "manifest.json");
   try {
@@ -152,6 +184,10 @@ function anosDoManifestExistente() {
     : [];
 }
 
+function existeSnapshotAtual() {
+  return Boolean(lerManifestExistente()) || fs.existsSync(path.join(outputDir, "todos.json"));
+}
+
 async function main() {
   fs.mkdirSync(outputDir, { recursive: true });
   console.log("Atualizando snapshots JSON da folha de serviço...");
@@ -160,25 +196,22 @@ async function main() {
     anos = await buscarAnos();
   } catch (error) {
     const anosExistentes = anosDoManifestExistente();
-    if (anosExistentes.length) {
+    if (existeSnapshotAtual()) {
       console.warn(
         "Aviso: falha ao listar anos da folha (" + (error.message || error) + "). " +
-        "Mantendo snapshots existentes: " + anosExistentes.join(", ") + "."
+        (
+          anosExistentes.length
+            ? "Mantendo snapshots existentes: " + anosExistentes.join(", ") + "."
+            : "Mantendo snapshot atual."
+        )
       );
       return;
     }
     throw error;
   }
   if (!anos.length) {
-    const anosExistentes = anosDoManifestExistente();
-    if (anosExistentes.length) {
-      console.warn(
-        "Aviso: API da folha retornou zero anos. Mantendo snapshots existentes: " +
-        anosExistentes.join(", ") + "."
-      );
-      return;
-    }
-    throw new Error("Nenhum ano encontrado na planilha e nao ha snapshot existente para manter.");
+    escreverMarcoZero("API da folha retornou zero anos");
+    return;
   }
 
   const totais = {};

@@ -1526,22 +1526,23 @@ h1 {
 
 <script>
     const URL_DO_SCRIPT_GOOGLE = "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
-    const DASHBOARD_VERSAO = "2026-06-23-dashboard-anos-planilha";
+    const DASHBOARD_VERSAO = "2026-07-02-dashboard-marco-zero";
     const DASHBOARD_POR_PAGINA = 3500;
     const ANO_ATUAL = new Date().getFullYear();
     const ANO_TODOS = "todos";
-    const CACHE_STORAGE_SLOT = "v12";
+    const CACHE_STORAGE_SLOT = "v13";
     const CACHE_KEY_PREFIX = "folha_dashboard_" + CACHE_STORAGE_SLOT;
-    const CACHE_IDB_NAME = "folha_dashboard_shared";
+    const CACHE_IDB_NAME = "folha_dashboard_shared_v2";
     const CACHE_IDB_STORE = "snapshots";
-    const CACHE_STATIC_NAME = "folha-dashboard-json-v1";
+    const CACHE_STATIC_NAME = "folha-dashboard-json-v2";
     const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
     const LEGACY_IDB_NAMES = [
+        "folha_dashboard_cache_v13",
         "folha_dashboard_cache_v12",
         "folha_dashboard_cache_v11",
         "folha_dashboard_cache_v10"
     ];
-    const LEGACY_CACHE_SLOTS = ["v12", "v11", "v10", "v9", "v8", "v7", "v6", "v5", "v4", "v3"];
+    const LEGACY_CACHE_SLOTS = ["v13", "v12", "v11", "v10", "v9", "v8", "v7", "v6", "v5", "v4", "v3"];
     const FETCH_TIMEOUT_MS = 120000;
 
     function resolverBasePortal() {
@@ -2199,7 +2200,7 @@ h1 {
     }
 
     function cacheKeyEstavel(ano) {
-        return "folha_dashboard_" + String(ano);
+        return CACHE_KEY_PREFIX + "_shared_" + String(ano);
     }
 
     function chaveLinhaPlanilha(item) {
@@ -2459,6 +2460,16 @@ h1 {
         return texto;
     }
 
+    function snapshotVazioValido(snapshot) {
+        if (!snapshot || !Array.isArray(snapshot.dados) || snapshot.dados.length) return false;
+        const total = Number(snapshot.meta?.total ?? snapshot.meta?.total_planilha ?? 0);
+        return folhaManifest?.marco_zero === true || total === 0;
+    }
+
+    function folhaEstaNoMarcoZero(snapshot) {
+        return folhaManifest?.marco_zero === true || snapshotVazioValido(snapshot);
+    }
+
     async function fetchJsonAssetRede(urls, noStore) {
         for (const url of urls) {
             try {
@@ -2488,6 +2499,21 @@ h1 {
 
         const bust = !silencioso || obterMarcaManifesto() !== marcaAntes;
         const snapshot = await carregarSnapshotTodosDireto(bust);
+
+        if (folhaEstaNoMarcoZero(snapshot)) {
+            const meta = snapshot?.meta || {
+                ano: ANO_TODOS,
+                total: 0,
+                total_planilha: 0,
+                versao: folhaManifest?.versao || DASHBOARD_VERSAO,
+                snapshotEm: folhaManifest?.atualizadoEm || ""
+            };
+            anoCarregado = ANO_TODOS;
+            salvarCacheMeta(ANO_TODOS, meta);
+            aplicarDadosDashboard([], "arquivo JSON", meta);
+            setLoadStatus(statusLinhaSnapshot(meta), "ok");
+            return snapshot;
+        }
 
         if (!snapshot?.dados?.length) {
             await reconciliarUltimosLancamentosPlanilha(silencioso);
@@ -2596,7 +2622,7 @@ h1 {
     }
 
     function listarAnosOrdenados() {
-        const bruto = folhaManifest?.anos?.length ? folhaManifest.anos : anosDisponiveis;
+        const bruto = Array.isArray(folhaManifest?.anos) ? folhaManifest.anos : anosDisponiveis;
         return [...bruto]
             .map((item) => parseInt(String(item), 10))
             .filter((item) => !Number.isNaN(item) && item >= 2000)
@@ -2797,14 +2823,16 @@ h1 {
                 ? await fetchJsonAssetRede(urls, true)
                 : await fetchJsonAsset(urls);
             if (!payload) return null;
+            const listaDeclarada = Array.isArray(payload.dados) || Array.isArray(payload);
             const dados = normalizarLista(payload.dados || payload);
-            if (!dados.length) return null;
+            const totalDeclarado = Number(payload.total ?? payload.total_planilha ?? dados.length);
+            if (!dados.length && (!listaDeclarada || totalDeclarado !== 0)) return null;
             return {
                 dados,
                 meta: {
                     ano: payload.ano != null ? payload.ano : ano,
-                    total: payload.total || dados.length,
-                    total_planilha: payload.total_planilha || payload.total || dados.length,
+                    total: payload.total ?? dados.length,
+                    total_planilha: payload.total_planilha ?? payload.total ?? dados.length,
                     versao: payload.versao || folhaManifest?.versao || DASHBOARD_VERSAO,
                     snapshotEm: payload.atualizadoEm || folhaManifest?.atualizadoEm || ""
                 }
@@ -2959,10 +2987,20 @@ h1 {
             try { localStorage.removeItem(key + "_meta"); } catch (_) {}
             try { sessionStorage.removeItem(key); } catch (_) {}
         });
+        try {
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith("folha_dashboard_") && !key.startsWith(CACHE_KEY_PREFIX + "_")) {
+                    localStorage.removeItem(key);
+                }
+            }
+        } catch (_) { /* armazenamento indisponível */ }
     }
 
     function cachePayloadValido(parsed, ano) {
         if (!parsed?.dados?.length || !parsed?.ts) return false;
+        const versaoCache = parsed.versao || parsed.meta?.versao || "";
+        if (versaoCache !== DASHBOARD_VERSAO) return false;
         if (Date.now() - parsed.ts > CACHE_TTL_MS) return false;
         const anoCache = String(parsed.ano || parsed.meta?.ano || "");
         if (ano && anoCache && anoCache !== String(ano)) return false;
@@ -3083,6 +3121,8 @@ h1 {
                 const raw = localStorage.getItem(key);
                 if (!raw) continue;
                 const parsed = JSON.parse(raw);
+                const versaoCache = parsed.versao || parsed.meta?.versao || "";
+                if (versaoCache !== DASHBOARD_VERSAO) continue;
                 if (Date.now() - parsed.ts > CACHE_TTL_MS) continue;
                 if (parsed.meta) return parsed.meta;
             } catch (_) { /* próxima chave */ }
@@ -3094,6 +3134,7 @@ h1 {
         try {
             localStorage.setItem(cacheMetaKey(ano), JSON.stringify({
                 ts: Date.now(),
+                versao: DASHBOARD_VERSAO,
                 ano: String(ano),
                 meta: meta || {}
             }));
@@ -3346,10 +3387,20 @@ h1 {
                 return;
             }
 
+            if (folhaEstaNoMarcoZero(preload.snapshot)) {
+                anoCarregado = anoInicial;
+                aplicarDadosDashboard([], "arquivo JSON", preload.snapshot?.meta || {});
+                iniciarSincronizacaoAutomatica();
+                return;
+            }
+
             setLoadStatus("Baixando arquivo JSON...", "load");
-            await refrescarJsonFolhaEmBackground(false);
+            const snapshotAtual = await refrescarJsonFolhaEmBackground(false);
             if (dadosMestres.length) {
                 finalizarCargaFolhaServico(anoInicial);
+            } else if (folhaEstaNoMarcoZero(snapshotAtual)) {
+                anoCarregado = anoInicial;
+                iniciarSincronizacaoAutomatica();
             } else {
                 setLoadStatus("Não foi possível carregar os dados. Toque em Atualizar.", "erro");
             }
