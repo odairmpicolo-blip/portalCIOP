@@ -29,13 +29,25 @@ export async function carregarTelemetriaAws(dataDe, dataAte, veiculo) {
   return awsFetch(`/telemetria?${qs}`, headers);
 }
 
-export async function importarTelemetriaAws(linhas, origemArquivo) {
+export async function importarTelemetriaAws(linhas, origemArquivo, onProgress) {
   const headers = await authHeaders();
-  return awsFetch("/telemetria/import", {
-    method: "POST",
-    body: { linhas, origemArquivo },
-    ...headers
-  });
+  const LOTE = 150;
+  let inseridos = 0;
+  let unificados = 0;
+  const totalLotes = Math.ceil(linhas.length / LOTE) || 1;
+  for (let i = 0; i < linhas.length; i += LOTE) {
+    const loteNum = Math.floor(i / LOTE) + 1;
+    onProgress?.(loteNum, totalLotes, linhas.length);
+    const pedaco = linhas.slice(i, i + LOTE);
+    const res = await awsFetch("/telemetria/import", {
+      method: "POST",
+      body: { linhas: pedaco, origemArquivo },
+      ...headers
+    });
+    inseridos += res.inseridos || 0;
+    unificados += res.unificados || pedaco.length;
+  }
+  return { ok: true, inseridos, unificados, total: linhas.length };
 }
 
 export async function telemetriaAwsDisponivel() {

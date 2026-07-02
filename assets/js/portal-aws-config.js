@@ -21,12 +21,21 @@ export async function awsFetch(path, { method = "GET", body, token, apiKey } = {
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (token) headers.Authorization = `Bearer ${token}`;
   if (apiKey) headers["X-Portal-Api-Key"] = apiKey;
-  const res = await fetch(`${apiUrl.replace(/\/$/, "")}${path}`, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-    cache: "no-store"
-  });
+  let res;
+  try {
+    res = await fetch(`${apiUrl.replace(/\/$/, "")}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      cache: "no-store"
+    });
+  } catch (err) {
+    const msg = String(err?.message || err || "");
+    if (/load failed|failed to fetch|networkerror/i.test(msg)) {
+      throw new Error("Timeout ou falha de rede na API (tente enviar em partes menores)");
+    }
+    throw err;
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.erro || `HTTP ${res.status}`);
   return data;

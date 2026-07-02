@@ -3,6 +3,8 @@ import { query } from "../db.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
 
 const router = Router();
+const LOTE_UPSERT = 80;
+const LOTE_SELECT = 200;
 
 function sanitizarLinha(row, dataIso, veiculo) {
   const payload = { ...row };
@@ -37,6 +39,49 @@ function normalizarDataIsoResposta(val) {
   const s = String(val).trim();
   const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   return m ? `${m[1]}-${m[2]}-${m[3]}` : s.slice(0, 10);
+}
+
+async function buscarPayloadsExistentes(chaves) {
+  const mapa = new Map();
+  for (let i = 0; i < chaves.length; i += LOTE_SELECT) {
+    const lote = chaves.slice(i, i + LOTE_SELECT);
+    const params = [];
+    const tuples = lote.map(([dataIso, veiculo], idx) => {
+      const a = idx * 2 + 1;
+      params.push(dataIso, veiculo);
+      return `($${a}::date, $${a + 1})`;
+    }).join(", ");
+    const sql = `SELECT data_iso, veiculo, payload FROM telemetria_linhas WHERE (data_iso, veiculo) IN (${tuples})`;
+    const result = await query(sql, params);
+    result.rows.forEach((r) => {
+      mapa.set(
+        `${normalizarDataIsoResposta(r.data_iso)}|${r.veiculo}`,
+        r.payload
+      );
+    });
+  }
+  return mapa;
+}
+
+async function upsertTelemetriaLote(registros, origemArquivo, email) {
+  if (!registros.length) return 0;
+  const params = [];
+  const values = registros.map((reg, idx) => {
+    const base = idx * 5;
+    params.push(reg.dataIso, reg.veiculo, JSON.stringify(reg.payloadFinal), origemArquivo || null, email || null);
+    return `($${base + 1}::date, $${base + 2}, $${base + 3}::jsonb, $${base + 4}, $${base + 5}, NOW())`;
+  }).join(", ");
+  await query(
+    `INSERT INTO telemetria_linhas (data_iso, veiculo, payload, origem_arquivo, atualizado_por, atualizado_em)
+     VALUES ${values}
+     ON CONFLICT (data_iso, veiculo) DO UPDATE SET
+       payload = EXCLUDED.payload,
+       origem_arquivo = EXCLUDED.origem_arquivo,
+       atualizado_por = EXCLUDED.atualizado_por,
+       atualizado_em = NOW()`,
+    params
+  );
+  return registros.length;
 }
 
 router.get("/", requireFirebaseUser, async (req, res) => {
@@ -100,28 +145,29 @@ router.post("/import", requireFirebaseUser, async (req, res) => {
       mapaImport.set(key, prev ? mesclarPayloadTelemetria(prev, clean) : clean);
     }
 
-    let inseridos = 0;
-    for (const [key, mergedIncoming] of mapaImport) {
+    const chaves = [...mapaImport.entries()].map(([key]) => {
       const [dataIso, veiculo] = key.split("|");
-      const existente = await query(
-        `SELECT payload FROM telemetria_linhas WHERE data_iso = $1::date AND veiculo = $2`,
-        [dataIso, veiculo]
-      );
-      const payloadFinal = existente.rows[0]?.payload
-        ? mesclarPayloadTelemetria(existente.rows[0].payload, mergedIncoming)
+      return [dataIso, veiculo];
+    });
+    const existentes = await buscarPayloadsExistentes(chaves);
+
+    const registros = [...mapaImport.entries()].map(([key, mergedIncoming]) => {
+      const [dataIso, veiculo] = key.split("|");
+      const payloadFinal = existentes.has(key)
+        ? mesclarPayloadTelemetria(existentes.get(key), mergedIncoming)
         : mergedIncoming;
-      await query(
-        `INSERT INTO telemetria_linhas (data_iso, veiculo, payload, origem_arquivo, atualizado_por, atualizado_em)
-         VALUES ($1::date, $2, $3::jsonb, $4, $5, NOW())
-         ON CONFLICT (data_iso, veiculo) DO UPDATE SET
-           payload = EXCLUDED.payload,
-           origem_arquivo = EXCLUDED.origem_arquivo,
-           atualizado_por = EXCLUDED.atualizado_por,
-           atualizado_em = NOW()`,
-        [dataIso, veiculo, JSON.stringify(payloadFinal), origemArquivo || null, req.user?.email || null]
+      return { dataIso, veiculo, payloadFinal };
+    });
+
+    let inseridos = 0;
+    for (let i = 0; i < registros.length; i += LOTE_UPSERT) {
+      inseridos += await upsertTelemetriaLote(
+        registros.slice(i, i + LOTE_UPSERT),
+        origemArquivo,
+        req.user?.email || null
       );
-      inseridos++;
     }
+
     res.json({ ok: true, inseridos, total: linhas.length, unificados: mapaImport.size });
   } catch (err) {
     res.status(500).json({ ok: false, erro: err.message });

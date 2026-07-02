@@ -784,7 +784,9 @@ async function salvarAws(linhasImport, nomeArquivo, meta) {
     let ultimoErro = "erro ao salvar";
     for (let i = 0; i < 3; i++) {
       try {
-        const res = await importarTelemetriaAws(payload, nomeArquivo);
+        const res = await importarTelemetriaAws(payload, nomeArquivo, (lote, total, linhas) => {
+          $("statusUpload").textContent = `Salvando ${nomeArquivo} na AWS… lote ${lote}/${total} (${linhas} linhas)`;
+        });
         return { ok: true, inseridos: res.inseridos };
       } catch (err) {
         ultimoErro = err.message || ultimoErro;
