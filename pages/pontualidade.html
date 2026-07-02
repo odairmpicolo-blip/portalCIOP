@@ -1931,8 +1931,19 @@ async function gerarPdfPontualidade() {
 
     try {
         await new Promise((r) => setTimeout(r, 80));
+        const chartTitleEl = document.getElementById('chartDynamicTitle');
+        const chartTitlePrev = chartTitleEl?.style.visibility;
+        if (chartTitleEl) chartTitleEl.style.visibility = 'hidden';
+
         const chartImageBase64 = chartInstance?.toBase64Image?.('image/png', 2) || null;
-        const subtituloPdf = (state.subtitulo || document.getElementById('dashboardSubtitle')?.innerText || '').toUpperCase();
+
+        if (chartTitleEl) chartTitleEl.style.visibility = chartTitlePrev || '';
+
+        const anoSel = document.getElementById('anoFilter')?.value;
+        const trimSel = document.getElementById('trimestreFilter')?.value;
+        const mesSel = document.getElementById('mesFilter')?.value;
+        const diaSel = document.getElementById('diaFilter')?.value;
+        const subtituloPdf = formatarSubtituloDashboard(anoSel, trimSel, mesSel, diaSel).toUpperCase();
         await window.exportarPdfPontualidade({
             meta: {
                 cenario: state.cenario,
@@ -1980,7 +1991,7 @@ window.onload = function() {
 </script>
 
 <script type="module">
-import { exportarPdfPontualidade } from '../assets/js/pontualidade-relatorio-export.js?v=20260702g';
+import { exportarPdfPontualidade } from '../assets/js/pontualidade-relatorio-export.js?v=20260702h';
 window.exportarPdfPontualidade = exportarPdfPontualidade;
 </script>
 
