@@ -117,14 +117,26 @@ export async function syncIncidentes() {
   steps.s3Pull = await baixarEstadoIncidentesS3(jsonPath);
 
   console.log("[sync] Buscando incidentes no TCGL...");
-  run(nodeBin, [path.join(scriptDir, "atualizar-incidentes-tcgl.mjs")]);
-  steps.fetch = true;
+  const fetchRes = runOpcional("TCGL", () => {
+    run(nodeBin, [path.join(scriptDir, "atualizar-incidentes-tcgl.mjs")]);
+    steps.fetch = true;
+    return { ok: true };
+  });
+  if (fetchRes?.error) {
+    warnings.push(`TCGL: ${fetchRes.error}`);
+    if (!fs.existsSync(jsonPath)) {
+      throw new Error(`Falha ao buscar TCGL e JSON existente nao encontrado: ${jsonPath}`);
+    }
+    console.warn("[sync] TCGL indisponivel; usando JSON existente para manter DSQL/portal atualizados.");
+  }
 
   if (!fs.existsSync(jsonPath)) {
     throw new Error(`JSON não gerado: ${jsonPath}`);
   }
 
-  steps.s3Push = await enviarEstadoIncidentesS3(jsonPath);
+  if (steps.fetch) {
+    steps.s3Push = await enviarEstadoIncidentesS3(jsonPath);
+  }
 
   if (publishGit) {
     const gitRes = runOpcional("git", () => {

@@ -134,11 +134,52 @@ function escreverJson(arquivo, payload) {
   console.log(`  salvo ${path.basename(arquivo)} (${kb} KB, ${payload.total?.toLocaleString("pt-BR") || 0} registros)`);
 }
 
+function lerManifestExistente() {
+  const arquivo = path.join(outputDir, "manifest.json");
+  try {
+    if (!fs.existsSync(arquivo)) return null;
+    return JSON.parse(fs.readFileSync(arquivo, "utf8"));
+  } catch (error) {
+    console.warn(`  aviso: manifest existente invalido: ${error.message || error}`);
+    return null;
+  }
+}
+
+function anosDoManifestExistente() {
+  const manifest = lerManifestExistente();
+  return Array.isArray(manifest?.anos)
+    ? manifest.anos.map((item) => parseInt(String(item), 10)).filter((item) => !Number.isNaN(item) && item >= 2000)
+    : [];
+}
+
 async function main() {
   fs.mkdirSync(outputDir, { recursive: true });
   console.log("Atualizando snapshots JSON da folha de serviço...");
-  const anos = await buscarAnos();
-  if (!anos.length) throw new Error("Nenhum ano encontrado na planilha.");
+  let anos = [];
+  try {
+    anos = await buscarAnos();
+  } catch (error) {
+    const anosExistentes = anosDoManifestExistente();
+    if (anosExistentes.length) {
+      console.warn(
+        "Aviso: falha ao listar anos da folha (" + (error.message || error) + "). " +
+        "Mantendo snapshots existentes: " + anosExistentes.join(", ") + "."
+      );
+      return;
+    }
+    throw error;
+  }
+  if (!anos.length) {
+    const anosExistentes = anosDoManifestExistente();
+    if (anosExistentes.length) {
+      console.warn(
+        "Aviso: API da folha retornou zero anos. Mantendo snapshots existentes: " +
+        anosExistentes.join(", ") + "."
+      );
+      return;
+    }
+    throw new Error("Nenhum ano encontrado na planilha e nao ha snapshot existente para manter.");
+  }
 
   const totais = {};
   for (const ano of anos) {
