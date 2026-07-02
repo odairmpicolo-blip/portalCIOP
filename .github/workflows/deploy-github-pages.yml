@@ -95,11 +95,11 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     needs: build
     environment:
       name: github-pages
-      url: ${{ steps.deploy_try1.outputs.page_url }}
+      url: ${{ steps.deploy_try1.outputs.page_url || steps.deploy_try2.outputs.page_url || steps.deploy_try3.outputs.page_url }}
     steps:
       - name: Publicar (tentativa 1)
         id: deploy_try1
@@ -107,16 +107,20 @@ jobs:
         continue-on-error: true
 
       - name: Aguardar fila do Pages
-        if: steps.deploy_try1.outcome == 'failure'
+        if: steps.deploy_try1.outcome != 'success'
         run: sleep 90
 
       - name: Publicar (tentativa 2)
         id: deploy_try2
-        if: steps.deploy_try1.outcome == 'failure'
+        if: steps.deploy_try1.outcome != 'success'
         uses: actions/deploy-pages@v4
         continue-on-error: true
 
       - name: Publicar (tentativa 3)
         id: deploy_try3
-        if: steps.deploy_try1.outcome == 'failure' && steps.deploy_try2.outcome == 'failure'
+        if: steps.deploy_try1.outcome != 'success' && steps.deploy_try2.outcome != 'success'
         uses: actions/deploy-pages@v4
+
+      - name: Falhar se nenhuma publicação concluiu
+        if: steps.deploy_try1.outcome != 'success' && steps.deploy_try2.outcome != 'success' && steps.deploy_try3.outcome != 'success'
+        run: exit 1
