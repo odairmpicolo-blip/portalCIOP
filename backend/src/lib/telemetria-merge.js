@@ -22,7 +22,22 @@ export function valorPreenchidoMerge(v) {
 export function parseNumeroMerge(val) {
   const s = String(val ?? "").trim();
   if (!s) return NaN;
-  const n = Number(s.replace(/\./g, "").replace(",", "."));
+  const hasComma = s.includes(",");
+  const hasDot = s.includes(".");
+  let normalized = s;
+  if (hasComma && hasDot) {
+    if (s.lastIndexOf(",") > s.lastIndexOf(".")) {
+      normalized = s.replace(/\./g, "").replace(",", ".");
+    } else {
+      normalized = s.replace(/,/g, "");
+    }
+  } else if (hasComma) {
+    normalized = s.replace(/\./g, "").replace(",", ".");
+  } else if (hasDot) {
+    const parts = s.split(".");
+    normalized = parts.length > 2 ? parts.join("") : s;
+  }
+  const n = Number(normalized);
   return Number.isNaN(n) ? NaN : n;
 }
 
@@ -31,6 +46,7 @@ export function estrategiaColunaTelemetria(col) {
   if (["cliente", "veiculo", "data", "data iso", "veiculo norm"].includes(n)) return "fixo";
   if (n === "inicio" || n === "start time local") return "min";
   if (n === "fim" || n === "end time local") return "max";
+  if (n.includes("horas motor")) return "fixo";
   return "soma";
 }
 
@@ -99,28 +115,28 @@ export function mesclarLinhasTelemetria(atual, nova) {
 export const COLUNAS_EXCLUIDAS_CLEVER = new Set([
   "customer id",
   "avg cabin temp",
-  "daily engine hours",
   "avg fuel economy"
 ]);
 
 export const MAP_COLUNAS_EN_PT = {
-  "vehicle id": "Veículo",
+  "vehicle id": "Veiculo",
   "date": "Data",
   "start time local": "Inicio",
   "end time local": "Fim",
-  "number of events": "Eventos",
-  "start distance": "KM/Inicial",
-  "end distance": "KM/Final",
-  "daily distance": "Distância",
-  "daily fuel consumption l": "Quant. Combustivel",
-  "daily avg km per liter": "Média Km/l",
-  "avg speed": "Veloc. Média",
-  "max speed": "Veloc. Máxima",
-  "avg engine temp": "Temp. Méd. Motor",
-  "max engine temp": "Temp. Máx. Motor",
-  "avg ambient temp": "Temp. Méd. Externa",
-  "avg air pressure": "Barómetro Méd.",
-  "max air pressure": "Barómetro Máx."
+  "number of events": "Registros CAN",
+  "start distance": "Km Inicial",
+  "end distance": "Km Final",
+  "daily distance": "Km Percorrido",
+  "daily fuel consumption l": "Consumo Combustivel (L)",
+  "daily engine hours": "Horas Motor",
+  "daily avg km per liter": "Media Km/L",
+  "avg speed": "Velocidade Media",
+  "max speed": "Velocidade Maxima",
+  "avg engine temp": "Temperatura Motor Media",
+  "max engine temp": "Temperatura Motor Maxima",
+  "avg ambient temp": "Temperatura Ambiente Media",
+  "avg air pressure": "Pressao Ar Media",
+  "max air pressure": "Pressao Ar Maxima"
 };
 
 export function colunaCleverExcluida(nome) {
@@ -132,43 +148,22 @@ export function nomeColunaClever(nome) {
   return MAP_COLUNAS_EN_PT[normChaveMerge(nome)] || null;
 }
 
-export const RENOMEAR_COLUNAS_LEGADO = {
-  "veiculo": "Veículo",
-  "cliente": null,
-  "registros can": "Eventos",
-  "registro can": "Eventos",
-  "km inicial": "KM/Inicial",
-  "km final": "KM/Final",
-  "km percorrido": "Distância",
-  "consumo combustivel l": "Quant. Combustivel",
-  "consumo combustivel": "Quant. Combustivel",
-  "media km l": "Média Km/l",
-  "media km/l": "Média Km/l",
-  "velocidade media": "Veloc. Média",
-  "velocidade maxima": "Veloc. Máxima",
-  "temperatura motor media": "Temp. Méd. Motor",
-  "temperatura motor maxima": "Temp. Máx. Motor",
-  "temperatura ambiente media": "Temp. Méd. Externa",
-  "pressao ar media": "Barómetro Méd.",
-  "pressao ar maxima": "Barómetro Máx.",
-  "temperatura cabine media": null,
-  "avg cabin temp": null,
-  "customer id": null
-};
+export const COLUNAS_OCULTAS_TELEMETRIA = new Set([
+  "cliente",
+  "customer id",
+  "temperatura cabine media",
+  "avg cabin temp"
+]);
 
 export function normalizarColunaTelemetria(nome) {
-  const chave = normChaveMerge(nome);
+  const original = String(nome || "").trim();
+  if (!original) return null;
+  const chave = normChaveMerge(original);
   if (COLUNAS_EXCLUIDAS_CLEVER.has(chave)) return null;
-  const legado = Object.prototype.hasOwnProperty.call(RENOMEAR_COLUNAS_LEGADO, chave)
-    ? RENOMEAR_COLUNAS_LEGADO[chave]
-    : undefined;
-  if (legado === null) return null;
-  if (legado) return legado;
+  if (COLUNAS_OCULTAS_TELEMETRIA.has(chave)) return null;
   const clever = MAP_COLUNAS_EN_PT[chave];
   if (clever) return clever;
-  const valores = new Set(Object.values(MAP_COLUNAS_EN_PT));
-  if (valores.has(nome)) return nome;
-  return nome;
+  return original;
 }
 
 export function normalizarLinhaTelemetria(row) {

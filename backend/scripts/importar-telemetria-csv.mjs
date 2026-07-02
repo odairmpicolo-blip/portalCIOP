@@ -1,18 +1,19 @@
 /**
- * Importa CSV(s) Clever/TCGL direto no Aurora DSQL (sem API Gateway).
+ * Importa CSV/XLSX Clever/TCGL direto no Aurora DSQL (sem API Gateway).
  *
  * Uso:
  *   DSQL_CLUSTER_ID=ort34httzig7iktrneb4ytcy5u DSQL_REGION=sa-east-1 \
- *     node backend/scripts/importar-telemetria-csv.mjs /caminho/pasta-ou-arquivo.csv
+ *     node backend/scripts/importar-telemetria-csv.mjs /caminho/pasta-ou-arquivo
  */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import XLSX from "xlsx";
 import { query, closePool } from "../src/db.js";
 import {
   agregarLinhasTelemetria,
   mesclarLinhasTelemetria,
-  nomeColunaClever,
+  normalizarColunaTelemetria,
   normChaveMerge
 } from "../src/lib/telemetria-merge.js";
 
@@ -73,22 +74,51 @@ function parseCsv(texto) {
   return linhas;
 }
 
-function converterCsv(texto) {
-  const linhas = parseCsv(texto);
+function encontrarLinhaCabecalho(linhas) {
+  const chavesVeiculo = ["veiculo", "vehicle id", "vehicle"];
+  for (let i = 0; i < Math.min(linhas.length, 8); i++) {
+    const row = linhas[i] || [];
+    const textos = row.map((c) => normChave(String(c ?? "").trim())).filter(Boolean);
+    if (textos.some((t) => chavesVeiculo.includes(t) || t.includes("veiculo"))) return i;
+  }
+  return 0;
+}
+
+function valorPreenchido(v) {
+  const s = String(v ?? "").trim();
+  if (!s) return false;
+  const low = s.toLowerCase();
+  return !["-", "—", "n/a", "na", "null", "undefined", "#n/a"].includes(low);
+}
+
+function converterPlanilha(linhas) {
   if (!linhas.length) return { headers: [], rows: [] };
+  const idx = encontrarLinhaCabecalho(linhas);
   const pares = [];
-  linhas[0].forEach((h, i) => {
-    const col = nomeColunaClever(String(h).trim());
+  (linhas[idx] || []).forEach((h, i) => {
+    const col = normalizarColunaTelemetria(String(h).trim());
     if (col) pares.push({ i, col });
   });
-  const rows = linhas.slice(1).map((cols) => {
+  const rows = linhas.slice(idx + 1).map((cols) => {
     const obj = {};
     pares.forEach(({ i, col }) => {
       obj[col] = cols[i] != null ? String(cols[i]).trim() : "";
     });
     return obj;
-  });
+  }).filter((row) => Object.values(row).some(valorPreenchido));
   return { headers: [...new Set(pares.map((p) => p.col))], rows };
+}
+
+function converterCsv(texto) {
+  const linhas = parseCsv(texto);
+  return converterPlanilha(linhas);
+}
+
+function converterXlsx(buf) {
+  const wb = XLSX.read(buf, { type: "buffer", cellDates: true });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const linhas = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
+  return converterPlanilha(linhas);
 }
 
 function detectarColunaVeiculo(headers) {
@@ -174,15 +204,16 @@ function listarArquivos(alvo) {
   const st = fs.statSync(alvo);
   if (st.isFile()) return [alvo];
   return fs.readdirSync(alvo)
-    .filter((f) => /\.csv$/i.test(f))
+    .filter((f) => /\.(csv|xlsx)$/i.test(f))
     .map((f) => path.join(alvo, f))
     .sort();
 }
 
 async function importarArquivo(arquivo) {
   const nome = path.basename(arquivo);
-  const texto = fs.readFileSync(arquivo, "utf8");
-  const { headers, rows } = converterCsv(texto);
+  const { headers, rows } = /\.xlsx$/i.test(arquivo)
+    ? converterXlsx(fs.readFileSync(arquivo))
+    : converterCsv(fs.readFileSync(arquivo, "utf8"));
   if (!rows.length) {
     console.warn(`  ${nome}: sem linhas`);
     return 0;
@@ -214,12 +245,12 @@ async function importarArquivo(arquivo) {
 async function main() {
   const alvo = process.argv[2];
   if (!alvo || !fs.existsSync(alvo)) {
-    console.error("Uso: node importar-telemetria-csv.mjs <pasta-ou-arquivo.csv>");
+    console.error("Uso: node importar-telemetria-csv.mjs <pasta-ou-arquivo.csv|.xlsx>");
     process.exit(1);
   }
   const arquivos = listarArquivos(alvo);
   if (!arquivos.length) {
-    console.error("Nenhum .csv encontrado.");
+    console.error("Nenhum .csv ou .xlsx encontrado.");
     process.exit(1);
   }
   console.log(`Importando ${arquivos.length} arquivo(s)…`);

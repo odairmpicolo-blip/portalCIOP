@@ -9,7 +9,6 @@ import { carregarSnapshotTelemetriaJson } from "./telemetria-dados-leitura.js";
 import { initPortalAwsRuntime } from "./portal-aws-config.js";
 import {
   agregarLinhasTelemetria,
-  nomeColunaClever,
   normalizarLinhaTelemetria,
   normalizarColunaTelemetria
 } from "./telemetria-merge.js";
@@ -26,10 +25,10 @@ const CHAVES_VEICULO = [
 const CHAVES_DATA = ["data", "date", "dia", "dt", "data_ref", "data referencia"];
 
 const KPI_DEFS = [
-  { id: "can", rotulos: ["eventos", "registros can", "number of events"] },
-  { id: "kmInicial", rotulos: ["km/inicial", "km inicial", "start distance"] },
-  { id: "kmFinal", rotulos: ["km/final", "km final", "end distance"] },
-  { id: "kmPercorrido", rotulos: ["distancia", "distância", "km percorrido", "daily distance"] }
+  { id: "can", rotulos: ["registros can", "eventos", "number of events"] },
+  { id: "kmInicial", rotulos: ["km inicial", "km/inicial", "start distance"] },
+  { id: "kmFinal", rotulos: ["km final", "km/final", "end distance"] },
+  { id: "kmPercorrido", rotulos: ["km percorrido", "distancia", "distância", "daily distance"] }
 ];
 
 const COLUNAS_OCULTAS = [
@@ -53,19 +52,20 @@ const COLUNAS_TABELA = [
   "Data",
   "Inicio",
   "Fim",
-  "Eventos",
-  "KM/Inicial",
-  "KM/Final",
-  "Distância",
-  "Quant. Combustivel",
-  "Média Km/l",
-  "Veloc. Média",
-  "Veloc. Máxima",
-  "Temp. Méd. Motor",
-  "Temp. Máx. Motor",
-  "Temp. Méd. Externa",
-  "Barómetro Méd.",
-  "Barómetro Máx."
+  "Registros CAN",
+  "Km Inicial",
+  "Km Final",
+  "Km Percorrido",
+  "Consumo Combustivel (L)",
+  "Horas Motor",
+  "Media Km/L",
+  "Velocidade Media",
+  "Velocidade Maxima",
+  "Temperatura Motor Media",
+  "Temperatura Motor Maxima",
+  "Temperatura Ambiente Media",
+  "Pressao Ar Media",
+  "Pressao Ar Maxima"
 ];
 
 function colunaOculta(nome) {
@@ -91,7 +91,23 @@ function colunaChave(col) {
 function parseNumero(val) {
   const s = String(val ?? "").trim();
   if (!s) return NaN;
-  return Number(s.replace(/\./g, "").replace(",", "."));
+  const hasComma = s.includes(",");
+  const hasDot = s.includes(".");
+  let normalized = s;
+  if (hasComma && hasDot) {
+    if (s.lastIndexOf(",") > s.lastIndexOf(".")) {
+      normalized = s.replace(/\./g, "").replace(",", ".");
+    } else {
+      normalized = s.replace(/,/g, "");
+    }
+  } else if (hasComma) {
+    normalized = s.replace(/\./g, "").replace(",", ".");
+  } else if (hasDot) {
+    const parts = s.split(".");
+    normalized = parts.length > 2 ? parts.join("") : s;
+  }
+  const n = Number(normalized);
+  return Number.isNaN(n) ? NaN : n;
 }
 
 function formatarInteiro(val) {
@@ -108,7 +124,14 @@ function formatarDecimal(val, dec = 2) {
 
 function colunaTemperatura(nome) {
   const n = colunaChave(nome);
-  return n.includes("temp.");
+  return n.includes("temperatura");
+}
+
+function formatarConsumoLitros(val) {
+  let n = parseNumero(val);
+  if (Number.isNaN(n)) return String(val ?? "").trim();
+  if (n > 100) n /= 1000;
+  return `${formatarDecimal(n)} L`;
 }
 
 function formatarCelula(col, val, row) {
@@ -130,14 +153,16 @@ function formatarCelula(col, val, row) {
     const iso = parseDataCsv(s) || dataIso;
     return iso ? formatarDataBr(iso) : s;
   }
-  if (n === "eventos" || n === "km/inicial" || n === "km inicial" || n === "km/final" || n === "km final" || n === "distancia") {
+  if (n === "registros can" || n === "eventos") return formatarInteiro(s);
+  if (n === "km inicial" || n === "km final" || n === "km percorrido" || n === "distancia") {
     return formatarInteiro(s);
   }
-  if (n === "quant. combustivel") return `${formatarDecimal(s)}L`;
-  if (n === "media km/l") return `${formatarDecimal(s)} km/l`;
-  if (n.includes("veloc")) return `${formatarInteiro(s)} Km/h`;
+  if (n.includes("consumo combustivel")) return formatarConsumoLitros(s);
+  if (n === "horas motor") return formatarDecimal(s, 1);
+  if (n.includes("media km")) return `${formatarDecimal(s)} km/l`;
+  if (n.includes("velocidade")) return `${formatarInteiro(s)} Km/h`;
   if (colunaTemperatura(col)) return `${formatarInteiro(s)}ºc`;
-  if (n.includes("barometro")) return `${formatarInteiro(s)} bar`;
+  if (n.includes("pressao ar")) return `${formatarInteiro(s)}`;
   return s;
 }
 
@@ -162,7 +187,36 @@ function normChave(s) {
 }
 
 function nomeColunaPadrao(nome) {
-  return normalizarColunaTelemetria(nomeColunaClever(nome) || nome);
+  return normalizarColunaTelemetria(nome);
+}
+
+function encontrarLinhaCabecalho(linhas) {
+  const chavesVeiculo = ["veiculo", "vehicle id", "vehicle"];
+  for (let i = 0; i < Math.min(linhas.length, 8); i++) {
+    const row = linhas[i] || [];
+    const textos = row.map((c) => normChave(String(c ?? "").trim())).filter(Boolean);
+    if (textos.some((t) => chavesVeiculo.includes(t) || t.includes("veiculo"))) return i;
+  }
+  return 0;
+}
+
+function converterLinhasPlanilha(linhas) {
+  if (!linhas.length) return { headers: [], rows: [] };
+  const idx = encontrarLinhaCabecalho(linhas);
+  const pares = [];
+  (linhas[idx] || []).forEach((h, i) => {
+    const col = nomeColunaPadrao(String(h).trim());
+    if (col) pares.push({ i, col });
+  });
+  const headers = [...new Set(pares.map((p) => p.col))];
+  const rows = linhas.slice(idx + 1).map((cols) => {
+    const obj = {};
+    pares.forEach(({ i, col }) => {
+      obj[col] = cols[i] != null ? String(cols[i]).trim() : "";
+    });
+    return obj;
+  }).filter((row) => Object.values(row).some(valorPreenchido));
+  return { headers, rows };
 }
 
 function normVeiculo(v) {
@@ -221,21 +275,7 @@ function parseCsv(texto) {
 }
 
 function converterLinhasCsv(linhas) {
-  if (!linhas.length) return { headers: [], rows: [] };
-  const pares = [];
-  linhas[0].forEach((h, i) => {
-    const col = nomeColunaPadrao(String(h).trim());
-    if (col) pares.push({ i, col });
-  });
-  const headers = [...new Set(pares.map((p) => p.col))];
-  const rows = linhas.slice(1).map((cols) => {
-    const obj = {};
-    pares.forEach(({ i, col }) => {
-      obj[col] = cols[i] != null ? String(cols[i]).trim() : "";
-    });
-    return obj;
-  });
-  return { headers, rows };
+  return converterLinhasPlanilha(linhas);
 }
 
 function detectarColunaVeiculo(headers) {
@@ -929,7 +969,7 @@ function renderizar() {
   $("painelResultado").hidden = false;
   if (!dadosBrutos?.rows?.length) {
     renderResumoVazio();
-    renderTabelaVazia("Nenhum registro no período. Use + CSV para lançar novos dados.");
+    renderTabelaVazia("Nenhum registro no período. Use + XLSX para lançar novos dados.");
     return;
   }
   const cols = colunasSelecionadas();
@@ -1083,7 +1123,7 @@ function mostrarErroCarregamento(motivo) {
   renderResumoVazio();
   renderTabelaVazia(auth
     ? "Sessão expirada. Saia, entre de novo e clique em Tentar novamente."
-    : `Sem dados no banco (${msg}). Use + CSV para lançar.`);
+    : `Sem dados no banco (${msg}). Use + XLSX para lançar.`);
   if (auth) {
     const corpo = $("tabelaDadosCorpo");
     if (corpo) {
@@ -1095,7 +1135,7 @@ function mostrarErroCarregamento(motivo) {
     await renovarSessaoTelemetria();
     const res = await carregarAws({ tentativas: 4, authTentativas: 15 });
     if (res.ok) {
-      $("statusUpload").textContent = "Pronto para lançar novo CSV";
+      $("statusUpload").textContent = "Pronto para lançar nova planilha";
       $("statusUpload").className = "status-upload muted";
       renderizar();
       return;
@@ -1136,10 +1176,9 @@ function incorporarCsv(parsed, nomeArquivo) {
   persistirCacheTelemetria();
 }
 
-async function processarTextoCsv(texto, nomeArquivo) {
-  const parsed = converterLinhasCsv(parseCsv(texto));
-  if (!parsed.headers.length) throw new Error("CSV sem cabeçalho válido.");
-  if (!parsed.rows.length) throw new Error("CSV sem linhas de dados.");
+async function processarPlanilha(parsed, nomeArquivo) {
+  if (!parsed.headers.length) throw new Error("Planilha sem cabeçalho válido.");
+  if (!parsed.rows.length) throw new Error("Planilha sem linhas de dados.");
 
   const colVeiculo = detectarColunaVeiculo(parsed.headers);
   const colData = detectarColunaData(parsed.headers);
@@ -1166,10 +1205,31 @@ async function processarTextoCsv(texto, nomeArquivo) {
   }
 }
 
+async function processarTextoCsv(texto, nomeArquivo) {
+  const parsed = converterLinhasCsv(parseCsv(texto));
+  await processarPlanilha(parsed, nomeArquivo);
+}
+
+async function processarXlsx(buffer, nomeArquivo) {
+  if (typeof XLSX === "undefined") throw new Error("Biblioteca XLSX não carregada.");
+  const wb = XLSX.read(buffer, { type: "array", cellDates: true });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const linhas = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
+  const parsed = converterLinhasPlanilha(linhas);
+  await processarPlanilha(parsed, nomeArquivo);
+}
+
+function arquivoTelemetriaValido(file) {
+  if (!file) return false;
+  return /\.(csv|xlsx)$/i.test(file.name)
+    || file.type === "text/csv"
+    || file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+}
+
 function lerArquivos(fileList) {
-  const files = [...(fileList || [])].filter((f) => f && (/\.csv$/i.test(f.name) || f.type === "text/csv"));
+  const files = [...(fileList || [])].filter(arquivoTelemetriaValido);
   if (!files.length) {
-    $("msgVazio").textContent = "Selecione um ou mais arquivos .csv";
+    $("msgVazio").textContent = "Selecione um ou mais arquivos .xlsx ou .csv";
     return;
   }
   (async () => {
@@ -1187,22 +1247,27 @@ function lerArquivos(fileList) {
 
 async function lerArquivo(file) {
   if (!file) return;
-  if (!/\.csv$/i.test(file.name) && file.type !== "text/csv") {
-    $("msgVazio").textContent = "Selecione um arquivo .csv";
+  if (!arquivoTelemetriaValido(file)) {
+    $("msgVazio").textContent = "Selecione um arquivo .xlsx ou .csv";
     return;
   }
   $("statusUpload").textContent = `Lendo ${file.name}...`;
   $("statusUpload").className = "status-upload muted";
-  const reader = new FileReader();
-  await new Promise((resolve, reject) => {
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("Não foi possível ler o arquivo."));
-    reader.readAsText(file, "UTF-8");
-  });
   try {
-    await processarTextoCsv(String(reader.result || ""), file.name);
+    if (/\.xlsx$/i.test(file.name)) {
+      const buffer = await file.arrayBuffer();
+      await processarXlsx(buffer, file.name);
+    } else {
+      const reader = new FileReader();
+      const texto = await new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("Não foi possível ler o arquivo."));
+        reader.readAsText(file, "UTF-8");
+      });
+      await processarTextoCsv(String(texto || ""), file.name);
+    }
   } catch (err) {
-    $("statusUpload").textContent = err.message || "Falha ao processar o CSV.";
+    $("statusUpload").textContent = err.message || "Falha ao processar o arquivo.";
     $("statusUpload").className = "status-upload warn";
   }
 }
@@ -1276,11 +1341,11 @@ async function iniciar() {
 
   $("btnLimparFiltros")?.addEventListener("click", () => limparFiltros());
 
-  $("statusUpload").textContent = "Pronto para lançar novo CSV";
+  $("statusUpload").textContent = "Pronto para lançar nova planilha";
   $("statusUpload").className = "status-upload muted";
   const carregou = await carregarAwsInicial();
   if (carregou.ok) {
-    $("statusUpload").textContent = "Pronto para lançar novo CSV";
+    $("statusUpload").textContent = "Pronto para lançar nova planilha";
     $("statusUpload").className = "status-upload muted";
   } else if (restaurarCacheTelemetria()) {
     // cache local exibido enquanto AWS indisponível
@@ -1289,7 +1354,7 @@ async function iniciar() {
     renderizar();
   } else {
     mostrarErroCarregamento(carregou.motivo);
-    $("statusUpload").textContent = "Pronto para lançar novo CSV";
+    $("statusUpload").textContent = "Pronto para lançar nova planilha";
     $("statusUpload").className = "status-upload muted";
   }
 }
