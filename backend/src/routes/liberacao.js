@@ -18,6 +18,20 @@ function sanitizarPayload(row, dataIso) {
   return payload;
 }
 
+function dataIsoDb(value) {
+  if (!value) return "";
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+}
+
+function payloadLinhaDsql(row) {
+  const payload = row?.payload && typeof row.payload === "object" ? { ...row.payload } : {};
+  const rowId = String(row?.row_id || "").trim();
+  if (rowId && !payload._row) payload._row = rowId;
+  if (!payload.data_iso) payload.data_iso = dataIsoDb(row?.data_iso);
+  return payload;
+}
+
 async function upsertLinha(dataIso, rowId, payload, origem) {
   await query(
     `INSERT INTO liberacao_linhas (data_iso, row_id, payload, atualizado_por, atualizado_em)
@@ -54,12 +68,12 @@ router.get("/", requireFirebaseUser, async (req, res) => {
   }
   try {
     const result = await query(
-      `SELECT payload FROM liberacao_linhas
+      `SELECT data_iso, row_id, payload FROM liberacao_linhas
        WHERE data_iso >= $1::date AND data_iso <= $2::date
        ORDER BY data_iso, row_id`,
       [dataDe, dataAte]
     );
-    const dados = result.rows.map((r) => r.payload);
+    const dados = result.rows.map(payloadLinhaDsql);
     res.json({ ok: true, dados, total: dados.length, origem: "aws" });
   } catch (err) {
     res.status(500).json({ ok: false, erro: err.message });
@@ -128,14 +142,14 @@ router.post("/sync-dia/:dataIso", requireFirebaseUser, async (req, res) => {
   try {
     const total = await importarPlanilhaParaDsql(dataIso, dataIso, req.user?.email || "sync-dia");
     const result = await query(
-      `SELECT payload FROM liberacao_linhas
+      `SELECT data_iso, row_id, payload FROM liberacao_linhas
        WHERE data_iso = $1::date ORDER BY row_id`,
       [dataIso]
     );
     res.json({
       ok: true,
       total,
-      dados: result.rows.map((r) => r.payload)
+      dados: result.rows.map(payloadLinhaDsql)
     });
   } catch (err) {
     res.status(500).json({ ok: false, erro: err.message });
