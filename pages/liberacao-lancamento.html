@@ -273,6 +273,7 @@ const LIBERACAO_DATA_BASE = "../assets/data/liberacao";
 const LIBERACAO_MANIFEST_URL = LIBERACAO_DATA_BASE + "/manifest.json";
 const LIBERACAO_ACOMPANHAMENTO_URL = LIBERACAO_DATA_BASE + "/acompanhamento-semana.json";
 const PLANILHA_FETCH_TIMEOUT_MS = 120000;
+const LINHA_RECEM_SALVA_TTL_MS = 60000;
 let liberacaoManifest = null;
 let carregamentoEmAndamento = false;
 let atualizacaoPlanilhaEmAndamento = false;
@@ -286,6 +287,7 @@ let eventosTabelaIniciados = false;
 let cabecalhoRenderizado = false;
 let cacheGravacaoTimer = null;
 let awsLiberacaoMod = null;
+const linhasRecemSalvas = new Map();
 const state = {
     colunas: COLUNAS_EXIBICAO,
     semana: [],
@@ -1178,11 +1180,17 @@ async function salvarLinha(i){
     delete state.saveTimers[i];
     syncLinhaFromDom(i);
     const row=state.dados[i];
-    if(!row||!row._row) return;
+    const rowId=rowIdLiberacao(row);
+    if(!row||!rowId){
+        if(row) row._syncErro=true;
+        document.querySelectorAll('[data-i="'+i+'"]').forEach(el=>{el.classList.remove("saving");el.classList.add("erro");});
+        setStatus("Linha sem identificador da planilha. Atualize os dados e tente novamente.","erro");
+        return;
+    }
     aplicarFormulasLinha(row);
     state.saving[i]=true;
     document.querySelector(".sync-"+i).innerHTML=syncBadge(row,i);
-    const payload={action:"update",_row:String(row._row)};
+    const payload={action:"update",_row:rowId};
     CAMPOS_EDITAVEIS.forEach(chave=>{
         payload[chave]=val(row,chave)||"";
     });
@@ -1194,20 +1202,22 @@ async function salvarLinha(i){
     delete dsqlPayload._dirty;
     delete dsqlPayload._syncErro;
     delete dsqlPayload._ultimoCampoEditado;
-    dsqlPayload._row=row._row;
+    dsqlPayload._row=rowId;
     dsqlPayload.data_iso=dataIso;
     try{
         await salvarPlanilhaLinha(payload);
+        registrarLinhaRecemSalva(rowId,dsqlPayload);
         if(LIBERACAO_FLUXO_AWS&&await liberacaoAwsAtiva()){
             const aws=await moduloLiberacaoAws();
-            aws.salvarLinhaLiberacaoAws(dataIso,row._row,dsqlPayload).catch(()=>{});
+            try{ await aws.salvarLinhaLiberacaoAws(dataIso,rowId,dsqlPayload); }catch(err){ console.warn("DSQL liberação:",err); }
             aws.importarPlanilhaLiberacaoAws(dataIso).catch(()=>{});
             setTimeout(()=>{
                 aws.carregarJanelaLiberacaoAws(dataIso,dataIso).then(pack=>{
-                    const atualizado=(pack?.dados||[]).find(r=>String(r._row)===String(row._row));
+                    const atualizado=(pack?.dados||[]).find(r=>rowIdLiberacao(r)===rowId);
                     if(!atualizado) return;
-                    Object.assign(row,atualizado);
-                    const idxSem=state.semana.findIndex(r=>r._row===row._row);
+                    if(!retornoConfirmaLinhaRecemSalva(rowId,atualizado)) return;
+                    Object.assign(row,mesclarLinhaLiberacao(row,atualizado));
+                    const idxSem=state.semana.findIndex(r=>rowIdLiberacao(r)===rowId);
                     if(idxSem>=0) state.semana[idxSem]=row;
                     atualizarLinhaPosSalvar(i);
                 }).catch(()=>{});
@@ -1215,7 +1225,7 @@ async function salvarLinha(i){
         }
         row._dirty=false;
         row._syncErro=false;
-        const idxSem=state.semana.findIndex(r=>r._row===row._row);
+        const idxSem=state.semana.findIndex(r=>rowIdLiberacao(r)===rowId);
         if(idxSem>=0) state.semana[idxSem]=row;
         if(state.semana.length) salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte});
         atualizarLinhaPosSalvar(i);
@@ -1329,7 +1339,8 @@ async function carregarManifestLiberacao(){
 }
 
 function chaveLinhaLiberacao(row){
-    if(row?._row) return "_row:"+row._row;
+    const rowId=rowIdLiberacao(row);
+    if(rowId) return "_row:"+rowId;
     return [
         normalizarDataIsoRow(row),
         row?.maquina||"",
@@ -1337,6 +1348,9 @@ function chaveLinhaLiberacao(row){
         row?.work_id||"",
         row?.carro||""
     ].join("|");
+}
+function rowIdLiberacao(row){
+    return String(row?._row||row?.row_id||row?.rowId||row?.rowNumber||row?.linhaPlanilha||"").trim();
 }
 
 function celulaLancamentoPreenchida(v){
@@ -1356,6 +1370,29 @@ function contarLancamentosDia(dados,data){
 }
 function contarLinhasDia(dados,data){
     return (dados||[]).filter(r=>normalizarDataIsoRow(r)===data).length;
+}
+function valoresEditaveisLinha(row){
+    const out={};
+    CAMPOS_EDITAVEIS.forEach(k=>{out[k]=String(row?.[k]??"").trim();});
+    return out;
+}
+function registrarLinhaRecemSalva(rowId,row){
+    if(!rowId) return;
+    linhasRecemSalvas.set(String(rowId),{
+        ate:Date.now()+LINHA_RECEM_SALVA_TTL_MS,
+        valores:valoresEditaveisLinha(row)
+    });
+}
+function retornoConfirmaLinhaRecemSalva(rowId,novo){
+    const salvo=linhasRecemSalvas.get(String(rowId));
+    if(!salvo) return true;
+    if(Date.now()>salvo.ate){
+        linhasRecemSalvas.delete(String(rowId));
+        return true;
+    }
+    const confirmado=Object.keys(salvo.valores).every(k=>String(novo?.[k]??"").trim()===salvo.valores[k]);
+    if(confirmado) linhasRecemSalvas.delete(String(rowId));
+    return confirmado;
 }
 function mesclarLinhaLiberacao(base,novo){
     if(!base) return Object.assign({},novo);
@@ -1379,6 +1416,8 @@ function mesclarSemana(base, novos){
         const k=chaveLinhaLiberacao(r);
         const existente=mapa.get(k);
         if(existente&&existente._dirty) return;
+        const rowId=rowIdLiberacao(existente||r);
+        if(existente&&rowId&&!retornoConfirmaLinhaRecemSalva(rowId,r)) return;
         mapa.set(k,existente?mesclarLinhaLiberacao(existente,r):Object.assign({},r));
     });
     return [...mapa.values()];
