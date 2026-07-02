@@ -331,6 +331,9 @@ h1 {
     width: 100%;
     min-width: 0;
 }
+.patio-board-shell {
+    position: relative;
+}
 .patio-board-head {
     display: flex;
     align-items: flex-start;
@@ -409,6 +412,38 @@ h1 {
 .legend-dot.analisado { background: var(--danger); }
 .legend-dot.rpl { background: var(--rpl); }
 .legend-dot.oficina { background: #111827; }
+.patio-map-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 5;
+    display: flex;
+    gap: 6px;
+    padding: 6px;
+    border: 1px solid #d8e0ec;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 8px 22px rgba(16, 24, 40, 0.14);
+}
+.map-tool-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #c8d3e2;
+    border-radius: 7px;
+    background: #ffffff;
+    color: var(--blue);
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1;
+}
+.map-tool-btn.reset {
+    width: 48px;
+    font-size: 12px;
+}
+.map-tool-btn:active {
+    background: #eef4ff;
+}
 .patio-board {
     width: 100%;
     max-height: calc(100vh - 260px);
@@ -416,6 +451,9 @@ h1 {
     overflow: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
     padding: 14px;
     cursor: grab;
     background:
@@ -431,6 +469,12 @@ h1 {
     outline: 3px solid rgba(11, 58, 138, 0.18);
     outline-offset: -3px;
 }
+.patio-zoom-stage {
+    position: relative;
+    width: max-content;
+    min-width: 1040px;
+    min-height: 480px;
+}
 .patio-container {
     display: grid;
     grid-template-columns: repeat(6, minmax(150px, 1fr));
@@ -438,6 +482,7 @@ h1 {
     min-width: 1040px;
     align-items: stretch;
     transform-origin: 0 0;
+    will-change: transform;
 }
 .fila-col {
     background: rgba(255, 255, 255, 0.94);
@@ -666,7 +711,6 @@ h1 {
 @media (max-width: 991px) {
     .patio-board {
         min-height: 520px;
-        touch-action: none;
     }
     .patio-container {
         grid-template-columns: repeat(6, minmax(150px, 1fr));
@@ -697,6 +741,14 @@ h1 {
         height: min(68vh, 620px);
         min-height: 460px;
         padding: 10px;
+    }
+    .patio-map-controls {
+        top: 8px;
+        right: 8px;
+    }
+    .map-tool-btn {
+        width: 34px;
+        height: 34px;
     }
     .patio-container {
         grid-template-columns: repeat(6, minmax(150px, 1fr));
@@ -1040,8 +1092,15 @@ h1 {
                     <span class="legend-chip"><span class="legend-dot oficina"></span>Oficina</span>
                 </div>
 
-                <div class="patio-board" tabindex="0" aria-label="Gabarito rolável do pátio">
-                    <div class="patio-container">
+                <div class="patio-board-shell">
+                    <div class="patio-map-controls" aria-label="Controles de zoom do mapa">
+                        <button class="map-tool-btn" type="button" data-map-action="zoom-out" aria-label="Diminuir zoom">-</button>
+                        <button class="map-tool-btn reset" type="button" data-map-action="zoom-reset" aria-label="Restaurar zoom">100%</button>
+                        <button class="map-tool-btn" type="button" data-map-action="zoom-in" aria-label="Aumentar zoom">+</button>
+                    </div>
+                    <div class="patio-board" tabindex="0" aria-label="Gabarito rolável do pátio">
+                        <div class="patio-zoom-stage">
+                            <div class="patio-container">
                         <section class="fila-col">
                             <div class="fila-header muro free">
                                 <div>Fila do Muro<small>Livre</small></div>
@@ -1089,6 +1148,8 @@ h1 {
                             </div>
                             <div id="oficina" class="lane-body"></div>
                         </section>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1165,26 +1226,52 @@ function inicializarGerenciamentoPatio() {
 function configurarGestosMapaPatio() {
     if (gestosPatioConfigurados) return;
     const board = document.querySelector('.patio-board');
+    const stage = document.querySelector('.patio-zoom-stage');
     const mapa = document.querySelector('.patio-container');
-    if (!board || !mapa) return;
+    const controles = document.querySelector('.patio-map-controls');
+    if (!board || !stage || !mapa) return;
 
     gestosPatioConfigurados = true;
-    const suportaZoomCss = 'zoom' in mapa.style;
     const minZoom = 0.65;
     const maxZoom = 2.4;
     let zoomAtual = 1;
+    let baseWidth = 0;
+    let baseHeight = 0;
+    let resizeFrame = 0;
     let distanciaInicial = 0;
     let zoomInicial = 1;
+    let gestoNativoAtivo = false;
     let arrastoAtivo = false;
     let arrastoMovido = false;
     let toqueInicialX = 0;
     let toqueInicialY = 0;
     let scrollInicialX = 0;
     let scrollInicialY = 0;
+    const ponteiros = new Map();
 
     function limitarZoom(valor) {
         return Math.min(maxZoom, Math.max(minZoom, valor));
     }
+
+    function medirMapa() {
+        baseWidth = mapa.offsetWidth || mapa.scrollWidth || 1040;
+        baseHeight = mapa.offsetHeight || mapa.scrollHeight || 480;
+        stage.style.width = Math.ceil(baseWidth * zoomAtual) + 'px';
+        stage.style.height = Math.ceil(baseHeight * zoomAtual) + 'px';
+        mapa.style.transform = 'scale(' + zoomAtual + ')';
+    }
+
+    function agendarMedicao() {
+        if (resizeFrame) {
+            cancelAnimationFrame(resizeFrame);
+        }
+        resizeFrame = requestAnimationFrame(function() {
+            resizeFrame = 0;
+            medirMapa();
+        });
+    }
+
+    window.atualizarZoomMapaPatio = agendarMedicao;
 
     function distanciaToques(touches) {
         const dx = touches[0].clientX - touches[1].clientX;
@@ -1199,6 +1286,37 @@ function configurarGestosMapaPatio() {
         };
     }
 
+    function distanciaPonteiros() {
+        const pontos = Array.from(ponteiros.values());
+        if (pontos.length < 2) return 0;
+        const dx = pontos[0].x - pontos[1].x;
+        const dy = pontos[0].y - pontos[1].y;
+        return Math.hypot(dx, dy);
+    }
+
+    function centroPonteiros() {
+        const pontos = Array.from(ponteiros.values());
+        return {
+            x: (pontos[0].x + pontos[1].x) / 2,
+            y: (pontos[0].y + pontos[1].y) / 2
+        };
+    }
+
+    function centroBoard() {
+        const rect = board.getBoundingClientRect();
+        return {
+            x: rect.left + board.clientWidth / 2,
+            y: rect.top + board.clientHeight / 2
+        };
+    }
+
+    function atualizarBotaoReset() {
+        const botaoReset = controles && controles.querySelector('[data-map-action="zoom-reset"]');
+        if (botaoReset) {
+            botaoReset.textContent = Math.round(zoomAtual * 100) + '%';
+        }
+    }
+
     function aplicarZoom(proximoZoom, centro) {
         const zoomAnterior = zoomAtual;
         zoomAtual = limitarZoom(proximoZoom);
@@ -1210,22 +1328,129 @@ function configurarGestosMapaPatio() {
         const conteudoX = (board.scrollLeft + pontoX) / zoomAnterior;
         const conteudoY = (board.scrollTop + pontoY) / zoomAnterior;
 
-        if (suportaZoomCss) {
-            mapa.style.zoom = String(zoomAtual);
-        } else {
-            mapa.style.transform = 'scale(' + zoomAtual + ')';
-        }
+        stage.style.width = Math.ceil(baseWidth * zoomAtual) + 'px';
+        stage.style.height = Math.ceil(baseHeight * zoomAtual) + 'px';
+        mapa.style.transform = 'scale(' + zoomAtual + ')';
 
         board.scrollLeft = conteudoX * zoomAtual - pontoX;
         board.scrollTop = conteudoY * zoomAtual - pontoY;
+        atualizarBotaoReset();
     }
 
     function alvoInterativo(target) {
-        return Boolean(target.closest('button, input, select, textarea, a, .remove-btn'));
+        return Boolean(target.closest('button, input, select, textarea, a, .remove-btn, .patio-map-controls'));
     }
 
+    medirMapa();
+    window.addEventListener('resize', agendarMedicao);
+
+    if (controles) {
+        controles.addEventListener('click', function(event) {
+            const botao = event.target.closest('[data-map-action]');
+            if (!botao) return;
+            event.preventDefault();
+            const action = botao.dataset.mapAction;
+            if (action === 'zoom-in') {
+                aplicarZoom(zoomAtual + 0.18, centroBoard());
+            } else if (action === 'zoom-out') {
+                aplicarZoom(zoomAtual - 0.18, centroBoard());
+            } else {
+                aplicarZoom(1, centroBoard());
+            }
+        });
+    }
+
+    if (window.PointerEvent) {
+        board.addEventListener('pointerdown', function(event) {
+            if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
+            if (alvoInterativo(event.target)) return;
+            event.preventDefault();
+            ponteiros.set(event.pointerId, { x: event.clientX, y: event.clientY });
+            if (board.setPointerCapture) {
+                try {
+                    board.setPointerCapture(event.pointerId);
+                } catch (erro) {
+                    // O Safari pode negar captura quando o toque ja saiu do alvo.
+                }
+            }
+            if (ponteiros.size === 1) {
+                arrastoAtivo = true;
+                arrastoMovido = false;
+                toqueInicialX = event.clientX;
+                toqueInicialY = event.clientY;
+                scrollInicialX = board.scrollLeft;
+                scrollInicialY = board.scrollTop;
+                board.classList.add('dragging');
+            } else if (ponteiros.size === 2) {
+                distanciaInicial = distanciaPonteiros();
+                zoomInicial = zoomAtual;
+                arrastoAtivo = false;
+                board.classList.add('dragging');
+            }
+        }, { passive: false });
+
+        board.addEventListener('pointermove', function(event) {
+            if (!ponteiros.has(event.pointerId)) return;
+            event.preventDefault();
+            ponteiros.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+            if (ponteiros.size >= 2 && distanciaInicial > 0) {
+                const proporcao = distanciaPonteiros() / distanciaInicial;
+                aplicarZoom(zoomInicial * proporcao, centroPonteiros());
+                return;
+            }
+
+            if (ponteiros.size === 1 && arrastoAtivo) {
+                const dx = event.clientX - toqueInicialX;
+                const dy = event.clientY - toqueInicialY;
+                if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                    arrastoMovido = true;
+                    board.scrollLeft = scrollInicialX - dx;
+                    board.scrollTop = scrollInicialY - dy;
+                }
+            }
+        }, { passive: false });
+
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(function(nomeEvento) {
+            board.addEventListener(nomeEvento, function(event) {
+                ponteiros.delete(event.pointerId);
+                if (ponteiros.size < 2) {
+                    distanciaInicial = 0;
+                }
+                if (!ponteiros.size) {
+                    arrastoAtivo = false;
+                    board.classList.remove('dragging');
+                }
+            });
+        });
+    }
+
+    board.addEventListener('gesturestart', function(event) {
+        gestoNativoAtivo = true;
+        zoomInicial = zoomAtual;
+        board.classList.add('dragging');
+        event.preventDefault();
+    }, { passive: false });
+
+    board.addEventListener('gesturechange', function(event) {
+        gestoNativoAtivo = true;
+        event.preventDefault();
+        aplicarZoom(zoomInicial * event.scale, {
+            x: event.clientX || centroBoard().x,
+            y: event.clientY || centroBoard().y
+        });
+    }, { passive: false });
+
+    board.addEventListener('gestureend', function(event) {
+        gestoNativoAtivo = false;
+        board.classList.remove('dragging');
+        event.preventDefault();
+    }, { passive: false });
+
     board.addEventListener('touchstart', function(event) {
+        if (window.PointerEvent || gestoNativoAtivo) return;
         if (event.touches.length === 2) {
+            event.preventDefault();
             distanciaInicial = distanciaToques(event.touches);
             zoomInicial = zoomAtual;
             arrastoAtivo = false;
@@ -1243,9 +1468,10 @@ function configurarGestosMapaPatio() {
             scrollInicialY = board.scrollTop;
             board.classList.add('dragging');
         }
-    }, { passive: true });
+    }, { passive: false });
 
     board.addEventListener('touchmove', function(event) {
+        if (window.PointerEvent || gestoNativoAtivo) return;
         if (event.touches.length === 2 && distanciaInicial > 0) {
             event.preventDefault();
             const proporcao = distanciaToques(event.touches) / distanciaInicial;
@@ -1267,6 +1493,7 @@ function configurarGestosMapaPatio() {
     }, { passive: false });
 
     board.addEventListener('touchend', function(event) {
+        if (window.PointerEvent || gestoNativoAtivo) return;
         if (event.touches.length < 2) {
             distanciaInicial = 0;
         }
@@ -1524,6 +1751,9 @@ function renderizarPatio() {
 
     // Atualiza a lista de opções para sumir com os carros analisados
     popularDatalist();
+    if (typeof window.atualizarZoomMapaPatio === 'function') {
+        window.atualizarZoomMapaPatio();
+    }
 }
 
 function liberarCarro(prefixo) {
