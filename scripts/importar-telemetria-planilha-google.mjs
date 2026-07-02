@@ -23,6 +23,8 @@ import {
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT_DIR = path.join(ROOT, "assets/data/telemetria");
 const DEFAULT_SHEET_ID = "1Z_rFA-1jz7-kq4juGp5uFG4WMpVBloML98hDgWcX9gQ";
+const DEFAULT_GID_CLEVER = "0";
+const DEFAULT_GID_TCGL = "1112924394";
 
 function parseArgs(argv) {
   const opts = { sheetId: DEFAULT_SHEET_ID };
@@ -112,8 +114,8 @@ async function main() {
   let tcgl = [];
 
   try {
-    clever = await carregarFonte(opts, "clever", opts.gidClever, ["Clever", "CLEVER", "clever"]);
-    tcgl = await carregarFonte(opts, "tcgl", opts.gidTcgl, ["TCGL", "Tcgl", "tcgl"]);
+    clever = await carregarFonte(opts, "clever", opts.gidClever || DEFAULT_GID_CLEVER, ["Clever", "CLEVER", "clever"]);
+    tcgl = await carregarFonte(opts, "tcgl", opts.gidTcgl || DEFAULT_GID_TCGL, ["TCGL", "Tcgl", "tcgl"]);
   } catch (err) {
     if (!opts.arquivo) {
       console.error(err.message);

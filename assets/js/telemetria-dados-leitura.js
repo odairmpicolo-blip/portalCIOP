@@ -50,22 +50,47 @@ export async function obterUrlTelemetriaScript() {
 
 export function mesclarRegistrosTelemetria(atual, novos) {
   const mapa = new Map();
-  const key = (r) => `${r.data_iso}|${r.fonte || "tcgl"}|${String(r.veiculo || "").trim()}`;
-  (atual || []).forEach((r) => mapa.set(key(r), r));
-  (novos || []).forEach((r) => mapa.set(key(r), r));
+  const key = (r) => `${r.data_iso}|${inferirFonteRegistro(r)}|${String(r.veiculo || "").trim()}`;
+  (atual || []).forEach((r) => mapa.set(key(r), { ...r, fonte: inferirFonteRegistro(r) }));
+  (novos || []).forEach((r) => mapa.set(key(r), { ...r, fonte: inferirFonteRegistro(r) }));
   return [...mapa.values()];
+}
+
+function valorPreenchidoTelemetria(v) {
+  const s = String(v ?? "").trim();
+  if (!s) return false;
+  const low = s.toLowerCase();
+  return !["-", "—", "n/a", "na", "null", "undefined", "#n/a"].includes(low);
+}
+
+/** Clever tem Início/Registros CAN; TCGL só km/consumo. */
+export function inferirFonteRegistro(reg) {
+  let payload = reg?.payload || reg;
+  if (typeof payload === "string") {
+    try { payload = JSON.parse(payload); } catch (_) { payload = {}; }
+  }
+  const temInicio = valorPreenchidoTelemetria(payload?.Inicio) || valorPreenchidoTelemetria(payload?.["Start time local"]);
+  const temCan = valorPreenchidoTelemetria(payload?.["Registros CAN"]) || valorPreenchidoTelemetria(payload?.["Number of events"]);
+  if (temInicio || temCan) return "clever";
+  const explicit = String(reg?.fonte || "").toLowerCase();
+  if (explicit === "clever" || explicit === "tcgl") return explicit;
+  return "tcgl";
+}
+
+export function normalizarFontesRegistros(dados) {
+  return (dados || []).map((d) => ({ ...d, fonte: inferirFonteRegistro(d) }));
 }
 
 export function filtrarSnapshotRegistros(snap, { fonte = "todos", de = "", ate = "" } = {}) {
   if (!snap?.dados?.length) return snap;
-  let dados = snap.dados;
+  let dados = normalizarFontesRegistros(snap.dados);
   if (fonte && fonte !== "todos") {
-    dados = dados.filter((d) => (d.fonte || "tcgl") === fonte);
+    dados = dados.filter((d) => d.fonte === fonte);
   }
   if (de) dados = dados.filter((d) => d.data_iso && d.data_iso >= de);
   if (ate) dados = dados.filter((d) => d.data_iso && d.data_iso <= ate);
-  const clever = dados.filter((d) => (d.fonte || "tcgl") === "clever").length;
-  const tcgl = dados.filter((d) => (d.fonte || "tcgl") === "tcgl").length;
+  const clever = dados.filter((d) => d.fonte === "clever").length;
+  const tcgl = dados.filter((d) => d.fonte === "tcgl").length;
   const datas = dados.map((d) => d.data_iso).filter(Boolean).sort();
   return {
     ...snap,
@@ -112,7 +137,10 @@ function gravarCacheSnapshot(snap, opcoes, origem) {
 }
 
 function combinarSnapshotsPlanilha(cleverSnap, tcglSnap, de, ate) {
-  const dados = [...(cleverSnap?.dados || []), ...(tcglSnap?.dados || [])];
+  const dados = normalizarFontesRegistros([
+    ...(cleverSnap?.dados || []),
+    ...(tcglSnap?.dados || [])
+  ]);
   if (!dados.length) return null;
   const datas = dados.map((d) => d.data_iso).filter(Boolean).sort();
   return {
@@ -121,8 +149,8 @@ function combinarSnapshotsPlanilha(cleverSnap, tcglSnap, de, ate) {
     atualizadoEm: cleverSnap?.atualizadoEm || tcglSnap?.atualizadoEm || new Date().toISOString(),
     origem: "google-sheets",
     total: dados.length,
-    total_clever: (cleverSnap?.dados || []).length,
-    total_tcgl: (tcglSnap?.dados || []).length,
+    total_clever: dados.filter((d) => d.fonte === "clever").length,
+    total_tcgl: dados.filter((d) => d.fonte === "tcgl").length,
     data_de: datas[0] || de || null,
     data_ate: datas[datas.length - 1] || ate || null,
     dados,
@@ -184,7 +212,7 @@ async function carregarSnapshotTelemetriaPlanilhaFonte(fonte, de, ate) {
     if (!res.ok) return null;
     const data = await res.json();
     if (!data?.ok || !Array.isArray(data.dados) || !data.dados.length) return null;
-    const snap = { ...data, origem_carregamento: "planilha" };
+    const snap = { ...data, dados: normalizarFontesRegistros(data.dados), origem_carregamento: "planilha" };
     gravarCacheSnapshot(snap, opcoes, "planilha");
     return snap;
   } catch (_) {

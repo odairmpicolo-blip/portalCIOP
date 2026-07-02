@@ -3,7 +3,9 @@ import {
   carregarSnapshotTelemetriaPlanilha,
   carregarManifestTelemetria,
   filtrarSnapshotRegistros,
-  mesclarRegistrosTelemetria
+  mesclarRegistrosTelemetria,
+  normalizarFontesRegistros,
+  inferirFonteRegistro
 } from "./telemetria-dados-leitura.js";
 import {
   agregarLinhasTelemetria,
@@ -584,23 +586,20 @@ function precisaRecarregarSnapshot(de, ate) {
 }
 
 function aplicarSnapshotBruto(snap, { mesclar = false } = {}) {
-  let dados = snap.dados || [];
+  let dados = normalizarFontesRegistros(snap.dados || []);
   if (mesclar && snapshotRaw?.dados?.length) {
     dados = mesclarRegistrosTelemetria(snapshotRaw.dados, dados);
   }
   snapshotRaw = {
     ...snap,
-    dados: dados.map((d) => ({
-      ...d,
-      fonte: d.fonte || "tcgl"
-    }))
+    dados
   };
-  const datas = snapshotRaw.dados.map((d) => d.data_iso).filter(Boolean).sort();
   const clever = snapshotRaw.dados.filter((d) => d.fonte === "clever").length;
   const tcgl = snapshotRaw.dados.filter((d) => d.fonte === "tcgl").length;
   snapshotRaw.total = snapshotRaw.dados.length;
   snapshotRaw.total_clever = clever;
   snapshotRaw.total_tcgl = tcgl;
+  const datas = snapshotRaw.dados.map((d) => d.data_iso).filter(Boolean).sort();
   periodoCarregado = {
     de: datas[0] || $("filtroDataDe")?.value || "",
     ate: datas[datas.length - 1] || $("filtroDataAte")?.value || ""
@@ -629,7 +628,16 @@ async function atualizarDaPlanilha() {
   }
   const snap = await carregarSnapshotTelemetriaPlanilha({ fonte, de, ate });
   if (!snap?.dados?.length) return false;
-  aplicarSnapshotBruto(snap, { mesclar: fonte !== "todos" });
+  if (fonte === "todos") {
+    const outros = (snapshotRaw?.dados || []).filter((d) => {
+      const f = inferirFonteRegistro(d);
+      return f !== "clever" && f !== "tcgl";
+    });
+    aplicarSnapshotBruto({ ...snap, dados: [...outros, ...snap.dados] });
+  } else {
+    const manter = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) !== fonte);
+    aplicarSnapshotBruto({ ...snap, dados: [...manter, ...snap.dados] });
+  }
   atualizarStatusJson();
   return true;
 }
@@ -667,7 +675,8 @@ async function garantirDadosFonte(fonte) {
   const snap = await carregarSnapshotTelemetriaPlanilha({ fonte, de, ate });
   if (!snap?.dados?.length) return;
 
-  aplicarSnapshotBruto(snap, { mesclar: true });
+  const manter = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) !== fonte);
+  aplicarSnapshotBruto({ ...snap, dados: [...manter, ...snap.dados] });
   atualizarStatusJson();
 }
 
@@ -705,10 +714,9 @@ async function carregarSnapshotInicial() {
   $("filtroDataDe").value = de;
   $("filtroDataAte").value = ate;
 
-  const fonteLoad = fontePlanilhaAtual();
   const json = await carregarSnapshotTelemetriaJson();
   if (json?.dados?.length) {
-    aplicarSnapshotBruto(filtrarSnapshotRegistros(json, { fonte: fonteLoad, de, ate }));
+    aplicarSnapshotBruto(filtrarSnapshotRegistros(json, { fonte: "todos", de, ate }));
     await aguardar(0);
     aplicarFonteAtiva();
     atualizarStatusJson();
@@ -725,7 +733,7 @@ async function carregarSnapshotInicial() {
 }
 
 function registrosDaFonte(fonte) {
-  return (snapshotRaw?.dados || []).filter((d) => (d.fonte || "tcgl") === fonte);
+  return (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === fonte);
 }
 
 function payloadParaRow(reg, colVeiculo, colData) {
@@ -737,7 +745,7 @@ function payloadParaRow(reg, colVeiculo, colData) {
   row[colVeiculo] = reg.veiculo || row.Veiculo || row[colVeiculo];
   row[colData] = reg.data_iso || row.Data || row[colData];
   row.data_iso = reg.data_iso;
-  row.__fonte = reg.fonte || "tcgl";
+  row.__fonte = inferirFonteRegistro(reg);
   return row;
 }
 
@@ -1364,7 +1372,12 @@ async function recarregarComFiltroDatas() {
       const fonte = fontePlanilhaAtual();
       const snap = await carregarSnapshotTelemetriaPlanilha({ fonte, de, ate });
       if (snap?.dados?.length) {
-        aplicarSnapshotBruto(snap, { mesclar: fonte !== "todos" });
+        if (fonte === "todos") {
+          aplicarSnapshotBruto(snap);
+        } else {
+          const manter = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) !== fonte);
+          aplicarSnapshotBruto({ ...snap, dados: [...manter, ...snap.dados] });
+        }
       }
       atualizarStatusJson();
     }

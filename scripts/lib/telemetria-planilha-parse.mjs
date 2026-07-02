@@ -100,11 +100,15 @@ export function linhasParaRegistros(rows, headers, fonte, origemArquivo) {
   for (const [key, grupo] of grupos) {
     const [data_iso, veiculo] = key.split("|");
     const agregado = agregarLinhasTelemetria(grupo);
+    const payload = { ...agregado, Veiculo: veiculo, Data: data_iso, data_iso, veiculo_norm: veiculo };
+    const temInicio = Boolean(String(payload.Inicio || payload["Start time local"] || "").trim());
+    const temCan = Boolean(String(payload["Registros CAN"] || payload["Number of events"] || "").trim());
+    const fonteReal = (temInicio || temCan) ? "clever" : fonte;
     registros.push({
       data_iso,
       veiculo,
-      fonte,
-      payload: { ...agregado, Veiculo: veiculo, Data: data_iso, data_iso, veiculo_norm: veiculo },
+      fonte: fonteReal,
+      payload,
       origem_arquivo: origemArquivo
     });
   }
