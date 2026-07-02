@@ -12,10 +12,74 @@ async function carregarImagemBase64(url) {
   });
 }
 
+function medirImagemBase64(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth || img.width, height: img.naturalHeight || img.height });
+    img.onerror = () => reject(new Error("Falha ao medir imagem"));
+    img.src = dataUrl;
+  });
+}
+
 function pct(val) {
   const n = Number(val);
   if (!Number.isFinite(n)) return String(val ?? "");
   return n.toFixed(2) + "%";
+}
+
+function desenharCabecalhoPdf(doc, pageW, margin, meta, logos, tituloPontualidade) {
+  const topoY = 5;
+
+  if (logos.ciop) doc.addImage(logos.ciop, "PNG", margin, topoY, 30, 11);
+  if (logos.tcgl) doc.addImage(logos.tcgl, "PNG", pageW - margin - 34, topoY - 1, 34, 12);
+
+  let abaixoTitulo = 18;
+
+  if (tituloPontualidade) {
+    const tituloW = Math.min(128, pageW - margin * 2 - 72);
+    const tituloH = tituloW * (116 / 1470);
+    const tituloX = (pageW - tituloW) / 2;
+    doc.addImage(tituloPontualidade, "PNG", tituloX, topoY + 1, tituloW, tituloH);
+    abaixoTitulo = topoY + tituloH + 6;
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(6, 36, 92);
+  doc.text(meta.subtitulo || meta.cenario || "Pontualidade IPV", pageW / 2, abaixoTitulo, { align: "center" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(102, 112, 133);
+  doc.text(`Gerado em: ${meta.geradoEm}`, pageW - margin, abaixoTitulo, { align: "right" });
+
+  return abaixoTitulo + 5;
+}
+
+async function desenharGraficoPdf(doc, pageW, margin, startY, chartImageBase64, tituloGrafico) {
+  if (!chartImageBase64) return startY;
+
+  const dims = await medirImagemBase64(chartImageBase64);
+  const ratio = dims.width / Math.max(dims.height, 1);
+
+  const maxW = pageW - margin * 2;
+  const maxH = 58;
+  let imgW = maxW * 0.92;
+  let imgH = imgW / ratio;
+  if (imgH > maxH) {
+    imgH = maxH;
+    imgW = imgH * ratio;
+  }
+
+  doc.setFontSize(8);
+  doc.setTextColor(6, 36, 92);
+  doc.setFont("helvetica", "bold");
+  doc.text(tituloGrafico || "Evolução de Pontualidade", margin, startY);
+  startY += 4;
+
+  const imgX = (pageW - imgW) / 2;
+  doc.addImage(chartImageBase64, "PNG", imgX, startY, imgW, imgH);
+  return startY + imgH + 6;
 }
 
 export async function exportarPdfPontualidade({ meta, chartImageBase64, linhas, assets }) {
@@ -24,53 +88,35 @@ export async function exportarPdfPontualidade({ meta, chartImageBase64, linhas, 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   if (typeof doc.autoTable !== "function") throw new Error("Plugin autoTable indisponível.");
+
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const margin = 8;
+  const margin = 10;
 
+  const logos = {};
+  let tituloPontualidade = null;
   try {
-    const [ciop, tcgl] = await Promise.all([
+    const [ciop, tcgl, titulo] = await Promise.all([
       carregarImagemBase64(assets.logoCiop),
-      carregarImagemBase64(assets.logoTcgl)
+      carregarImagemBase64(assets.logoTcgl),
+      assets.tituloPontualidade ? carregarImagemBase64(assets.tituloPontualidade) : Promise.resolve(null)
     ]);
-    doc.addImage(ciop, "PNG", margin, 5, 30, 11);
-    doc.addImage(tcgl, "PNG", pageW - margin - 34, 4, 34, 12);
+    logos.ciop = ciop;
+    logos.tcgl = tcgl;
+    tituloPontualidade = titulo;
   } catch (_) { /* logos opcionais */ }
 
-  doc.setTextColor(6, 36, 92);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("PONTUALIDADE IPV", pageW / 2, 11, { align: "center" });
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(102, 112, 133);
-  doc.text("Portal CIOP · TCGL", pageW / 2, 16, { align: "center" });
-  doc.text(meta.cenario || "Realidade 2 / 6", pageW / 2, 20, { align: "center" });
-  doc.text(`Seleção: ${meta.selecao}`, pageW / 2, 24, { align: "center" });
-  doc.text(`Gerado em: ${meta.geradoEm}`, pageW - margin, 24, { align: "right" });
-
-  let startY = 28;
-
-  if (chartImageBase64) {
-    const imgW = pageW - margin * 2;
-    const imgH = 88;
-    doc.setFontSize(8);
-    doc.setTextColor(6, 36, 92);
-    doc.setFont("helvetica", "bold");
-    doc.text(meta.tituloGrafico || "Evolução de Pontualidade", margin, startY);
-    startY += 4;
-    doc.addImage(chartImageBase64, "PNG", margin, startY, imgW, imgH);
-    startY += imgH + 5;
-  }
+  let startY = desenharCabecalhoPdf(doc, pageW, margin, meta, logos, tituloPontualidade);
+  startY = await desenharGraficoPdf(doc, pageW, margin, startY, chartImageBase64, meta.tituloGrafico);
 
   const colPeriodo = meta.colunaPeriodo || "Período";
-  const head = [[colPeriodo, "No Horário", "Adiantado", "Atrasado"]];
+  const head = [[colPeriodo, "No Horário", "Adiantado", "Atrasado", "ICV - Índice de Cumprimento de Viagem"]];
   const body = (linhas || []).map((row) => [
     row.periodo,
     pct(row.no_horario),
     pct(row.adiantado),
-    pct(row.atrasado)
+    pct(row.atrasado),
+    pct(row.icv)
   ]);
 
   doc.setFont("helvetica", "bold");
@@ -99,10 +145,11 @@ export async function exportarPdfPontualidade({ meta, chartImageBase64, linhas, 
     },
     alternateRowStyles: { fillColor: [248, 250, 252] },
     columnStyles: {
-      0: { halign: "left", cellWidth: 52 },
+      0: { halign: "left", cellWidth: 40 },
       1: { halign: "center", textColor: [37, 99, 235] },
       2: { halign: "center", textColor: [222, 27, 27] },
-      3: { halign: "center", textColor: [180, 130, 10] }
+      3: { halign: "center", textColor: [180, 130, 10] },
+      4: { halign: "center", textColor: [15, 118, 110], fontStyle: "bold" }
     },
     didDrawPage: (data) => {
       const pg = doc.internal.getNumberOfPages();
