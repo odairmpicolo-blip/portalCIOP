@@ -504,7 +504,6 @@ function classeLinhaDado(row, colunasKpi) {
 }
 
 function contextoDiaUnico() {
-  if (abaDataAtiva && abaDataAtiva !== "todas") return abaDataAtiva;
   const de = $("filtroDataDe")?.value || "";
   const ate = $("filtroDataAte")?.value || "";
   if (de && ate && de === ate) return de;
@@ -823,7 +822,6 @@ function aplicarFonteAtiva() {
 async function selecionarFonte(fonte) {
   if (!["clever", "tcgl", "comparacao"].includes(fonte) || fonte === fonteAtiva) return;
   fonteAtiva = fonte;
-  abaDataAtiva = "todas";
   sortCol = null;
   await garantirDadosFonte(fonte);
   aplicarFonteAtiva();
@@ -898,7 +896,6 @@ function formatarDataHoraBr(val) {
 let dadosBrutos = null;
 let colunasMarcadas = new Set();
 let awsAtivo = false;
-let abaDataAtiva = "todas";
 let sortCol = null;
 let sortDir = "asc";
 let primeiraCarga = true;
@@ -975,7 +972,6 @@ function aplicarDadosBrutos(src, opcoes = {}) {
   montarFiltroDatas(true);
   montarPainelColunas();
   if (primeiraCarga && opcoes.resetarAba !== false) {
-    abaDataAtiva = "todas";
     primeiraCarga = false;
   }
   renderizar();
@@ -996,7 +992,6 @@ function renderTabelaVazia(msg) {
   if (head) head.innerHTML = "<tr><th>Veículo</th></tr>";
   if (corpo) corpo.innerHTML = `<tr><td>${escapeHtml(msg || "Nenhum dado carregado.")}</td></tr>`;
   if ($("contagemDados")) $("contagemDados").textContent = "0 registro(s)";
-  if ($("abasDataWrap")) $("abasDataWrap").hidden = true;
 }
 
 function garantirSortPadrao() {
@@ -1074,63 +1069,11 @@ function rowsBaseFiltro() {
 }
 
 function rowsFiltradasDados() {
-  let rows = rowsBaseFiltro();
-  if (abaDataAtiva && abaDataAtiva !== "todas") {
-    rows = rows.filter((r) => parseDataCsv(r[dadosBrutos.colData]) === abaDataAtiva);
-  }
-  return rows;
+  return rowsBaseFiltro();
 }
 
 function rowsFiltradas() {
   return expandirFrotaSemDados(rowsFiltradasDados());
-}
-
-function renderAbasData(baseRows) {
-  const wrap = $("abasDataWrap");
-  const container = $("abasData");
-  if (!wrap || !container || !dadosBrutos) return;
-
-  const contagem = new Map();
-  const veiculosPorData = new Map();
-  baseRows.forEach((r) => {
-    const iso = parseDataCsv(r[dadosBrutos.colData]);
-    if (!iso) return;
-    contagem.set(iso, (contagem.get(iso) || 0) + 1);
-    if (FROTA.length) {
-      if (!veiculosPorData.has(iso)) veiculosPorData.set(iso, new Set());
-      veiculosPorData.get(iso).add(normVeiculo(r[dadosBrutos.colVeiculo]));
-    }
-  });
-
-  const datas = [...contagem.keys()].sort((a, b) => b.localeCompare(a));
-  if (!datas.length) {
-    wrap.hidden = true;
-    container.innerHTML = "";
-    abaDataAtiva = "todas";
-    return;
-  }
-
-  wrap.hidden = false;
-  if (abaDataAtiva !== "todas" && !contagem.has(abaDataAtiva)) abaDataAtiva = "todas";
-
-  const botoes = [`<button type="button" role="tab" data-aba-data="todas" class="${abaDataAtiva === "todas" ? "ativo" : ""}" aria-selected="${abaDataAtiva === "todas"}">Todas (${baseRows.length})</button>`];
-  datas.forEach((iso) => {
-    const ativo = abaDataAtiva === iso;
-    const carros = FROTA.length ? (veiculosPorData.get(iso)?.size || 0) : contagem.get(iso);
-    const rotuloCarros = FROTA.length ? `${carros}/${FROTA.length}` : String(carros);
-    botoes.push(`<button type="button" role="tab" data-aba-data="${iso}" class="${ativo ? "ativo" : ""}" aria-selected="${ativo}" title="Dia completo 00:00–23:59">${formatarDataBr(iso)} · ${rotuloCarros} carro(s)</button>`);
-  });
-
-  container.innerHTML = botoes.join("");
-  container.querySelectorAll("[data-aba-data]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      abaDataAtiva = btn.getAttribute("data-aba-data") || "todas";
-      renderizar();
-    });
-  });
-
-  const ativoEl = container.querySelector(".ativo");
-  if (ativoEl) ativoEl.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
 
 function atualizarRotuloColunas() {
@@ -1286,12 +1229,6 @@ function renderTabelaDados(rows, cols) {
   $("contagemDados").textContent = (() => {
     const semDados = rows.filter((r) => r.__semDados).length;
     const comDados = rows.length - semDados;
-    if (abaDataAtiva !== "todas") {
-      const base = `${rows.length} veículo(s) · ${comDados} com dados`;
-      return semDados
-        ? `${base} · ${semDados} sem dados · ${formatarDataBr(abaDataAtiva)}`
-        : `${rows.length} registro(s) · ${formatarDataBr(abaDataAtiva)}`;
-    }
     if (semDados) return `${rows.length} linha(s) · ${comDados} com dados · ${semDados} sem registro no período`;
     return `${rows.length} registro(s)`;
   })();
@@ -1324,8 +1261,6 @@ function renderizar() {
     return;
   }
   const cols = colunasSelecionadas();
-  const baseRows = rowsBaseFiltro();
-  renderAbasData(baseRows);
   const rowsDados = rowsFiltradasDados();
   const rows = expandirFrotaSemDados(rowsDados);
   const stats = calcularStats(rowsDados, dadosBrutos.colVeiculo, dadosBrutos.colunasKpi);
@@ -1337,7 +1272,6 @@ function renderizar() {
 
 function limparFiltros() {
   if (!dadosBrutos) return;
-  abaDataAtiva = "todas";
   sortCol = dadosBrutos.colVeiculo;
   sortDir = "asc";
   $("filtroVeiculo").value = "";
