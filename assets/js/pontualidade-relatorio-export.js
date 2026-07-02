@@ -71,11 +71,13 @@ async function desenharGraficoPdf(doc, pageW, margin, startY, chartImageBase64, 
     imgW = imgH * ratio;
   }
 
-  doc.setFontSize(8);
-  doc.setTextColor(6, 36, 92);
-  doc.setFont("helvetica", "bold");
-  doc.text(tituloGrafico || "Evolução de Pontualidade", margin, startY);
-  startY += 4;
+  if (tituloGrafico) {
+    doc.setFontSize(8);
+    doc.setTextColor(6, 36, 92);
+    doc.setFont("helvetica", "bold");
+    doc.text(tituloGrafico, margin, startY);
+    startY += 4;
+  }
 
   const imgX = (pageW - imgW) / 2;
   doc.addImage(chartImageBase64, "PNG", imgX, startY, imgW, imgH);
@@ -107,7 +109,7 @@ export async function exportarPdfPontualidade({ meta, chartImageBase64, linhas, 
   } catch (_) { /* logos opcionais */ }
 
   let startY = desenharCabecalhoPdf(doc, pageW, margin, meta, logos, tituloPontualidade);
-  startY = await desenharGraficoPdf(doc, pageW, margin, startY, chartImageBase64, meta.tituloGrafico);
+  startY = await desenharGraficoPdf(doc, pageW, margin, startY, chartImageBase64, null);
 
   const colPeriodo = meta.colunaPeriodo || "Período";
   const head = [[colPeriodo, "No Horário", "Adiantado", "Atrasado", "ICV - Índice de Cumprimento de Viagem"]];

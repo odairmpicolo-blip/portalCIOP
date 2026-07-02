@@ -1932,12 +1932,12 @@ async function gerarPdfPontualidade() {
     try {
         await new Promise((r) => setTimeout(r, 80));
         const chartImageBase64 = chartInstance?.toBase64Image?.('image/png', 2) || null;
+        const subtituloPdf = (state.subtitulo || document.getElementById('dashboardSubtitle')?.innerText || '').toUpperCase();
         await window.exportarPdfPontualidade({
             meta: {
                 cenario: state.cenario,
-                subtitulo: state.tituloGrafico || state.subtitulo || document.getElementById('chartDynamicTitle')?.innerText,
+                subtitulo: subtituloPdf,
                 selecao: state.selecao,
-                tituloGrafico: state.tituloGrafico,
                 tituloTabela: state.tituloTabela,
                 colunaPeriodo: state.colunaPeriodo,
                 geradoEm,
@@ -1980,7 +1980,7 @@ window.onload = function() {
 </script>
 
 <script type="module">
-import { exportarPdfPontualidade } from '../assets/js/pontualidade-relatorio-export.js?v=20260712e';
+import { exportarPdfPontualidade } from '../assets/js/pontualidade-relatorio-export.js?v=20260712f';
 window.exportarPdfPontualidade = exportarPdfPontualidade;
 </script>
 
