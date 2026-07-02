@@ -69,7 +69,9 @@ export function mesclarLinhasTelemetria(atual, nova) {
 
 export const COLUNAS_EXCLUIDAS_CLEVER = new Set([
   "customer id",
-  "avg cabin temp"
+  "avg cabin temp",
+  "daily engine hours",
+  "avg fuel economy"
 ]);
 
 export const MAP_COLUNAS_EN_PT = {
@@ -82,7 +84,6 @@ export const MAP_COLUNAS_EN_PT = {
   "end distance": "KM/Final",
   "daily distance": "Distância",
   "daily fuel consumption l": "Quant. Combustivel",
-  "daily engine hours": "Cons. Combustivel",
   "daily avg km per liter": "Média Km/l",
   "avg speed": "Veloc. Média",
   "max speed": "Veloc. Máxima",
@@ -90,8 +91,7 @@ export const MAP_COLUNAS_EN_PT = {
   "max engine temp": "Temp. Máx. Motor",
   "avg ambient temp": "Temp. Méd. Externa",
   "avg air pressure": "Barómetro Méd.",
-  "max air pressure": "Barómetro Máx.",
-  "avg fuel economy": "Cons. Méd. Comb."
+  "max air pressure": "Barómetro Máx."
 };
 
 export function colunaCleverExcluida(nome) {
@@ -113,7 +113,6 @@ export const RENOMEAR_COLUNAS_LEGADO = {
   "km percorrido": "Distância",
   "consumo combustivel l": "Quant. Combustivel",
   "consumo combustivel": "Quant. Combustivel",
-  "horas motor": "Cons. Combustivel",
   "media km l": "Média Km/l",
   "media km/l": "Média Km/l",
   "velocidade media": "Veloc. Média",
@@ -123,7 +122,6 @@ export const RENOMEAR_COLUNAS_LEGADO = {
   "temperatura ambiente media": "Temp. Méd. Externa",
   "pressao ar media": "Barómetro Méd.",
   "pressao ar maxima": "Barómetro Máx.",
-  "economia combustivel media": "Cons. Méd. Comb.",
   "temperatura cabine media": null,
   "avg cabin temp": null,
   "customer id": null

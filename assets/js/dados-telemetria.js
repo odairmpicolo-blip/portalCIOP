@@ -39,7 +39,33 @@ const COLUNAS_OCULTAS = [
   "temperatura cabine",
   "avg cabin temp",
   "avg_cabin_temp",
-  "temp cabine"
+  "temp cabine",
+  "cons. combustivel",
+  "cons combustivel",
+  "cons. méd. comb.",
+  "cons. med. comb.",
+  "cons méd comb",
+  "data_iso",
+  "veiculo_norm"
+];
+
+const COLUNAS_TABELA = [
+  "Data",
+  "Inicio",
+  "Fim",
+  "Eventos",
+  "KM/Inicial",
+  "KM/Final",
+  "Distância",
+  "Quant. Combustivel",
+  "Média Km/l",
+  "Veloc. Média",
+  "Veloc. Máxima",
+  "Temp. Méd. Motor",
+  "Temp. Máx. Motor",
+  "Temp. Méd. Externa",
+  "Barómetro Méd.",
+  "Barómetro Máx."
 ];
 
 function colunaOculta(nome) {
@@ -48,27 +74,72 @@ function colunaOculta(nome) {
 }
 
 function colunasExibiveis(headers, colVeiculo) {
-  return (headers || []).filter((h) => h !== colVeiculo && !colunaOculta(h));
+  const set = new Set(
+    (headers || []).filter((h) => h !== colVeiculo && !colunaOculta(h))
+  );
+  const ordenadas = COLUNAS_TABELA.filter((c) => set.has(c));
+  set.forEach((c) => {
+    if (!ordenadas.includes(c)) ordenadas.push(c);
+  });
+  return ordenadas;
+}
+
+function colunaChave(col) {
+  return normChave(col);
+}
+
+function parseNumero(val) {
+  const s = String(val ?? "").trim();
+  if (!s) return NaN;
+  return Number(s.replace(/\./g, "").replace(",", "."));
+}
+
+function formatarInteiro(val) {
+  const n = parseNumero(val);
+  if (Number.isNaN(n)) return String(val ?? "").trim();
+  return Math.round(n).toLocaleString("pt-BR");
+}
+
+function formatarDecimal(val, dec = 2) {
+  const n = parseNumero(val);
+  if (Number.isNaN(n)) return String(val ?? "").trim();
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
 
 function colunaTemperatura(nome) {
-  const n = normChave(nome);
-  return n.includes("temp.") || n.includes("temperatura");
+  const n = colunaChave(nome);
+  return n.includes("temp.");
 }
 
-function formatarTemperatura(val) {
+function formatarCelula(col, val, row) {
+  if (row?.__semDados) {
+    if (col === dadosBrutos?.colData && !String(val ?? "").trim()) return "Sem dados";
+    return "";
+  }
   const s = String(val ?? "").trim();
-  if (!s) return "";
-  const num = Number(s.replace(",", "."));
-  if (Number.isNaN(num)) return s;
-  const formatted = num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return `${formatted}ºC`;
-}
+  const n = colunaChave(col);
+  const dataIso = row && dadosBrutos?.colData ? parseDataCsv(row[dadosBrutos.colData]) : "";
 
-function formatarCelula(col, val) {
-  const s = String(val ?? "").trim();
+  if (n === "inicio") {
+    return dataIso ? `${formatarDataBr(dataIso)} 00:00` : s;
+  }
+  if (n === "fim") {
+    return dataIso ? `${formatarDataBr(dataIso)} 23:59` : s;
+  }
   if (!s) return "";
-  if (colunaTemperatura(col)) return formatarTemperatura(s);
+
+  if (n === "data" || col === dadosBrutos?.colData) {
+    const iso = parseDataCsv(s) || dataIso;
+    return iso ? formatarDataBr(iso) : s;
+  }
+  if (n === "eventos" || n === "km/inicial" || n === "km inicial" || n === "km/final" || n === "km final" || n === "distancia") {
+    return formatarInteiro(s);
+  }
+  if (n === "quant. combustivel") return `${formatarDecimal(s)}L`;
+  if (n === "media km/l") return `${formatarDecimal(s)} km/l`;
+  if (n.includes("veloc")) return `${formatarInteiro(s)} Km/h`;
+  if (colunaTemperatura(col)) return `${formatarInteiro(s)}ºc`;
+  if (n.includes("barometro")) return `${formatarInteiro(s)} bar`;
   return s;
 }
 
@@ -226,7 +297,9 @@ function chaveLinha(row, colVeiculo, colData) {
 
 function mesclarHeaders(atual, novo) {
   const set = new Set([...(atual || []), ...novo]);
-  return [...set];
+  return COLUNAS_TABELA.filter((c) => set.has(c)).concat(
+    [...set].filter((c) => !COLUNAS_TABELA.includes(c) && !colunaOculta(c))
+  );
 }
 
 function unificarLinhasPorVeiculoData(rows, colVeiculo, colData) {
@@ -316,6 +389,7 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
   const sets = { can: new Set(), kmInicial: new Set(), kmFinal: new Set(), kmPercorrido: new Set() };
 
   rows.forEach((row) => {
+    if (row.__semDados) return;
     const id = normVeiculo(row[colVeiculo]);
     if (!frotaIds.has(id)) return;
     noArquivo.add(id);
@@ -332,12 +406,14 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
     comKmInicial: sets.kmInicial.size,
     comKmFinal: sets.kmFinal.size,
     comKmPercorrido: sets.kmPercorrido.size,
+    semRegistro: Math.max(0, FROTA.length - noArquivo.size),
     linhas: rows.length,
     veiculosArquivo: new Set(rows.map((r) => normVeiculo(r[colVeiculo])).filter(Boolean)).size
   };
 }
 
 function classeLinhaDado(row, colunasKpi) {
+  if (row.__semDados) return "row-sem-dados";
   const cols = KPI_DEFS.map((d) => colunasKpi[d.id]).filter(Boolean);
   if (!cols.length) return "";
   let filled = 0;
@@ -345,6 +421,45 @@ function classeLinhaDado(row, colunasKpi) {
   if (filled === 0) return "row-sem-dados";
   if (filled < cols.length) return "row-incoerente";
   return "";
+}
+
+function contextoDiaUnico() {
+  if (abaDataAtiva && abaDataAtiva !== "todas") return abaDataAtiva;
+  const de = $("filtroDataDe")?.value || "";
+  const ate = $("filtroDataAte")?.value || "";
+  if (de && ate && de === ate) return de;
+  return "";
+}
+
+function linhaSemDados(veiculo, dataIso) {
+  const colVeiculo = dadosBrutos.colVeiculo;
+  const colData = dadosBrutos.colData;
+  const row = { __semDados: true };
+  row[colVeiculo] = veiculo;
+  if (colData && dataIso) {
+    const [y, m, d] = dataIso.split("-");
+    row[colData] = `${d}-${m}-${y}`;
+    row.data_iso = dataIso;
+  }
+  return row;
+}
+
+function expandirFrotaSemDados(rows) {
+  if (!$("filtroVeiculo")?.value && FROTA.length && dadosBrutos) {
+    const colVeiculo = dadosBrutos.colVeiculo;
+    const presentes = new Set(rows.map((r) => normVeiculo(r[colVeiculo])).filter(Boolean));
+    const dataIso = contextoDiaUnico();
+    const extras = [];
+
+    FROTA.forEach((f) => {
+      const id = normVeiculo(f.veiculo);
+      if (!id || presentes.has(id)) return;
+      extras.push(linhaSemDados(f.veiculo, dataIso || null));
+    });
+
+    return [...rows, ...extras];
+  }
+  return rows;
 }
 
 function dataIsoPadrao(offsetDias) {
@@ -376,23 +491,10 @@ function aguardar(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function formatarDataHoraBr(iso) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
-}
-
 async function carregarSnapshotInicial() {
   const snap = await carregarSnapshotTelemetriaJson();
   if (!snap?.dados?.length) return false;
   aplicarRegistrosAws({ dados: snap.dados });
-  const quando = snap.atualizadoEm ? formatarDataHoraBr(snap.atualizadoEm) : "—";
-  const periodo = snap.data_de && snap.data_ate
-    ? `${formatarDataBr(snap.data_de)} a ${formatarDataBr(snap.data_ate)}`
-    : "";
-  atualizarInfoBanco(
-    `Exibindo snapshot JSON (${snap.total || snap.dados.length} registros${periodo ? ` · ${periodo}` : ""} · ${quando}) · sincronizando AWS…`
-  );
   return true;
 }
 
@@ -490,26 +592,9 @@ function aplicarDadosBrutos(src, opcoes = {}) {
   return dadosBrutos.rows.length;
 }
 
-function atualizarInfoBanco(extra) {
-  const el = $("infoBanco");
-  if (!el) return;
-  if (extra) {
-    el.textContent = extra;
-    return;
-  }
-  if (!dadosBrutos?.rows?.length) {
-    el.textContent = "Nenhum registro salvo no banco AWS ainda.";
-    return;
-  }
-  const arquivos = dadosBrutos.arquivos?.length ? dadosBrutos.arquivos.join(", ") : "—";
-  const datas = dadosBrutos.rows.map((r) => parseDataCsv(r[dadosBrutos.colData])).filter(Boolean).sort();
-  const periodo = datas.length ? `${formatarDataBr(datas[0])} a ${formatarDataBr(datas[datas.length - 1])}` : "—";
-  el.textContent = `${dadosBrutos.rows.length} registro(s) unificado(s) por veículo e data · ${periodo} · arquivos: ${arquivos}${awsAtivo ? " · AWS" : ""}`;
-}
-
 function renderResumoVazio() {
   $("statFrota").textContent = FROTA.length;
-  ["statNoArquivo", "statCan", "statKmInicial", "statKmFinal", "statKmPercorrido"].forEach((id) => {
+  ["statNoArquivo", "statSemRegistro", "statCan", "statKmInicial", "statKmFinal", "statKmPercorrido"].forEach((id) => {
     $(id).textContent = "—";
   });
 }
@@ -596,12 +681,16 @@ function rowsBaseFiltro() {
   return rows;
 }
 
-function rowsFiltradas() {
+function rowsFiltradasDados() {
   let rows = rowsBaseFiltro();
   if (abaDataAtiva && abaDataAtiva !== "todas") {
     rows = rows.filter((r) => parseDataCsv(r[dadosBrutos.colData]) === abaDataAtiva);
   }
   return rows;
+}
+
+function rowsFiltradas() {
+  return expandirFrotaSemDados(rowsFiltradasDados());
 }
 
 function renderAbasData(baseRows) {
@@ -631,7 +720,8 @@ function renderAbasData(baseRows) {
   datas.forEach((iso) => {
     const ativo = abaDataAtiva === iso;
     const carros = new Set(baseRows.filter((r) => parseDataCsv(r[dadosBrutos.colData]) === iso).map((r) => normVeiculo(r[dadosBrutos.colVeiculo]))).size;
-    botoes.push(`<button type="button" role="tab" data-aba-data="${iso}" class="${ativo ? "ativo" : ""}" aria-selected="${ativo}" title="Dia completo 00:00–23:59">${formatarDataBr(iso)} · ${carros} carro(s)</button>`);
+    const rotuloCarros = FROTA.length ? `${carros}/${FROTA.length}` : String(carros);
+    botoes.push(`<button type="button" role="tab" data-aba-data="${iso}" class="${ativo ? "ativo" : ""}" aria-selected="${ativo}" title="Dia completo 00:00–23:59">${formatarDataBr(iso)} · ${rotuloCarros} carro(s)</button>`);
   });
 
   container.innerHTML = botoes.join("");
@@ -770,6 +860,7 @@ function hintFiltrosAtivos() {
 function renderResumo(stats) {
   $("statFrota").textContent = stats.frota;
   $("statNoArquivo").textContent = stats.noArquivo;
+  $("statSemRegistro").textContent = stats.semRegistro ?? "—";
   $("statCan").textContent = stats.comCan;
   $("statKmInicial").textContent = stats.comKmInicial;
   $("statKmFinal").textContent = stats.comKmFinal;
@@ -793,9 +884,18 @@ function renderTabelaDados(rows, cols) {
     th.addEventListener("click", () => alternarOrdenacao(th.getAttribute("data-sort-col")));
   });
 
-  $("contagemDados").textContent = abaDataAtiva !== "todas"
-    ? `${rows.length} registro(s) · ${formatarDataBr(abaDataAtiva)} (00:00–23:59)`
-    : `${rows.length} registro(s)`;
+  $("contagemDados").textContent = (() => {
+    const semDados = rows.filter((r) => r.__semDados).length;
+    const comDados = rows.length - semDados;
+    if (abaDataAtiva !== "todas") {
+      const base = `${rows.length} veículo(s) · ${comDados} com dados`;
+      return semDados
+        ? `${base} · ${semDados} sem dados · ${formatarDataBr(abaDataAtiva)}`
+        : `${rows.length} registro(s) · ${formatarDataBr(abaDataAtiva)}`;
+    }
+    if (semDados) return `${rows.length} linha(s) · ${comDados} com dados · ${semDados} sem registro no período`;
+    return `${rows.length} registro(s)`;
+  })();
 
   if (!rows.length) {
     corpo.innerHTML = `<tr><td colspan="${colsVisiveis.length + 1}">Nenhum registro no período selecionado.</td></tr>`;
@@ -807,7 +907,7 @@ function renderTabelaDados(rows, cols) {
   corpo.innerHTML = sorted.map((row) => {
     const rowCls = classeLinhaDado(row, colunasKpi);
     const cells = colsVisiveis.map((col) => {
-      const val = formatarCelula(col, row[col] ?? "");
+      const val = formatarCelula(col, row[col] ?? "", row);
       return `<td>${escapeHtml(val) || "<span class=\"cell-vazio\">—</span>"}</td>`;
     }).join("");
     return `<tr${rowCls ? ` class="${rowCls}"` : ""}>
@@ -822,15 +922,14 @@ function renderizar() {
   if (!dadosBrutos?.rows?.length) {
     renderResumoVazio();
     renderTabelaVazia("Nenhum registro no período. Use + CSV para lançar novos dados.");
-    atualizarInfoBanco();
     return;
   }
   const cols = colunasSelecionadas();
   const baseRows = rowsBaseFiltro();
   renderAbasData(baseRows);
-  const rows = rowsFiltradas();
-  const stats = calcularStats(rows, dadosBrutos.colVeiculo, dadosBrutos.colunasKpi);
-  atualizarInfoBanco();
+  const rowsDados = rowsFiltradasDados();
+  const rows = expandirFrotaSemDados(rowsDados);
+  const stats = calcularStats(rowsDados, dadosBrutos.colVeiculo, dadosBrutos.colunasKpi);
   hintFiltrosAtivos();
   renderResumo(stats);
   renderTabelaDados(rows, cols);
@@ -942,11 +1041,9 @@ async function carregarAws(opcoes = {}) {
 }
 
 async function carregarAwsInicial() {
-  atualizarInfoBanco("Carregando dados do banco AWS…");
   await renovarSessaoTelemetria();
   let result = await carregarAws({ tentativas: 4, authTentativas: 20 });
   if (!result.ok && /token|sessão|sessao|401|403|autentic|expirad/i.test(result.motivo)) {
-    atualizarInfoBanco("Renovando sessão…");
     await renovarSessaoTelemetria();
     await aguardar(500);
     result = await carregarAws({ tentativas: 3, authTentativas: 12 });
@@ -961,20 +1058,17 @@ function mostrarErroCarregamento(motivo) {
   renderTabelaVazia(auth
     ? "Sessão expirada. Saia, entre de novo e clique em Tentar novamente."
     : `Sem dados no banco (${msg}). Use + CSV para lançar.`);
-  const el = $("infoBanco");
-  if (el) {
-    if (auth) {
-      el.innerHTML = `${escapeHtml(msg)} — <button type="button" id="btnRetryTelemetria" class="btn-limpar-filtros" style="margin:6px 0 0;display:inline-block">Tentar novamente</button>`;
-    } else {
-      el.textContent = `Não foi possível carregar: ${msg}`;
+  if (auth) {
+    const corpo = $("tabelaDadosCorpo");
+    if (corpo) {
+      corpo.innerHTML = `<tr><td>${escapeHtml(msg)} <button type="button" id="btnRetryTelemetria" class="btn-limpar-filtros" style="margin-left:8px">Tentar novamente</button></td></tr>`;
     }
   }
   $("btnRetryTelemetria")?.addEventListener("click", async () => {
-    atualizarInfoBanco("Carregando dados do banco AWS…");
+    renderTabelaVazia("Carregando dados do banco AWS…");
     const ok = await renovarSessaoTelemetria();
     const res = await carregarAws({ tentativas: 4, authTentativas: 15 });
     if (res.ok) {
-      atualizarInfoBanco();
       renderizar();
       return;
     }
@@ -1101,12 +1195,10 @@ async function iniciar() {
   limparCacheTelemetriaLegado();
   renderResumoVazio();
   renderTabelaVazia("Carregando dados…");
-  atualizarInfoBanco("Carregando snapshot…");
 
   const temSnapshot = await carregarSnapshotInicial();
   if (!temSnapshot) {
     renderTabelaVazia("Carregando dados do banco AWS…");
-    atualizarInfoBanco("Carregando dados do banco AWS…");
   }
 
   const input = $("csvInput");
@@ -1163,10 +1255,7 @@ async function iniciar() {
     $("statusUpload").textContent = "Pronto para lançar novo CSV";
     $("statusUpload").className = "status-upload muted";
   } else if (restaurarCacheTelemetria()) {
-    const hint = /token|sessão|expirad/i.test(carregou.motivo)
-      ? `${carregou.motivo} — saia e entre de novo no portal`
-      : carregou.motivo;
-    atualizarInfoBanco(`Dados locais exibidos · AWS: ${hint}`);
+    // cache local exibido enquanto AWS indisponível
   } else {
     mostrarErroCarregamento(carregou.motivo);
     $("statusUpload").textContent = "Pronto para lançar novo CSV";
