@@ -22,7 +22,7 @@ export async function exportarPdfPontualidade({ meta, chartImageBase64, linhas, 
   if (!window.jspdf?.jsPDF) throw new Error("Biblioteca PDF indisponível.");
 
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   if (typeof doc.autoTable !== "function") throw new Error("Plugin autoTable indisponível.");
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -54,7 +54,7 @@ export async function exportarPdfPontualidade({ meta, chartImageBase64, linhas, 
 
   if (chartImageBase64) {
     const imgW = pageW - margin * 2;
-    const imgH = 72;
+    const imgH = 88;
     doc.setFontSize(8);
     doc.setTextColor(6, 36, 92);
     doc.setFont("helvetica", "bold");
@@ -99,7 +99,7 @@ export async function exportarPdfPontualidade({ meta, chartImageBase64, linhas, 
     },
     alternateRowStyles: { fillColor: [248, 250, 252] },
     columnStyles: {
-      0: { halign: "left", cellWidth: 42 },
+      0: { halign: "left", cellWidth: 52 },
       1: { halign: "center", textColor: [37, 99, 235] },
       2: { halign: "center", textColor: [222, 27, 27] },
       3: { halign: "center", textColor: [180, 130, 10] }
