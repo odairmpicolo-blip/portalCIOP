@@ -1017,7 +1017,7 @@ async function salvarAws(linhasImport, nomeArquivo, meta) {
         return { ok: true, inseridos: res.inseridos };
       } catch (err) {
         ultimoErro = err.message || ultimoErro;
-        await aguardar(800 + i * 400);
+        await aguardar(1200 + i * 600);
       }
     }
     return { ok: false, motivo: ultimoErro };

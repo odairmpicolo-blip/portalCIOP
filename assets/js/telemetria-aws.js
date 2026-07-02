@@ -56,8 +56,48 @@ export async function carregarTelemetriaAws(dataDe, dataAte, veiculo) {
   return telemetriaFetch(`/telemetria?${qs}`);
 }
 
+const LOTE_PADRAO = 35;
+const LOTE_GRANDE = 20;
+const LOTE_MINIMO = 5;
+const PAUSA_ENTRE_LOTES_MS = 150;
+
+function tamanhoLoteImportacao(totalLinhas) {
+  if (totalLinhas > 2000) return LOTE_GRANDE;
+  if (totalLinhas > 800) return LOTE_PADRAO;
+  return 80;
+}
+
+function pausar(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function importarLoteTelemetria(lote, origemArquivo) {
+  return telemetriaFetch("/telemetria/import", {
+    method: "POST",
+    body: { linhas: lote, origemArquivo }
+  });
+}
+
+async function importarLoteComRetry(lote, origemArquivo, tentativa = 0) {
+  try {
+    return await importarLoteTelemetria(lote, origemArquivo);
+  } catch (err) {
+    if (lote.length > LOTE_MINIMO && tentativa < 4) {
+      await pausar(400 + tentativa * 350);
+      const meio = Math.ceil(lote.length / 2);
+      const esq = await importarLoteComRetry(lote.slice(0, meio), origemArquivo, tentativa + 1);
+      const dir = await importarLoteComRetry(lote.slice(meio), origemArquivo, tentativa + 1);
+      return {
+        inseridos: (esq.inseridos || 0) + (dir.inseridos || 0),
+        unificados: (esq.unificados || 0) + (dir.unificados || 0)
+      };
+    }
+    throw err;
+  }
+}
+
 export async function importarTelemetriaAws(linhas, origemArquivo, onProgress) {
-  const LOTE = 150;
+  const LOTE = tamanhoLoteImportacao(linhas.length);
   let inseridos = 0;
   let unificados = 0;
   const totalLotes = Math.ceil(linhas.length / LOTE) || 1;
@@ -65,12 +105,10 @@ export async function importarTelemetriaAws(linhas, origemArquivo, onProgress) {
     const loteNum = Math.floor(i / LOTE) + 1;
     onProgress?.(loteNum, totalLotes, linhas.length);
     const pedaco = linhas.slice(i, i + LOTE);
-    const res = await telemetriaFetch("/telemetria/import", {
-      method: "POST",
-      body: { linhas: pedaco, origemArquivo }
-    });
+    const res = await importarLoteComRetry(pedaco, origemArquivo);
     inseridos += res.inseridos || 0;
     unificados += res.unificados || pedaco.length;
+    if (i + LOTE < linhas.length) await pausar(PAUSA_ENTRE_LOTES_MS);
   }
   return { ok: true, inseridos, unificados, total: linhas.length };
 }

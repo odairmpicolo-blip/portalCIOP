@@ -37,7 +37,12 @@ export async function awsFetch(path, { method = "GET", body, token, apiKey } = {
     throw err;
   }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.erro || `HTTP ${res.status}`);
+  if (!res.ok) {
+    if (res.status === 504 || res.status === 502) {
+      throw new Error("Timeout na API — o envio continuará em lotes menores");
+    }
+    throw new Error(data.erro || `HTTP ${res.status}`);
+  }
   return data;
 }
 

@@ -4,8 +4,8 @@ import { requireFirebaseUser } from "../middleware/auth.js";
 import { mesclarLinhasTelemetria, agregarLinhasTelemetria, normalizarLinhaTelemetria } from "../lib/telemetria-merge.js";
 
 const router = Router();
-const LOTE_UPSERT = 80;
-const LOTE_SELECT = 200;
+const LOTE_UPSERT = 50;
+const LOTE_SELECT = 100;
 
 function sanitizarLinha(row, dataIso, veiculo) {
   const payload = { ...row };
