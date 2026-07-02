@@ -7,7 +7,9 @@ import {
 import { initPortalAwsRuntime } from "./portal-aws-config.js";
 import {
   agregarLinhasTelemetria,
-  nomeColunaClever
+  nomeColunaClever,
+  normalizarLinhaTelemetria,
+  normalizarColunaTelemetria
 } from "./telemetria-merge.js";
 
 const FROTA = (window.FROTA_PATIO || []).slice().sort((a, b) =>
@@ -87,7 +89,7 @@ function normChave(s) {
 }
 
 function nomeColunaPadrao(nome) {
-  return nomeColunaClever(nome);
+  return normalizarColunaTelemetria(nomeColunaClever(nome) || nome);
 }
 
 function normVeiculo(v) {
@@ -288,11 +290,7 @@ function headersDoPayload(payload) {
 }
 
 function limparColunasExcluidas(row) {
-  const out = {};
-  Object.keys(row || {}).forEach((k) => {
-    if (!colunaOculta(k)) out[k] = row[k];
-  });
-  return out;
+  return normalizarLinhaTelemetria(row);
 }
 
 function filtrarRowsPorData(rows, colData, dataDe, dataAte) {
@@ -375,7 +373,14 @@ let abaDataAtiva = "todas";
 let sortCol = null;
 let sortDir = "asc";
 let primeiraCarga = true;
-const CACHE_STORAGE_KEY = "portal_telemetria_v1";
+const CACHE_STORAGE_KEY = "portal_telemetria_v2";
+const CACHE_LEGACY_KEYS = ["portal_telemetria_v1"];
+
+function limparCacheTelemetriaLegado() {
+  CACHE_LEGACY_KEYS.forEach((k) => {
+    try { localStorage.removeItem(k); } catch (_) { /* ignore */ }
+  });
+}
 
 function persistirCacheTelemetria() {
   if (!dadosBrutos?.rows?.length) return;
@@ -418,12 +423,16 @@ function detectarHeadersTelemetria(dados) {
 }
 
 function aplicarDadosBrutos(src, opcoes = {}) {
-  const headers = src.headers?.length ? src.headers : detectarHeadersTelemetria(src.rows);
-  const colVeiculo = src.colVeiculo || detectarColunaVeiculo(headers);
-  const colData = src.colData || detectarColunaData(headers);
-  const rows = Array.isArray(src.rows) && src.rows[0]?.[colVeiculo]
+  const headersIniciais = src.headers?.length ? src.headers : detectarHeadersTelemetria(src.rows);
+  const colVeiculoGuess = src.colVeiculo || detectarColunaVeiculo(headersIniciais);
+  const colDataGuess = src.colData || detectarColunaData(headersIniciais);
+  let rows = Array.isArray(src.rows) && src.rows[0]?.[colVeiculoGuess]
     ? src.rows
-    : linhasAwsParaRows(src.rows, headers, colVeiculo, colData);
+    : linhasAwsParaRows(src.rows, headersIniciais, colVeiculoGuess, colDataGuess);
+  rows = rows.map((r) => normalizarLinhaTelemetria(r));
+  const headers = [...new Set(rows.flatMap((r) => Object.keys(r)))];
+  const colVeiculo = detectarColunaVeiculo(headers) || colVeiculoGuess;
+  const colData = detectarColunaData(headers) || colDataGuess;
 
   dadosBrutos = {
     headers: mesclarHeaders([], headers),
@@ -1048,14 +1057,10 @@ async function iniciar() {
   $("filtroDataDe").value = "";
   $("filtroDataAte").value = "";
   $("statFrota").textContent = FROTA.length;
+  limparCacheTelemetriaLegado();
   renderResumoVazio();
   renderTabelaVazia("Carregando dados do banco AWS…");
   atualizarInfoBanco("Carregando dados do banco AWS…");
-
-  const tinhaCache = restaurarCacheTelemetria();
-  if (tinhaCache) {
-    atualizarInfoBanco("Exibindo últimos dados salvos · sincronizando com AWS…");
-  }
 
   const input = $("csvInput");
   const zona = $("uploadZona");
@@ -1110,7 +1115,7 @@ async function iniciar() {
   if (carregou.ok) {
     $("statusUpload").textContent = "Pronto para lançar novo CSV";
     $("statusUpload").className = "status-upload muted";
-  } else if (tinhaCache) {
+  } else if (restaurarCacheTelemetria()) {
     const hint = /token|sessão|expirad/i.test(carregou.motivo)
       ? `${carregou.motivo} — saia e entre de novo no portal`
       : carregou.motivo;

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { query } from "../db.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
-import { mesclarLinhasTelemetria, agregarLinhasTelemetria } from "../lib/telemetria-merge.js";
+import { mesclarLinhasTelemetria, agregarLinhasTelemetria, normalizarLinhaTelemetria } from "../lib/telemetria-merge.js";
 
 const router = Router();
 const LOTE_UPSERT = 80;
@@ -91,7 +91,7 @@ router.get("/", requireFirebaseUser, async (req, res) => {
     const dados = result.rows.map((r) => ({
       data_iso: normalizarDataIsoResposta(r.data_iso),
       veiculo: r.veiculo,
-      payload: r.payload,
+      payload: normalizarLinhaTelemetria(r.payload),
       origem_arquivo: r.origem_arquivo
     }));
     res.json({
@@ -124,7 +124,7 @@ router.post("/import", requireFirebaseUser, async (req, res) => {
       const veiculo = String(item?.veiculo || "").trim();
       const payload = item?.payload;
       if (!dataIso || !veiculo || !payload || typeof payload !== "object") continue;
-      const clean = sanitizarLinha(payload, dataIso, veiculo);
+      const clean = normalizarLinhaTelemetria(sanitizarLinha(payload, dataIso, veiculo));
       const key = `${dataIso}|${veiculo}`;
       if (!gruposImport.has(key)) gruposImport.set(key, []);
       gruposImport.get(key).push(clean);

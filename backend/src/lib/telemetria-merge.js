@@ -100,5 +100,69 @@ export function colunaCleverExcluida(nome) {
 
 export function nomeColunaClever(nome) {
   if (colunaCleverExcluida(nome)) return null;
-  return MAP_COLUNAS_EN_PT[normChaveMerge(nome)] || nome;
+  return MAP_COLUNAS_EN_PT[normChaveMerge(nome)] || null;
+}
+
+export const RENOMEAR_COLUNAS_LEGADO = {
+  "veiculo": "Veículo",
+  "cliente": null,
+  "registros can": "Eventos",
+  "registro can": "Eventos",
+  "km inicial": "KM/Inicial",
+  "km final": "KM/Final",
+  "km percorrido": "Distância",
+  "consumo combustivel l": "Quant. Combustivel",
+  "consumo combustivel": "Quant. Combustivel",
+  "horas motor": "Cons. Combustivel",
+  "media km l": "Média Km/l",
+  "media km/l": "Média Km/l",
+  "velocidade media": "Veloc. Média",
+  "velocidade maxima": "Veloc. Máxima",
+  "temperatura motor media": "Temp. Méd. Motor",
+  "temperatura motor maxima": "Temp. Máx. Motor",
+  "temperatura ambiente media": "Temp. Méd. Externa",
+  "pressao ar media": "Barómetro Méd.",
+  "pressao ar maxima": "Barómetro Máx.",
+  "economia combustivel media": "Cons. Méd. Comb.",
+  "temperatura cabine media": null,
+  "avg cabin temp": null,
+  "customer id": null
+};
+
+export function normalizarColunaTelemetria(nome) {
+  const chave = normChaveMerge(nome);
+  if (COLUNAS_EXCLUIDAS_CLEVER.has(chave)) return null;
+  const legado = Object.prototype.hasOwnProperty.call(RENOMEAR_COLUNAS_LEGADO, chave)
+    ? RENOMEAR_COLUNAS_LEGADO[chave]
+    : undefined;
+  if (legado === null) return null;
+  if (legado) return legado;
+  const clever = MAP_COLUNAS_EN_PT[chave];
+  if (clever) return clever;
+  const valores = new Set(Object.values(MAP_COLUNAS_EN_PT));
+  if (valores.has(nome)) return nome;
+  return nome;
+}
+
+export function normalizarLinhaTelemetria(row) {
+  const grupos = new Map();
+  Object.entries(row || {}).forEach(([k, v]) => {
+    if (k === "data_iso" || k === "veiculo_norm") {
+      grupos.set(k, [v]);
+      return;
+    }
+    const col = normalizarColunaTelemetria(k);
+    if (!col) return;
+    if (!grupos.has(col)) grupos.set(col, []);
+    grupos.get(col).push(v);
+  });
+  const out = {};
+  grupos.forEach((vals, col) => {
+    if (col === "data_iso" || col === "veiculo_norm") {
+      out[col] = vals[vals.length - 1];
+      return;
+    }
+    out[col] = agregarValoresColuna(col, vals);
+  });
+  return out;
 }
