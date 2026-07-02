@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Itinerários TCGL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── RESET & VARS ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:        #1e3a8a;
+      --blue-mid:    #2563eb;
+      --blue-light:  #dbeafe;
+      --blue-xlight: #eff6ff;
+      --text:        #1e293b;
+      --muted:       #64748b;
+      --border:      #e2e8f0;
+      --bg:          #f1f5f9;
+      --white:       #ffffff;
+      --sidebar:     220px;
+      --amber-bg:    #fef3c7;
+      --amber-text:  #92400e;
+      --amber-border:#d97706;
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ── UTILITY ── */
+    .hidden { display: none !important; }
+
+    /* ══════════════════════════════════════
+       DESKTOP  (>= 769px)
+    ══════════════════════════════════════ */
+    .desktop-shell {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar);
+      background: var(--blue);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow-y: auto;
+    }
+    .sidebar-logo { padding: 18px 16px 14px; border-bottom: 1px solid rgba(255,255,255,.1); }
+    .sidebar-logo h1 { color: #fff; font-size: 15px; font-weight: 600; line-height: 1.3; }
+    .sidebar-logo p  { color: #93c5fd; font-size: 11px; margin-top: 3px; }
+    .sidebar-nav { padding: 8px 0; flex: 1; }
+    .nav-section { padding: 10px 16px 4px; font-size: 9px; color: #60a5fa; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 16px; font-size: 13px; color: #bfdbfe;
+      text-decoration: none; transition: background .15s;
+    }
+    .nav-item svg { width: 17px; height: 17px; stroke: #93c5fd; flex-shrink: 0; }
+    .nav-item:hover { background: rgba(255,255,255,.08); }
+    .nav-item.active { background: rgba(255,255,255,.15); color: #fff; font-weight: 500; }
+    .nav-item.active svg { stroke: #fff; }
+    .sidebar-footer { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,.1); }
+    .sidebar-footer p { font-size: 10px; color: #60a5fa; line-height: 1.6; }
+
+    /* Main column */
+    .d-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* Topbar */
+    .d-topbar {
+      background: var(--white); border-bottom: 1px solid var(--border);
+      padding: 11px 20px; display: flex; align-items: center;
+      justify-content: space-between; flex-shrink: 0;
+    }
+    .d-topbar-title { font-size: 16px; font-weight: 600; color: var(--blue); }
+    .d-topbar-sub   { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .badge { background: var(--blue-light); color: var(--blue); border-radius: 6px; font-size: 11px; font-weight: 500; padding: 4px 10px; }
+
+    /* Content area */
+    .d-content { flex: 1; display: flex; gap: 14px; padding: 14px; overflow: hidden; }
+
+    /* Panel shared */
+    .panel {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .panel-hdr {
+      padding: 11px 14px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .panel-hdr-title { font-size: 13px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 7px; }
+    .panel-hdr-title svg { width: 16px; height: 16px; stroke: var(--blue-mid); }
+    .panel-count { font-size: 11px; color: var(--muted); }
+
+    /* Search input */
+    .search-box { padding: 9px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .search-box input {
+      width: 100%; padding: 7px 11px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 13px; font-family: inherit;
+      background: var(--bg); color: var(--text); outline: none;
+    }
+    .search-box input:focus { border-color: var(--blue-mid); background: var(--white); }
+
+    /* Route list */
+    .d-route-list { flex: 1; overflow-y: auto; }
+    .group-lbl {
+      padding: 5px 12px 3px; font-size: 10px; font-weight: 600;
+      color: var(--muted); text-transform: uppercase; letter-spacing: .6px;
+      background: var(--bg); border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 1;
+    }
+    .route-row {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      border-bottom: 1px solid var(--border); cursor: pointer; transition: background .1s;
+    }
+    .route-row:hover  { background: var(--bg); }
+    .route-row.active { background: var(--blue-xlight); }
+    .rnum {
+      background: var(--blue); color: #fff; border-radius: 6px;
+      font-size: 11px; font-weight: 600; padding: 3px 7px;
+      min-width: 38px; text-align: center; flex-shrink: 0;
+    }
+    .route-row.active .rnum { background: var(--blue-mid); }
+    .rname { font-size: 12px; flex: 1; }
+    .rchev { width: 14px; height: 14px; stroke: var(--border); flex-shrink: 0; }
+    .route-row.active .rchev { stroke: var(--blue-mid); }
+
+    /* Detail panel */
+    .d-detail { flex: 1; }
+    .d-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .d-tab {
+      flex: 1; padding: 11px 8px; font-size: 13px; font-weight: 500;
+      text-align: center; cursor: pointer; color: var(--muted);
+      border-bottom: 2px solid transparent; transition: all .15s; user-select: none;
+    }
+    .d-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+    /* Tab panes */
+    .d-pane { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 14px; gap: 12px; }
+    .d-pane.hidden { display: none; }
+
+    .map-frame {
+      flex: 1; border-radius: 10px; overflow: hidden; border: 1px solid var(--border);
+      background: var(--bg); min-height: 160px; touch-action: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .map-frame iframe {
+      width: 100%; height: 100%; border: none; display: block;
+      pointer-events: auto; touch-action: auto;
+    }
+    .map-empty {
+      width: 100%; height: 100%; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 8px; color: var(--muted);
+    }
+    .map-empty svg { width: 40px; height: 40px; stroke: var(--border); }
+    .map-empty p { font-size: 13px; }
+
+    .open-btn {
+      display: flex; align-items: center; gap: 7px; justify-content: center;
+      background: var(--blue); color: #fff; border: none; border-radius: 8px;
+      padding: 10px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+      text-decoration: none; transition: background .15s; font-family: inherit;
+      flex-shrink: 0;
+    }
+    .open-btn:hover { background: #1e40af; }
+    .open-btn svg { width: 15px; height: 15px; stroke: #fff; }
+
+    /* Ocioso sub-tabs */
+    .ocioso-subtabs { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+    .o-stab {
+      flex: 1; padding: 8px; font-size: 12px; font-weight: 500;
+      text-align: center; cursor: pointer; color: var(--muted);
+      background: var(--bg); border: none; font-family: inherit; transition: all .15s;
+    }
+    .o-stab.active { background: var(--blue); color: #fff; }
+
+    /* Card list for ocioso items */
+    .card-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+    .card-item {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 12px; cursor: pointer; transition: border-color .15s;
+    }
+    .card-item:hover { border-color: var(--blue-mid); background: var(--blue-xlight); }
+    .card-item-name  { font-size: 13px; font-weight: 500; color: var(--text); }
+    .card-item-group { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .card-group-lbl { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; padding: 6px 0 2px; }
+
+    .detail-title { font-size: 15px; font-weight: 600; color: var(--blue); }
+    .detail-sub   { font-size: 12px; color: var(--muted); }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: 5px; color: var(--blue-mid);
+      cursor: pointer; font-size: 13px; font-weight: 500; background: none;
+      border: none; font-family: inherit; flex-shrink: 0;
+    }
+    .back-link svg { width: 16px; height: 16px; stroke: var(--blue-mid); }
+
+    .notice {
+      margin: 0 14px 10px; padding: 9px 13px;
+      background: var(--amber-bg); border-left: 3px solid var(--amber-border);
+      border-radius: 0 8px 8px 0; flex-shrink: 0;
+    }
+    .notice p { font-size: 11px; color: var(--amber-text); line-height: 1.5; }
+
+    /* ══════════════════════════════════════
+       MOBILE  (<= 768px)
+    ══════════════════════════════════════ */
+    .mobile-shell {
+      display: none;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Mobile top header */
+    .m-header {
+      background: var(--blue); padding: 13px 16px;
+      flex-shrink: 0;
+    }
+    .m-header h1 { color: #fff; font-size: 16px; font-weight: 600; }
+    .m-header p  { color: #93c5fd; font-size: 11px; margin-top: 2px; }
+
+    /* Mobile screens stack */
+    .m-screen { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .m-screen.active { display: flex; }
+
+    /* Mobile search */
+    .m-search { padding: 10px 14px; background: var(--white); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .m-search input {
+      width: 100%; padding: 10px 14px; border: 1px solid var(--border);
+      border-radius: 10px; font-size: 15px; font-family: inherit;
+      background: var(--bg); color: var(--text); outline: none;
+    }
+    .m-search input:focus { border-color: var(--blue-mid); background: var(--white); }
+
+    /* Mobile route list */
+    .m-route-list { flex: 1; overflow-y: auto; background: var(--white); }
+    .m-group-lbl {
+      padding: 7px 16px 4px; font-size: 10px; font-weight: 600;
+      color: var(--muted); text-transform: uppercase; letter-spacing: .6px;
+      background: var(--bg); border-bottom: 1px solid var(--border);
+      border-top: 1px solid var(--border); position: sticky; top: 0; z-index: 1;
+    }
+    .m-route-item {
+      display: flex; align-items: center; gap: 12px; padding: 13px 16px;
+      border-bottom: 1px solid var(--border); cursor: pointer; background: var(--white);
+      transition: background .1s;
+    }
+    .m-route-item:active { background: var(--blue-xlight); }
+    .m-rnum {
+      background: var(--blue); color: #fff; border-radius: 7px;
+      font-size: 12px; font-weight: 700; padding: 5px 9px;
+      min-width: 42px; text-align: center; flex-shrink: 0;
+    }
+    .m-rname { font-size: 14px; flex: 1; }
+    .m-rgrp  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .m-rchev { width: 16px; height: 16px; stroke: var(--border); flex-shrink: 0; }
+
+    /* Mobile screen header (back bar) */
+    .m-screen-hdr {
+      background: var(--white); border-bottom: 1px solid var(--border);
+      padding: 12px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+    }
+    .m-back {
+      display: flex; align-items: center; gap: 5px; color: var(--blue-mid);
+      cursor: pointer; font-size: 14px; font-weight: 500;
+      background: none; border: none; font-family: inherit;
+    }
+    .m-back svg { width: 18px; height: 18px; stroke: var(--blue-mid); }
+    .m-screen-title { font-size: 14px; font-weight: 600; color: var(--blue); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+
+    /* Mobile map */
+    .m-map-wrap {
+      flex: 1; overflow: hidden; touch-action: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .m-map-wrap iframe {
+      width: 100%; height: 100%; border: none; display: block;
+      pointer-events: auto; touch-action: auto;
+    }
+
+    .m-open-btn {
+      display: flex; align-items: center; gap: 8px; justify-content: center;
+      background: var(--blue); color: #fff; border: none; border-radius: 10px;
+      padding: 14px; font-size: 14px; font-weight: 600; cursor: pointer;
+      font-family: inherit; text-decoration: none; flex-shrink: 0;
+      margin: 12px 16px;
+    }
+    .m-open-btn svg { width: 18px; height: 18px; stroke: #fff; }
+
+    /* Mobile ocioso sub-tabs */
+    .m-o-subtabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--white); }
+    .m-o-stab {
+      flex: 1; padding: 10px 6px; text-align: center; font-size: 13px; font-weight: 500;
+      color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent;
+    }
+    .m-o-stab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+    /* Mobile card list */
+    .m-card-list { flex: 1; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; background: var(--bg); }
+    .m-card {
+      background: var(--white); border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 14px; cursor: pointer; transition: border-color .12s;
+    }
+    .m-card:active { border-color: var(--blue-mid); background: var(--blue-xlight); }
+    .m-card-name  { font-size: 14px; font-weight: 500; }
+    .m-card-group { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .m-card-group-lbl { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; padding: 8px 0 4px; }
+
+    /* Bottom tab bar */
+    .m-tabbar { display: flex; background: var(--white); border-top: 1px solid var(--border); flex-shrink: 0; }
+    .m-tabbar-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 8px 4px 6px; cursor: pointer; color: var(--muted);
+      border-top: 2px solid transparent; text-decoration: none;
+    }
+    .m-tabbar-item svg   { width: 22px; height: 22px; stroke: currentColor; }
+    .m-tabbar-item span  { font-size: 10px; margin-top: 3px; font-weight: 500; }
+    .m-tabbar-item.active { color: var(--blue); border-top-color: var(--blue); }
+
+    /* ── RESPONSIVE SWITCH ── */
+    @media (max-width: 768px) {
+      .desktop-shell { display: none; }
+      .mobile-shell  { display: flex; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     DESKTOP
+══════════════════════════════════════════════ -->
+<div class="desktop-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>Itinerários TCGL</h1>
+      <p>CIOP / Grande Londrina</p>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Consulta</div>
+      <div class="nav-item active" onclick="dSwitchPage('itinerario')" id="dnav-itinerario">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+        Itinerários
+      </div>
+      <div class="nav-item" onclick="dSwitchPage('ocioso')" id="dnav-ocioso">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Trajetos Ociosos
+      </div>
+      <a href="https://monitoramentotcgl.github.io/tajetos/codigo.html" class="nav-item" target="_blank">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M8 8h5M8 16h3"/></svg>
+        Códigos
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <p>Will Felippi, Islan Jesus<br>Odair Marino © 2025<br>CIOP/TCGL</p>
+    </div>
+  </aside>
+
+  <div class="d-main">
+    <div class="d-topbar">
+      <div>
+        <div class="d-topbar-title">Itinerários das Linhas</div>
+        <div class="d-topbar-sub">Selecione uma linha para visualizar o trajeto</div>
+      </div>
+      <span class="badge">Atualizado 23/04/2026</span>
+    </div>
+
+    <div class="d-content">
+
+      <!-- LIST PANEL -->
+      <div class="panel" id="d-list-panel" style="width:300px;flex-shrink:0">
+        <div class="panel-hdr">
+          <div class="panel-hdr-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+            Linhas
+          </div>
+          <span class="panel-count" id="d-count"></span>
+        </div>
+        <div class="search-box">
+          <input type="text" id="d-search" placeholder="Buscar linha…" autocomplete="off">
+        </div>
+        <div class="d-route-list" id="d-list"></div>
+      </div>
+
+      <!-- PAGE: Itinerário -->
+      <div class="panel d-detail" id="d-page-itinerario">
+        <div class="d-pane" style="flex:1">
+          <div class="map-empty" id="d-it-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 13l4.553 2.276A1 1 0 0021 21.382V10.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 4"/></svg>
+            <p>Selecione uma linha à esquerda</p>
+          </div>
+          <div id="d-it-content" class="hidden" style="display:flex;flex-direction:column;gap:12px;height:100%">
+            <div>
+              <div class="detail-title" id="d-it-title"></div>
+              <div class="detail-sub">Trajeto de ida / saída de terminal</div>
+            </div>
+            <div class="map-frame" id="d-it-map"></div>
+            <a class="open-btn" id="d-it-link" href="#" target="_blank">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+              Abrir no Google Maps
+            </a>
+          </div>
+        </div>
+        <div class="notice">
+          <p><strong>Divergências?</strong> Contato: Islan / Odair / Will — 3372-5222 | 3372-5205 | 3372-5206 | 3372-5207</p>
+        </div>
+      </div>
+
+      <!-- PAGE: Trajetos Ociosos -->
+      <div class="panel d-detail hidden" id="d-page-ocioso">
+        <div class="d-pane" style="flex:1;overflow:hidden">
+          <!-- search box -->
+          <div class="search-box" style="flex-shrink:0;margin-bottom:0">
+            <input type="text" id="d-ocioso-search" placeholder="Buscar linha…" autocomplete="off" oninput="filterOcioso(this.value)">
+          </div>
+          <!-- list view -->
+          <div id="d-ocioso-list" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+            <div class="card-list" id="d-ocioso-cards"></div>
+          </div>
+
+          <!-- map view -->
+          <div id="d-ocioso-map-view" class="hidden" style="display:flex;flex-direction:column;gap:12px;flex:1;overflow:hidden">
+            <button class="back-link" onclick="dOciosoBackToList()">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+              Voltar à lista
+            </button>
+            <div>
+              <div class="detail-title" id="d-ocioso-title" style="font-size:14px"></div>
+              <div class="detail-sub" id="d-ocioso-type"></div>
+            </div>
+            <div class="map-frame" id="d-ocioso-map"></div>
+            <a class="open-btn" id="d-ocioso-link" href="#" target="_blank">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+              Abrir no Google Maps
+            </a>
+          </div>
+        </div>
+        <div class="notice">
+          <p><strong>Divergências?</strong> Contato: Islan / Odair / Will — 3372-5222 | 3372-5205 | 3372-5206 | 3372-5207</p>
+        </div>
+      </div>
+
+    </div><!-- d-content -->
+  </div><!-- d-main -->
+</div><!-- desktop-shell -->
+
+
+<!-- ══════════════════════════════════════════════
+     MOBILE
+══════════════════════════════════════════════ -->
+<div class="mobile-shell">
+
+  <div class="m-header">
+    <h1>Itinerários TCGL</h1>
+    <p>CIOP / Grande Londrina</p>
+  </div>
+
+  <!-- SCREEN 1: route list -->
+  <div class="m-screen active" id="m-s-list" style="flex:1;flex-direction:column;overflow:hidden">
+    <div class="m-search">
+      <input type="text" id="m-search" placeholder="🔍  Buscar linha…" autocomplete="off">
+    </div>
+    <div class="m-route-list" id="m-list"></div>
+  </div>
+
+  <!-- SCREEN 2: route detail -->
+  <div class="m-screen" id="m-s-detail" style="flex:1;flex-direction:column;overflow:hidden">
+    <div class="m-screen-hdr">
+      <button class="m-back" onclick="mGoTo('list')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        Voltar
+      </button>
+      <span class="m-screen-title" id="m-detail-title"></span>
+    </div>
+    <!-- Mapa do itinerário -->
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+      <div class="m-map-wrap" id="m-it-map" style="flex:1"></div>
+      <a class="m-open-btn" id="m-it-link" href="#" target="_blank">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+        Abrir no Google Maps
+      </a>
+    </div>
+  </div>
+
+  <!-- SCREEN: Ocioso nível 1 – lista de linhas -->
+  <div class="m-screen" id="m-s-ocioso" style="flex:1;flex-direction:column;overflow:hidden">
+    <div class="m-search">
+      <input type="text" id="m-ocioso-search" placeholder="🔍  Buscar linha…" autocomplete="off">
+    </div>
+    <div class="m-route-list" id="m-ocioso-line-list"></div>
+  </div>
+
+  <!-- SCREEN: Ocioso nível 2 – início ou recolha -->
+  <div class="m-screen" id="m-s-ocioso-tipo" style="flex:1;flex-direction:column;overflow:hidden">
+    <div class="m-screen-hdr">
+      <button class="m-back" onclick="mGoTo('ocioso')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        Voltar
+      </button>
+      <span class="m-screen-title" id="m-ocioso-tipo-title"></span>
+    </div>
+    <div class="m-card-list" id="m-ocioso-tipo-cards"></div>
+  </div>
+
+  <!-- SCREEN: Ocioso nível 3 – vias / mapa -->
+  <div class="m-screen" id="m-s-ocioso-via" style="flex:1;flex-direction:column;overflow:hidden">
+    <div class="m-screen-hdr">
+      <button class="m-back" id="m-ocioso-via-back" onclick="mGoTo('ocioso-tipo')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        Voltar
+      </button>
+      <span class="m-screen-title" id="m-ocioso-via-title"></span>
+    </div>
+    <!-- Card list for multiple vias OR map for single via -->
+    <div class="m-card-list" id="m-ocioso-via-cards" style="display:none"></div>
+    <div id="m-ocioso-via-map-wrap" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+      <div class="m-map-wrap" id="m-ocioso-map" style="flex:1"></div>
+      <a class="m-open-btn" id="m-ocioso-link" href="#" target="_blank">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+        Abrir no Google Maps
+      </a>
+    </div>
+  </div>
+
+  <!-- Bottom tab bar -->
+  <div class="m-tabbar">
+    <div class="m-tabbar-item active" onclick="mTabbar('itinerarios')" id="mtb-itinerarios">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      <span>Itinerários</span>
+    </div>
+    <div class="m-tabbar-item" onclick="mTabbar('ocioso')" id="mtb-ocioso">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      <span>Ociosos</span>
+    </div>
+    <a href="codigo.html" class="m-tabbar-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M8 8h5M8 16h3"/></svg>
+      <span>Códigos</span>
+    </a>
+  </div>
+
+</div><!-- mobile-shell -->
+
+
+<script>
+// ══════════════════════════
+// DATA
+// ══════════════════════════
+const routesInicio = [
+  {group:"ESPECIAIS",name:"081 - Epesmel",url:"https://www.google.com/maps/d/u/0/embed?mid=1ZuNkCQ773PXmDR-_HYcVFmL3yj1L-dI&ehbc=2E312F"},
+  {group:"ESPECIAIS",name:"086 - Especial APAE",url:"https://www.google.com/maps/d/u/0/embed?mid=168Novg05tLUntc3PD1xSJLOwpZJle8c&ehbc=2E312F"},
+  {group:"ESPECIAIS",name:"087 - Guarda Mirim",url:"https://www.google.com/maps/d/u/0/embed?mid=15_zFWbCNw6PrH1xOLJTt9D-dEjBZFh4&ehbc=2E312F"},
+  {group:"ESPECIAIS",name:"360 - Exposição",url:"https://www.google.com/maps/d/embed?mid=1yhMYQjhl08KKDKUoLl2y0JDY9dbOrzA&ehbc=2E312F"},
+  {group:"ESPECIAIS",name:"825 - Especial LondriNatal",url:"https://www.google.com/maps/d/embed?mid=1mGkwwop_zc61Yfn7-YRFn_oCNGgOYhs&ehbc=2E312F"},
+  {group:"ESPECIAIS",name:"826 - Carnaval Zerão",url:"https://www.google.com/maps/d/u/0/embed?mid=1-20ZqzfmuCIl6HwrCXhzEvUfaBSqKxs&ehbc=2E312F"},
+  {group:"RADIAL",name:"100 - Alemanha",url:"https://www.google.com/maps/d/u/0/embed?mid=1_sMQ6wN1YR2QwVnCVv5fdYTuBnGPnL8&ehbc=2E312F"},
+  {group:"RADIAL",name:"101 - Novo Amparo",url:"https://www.google.com/maps/d/embed?mid=1PbGBTnoPU741Qf4yTykBZ-ko92xk8xg&ehbc=2E312F"},
+  {group:"RADIAL",name:"102 - Jd. Ideal",url:"https://www.google.com/maps/d/embed?mid=1FriCDQy6FeyJnA4vLeFdAVg2Ac-bsco&ehbc=2E312F"},
+  {group:"RADIAL",name:"103 - Jd. Santa Fé",url:"https://www.google.com/maps/d/u/0/embed?mid=1diHdrR7GLolTxhsnqrMBm_Do7vCDwm4&ehbc=2E312F"},
+  {group:"RADIAL",name:"104 - Jd. Interlagos",url:"https://www.google.com/maps/d/embed?mid=1vTb020aFFxbx7fvOnE01NekCbnMxUgs&ehbc=2E312F"},
+  {group:"RADIAL",name:"106 - Guilherme Pires",url:"https://www.google.com/maps/d/embed?mid=1KvV4PMr_N3Lc-YVTEk7JGbhIgzF_yZQ&ehbc=2E312F"},
+  {group:"RADIAL",name:"107 - Aragarça",url:"https://www.google.com/maps/d/embed?mid=1OL9OBedq0OD4QfvndyVFkNnn1qBl3iw&ehbc=2E312F"},
+  {group:"RADIAL",name:"108 - Albatroz",url:"https://www.google.com/maps/d/embed?mid=1qiVR3ynqH_t9cuCPLKC1-rwnqNQPOKY&ehbc=2E312F"},
+  {group:"RADIAL",name:"109 - Rodoviária",url:"https://www.google.com/maps/d/embed?mid=1PaPw_CmzJ-QDjtqXi5xGo0esJRGkRlQ&ehbc=2E312F"},
+  {group:"RADIAL",name:"110 - Mister Thormas",url:"https://www.google.com/maps/d/embed?mid=1jhB5K4-E-zTk3QmTQcNq5jGUw6IRnpE&ehbc=2E312F"},
+  {group:"RADIAL",name:"111 - Eucaliptos",url:"https://www.google.com/maps/d/embed?mid=1TK_NcJOwiV2fKyk2MEdUxXIgQNr66Oo&ehbc=2E312F"},
+  {group:"RADIAL",name:"112 - Alexandre Urbanas",url:"https://www.google.com/maps/d/embed?mid=1WL2EgAcIvPu6fPGNllAMJyYnS5fOAvk&ehbc=2E312F"},
+  {group:"RADIAL",name:"113 - Tauá",url:"https://www.google.com/maps/d/embed?mid=1ppfBwY4P1GEUhCXkg84ORBFW_svNYPY&ehbc=2E312F"},
+  {group:"RADIAL",name:"121 - Três Figueiras",url:"https://www.google.com/maps/d/embed?mid=1CIVpJbPbzcPpZ6xxU3dWO-LNulbt9ro&ehbc=2E312F"},
+  {group:"RADIAL",name:"301 - Jd. Presidente",url:"https://www.google.com/maps/d/embed?mid=1AERqwJVu4fD_nB4J4JN4AWay7fQ4s8o&ehbc=2E312F"},
+  {group:"RADIAL",name:"302 - Jd. Hedy",url:"https://www.google.com/maps/d/embed?mid=1USJgKlt8d4kZZR7iUeHTDV2WQIFI4jA&ehbc=2E312F"},
+  {group:"RADIAL",name:"305 - Campus UEL",url:"https://www.google.com/maps/d/embed?mid=1_ePXHqOhHjB_P0vwaBYxXbKbSMlp47w&ehbc=2E312F"},
+  {group:"RADIAL",name:"306 - Cidade Universitária",url:"https://www.google.com/maps/d/embed?mid=1yEwI24C_VgALY1rgUNCwa9Us5uVngXo&ehbc=2E312F"},
+  {group:"RADIAL",name:"307 - Avelino Vieira",url:"https://www.google.com/maps/d/embed?mid=1xdlr4as0CaTspeJJSJtakfT1SMkSx0Y&ehbc=2E312F"},
+  {group:"RADIAL",name:"308 - Jd. Bandeirantes",url:"https://www.google.com/maps/d/embed?mid=1nEJurkqdsosTcsOfc7xJ9_yEdNcHtME&ehbc=2E312F"},
+  {group:"RADIAL",name:"311 - Jd. Santa Rita",url:"https://www.google.com/maps/d/embed?mid=1dkk37FRXsuaT2ZB1d98EH-6XtJjcKss&ehbc=2E312F"},
+  {group:"RADIAL",name:"314 - Jd. Olímpico",url:"https://www.google.com/maps/d/embed?mid=1yEx88vHDLMci8H7xxXVfwvHUwlgBWQc&ehbc=2E312F"},
+  {group:"RADIAL",name:"315 - Columbia",url:"https://www.google.com/maps/d/embed?mid=11MlF6-rd9FSKhFB-Czc03Ah27_ZxoMo&ehbc=2E312F"},
+  {group:"RADIAL",name:"317 - Jd. Maracanã",url:"https://www.google.com/maps/d/embed?mid=1eRfFcDM0Uivsg4QTmufpHGcGAPMk_sw&ehbc=2E312F"},
+  {group:"RADIAL",name:"405 - Maria Cecilia",url:"https://www.google.com/maps/d/embed?mid=1j54QN9Wd4qO80dVgbxulw-WXN50hbts&ehbc=2E312F"},
+  {group:"RADIAL",name:"406 - Aquiles Stenghel",url:"https://www.google.com/maps/d/embed?mid=18AYBLX0PCLVNHMWOp-fOHgumI7PsQkY&ehbc=2E312F"},
+  {group:"RADIAL",name:"407 - João Paz",url:"https://www.google.com/maps/d/embed?mid=1D84kB19fHxTYgKXzG8ks09qwQuMMIRI&ehbc=2E312F"},
+  {group:"RADIAL",name:"408 - Vila Recreio",url:"https://www.google.com/maps/d/embed?mid=1MfRtyt06uWVMhlk0uze5LtxzTsg3hZE&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"200 - Vila Brasil",url:"https://www.google.com/maps/d/embed?mid=1Ewit9DUZ_Nbzh1Z4rgO3Xs25V1Oetfw&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"309 - Pq. Ney Braga",url:"https://www.google.com/maps/d/embed?mid=1IIM0TkKHqJu4vv6Yk1367v1dOxlEtZU&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"310 - Jardim do Sol",url:"https://www.google.com/maps/d/embed?mid=1kBmyfNhVSWsaA0LcERZFWCsNhcpBEZw&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"312 - Jd. Santo André",url:"https://www.google.com/maps/d/embed?mid=1DpjLyzl2JgRWLT_gLMkj6Rf_IQg5wXQ&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"313 - Maria Lúcia",url:"https://www.google.com/maps/d/embed?mid=1pbHSSBCTqey4PB0rbhoF2adWjEZGG-4&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"400 - Parigot de Souza",url:"https://www.google.com/maps/d/embed?mid=1p8plBIRHzPO97RNFxvNLmDDYvVdpyrY&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"401 - Chefe Newton",url:"https://www.google.com/maps/d/embed?mid=12SuSYIw55Yk9K8GbeQyc1KMiQbBbA2E&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"402 - Cj. Vivi Xavier",url:"https://www.google.com/maps/d/embed?mid=1F0NUWt4gd4M2CSMMFbsbyrd9UIdUnEc&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"404 - Heimtal",url:"https://www.google.com/maps/d/embed?mid=1LrpSDoFQVwou-0lNyq5SL7TP5mWPH1U&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"412 - Hilda Mandarino",url:"https://www.google.com/maps/d/embed?mid=1oyrfyrGqRnN8gaO92JbUZUH13J3iiI8&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"413 - Residencial do Café",url:"https://www.google.com/maps/d/embed?mid=1WTKuoFCcCPgiMp_ucf_iyaDqGijDhxE&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"414 - Nova Olinda",url:"https://www.google.com/maps/d/embed?mid=13z0U8LlzMtlfvjWfu-K7sV4c3Muhw8o&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"415 - Jd. Itapoá",url:"https://www.google.com/maps/d/embed?mid=1XPzcvY2Q9Q1b4ZDx5yGegISSLAoTf_M&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"417 - Jd. Catuaí",url:"https://www.google.com/maps/d/embed?mid=1xJCGLEEcfDSGgGehK2W8cz0B9GxZMjs&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"418 - Chácara Primavera",url:"https://www.google.com/maps/d/embed?mid=1gbS0TDKiUYcM85ecgyvjXjqIZM4y-Ho&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"419 - Porto Seguro",url:"https://www.google.com/maps/d/embed?mid=1veF5-IyyfydLQvA1Y_IeaS7qndVAxp4&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"421 - T. Gavetti / Ouro Verde",url:"https://www.google.com/maps/d/embed?mid=1EkHciA6ThdLKttj6QULHlRqdftA_LTY&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"423 - São Jorge",url:"https://www.google.com/maps/d/embed?mid=1Q3fDSbZPHSFl2JuAeBiAwwCPSXeTJ9Y&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"424 - Maristela",url:"https://www.google.com/maps/d/embed?mid=1XQ4oigQzoshQFnTkTREEdiUH9HKqnpQ&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"425 - Comercial Norte",url:"https://www.google.com/maps/d/embed?mid=1uHIkCWd6B4fhHdr66ZVBR137JZ4I7uM&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"426 - Jd. Paris",url:"https://www.google.com/maps/d/embed?mid=13ZAMpDFmtiuQJTVxxDl1WkYn_4h_G4U&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"427 - Warta / Vivi Xavier",url:"https://www.google.com/maps/d/embed?mid=1fbVE4c8AbVSc8JpJpNq3kPmP9beBKcg&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"428 - Vista Bela",url:"https://www.google.com/maps/d/embed?mid=1cHJv__NIj1__asgHzNlJ6wQcOmUi1qg&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"430 - Flor de Lotus",url:"https://www.google.com/maps/d/embed?mid=1uL3jadvN_F6n_cUGrcgcXWemqvjQhqQ&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"444 - Warta / Gavetti",url:"https://www.google.com/maps/d/embed?mid=1Se0Kp8hLsczSRG7v5qXbUJ5yM49tC8E&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"445 - Jd. Felicidade",url:"https://www.google.com/maps/d/embed?mid=1l10iXsFZjzL8qbJ4qNvsqaXNw9_WLro&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"446 - Shopping Catuaí Norte",url:"https://www.google.com/maps/d/embed?mid=1X6eTe4s6T7p7wo22FtyaY1D2GLoPUtA&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"447 - Flores do Campo",url:"https://www.google.com/maps/d/u/0/embed?mid=19Y0cJM2XdhLYgCXXbz4ZqAHjYhV34Ww&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"448 - BRF",url:"https://www.google.com/maps/d/u/0/embed?mid=1wqTbcm_2Cf4Y87VILj-e_BBv7iLHMio&ehbc=2E312F"},
+  {group:"ALIMENTADOR",name:"449 - Lituânia",url:"https://www.google.com/maps/d/u/0/embed?mid=1Nd3XphxUpSrud6kY6unlNGpS456GLWs&ehbc=2E312F"},
+  {group:"TRONCAL",name:"303 - Jd. Tokio",url:"https://www.google.com/maps/d/embed?mid=1RLrq7wK8xrOvFCspQQZKyTvn0850DDk&ehbc=2E312F"},
+  {group:"TRONCAL",name:"351 - T. Oeste / T. Central",url:"https://www.google.com/maps/d/embed?mid=1fsiBcfJL06mKpvY4FrdJzluunl5WNqo&ehbc=2E312F"},
+  {group:"TRONCAL",name:"420 - T. Vivi Xavier / Shopping Norte",url:"https://www.google.com/maps/d/embed?mid=1_xa8MmFjCdAcfqvbu0wyEdqNVSfmmE4&ehbc=2E312F"},
+  {group:"TRONCAL",name:"501 - T. Vivi Xavier / T. Central",url:"https://www.google.com/maps/d/embed?mid=1j3VA8kOfXqKnJ-EAHpdHZQHxigQ2PIM&ehbc=2E312F"},
+  {group:"TRONCAL",name:"502 - T. Ouro Verde / T. Central",url:"https://www.google.com/maps/d/embed?mid=1OFSosPOuytMMFYPU8XJsqUDJNFKnZy4&ehbc=2E312F"},
+  {group:"TRONCAL",name:"504 - T. Gavetti / T. Central",url:"https://www.google.com/maps/d/embed?mid=1W1GI5QQ4iFV5biE2zp6hb943MwatlCs&ehbc=2E312F"},
+  {group:"TRONCAL",name:"505 - Expresso T. Vivi Xavier",url:"https://www.google.com/maps/d/embed?mid=1WYqhp0M_vImqAJGjvwj-L-3mJJLiyew&ehbc=2E312F"},
+  {group:"TRONCAL",name:"512 - T. Ouro Verde / T. Central",url:"https://www.google.com/maps/d/embed?mid=12wl43Jyy2A2ox9kVPbM7t9saoDls4X0&ehbc=2E312F"},
+  {group:"DIAMETRAL",name:"703 - Rápido Aquiles",url:"https://www.google.com/maps/d/embed?mid=14qPx7FvPmuGHPEB4m6s07IRghsAg2mE&ehbc=2E312F"},
+  {group:"DIAMETRAL",name:"706 - Rápido Maria Cecilia",url:"https://www.google.com/maps/d/embed?mid=1xEMuhq45V8AJveUBpB7nCk3TvqoV-7Q&ehbc=2E312F"},
+  {group:"DIAMETRAL",name:"800 - T. Vivi Xavier / T. Acapulco",url:"https://www.google.com/maps/d/embed?mid=1bZ4TAVnW__ni-yLXf83IH2SZSehOJQA&ehbc=2E312F"},
+  {group:"DIAMETRAL",name:"801 - T. Vivi Xavier / Centro Cívico",url:"https://www.google.com/maps/d/embed?mid=1-_t_SDPTwy7NQaZcokJH7mNEN84bBwk&ehbc=2E312F"},
+  {group:"DIAMETRAL",name:"802 - T. Vivi Xavier / Av. Bandeirantes",url:"https://www.google.com/maps/d/embed?mid=1b_N7UhsHNNQNJ-1RswRzOEIo7g9ejR0&ehbc=2E312F"},
+  {group:"DIAMETRAL",name:"803 - T. Vivi Xavier / Shopping Catuaí",url:"https://www.google.com/maps/d/embed?mid=1sqF3pAIruO2G9cs7LTgrb_qdpX3r6SI&ehbc=2E312F"},
+  {group:"DIAMETRAL",name:"804 - T. Oeste / Shopping Catuaí",url:"https://www.google.com/maps/d/embed?mid=13jYyuexZXBZydJwrDNMsF0kPhsjznSM&ehbc=2E312F"},
+  {group:"DIAMETRAL",name:"806 - Av. Saul Elkind / Shopping Catuaí",url:"https://www.google.com/maps/d/embed?mid=13iXb289JFQsxiFTbGjkJi5dgwSKCqeA&ehbc=2E312F"},
+  {group:"DIAMETRAL",name:"835 - UEL / T. Gavetti",url:"https://www.google.com/maps/d/embed?mid=1WhCkBYU2-f6hZ3ed6dtFuxjXqUok1Vk&ehbc=2E312F"},
+  {group:"PERIMETRAL",name:"900 - T. Vivi Xavier / HU",url:"https://www.google.com/maps/d/embed?mid=1D3azKE1gUz0HNmL7oJGY_CqjXJCqYmc&ehbc=2E312F"},
+  {group:"PERIMETRAL",name:"901 - Cacique / 5 Conjuntos",url:"https://www.google.com/maps/d/embed?mid=1Y2hEb59xln5_qutmb0I6GnCzTyFLa0c&ehbc=2E312F"},
+  {group:"PERIMETRAL",name:"902 - T. Vivi Xavier / Av. Maritacas",url:"https://www.google.com/maps/d/embed?mid=1ShPkJwOZp24mhCxEIPKEov2wEGvjyQM&ehbc=2E312F"},
+  {group:"PERIMETRAL",name:"904 - T. Vivi Xavier / T. Acapulco",url:"https://www.google.com/maps/d/embed?mid=1PlmA5ZSL_aFsGMGMgg2sAf-ZGK0EwsU&ehbc=2E312F"},
+  {group:"PERIMETRAL",name:"913 - Robert Koch / Gleba Palhano",url:"https://www.google.com/maps/d/embed?mid=1j-srCtl4PtTEdH1XVet88O8GtVAts7Y&ehbc=2E312F"},
+  {group:"PERIMETRAL",name:"931 - T. Oeste / Norte Shopping",url:"https://www.google.com/maps/d/embed?mid=173SzrRoY0iH1UN8XrJluTTHdNEGCEP4&ehbc=2E312F"},
+  {group:"PERIMETRAL",name:"932 - T. Vivi Xavier / UEL",url:"https://www.google.com/maps/d/embed?mid=1fGSBYfOZWVYrimrYx9dZ6luV3uQN7zk&ehbc=2E312F"},
+  {group:"CORUJÕES",name:"091 - Corujão Parigot de Souza",url:"https://www.google.com/maps/d/embed?mid=1s2OdjQe-RmZdLo0oFlggxnECwmoYLxQ&ehbc=2E312F"},
+  {group:"CORUJÕES",name:"092 - Corujão Waldemar Hauer",url:"https://www.google.com/maps/d/u/0/embed?mid=1kr3gnglwM7vwFFbz0FQyqDtT3aBa6Q4&ehbc=2E312F"},
+  {group:"CORUJÕES",name:"093 - Corujão Aquiles",url:"https://www.google.com/maps/d/u/0/embed?mid=11inaHBozzzXxeiFeQQ7eOvgj66Uqbeg&ehbc=2E312F"},
+  {group:"CORUJÕES",name:"096 - Corujão Guilherme Pires",url:"https://www.google.com/maps/d/embed?mid=1vRD6beukvXqZZ_p0VUBoLNdROi_dRsk&ehbc=2E312F"},
+  {group:"CORUJÕES",name:"099 - Corujão São Francisco",url:"https://www.google.com/maps/d/u/0/embed?mid=1gtkkARmDxnI3_wdlArmEpTMc7Ukj9qg&ehbc=2E312F"},
+];
+
+
+
+const ocisoData = [
+  {name:"Terminais",isTerminal:true,inicio:[{label:"Terminal Central Inferior",url:"https://www.google.com/maps/d/embed?mid=1bc0ZZK-YnLle7Z5e__TfAdAWPNDzIy4&ehbc=2E312F"},{label:"Terminal Central Superior",url:"https://www.google.com/maps/d/embed?mid=1v0bIYc0ZdYMWjqQW-cWlrbtITyCh9Ms&ehbc=2E312F"},{label:"Terminal Vivi Xavier",url:"https://www.google.com/maps/d/embed?mid=1JwctNXvApEviSLTar3QIAmdEwDotl8o&ehbc=2E312F"},{label:"Terminal Região Oeste",url:"https://www.google.com/maps/d/embed?mid=1_6QHocjglZGeg4Gj43C1eOMgGW9EpCQ&ehbc=2E312F"},{label:"Terminal Milton Gavetti",url:"https://www.google.com/maps/d/embed?mid=1subtwMhp8lsK4JP5-eB0FSwa1mpELn0&ehbc=2E312F"},{label:"Terminal Ouro Verde",url:"https://www.google.com/maps/d/embed?mid=1Hopj0PaEB1GcYbm839zFkfsbn4CVx3M&ehbc=2E312F"},{label:"Terminal Acapulco",url:"https://www.google.com/maps/d/embed?mid=1RaaFPK_nMgXhjkhr34Yrh4YLrBxzdGI&ehbc=2E312F"},{label:"Terminal Shopping Catuaí",url:"https://www.google.com/maps/d/embed?mid=1_JwCxjPv0BU4wGN9ummpe0EmfmGyKb0&ehbc=2E312F"}],recolha:[{label:"Terminal Central Inferior",url:"https://www.google.com/maps/d/embed?mid=1DSR7knIyAna8HjxohEeA3CN04Pr7Gao&ehbc=2E312F"},{label:"Terminal Central Superior",url:"https://www.google.com/maps/d/embed?mid=1X8VX-8jaInRRoAxNGQJjRfQ_Ofug-Sc&ehbc=2E312F"},{label:"Terminal Região Oeste",url:"https://www.google.com/maps/d/embed?mid=11n1_eDGlx6XJBIAKSzW64b0HjurHxVE&ehbc=2E312F"},{label:"Terminal Milton Gavetti",url:"https://www.google.com/maps/d/embed?mid=1OFGMrr_SbR_3k2RQEKQkYFItEeNhZ54&ehbc=2E312F"},{label:"Terminal Vivi Xavier",url:"https://www.google.com/maps/d/embed?mid=1uehKi2s0n3ph46ZvvG-WjIEArKML9go&ehbc=2E312F"},{label:"Terminal Shopping Catuaí",url:"https://www.google.com/maps/d/embed?mid=1NvhRI2DijCXK3usTx05w06QnsQdFnGg&ehbc=2E312F"},{label:"Terminal Acapulco",url:"https://www.google.com/maps/d/embed?mid=1_izL6vYlFKuvbZ2LEI3MVUhB7IHkMG8&ehbc=2E312F"},{label:"Terminal Ouro Verde",url:"https://www.google.com/maps/d/embed?mid=1xcKj-bsQy7_sUxiiNLyzn_tpd1K1fpA&ehbc=2E312F"}]},
+  {name:"101",isTerminal:false,inicio:[{label:"via Angelina",url:"https://www.google.com/maps/d/embed?mid=117FfJ1pH3mX1oLH9KEUD-r1txtipHP4&ehbc=2E312F"},{label:"via Gino",url:"https://www.google.com/maps/d/embed?mid=1Ubg4LTVrYTSDDB46qJPHSKbPO7761vA&ehbc=2E312F"}],recolha:[{label:"via Angelina",url:"https://www.google.com/maps/d/embed?mid=1VP6MY0YidpZnwKC3geSUMYaV6OJ5v3Y&ehbc=2E312F"},{label:"via Gino",url:"https://www.google.com/maps/d/embed?mid=1AlPcCiITF-_bkyBvvz6API14xwtSwNo&ehbc=2E312F"}]},
+  {name:"102",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1-D_YElKgqZv3XOzCmho3Ib_tAap7-uk&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1a42XzdqQjmy2G12gZ2poqgIktoqrwx0&ehbc=2E312F"}]},
+  {name:"103",isTerminal:false,inicio:[{label:"via Ambas vias",url:"https://www.google.com/maps/d/embed?mid=1ArEZxgmONO8q-9uHZfHFjyNv0IWbU-Y&ehbc=2E312F"}],recolha:[{label:"via Mangaba",url:"https://www.google.com/maps/d/embed?mid=14Lkl2vz86mnJJQHp6v5Vyr2eq1qscQY&ehbc=2E312F"},{label:"via Monte Cristo",url:"https://www.google.com/maps/d/embed?mid=1CccTtTLzlLaXozADy-H2Y07m6mmMXlw&ehbc=2E312F"}]},
+  {name:"104",isTerminal:false,inicio:[{label:"via Morumbi",url:"https://www.google.com/maps/d/embed?mid=1ItK028vhjQN-puRbdewC8_spZSQ0t3c&ehbc=2E312F"},{label:"via S. Terezinha",url:"https://www.google.com/maps/d/embed?mid=1T2lVxsU8xNu2cT0Tfx--srPiRMZMZvY&ehbc=2E312F"}],recolha:[{label:"via Morumbi",url:"https://www.google.com/maps/d/embed?mid=1JmYKzApb7sVXQ-cl7brAZvRJWS-C_FM&ehbc=2E312F"},{label:"via S. Terezinha",url:"https://www.google.com/maps/d/embed?mid=1CVRSnKIQqGcHpQ8yDq2eplSvOKbAQl0&ehbc=2E312F"}]},
+  {name:"106",isTerminal:false,inicio:[{label:"via Ambas vias",url:"https://www.google.com/maps/d/embed?mid=149kzSAlzG0ECTIJHIRRngGhMJ2A2NZU&ehbc=2E312F"}],recolha:[{label:"via Ambas Vias",url:"https://www.google.com/maps/d/embed?mid=1kJKnSHnygOa-emNnheEUY4lrpphE95Y&ehbc=2E312F"}]},
+  {name:"107",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1yWudOcD5IBjcXh1n3FFH_Uu7ExuHvik&ehbc=2E312F"}],recolha:[]},
+  {name:"108",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1p15PM50vINDZ1_iyCAhvIkcT4NeVDeQ&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1_EIqVLGNXWe9VgE4QCcLKkJ5xQZiU8o&ehbc=2E312F"}]},
+  {name:"109",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=12yxD3AWkvNtVh7q5HJGHrZXlty4ZNnw&ehbc=2E312F"}],recolha:[]},
+  {name:"110",isTerminal:false,inicio:[{label:"via Centenário do Sul",url:"https://www.google.com/maps/d/embed?mid=1dNH1VhTWvsPsbE0gb0Zaynq11_9u9NY&ehbc=2E312F"},{label:"via Nova Londrina",url:"https://www.google.com/maps/d/embed?mid=1gh7fnFze2GRltNNDUquGXaGXZxQTOSA&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1qZAclxlVcP_nn31rjejVLrim6IfmtWc&ehbc=2E312F"}]},
+  {name:"111",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1o16GM0PQnT3wM0r07LsL_9pgSrMrjQs&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1XTtodZNX85lsNVM1IjqhQ98l9LyUFZo&ehbc=2E312F"}]},
+  {name:"112",isTerminal:false,inicio:[{label:"via Laranjeiras",url:"https://www.google.com/maps/d/embed?mid=1uzkJ9haWrFhqJm__2m1TqEoQ0GqGQdw&ehbc=2E312F"},{label:"via São João",url:"https://www.google.com/maps/d/embed?mid=1GwYqIO-229-DPccbbhJeFfJ5hteW7Qk&ehbc=2E312F"}],recolha:[{label:"via Laranjeiras",url:"https://www.google.com/maps/d/embed?mid=1Ld5fKUtLwX71qukYa7XasR2L87XIQSM&ehbc=2E312F"},{label:"via São João",url:"https://www.google.com/maps/d/embed?mid=1qqi_lkrlZ5lZBmte8B8qjpdDSs01nxw&ehbc=2E312F"}]},
+  {name:"113",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1BlSAZS5fnjaUVKBorQzlg1-2lQ-UT2g&ehbc=2E312F"},{label:"via Boulevard",url:"https://www.google.com/maps/d/embed?mid=1sUAGdc0Bg07D1H7h8k9GUs_e3cdZlpM&ehbc=2E312F"},{label:"via UTFPR",url:"https://www.google.com/maps/d/embed?mid=1ySQxpXN37o-H9dSushcdbCkNy1bAc2c&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1GSOeX2A5gvaEfKp8PHTHqGAbdkgft4M&ehbc=2E312F"}]},
+  {name:"121",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1GfJzLBaupUYOPe5PTEO3KX9I6wpnkFo&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1jm_j9xamDRSM61Ifjmxq9SLo9VHYU8I&ehbc=2E312F"}]},
+  {name:"200",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1KFxM8EzZfeSug3lWZKhGEMdjr78Y68k&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1Sjs4J5KYlozhoDitD0HzDK-epxhTm6U&ehbc=2E312F"}]},
+  {name:"301",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1reVftJUIEV3LlXjgJy7InaYULMFSNX8&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1GnIDCobYsAyL2s9WXvNuaZOylTbTb2c&ehbc=2E312F"}]},
+  {name:"302",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1BHuw8WfIfaVIa5HuY8ECOSbL0BhsMkY&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=18xyBZiiLhOnFMpbEUPuaocL8v5Zgoak&ehbc=2E312F"}]},
+  {name:"303",isTerminal:false,inicio:[{label:"via Sent. T. Central",url:"https://www.google.com/maps/d/embed?mid=1kmOEpPUewY4UZQpfhynToLG4fIogk3E&ehbc=2E312F"},{label:"via Sent. T. Oeste",url:"https://www.google.com/maps/d/embed?mid=1-wEbjslrp3HpSZqpQ_FGSjFyJkEkx1E&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=123n8H1fwXw3VLezAgGG9NrxstlzgOVs&ehbc=2E312F"}]},
+  {name:"305",isTerminal:false,inicio:[{label:"via ceca",url:"https://www.google.com/maps/d/embed?mid=1XVb_TvJ5oUmGImLE8_xSEwyz_i2G4sQ&ehbc=2E312F"},{label:"via Aplicação",url:"https://www.google.com/maps/d/embed?mid=1XVb_TvJ5oUmGImLE8_xSEwyz_i2G4sQ&ehbc=2E312F"}],recolha:[{label:"via Todas vias",url:"https://www.google.com/maps/d/embed?mid=1Hy2FWwKlzyP2mGIjePY_BqV5ymSj1DI&ehbc=2E312F"}]},
+  {name:"307",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1mt2emekoJZ_KSSMNoO0IqkwCYTzGeO0&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1dKd0JO1bzSouaZweZir56iZyE5ZZYR8&ehbc=2E312F"}]},
+  {name:"308",isTerminal:false,inicio:[{label:"via Graciosa",url:"https://www.google.com/maps/d/embed?mid=1gotPdOBRJLNXVk1FE-q4K6TRIpWs6Bg&ehbc=2E312F"},{label:"via Parecis",url:"https://www.google.com/maps/d/embed?mid=1-Wa56dwEQS8RWNol99ThCJkhL08m1eQ&ehbc=2E312F"}],recolha:[{label:"via Graciosa",url:"https://www.google.com/maps/d/embed?mid=1wZdeA7KLBu9Mff-uGLqbejLhW2NfOoo&ehbc=2E312F"},{label:"via Parecis",url:"https://www.google.com/maps/d/embed?mid=1eOeQpyv4tCScAzuHijZy0TByRWo8qDI&ehbc=2E312F"}]},
+  {name:"309",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=12WtVBpMGYkxDM1N-VxF1si0wpQw0pGs&ehbc=2E312F"},{label:"via Trevo",url:"https://www.google.com/maps/d/embed?mid=1_UX1RtYG51MQAcBsgItt0YuqEcpagIo&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1iIzuY05lzGbvN2ctQZO1rr-2tE-lasA&ehbc=2E312F"}]},
+  {name:"310",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1_UX1RtYG51MQAcBsgItt0YuqEcpagIo&ehbc=2E312F"}],recolha:[]},
+  {name:"311",isTerminal:false,inicio:[{label:"via Cajarana",url:"https://www.google.com/maps/d/embed?mid=1XIzBMnRWJ5Nnw3e8yfAOd6e-mxMpM0I&ehbc=2E312F"},{label:"via Carnascialli",url:"https://www.google.com/maps/d/embed?mid=1KiJQPL6vcj7gZXUV_OwD2qKT-pkSz8s&ehbc=2E312F"}],recolha:[{label:"via Cajarana",url:"https://www.google.com/maps/d/embed?mid=1USoV_ZSejEi7dQRpqKNAzoxAIYdHJWI&ehbc=2E312F"},{label:"via Carnascialli",url:"https://www.google.com/maps/d/embed?mid=1WlxI7A4cpD_hwovpSAhLMEYS7bwcsyQ&ehbc=2E312F"}]},
+  {name:"312",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1OUGGy0pzZtFyeeSyFS-U80f9qlbeD1c&ehbc=2E312F"}],recolha:[]},
+  {name:"313",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=136H9aUPu-xqlkPfeg5zAMB_5xCfXlls&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=17bzP5qNuaBt1eSq0T3gsJk0zZtSeD7g&ehbc=2E312F"}]},
+  {name:"314",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1K_HnU3VpMdyJNI9B9A_nlkhsS9EB2FQ&ehbc=2E312F"},{label:"via Inicio Col. Castaldi",url:"https://www.google.com/maps/d/embed?mid=1jqe9NF4ZvBRebEW04VM-7Sfh8EPP6BQ&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=172MEuLOnBF3dxampsivBQ8Cp-jZZpo8&ehbc=2E312F"}]},
+  {name:"315",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1T89IVECXJI1HrRdtGlxVI-KjEpGZRS0&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1he_kIs554q0I50Xn71qEoCTB0MwiS8k&ehbc=2E312F"}]},
+  {name:"317",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1ZCN6PodbNf7ror2iyHa2mXObgrfIYQw&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1avm4iMmaFsGCEEdxhb6hAj4KIyczVG0&ehbc=2E312F"}]},
+  {name:"400",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=10hpEoKvAIYegSwsRIUrzC5e97fB_VGQ&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1kJEkr0NMpBJpcIvGDpt7LG8vDVSxFyU&ehbc=2E312F"}]},
+  {name:"401",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1qMNDnrxengLMJDc_pZQXQ5_-UYRUuxg&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1gx7x0YJBKS8dv2ZknT-1TA7NaTiER2I&ehbc=2E312F"}]},
+  {name:"402",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1m8BaIckqecWsSOB2oBGWen17LMmXpUY&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1A3afyGTvtef-N21BZMgDOoGyG2S2UN0&ehbc=2E312F"}]},
+  {name:"404",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1izFLP5D-3cx_6wIbcd49FXFqgWzm3go&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1E8GLkchLCldirSdEjVqBqAmns15HweQ&ehbc=2E312F"}]},
+  {name:"405",isTerminal:false,inicio:[{label:"via Gines Parra",url:"https://www.google.com/maps/d/embed?mid=1McpZiXEMs1RZLj0ytVAAip2M46okJTg&ehbc=2E312F"}],recolha:[{label:"via Ambas vias",url:"https://www.google.com/maps/d/embed?mid=16UucTanUya7OEe-UBnr_TAcvELpQNEs&ehbc=2E312F"}]},
+  {name:"406",isTerminal:false,inicio:[{label:"via Aquiles",url:"https://www.google.com/maps/d/embed?mid=1Ol_dGzEOUdaQddDU4epsFw0fNreGorw&ehbc=2E312F"},{label:"via Luiz de Sá",url:"https://www.google.com/maps/d/embed?mid=1ZOvYTraJSFSBdxM6KIVN_h9rH9azLWQ&ehbc=2E312F"}],recolha:[{label:"via Aquiles",url:"https://www.google.com/maps/d/embed?mid=1LziqVq5K_WCyHmcjSd30W01lRh-oFbs&ehbc=2E312F"},{label:"via Luiz de Sá",url:"https://www.google.com/maps/d/embed?mid=1qW4obPvJVelQqDXqEWmcga63SexXh_I&ehbc=2E312F"}]},
+  {name:"407",isTerminal:false,inicio:[{label:"via João Paz",url:"https://www.google.com/maps/d/embed?mid=15PV19DR8jz-WAvIRTb_rxWl9VsMGAiQ&ehbc=2E312F"},{label:"via Semiramis",url:"https://www.google.com/maps/d/embed?mid=1f_HIzDK5YecC7JV6iHAp6vwHb6QK0gc&ehbc=2E312F"},{label:"via M. Tintas",url:"https://www.google.com/maps/d/embed?mid=1CA6rZF5ybIY5EY6FPwBcF-BinTgQj2c&ehbc=2E312F"},{label:"via Spazio Lion",url:"https://www.google.com/maps/d/embed?mid=13doXoUB3fJ0J8I0si4CFRFIyoY7Gi1w&ehbc=2E312F"}],recolha:[{label:"via João Paz",url:"https://www.google.com/maps/d/embed?mid=1ACqQ2wJ5iVN0utQGQsU-sWGqHLDFWrI&ehbc=2E312F"},{label:"via Semiramis",url:"https://www.google.com/maps/d/embed?mid=1Xmos_X2hwdSXLKMmjpMiiSUItmjQxK0&ehbc=2E312F"}]},
+  {name:"408",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1k3QDKbXYd3zy--bAsj4HRskN2JPAWfs&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=17WIRnTRqeWNx1Cctg7oFrOhIFCs-CcQ&ehbc=2E312F"}]},
+  {name:"412",isTerminal:false,inicio:[{label:"via H. Mandarino",url:"https://www.google.com/maps/d/embed?mid=1Z3UIoBkEIA7ZqsKTEh9AjQ-oPHYLdak&ehbc=2E312F"},{label:"via Imagawa",url:"https://www.google.com/maps/d/embed?mid=1s0VikZX-b8sLogPkZU8Bk_mnk9vh1xM&ehbc=2E312F"}],recolha:[{label:"via H. Mandarino",url:"https://www.google.com/maps/d/embed?mid=1enVwi6eSISCh2ybp5Z3osUPp0E1RW4w&ehbc=2E312F"},{label:"via Imagawa",url:"https://www.google.com/maps/d/embed?mid=1yoh46bRs1LGAV8i2uWjXTMoW4H-DiHc&ehbc=2E312F"}]},
+  {name:"413",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1Jz5N3P9fMGvs87OcT22Stw9Ufx9G_9c&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=16Z0rsXt8M2t7TKDuafvgeFARtYJ-bTo&ehbc=2E312F"}]},
+  {name:"414",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1xM5zpGEAIeCfE6kF-wRXCDm1G4KMkG8&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=162D3rWWqyfvqDG6O2D9AhXuPDt6wfqQ&ehbc=2E312F"}]},
+  {name:"415",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1nP8iB2dgGa-TmiPdCmCDZtVLgQP7Av4&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1Snfq_tgNrtV77qFLAGEkPblhEKKFRfE&ehbc=2E312F"}]},
+  {name:"417",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1DscTkqWqDHQXwIydVSf34Xp0OrBxmms&ehbc=2E312F"},{label:"via Hakme",url:"https://www.google.com/maps/d/embed?mid=1HKJW-7sdHrNf1N2P7crg-MfXHOJVsH4&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1T4Omdw7R6tOrNIKBhWPsBUybzIgSsak&ehbc=2E312F"}]},
+  {name:"418",isTerminal:false,inicio:[{label:"via Chacaras",url:"https://www.google.com/maps/d/embed?mid=1b1g-4DxFatW3IBGRbowWdA6ADi0cLC0&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1OGmltzum1NfQPiavowHYepaUaVhGw2w&ehbc=2E312F"}]},
+  {name:"419",isTerminal:false,inicio:[{label:"via Sent. TMG",url:"https://www.google.com/maps/d/embed?mid=1U1emvT2g8UDFkr-gkVS9He25Uug5Vlw&ehbc=2E312F"},{label:"via Sent. TVX",url:"https://www.google.com/maps/d/embed?mid=1tK1Gh0RQKCDWnAFJ8lsbKL1qS8sPmBM&ehbc=2E312F"}],recolha:[]},
+  {name:"420",isTerminal:false,inicio:[{label:"via IFPR",url:"https://www.google.com/maps/d/embed?mid=12Ish-1CHqNV7eJ82_umY0Ygr5CBogMc&ehbc=2E312F"}],recolha:[{label:"via IFPR",url:"https://www.google.com/maps/d/embed?mid=1kc_iNfzUOIEnd4LxEUP8ZMxvJ1s8iIY&ehbc=2E312F"}]},
+  {name:"423",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=13cW2uS4FhZf2GbzaiewDQW6tt-AonsE&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1bnzqEHHJBNd18TYFpwqasVi0G_nbS48&ehbc=2E312F"}]},
+  {name:"424",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1pJu3DIrCO9fF0ulGVoQIbpqO22hLLsw&ehbc=2E312F"}],recolha:[]},
+  {name:"425",isTerminal:false,inicio:[{label:"via Amcor",url:"https://www.google.com/maps/d/embed?mid=1r3J5OSG2RmtDkfD2823aP6U8CCvxaEU&ehbc=2E312F"},{label:"via Flor de Lotus",url:"https://www.google.com/maps/d/embed?mid=1rIlcw7U1uqDUhKKMhuto2RjvWpK4asA&ehbc=2E312F"}],recolha:[{label:"via Amcor",url:"https://www.google.com/maps/d/embed?mid=123CbQ8_gwlcFfqZCS9Hny63d8Jvhjtw&ehbc=2E312F"},{label:"via Flor de Lotus",url:"https://www.google.com/maps/d/embed?mid=1JhKVPlowVNDVOofoJYLTCswBbnwLqhQ&ehbc=2E312F"}]},
+  {name:"426",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1vJIu1aKUN9JngpzB2mJpTa-oLRBJ704&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1Qtuoa49tDPhiffZSc9DVyo-rIeyTqnc&ehbc=2E312F"}]},
+  {name:"428",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1WgNkZPmmVPajqttRsM6XgET9UmTtET4&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1yZ7Q5hWDxT-GlOHe_lz5VstP9NwIXyk&ehbc=2E312F"}]},
+  {name:"430",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1n90hVgYvhZZgyHjoYZuR1plytOX8DRA&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1iHkOz2eY9wnbX0OzlkkYt6szp24MicY&ehbc=2E312F"}]},
+  {name:"444",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1kYHJtqsBUSUKsuN5iCys5Oic5S3nIVQ&ehbc=2E312F"}],recolha:[]},
+  {name:"447",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1NXBWq5RH7tbcccUs-ie7lnJvtb7x4wQ&ehbc=2E312F"}],recolha:[]},
+  {name:"448",isTerminal:false,inicio:[{label:"via BRF",url:"https://www.google.com/maps/d/embed?mid=1U6UvaHMsNv9V49dK4z0RTLp7u1k_3WQ&ehbc=2E312F"}],recolha:[]},
+  {name:"501",isTerminal:false,inicio:[{label:"via A. Boa Vista",url:"https://www.google.com/maps/d/embed?mid=1gp9cc60Tl7JYm21Om1FGs1nca-7IxKo&ehbc=2E312F"}],recolha:[]},
+  {name:"504",isTerminal:false,inicio:[{label:"via M. Gavetti",url:"https://www.google.com/maps/d/embed?mid=11kf20JQZzmcTSVexj9fWUegZfnQKtDE&ehbc=2E312F"}],recolha:[]},
+  {name:"703",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=12hLWuPjDj7R0G-721B7XL_3l_2njLqw&ehbc=2E312F"},{label:"via Centro",url:"https://www.google.com/maps/d/embed?mid=1y69WFuveCTFa2rqX4AHZh3gl1OL_pHg&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1MWNnLGFq3z7WSgcw3R4U-swHoBlldAc&ehbc=2E312F"},{label:"via Centro",url:"https://www.google.com/maps/d/embed?mid=1BxhzSxlPdziNlUNVbeAt0PyYc9pbLF8&ehbc=2E312F"}]},
+  {name:"706",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1608wh3BItCGKFyhlNhSIMlxUjqcwoiI&ehbc=2E312F"},{label:"via Centro",url:"https://www.google.com/maps/d/embed?mid=1GycGNNRbCvkTxtc1_hKHpQj3a2m1jCc&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1TWUHSkmILyoGZBGiwtzIZRIfFpK7m5E&ehbc=2E312F"},{label:"via Centro",url:"https://www.google.com/maps/d/embed?mid=1M-hnbZKxNWWxOJPCT7IY9X19d77d13c&ehbc=2E312F"}]},
+  {name:"800",isTerminal:false,inicio:[{label:"via Centro - TAC",url:"https://www.google.com/maps/d/embed?mid=1YNGoVMtuhKZl3eZu0SW9YsOUbmtSWZE&ehbc=2E312F"},{label:"via Centro - TVX",url:"https://www.google.com/maps/d/embed?mid=1O6YL0ryffWQsiXqL-vLaRT7uZyGS470&ehbc=2E312F"}],recolha:[{label:"via Higienópolis",url:"https://www.google.com/maps/d/embed?mid=1CnZvBW3WYTfJNHJBxo4HrEJvEZT2qlA&ehbc=2E312F"},{label:"via Quintino",url:"https://www.google.com/maps/d/embed?mid=1bBfQZVwwVUINfhwFXT-WKpJ-xX9LoGM&ehbc=2E312F"}]},
+  {name:"802",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1P-Bmsq0qJcQI3X4jt5FrbjpeJ3FN3yw&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1IQeSKoyz1Ydxa7rzu_bGv0-CUQ6oMKs&ehbc=2E312F"}]},
+  {name:"803",isTerminal:false,inicio:[{label:"via Aurora",url:"https://www.google.com/maps/d/embed?mid=1Um_dEAIy-XYJuJHcbxGAD4iQD9biGEc&ehbc=2E312F"}],recolha:[]},
+  {name:"804",isTerminal:false,inicio:[{label:"via Cajarana",url:"https://www.google.com/maps/d/embed?mid=1XFnGe7t3uy10ZBbuemaVav8F4BJqiHw&ehbc=2E312F"},{label:"via Carnascialli",url:"https://www.google.com/maps/d/embed?mid=1xuntovGAmF4x-C8LZE1nnl034SisZ8o&ehbc=2E312F"}],recolha:[]},
+  {name:"806",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1-p4A-lG5P1YBy3QNNOjDjj9_DByDXpE&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1nNGDYHDdLlK7D8mtzM4pyioMIUOtjec&ehbc=2E312F"}]},
+  {name:"835",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1EEzQAqGZ69OeCYcffE8sc5M3cThHrdE&ehbc=2E312F"}],recolha:[]},
+  {name:"900",isTerminal:false,inicio:[{label:"via HU",url:"https://www.google.com/maps/d/embed?mid=1O5Ei9Bt9vzgJfH9jzVIf_9cQ9rpBYOA&ehbc=2E312F"}],recolha:[{label:"via HU",url:"https://www.google.com/maps/d/embed?mid=1planRick1Nfy1_lXahWSZue13WDyH2w&ehbc=2E312F"}]},
+  {name:"901",isTerminal:false,inicio:[{label:"via Amcor",url:"https://www.google.com/maps/d/embed?mid=1tLrJ_a6z0ye7rsWk7kPnrg4-65zqDbU&ehbc=2E312F"},{label:"via Saul Elkind",url:"https://www.google.com/maps/d/embed?mid=14S0dWYfuul0E1PAFDQ3SlenRzgI7788&ehbc=2E312F"},{label:"via Gines Parra",url:"https://www.google.com/maps/d/embed?mid=1ZxJQIfZuk48sllaYSes7f-u_y4Jkt0w&ehbc=2E312F"},{label:"via Cacique",url:"https://www.google.com/maps/d/embed?mid=1dvW3_A33eerDnvQoUUlrwhsuLt2SjR0&ehbc=2E312F"}],recolha:[{label:"via Saul Elkind",url:"https://www.google.com/maps/d/embed?mid=1YRDNuwC7p_1mCP0EIkL_MhKg8lIy0yw&ehbc=2E312F"},{label:"via Cacique",url:"https://www.google.com/maps/d/embed?mid=1ch9XSPdRKVMaSDmsLh6f49tPVC94HCA&ehbc=2E312F"}]},
+  {name:"902",isTerminal:false,inicio:[{label:"via Flor de Lotus",url:"https://www.google.com/maps/d/embed?mid=1hU1dLZnsBMO1k6gTq4Ue82ZfwoAVBu0&ehbc=2E312F"},{label:"via Maritacas",url:"https://www.google.com/maps/d/embed?mid=13GuraYeCO_S-9C6xdtPUUC_N4KoC0Js&ehbc=2E312F"}],recolha:[{label:"via Flor de Lotus",url:"https://www.google.com/maps/d/embed?mid=1x7COm0Xf50rlO6LmxKGw6JBkqlHqHVU&ehbc=2E312F"}]},
+  {name:"904",isTerminal:false,inicio:[{label:"via Sabara",url:"https://www.google.com/maps/d/embed?mid=1QIPQCFVqnPnA5s4V58dnFpgimP1Mv7A&ehbc=2E312F"}],recolha:[]},
+  {name:"913",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1zZ3Rpk6NM534brBfYzi-vn7vpsnice4&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1ugkC2wBTqdFE__fGYD9hyLz8dTaYCLs&ehbc=2E312F"},{label:"via UEL",url:"https://www.google.com/maps/d/embed?mid=1ilMlsccOpEwn7GP_Nrq4znMQWQT2beE&ehbc=2E312F"}]},
+  {name:"APAE",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1ApOAjVVjoAZaQzZxxIqG7yjhKCrGGwg&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1S6JgDG-IghVhI0BIqmpgCN19BHhgBns&ehbc=2E312F"}]},
+  {name:"Guarda Mirim",isTerminal:false,inicio:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=19cHpsC6djUvCI3lDRM1ZYppb3FFIyWU&ehbc=2E312F"}],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1TwHSpGVZhHKQIDlhQ1RlLPX9_753p1A&ehbc=2E312F"}]},
+  {name:"306",isTerminal:false,inicio:[],recolha:[{label:"Bairro",url:"https://www.google.com/maps/d/embed?mid=1ottzQ3dakeMxJRuMPTRXDT7v7FXY9zQ&ehbc=2E312F"}]},
+  {name:"502",isTerminal:false,inicio:[],recolha:[{label:"via Jd Américas",url:"https://www.google.com/maps/d/embed?mid=13ON4bcCUNbRWhVLJkajxJ5nOKtGgS0M&ehbc=2E312F"}]},
+  {name:"932",isTerminal:false,inicio:[],recolha:[{label:"via UEL",url:"https://www.google.com/maps/d/embed?mid=1WVGq9k1NpJ4MowJXYqSAseTPZIbvCV8&ehbc=2E312F"}]},
+];
+
+// ══════════════════════════
+// HELPERS
+// ══════════════════════════
+function getNum(n){ const m=n.match(/^(\d+)/); return m?m[1]:n.slice(0,3); }
+function chevSvg(cls='rchev'){ return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>`; }
+function backSvg(){ return `<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>`; }
+function mapViewerUrl(url){
+  return url
+    .replace('/maps/d/u/0/embed?', '/maps/d/u/0/viewer?')
+    .replace('/maps/d/embed?', '/maps/d/viewer?');
+}
+function mapIframeHtml(url){
+  return `<iframe src="${url}" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade" allow="fullscreen; geolocation"></iframe>`;
+}
+
+// ══════════════════════════
+// STATE
+// ══════════════════════════
+let dSelectedRoute = -1;
+let dOciosoMode = 'inicio';   // 'inicio' | 'recolha'
+let mOciosoMode = 'inicio';
+let mCurrentScreen = 'list';
+
+// ══════════════════════════
+// DESKTOP: route list
+// ══════════════════════════
+function dBuildList(filter=''){
+  const el = document.getElementById('d-list');
+  const f = filter.toLowerCase();
+  let html = '', grp = '';
+  let count = 0;
+  routesInicio.forEach((r,i)=>{
+    if(f && !r.name.toLowerCase().includes(f) && !r.group.toLowerCase().includes(f)) return;
+    count++;
+    if(r.group!==grp){ grp=r.group; html+=`<div class="group-lbl">${grp}</div>`; }
+    const active = i===dSelectedRoute ? ' active':'';
+    html+=`<div class="route-row${active}" onclick="dSelectRoute(${i})">
+      <span class="rnum">${getNum(r.name)}</span>
+      <span class="rname">${r.name}</span>
+      ${chevSvg()}
+    </div>`;
+  });
+  el.innerHTML = html;
+  document.getElementById('d-count').textContent = count+' linhas';
+}
+
+function dSelectRoute(i){
+  dSelectedRoute = i;
+  dBuildList(document.getElementById('d-search').value);
+  const r = routesInicio[i];
+  // populate itinerário pane
+  document.getElementById('d-it-empty').classList.add('hidden');
+  const c = document.getElementById('d-it-content');
+  c.classList.remove('hidden'); c.style.display='flex';
+  document.getElementById('d-it-title').textContent = r.name;
+  document.getElementById('d-it-map').innerHTML = mapIframeHtml(r.url);
+  document.getElementById('d-it-link').href = mapViewerUrl(r.url);
+}
+
+// ── Desktop page switching (sidebar nav) ──
+function dSwitchPage(page){
+  ['itinerario','ocioso'].forEach(p=>{
+    document.getElementById('d-page-'+p).classList.toggle('hidden', p!==page);
+    document.getElementById('dnav-'+p).classList.toggle('active', p===page);
+  });
+  // List panel only makes sense on itinerário page
+  document.getElementById('d-list-panel').style.display = page==='itinerario' ? 'flex' : 'none';
+  if(page==='ocioso') dBuildOciosoCards();
+}
+
+
+
+// ── Desktop ocioso state ──
+let dOciosoLineIdx = -1;
+let dOciosoTipo = 'inicio';
+
+function dOciosoShowCards(html){
+  document.getElementById('d-ocioso-map-view').classList.add('hidden');
+  document.getElementById('d-ocioso-map-view').style.display = 'none';
+  document.getElementById('d-ocioso-list').style.display = 'flex';
+  document.getElementById('d-ocioso-cards').innerHTML = html;
+}
+
+function dBuildOciosoCards(filter=''){
+  const f = filter.toLowerCase();
+  let html = '';
+  ocisoData.forEach((line,i)=>{
+    if(f && !line.name.toLowerCase().includes(f)) return;
+    const hasBoth = line.inicio.length>0 && line.recolha.length>0;
+    const sub = hasBoth ? 'Início + Recolha' : line.inicio.length>0 ? 'Somente início' : 'Somente recolha';
+    html+=`<div class="card-item" onclick="dOciosoSelectLine(${i})">
+      <div class="card-item-name">${line.name}</div>
+      <div class="card-item-group">${sub}</div>
+    </div>`;
+  });
+  dOciosoShowCards(html);
+}
+
+function dOciosoSelectLine(i){
+  dOciosoLineIdx = i;
+  const line = ocisoData[i];
+  const hasI = line.inicio.length>0;
+  const hasR = line.recolha.length>0;
+  if(hasI && !hasR){ dOciosoShowTipo('inicio'); return; }
+  if(hasR && !hasI){ dOciosoShowTipo('recolha'); return; }
+  dOciosoShowCards(`
+    <button class="back-link" onclick="dBuildOciosoCards()" style="margin-bottom:8px">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" width="16" height="16"><path d="M15 18l-6-6 6-6"/></svg>
+      Voltar
+    </button>
+    <div style="font-size:14px;font-weight:600;color:var(--blue);margin-bottom:10px">${line.name}</div>
+    <div class="card-item" onclick="dOciosoShowTipo('inicio')" style="border-left:3px solid var(--blue)">
+      <div class="card-item-name">Para início de linha</div>
+      <div class="card-item-group">${line.inicio.length} opção${line.inicio.length>1?'s':''}</div>
+    </div>
+    <div class="card-item" onclick="dOciosoShowTipo('recolha')" style="border-left:3px solid var(--amber-border)">
+      <div class="card-item-name">Recolha para garagem</div>
+      <div class="card-item-group">${line.recolha.length} opção${line.recolha.length>1?'s':''}</div>
+    </div>`);
+}
+
+function dOciosoShowTipo(tipo){
+  dOciosoTipo = tipo;
+  const line = ocisoData[dOciosoLineIdx];
+  const options = line[tipo];
+  const tipoLabel = tipo==='inicio' ? 'Para início de linha' : 'Recolha para garagem';
+  const hasBoth = line.inicio.length>0 && line.recolha.length>0;
+  const backFn = hasBoth ? 'dOciosoSelectLine('+dOciosoLineIdx+')' : 'dBuildOciosoCards()';
+  if(options.length === 1){
+    dOciosoShowMap(options[0].url, line.name + ' – ' + options[0].label, tipoLabel, backFn);
+    return;
+  }
+  let html = `
+    <button class="back-link" onclick="${backFn}" style="margin-bottom:8px">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" width="16" height="16"><path d="M15 18l-6-6 6-6"/></svg>
+      Voltar
+    </button>
+    <div style="font-size:14px;font-weight:600;color:var(--blue);margin-bottom:10px">${line.name} – ${tipoLabel}</div>`;
+  options.forEach((opt,i)=>{
+    html+=`<div class="card-item" onclick="dOciosoSelectVia(${i})">
+      <div class="card-item-name">${opt.label}</div>
+    </div>`;
+  });
+  dOciosoShowCards(html);
+}
+
+function dOciosoSelectVia(i){
+  const line = ocisoData[dOciosoLineIdx];
+  const opt = line[dOciosoTipo][i];
+  const tipoLabel = dOciosoTipo==='inicio' ? 'Para início de linha' : 'Recolha para garagem';
+  const hasBoth = line.inicio.length>0 && line.recolha.length>0;
+  const backFn = hasBoth
+    ? 'dOciosoSelectLine('+dOciosoLineIdx+'); setTimeout(()=>dOciosoShowTipo(dOciosoTipo),0)'
+    : 'dOciosoShowTipo(dOciosoTipo)';
+  dOciosoShowMap(opt.url, line.name + ' – ' + opt.label, tipoLabel, backFn);
+}
+
+function dOciosoShowMap(url, title, tipo, backFn){
+  document.getElementById('d-ocioso-list').style.display = 'none';
+  const mv = document.getElementById('d-ocioso-map-view');
+  mv.classList.remove('hidden'); mv.style.display = 'flex';
+  document.getElementById('d-ocioso-title').textContent = title;
+  document.getElementById('d-ocioso-type').textContent = tipo;
+  document.getElementById('d-ocioso-map').innerHTML = mapIframeHtml(url);
+  document.getElementById('d-ocioso-link').href = mapViewerUrl(url);
+  const backBtn = mv.querySelector('.back-link');
+  if(backBtn) backBtn.setAttribute('onclick', backFn);
+}
+
+function dOciosoBackToList(){
+  const q = document.getElementById('d-ocioso-search');
+  dBuildOciosoCards(q ? q.value : '');
+}
+
+document.getElementById('d-search').addEventListener('input', e=>dBuildList(e.target.value));
+
+// ══════════════════════════
+// MOBILE: navigation
+// ══════════════════════════
+function mGoTo(screen){
+  mCurrentScreen = screen;
+  document.querySelectorAll('.m-screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('m-s-'+screen).classList.add('active');
+}
+
+function mTabbar(tab){
+  document.querySelectorAll('.m-tabbar-item').forEach(t=>t.classList.remove('active'));
+  if(tab==='itinerarios'){
+    document.getElementById('mtb-itinerarios').classList.add('active');
+    mGoTo('list');
+  } else if(tab==='ocioso'){
+    document.getElementById('mtb-ocioso').classList.add('active');
+    mGoTo('ocioso');
+    mBuildOciosoLineList();
+  }
+}
+
+// ── Ocioso state ──
+let mOciosoLineIdx = -1;
+let mOciosoTipo = 'inicio'; // 'inicio' | 'recolha'
+
+// ── Ocioso search filter ──
+function filterOcioso(query){
+  const f = query.toLowerCase();
+  // sync both inputs
+  const di = document.getElementById('d-ocioso-search');
+  const mi = document.getElementById('m-ocioso-search');
+  if(di && di.value !== query) di.value = query;
+  if(mi && mi.value !== query) mi.value = query;
+  dBuildOciosoCards(f);
+  mBuildOciosoLineList(f);
+}
+
+// Nível 1: lista de linhas
+function mBuildOciosoLineList(filter=''){
+  const el = document.getElementById('m-ocioso-line-list');
+  const f = filter.toLowerCase();
+  let html = '';
+  // Terminais primeiro, depois linhas numéricas
+  ocisoData.forEach((line, i)=>{
+    if(f && !line.name.toLowerCase().includes(f)) return;
+    const isTerminal = line.isTerminal;
+    const hasBoth = line.inicio.length > 0 && line.recolha.length > 0;
+    const hasInicio = line.inicio.length > 0;
+    const hasRecolha = line.recolha.length > 0;
+    const badge = isTerminal ? 'T' : getNum(line.name);
+    const sub = isTerminal ? 'Terminais' : (hasBoth ? 'Início + Recolha' : hasInicio ? 'Somente início' : 'Somente recolha');
+    html += `<div class="m-route-item" onclick="mOciosoSelectLine(${i})">
+      <span class="m-rnum" style="${isTerminal?'background:var(--blue-mid)':''}">${badge}</span>
+      <div style="flex:1">
+        <div class="m-rname">${line.name}</div>
+        <div class="m-rgrp">${sub}</div>
+      </div>
+      ${chevSvg('m-rchev')}
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+// Nível 2: início ou recolha
+function mOciosoSelectLine(i){
+  mOciosoLineIdx = i;
+  const line = ocisoData[i];
+  document.getElementById('m-ocioso-tipo-title').textContent = line.name;
+  const el = document.getElementById('m-ocioso-tipo-cards');
+  const hasI = line.inicio.length > 0;
+  const hasR = line.recolha.length > 0;
+
+  // Se só tem um tipo, pula direto para o nível 3
+  if(hasI && !hasR){ mOciosoSelectTipo('inicio'); return; }
+  if(hasR && !hasI){ mOciosoSelectTipo('recolha'); return; }
+
+  el.innerHTML = `
+    <div class="m-card" onclick="mOciosoSelectTipo('inicio')" style="border-left:3px solid var(--blue)">
+      <div class="m-card-name">Para início de linha</div>
+      <div class="m-card-group">${line.inicio.length} opção${line.inicio.length>1?'s':''}</div>
+    </div>
+    <div class="m-card" onclick="mOciosoSelectTipo('recolha')" style="border-left:3px solid var(--amber-border)">
+      <div class="m-card-name">Recolha para garagem</div>
+      <div class="m-card-group">${line.recolha.length} opção${line.recolha.length>1?'s':''}</div>
+    </div>`;
+  mGoTo('ocioso-tipo');
+}
+
+// Nível 3: vias (ou direto no mapa se só uma via)
+function mOciosoSelectTipo(tipo){
+  mOciosoTipo = tipo;
+  const line = ocisoData[mOciosoLineIdx];
+  const options = line[tipo];
+  const tipoLabel = tipo==='inicio' ? 'Para início de linha' : 'Recolha para garagem';
+  document.getElementById('m-ocioso-via-title').textContent = line.name + ' – ' + tipoLabel;
+
+  if(options.length === 1){
+    // Direto no mapa, voltar vai para tipo (ou pula para linha se só tinha um tipo)
+    const hasOtherTipo = line.inicio.length > 0 && line.recolha.length > 0;
+    document.getElementById('m-ocioso-via-back').onclick = ()=> mGoTo(hasOtherTipo ? 'ocioso-tipo' : 'ocioso');
+    mShowOciosoMap(options[0].url, options[0].label);
+  } else {
+    // Lista de vias — botão voltar vai para tela de tipo
+    document.getElementById('m-ocioso-via-back').onclick = ()=> mGoTo('ocioso-tipo');
+    const el = document.getElementById('m-ocioso-via-cards');
+    let html = '';
+    options.forEach((opt, i)=>{
+      html += `<div class="m-card" onclick="mOciosoSelectVia(${i})">
+        <div class="m-card-name">${opt.label}</div>
+      </div>`;
+    });
+    el.innerHTML = html;
+    el.style.display = 'flex';
+    el.style.flexDirection = 'column';
+    document.getElementById('m-ocioso-via-map-wrap').style.display = 'none';
+    mGoTo('ocioso-via');
+  }
+}
+
+function mOciosoSelectVia(i){
+  const line = ocisoData[mOciosoLineIdx];
+  const opt = line[mOciosoTipo][i];
+  // Voltar para lista de vias
+  document.getElementById('m-ocioso-via-back').onclick = ()=>{
+    document.getElementById('m-ocioso-via-cards').style.display = 'flex';
+    document.getElementById('m-ocioso-via-map-wrap').style.display = 'none';
+    document.getElementById('m-ocioso-via-back').onclick = ()=> mGoTo('ocioso-tipo');
+  };
+  mShowOciosoMap(opt.url, opt.label);
+}
+
+function mShowOciosoMap(url, label){
+  document.getElementById('m-ocioso-via-cards').style.display = 'none';
+  const wrap = document.getElementById('m-ocioso-via-map-wrap');
+  wrap.style.display = 'flex';
+  wrap.style.flexDirection = 'column';
+  document.getElementById('m-ocioso-map').innerHTML = mapIframeHtml(url);
+  document.getElementById('m-ocioso-link').href = mapViewerUrl(url);
+  mGoTo('ocioso-via');
+}
+
+// ── Mobile route list ──
+function mBuildList(filter=''){
+  const el = document.getElementById('m-list');
+  const f = filter.toLowerCase();
+  let html='', grp='';
+  routesInicio.forEach((r,i)=>{
+    if(f && !r.name.toLowerCase().includes(f) && !r.group.toLowerCase().includes(f)) return;
+    if(r.group!==grp){ grp=r.group; html+=`<div class="m-group-lbl">${grp}</div>`; }
+    html+=`<div class="m-route-item" onclick="mSelectRoute(${i})">
+      <span class="m-rnum">${getNum(r.name)}</span>
+      <div style="flex:1"><div class="m-rname">${r.name}</div><div class="m-rgrp">${r.group}</div></div>
+      ${chevSvg('m-rchev')}
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+function mSelectRoute(i){
+  const r = routesInicio[i];
+  document.getElementById('m-detail-title').textContent = r.name;
+  document.getElementById('m-it-map').innerHTML = mapIframeHtml(r.url);
+  document.getElementById('m-it-link').href = mapViewerUrl(r.url);
+  mGoTo('detail');
+}
+
+document.getElementById('m-search').addEventListener('input', e=>mBuildList(e.target.value));
+document.getElementById('m-ocioso-search').addEventListener('input', e=>filterOcioso(e.target.value));
+
+// ═════════════════════════
+// INIT
+// ═════════════════════════
+dBuildList();
+dBuildOciosoCards();
+mBuildList();
+mBuildOciosoLineList();
+</script>
+</body>
+</html>
