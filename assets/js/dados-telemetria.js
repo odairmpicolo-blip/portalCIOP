@@ -1051,7 +1051,25 @@ async function carregarAwsInicial() {
   return result;
 }
 
+function avisarAwsIndisponivel(motivo) {
+  const msg = String(motivo || "erro AWS");
+  const auth = /token|sessão|sessao|401|403|autentic|expirad/i.test(msg);
+  const el = $("statusUpload");
+  if (!el) return;
+  if (auth) {
+    el.textContent = "Dados exibidos · AWS: sessão inválida (saia e entre de novo para sincronizar)";
+  } else {
+    el.textContent = `Dados exibidos · AWS indisponível (${msg})`;
+  }
+  el.className = "status-upload warn";
+}
+
 function mostrarErroCarregamento(motivo) {
+  if (dadosBrutos?.rows?.length) {
+    avisarAwsIndisponivel(motivo);
+    renderizar();
+    return;
+  }
   const msg = String(motivo || "erro desconhecido");
   const auth = /token|sessão|sessao|401|403|autentic|expirad/i.test(msg);
   renderResumoVazio();
@@ -1066,13 +1084,15 @@ function mostrarErroCarregamento(motivo) {
   }
   $("btnRetryTelemetria")?.addEventListener("click", async () => {
     renderTabelaVazia("Carregando dados do banco AWS…");
-    const ok = await renovarSessaoTelemetria();
+    await renovarSessaoTelemetria();
     const res = await carregarAws({ tentativas: 4, authTentativas: 15 });
     if (res.ok) {
+      $("statusUpload").textContent = "Pronto para lançar novo CSV";
+      $("statusUpload").className = "status-upload muted";
       renderizar();
       return;
     }
-    mostrarErroCarregamento(res.motivo || (ok ? "erro ao carregar" : "sessão inválida"));
+    mostrarErroCarregamento(res.motivo || "sessão inválida");
   });
 }
 
@@ -1256,6 +1276,9 @@ async function iniciar() {
     $("statusUpload").className = "status-upload muted";
   } else if (restaurarCacheTelemetria()) {
     // cache local exibido enquanto AWS indisponível
+  } else if (dadosBrutos?.rows?.length) {
+    avisarAwsIndisponivel(carregou.motivo);
+    renderizar();
   } else {
     mostrarErroCarregamento(carregou.motivo);
     $("statusUpload").textContent = "Pronto para lançar novo CSV";

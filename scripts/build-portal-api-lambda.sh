@@ -17,6 +17,16 @@ cp "$AWS_DIR/package.json" "$BUILD/"
 cp "$AWS_DIR/package-lock.json" "$BUILD/" 2>/dev/null || true
 rsync -a --exclude node_modules --exclude .env "$ROOT/backend/" "$BUILD/backend/"
 
+SA_SRC=""
+for p in "$ROOT/.secrets/serviceAccount.json" "$HOME/.config/portal-ciop/serviceAccount.json"; do
+  if [[ -f "$p" ]]; then SA_SRC="$p"; break; fi
+done
+if [[ -n "$SA_SRC" ]]; then
+  mkdir -p "$BUILD/.secrets"
+  cp "$SA_SRC" "$BUILD/.secrets/serviceAccount.json"
+  echo "==> Service account Firebase incluído no pacote Lambda"
+fi
+
 echo "==> npm install (handler + backend)"
 cd "$BUILD"
 npm ci --omit=dev 2>/dev/null || npm ci

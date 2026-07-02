@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import path from "node:path";
 import admin from "firebase-admin";
 import { OAuth2Client } from "google-auth-library";
 import { config } from "../config.js";
@@ -6,15 +7,52 @@ import { config } from "../config.js";
 let firebaseReady = false;
 const oauthClient = new OAuth2Client();
 
+function candidatosServiceAccount() {
+  return [
+    process.env.GOOGLE_APPLICATION_CREDENTIALS,
+    process.env.FIREBASE_SERVICE_ACCOUNT,
+    "/var/task/.secrets/serviceAccount.json",
+    path.join(process.cwd(), ".secrets", "serviceAccount.json")
+  ].filter(Boolean);
+}
+
+function carregarServiceAccountJson() {
+  const inline = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (inline) {
+    try {
+      return JSON.parse(inline);
+    } catch (_) {
+      /* ignora JSON inválido */
+    }
+  }
+  const arquivo = candidatosServiceAccount().find((p) => fs.existsSync(p));
+  if (!arquivo) return null;
+  try {
+    return JSON.parse(fs.readFileSync(arquivo, "utf8"));
+  } catch (_) {
+    return null;
+  }
+}
+
 function initFirebaseAdmin() {
   if (firebaseReady || admin.apps.length) {
     firebaseReady = true;
     return true;
   }
   const credPath = config.firebaseCredentials;
-  if (!credPath || !fs.existsSync(credPath)) return false;
+  if (credPath && fs.existsSync(credPath)) {
+    admin.initializeApp({
+      credential: admin.credential.cert(JSON.parse(fs.readFileSync(credPath, "utf8"))),
+      projectId: config.firebaseProjectId
+    });
+    firebaseReady = true;
+    return true;
+  }
+  const serviceAccount = carregarServiceAccountJson();
+  if (!serviceAccount) return false;
   admin.initializeApp({
-    credential: admin.credential.cert(JSON.parse(fs.readFileSync(credPath, "utf8")))
+    credential: admin.credential.cert(serviceAccount),
+    projectId: config.firebaseProjectId
   });
   firebaseReady = true;
   return true;
@@ -22,7 +60,7 @@ function initFirebaseAdmin() {
 
 async function verifyFirebaseToken(token) {
   if (initFirebaseAdmin()) {
-    const decoded = await admin.auth().verifyIdToken(token);
+    const decoded = await admin.auth().verifyIdToken(token, true);
     return { email: decoded.email, uid: decoded.uid };
   }
   const ticket = await oauthClient.verifyIdToken({
@@ -68,7 +106,7 @@ export async function requireFirebaseUser(req, res, next) {
   } catch (err) {
     const msg = String(err?.message || "");
     const erro = /expired|expir/i.test(msg) ? "Token expirado" : "Token inválido";
-    console.warn("auth:", erro, msg.slice(0, 120));
+    console.warn("auth:", erro, msg.slice(0, 160));
     res.status(401).json({ ok: false, erro });
   }
 }
