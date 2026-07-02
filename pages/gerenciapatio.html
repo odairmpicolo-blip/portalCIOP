@@ -414,12 +414,18 @@ h1 {
     max-height: calc(100vh - 260px);
     min-height: 520px;
     overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     padding: 14px;
+    cursor: grab;
     background:
         linear-gradient(90deg, rgba(6, 36, 92, 0.045) 1px, transparent 1px),
         linear-gradient(180deg, rgba(6, 36, 92, 0.045) 1px, transparent 1px),
         #f5f7fb;
     background-size: 28px 28px;
+}
+.patio-board.dragging {
+    cursor: grabbing;
 }
 .patio-board:focus {
     outline: 3px solid rgba(11, 58, 138, 0.18);
@@ -431,6 +437,7 @@ h1 {
     gap: 12px;
     min-width: 1040px;
     align-items: stretch;
+    transform-origin: 0 0;
 }
 .fila-col {
     background: rgba(255, 255, 255, 0.94);
@@ -658,19 +665,19 @@ h1 {
 }
 @media (max-width: 991px) {
     .patio-board {
-        min-height: auto;
-        overflow-x: hidden;
+        min-height: 520px;
+        touch-action: none;
     }
     .patio-container {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        min-width: 0;
-        width: 100%;
+        grid-template-columns: repeat(6, minmax(150px, 1fr));
+        min-width: 1040px;
+        width: max-content;
     }
     .fila-col {
-        min-height: auto;
+        min-height: 480px;
     }
     .lane-body {
-        min-height: 0;
+        min-height: 380px;
     }
 }
 @media (max-width: 680px) {
@@ -687,12 +694,13 @@ h1 {
         grid-template-columns: 1fr;
     }
     .patio-board {
-        min-height: auto;
+        height: min(68vh, 620px);
+        min-height: 460px;
         padding: 10px;
     }
     .patio-container {
-        grid-template-columns: 1fr;
-        min-width: 0;
+        grid-template-columns: repeat(6, minmax(150px, 1fr));
+        min-width: 1040px;
     }
 }
 
@@ -1118,6 +1126,8 @@ const FILAS_PATIO = [
     { key: 'oficina', nome: 'Oficina' }
 ];
 
+let gestosPatioConfigurados = false;
+
 [...FILAS_PATIO.map(fila => fila.key), 'analisados', 'rpl'].forEach(chave => {
     if (!Array.isArray(patio[chave])) {
         patio[chave] = [];
@@ -1146,9 +1156,133 @@ function inicializarGerenciamentoPatio() {
     }
     
     renderizarPatio();
+    configurarGestosMapaPatio();
     if (window.portalLoading) {
         window.portalLoading.hide();
     }
+}
+
+function configurarGestosMapaPatio() {
+    if (gestosPatioConfigurados) return;
+    const board = document.querySelector('.patio-board');
+    const mapa = document.querySelector('.patio-container');
+    if (!board || !mapa) return;
+
+    gestosPatioConfigurados = true;
+    const suportaZoomCss = 'zoom' in mapa.style;
+    const minZoom = 0.65;
+    const maxZoom = 2.4;
+    let zoomAtual = 1;
+    let distanciaInicial = 0;
+    let zoomInicial = 1;
+    let arrastoAtivo = false;
+    let arrastoMovido = false;
+    let toqueInicialX = 0;
+    let toqueInicialY = 0;
+    let scrollInicialX = 0;
+    let scrollInicialY = 0;
+
+    function limitarZoom(valor) {
+        return Math.min(maxZoom, Math.max(minZoom, valor));
+    }
+
+    function distanciaToques(touches) {
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.hypot(dx, dy);
+    }
+
+    function centroToques(touches) {
+        return {
+            x: (touches[0].clientX + touches[1].clientX) / 2,
+            y: (touches[0].clientY + touches[1].clientY) / 2
+        };
+    }
+
+    function aplicarZoom(proximoZoom, centro) {
+        const zoomAnterior = zoomAtual;
+        zoomAtual = limitarZoom(proximoZoom);
+        if (Math.abs(zoomAtual - zoomAnterior) < 0.01) return;
+
+        const rect = board.getBoundingClientRect();
+        const pontoX = centro ? centro.x - rect.left : board.clientWidth / 2;
+        const pontoY = centro ? centro.y - rect.top : board.clientHeight / 2;
+        const conteudoX = (board.scrollLeft + pontoX) / zoomAnterior;
+        const conteudoY = (board.scrollTop + pontoY) / zoomAnterior;
+
+        if (suportaZoomCss) {
+            mapa.style.zoom = String(zoomAtual);
+        } else {
+            mapa.style.transform = 'scale(' + zoomAtual + ')';
+        }
+
+        board.scrollLeft = conteudoX * zoomAtual - pontoX;
+        board.scrollTop = conteudoY * zoomAtual - pontoY;
+    }
+
+    function alvoInterativo(target) {
+        return Boolean(target.closest('button, input, select, textarea, a, .remove-btn'));
+    }
+
+    board.addEventListener('touchstart', function(event) {
+        if (event.touches.length === 2) {
+            distanciaInicial = distanciaToques(event.touches);
+            zoomInicial = zoomAtual;
+            arrastoAtivo = false;
+            board.classList.add('dragging');
+            return;
+        }
+
+        if (event.touches.length === 1 && !alvoInterativo(event.target)) {
+            const toque = event.touches[0];
+            arrastoAtivo = true;
+            arrastoMovido = false;
+            toqueInicialX = toque.clientX;
+            toqueInicialY = toque.clientY;
+            scrollInicialX = board.scrollLeft;
+            scrollInicialY = board.scrollTop;
+            board.classList.add('dragging');
+        }
+    }, { passive: true });
+
+    board.addEventListener('touchmove', function(event) {
+        if (event.touches.length === 2 && distanciaInicial > 0) {
+            event.preventDefault();
+            const proporcao = distanciaToques(event.touches) / distanciaInicial;
+            aplicarZoom(zoomInicial * proporcao, centroToques(event.touches));
+            return;
+        }
+
+        if (event.touches.length === 1 && arrastoAtivo) {
+            const toque = event.touches[0];
+            const dx = toque.clientX - toqueInicialX;
+            const dy = toque.clientY - toqueInicialY;
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                arrastoMovido = true;
+                event.preventDefault();
+                board.scrollLeft = scrollInicialX - dx;
+                board.scrollTop = scrollInicialY - dy;
+            }
+        }
+    }, { passive: false });
+
+    board.addEventListener('touchend', function(event) {
+        if (event.touches.length < 2) {
+            distanciaInicial = 0;
+        }
+        if (!event.touches.length) {
+            arrastoAtivo = false;
+            board.classList.remove('dragging');
+        }
+    }, { passive: true });
+
+    board.addEventListener('click', function(event) {
+        if (arrastoMovido) {
+            event.preventDefault();
+            event.stopPropagation();
+            arrastoMovido = false;
+        }
+    }, true);
 }
 
 document.addEventListener("DOMContentLoaded", function() {
