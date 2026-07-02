@@ -1,12 +1,4 @@
-import {
-  carregarTelemetriaAws,
-  importarTelemetriaAws,
-  telemetriaAwsDisponivel,
-  aguardarAuthTelemetria,
-  renovarSessaoTelemetria
-} from "./telemetria-aws.js";
-import { carregarSnapshotTelemetriaJson } from "./telemetria-dados-leitura.js";
-import { initPortalAwsRuntime } from "./portal-aws-config.js";
+import { carregarSnapshotTelemetria, carregarManifestTelemetria } from "./telemetria-dados-leitura.js";
 import {
   agregarLinhasTelemetria,
   normalizarLinhaTelemetria,
@@ -16,6 +8,10 @@ import {
 const FROTA = (window.FROTA_PATIO || []).slice().sort((a, b) =>
   String(a.veiculo).localeCompare(String(b.veiculo), "pt-BR", { numeric: true })
 );
+
+const PLANILHA_TELEMETRIA_URL = "https://docs.google.com/spreadsheets/d/1Z_rFA-1jz7-kq4juGp5uFG4WMpVBloML98hDgWcX9gQ/edit";
+let fonteAtiva = "tcgl";
+let snapshotRaw = null;
 
 const CHAVES_VEICULO = [
   "veiculo", "veículo", "vehicle id", "vehicle_id", "prefixo", "carro", "numero", "número", "n°", "nº",
@@ -32,20 +28,15 @@ const KPI_DEFS = [
 ];
 
 const COLUNAS_OCULTAS = [
-  "cliente",
-  "customer id",
-  "customer_id",
-  "temperatura cabine",
-  "avg cabin temp",
-  "avg_cabin_temp",
-  "temp cabine",
-  "cons. combustivel",
-  "cons combustivel",
-  "cons. méd. comb.",
-  "cons. med. comb.",
-  "cons méd comb",
   "data_iso",
   "veiculo_norm"
+];
+
+const METRICAS_COMPARACAO = [
+  "Km Inicial",
+  "Km Final",
+  "Km Percorrido",
+  "Consumo Combustivel (L)"
 ];
 
 const COLUNAS_TABELA = [
@@ -82,6 +73,40 @@ function colunasExibiveis(headers, colVeiculo) {
     if (!ordenadas.includes(c)) ordenadas.push(c);
   });
   return ordenadas;
+}
+
+function colunaComparacaoLado(col) {
+  const m = String(col).match(/^(.+)\s+\((Clever|TCGL)\)$/);
+  return m ? { metrica: m[1], lado: m[2] } : null;
+}
+
+function toleranciaMetrica(metrica) {
+  const n = normChave(metrica);
+  if (n.includes("consumo combustivel")) return 0.5;
+  return 1;
+}
+
+function metricasDivergentes(clever, tcgl) {
+  return METRICAS_COMPARACAO.some((metrica) => {
+    const valC = clever?.[metrica] ?? "";
+    const valT = tcgl?.[metrica] ?? "";
+    const nC = parseNumero(valC);
+    const nT = parseNumero(valT);
+    const temC = valorPreenchido(valC) && Number.isFinite(nC);
+    const temT = valorPreenchido(valT) && Number.isFinite(nT);
+    if (!temC && !temT) return false;
+    if (!temC || !temT) return true;
+    return Math.abs(nT - nC) > toleranciaMetrica(metrica);
+  });
+}
+
+function cabecalhosComparacao() {
+  const headers = ["Data"];
+  METRICAS_COMPARACAO.forEach((metrica) => {
+    headers.push(`${metrica} (Clever)`, `${metrica} (TCGL)`);
+  });
+  headers.push("Status");
+  return headers;
 }
 
 function colunaChave(col) {
@@ -137,7 +162,20 @@ function formatarConsumoLitros(val) {
 function formatarCelula(col, val, row) {
   if (row?.__semDados) {
     if (col === dadosBrutos?.colData && !String(val ?? "").trim()) return "Sem dados";
+    if (fonteAtiva === "comparacao" || dadosBrutos?.modo === "comparacao") return "Sem dados";
     return "";
+  }
+  if (row?.__comparacao) {
+    const info = colunaComparacaoLado(col);
+    if (info) {
+      const s = String(val ?? "").trim();
+      const semLado = info.lado === "Clever" ? row.__semDadosClever : row.__semDadosTcgl;
+      if (!s) return semLado ? "Sem dados" : "";
+      if (normChave(info.metrica).includes("consumo combustivel")) return formatarConsumoLitros(s);
+      if (normChave(info.metrica).includes("km")) return formatarInteiro(s);
+      return formatarDecimal(s);
+    }
+    if (col === "Status") return String(val ?? "").trim();
   }
   const s = String(val ?? "").trim();
   const n = colunaChave(col);
@@ -452,6 +490,12 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
 
 function classeLinhaDado(row, colunasKpi) {
   if (row.__semDados) return "row-sem-dados";
+  if (row.__comparacao) {
+    if (row.__semDadosClever && row.__semDadosTcgl) return "row-sem-dados";
+    if (row.__semDadosClever || row.__semDadosTcgl) return "row-sem-dados";
+    if (row.Status === "Divergente") return "row-incoerente";
+    return "";
+  }
   const cols = KPI_DEFS.map((d) => colunasKpi[d.id]).filter(Boolean);
   if (!cols.length) return "";
   let filled = 0;
@@ -479,25 +523,34 @@ function linhaSemDados(veiculo, dataIso) {
     row[colData] = `${d}-${m}-${y}`;
     row.data_iso = dataIso;
   }
+  if (fonteAtiva === "comparacao" || dadosBrutos?.modo === "comparacao") {
+    row.__comparacao = true;
+    row.__semDadosClever = true;
+    row.__semDadosTcgl = true;
+    cabecalhosComparacao().forEach((col) => {
+      if (col !== "Data") row[col] = col === "Status" ? "Sem dados" : "";
+    });
+  }
   return row;
 }
 
 function expandirFrotaSemDados(rows) {
-  if (!$("filtroVeiculo")?.value && FROTA.length && dadosBrutos) {
-    const colVeiculo = dadosBrutos.colVeiculo;
-    const presentes = new Set(rows.map((r) => normVeiculo(r[colVeiculo])).filter(Boolean));
-    const dataIso = contextoDiaUnico();
-    const extras = [];
+  const diaUnico = contextoDiaUnico();
+  const expandir = FROTA.length && dadosBrutos && (!$("filtroVeiculo")?.value) && diaUnico;
+  if (!expandir) return rows;
 
-    FROTA.forEach((f) => {
-      const id = normVeiculo(f.veiculo);
-      if (!id || presentes.has(id)) return;
-      extras.push(linhaSemDados(f.veiculo, dataIso || null));
-    });
+  const colVeiculo = dadosBrutos.colVeiculo;
+  const presentes = new Set(rows.map((r) => normVeiculo(r[colVeiculo])).filter(Boolean));
+  const dataIso = diaUnico || null;
+  const extras = [];
 
-    return [...rows, ...extras];
-  }
-  return rows;
+  FROTA.forEach((f) => {
+    const id = normVeiculo(f.veiculo);
+    if (!id || presentes.has(id)) return;
+    extras.push(linhaSemDados(f.veiculo, dataIso || null));
+  });
+
+  return [...rows, ...extras];
 }
 
 function dataIsoPadrao(offsetDias) {
@@ -530,10 +583,187 @@ function aguardar(ms) {
 }
 
 async function carregarSnapshotInicial() {
-  const snap = await carregarSnapshotTelemetriaJson();
+  const snap = await carregarSnapshotTelemetria();
   if (!snap?.dados?.length) return false;
-  aplicarRegistrosAws({ dados: snap.dados });
+  snapshotRaw = {
+    ...snap,
+    dados: snap.dados.map((d) => ({
+      ...d,
+      fonte: d.fonte || "tcgl"
+    }))
+  };
+  aplicarFonteAtiva();
+  atualizarStatusJson();
   return true;
+}
+
+function registrosDaFonte(fonte) {
+  return (snapshotRaw?.dados || []).filter((d) => (d.fonte || "tcgl") === fonte);
+}
+
+function payloadParaRow(reg, colVeiculo, colData) {
+  let payload = reg.payload || reg;
+  if (typeof payload === "string") {
+    try { payload = JSON.parse(payload); } catch (_) { payload = {}; }
+  }
+  const row = normalizarLinhaTelemetria({ ...payload });
+  row[colVeiculo] = reg.veiculo || row.Veiculo || row[colVeiculo];
+  row[colData] = reg.data_iso || row.Data || row[colData];
+  row.data_iso = reg.data_iso;
+  row.__fonte = reg.fonte || "tcgl";
+  return row;
+}
+
+function montarLinhasComparacao() {
+  const clever = registrosDaFonte("clever");
+  const tcgl = registrosDaFonte("tcgl");
+  const mapa = new Map();
+
+  const indexar = (lista, lado) => {
+    lista.forEach((reg) => {
+      const key = `${reg.data_iso}|${normVeiculo(reg.veiculo)}`;
+      if (!mapa.has(key)) {
+        mapa.set(key, { data_iso: reg.data_iso, veiculo: normVeiculo(reg.veiculo), clever: null, tcgl: null });
+      }
+      mapa.get(key)[lado] = reg.payload || reg;
+    });
+  };
+  indexar(clever, "clever");
+  indexar(tcgl, "tcgl");
+
+  const colVeiculo = "Veiculo";
+  const colData = "Data";
+  const rows = [];
+
+  mapa.forEach((item) => {
+    const c = item.clever ? normalizarLinhaTelemetria({ ...item.clever }) : null;
+    const t = item.tcgl ? normalizarLinhaTelemetria({ ...item.tcgl }) : null;
+    const semClever = !c;
+    const semTcgl = !t;
+    const row = {
+      [colVeiculo]: item.veiculo,
+      [colData]: item.data_iso,
+      data_iso: item.data_iso,
+      __comparacao: true,
+      __semDados: semClever && semTcgl,
+      __semDadosClever: semClever,
+      __semDadosTcgl: semTcgl
+    };
+
+    METRICAS_COMPARACAO.forEach((metrica) => {
+      row[`${metrica} (Clever)`] = c?.[metrica] ?? "";
+      row[`${metrica} (TCGL)`] = t?.[metrica] ?? "";
+    });
+
+    row.Status = semClever && semTcgl ? "Sem dados"
+      : semClever ? "Sem Clever"
+        : semTcgl ? "Sem TCGL"
+          : (metricasDivergentes(c, t) ? "Divergente" : "OK");
+
+    rows.push(row);
+  });
+
+  return {
+    headers: cabecalhosComparacao(),
+    rows,
+    colVeiculo,
+    colData
+  };
+}
+
+function aplicarFonteAtiva() {
+  if (!snapshotRaw?.dados?.length) return 0;
+
+  if (fonteAtiva === "comparacao") {
+    const comp = montarLinhasComparacao();
+    dadosBrutos = {
+      headers: comp.headers,
+      rows: comp.rows,
+      colVeiculo: comp.colVeiculo,
+      colData: comp.colData,
+      colunasKpi: detectarColunasKpi(comp.headers),
+      arquivos: ["planilha-google"],
+      modo: "comparacao"
+    };
+  } else {
+    const registros = registrosDaFonte(fonteAtiva);
+    const headers = detectarHeadersTelemetria(registros);
+    const colVeiculo = detectarColunaVeiculo(headers) || "Veiculo";
+    const colData = detectarColunaData(headers) || "Data";
+    const rows = registros.map((r) => payloadParaRow(r, colVeiculo, colData));
+    aplicarDadosBrutos({
+      headers,
+      rows,
+      colVeiculo,
+      colData,
+      colunasKpi: detectarColunasKpi(headers),
+      arquivos: [`planilha-${fonteAtiva}`],
+      modo: fonteAtiva
+    }, { resetarAba: false });
+    return dadosBrutos.rows.length;
+  }
+
+  colunasMarcadas = new Set(colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo));
+  montarFiltroVeiculos();
+  montarFiltroDatas(true);
+  montarPainelColunas();
+  renderizar();
+  return dadosBrutos.rows.length;
+}
+
+function selecionarFonte(fonte) {
+  if (!["clever", "tcgl", "comparacao"].includes(fonte) || fonte === fonteAtiva) return;
+  fonteAtiva = fonte;
+  abaDataAtiva = "todas";
+  sortCol = null;
+  aplicarFonteAtiva();
+  renderAbasFonte();
+}
+
+function renderAbasFonte() {
+  const wrap = $("abasFonteWrap");
+  const container = $("abasFonte");
+  if (!wrap || !container) return;
+  wrap.hidden = false;
+  const opcoes = [
+    { id: "clever", rotulo: "CLEVER" },
+    { id: "tcgl", rotulo: "TCGL" },
+    { id: "comparacao", rotulo: "COMPARAÇÃO" }
+  ];
+  container.innerHTML = opcoes.map((o) =>
+    `<button type="button" role="tab" data-fonte="${o.id}" class="${fonteAtiva === o.id ? "ativo" : ""}" aria-selected="${fonteAtiva === o.id}">${o.rotulo}</button>`
+  ).join("");
+  container.querySelectorAll("[data-fonte]").forEach((btn) => {
+    btn.addEventListener("click", () => selecionarFonte(btn.getAttribute("data-fonte")));
+  });
+}
+
+async function atualizarStatusJson() {
+  const el = $("statusJson");
+  if (!el) return;
+  const snap = snapshotRaw;
+  const quando = snap?.atualizadoEm ? new Date(snap.atualizadoEm).toLocaleString("pt-BR") : null;
+  const clever = snap?.total_clever ?? "—";
+  const tcgl = snap?.total_tcgl ?? "—";
+  if (snap?.origem_carregamento === "planilha" && quando) {
+    el.textContent = `Planilha · ${quando} · Clever ${clever} · TCGL ${tcgl}`;
+    el.className = "status-json ok";
+    return;
+  }
+  const manifest = await carregarManifestTelemetria();
+  if (manifest?.atualizadoEm) {
+    const quandoManifest = new Date(manifest.atualizadoEm).toLocaleString("pt-BR");
+    const cleverManifest = manifest.total_clever ?? clever;
+    const tcglManifest = manifest.total_tcgl ?? tcgl;
+    el.textContent = `JSON · ${quandoManifest} · Clever ${cleverManifest} · TCGL ${tcglManifest}`;
+    el.className = "status-json ok";
+  } else if (quando) {
+    el.textContent = `JSON · ${quando} · Clever ${clever} · TCGL ${tcgl}`;
+    el.className = "status-json ok";
+  } else {
+    el.textContent = "JSON local";
+    el.className = "status-json muted";
+  }
 }
 
 function formatarDataBr(iso) {
@@ -716,6 +946,7 @@ function alternarOrdenacao(col) {
 function colunasSelecionadas() {
   if (!dadosBrutos) return [];
   const todas = colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo);
+  if (dadosBrutos.modo === "comparacao") return todas;
   if (!colunasMarcadas.size) return todas;
   return todas.filter((c) => colunasMarcadas.has(c));
 }
@@ -814,6 +1045,8 @@ function fecharPainelColunas() {
 
 function montarPainelColunas() {
   const panel = $("filtroColunasPanel");
+  const fieldColunas = document.querySelector(".filter-field--colunas");
+  if (fieldColunas) fieldColunas.hidden = dadosBrutos?.modo === "comparacao";
   if (!dadosBrutos || !panel) return;
   const cols = colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo);
   if (!colunasMarcadas.size) cols.forEach((c) => colunasMarcadas.add(c));
@@ -969,7 +1202,7 @@ function renderizar() {
   $("painelResultado").hidden = false;
   if (!dadosBrutos?.rows?.length) {
     renderResumoVazio();
-    renderTabelaVazia("Nenhum registro no período. Use + XLSX para lançar novos dados.");
+    renderTabelaVazia("Nenhum registro no período. Atualize o JSON a partir da planilha Google.");
     return;
   }
   const cols = colunasSelecionadas();
@@ -1278,8 +1511,6 @@ async function iniciar() {
     return;
   }
 
-  await initPortalAwsRuntime();
-
   $("painelResultado").hidden = false;
   montarFiltroVeiculos();
   $("filtroDataDe").value = "";
@@ -1287,32 +1518,8 @@ async function iniciar() {
   $("statFrota").textContent = FROTA.length;
   limparCacheTelemetriaLegado();
   renderResumoVazio();
-  renderTabelaVazia("Carregando dados…");
-
-  const temSnapshot = await carregarSnapshotInicial();
-  if (!temSnapshot) {
-    renderTabelaVazia("Carregando dados do banco AWS…");
-  }
-
-  const input = $("csvInput");
-  const zona = $("uploadZona");
-
-  input.addEventListener("change", () => {
-    lerArquivos(input.files);
-    input.value = "";
-  });
-
-  zona.addEventListener("dragover", (e) => { e.preventDefault(); zona.classList.add("drag"); });
-  zona.addEventListener("dragleave", () => zona.classList.remove("drag"));
-  zona.addEventListener("drop", (e) => {
-    e.preventDefault();
-    zona.classList.remove("drag");
-    lerArquivos(e.dataTransfer?.files);
-  });
-  zona.addEventListener("click", () => input.click());
-  zona.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); }
-  });
+  renderTabelaVazia("Carregando dados da planilha…");
+  renderAbasFonte();
 
   ["filtroDataDe", "filtroDataAte"].forEach((id) => {
     const el = $(id);
@@ -1341,22 +1548,17 @@ async function iniciar() {
 
   $("btnLimparFiltros")?.addEventListener("click", () => limparFiltros());
 
-  $("statusUpload").textContent = "Pronto para lançar nova planilha";
-  $("statusUpload").className = "status-upload muted";
-  const carregou = await carregarAwsInicial();
-  if (carregou.ok) {
-    $("statusUpload").textContent = "Pronto para lançar nova planilha";
-    $("statusUpload").className = "status-upload muted";
-  } else if (restaurarCacheTelemetria()) {
-    // cache local exibido enquanto AWS indisponível
-  } else if (dadosBrutos?.rows?.length) {
-    avisarAwsIndisponivel(carregou.motivo);
-    renderizar();
-  } else {
-    mostrarErroCarregamento(carregou.motivo);
-    $("statusUpload").textContent = "Pronto para lançar nova planilha";
-    $("statusUpload").className = "status-upload muted";
+  const temSnapshot = await carregarSnapshotInicial();
+  if (!temSnapshot) {
+    renderTabelaVazia("Nenhum dado de telemetria. Verifique o Web App da planilha ou exporte XLSX e rode o script de importação.");
+    const el = $("statusJson");
+    if (el) {
+      el.innerHTML = `Sem dados · <a href="${PLANILHA_TELEMETRIA_URL}" target="_blank" rel="noopener">Abrir planilha</a>`;
+      el.className = "status-json warn";
+    }
+    return;
   }
+  renderAbasFonte();
 }
 
 function bootstrapTelemetria() {

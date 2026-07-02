@@ -50,6 +50,7 @@ jobs:
           CUSTOM_DOMAIN: ${{ vars.PORTAL_CUSTOM_DOMAIN }}
           PORTAL_AWS_API_URL: ${{ secrets.PORTAL_AWS_API_URL }}
           RELATORIO_IA_SCRIPT_URL: ${{ secrets.RELATORIO_IA_SCRIPT_URL }}
+          TELEMETRIA_SCRIPT_URL: ${{ secrets.TELEMETRIA_SCRIPT_URL }}
         run: |
           set -euo pipefail
           mkdir site
@@ -69,20 +70,23 @@ jobs:
             echo "Para ativar domínio após DNS: bash scripts/ativar-dominio-portal.sh"
           fi
 
-          export PORTAL_AWS_API_URL RELATORIO_IA_SCRIPT_URL
+          export PORTAL_AWS_API_URL RELATORIO_IA_SCRIPT_URL TELEMETRIA_SCRIPT_URL
           node -e "
             const fs = require('fs');
             const path = 'site/assets/data/portal-runtime.json';
             const cfg = JSON.parse(fs.readFileSync(path, 'utf8'));
             const api = (process.env.PORTAL_AWS_API_URL || '').replace(/\\/$/, '');
             const ia = (process.env.RELATORIO_IA_SCRIPT_URL || '').trim();
+            const telemetria = (process.env.TELEMETRIA_SCRIPT_URL || '').trim();
             if (api) cfg.awsApiUrl = api;
             if (ia) cfg.relatorioIaScriptUrl = ia;
+            if (telemetria) cfg.telemetriaScriptUrl = telemetria;
             delete cfg.devApiKey;
             fs.writeFileSync(path, JSON.stringify(cfg, null, 2) + '\n');
             if (api) console.log('portal-runtime.json -> awsApiUrl:', api);
             if (ia) console.log('portal-runtime.json -> relatorioIaScriptUrl:', ia);
-            if (!api && !ia) console.log('portal-runtime.json mantém valores do repositório');
+            if (telemetria) console.log('portal-runtime.json -> telemetriaScriptUrl:', telemetria);
+            if (!api && !ia && !telemetria) console.log('portal-runtime.json mantém valores do repositório');
           "
 
       - name: Configurar GitHub Pages

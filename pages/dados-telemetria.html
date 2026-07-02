@@ -28,22 +28,18 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
 .btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .panel{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:0 8px 24px rgba(16,24,40,.06);margin-bottom:16px}
 .panel h2{font-size:15px;color:var(--blue);margin:0 0 12px}
-.upload-compact{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1.5px dashed #b8c5d9;border-radius:10px;padding:10px 14px;background:linear-gradient(180deg,#fafcff,#f4f8ff);cursor:pointer;transition:border-color .2s,background .2s}
-.upload-compact:hover,.upload-compact.drag{border-color:var(--blue2);background:#eef4ff}
-.upload-compact strong{font-size:13px;color:var(--blue);white-space:nowrap}
-.upload-compact span{font-size:11px;color:var(--muted);font-weight:600}
-.upload-compact input[type=file]{display:none}
-.upload-meta{flex:1;min-width:180px;font-size:11px;color:var(--muted);font-weight:700;line-height:1.4}
-.status-aws{font-size:11px;font-weight:800;padding:4px 8px;border-radius:6px;white-space:nowrap}
-.status-aws.ok{background:#dcfce7;color:#166534}
-.status-aws.warn{background:#fef3c7;color:#92400e}
-.status-aws.muted{background:#f1f5f9;color:#475569}
-.status-upload{font-size:11px;font-weight:800;padding:4px 8px;border-radius:6px;white-space:nowrap}
-.status-upload.ok{background:#dcfce7;color:#166534}
-.status-upload.warn{background:#fef3c7;color:#92400e}
-.status-upload.muted{background:#f1f5f9;color:#475569}
-.info-banco{margin:10px 0 0;font-size:12px;color:var(--blue);font-weight:700;line-height:1.4}
-.info-banco-hint{margin:4px 0 0;font-size:11px;color:var(--muted);font-weight:600;line-height:1.35}
+.abas-fonte-wrap{margin-bottom:14px}
+.abas-fonte{display:flex;flex-wrap:wrap;gap:8px}
+.abas-fonte button{border:2px solid var(--blue);background:#fff;color:var(--blue);border-radius:10px;padding:8px 18px;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;letter-spacing:.04em}
+.abas-fonte button.ativo{background:var(--blue);color:#fff}
+.status-json{font-size:11px;font-weight:800;padding:4px 8px;border-radius:6px;white-space:nowrap}
+.status-json.ok{background:#dcfce7;color:#166534}
+.status-json.warn{background:#fef3c7;color:#92400e}
+.status-json.muted{background:#f1f5f9;color:#475569}
+.status-json a{color:inherit}
+.panel-planilha{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.panel-planilha p{margin:0;font-size:12px;color:var(--muted);font-weight:600;line-height:1.4}
+.panel-planilha a{color:var(--blue);font-weight:800}
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
 .stat-card{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px}
 .stat-card .lbl{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;line-height:1.3}
@@ -110,7 +106,7 @@ table.telemetria tr.row-incoerente .veiculo{color:#92400e}
   <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
   <div class="title-wrap">
     <h1 class="telemetria-title" aria-label="Dados de telemetria">Dados de telemetria</h1>
-    <div class="subtitle">Cobertura da frota · 250 veículos</div>
+    <div class="subtitle">Clever · TCGL · Comparação · 250 veículos</div>
   </div>
   <div class="header-actions">
     <div class="ciop-session" aria-label="Usuário logado">
@@ -132,16 +128,16 @@ table.telemetria tr.row-incoerente .veiculo{color:#92400e}
     </div>
   </div>
 
-  <section class="panel panel-upload" aria-label="Lançamento de planilha">
-    <div class="upload-compact" id="uploadZona" tabindex="0" role="button" aria-label="Lançar novo arquivo XLSX ou CSV">
-      <strong>+ XLSX</strong>
-      <span>Novo lançamento · Clever / TCGL</span>
-      <input type="file" id="csvInput" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" multiple>
-      <div class="upload-meta"><span class="status-upload muted" id="statusUpload">Pronto para lançar</span></div>
-    </div>
+  <section class="panel panel-planilha" aria-label="Fonte dos dados">
+    <p>Dados da <a href="https://docs.google.com/spreadsheets/d/1Z_rFA-1jz7-kq4juGp5uFG4WMpVBloML98hDgWcX9gQ/edit" target="_blank" rel="noopener">planilha Google</a> (abas Clever e TCGL), carregados via JSON estático.</p>
+    <span class="status-json muted" id="statusJson">Carregando…</span>
   </section>
 
   <div id="painelResultado">
+    <div class="abas-fonte-wrap" id="abasFonteWrap" hidden>
+      <div class="abas-fonte" id="abasFonte" role="tablist" aria-label="Fonte de telemetria"></div>
+    </div>
+
     <section class="panel" id="painelFiltros" aria-label="Filtros">
       <h2>Filtros</h2>
       <div class="filtros-grid">
@@ -181,7 +177,7 @@ table.telemetria tr.row-incoerente .veiculo{color:#92400e}
 
     <section class="panel">
       <h2>Dados de telemetria</h2>
-      <p class="legenda-linhas">Linha <span style="background:#fee2e2;padding:0 6px;border-radius:4px">vermelha</span> sem registro ou sem CAN/KM · <span style="background:#fef3c7;padding:0 6px;border-radius:4px">amarela</span> dados parciais</p>
+      <p class="legenda-linhas">Linha <span style="background:#fee2e2;padding:0 6px;border-radius:4px">vermelha</span> sem registro · <span style="background:#fef3c7;padding:0 6px;border-radius:4px">amarela</span> dados parciais ou divergência na comparação</p>
       <div class="abas-data-wrap" id="abasDataWrap" hidden>
         <div class="abas-data" id="abasData" role="tablist" aria-label="Datas"></div>
       </div>
@@ -193,14 +189,13 @@ table.telemetria tr.row-incoerente .veiculo{color:#92400e}
         </table>
       </div>
       <div id="painelVazio" class="empty-state" hidden>
-        <p id="msgVazio">Nenhum registro no banco. Use + XLSX para lançar novos dados.</p>
+        <p id="msgVazio">Nenhum registro no JSON. Atualize a planilha e rode o script de importação.</p>
       </div>
     </section>
   </div>
 </main>
 
 <footer class="page-footer">Portal CIOP · Dados de telemetria · TCGL</footer>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script type="module" src="../assets/js/dados-telemetria.js?v=20260711"></script>
+<script type="module" src="../assets/js/dados-telemetria.js?v=20260702a"></script>
 </body>
 </html>
