@@ -1,0 +1,689 @@
+/* Telemetria — layout compacto, visual moderno */
+
+:root {
+  --tel-bg: #eef2f9;
+  --tel-bg-accent: radial-gradient(1200px 600px at 10% -10%, rgba(6, 182, 212, 0.12), transparent 55%),
+    radial-gradient(900px 500px at 95% 0%, rgba(255, 107, 0, 0.08), transparent 50%),
+    linear-gradient(180deg, #f8fafc 0%, var(--tel-bg) 100%);
+  --tel-panel: rgba(255, 255, 255, 0.92);
+  --tel-panel-border: rgba(6, 36, 92, 0.1);
+  --tel-glow: rgba(6, 182, 212, 0.35);
+  --tel-cyan: #0891b2;
+  --tel-cyan-soft: #ecfeff;
+  --tel-navy: #06245c;
+  --tel-navy-2: #0b3a8a;
+  --tel-muted: #64748b;
+  --tel-text: #0f172a;
+  --tel-radius: 14px;
+  --tel-radius-sm: 10px;
+}
+
+body.telemetria-page {
+  background: var(--tel-bg-accent);
+  color: var(--tel-text);
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+}
+
+.telemetria-main {
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 14px 18px 28px;
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Toolbar — igual ICV / Pontualidade */
+.toolbar {
+  background: #fff;
+  border: 1px solid var(--tel-panel-border);
+  border-radius: var(--tel-radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.05);
+  border-left: 3px solid #ff6b00;
+}
+
+.toolbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toolbar .btn-portal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  border-radius: 8px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, var(--tel-navy), var(--tel-navy-2));
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 12px;
+  box-shadow: 0 8px 16px rgba(6, 36, 92, 0.16);
+  transition: transform 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+  border: 0;
+  font-family: inherit;
+}
+
+.toolbar .btn-portal:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(6, 36, 92, 0.2);
+}
+
+.toolbar .btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar .btn-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.filters-status {
+  margin-left: auto;
+  flex: 0 1 auto;
+  max-width: min(420px, 40vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-json {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+}
+
+.status-json.ok {
+  background: rgba(22, 163, 74, 0.12);
+  color: #166534;
+  border-color: rgba(22, 163, 74, 0.2);
+}
+
+.status-json.warn {
+  background: rgba(217, 119, 6, 0.12);
+  color: #92400e;
+  border-color: rgba(217, 119, 6, 0.2);
+}
+
+.status-json.muted {
+  background: rgba(100, 116, 139, 0.1);
+  color: #475569;
+  border-color: rgba(100, 116, 139, 0.15);
+}
+
+/* Painel de filtros — uma linha */
+.telemetria-filters {
+  background: var(--tel-panel);
+  border: 1px solid var(--tel-panel-border);
+  border-radius: var(--tel-radius);
+  padding: 10px 12px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  position: relative;
+  overflow: hidden;
+}
+
+.telemetria-filters::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--tel-cyan), #ff6b00 45%, var(--tel-navy));
+  opacity: 0.85;
+}
+
+.filters-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.filters-row::-webkit-scrollbar {
+  height: 4px;
+}
+
+.filters-row::-webkit-scrollbar-thumb {
+  background: rgba(6, 36, 92, 0.15);
+  border-radius: 999px;
+}
+
+.abas-fonte {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 3px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  border: 1px solid rgba(6, 36, 92, 0.08);
+}
+
+.abas-fonte button {
+  border: 0;
+  background: transparent;
+  color: var(--tel-navy);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.abas-fonte button.ativo {
+  background: linear-gradient(135deg, var(--tel-navy), var(--tel-navy-2));
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(6, 36, 92, 0.25);
+}
+
+.filters-divider {
+  width: 1px;
+  height: 28px;
+  background: linear-gradient(180deg, transparent, rgba(6, 36, 92, 0.15), transparent);
+  flex: 0 0 auto;
+}
+
+.filter-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.filter-inline label {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--tel-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.filter-inline input[type="date"],
+.filter-inline select {
+  min-height: 32px;
+  height: 32px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid rgba(6, 36, 92, 0.12);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--tel-text);
+  font-family: inherit;
+  min-width: 0;
+}
+
+.filter-inline input[type="date"] {
+  width: 132px;
+}
+
+.filter-inline select {
+  width: 108px;
+}
+
+.chave-planilha {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--tel-navy);
+  user-select: none;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(6, 36, 92, 0.08);
+  background: #f8fafc;
+}
+
+.chave-planilha input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.chave-planilha-track {
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  position: relative;
+  transition: background 0.2s;
+}
+
+.chave-planilha-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+
+.chave-planilha input:checked + .chave-planilha-track {
+  background: linear-gradient(135deg, var(--tel-cyan), #0e7490);
+}
+
+.chave-planilha input:checked + .chave-planilha-track .chave-planilha-thumb {
+  transform: translateX(16px);
+}
+
+.btn-limpar-filtros {
+  flex: 0 0 auto;
+  border: 1px solid rgba(6, 36, 92, 0.12);
+  background: #fff;
+  color: var(--tel-navy);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-limpar-filtros:hover {
+  background: var(--tel-cyan-soft);
+  border-color: rgba(8, 145, 178, 0.35);
+}
+
+.filtro-ativo-hint {
+  font-size: 10px;
+  color: #d97706;
+  font-weight: 700;
+  margin: 6px 0 0;
+}
+
+.filter-field--colunas {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.filtro-colunas-btn {
+  min-height: 32px;
+  height: 32px;
+  padding: 0 28px 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid rgba(6, 36, 92, 0.12);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--tel-text);
+  white-space: nowrap;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2306245c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.filtro-colunas-panel {
+  position: fixed;
+  z-index: 9999;
+  min-width: 220px;
+  max-width: min(360px, 92vw);
+  max-height: min(52vh, 420px);
+  overflow: auto;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--tel-panel-border);
+  border-radius: var(--tel-radius-sm);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.filtro-colunas-panel[hidden] {
+  display: none !important;
+}
+
+.filtro-colunas-acoes {
+  display: flex;
+  gap: 6px;
+  padding: 4px 2px 6px;
+  border-bottom: 1px solid #eef2f7;
+  margin-bottom: 4px;
+}
+
+.filtro-colunas-acoes button {
+  flex: 1;
+  border: 1px solid var(--tel-panel-border);
+  background: #f8fafc;
+  color: var(--tel-navy);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.filtro-colunas-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 5px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.filtro-colunas-opt:hover {
+  background: #f8fafc;
+}
+
+.filtro-colunas-opt input {
+  margin: 2px 0 0;
+  accent-color: var(--tel-cyan);
+}
+
+/* KPIs compactos */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.stat-card {
+  background: var(--tel-panel);
+  border: 1px solid var(--tel-panel-border);
+  border-radius: var(--tel-radius-sm);
+  padding: 10px 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+}
+
+.stat-card::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--tel-cyan), transparent);
+  opacity: 0.6;
+}
+
+.stat-card .lbl {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--tel-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+
+.stat-card .val {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--tel-navy);
+  margin-top: 2px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tabela */
+.telemetria-table-panel {
+  background: var(--tel-panel);
+  border: 1px solid var(--tel-panel-border);
+  border-radius: var(--tel-radius);
+  padding: 14px 16px 16px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.07);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.telemetria-table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.telemetria-table-head h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--tel-navy);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.telemetria-table-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tel-muted);
+}
+
+.legenda-linhas {
+  margin: 0;
+}
+
+.legenda-linhas span {
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.contagem {
+  margin: 0;
+  font-size: 10px;
+  color: var(--tel-cyan);
+  font-weight: 800;
+}
+
+.table-wrap {
+  overflow: auto;
+  max-height: min(68vh, 720px);
+  border: 1px solid rgba(6, 36, 92, 0.1);
+  border-radius: var(--tel-radius-sm);
+  background: #fff;
+}
+
+table.telemetria {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+table.telemetria thead th {
+  position: sticky;
+  top: 0;
+  background: linear-gradient(180deg, #0f2744 0%, #061a33 100%);
+  color: #e2e8f0;
+  padding: 9px 10px;
+  text-align: left;
+  font-weight: 800;
+  white-space: nowrap;
+  z-index: 2;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--tel-cyan);
+}
+
+table.telemetria thead th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+table.telemetria thead th.sortable:hover {
+  background: linear-gradient(180deg, #143055 0%, #0a2240 100%);
+}
+
+table.telemetria thead th.sort-ativo {
+  background: linear-gradient(180deg, #164770 0%, #0c2d52 100%);
+}
+
+table.telemetria thead th .sort-seta {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 9px;
+  opacity: 0.9;
+  min-width: 10px;
+}
+
+table.telemetria tbody td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: middle;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+table.telemetria tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+table.telemetria tbody tr:hover {
+  background: #ecfeff;
+}
+
+table.telemetria tbody tr.row-sem-dados {
+  background: #fee2e2;
+}
+
+table.telemetria tbody tr.row-sem-dados:nth-child(even) {
+  background: #fecaca;
+}
+
+table.telemetria tbody tr.row-incoerente {
+  background: #fef3c7;
+}
+
+table.telemetria tbody tr.row-incoerente:nth-child(even) {
+  background: #fde68a;
+}
+
+table.telemetria .col-fix {
+  position: sticky;
+  left: 0;
+  background: inherit;
+  z-index: 1;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.04);
+}
+
+table.telemetria thead .col-fix {
+  z-index: 3;
+  background: linear-gradient(180deg, #0f2744 0%, #061a33 100%);
+}
+
+table.telemetria .veiculo {
+  font-weight: 900;
+  color: var(--tel-navy);
+  min-width: 72px;
+}
+
+table.telemetria tr.row-sem-dados .veiculo {
+  color: #991b1b;
+}
+
+table.telemetria tr.row-incoerente .veiculo {
+  color: #92400e;
+}
+
+.cell-vazio {
+  color: #94a3b8;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 24px 20px;
+  color: var(--tel-muted);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.page-footer {
+  padding: 12px;
+  text-align: center;
+  color: var(--tel-muted);
+  font-size: 10px;
+  font-weight: 700;
+  border-top: 1px solid var(--tel-panel-border);
+  background: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filters-status {
+    max-width: none;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .telemetria-main {
+    padding: 10px 12px 20px;
+  }
+
+  .filters-row {
+    gap: 6px;
+  }
+
+  .filter-inline input[type="date"] {
+    width: 118px;
+  }
+
+  .filter-inline select {
+    width: 96px;
+  }
+}
