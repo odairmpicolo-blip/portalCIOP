@@ -16,6 +16,23 @@ const ANOS_EXTRA = String(process.env.FOLHA_SERVICO_ANOS || "")
 const portalRoot = process.env.PORTAL_ROOT || process.cwd();
 const outputDir = path.join(portalRoot, "assets", "data", "folha-servico");
 
+function registroValido(item) {
+  return Boolean(String(item?.data || "").trim());
+}
+
+function lerAnosFallback() {
+  const manifestPath = path.join(outputDir, "manifest.json");
+  if (!fs.existsSync(manifestPath)) return [];
+  try {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    return Array.isArray(manifest.anos)
+      ? manifest.anos.map((item) => parseInt(String(item), 10)).filter((item) => !Number.isNaN(item) && item >= 2000)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 function slimRegistro(item) {
   const pick = (...keys) => {
     for (const key of keys) {
@@ -83,7 +100,9 @@ async function buscarAno(ano) {
     if (cursor > 0) url += `&from_row=${cursor}`;
     const payload = await fetchJson(url);
     meta = payload.meta || meta;
-    const lote = Array.isArray(payload.dados) ? payload.dados.map(slimRegistro) : [];
+    const lote = Array.isArray(payload.dados)
+      ? payload.dados.map(slimRegistro).filter(registroValido)
+      : [];
     dados = dados.concat(lote);
     console.log(`  ano ${ano}: ${dados.length.toLocaleString("pt-BR")} registro(s)...`);
     if (!meta.has_more) break;
@@ -110,7 +129,9 @@ async function buscarTodos() {
     const url = `${APPS_SCRIPT_URL}?dashboard=1&limit=${PAGE_SIZE}&ano=todos&completo=1&dias=0&offset=${offset}`;
     const payload = await fetchJson(url);
     meta = payload.meta || meta;
-    const lote = Array.isArray(payload.dados) ? payload.dados.map(slimRegistro) : [];
+    const lote = Array.isArray(payload.dados)
+      ? payload.dados.map(slimRegistro).filter(registroValido)
+      : [];
     dados = dados.concat(lote);
     console.log(`  todos: ${dados.length.toLocaleString("pt-BR")} registro(s)...`);
     if (!meta.has_more) break;
@@ -137,21 +158,44 @@ function escreverJson(arquivo, payload) {
 async function main() {
   fs.mkdirSync(outputDir, { recursive: true });
   console.log("Atualizando snapshots JSON da folha de serviço...");
-  const anos = await buscarAnos();
-  if (!anos.length) throw new Error("Nenhum ano encontrado na planilha.");
+  let anos = await buscarAnos();
+  if (!anos.length) {
+    anos = lerAnosFallback();
+    if (anos.length) {
+      console.warn(`API retornou anos vazios; usando manifest local: ${anos.join(", ")}`);
+    }
+  }
+  if (!anos.length) {
+    console.warn("Nenhum ano disponível. Verifique a planilha da folha de serviço (coluna data). Mantendo snapshots existentes.");
+    process.exit(0);
+  }
 
   const totais = {};
   for (const ano of anos) {
     console.log(`Baixando ano ${ano}...`);
     const payload = await buscarAno(ano);
-    escreverJson(path.join(outputDir, `ano-${ano}.json`), payload);
     totais[String(ano)] = payload.total;
+    if (!payload.total) {
+      console.warn(`  ano ${ano}: API sem registros válidos — arquivo local preservado.`);
+      continue;
+    }
+    escreverJson(path.join(outputDir, `ano-${ano}.json`), payload);
+  }
+
+  const totalAnos = Object.values(totais).reduce((acc, n) => acc + n, 0);
+  if (!totalAnos) {
+    console.warn("API retornou 0 registros válidos em todos os anos. Verifique a planilha (possível TDM desatualizado). Mantendo snapshots existentes.");
+    process.exit(0);
   }
 
   console.log("Baixando visão consolidada (todos os anos)...");
   const todos = await buscarTodos();
-  escreverJson(path.join(outputDir, "todos.json"), todos);
-  totais.todos = todos.total;
+  if (todos.total) {
+    escreverJson(path.join(outputDir, "todos.json"), todos);
+    totais.todos = todos.total;
+  } else {
+    console.warn("  visão todos: sem registros válidos — todos.json preservado.");
+  }
 
   const manifest = {
     versao: DASHBOARD_VERSAO,

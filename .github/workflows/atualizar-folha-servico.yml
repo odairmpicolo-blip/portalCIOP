@@ -36,7 +36,9 @@ jobs:
         env:
           PORTAL_ROOT: ${{ github.workspace }}
           FOLHA_SERVICO_TIMEOUT_MS: 180000
+          FOLHA_SERVICO_ANOS: "2026,2025"
         run: node scripts/atualizar-folha-servico-json.mjs
+        continue-on-error: true
 
       - name: Publicar JSON da folha de serviço
         run: bash scripts/ci-git-commit-push.sh "Atualiza JSON da folha de serviço" assets/data/folha-servico/*.json
