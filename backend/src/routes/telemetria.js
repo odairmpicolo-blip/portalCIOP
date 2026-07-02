@@ -31,6 +31,14 @@ function mesclarPayloadTelemetria(atual, novo) {
   return out;
 }
 
+function normalizarDataIsoResposta(val) {
+  if (!val) return "";
+  if (val instanceof Date) return val.toISOString().slice(0, 10);
+  const s = String(val).trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : s.slice(0, 10);
+}
+
 router.get("/", requireFirebaseUser, async (req, res) => {
   const dataDe = String(req.query.de || "").slice(0, 10);
   const dataAte = String(req.query.ate || "").slice(0, 10);
@@ -51,7 +59,7 @@ router.get("/", requireFirebaseUser, async (req, res) => {
     sql += ` ORDER BY data_iso DESC, veiculo`;
     const result = await query(sql, params);
     const dados = result.rows.map((r) => ({
-      data_iso: r.data_iso,
+      data_iso: normalizarDataIsoResposta(r.data_iso),
       veiculo: r.veiculo,
       payload: r.payload,
       origem_arquivo: r.origem_arquivo

@@ -176,11 +176,15 @@ function detectarColunasKpi(headers) {
 function parseDataCsv(val) {
   const s = String(val || "").trim();
   if (!s) return "";
-  let m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
-  if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
-  m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+  if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
   return "";
+}
+
+function normalizarDataIsoApi(val) {
+  return parseDataCsv(val) || String(val || "").slice(0, 10);
 }
 
 function chaveLinha(row, colVeiculo, colData) {
@@ -228,15 +232,21 @@ function payloadParaLinha(row, colVeiculo, colData) {
 function linhasAwsParaRows(dados, headers, colVeiculo, colData) {
   const map = new Map();
   (dados || []).forEach((item) => {
-    const row = { ...(item.payload || item) };
+    let payload = item.payload || item;
+    if (typeof payload === "string") {
+      try { payload = JSON.parse(payload); } catch (_) { payload = {}; }
+    }
+    const row = { ...payload };
     const veiculo = item.veiculo || item.veiculo_norm || row.veiculo_norm;
-    const dataIso = item.data_iso || row.data_iso;
+    const dataIso = normalizarDataIsoApi(item.data_iso || row.data_iso);
     if (colVeiculo && !row[colVeiculo] && veiculo) row[colVeiculo] = veiculo;
-    if (colData && !row[colData] && dataIso) {
-      const [y, m, d] = String(dataIso).split("-");
+    if (colData && dataIso) {
+      const [y, m, d] = dataIso.split("-");
       row[colData] = `${d}-${m}-${y}`;
     }
+    row.data_iso = dataIso;
     const key = chaveLinha(row, colVeiculo, colData);
+    if (!key || key.startsWith("|") || key.endsWith("|")) return;
     const prev = map.get(key);
     map.set(key, prev ? mesclarLinhaTelemetria(prev, row) : row);
   });
@@ -332,6 +342,76 @@ let abaDataAtiva = "todas";
 let sortCol = null;
 let sortDir = "asc";
 let primeiraCarga = true;
+const CACHE_STORAGE_KEY = "portal_telemetria_v1";
+
+function persistirCacheTelemetria() {
+  if (!dadosBrutos?.rows?.length) return;
+  try {
+    localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify({
+      headers: dadosBrutos.headers,
+      rows: dadosBrutos.rows,
+      colVeiculo: dadosBrutos.colVeiculo,
+      colData: dadosBrutos.colData,
+      colunasKpi: dadosBrutos.colunasKpi,
+      arquivos: dadosBrutos.arquivos,
+      salvoEm: new Date().toISOString()
+    }));
+  } catch (_) { /* quota */ }
+}
+
+function restaurarCacheTelemetria() {
+  try {
+    const raw = localStorage.getItem(CACHE_STORAGE_KEY);
+    if (!raw) return false;
+    const cache = JSON.parse(raw);
+    if (!cache?.rows?.length || !cache.colVeiculo || !cache.colData) return false;
+    aplicarDadosBrutos(cache, { resetarAba: false });
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function detectarHeadersTelemetria(dados) {
+  const set = new Set();
+  (dados || []).forEach((item) => {
+    let payload = item?.payload || item;
+    if (typeof payload === "string") {
+      try { payload = JSON.parse(payload); } catch (_) { payload = null; }
+    }
+    headersDoPayload(payload).forEach((h) => set.add(h));
+  });
+  return [...set];
+}
+
+function aplicarDadosBrutos(src, opcoes = {}) {
+  const headers = src.headers?.length ? src.headers : detectarHeadersTelemetria(src.rows);
+  const colVeiculo = src.colVeiculo || detectarColunaVeiculo(headers);
+  const colData = src.colData || detectarColunaData(headers);
+  const rows = Array.isArray(src.rows) && src.rows[0]?.[colVeiculo]
+    ? src.rows
+    : linhasAwsParaRows(src.rows, headers, colVeiculo, colData);
+
+  dadosBrutos = {
+    headers: mesclarHeaders([], headers),
+    rows: unificarLinhasPorVeiculoData(rows, colVeiculo, colData),
+    colVeiculo,
+    colData,
+    colunasKpi: src.colunasKpi || detectarColunasKpi(headers),
+    arquivos: src.arquivos || []
+  };
+  colunasMarcadas = new Set(colunasExibiveis(dadosBrutos.headers, colVeiculo));
+  montarFiltroVeiculos();
+  montarFiltroDatas(true);
+  montarPainelColunas();
+  if (primeiraCarga && opcoes.resetarAba !== false) {
+    abaDataAtiva = "todas";
+    primeiraCarga = false;
+  }
+  renderizar();
+  persistirCacheTelemetria();
+  return dadosBrutos.rows.length;
+}
 
 function atualizarInfoBanco(extra) {
   const el = $("infoBanco");
@@ -701,38 +781,36 @@ async function salvarAws(linhasImport, nomeArquivo, meta) {
   try {
     awsAtivo = await telemetriaAwsDisponivel();
     if (!awsAtivo) return { ok: false, motivo: "aws indisponível" };
-    const res = await importarTelemetriaAws(payload, nomeArquivo);
-    return { ok: true, inseridos: res.inseridos };
+    let ultimoErro = "erro ao salvar";
+    for (let i = 0; i < 3; i++) {
+      try {
+        const res = await importarTelemetriaAws(payload, nomeArquivo);
+        return { ok: true, inseridos: res.inseridos };
+      } catch (err) {
+        ultimoErro = err.message || ultimoErro;
+        await aguardar(800 + i * 400);
+      }
+    }
+    return { ok: false, motivo: ultimoErro };
   } catch (err) {
     return { ok: false, motivo: err.message || "erro aws" };
   }
 }
 
 function aplicarRegistrosAws(res) {
-  const sample = res.dados[0]?.payload || res.dados[0];
-  const headers = headersDoPayload(sample);
+  if (!res?.dados?.length) return 0;
+  const headers = detectarHeadersTelemetria(res.dados);
   const colVeiculo = detectarColunaVeiculo(headers);
   const colData = detectarColunaData(headers);
   const rows = linhasAwsParaRows(res.dados, headers, colVeiculo, colData);
-
-  dadosBrutos = {
-    headers: mesclarHeaders([], headers),
+  return aplicarDadosBrutos({
+    headers,
     rows,
     colVeiculo,
     colData,
     colunasKpi: detectarColunasKpi(headers),
     arquivos: arquivosDosRegistrosAws(res.dados)
-  };
-  colunasMarcadas = new Set(colunasExibiveis(dadosBrutos.headers, colVeiculo));
-  montarFiltroVeiculos();
-  montarFiltroDatas(true);
-  montarPainelColunas();
-  if (primeiraCarga) {
-    abaDataAtiva = "todas";
-    primeiraCarga = false;
-  }
-  renderizar();
-  return rows.length;
+  });
 }
 
 async function carregarAws(opcoes = {}) {
@@ -790,30 +868,33 @@ async function carregarAwsInicial() {
 function incorporarCsv(parsed, nomeArquivo) {
   const colVeiculo = detectarColunaVeiculo(parsed.headers);
   const colData = detectarColunaData(parsed.headers);
+  parsed.rows = unificarLinhasPorVeiculoData(parsed.rows, colVeiculo, colData);
 
   if (!dadosBrutos) {
-    dadosBrutos = {
+    aplicarDadosBrutos({
       headers: parsed.headers.slice(),
       rows: parsed.rows.slice(),
       colVeiculo,
       colData,
       colunasKpi: detectarColunasKpi(parsed.headers),
       arquivos: [nomeArquivo]
-    };
-  } else {
-    dadosBrutos.headers = mesclarHeaders(dadosBrutos.headers, parsed.headers);
-    dadosBrutos.colVeiculo = colVeiculo || dadosBrutos.colVeiculo;
-    dadosBrutos.colData = colData || dadosBrutos.colData;
-    dadosBrutos.colunasKpi = { ...dadosBrutos.colunasKpi, ...detectarColunasKpi(parsed.headers) };
-    dadosBrutos.rows = mesclarRows(dadosBrutos.rows, parsed.rows, dadosBrutos.colVeiculo, dadosBrutos.colData);
-    if (!dadosBrutos.arquivos.includes(nomeArquivo)) dadosBrutos.arquivos.push(nomeArquivo);
+    }, { resetarAba: false });
+    return;
   }
+
+  dadosBrutos.headers = mesclarHeaders(dadosBrutos.headers, parsed.headers);
+  dadosBrutos.colVeiculo = colVeiculo || dadosBrutos.colVeiculo;
+  dadosBrutos.colData = colData || dadosBrutos.colData;
+  dadosBrutos.colunasKpi = { ...dadosBrutos.colunasKpi, ...detectarColunasKpi(parsed.headers) };
+  dadosBrutos.rows = mesclarRows(dadosBrutos.rows, parsed.rows, dadosBrutos.colVeiculo, dadosBrutos.colData);
+  if (!dadosBrutos.arquivos.includes(nomeArquivo)) dadosBrutos.arquivos.push(nomeArquivo);
 
   colunasMarcadas = new Set(colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo));
   montarFiltroVeiculos();
   montarFiltroDatas(false);
   montarPainelColunas();
   renderizar();
+  persistirCacheTelemetria();
 }
 
 async function processarTextoCsv(texto, nomeArquivo) {
@@ -828,9 +909,10 @@ async function processarTextoCsv(texto, nomeArquivo) {
   $("statusUpload").textContent = `Salvando ${nomeArquivo} na AWS (${parsed.rows.length} veículo(s)/dia)...`;
   const salvo = await salvarAws(parsed.rows, nomeArquivo, { colVeiculo, colData });
   if (salvo.ok) {
-    $("statusUpload").textContent = `Arquivo ${nomeArquivo} salvo (${salvo.inseridos} linha(s))`;
+    $("statusUpload").textContent = `Arquivo ${nomeArquivo} salvo na AWS (${salvo.inseridos} linha(s))`;
     $("statusUpload").className = "status-upload ok";
-    const recarregou = await carregarAws({ tentativas: 3 });
+    persistirCacheTelemetria();
+    const recarregou = await carregarAws({ tentativas: 5 });
     if (!recarregou.ok) {
       incorporarCsv(parsed, nomeArquivo);
       $("statusUpload").textContent += ` · recarregar falhou (${recarregou.motivo})`;
@@ -886,6 +968,11 @@ async function iniciar() {
   renderTabelaVazia("Carregando dados do banco AWS…");
   atualizarInfoBanco("Carregando dados do banco AWS…");
 
+  const tinhaCache = restaurarCacheTelemetria();
+  if (tinhaCache) {
+    atualizarInfoBanco("Exibindo últimos dados salvos · sincronizando com AWS…");
+  }
+
   const input = $("csvInput");
   const zona = $("uploadZona");
 
@@ -937,6 +1024,8 @@ async function iniciar() {
   if (carregou.ok) {
     $("statusUpload").textContent = "Pronto para lançar novo CSV";
     $("statusUpload").className = "status-upload muted";
+  } else if (tinhaCache) {
+    atualizarInfoBanco(`Dados locais exibidos · AWS: ${carregou.motivo}`);
   } else {
     renderResumoVazio();
     renderTabelaVazia(`Sem dados no banco (${carregou.motivo}). Use + CSV para lançar.`);
