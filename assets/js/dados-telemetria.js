@@ -1,9 +1,7 @@
 import {
-  carregarSnapshotTelemetria,
   carregarSnapshotTelemetriaJson,
   carregarSnapshotTelemetriaPlanilha,
   carregarManifestTelemetria,
-  carregarResumoTelemetriaPlanilha,
   filtrarSnapshotRegistros,
   mesclarRegistrosTelemetria
 } from "./telemetria-dados-leitura.js";
@@ -18,8 +16,10 @@ const FROTA = (window.FROTA_PATIO || []).slice().sort((a, b) =>
 );
 
 const PLANILHA_TELEMETRIA_URL = "https://docs.google.com/spreadsheets/d/1Z_rFA-1jz7-kq4juGp5uFG4WMpVBloML98hDgWcX9gQ/edit";
+const CHAVE_PLANILHA_STORAGE = "telemetria_planilha_ao_vivo";
 const DIAS_CARREGAMENTO_INICIAL = 7;
 let fonteAtiva = "tcgl";
+let planilhaAoVivo = false;
 let snapshotRaw = null;
 let periodoCarregado = { de: "", ate: "" };
 let debounceFiltroTimer = null;
@@ -615,7 +615,40 @@ function periodoCarregamentoAtual() {
   };
 }
 
+function fontePlanilhaAtual() {
+  return fonteAtiva === "comparacao" ? "todos" : fonteAtiva;
+}
+
+async function atualizarDaPlanilha() {
+  const { de, ate } = periodoCarregamentoAtual();
+  const fonte = fontePlanilhaAtual();
+  const el = $("statusJson");
+  if (el) {
+    el.textContent = "Carregando planilha…";
+    el.className = "status-json muted";
+  }
+  const snap = await carregarSnapshotTelemetriaPlanilha({ fonte, de, ate });
+  if (!snap?.dados?.length) return false;
+  aplicarSnapshotBruto(snap, { mesclar: fonte !== "todos" });
+  atualizarStatusJson();
+  return true;
+}
+
+async function onChavePlanilhaChange() {
+  const chave = $("chavePlanilhaAoVivo");
+  planilhaAoVivo = Boolean(chave?.checked);
+  try {
+    sessionStorage.setItem(CHAVE_PLANILHA_STORAGE, planilhaAoVivo ? "1" : "0");
+  } catch (_) { /* ignore */ }
+  if (planilhaAoVivo) {
+    await atualizarDaPlanilha();
+    aplicarFonteAtiva();
+    return;
+  }
+  atualizarStatusJson();
+}
 async function garantirDadosFonte(fonte) {
+  if (!planilhaAoVivo) return;
   if (fonte === "comparacao") {
     await garantirDadosFonte("clever");
     await garantirDadosFonte("tcgl");
@@ -672,37 +705,23 @@ async function carregarSnapshotInicial() {
   $("filtroDataDe").value = de;
   $("filtroDataAte").value = ate;
 
-  const planilhaPromise = carregarSnapshotTelemetriaPlanilha({ fonte: "todos", de, ate });
-
-  let exibiu = false;
+  const fonteLoad = fontePlanilhaAtual();
   const json = await carregarSnapshotTelemetriaJson();
   if (json?.dados?.length) {
-    aplicarSnapshotBruto(filtrarSnapshotRegistros(json, { fonte: "todos", de, ate }));
+    aplicarSnapshotBruto(filtrarSnapshotRegistros(json, { fonte: fonteLoad, de, ate }));
     await aguardar(0);
     aplicarFonteAtiva();
     atualizarStatusJson();
-    exibiu = true;
   }
 
-  const planilha = await planilhaPromise;
-  if (planilha?.dados?.length) {
-    aplicarSnapshotBruto(planilha);
+  if (planilhaAoVivo) {
+    await atualizarDaPlanilha();
     await aguardar(0);
     aplicarFonteAtiva();
     atualizarStatusJson();
-    exibiu = true;
   }
 
-  if (!exibiu) {
-    const snap = await carregarSnapshotTelemetria({ fonte: "todos", de, ate });
-    if (!snap?.dados?.length) return false;
-    aplicarSnapshotBruto(snap);
-    await aguardar(0);
-    aplicarFonteAtiva();
-    atualizarStatusJson();
-    return true;
-  }
-  return exibiu;
+  return Boolean(snapshotRaw?.dados?.length);
 }
 
 function registrosDaFonte(fonte) {
@@ -829,10 +848,8 @@ async function selecionarFonte(fonte) {
 }
 
 function renderAbasFonte() {
-  const wrap = $("abasFonteWrap");
   const container = $("abasFonte");
-  if (!wrap || !container) return;
-  wrap.hidden = false;
+  if (!container) return;
   const opcoes = [
     { id: "clever", rotulo: "CLEVER" },
     { id: "tcgl", rotulo: "TCGL" },
@@ -844,6 +861,8 @@ function renderAbasFonte() {
   container.querySelectorAll("[data-fonte]").forEach((btn) => {
     btn.addEventListener("click", () => selecionarFonte(btn.getAttribute("data-fonte")));
   });
+  const chave = $("chavePlanilhaAoVivo");
+  if (chave) chave.checked = planilhaAoVivo;
 }
 
 async function atualizarStatusJson() {
@@ -862,7 +881,8 @@ async function atualizarStatusJson() {
     const periodo = periodoCarregado.de && periodoCarregado.ate
       ? ` · ${formatarDataBr(periodoCarregado.de)}–${formatarDataBr(periodoCarregado.ate)}`
       : "";
-    el.textContent = `${rotuloOrigem} · ${quando}${periodo} · Clever ${clever} · TCGL ${tcgl}`;
+    const modo = planilhaAoVivo ? rotuloOrigem : `${rotuloOrigem} · rápido`;
+    el.textContent = `${modo} · ${quando}${periodo} · Clever ${clever} · TCGL ${tcgl}`;
     el.className = "status-json ok";
     return;
   }
@@ -1257,7 +1277,10 @@ function renderizar() {
   $("painelResultado").hidden = false;
   if (!dadosBrutos?.rows?.length) {
     renderResumoVazio();
-    renderTabelaVazia("Nenhum registro no período. Atualize o JSON a partir da planilha Google.");
+    const msg = !planilhaAoVivo && (fonteAtiva === "clever" || fonteAtiva === "comparacao")
+      ? "Sem dados no JSON para esta fonte. Ative Planilha ao vivo para buscar na planilha Google."
+      : "Nenhum registro no período. Ative Planilha ao vivo ou ajuste as datas.";
+    renderTabelaVazia(msg);
     return;
   }
   const cols = colunasSelecionadas();
@@ -1332,15 +1355,16 @@ async function recarregarComFiltroDatas() {
   debounceFiltroTimer = setTimeout(async () => {
     const de = $("filtroDataDe")?.value || "";
     const ate = $("filtroDataAte")?.value || "";
-    if (precisaRecarregarSnapshot(de, ate)) {
+    if (precisaRecarregarSnapshot(de, ate) && planilhaAoVivo) {
       const el = $("statusJson");
       if (el) {
         el.textContent = "Carregando período…";
         el.className = "status-json muted";
       }
-      const snap = await carregarSnapshotTelemetriaPlanilha({ fonte: "todos", de, ate });
+      const fonte = fontePlanilhaAtual();
+      const snap = await carregarSnapshotTelemetriaPlanilha({ fonte, de, ate });
       if (snap?.dados?.length) {
-        aplicarSnapshotBruto(snap);
+        aplicarSnapshotBruto(snap, { mesclar: fonte !== "todos" });
       }
       atualizarStatusJson();
     }
@@ -1588,16 +1612,13 @@ async function iniciar() {
   limparCacheTelemetriaLegado();
   renderResumoVazio();
   renderTabelaVazia("Carregando dados…");
+  planilhaAoVivo = sessionStorage.getItem(CHAVE_PLANILHA_STORAGE) === "1";
+  const chavePlanilha = $("chavePlanilhaAoVivo");
+  if (chavePlanilha) {
+    chavePlanilha.checked = planilhaAoVivo;
+    chavePlanilha.addEventListener("change", () => onChavePlanilhaChange());
+  }
   renderAbasFonte();
-
-  carregarResumoTelemetriaPlanilha().then((resumo) => {
-    if (!resumo || snapshotRaw) return;
-    const el = $("statusJson");
-    if (!el) return;
-    const quando = resumo.atualizadoEm ? new Date(resumo.atualizadoEm).toLocaleString("pt-BR") : "";
-    el.textContent = `Planilha · ${quando} · total ${resumo.total} (carregando período…)`;
-    el.className = "status-json muted";
-  });
 
   ["filtroDataDe", "filtroDataAte"].forEach((id) => {
     const el = $(id);
@@ -1636,7 +1657,6 @@ async function iniciar() {
     }
     return;
   }
-  renderAbasFonte();
 }
 
 function bootstrapTelemetria() {
