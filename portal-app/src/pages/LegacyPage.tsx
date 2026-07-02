@@ -33,6 +33,15 @@ export function LegacyPage() {
   const syncNativeFrame = useCallback(
     (frame: HTMLIFrameElement | null) => {
       if (!frame) return
+      if (tracking) {
+        frame.setAttribute('scrolling', 'no')
+        frame.style.touchAction = 'none'
+        frame.style.overscrollBehavior = 'contain'
+      } else {
+        frame.removeAttribute('scrolling')
+        frame.style.removeProperty('touch-action')
+        frame.style.removeProperty('overscroll-behavior')
+      }
       try {
         const doc = frame.contentDocument
         if (doc) injectLegacyNativeFrame(doc)
@@ -91,6 +100,7 @@ export function LegacyPage() {
         src={src}
         className="legacy-frame"
         loading="eager"
+        scrolling={tracking ? 'no' : undefined}
         onLoad={onFrameLoad}
       />
     </section>
