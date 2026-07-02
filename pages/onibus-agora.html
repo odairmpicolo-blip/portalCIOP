@@ -4,7 +4,7 @@
 <script>document.documentElement.classList.add("portal-auth-pending");</script>
 <style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}</style>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <title>Ônibus Agora | Portal CIOP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -101,7 +101,7 @@ body.oa-page{
 #mapa.leaflet-container,#mapaViagem.leaflet-container,
 #mapa .leaflet-map-pane,#mapa .leaflet-pane,#mapa .leaflet-tile-pane,#mapa .leaflet-marker-pane,
 #mapaViagem .leaflet-map-pane,#mapaViagem .leaflet-pane,#mapaViagem .leaflet-tile-pane,#mapaViagem .leaflet-marker-pane{
-  touch-action:none;pointer-events:auto;-webkit-user-select:none;user-select:none
+  touch-action:none;pointer-events:auto;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none
 }
 .map-tools{position:absolute;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:8px}
 .shape-picker{
@@ -1101,9 +1101,10 @@ function initPontToggle(){
 }
 
 function scheduleMapResize(){
-    if (!state.mapa) return;
+    if (!state.mapa && !state.mapaViagem) return;
     const fix = () => {
-        try { state.mapa.invalidateSize(); } catch (_) {}
+        try { state.mapa?.invalidateSize({ pan: false }); } catch (_) {}
+        try { state.mapaViagem?.invalidateSize({ pan: false }); } catch (_) {}
     };
     requestAnimationFrame(fix);
     [120, 350, 700, 1400, 2500].forEach(ms => setTimeout(fix, ms));
@@ -1140,19 +1141,9 @@ function ativarGestosMapa(mapa){
         container.style.pointerEvents = "auto";
         container.classList.add("oa-touch-map");
         if (!container.dataset.oaTouchBound){
-            const stopTouch = (ev) => ev.stopPropagation();
-            const keepPinchOnMap = (ev) => {
-                ev.stopPropagation();
-                if (ev.touches && ev.touches.length > 1) ev.preventDefault();
-            };
-            const stopGesture = (ev) => {
-                ev.preventDefault();
-                ev.stopPropagation();
-            };
-            container.addEventListener("touchstart", stopTouch, { passive: true });
-            container.addEventListener("touchmove", keepPinchOnMap, { passive: false });
-            container.addEventListener("gesturestart", stopGesture, { passive: false });
-            container.addEventListener("gesturechange", stopGesture, { passive: false });
+            const keepNativeZoomOut = (ev) => ev.preventDefault();
+            container.addEventListener("gesturestart", keepNativeZoomOut, { passive: false });
+            container.addEventListener("gesturechange", keepNativeZoomOut, { passive: false });
             container.dataset.oaTouchBound = "1";
         }
     }
@@ -2182,6 +2173,9 @@ function bind(){
         }
     });
     document.querySelectorAll(".tab").forEach(btn => btn.addEventListener("click", () => trocarTab(btn.dataset.tab)));
+    window.addEventListener("resize", scheduleMapResize);
+    window.addEventListener("orientationchange", () => setTimeout(scheduleMapResize, 250));
+    window.visualViewport?.addEventListener("resize", scheduleMapResize);
 }
 
 function iniciar(){
