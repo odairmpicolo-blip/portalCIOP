@@ -1,4 +1,11 @@
-import { carregarSnapshotTelemetria, carregarManifestTelemetria } from "./telemetria-dados-leitura.js";
+import {
+  carregarSnapshotTelemetria,
+  carregarSnapshotTelemetriaJson,
+  carregarSnapshotTelemetriaPlanilha,
+  carregarManifestTelemetria,
+  carregarResumoTelemetriaPlanilha,
+  filtrarSnapshotRegistros
+} from "./telemetria-dados-leitura.js";
 import {
   agregarLinhasTelemetria,
   normalizarLinhaTelemetria,
@@ -10,8 +17,11 @@ const FROTA = (window.FROTA_PATIO || []).slice().sort((a, b) =>
 );
 
 const PLANILHA_TELEMETRIA_URL = "https://docs.google.com/spreadsheets/d/1Z_rFA-1jz7-kq4juGp5uFG4WMpVBloML98hDgWcX9gQ/edit";
+const DIAS_CARREGAMENTO_INICIAL = 7;
 let fonteAtiva = "tcgl";
 let snapshotRaw = null;
+let periodoCarregado = { de: "", ate: "" };
+let debounceFiltroTimer = null;
 
 const CHAVES_VEICULO = [
   "veiculo", "veículo", "vehicle id", "vehicle_id", "prefixo", "carro", "numero", "número", "n°", "nº",
@@ -553,6 +563,54 @@ function expandirFrotaSemDados(rows) {
   return [...rows, ...extras];
 }
 
+function headersPlanilhaTelemetria() {
+  return COLUNAS_TABELA.slice();
+}
+
+function periodoCarregamentoInicial() {
+  return { de: dataIsoPadrao(-DIAS_CARREGAMENTO_INICIAL), ate: dataIsoPadrao(0) };
+}
+
+function periodoFiltroDom() {
+  return {
+    de: $("filtroDataDe")?.value || "",
+    ate: $("filtroDataAte")?.value || ""
+  };
+}
+
+function filtrarRegistrosPorPeriodo(registros) {
+  const { de, ate } = periodoFiltroDom();
+  if (!de && !ate) return registros;
+  return registros.filter((r) => {
+    const d = r.data_iso;
+    if (!d) return false;
+    if (de && d < de) return false;
+    if (ate && d > ate) return false;
+    return true;
+  });
+}
+
+function precisaRecarregarSnapshot(de, ate) {
+  if (!de || !ate) return false;
+  if (!periodoCarregado.de || !periodoCarregado.ate) return true;
+  return de < periodoCarregado.de || ate > periodoCarregado.ate;
+}
+
+function aplicarSnapshotBruto(snap) {
+  snapshotRaw = {
+    ...snap,
+    dados: (snap.dados || []).map((d) => ({
+      ...d,
+      fonte: d.fonte || "tcgl"
+    }))
+  };
+  const datas = snapshotRaw.dados.map((d) => d.data_iso).filter(Boolean).sort();
+  periodoCarregado = {
+    de: datas[0] || $("filtroDataDe")?.value || "",
+    ate: datas[datas.length - 1] || $("filtroDataAte")?.value || ""
+  };
+}
+
 function dataIsoPadrao(offsetDias) {
   const d = new Date();
   d.setDate(d.getDate() + offsetDias);
@@ -583,18 +641,39 @@ function aguardar(ms) {
 }
 
 async function carregarSnapshotInicial() {
-  const snap = await carregarSnapshotTelemetria();
-  if (!snap?.dados?.length) return false;
-  snapshotRaw = {
-    ...snap,
-    dados: snap.dados.map((d) => ({
-      ...d,
-      fonte: d.fonte || "tcgl"
-    }))
-  };
-  aplicarFonteAtiva();
-  atualizarStatusJson();
-  return true;
+  const { de, ate } = periodoCarregamentoInicial();
+  $("filtroDataDe").value = de;
+  $("filtroDataAte").value = ate;
+
+  let exibiu = false;
+  const json = await carregarSnapshotTelemetriaJson();
+  if (json?.dados?.length) {
+    aplicarSnapshotBruto(filtrarSnapshotRegistros(json, { fonte: "todos", de, ate }));
+    await aguardar(0);
+    aplicarFonteAtiva();
+    atualizarStatusJson();
+    exibiu = true;
+  }
+
+  const planilha = await carregarSnapshotTelemetriaPlanilha({ fonte: "todos", de, ate });
+  if (planilha?.dados?.length) {
+    aplicarSnapshotBruto(planilha);
+    await aguardar(0);
+    aplicarFonteAtiva();
+    atualizarStatusJson();
+    exibiu = true;
+  }
+
+  if (!exibiu) {
+    const snap = await carregarSnapshotTelemetria({ fonte: "todos", de, ate });
+    if (!snap?.dados?.length) return false;
+    aplicarSnapshotBruto(snap);
+    await aguardar(0);
+    aplicarFonteAtiva();
+    atualizarStatusJson();
+    return true;
+  }
+  return exibiu;
 }
 
 function registrosDaFonte(fonte) {
@@ -615,8 +694,8 @@ function payloadParaRow(reg, colVeiculo, colData) {
 }
 
 function montarLinhasComparacao() {
-  const clever = registrosDaFonte("clever");
-  const tcgl = registrosDaFonte("tcgl");
+  const clever = filtrarRegistrosPorPeriodo(registrosDaFonte("clever"));
+  const tcgl = filtrarRegistrosPorPeriodo(registrosDaFonte("tcgl"));
   const mapa = new Map();
 
   const indexar = (lista, lado) => {
@@ -686,10 +765,10 @@ function aplicarFonteAtiva() {
       modo: "comparacao"
     };
   } else {
-    const registros = registrosDaFonte(fonteAtiva);
-    const headers = detectarHeadersTelemetria(registros);
-    const colVeiculo = detectarColunaVeiculo(headers) || "Veiculo";
-    const colData = detectarColunaData(headers) || "Data";
+    const registros = filtrarRegistrosPorPeriodo(registrosDaFonte(fonteAtiva));
+    const colVeiculo = "Veiculo";
+    const colData = "Data";
+    const headers = headersPlanilhaTelemetria();
     const rows = registros.map((r) => payloadParaRow(r, colVeiculo, colData));
     aplicarDadosBrutos({
       headers,
@@ -745,20 +824,23 @@ async function atualizarStatusJson() {
   const quando = snap?.atualizadoEm ? new Date(snap.atualizadoEm).toLocaleString("pt-BR") : null;
   const clever = snap?.total_clever ?? "—";
   const tcgl = snap?.total_tcgl ?? "—";
-  if (snap?.origem_carregamento === "planilha" && quando) {
-    el.textContent = `Planilha · ${quando} · Clever ${clever} · TCGL ${tcgl}`;
+  const origem = snap?.origem_carregamento;
+  const rotuloOrigem = origem === "planilha" ? "Planilha"
+    : origem === "cache" ? "Planilha (cache)"
+      : origem === "json" ? "JSON"
+        : "Dados";
+  if (quando) {
+    const periodo = periodoCarregado.de && periodoCarregado.ate
+      ? ` · ${formatarDataBr(periodoCarregado.de)}–${formatarDataBr(periodoCarregado.ate)}`
+      : "";
+    el.textContent = `${rotuloOrigem} · ${quando}${periodo} · Clever ${clever} · TCGL ${tcgl}`;
     el.className = "status-json ok";
     return;
   }
   const manifest = await carregarManifestTelemetria();
   if (manifest?.atualizadoEm) {
     const quandoManifest = new Date(manifest.atualizadoEm).toLocaleString("pt-BR");
-    const cleverManifest = manifest.total_clever ?? clever;
-    const tcglManifest = manifest.total_tcgl ?? tcgl;
-    el.textContent = `JSON · ${quandoManifest} · Clever ${cleverManifest} · TCGL ${tcglManifest}`;
-    el.className = "status-json ok";
-  } else if (quando) {
-    el.textContent = `JSON · ${quando} · Clever ${clever} · TCGL ${tcgl}`;
+    el.textContent = `JSON · ${quandoManifest} · Clever ${manifest.total_clever ?? clever} · TCGL ${manifest.total_tcgl ?? tcgl}`;
     el.className = "status-json ok";
   } else {
     el.textContent = "JSON local";
@@ -978,10 +1060,15 @@ function renderAbasData(baseRows) {
   if (!wrap || !container || !dadosBrutos) return;
 
   const contagem = new Map();
+  const veiculosPorData = new Map();
   baseRows.forEach((r) => {
     const iso = parseDataCsv(r[dadosBrutos.colData]);
     if (!iso) return;
     contagem.set(iso, (contagem.get(iso) || 0) + 1);
+    if (FROTA.length) {
+      if (!veiculosPorData.has(iso)) veiculosPorData.set(iso, new Set());
+      veiculosPorData.get(iso).add(normVeiculo(r[dadosBrutos.colVeiculo]));
+    }
   });
 
   const datas = [...contagem.keys()].sort((a, b) => b.localeCompare(a));
@@ -998,7 +1085,7 @@ function renderAbasData(baseRows) {
   const botoes = [`<button type="button" role="tab" data-aba-data="todas" class="${abaDataAtiva === "todas" ? "ativo" : ""}" aria-selected="${abaDataAtiva === "todas"}">Todas (${baseRows.length})</button>`];
   datas.forEach((iso) => {
     const ativo = abaDataAtiva === iso;
-    const carros = new Set(baseRows.filter((r) => parseDataCsv(r[dadosBrutos.colData]) === iso).map((r) => normVeiculo(r[dadosBrutos.colVeiculo]))).size;
+    const carros = FROTA.length ? (veiculosPorData.get(iso)?.size || 0) : contagem.get(iso);
     const rotuloCarros = FROTA.length ? `${carros}/${FROTA.length}` : String(carros);
     botoes.push(`<button type="button" role="tab" data-aba-data="${iso}" class="${ativo ? "ativo" : ""}" aria-selected="${ativo}" title="Dia completo 00:00–23:59">${formatarDataBr(iso)} · ${rotuloCarros} carro(s)</button>`);
   });
@@ -1276,7 +1363,24 @@ function aplicarRegistrosAws(res) {
 }
 
 async function recarregarComFiltroDatas() {
-  renderizar();
+  clearTimeout(debounceFiltroTimer);
+  debounceFiltroTimer = setTimeout(async () => {
+    const de = $("filtroDataDe")?.value || "";
+    const ate = $("filtroDataAte")?.value || "";
+    if (precisaRecarregarSnapshot(de, ate)) {
+      const el = $("statusJson");
+      if (el) {
+        el.textContent = "Carregando período…";
+        el.className = "status-json muted";
+      }
+      const snap = await carregarSnapshotTelemetriaPlanilha({ fonte: "todos", de, ate });
+      if (snap?.dados?.length) {
+        aplicarSnapshotBruto(snap);
+      }
+      atualizarStatusJson();
+    }
+    aplicarFonteAtiva();
+  }, 350);
 }
 
 async function carregarAws(opcoes = {}) {
@@ -1518,8 +1622,17 @@ async function iniciar() {
   $("statFrota").textContent = FROTA.length;
   limparCacheTelemetriaLegado();
   renderResumoVazio();
-  renderTabelaVazia("Carregando dados da planilha…");
+  renderTabelaVazia("Carregando dados…");
   renderAbasFonte();
+
+  carregarResumoTelemetriaPlanilha().then((resumo) => {
+    if (!resumo || snapshotRaw) return;
+    const el = $("statusJson");
+    if (!el) return;
+    const quando = resumo.atualizadoEm ? new Date(resumo.atualizadoEm).toLocaleString("pt-BR") : "";
+    el.textContent = `Planilha · ${quando} · total ${resumo.total} (carregando período…)`;
+    el.className = "status-json muted";
+  });
 
   ["filtroDataDe", "filtroDataAte"].forEach((id) => {
     const el = $(id);
