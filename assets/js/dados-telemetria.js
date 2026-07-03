@@ -20,7 +20,7 @@ const FROTA = (window.FROTA_PATIO || []).slice().sort((a, b) =>
 const PLANILHA_TELEMETRIA_URL = "https://docs.google.com/spreadsheets/d/1Z_rFA-1jz7-kq4juGp5uFG4WMpVBloML98hDgWcX9gQ/edit";
 const CHAVE_PLANILHA_STORAGE = "telemetria_planilha_ao_vivo";
 const DIAS_CARREGAMENTO_INICIAL = 120;
-let fonteAtiva = "tcgl";
+let fonteAtiva = "comparacao";
 let planilhaAoVivo = false;
 let snapshotRaw = null;
 let periodoCarregado = { de: "", ate: "" };
@@ -930,10 +930,10 @@ function renderAbasFonte() {
   const container = $("abasFonte");
   if (!container) return;
   const opcoes = [
+    { id: "comparacao", rotulo: "COMPARAÇÃO" },
     { id: "tcgl", rotulo: "TCGL" },
     { id: "clever", rotulo: "CLEVER" },
-    { id: "fleetbus", rotulo: "FLEETBUS" },
-    { id: "comparacao", rotulo: "COMPARAÇÃO" }
+    { id: "fleetbus", rotulo: "FLEETBUS" }
   ];
   container.innerHTML = opcoes.map((o) =>
     `<button type="button" role="tab" data-fonte="${o.id}" class="${fonteAtiva === o.id ? "ativo" : ""}" aria-selected="${fonteAtiva === o.id}">${o.rotulo}</button>`
