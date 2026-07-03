@@ -99,6 +99,7 @@ function metricasDivergentes(clever, tcgl) {
 function cabecalhosComparacao() {
   return [
     "Data",
+    "Km Percorrido (TCGL)",
     "Km Percorrido (Clever)",
     "Km Percorrido (FleetBus)",
     "Clever / TCGL %",
@@ -856,6 +857,7 @@ function montarLinhasComparacao() {
       __semDadosClever: !c,
       __semDadosTcgl: !t,
       __semDadosFleetBus: !f,
+      "Km Percorrido (TCGL)": kmTcgl,
       "Km Percorrido (Clever)": kmClever,
       "Km Percorrido (FleetBus)": kmFleetbus,
       "Clever / TCGL %": calcPct(kmClever, kmTcgl),
