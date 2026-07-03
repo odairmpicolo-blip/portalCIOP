@@ -531,7 +531,9 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
 
   const pctStr = (num, den) => {
     if (!Number.isFinite(num) || !Number.isFinite(den) || den <= 0) return "—";
-    return `${formatarDecimal((num / den) * 100, 1)}%`;
+    let pct = (num / den) * 100;
+    if (pct > 100) pct = 200 - pct;
+    return `${formatarDecimal(pct, 1)}%`;
   };
 
   return {
@@ -812,7 +814,9 @@ function calcPct(numerador, divisor) {
   const n = parseNumero(numerador);
   const d = parseNumero(divisor);
   if (!Number.isFinite(n) || !Number.isFinite(d) || d <= 0) return "";
-  return `${formatarDecimal((n / d) * 100, 1)}%`;
+  let pct = (n / d) * 100;
+  if (pct > 100) pct = 200 - pct;
+  return `${formatarDecimal(pct, 1)}%`;
 }
 
 function montarLinhasComparacao() {
