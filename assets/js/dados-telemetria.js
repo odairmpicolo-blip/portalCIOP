@@ -25,6 +25,8 @@ let planilhaAoVivo = false;
 let snapshotRaw = null;
 let periodoCarregado = { de: "", ate: "" };
 let debounceFiltroTimer = null;
+let veiculosAtencao = [];
+let filtroAtencaoAtivo = false;
 
 const CHAVES_VEICULO = [
   "veiculo", "veículo", "vehicle id", "vehicle_id", "prefixo", "carro", "numero", "número", "n°", "nº",
@@ -537,12 +539,45 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
     return `${formatarDecimal(pct, 1)}%`;
   };
 
+  const atencaoSet = new Set();
+  const cleverRaw = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "clever");
+
+  const diasTcglPorVeiculo = new Map();
+  tcglMap.forEach((_km, key) => {
+    const [, v] = key.split("|");
+    diasTcglPorVeiculo.set(v, (diasTcglPorVeiculo.get(v) || 0) + 1);
+  });
+  const diasCleverPorVeiculo = new Map();
+  cleverMap.forEach((_km, key) => {
+    const [, v] = key.split("|");
+    diasCleverPorVeiculo.set(v, (diasCleverPorVeiculo.get(v) || 0) + 1);
+  });
+
+  diasTcglPorVeiculo.forEach((diasTcgl, veiculo) => {
+    const diasClever = diasCleverPorVeiculo.get(veiculo) || 0;
+    const faltando = diasTcgl - diasClever;
+    if (faltando >= 3) atencaoSet.add(veiculo);
+  });
+
+  cleverRaw.forEach((reg) => {
+    let payload = reg.payload || reg;
+    if (typeof payload === "string") try { payload = JSON.parse(payload); } catch (_) { payload = {}; }
+    const row = normalizarLinhaTelemetria({ ...payload });
+    const km = parseNumero(row["Km Percorrido"]);
+    if (Number.isFinite(km) && km > KM_DIARIO_MAX) {
+      atencaoSet.add(normVeiculo(reg.veiculo));
+    }
+  });
+
+  veiculosAtencao = [...atencaoSet].sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
+
   return {
     frota: FROTA.length,
     noArquivo: noArquivo.size,
     pctCleverTcgl: pctStr(parCleverTcgl.somaA, parCleverTcgl.somaB),
     pctFleetbusTcgl: pctStr(parFleetbusTcgl.somaA, parFleetbusTcgl.somaB),
-    pctFleetbusClever: pctStr(parFleetbusClever.somaA, parFleetbusClever.somaB)
+    pctFleetbusClever: pctStr(parFleetbusClever.somaA, parFleetbusClever.somaB),
+    atencao: veiculosAtencao.length
   };
 }
 
@@ -1087,9 +1122,11 @@ function aplicarDadosBrutos(src, opcoes = {}) {
 
 function renderResumoVazio() {
   $("statFrota").textContent = FROTA.length;
-  ["statNoArquivo", "statPctCleverTcgl", "statPctFleetbusTcgl", "statPctCleverFleetbus"].forEach((id) => {
+  ["statNoArquivo", "statPctCleverTcgl", "statPctFleetbusTcgl", "statPctCleverFleetbus", "statAtencao"].forEach((id) => {
     $(id).textContent = "—";
   });
+  const card = $("cardAtencao");
+  if (card) card.classList.remove("alerta");
 }
 
 function renderTabelaVazia(msg) {
@@ -1171,6 +1208,10 @@ function rowsBaseFiltro() {
   rows = filtrarRowsPorData(rows, dadosBrutos.colData, $("filtroDataDe").value, $("filtroDataAte").value);
   const veicFiltro = $("filtroVeiculo").value;
   if (veicFiltro) rows = rows.filter((r) => normVeiculo(r[dadosBrutos.colVeiculo]) === veicFiltro);
+  if (filtroAtencaoAtivo && veiculosAtencao.length) {
+    const ids = new Set(veiculosAtencao);
+    rows = rows.filter((r) => ids.has(normVeiculo(r[dadosBrutos.colVeiculo])));
+  }
   return rows;
 }
 
@@ -1311,6 +1352,9 @@ function renderResumo(stats) {
   $("statPctCleverTcgl").textContent = stats.pctCleverTcgl;
   $("statPctFleetbusTcgl").textContent = stats.pctFleetbusTcgl;
   $("statPctCleverFleetbus").textContent = stats.pctFleetbusClever;
+  $("statAtencao").textContent = stats.atencao;
+  const card = $("cardAtencao");
+  if (card) card.classList.toggle("alerta", stats.atencao > 0);
 }
 
 function renderTabelaDados(rows, cols) {
@@ -1382,6 +1426,9 @@ function limparFiltros() {
   if (!dadosBrutos) return;
   sortCol = dadosBrutos.colVeiculo;
   sortDir = "asc";
+  filtroAtencaoAtivo = false;
+  const cardAt = $("cardAtencao");
+  if (cardAt) cardAt.classList.remove("filtro-ativo");
   $("filtroVeiculo").value = "";
   montarFiltroDatas(true);
   const cols = colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo);
@@ -1736,6 +1783,19 @@ async function iniciar() {
   }
 
   $("btnLimparFiltros")?.addEventListener("click", () => limparFiltros());
+
+  const cardAtencao = $("cardAtencao");
+  if (cardAtencao) {
+    cardAtencao.style.cursor = "pointer";
+    cardAtencao.addEventListener("click", () => {
+      if (!veiculosAtencao.length) return;
+      filtroAtencaoAtivo = !filtroAtencaoAtivo;
+      cardAtencao.classList.toggle("filtro-ativo", filtroAtencaoAtivo);
+      renderizar();
+      const tabela = $("tabelaDados") || $("tabelaDadosCorpo");
+      if (tabela) tabela.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
 
   const temSnapshot = await carregarSnapshotInicial();
   if (!temSnapshot) {
