@@ -26,6 +26,7 @@ let snapshotRaw = null;
 let periodoCarregado = { de: "", ate: "" };
 let debounceFiltroTimer = null;
 let veiculosAtencao = [];
+let veiculosAtencaoDetalhe = [];
 let filtroAtencaoAtivo = false;
 
 const CHAVES_VEICULO = [
@@ -539,7 +540,12 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
     return `${formatarDecimal(pct, 1)}%`;
   };
 
-  const atencaoSet = new Set();
+  const atencaoMap = new Map();
+  const obterAtencao = (v) => {
+    if (!atencaoMap.has(v)) atencaoMap.set(v, { veiculo: v, diasTcgl: 0, diasClever: 0, diasFaltando: 0, kmIrreal: [] });
+    return atencaoMap.get(v);
+  };
+
   const cleverRaw = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "clever");
 
   const diasTcglPorVeiculo = new Map();
@@ -556,7 +562,12 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
   diasTcglPorVeiculo.forEach((diasTcgl, veiculo) => {
     const diasClever = diasCleverPorVeiculo.get(veiculo) || 0;
     const faltando = diasTcgl - diasClever;
-    if (faltando >= 3) atencaoSet.add(veiculo);
+    if (faltando >= 3) {
+      const info = obterAtencao(veiculo);
+      info.diasTcgl = diasTcgl;
+      info.diasClever = diasClever;
+      info.diasFaltando = faltando;
+    }
   });
 
   cleverRaw.forEach((reg) => {
@@ -565,11 +576,14 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
     const row = normalizarLinhaTelemetria({ ...payload });
     const km = parseNumero(row["Km Percorrido"]);
     if (Number.isFinite(km) && km > KM_DIARIO_MAX) {
-      atencaoSet.add(normVeiculo(reg.veiculo));
+      const v = normVeiculo(reg.veiculo);
+      const info = obterAtencao(v);
+      info.kmIrreal.push({ data: reg.data_iso, km: Math.round(km) });
     }
   });
 
-  veiculosAtencao = [...atencaoSet].sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true }));
+  veiculosAtencaoDetalhe = [...atencaoMap.values()].sort((a, b) => a.veiculo.localeCompare(b.veiculo, "pt-BR", { numeric: true }));
+  veiculosAtencao = veiculosAtencaoDetalhe.map((d) => d.veiculo);
 
   return {
     frota: FROTA.length,
@@ -915,10 +929,42 @@ function montarLinhasComparacao() {
   };
 }
 
+function montarLinhasAtencao() {
+  const colVeiculo = "Veiculo";
+  const headers = [colVeiculo, "Problema", "Dias TCGL", "Dias Clever", "Dias Faltando", "Km Irreal (exemplos)"];
+  const rows = veiculosAtencaoDetalhe.map((info) => {
+    const problemas = [];
+    if (info.diasFaltando >= 3) problemas.push("Sem dados Clever");
+    if (info.kmIrreal.length) problemas.push("Km irreal");
+    const kmExemplos = info.kmIrreal.slice(0, 3).map((e) => `${e.data}: ${e.km.toLocaleString("pt-BR")} km`).join(", ");
+    const row = {
+      [colVeiculo]: info.veiculo,
+      "Problema": problemas.join(" + "),
+      "Dias TCGL": info.diasTcgl || "—",
+      "Dias Clever": info.diasClever || "—",
+      "Dias Faltando": info.diasFaltando || "—",
+      "Km Irreal (exemplos)": kmExemplos || "—"
+    };
+    return row;
+  });
+  return { headers, rows, colVeiculo, colData: null };
+}
+
 function aplicarFonteAtiva() {
   if (!snapshotRaw?.dados?.length) return 0;
 
-  if (fonteAtiva === "comparacao") {
+  if (fonteAtiva === "atencao") {
+    const atencao = montarLinhasAtencao();
+    dadosBrutos = {
+      headers: atencao.headers,
+      rows: atencao.rows,
+      colVeiculo: atencao.colVeiculo,
+      colData: atencao.colData,
+      colunasKpi: {},
+      arquivos: ["atencao-clever"],
+      modo: "atencao"
+    };
+  } else if (fonteAtiva === "comparacao") {
     const comp = montarLinhasComparacao();
     dadosBrutos = {
       headers: comp.headers,
@@ -956,11 +1002,11 @@ function aplicarFonteAtiva() {
 }
 
 async function selecionarFonte(fonte) {
-  const validas = ["clever", "tcgl", "fleetbus", "comparacao"];
+  const validas = ["clever", "tcgl", "fleetbus", "comparacao", "atencao"];
   if (!validas.includes(fonte) || fonte === fonteAtiva) return;
   fonteAtiva = fonte;
   sortCol = null;
-  await garantirDadosFonte(fonte);
+  if (fonte !== "atencao") await garantirDadosFonte(fonte);
   aplicarFonteAtiva();
   renderAbasFonte();
 }
@@ -968,14 +1014,16 @@ async function selecionarFonte(fonte) {
 function renderAbasFonte() {
   const container = $("abasFonte");
   if (!container) return;
+  const qtd = veiculosAtencao.length;
   const opcoes = [
     { id: "comparacao", rotulo: "COMPARAÇÃO" },
     { id: "tcgl", rotulo: "TCGL" },
     { id: "clever", rotulo: "CLEVER" },
-    { id: "fleetbus", rotulo: "FLEETBUS" }
+    { id: "fleetbus", rotulo: "FLEETBUS" },
+    { id: "atencao", rotulo: `ATENÇÃO${qtd ? ` (${qtd})` : ""}` }
   ];
   container.innerHTML = opcoes.map((o) =>
-    `<button type="button" role="tab" data-fonte="${o.id}" class="${fonteAtiva === o.id ? "ativo" : ""}" aria-selected="${fonteAtiva === o.id}">${o.rotulo}</button>`
+    `<button type="button" role="tab" data-fonte="${o.id}" class="${fonteAtiva === o.id ? "ativo" : ""}${o.id === "atencao" && qtd ? " tab-alerta" : ""}" aria-selected="${fonteAtiva === o.id}">${o.rotulo}</button>`
   ).join("");
   container.querySelectorAll("[data-fonte]").forEach((btn) => {
     btn.addEventListener("click", () => selecionarFonte(btn.getAttribute("data-fonte")));
@@ -1406,7 +1454,9 @@ function renderizar() {
   if (!dadosBrutos?.rows?.length) {
     renderResumoVazio();
     const fontesVivo = ["clever", "fleetbus", "comparacao"];
-    const msg = !planilhaAoVivo && fontesVivo.includes(fonteAtiva)
+    const msg = fonteAtiva === "atencao"
+      ? "Nenhum veículo com problema detectado. Todos os dados Clever estão normais."
+      : !planilhaAoVivo && fontesVivo.includes(fonteAtiva)
       ? "Sem dados no JSON para esta fonte. Ative Planilha ao vivo para buscar na planilha Google."
       : "Nenhum registro no período. Ative Planilha ao vivo ou ajuste as datas.";
     renderTabelaVazia(msg);
@@ -1414,7 +1464,7 @@ function renderizar() {
   }
   const cols = colunasSelecionadas();
   const rowsDados = rowsFiltradasDados();
-  const rows = expandirFrotaSemDados(rowsDados);
+  const rows = fonteAtiva === "atencao" ? rowsDados : expandirFrotaSemDados(rowsDados);
   const stats = calcularStats(rowsDados, dadosBrutos.colVeiculo, dadosBrutos.colunasKpi);
   hintFiltrosAtivos();
   renderResumo(stats);
@@ -1788,12 +1838,7 @@ async function iniciar() {
   if (cardAtencao) {
     cardAtencao.style.cursor = "pointer";
     cardAtencao.addEventListener("click", () => {
-      if (!veiculosAtencao.length) return;
-      filtroAtencaoAtivo = !filtroAtencaoAtivo;
-      cardAtencao.classList.toggle("filtro-ativo", filtroAtencaoAtivo);
-      renderizar();
-      const tabela = $("tabelaDados") || $("tabelaDadosCorpo");
-      if (tabela) tabela.scrollIntoView({ behavior: "smooth", block: "start" });
+      selecionarFonte("atencao");
     });
   }
 
