@@ -759,9 +759,23 @@ async function carregarSnapshotInicial() {
   $("filtroDataDe").value = de;
   $("filtroDataAte").value = ate;
 
-  const json = await carregarSnapshotTelemetriaJson();
-  if (json?.dados?.length) {
-    aplicarSnapshotBruto(filtrarSnapshotRegistros(json, { fonte: "todos", de, ate }));
+  const [json, fleetbusSnap] = await Promise.all([
+    carregarSnapshotTelemetriaJson(),
+    carregarSnapshotTelemetriaPlanilha({ fonte: "fleetbus", de, ate })
+  ]);
+
+  const dadosCombinados = [
+    ...(json?.dados || []),
+    ...(fleetbusSnap?.dados || [])
+  ];
+
+  if (dadosCombinados.length) {
+    const snapCombinado = {
+      ...(json || {}),
+      dados: dadosCombinados,
+      atualizadoEm: json?.atualizadoEm || fleetbusSnap?.atualizadoEm || new Date().toISOString()
+    };
+    aplicarSnapshotBruto(filtrarSnapshotRegistros(snapCombinado, { fonte: "todos", de, ate }));
     await aguardar(0);
     aplicarFonteAtiva();
     atualizarStatusJson();

@@ -197,10 +197,122 @@ export async function carregarResumoTelemetriaPlanilha() {
   }
 }
 
+const FLEETBUS_SHEET_ID = "1Z_rFA-1jz7-kq4juGp5uFG4WMpVBloML98hDgWcX9gQ";
+const FLEETBUS_GID = "1035972881";
+
+function normalizarDataIsoLeitura(val) {
+  const s = String(val || "").trim();
+  if (!s) return "";
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+  if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  return "";
+}
+
+function normalizarVeiculoLeitura(v) {
+  const s = String(v || "").trim();
+  if (!s) return "";
+  const digits = s.replace(/\D/g, "");
+  return digits ? String(parseInt(digits, 10)) : s.toUpperCase();
+}
+
+async function carregarFleetbusDiretoDaPlanilha(de, ate) {
+  const url = `https://docs.google.com/spreadsheets/d/${FLEETBUS_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${FLEETBUS_GID}`;
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return null;
+    const texto = await res.text();
+    if (!texto.trim()) return null;
+
+    const linhas = texto.trim().split(/\r?\n/);
+    if (linhas.length < 2) return null;
+
+    const parseRow = (line) => {
+      const cols = [];
+      let cell = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (inQuotes) {
+          if (c === '"' && line[i + 1] === '"') { cell += '"'; i++; }
+          else if (c === '"') inQuotes = false;
+          else cell += c;
+        } else {
+          if (c === '"') inQuotes = true;
+          else if (c === ',') { cols.push(cell.trim()); cell = ""; }
+          else cell += c;
+        }
+      }
+      cols.push(cell.trim());
+      return cols;
+    };
+
+    const headers = parseRow(linhas[0]).map((h) => h.toLowerCase().trim());
+    const iVeiculo = headers.findIndex((h) => h === "veiculo" || h === "prefixo" || h.includes("veiculo"));
+    const iData = headers.findIndex((h) => h === "data" || h === "date" || h === "dia");
+    const iKm = headers.findIndex((h) => h.includes("km percorrido") || h.includes("distancia") || h.includes("distância"));
+    if (iVeiculo < 0 || iData < 0) return null;
+
+    const dados = [];
+    for (let i = 1; i < linhas.length; i++) {
+      if (!linhas[i].trim()) continue;
+      const cols = parseRow(linhas[i]);
+      const veiculo = normalizarVeiculoLeitura(cols[iVeiculo]);
+      const dataIso = normalizarDataIsoLeitura(cols[iData]);
+      if (!veiculo || !dataIso) continue;
+      if (de && dataIso < de) continue;
+      if (ate && dataIso > ate) continue;
+
+      const kmPercorrido = cols[iKm] != null ? String(cols[iKm]).replace(/\./g, "").replace(",", ".").trim() : "";
+
+      const payload = {
+        Veiculo: veiculo,
+        Data: dataIso,
+        "Km Percorrido": kmPercorrido,
+        data_iso: dataIso,
+        veiculo_norm: veiculo
+      };
+
+      dados.push({
+        data_iso: dataIso,
+        veiculo,
+        fonte: "fleetbus",
+        payload,
+        origem_arquivo: "planilha-fleetbus"
+      });
+    }
+
+    if (!dados.length) return null;
+    const datas = dados.map((d) => d.data_iso).filter(Boolean).sort();
+    return {
+      ok: true,
+      atualizadoEm: new Date().toISOString(),
+      origem: "google-sheets-direct",
+      total: dados.length,
+      total_fleetbus: dados.length,
+      data_de: datas[0] || de || null,
+      data_ate: datas[datas.length - 1] || ate || null,
+      dados,
+      origem_carregamento: "planilha"
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
 async function carregarSnapshotTelemetriaPlanilhaFonte(fonte, de, ate) {
   const opcoes = { fonte, de, ate };
   const cached = lerCacheSnapshot(opcoes);
   if (cached) return cached;
+
+  if (fonte === "fleetbus") {
+    const direct = await carregarFleetbusDiretoDaPlanilha(de, ate);
+    if (direct) {
+      gravarCacheSnapshot(direct, opcoes, "planilha");
+      return direct;
+    }
+  }
 
   const base = await obterUrlTelemetriaScript();
   if (!base) return null;
