@@ -1702,10 +1702,10 @@ async function iniciar() {
   limparCacheTelemetriaLegado();
   renderResumoVazio();
   renderTabelaVazia("Carregando dados…");
-  planilhaAoVivo = sessionStorage.getItem(CHAVE_PLANILHA_STORAGE) === "1";
+  planilhaAoVivo = true;
   const chavePlanilha = $("chavePlanilhaAoVivo");
   if (chavePlanilha) {
-    chavePlanilha.checked = planilhaAoVivo;
+    chavePlanilha.checked = true;
     chavePlanilha.addEventListener("change", () => onChavePlanilhaChange());
   }
   renderAbasFonte();
