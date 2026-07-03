@@ -495,26 +495,39 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
     noArquivo.add(id);
   });
 
-  const registrosFiltrados = filtrarRegistrosPorPeriodo;
-  const cleverRegs = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "clever");
-  const tcglRegs = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "tcgl");
-  const fleetbusRegs = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "fleetbus");
-
-  const somaKm = (regs) => {
-    let total = 0;
+  const kmPorFonte = (regs) => {
+    const mapa = new Map();
     regs.forEach((reg) => {
       let payload = reg.payload || reg;
       if (typeof payload === "string") try { payload = JSON.parse(payload); } catch (_) { payload = {}; }
       const row = normalizarLinhaTelemetria({ ...payload });
       const km = parseNumero(row["Km Percorrido"]);
-      if (Number.isFinite(km)) total += km;
+      if (!Number.isFinite(km) || km <= 0) return;
+      const key = `${reg.data_iso}|${normVeiculo(reg.veiculo)}`;
+      mapa.set(key, (mapa.get(key) || 0) + km);
     });
-    return total;
+    return mapa;
   };
 
-  const kmClever = somaKm(cleverRegs);
-  const kmTcgl = somaKm(tcglRegs);
-  const kmFleetbus = somaKm(fleetbusRegs);
+  const cleverMap = kmPorFonte((snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "clever"));
+  const tcglMap = kmPorFonte((snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "tcgl"));
+  const fleetbusMap = kmPorFonte((snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "fleetbus"));
+
+  const somaPar = (mapA, mapB) => {
+    let somaA = 0, somaB = 0;
+    mapA.forEach((valA, key) => {
+      const valB = mapB.get(key);
+      if (valB != null && valB > 0) {
+        somaA += valA;
+        somaB += valB;
+      }
+    });
+    return { somaA, somaB };
+  };
+
+  const parCleverTcgl = somaPar(cleverMap, tcglMap);
+  const parFleetbusTcgl = somaPar(fleetbusMap, tcglMap);
+  const parCleverFleetbus = somaPar(cleverMap, fleetbusMap);
 
   const pctStr = (num, den) => {
     if (!Number.isFinite(num) || !Number.isFinite(den) || den <= 0) return "—";
@@ -524,9 +537,9 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
   return {
     frota: FROTA.length,
     noArquivo: noArquivo.size,
-    pctCleverTcgl: pctStr(kmClever, kmTcgl),
-    pctFleetbusTcgl: pctStr(kmFleetbus, kmTcgl),
-    pctCleverFleetbus: pctStr(kmClever, kmFleetbus)
+    pctCleverTcgl: pctStr(parCleverTcgl.somaA, parCleverTcgl.somaB),
+    pctFleetbusTcgl: pctStr(parFleetbusTcgl.somaA, parFleetbusTcgl.somaB),
+    pctCleverFleetbus: pctStr(parCleverFleetbus.somaA, parCleverFleetbus.somaB)
   };
 }
 
