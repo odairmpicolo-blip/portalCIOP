@@ -99,10 +99,26 @@ function metricasDivergentes(clever, tcgl) {
 function cabecalhosComparacao() {
   const headers = ["Data"];
   METRICAS_COMPARACAO.forEach((metrica) => {
-    headers.push(`${metrica} (Clever)`, `${metrica} (TCGL)`);
+    headers.push(`${metrica} (TCGL)`, `${metrica} (Clever)`);
   });
   headers.push("Status");
   return headers;
+}
+
+function pctKmCleverSobreTcgl(clever, tcgl) {
+  const kmC = parseNumero(clever?.["Km Percorrido"]);
+  const kmT = parseNumero(tcgl?.["Km Percorrido"]);
+  if (!Number.isFinite(kmC) || !Number.isFinite(kmT) || kmT <= 0) return null;
+  return (kmC / kmT) * 100;
+}
+
+function statusComparacaoKm(clever, tcgl, semClever, semTcgl) {
+  if (semClever && semTcgl) return "Sem dados";
+  if (semClever) return "Sem Clever";
+  if (semTcgl) return "Sem TCGL";
+  const pct = pctKmCleverSobreTcgl(clever, tcgl);
+  if (pct == null) return "—";
+  return `${formatarDecimal(pct, 1)}%`;
 }
 
 function colunaChave(col) {
@@ -480,7 +496,7 @@ function classeLinhaDado(row, colunasKpi) {
   if (row.__comparacao) {
     if (row.__semDadosClever && row.__semDadosTcgl) return "row-sem-dados";
     if (row.__semDadosClever || row.__semDadosTcgl) return "row-sem-dados";
-    if (row.Status === "Divergente") return "row-incoerente";
+    if (row.__divergente) return "row-incoerente";
     return "";
   }
   const cols = KPI_DEFS.map((d) => colunasKpi[d.id]).filter(Boolean);
@@ -773,14 +789,12 @@ function montarLinhasComparacao() {
     };
 
     METRICAS_COMPARACAO.forEach((metrica) => {
-      row[`${metrica} (Clever)`] = c?.[metrica] ?? "";
       row[`${metrica} (TCGL)`] = t?.[metrica] ?? "";
+      row[`${metrica} (Clever)`] = c?.[metrica] ?? "";
     });
 
-    row.Status = semClever && semTcgl ? "Sem dados"
-      : semClever ? "Sem Clever"
-        : semTcgl ? "Sem TCGL"
-          : (metricasDivergentes(c, t) ? "Divergente" : "OK");
+    row.__divergente = !semClever && !semTcgl && metricasDivergentes(c, t);
+    row.Status = statusComparacaoKm(c, t, semClever, semTcgl);
 
     rows.push(row);
   });
@@ -846,8 +860,8 @@ function renderAbasFonte() {
   const container = $("abasFonte");
   if (!container) return;
   const opcoes = [
-    { id: "clever", rotulo: "CLEVER" },
     { id: "tcgl", rotulo: "TCGL" },
+    { id: "clever", rotulo: "CLEVER" },
     { id: "comparacao", rotulo: "COMPARAÇÃO" }
   ];
   container.innerHTML = opcoes.map((o) =>
@@ -877,14 +891,14 @@ async function atualizarStatusJson() {
       ? ` · ${formatarDataBr(periodoCarregado.de)}–${formatarDataBr(periodoCarregado.ate)}`
       : "";
     const modo = planilhaAoVivo ? rotuloOrigem : `${rotuloOrigem} · rápido`;
-    el.textContent = `${modo} · ${quando}${periodo} · Clever ${clever} · TCGL ${tcgl}`;
+    el.textContent = `${modo} · ${quando}${periodo} · TCGL ${tcgl} · Clever ${clever}`;
     el.className = "status-json ok";
     return;
   }
   const manifest = await carregarManifestTelemetria();
   if (manifest?.atualizadoEm) {
     const quandoManifest = new Date(manifest.atualizadoEm).toLocaleString("pt-BR");
-    el.textContent = `JSON · ${quandoManifest} · Clever ${manifest.total_clever ?? clever} · TCGL ${manifest.total_tcgl ?? tcgl}`;
+    el.textContent = `JSON · ${quandoManifest} · TCGL ${manifest.total_tcgl ?? tcgl} · Clever ${manifest.total_clever ?? clever}`;
     el.className = "status-json ok";
   } else {
     el.textContent = "JSON local";
