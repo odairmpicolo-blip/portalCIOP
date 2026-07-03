@@ -96,23 +96,15 @@ function metricasDivergentes(clever, tcgl) {
   });
 }
 
-function cabecalhosComparacao(modo) {
-  const headers = ["Data"];
-  if (modo === "fleetbus_tcgl") {
-    METRICAS_COMPARACAO.forEach((metrica) => {
-      headers.push(`${metrica} (TCGL)`, `${metrica} (FleetBus)`);
-    });
-  } else if (modo === "clever_fleetbus") {
-    METRICAS_COMPARACAO.forEach((metrica) => {
-      headers.push(`${metrica} (FleetBus)`, `${metrica} (Clever)`);
-    });
-  } else {
-    METRICAS_COMPARACAO.forEach((metrica) => {
-      headers.push(`${metrica} (TCGL)`, `${metrica} (Clever)`);
-    });
-  }
-  headers.push("Status");
-  return headers;
+function cabecalhosComparacao() {
+  return [
+    "Data",
+    "Km Percorrido (Clever)",
+    "Km Percorrido (FleetBus)",
+    "Clever / TCGL %",
+    "FleetBus / TCGL %",
+    "Clever / FleetBus %"
+  ];
 }
 
 function pctKmCleverSobreTcgl(clever, tcgl) {
@@ -203,10 +195,11 @@ function formatarCelula(col, val, row) {
       const semLado = (info.lado === "Clever" && row.__semDadosClever)
         || (info.lado === "TCGL" && row.__semDadosTcgl)
         || (info.lado === "FleetBus" && (row.__semDadosFleetBus ?? false));
-      if (!s) return semLado ? "Sem dados" : "";
+      if (!s) return semLado ? "—" : "";
       if (normChave(info.metrica).includes("km")) return formatarInteiro(s);
       return formatarDecimal(s);
     }
+    if (col.endsWith("%")) return String(val ?? "").trim() || "—";
     if (col === "Status") return String(val ?? "").trim();
   }
   const s = String(val ?? "").trim();
@@ -553,13 +546,13 @@ function linhaSemDados(veiculo, dataIso) {
     row[colData] = `${d}-${m}-${y}`;
     row.data_iso = dataIso;
   }
-  const MODOS_COMP = ["comparacao", "fleetbus_tcgl", "clever_fleetbus"];
-  if (MODOS_COMP.includes(fonteAtiva) || dadosBrutos?.modo === "comparacao") {
+  if (fonteAtiva === "comparacao" || dadosBrutos?.modo === "comparacao") {
     row.__comparacao = true;
     row.__semDadosClever = true;
     row.__semDadosTcgl = true;
-    cabecalhosComparacao(fonteAtiva).forEach((col) => {
-      if (col !== "Data") row[col] = col === "Status" ? "Sem dados" : "";
+    row.__semDadosFleetBus = true;
+    cabecalhosComparacao().forEach((col) => {
+      if (col !== "Data") row[col] = "";
     });
   }
   return row;
@@ -649,8 +642,7 @@ function periodoCarregamentoAtual() {
 }
 
 function fontePlanilhaAtual() {
-  if (["comparacao", "fleetbus_tcgl", "clever_fleetbus"].includes(fonteAtiva)) return "todos";
-  return fonteAtiva;
+  return fonteAtiva === "comparacao" ? "todos" : fonteAtiva;
 }
 
 async function atualizarDaPlanilha() {
@@ -695,15 +687,6 @@ async function garantirDadosFonte(fonte) {
   if (fonte === "comparacao") {
     await garantirDadosFonte("clever");
     await garantirDadosFonte("tcgl");
-    return;
-  }
-  if (fonte === "fleetbus_tcgl") {
-    await garantirDadosFonte("fleetbus");
-    await garantirDadosFonte("tcgl");
-    return;
-  }
-  if (fonte === "clever_fleetbus") {
-    await garantirDadosFonte("clever");
     await garantirDadosFonte("fleetbus");
     return;
   }
@@ -808,75 +791,66 @@ function payloadParaRow(reg, colVeiculo, colData) {
   return row;
 }
 
-function montarLinhasComparacao(modo) {
-  modo = modo || "comparacao";
-  let fonteA, fonteB, nomeA, nomeB;
-  if (modo === "fleetbus_tcgl") {
-    fonteA = "fleetbus"; fonteB = "tcgl"; nomeA = "FleetBus"; nomeB = "TCGL";
-  } else if (modo === "clever_fleetbus") {
-    fonteA = "clever"; fonteB = "fleetbus"; nomeA = "Clever"; nomeB = "FleetBus";
-  } else {
-    fonteA = "clever"; fonteB = "tcgl"; nomeA = "Clever"; nomeB = "TCGL";
-  }
+function calcPct(numerador, divisor) {
+  const n = parseNumero(numerador);
+  const d = parseNumero(divisor);
+  if (!Number.isFinite(n) || !Number.isFinite(d) || d <= 0) return "";
+  return `${formatarDecimal((n / d) * 100, 1)}%`;
+}
 
-  const listaA = filtrarRegistrosPorPeriodo(registrosDaFonte(fonteA));
-  const listaB = filtrarRegistrosPorPeriodo(registrosDaFonte(fonteB));
+function montarLinhasComparacao() {
+  const cleverRegs = filtrarRegistrosPorPeriodo(registrosDaFonte("clever"));
+  const tcglRegs = filtrarRegistrosPorPeriodo(registrosDaFonte("tcgl"));
+  const fleetbusRegs = filtrarRegistrosPorPeriodo(registrosDaFonte("fleetbus"));
   const mapa = new Map();
 
-  const indexar = (lista, lado) => {
+  const indexar = (lista, campo) => {
     lista.forEach((reg) => {
       const key = `${reg.data_iso}|${normVeiculo(reg.veiculo)}`;
       if (!mapa.has(key)) {
-        mapa.set(key, { data_iso: reg.data_iso, veiculo: normVeiculo(reg.veiculo), ladoA: null, ladoB: null });
+        mapa.set(key, { data_iso: reg.data_iso, veiculo: normVeiculo(reg.veiculo), clever: null, tcgl: null, fleetbus: null });
       }
-      mapa.get(key)[lado] = reg.payload || reg;
+      mapa.get(key)[campo] = reg.payload || reg;
     });
   };
-  indexar(listaA, "ladoA");
-  indexar(listaB, "ladoB");
+  indexar(cleverRegs, "clever");
+  indexar(tcglRegs, "tcgl");
+  indexar(fleetbusRegs, "fleetbus");
 
   const colVeiculo = "Veiculo";
   const colData = "Data";
   const rows = [];
 
-  let labelBase, labelComp;
-  if (modo === "fleetbus_tcgl") {
-    labelBase = "TCGL"; labelComp = "FleetBus";
-  } else if (modo === "clever_fleetbus") {
-    labelBase = "FleetBus"; labelComp = "Clever";
-  } else {
-    labelBase = "TCGL"; labelComp = "Clever";
-  }
-
   mapa.forEach((item) => {
-    const a = item.ladoA ? normalizarLinhaTelemetria({ ...item.ladoA }) : null;
-    const b = item.ladoB ? normalizarLinhaTelemetria({ ...item.ladoB }) : null;
-    const semA = !a;
-    const semB = !b;
+    const c = item.clever ? normalizarLinhaTelemetria({ ...item.clever }) : null;
+    const t = item.tcgl ? normalizarLinhaTelemetria({ ...item.tcgl }) : null;
+    const f = item.fleetbus ? normalizarLinhaTelemetria({ ...item.fleetbus }) : null;
+
+    const kmClever = c?.["Km Percorrido"] ?? "";
+    const kmTcgl = t?.["Km Percorrido"] ?? "";
+    const kmFleetbus = f?.["Km Percorrido"] ?? "";
+
     const row = {
       [colVeiculo]: item.veiculo,
       [colData]: item.data_iso,
       data_iso: item.data_iso,
       __comparacao: true,
-      __semDados: semA && semB,
-      __semDadosClever: (modo === "comparacao" || modo === "clever_fleetbus") ? semA : false,
-      __semDadosTcgl: (modo === "comparacao" || modo === "fleetbus_tcgl") ? semB : false,
-      __semDadosFleetBus: (modo === "fleetbus_tcgl") ? semA : (modo === "clever_fleetbus" ? semB : false)
+      __semDados: !c && !t && !f,
+      __semDadosClever: !c,
+      __semDadosTcgl: !t,
+      __semDadosFleetBus: !f,
+      "Km Percorrido (Clever)": kmClever,
+      "Km Percorrido (FleetBus)": kmFleetbus,
+      "Clever / TCGL %": calcPct(kmClever, kmTcgl),
+      "FleetBus / TCGL %": calcPct(kmFleetbus, kmTcgl),
+      "Clever / FleetBus %": calcPct(kmClever, kmFleetbus)
     };
-
-    METRICAS_COMPARACAO.forEach((metrica) => {
-      row[`${metrica} (${labelBase})`] = b?.[metrica] ?? "";
-      row[`${metrica} (${labelComp})`] = a?.[metrica] ?? "";
-    });
-
-    row.__divergente = !semA && !semB && metricasDivergentes(a, b);
-    row.Status = statusComparacaoGenerico(a, b, semA, semB, nomeA, nomeB);
 
     rows.push(row);
   });
 
   return {
-    headers: cabecalhosComparacao(modo),
+    headers: cabecalhosComparacao(),
     rows,
     colVeiculo,
     colData
@@ -886,9 +860,8 @@ function montarLinhasComparacao(modo) {
 function aplicarFonteAtiva() {
   if (!snapshotRaw?.dados?.length) return 0;
 
-  const MODOS_COMPARACAO = ["comparacao", "fleetbus_tcgl", "clever_fleetbus"];
-  if (MODOS_COMPARACAO.includes(fonteAtiva)) {
-    const comp = montarLinhasComparacao(fonteAtiva);
+  if (fonteAtiva === "comparacao") {
+    const comp = montarLinhasComparacao();
     dadosBrutos = {
       headers: comp.headers,
       rows: comp.rows,
@@ -925,7 +898,7 @@ function aplicarFonteAtiva() {
 }
 
 async function selecionarFonte(fonte) {
-  const validas = ["clever", "tcgl", "fleetbus", "comparacao", "fleetbus_tcgl", "clever_fleetbus"];
+  const validas = ["clever", "tcgl", "fleetbus", "comparacao"];
   if (!validas.includes(fonte) || fonte === fonteAtiva) return;
   fonteAtiva = fonte;
   sortCol = null;
@@ -941,9 +914,7 @@ function renderAbasFonte() {
     { id: "tcgl", rotulo: "TCGL" },
     { id: "clever", rotulo: "CLEVER" },
     { id: "fleetbus", rotulo: "FLEETBUS" },
-    { id: "comparacao", rotulo: "Clever/TCGL" },
-    { id: "fleetbus_tcgl", rotulo: "FleetBus/TCGL" },
-    { id: "clever_fleetbus", rotulo: "Clever/FleetBus" }
+    { id: "comparacao", rotulo: "COMPARAÇÃO" }
   ];
   container.innerHTML = opcoes.map((o) =>
     `<button type="button" role="tab" data-fonte="${o.id}" class="${fonteAtiva === o.id ? "ativo" : ""}" aria-selected="${fonteAtiva === o.id}">${o.rotulo}</button>`
@@ -1369,7 +1340,7 @@ function renderizar() {
   $("painelResultado").hidden = false;
   if (!dadosBrutos?.rows?.length) {
     renderResumoVazio();
-    const fontesVivo = ["clever", "fleetbus", "comparacao", "fleetbus_tcgl", "clever_fleetbus"];
+    const fontesVivo = ["clever", "fleetbus", "comparacao"];
     const msg = !planilhaAoVivo && fontesVivo.includes(fonteAtiva)
       ? "Sem dados no JSON para esta fonte. Ative Planilha ao vivo para buscar na planilha Google."
       : "Nenhum registro no período. Ative Planilha ao vivo ou ajuste as datas.";
