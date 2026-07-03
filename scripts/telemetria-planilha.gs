@@ -20,9 +20,10 @@
  * GET ?resumo=1
  */
 
-const TELEMETRIA_VERSAO = "2026-07-04-planilha-clever-tcgl";
+const TELEMETRIA_VERSAO = "2026-07-04-planilha-clever-tcgl-fleetbus";
 const ABA_CLEVER = "Clever";
 const ABA_TCGL = "TCGL";
+const ABA_FLEETBUS = "Fleetbus";
 const CACHE_TTL = 300;
 
 const MAP_COLUNAS_EN_PT = {
@@ -87,6 +88,7 @@ function menuResumoTelemetria_() {
   var msg = [
     "Clever: " + resumo.total_clever + " registro(s)",
     "TCGL: " + resumo.total_tcgl + " registro(s)",
+    "FleetBus: " + (resumo.total_fleetbus || 0) + " registro(s)",
     "Período: " + (resumo.data_de || "—") + " a " + (resumo.data_ate || "—"),
     "Atualizado: " + resumo.atualizadoEm
   ].join("\n");
@@ -125,7 +127,8 @@ function montarDebugTelemetria_() {
       return { nome: s.getName(), gid: s.getSheetId(), linhas: s.getLastRow() };
     }),
     clever: debugAba_(obterAbaPorNome_(ABA_CLEVER)),
-    tcgl: debugAba_(obterAbaPorNome_(ABA_TCGL))
+    tcgl: debugAba_(obterAbaPorNome_(ABA_TCGL)),
+    fleetbus: debugAba_(obterAbaPorNome_(ABA_FLEETBUS))
   };
 }
 
@@ -154,6 +157,7 @@ function montarResumoTelemetria_() {
     total: snap.total,
     total_clever: snap.total_clever,
     total_tcgl: snap.total_tcgl,
+    total_fleetbus: snap.total_fleetbus,
     data_de: snap.data_de,
     data_ate: snap.data_ate
   };
@@ -167,9 +171,10 @@ function montarSnapshotTelemetria_(params) {
   var cache = lerCacheTelemetria_(chave);
   if (cache) return cache;
 
-  var clever = (fonteParam === "tcgl") ? [] : lerRegistrosAba_(ABA_CLEVER, "clever");
-  var tcgl = (fonteParam === "clever") ? [] : lerRegistrosAba_(ABA_TCGL, "tcgl");
-  var dados = clever.concat(tcgl);
+  var clever = (fonteParam === "tcgl" || fonteParam === "fleetbus") ? [] : lerRegistrosAba_(ABA_CLEVER, "clever");
+  var tcgl = (fonteParam === "clever" || fonteParam === "fleetbus") ? [] : lerRegistrosAba_(ABA_TCGL, "tcgl");
+  var fleetbus = (fonteParam === "clever" || fonteParam === "tcgl") ? [] : lerRegistrosFleetbus_();
+  var dados = clever.concat(tcgl).concat(fleetbus);
 
   if (de || ate) {
     dados = dados.filter(function (r) {
@@ -191,10 +196,11 @@ function montarSnapshotTelemetria_(params) {
     atualizadoEm: new Date().toISOString(),
     origem: "google-sheets",
     planilhaId: SpreadsheetApp.getActiveSpreadsheet().getId(),
-    fontes: ["clever", "tcgl"],
+    fontes: ["clever", "tcgl", "fleetbus"],
     total: dados.length,
     total_clever: clever.length,
     total_tcgl: tcgl.length,
+    total_fleetbus: fleetbus.length,
     data_de: datas.length ? datas[0] : null,
     data_ate: datas.length ? datas[datas.length - 1] : null,
     dados: dados
@@ -491,6 +497,66 @@ function dispararAtualizacaoGithub_(repo) {
     }),
     muteHttpExceptions: true
   });
+}
+
+function lerRegistrosFleetbus_() {
+  var sheet = obterAbaPorNome_(ABA_FLEETBUS);
+  if (!sheet) return [];
+  var display = sheet.getDataRange().getDisplayValues();
+  if (!display.length) return [];
+
+  var headerIdx = encontrarLinhaCabecalho_(display);
+  var headers = (display[headerIdx] || []).map(function (h) { return String(h || "").trim(); });
+  var colVeiculo = detectarColuna_(headers, ["veiculo", "vehicle id", "vehicle", "carro", "prefixo"]);
+  var colData = detectarColuna_(headers, ["data", "date", "dia"]);
+  var colKm = detectarColuna_(headers, ["km percorrido", "distancia", "distância", "daily distance"]);
+  if (!colVeiculo || !colData) return [];
+
+  var grupos = {};
+  for (var i = headerIdx + 1; i < display.length; i++) {
+    var linha = display[i];
+    if (!linha || !linha.some(function (c) { return valorPreenchido_(c); })) continue;
+
+    var row = {};
+    headers.forEach(function (h, idx) {
+      var col = normalizarColunaTelemetria_(h) || h;
+      row[col] = String(linha[idx] != null ? linha[idx] : "").trim();
+    });
+
+    var veiculo = normalizarVeiculo_(row[colVeiculo] || row.Veiculo || "");
+    var dataIso = normalizarDataIso_(row[colData] || row.Data || "");
+    if (!veiculo || !dataIso) continue;
+
+    row.Veiculo = veiculo;
+    row.Data = dataIso;
+    row.data_iso = dataIso;
+    row.veiculo_norm = veiculo;
+    if (colKm && row[colKm]) row["Km Percorrido"] = row[colKm];
+
+    var key = dataIso + "|" + veiculo;
+    if (!grupos[key]) grupos[key] = [];
+    grupos[key].push(row);
+  }
+
+  var registros = [];
+  Object.keys(grupos).forEach(function (key) {
+    var partes = key.split("|");
+    var dataIso = partes[0];
+    var veiculo = partes[1];
+    var payload = agregarLinhasTelemetria_(grupos[key]);
+    payload.Veiculo = veiculo;
+    payload.Data = dataIso;
+    payload.data_iso = dataIso;
+    payload.veiculo_norm = veiculo;
+    registros.push({
+      data_iso: dataIso,
+      veiculo: veiculo,
+      fonte: "fleetbus",
+      payload: payload,
+      origem_arquivo: "planilha-fleetbus"
+    });
+  });
+  return registros;
 }
 
 function respostaJson_(obj) {

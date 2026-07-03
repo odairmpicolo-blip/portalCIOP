@@ -19,7 +19,7 @@ const FROTA = (window.FROTA_PATIO || []).slice().sort((a, b) =>
 
 const PLANILHA_TELEMETRIA_URL = "https://docs.google.com/spreadsheets/d/1Z_rFA-1jz7-kq4juGp5uFG4WMpVBloML98hDgWcX9gQ/edit";
 const CHAVE_PLANILHA_STORAGE = "telemetria_planilha_ao_vivo";
-const DIAS_CARREGAMENTO_INICIAL = 7;
+const DIAS_CARREGAMENTO_INICIAL = 120;
 let fonteAtiva = "tcgl";
 let planilhaAoVivo = false;
 let snapshotRaw = null;
@@ -66,7 +66,7 @@ function colunaOculta(nome) {
 function colunasExibiveis(headers, colVeiculo) {
   const headerList = headers || [];
   const isComparacao = headerList.includes("Status")
-    || headerList.some((h) => /\((Clever|TCGL)\)$/.test(h));
+    || headerList.some((h) => /\((Clever|TCGL|FleetBus)\)$/.test(h));
   if (isComparacao) {
     return headerList.filter((h) => h !== colVeiculo && !colunaOculta(h));
   }
@@ -74,7 +74,7 @@ function colunasExibiveis(headers, colVeiculo) {
 }
 
 function colunaComparacaoLado(col) {
-  const m = String(col).match(/^(.+)\s+\((Clever|TCGL)\)$/);
+  const m = String(col).match(/^(.+)\s+\((Clever|TCGL|FleetBus)\)$/);
   return m ? { metrica: m[1], lado: m[2] } : null;
 }
 
@@ -96,11 +96,21 @@ function metricasDivergentes(clever, tcgl) {
   });
 }
 
-function cabecalhosComparacao() {
+function cabecalhosComparacao(modo) {
   const headers = ["Data"];
-  METRICAS_COMPARACAO.forEach((metrica) => {
-    headers.push(`${metrica} (TCGL)`, `${metrica} (Clever)`);
-  });
+  if (modo === "fleetbus_tcgl") {
+    METRICAS_COMPARACAO.forEach((metrica) => {
+      headers.push(`${metrica} (TCGL)`, `${metrica} (FleetBus)`);
+    });
+  } else if (modo === "clever_fleetbus") {
+    METRICAS_COMPARACAO.forEach((metrica) => {
+      headers.push(`${metrica} (FleetBus)`, `${metrica} (Clever)`);
+    });
+  } else {
+    METRICAS_COMPARACAO.forEach((metrica) => {
+      headers.push(`${metrica} (TCGL)`, `${metrica} (Clever)`);
+    });
+  }
   headers.push("Status");
   return headers;
 }
@@ -112,11 +122,27 @@ function pctKmCleverSobreTcgl(clever, tcgl) {
   return (kmC / kmT) * 100;
 }
 
+function pctKmSobreDivisor(numerador, divisor) {
+  const kmN = parseNumero(numerador?.["Km Percorrido"]);
+  const kmD = parseNumero(divisor?.["Km Percorrido"]);
+  if (!Number.isFinite(kmN) || !Number.isFinite(kmD) || kmD <= 0) return null;
+  return (kmN / kmD) * 100;
+}
+
 function statusComparacaoKm(clever, tcgl, semClever, semTcgl) {
   if (semClever && semTcgl) return "Sem dados";
   if (semClever) return "Sem Clever";
   if (semTcgl) return "Sem TCGL";
   const pct = pctKmCleverSobreTcgl(clever, tcgl);
+  if (pct == null) return "—";
+  return `${formatarDecimal(pct, 1)}%`;
+}
+
+function statusComparacaoGenerico(ladoA, ladoB, semA, semB, nomeA, nomeB) {
+  if (semA && semB) return "Sem dados";
+  if (semA) return `Sem ${nomeA}`;
+  if (semB) return `Sem ${nomeB}`;
+  const pct = pctKmSobreDivisor(ladoA, ladoB);
   if (pct == null) return "—";
   return `${formatarDecimal(pct, 1)}%`;
 }
@@ -174,7 +200,9 @@ function formatarCelula(col, val, row) {
     const info = colunaComparacaoLado(col);
     if (info) {
       const s = String(val ?? "").trim();
-      const semLado = info.lado === "Clever" ? row.__semDadosClever : row.__semDadosTcgl;
+      const semLado = (info.lado === "Clever" && row.__semDadosClever)
+        || (info.lado === "TCGL" && row.__semDadosTcgl)
+        || (info.lado === "FleetBus" && (row.__semDadosFleetBus ?? false));
       if (!s) return semLado ? "Sem dados" : "";
       if (normChave(info.metrica).includes("km")) return formatarInteiro(s);
       return formatarDecimal(s);
@@ -525,11 +553,12 @@ function linhaSemDados(veiculo, dataIso) {
     row[colData] = `${d}-${m}-${y}`;
     row.data_iso = dataIso;
   }
-  if (fonteAtiva === "comparacao" || dadosBrutos?.modo === "comparacao") {
+  const MODOS_COMP = ["comparacao", "fleetbus_tcgl", "clever_fleetbus"];
+  if (MODOS_COMP.includes(fonteAtiva) || dadosBrutos?.modo === "comparacao") {
     row.__comparacao = true;
     row.__semDadosClever = true;
     row.__semDadosTcgl = true;
-    cabecalhosComparacao().forEach((col) => {
+    cabecalhosComparacao(fonteAtiva).forEach((col) => {
       if (col !== "Data") row[col] = col === "Status" ? "Sem dados" : "";
     });
   }
@@ -599,9 +628,11 @@ function aplicarSnapshotBruto(snap, { mesclar = false } = {}) {
   };
   const clever = snapshotRaw.dados.filter((d) => d.fonte === "clever").length;
   const tcgl = snapshotRaw.dados.filter((d) => d.fonte === "tcgl").length;
+  const fleetbus = snapshotRaw.dados.filter((d) => d.fonte === "fleetbus").length;
   snapshotRaw.total = snapshotRaw.dados.length;
   snapshotRaw.total_clever = clever;
   snapshotRaw.total_tcgl = tcgl;
+  snapshotRaw.total_fleetbus = fleetbus;
   const datas = snapshotRaw.dados.map((d) => d.data_iso).filter(Boolean).sort();
   periodoCarregado = {
     de: datas[0] || $("filtroDataDe")?.value || "",
@@ -618,7 +649,8 @@ function periodoCarregamentoAtual() {
 }
 
 function fontePlanilhaAtual() {
-  return fonteAtiva === "comparacao" ? "todos" : fonteAtiva;
+  if (["comparacao", "fleetbus_tcgl", "clever_fleetbus"].includes(fonteAtiva)) return "todos";
+  return fonteAtiva;
 }
 
 async function atualizarDaPlanilha() {
@@ -634,7 +666,7 @@ async function atualizarDaPlanilha() {
   if (fonte === "todos") {
     const outros = (snapshotRaw?.dados || []).filter((d) => {
       const f = inferirFonteRegistro(d);
-      return f !== "clever" && f !== "tcgl";
+      return f !== "clever" && f !== "tcgl" && f !== "fleetbus";
     });
     aplicarSnapshotBruto({ ...snap, dados: [...outros, ...snap.dados] });
   } else {
@@ -665,7 +697,17 @@ async function garantirDadosFonte(fonte) {
     await garantirDadosFonte("tcgl");
     return;
   }
-  if (fonte !== "clever" && fonte !== "tcgl") return;
+  if (fonte === "fleetbus_tcgl") {
+    await garantirDadosFonte("fleetbus");
+    await garantirDadosFonte("tcgl");
+    return;
+  }
+  if (fonte === "clever_fleetbus") {
+    await garantirDadosFonte("clever");
+    await garantirDadosFonte("fleetbus");
+    return;
+  }
+  if (!["clever", "tcgl", "fleetbus"].includes(fonte)) return;
   if (registrosDaFonte(fonte).length) return;
 
   const { de, ate } = periodoCarregamentoAtual();
@@ -752,55 +794,75 @@ function payloadParaRow(reg, colVeiculo, colData) {
   return row;
 }
 
-function montarLinhasComparacao() {
-  const clever = filtrarRegistrosPorPeriodo(registrosDaFonte("clever"));
-  const tcgl = filtrarRegistrosPorPeriodo(registrosDaFonte("tcgl"));
+function montarLinhasComparacao(modo) {
+  modo = modo || "comparacao";
+  let fonteA, fonteB, nomeA, nomeB;
+  if (modo === "fleetbus_tcgl") {
+    fonteA = "fleetbus"; fonteB = "tcgl"; nomeA = "FleetBus"; nomeB = "TCGL";
+  } else if (modo === "clever_fleetbus") {
+    fonteA = "clever"; fonteB = "fleetbus"; nomeA = "Clever"; nomeB = "FleetBus";
+  } else {
+    fonteA = "clever"; fonteB = "tcgl"; nomeA = "Clever"; nomeB = "TCGL";
+  }
+
+  const listaA = filtrarRegistrosPorPeriodo(registrosDaFonte(fonteA));
+  const listaB = filtrarRegistrosPorPeriodo(registrosDaFonte(fonteB));
   const mapa = new Map();
 
   const indexar = (lista, lado) => {
     lista.forEach((reg) => {
       const key = `${reg.data_iso}|${normVeiculo(reg.veiculo)}`;
       if (!mapa.has(key)) {
-        mapa.set(key, { data_iso: reg.data_iso, veiculo: normVeiculo(reg.veiculo), clever: null, tcgl: null });
+        mapa.set(key, { data_iso: reg.data_iso, veiculo: normVeiculo(reg.veiculo), ladoA: null, ladoB: null });
       }
       mapa.get(key)[lado] = reg.payload || reg;
     });
   };
-  indexar(clever, "clever");
-  indexar(tcgl, "tcgl");
+  indexar(listaA, "ladoA");
+  indexar(listaB, "ladoB");
 
   const colVeiculo = "Veiculo";
   const colData = "Data";
   const rows = [];
 
+  let labelBase, labelComp;
+  if (modo === "fleetbus_tcgl") {
+    labelBase = "TCGL"; labelComp = "FleetBus";
+  } else if (modo === "clever_fleetbus") {
+    labelBase = "FleetBus"; labelComp = "Clever";
+  } else {
+    labelBase = "TCGL"; labelComp = "Clever";
+  }
+
   mapa.forEach((item) => {
-    const c = item.clever ? normalizarLinhaTelemetria({ ...item.clever }) : null;
-    const t = item.tcgl ? normalizarLinhaTelemetria({ ...item.tcgl }) : null;
-    const semClever = !c;
-    const semTcgl = !t;
+    const a = item.ladoA ? normalizarLinhaTelemetria({ ...item.ladoA }) : null;
+    const b = item.ladoB ? normalizarLinhaTelemetria({ ...item.ladoB }) : null;
+    const semA = !a;
+    const semB = !b;
     const row = {
       [colVeiculo]: item.veiculo,
       [colData]: item.data_iso,
       data_iso: item.data_iso,
       __comparacao: true,
-      __semDados: semClever && semTcgl,
-      __semDadosClever: semClever,
-      __semDadosTcgl: semTcgl
+      __semDados: semA && semB,
+      __semDadosClever: (modo === "comparacao" || modo === "clever_fleetbus") ? semA : false,
+      __semDadosTcgl: (modo === "comparacao" || modo === "fleetbus_tcgl") ? semB : false,
+      __semDadosFleetBus: (modo === "fleetbus_tcgl") ? semA : (modo === "clever_fleetbus" ? semB : false)
     };
 
     METRICAS_COMPARACAO.forEach((metrica) => {
-      row[`${metrica} (TCGL)`] = t?.[metrica] ?? "";
-      row[`${metrica} (Clever)`] = c?.[metrica] ?? "";
+      row[`${metrica} (${labelBase})`] = b?.[metrica] ?? "";
+      row[`${metrica} (${labelComp})`] = a?.[metrica] ?? "";
     });
 
-    row.__divergente = !semClever && !semTcgl && metricasDivergentes(c, t);
-    row.Status = statusComparacaoKm(c, t, semClever, semTcgl);
+    row.__divergente = !semA && !semB && metricasDivergentes(a, b);
+    row.Status = statusComparacaoGenerico(a, b, semA, semB, nomeA, nomeB);
 
     rows.push(row);
   });
 
   return {
-    headers: cabecalhosComparacao(),
+    headers: cabecalhosComparacao(modo),
     rows,
     colVeiculo,
     colData
@@ -810,8 +872,9 @@ function montarLinhasComparacao() {
 function aplicarFonteAtiva() {
   if (!snapshotRaw?.dados?.length) return 0;
 
-  if (fonteAtiva === "comparacao") {
-    const comp = montarLinhasComparacao();
+  const MODOS_COMPARACAO = ["comparacao", "fleetbus_tcgl", "clever_fleetbus"];
+  if (MODOS_COMPARACAO.includes(fonteAtiva)) {
+    const comp = montarLinhasComparacao(fonteAtiva);
     dadosBrutos = {
       headers: comp.headers,
       rows: comp.rows,
@@ -848,7 +911,8 @@ function aplicarFonteAtiva() {
 }
 
 async function selecionarFonte(fonte) {
-  if (!["clever", "tcgl", "comparacao"].includes(fonte) || fonte === fonteAtiva) return;
+  const validas = ["clever", "tcgl", "fleetbus", "comparacao", "fleetbus_tcgl", "clever_fleetbus"];
+  if (!validas.includes(fonte) || fonte === fonteAtiva) return;
   fonteAtiva = fonte;
   sortCol = null;
   await garantirDadosFonte(fonte);
@@ -862,7 +926,10 @@ function renderAbasFonte() {
   const opcoes = [
     { id: "tcgl", rotulo: "TCGL" },
     { id: "clever", rotulo: "CLEVER" },
-    { id: "comparacao", rotulo: "COMPARAÇÃO" }
+    { id: "fleetbus", rotulo: "FLEETBUS" },
+    { id: "comparacao", rotulo: "Clever/TCGL" },
+    { id: "fleetbus_tcgl", rotulo: "FleetBus/TCGL" },
+    { id: "clever_fleetbus", rotulo: "Clever/FleetBus" }
   ];
   container.innerHTML = opcoes.map((o) =>
     `<button type="button" role="tab" data-fonte="${o.id}" class="${fonteAtiva === o.id ? "ativo" : ""}" aria-selected="${fonteAtiva === o.id}">${o.rotulo}</button>`
@@ -891,7 +958,9 @@ async function atualizarStatusJson() {
       ? ` · ${formatarDataBr(periodoCarregado.de)}–${formatarDataBr(periodoCarregado.ate)}`
       : "";
     const modo = planilhaAoVivo ? rotuloOrigem : `${rotuloOrigem} · rápido`;
-    el.textContent = `${modo} · ${quando}${periodo} · TCGL ${tcgl} · Clever ${clever}`;
+    const fb = snap?.total_fleetbus ?? 0;
+    const fbLabel = fb ? ` · FleetBus ${fb}` : "";
+    el.textContent = `${modo} · ${quando}${periodo} · TCGL ${tcgl} · Clever ${clever}${fbLabel}`;
     el.className = "status-json ok";
     return;
   }
@@ -1286,7 +1355,8 @@ function renderizar() {
   $("painelResultado").hidden = false;
   if (!dadosBrutos?.rows?.length) {
     renderResumoVazio();
-    const msg = !planilhaAoVivo && (fonteAtiva === "clever" || fonteAtiva === "comparacao")
+    const fontesVivo = ["clever", "fleetbus", "comparacao", "fleetbus_tcgl", "clever_fleetbus"];
+    const msg = !planilhaAoVivo && fontesVivo.includes(fonteAtiva)
       ? "Sem dados no JSON para esta fonte. Ative Planilha ao vivo para buscar na planilha Google."
       : "Nenhum registro no período. Ative Planilha ao vivo ou ajuste as datas.";
     renderTabelaVazia(msg);

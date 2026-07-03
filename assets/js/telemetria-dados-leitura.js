@@ -63,8 +63,10 @@ function valorPreenchidoTelemetria(v) {
   return !["-", "—", "n/a", "na", "null", "undefined", "#n/a"].includes(low);
 }
 
-/** Clever tem Início/Registros CAN; TCGL só km/consumo. */
+/** Clever tem Início/Registros CAN; TCGL só km/consumo; FleetBus marcado explicitamente. */
 export function inferirFonteRegistro(reg) {
+  const explicit = String(reg?.fonte || "").toLowerCase();
+  if (explicit === "fleetbus") return "fleetbus";
   let payload = reg?.payload || reg;
   if (typeof payload === "string") {
     try { payload = JSON.parse(payload); } catch (_) { payload = {}; }
@@ -72,7 +74,6 @@ export function inferirFonteRegistro(reg) {
   const temInicio = valorPreenchidoTelemetria(payload?.Inicio) || valorPreenchidoTelemetria(payload?.["Start time local"]);
   const temCan = valorPreenchidoTelemetria(payload?.["Registros CAN"]) || valorPreenchidoTelemetria(payload?.["Number of events"]);
   if (temInicio || temCan) return "clever";
-  const explicit = String(reg?.fonte || "").toLowerCase();
   if (explicit === "clever" || explicit === "tcgl") return explicit;
   return "tcgl";
 }
@@ -136,21 +137,23 @@ function gravarCacheSnapshot(snap, opcoes, origem) {
   }
 }
 
-function combinarSnapshotsPlanilha(cleverSnap, tcglSnap, de, ate) {
+function combinarSnapshotsPlanilha(cleverSnap, tcglSnap, de, ate, fleetbusSnap) {
   const dados = normalizarFontesRegistros([
     ...(cleverSnap?.dados || []),
-    ...(tcglSnap?.dados || [])
+    ...(tcglSnap?.dados || []),
+    ...(fleetbusSnap?.dados || [])
   ]);
   if (!dados.length) return null;
   const datas = dados.map((d) => d.data_iso).filter(Boolean).sort();
   return {
     ok: true,
-    script_versao: cleverSnap?.script_versao || tcglSnap?.script_versao,
-    atualizadoEm: cleverSnap?.atualizadoEm || tcglSnap?.atualizadoEm || new Date().toISOString(),
+    script_versao: cleverSnap?.script_versao || tcglSnap?.script_versao || fleetbusSnap?.script_versao,
+    atualizadoEm: cleverSnap?.atualizadoEm || tcglSnap?.atualizadoEm || fleetbusSnap?.atualizadoEm || new Date().toISOString(),
     origem: "google-sheets",
     total: dados.length,
     total_clever: dados.filter((d) => d.fonte === "clever").length,
     total_tcgl: dados.filter((d) => d.fonte === "tcgl").length,
+    total_fleetbus: dados.filter((d) => d.fonte === "fleetbus").length,
     data_de: datas[0] || de || null,
     data_ate: datas[datas.length - 1] || ate || null,
     dados,
@@ -229,11 +232,12 @@ export async function carregarSnapshotTelemetriaPlanilha({ fonte = "todos", de =
     const cached = lerCacheSnapshot(opcoes);
     if (cached) return cached;
 
-    const [cleverSnap, tcglSnap] = await Promise.all([
+    const [cleverSnap, tcglSnap, fleetbusSnap] = await Promise.all([
       carregarSnapshotTelemetriaPlanilhaFonte("clever", de, ate),
-      carregarSnapshotTelemetriaPlanilhaFonte("tcgl", de, ate)
+      carregarSnapshotTelemetriaPlanilhaFonte("tcgl", de, ate),
+      carregarSnapshotTelemetriaPlanilhaFonte("fleetbus", de, ate)
     ]);
-    const comb = combinarSnapshotsPlanilha(cleverSnap, tcglSnap, de, ate);
+    const comb = combinarSnapshotsPlanilha(cleverSnap, tcglSnap, de, ate, fleetbusSnap);
     if (comb) gravarCacheSnapshot(comb, opcoes, "planilha");
     return comb;
   }
