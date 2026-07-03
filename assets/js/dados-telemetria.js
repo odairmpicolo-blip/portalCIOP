@@ -486,29 +486,46 @@ function filtrarRowsPorData(rows, colData, dataDe, dataAte) {
 function calcularStats(rows, colVeiculo, colunasKpi) {
   const frotaIds = new Set(FROTA.map((f) => normVeiculo(f.veiculo)));
   const noArquivo = new Set();
-  const sets = { can: new Set(), kmInicial: new Set(), kmFinal: new Set(), kmPercorrido: new Set() };
 
   rows.forEach((row) => {
     if (row.__semDados) return;
     const id = normVeiculo(row[colVeiculo]);
     if (!frotaIds.has(id)) return;
     noArquivo.add(id);
-    KPI_DEFS.forEach((def) => {
-      const col = colunasKpi[def.id];
-      if (col && valorPreenchido(row[col])) sets[def.id].add(id);
-    });
   });
+
+  const registrosFiltrados = filtrarRegistrosPorPeriodo;
+  const cleverRegs = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "clever");
+  const tcglRegs = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "tcgl");
+  const fleetbusRegs = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "fleetbus");
+
+  const somaKm = (regs) => {
+    let total = 0;
+    regs.forEach((reg) => {
+      let payload = reg.payload || reg;
+      if (typeof payload === "string") try { payload = JSON.parse(payload); } catch (_) { payload = {}; }
+      const row = normalizarLinhaTelemetria({ ...payload });
+      const km = parseNumero(row["Km Percorrido"]);
+      if (Number.isFinite(km)) total += km;
+    });
+    return total;
+  };
+
+  const kmClever = somaKm(cleverRegs);
+  const kmTcgl = somaKm(tcglRegs);
+  const kmFleetbus = somaKm(fleetbusRegs);
+
+  const pctStr = (num, den) => {
+    if (!Number.isFinite(num) || !Number.isFinite(den) || den <= 0) return "—";
+    return `${formatarDecimal((num / den) * 100, 1)}%`;
+  };
 
   return {
     frota: FROTA.length,
     noArquivo: noArquivo.size,
-    comCan: sets.can.size,
-    comKmInicial: sets.kmInicial.size,
-    comKmFinal: sets.kmFinal.size,
-    comKmPercorrido: sets.kmPercorrido.size,
-    semRegistro: Math.max(0, FROTA.length - noArquivo.size),
-    linhas: rows.length,
-    veiculosArquivo: new Set(rows.map((r) => normVeiculo(r[colVeiculo])).filter(Boolean)).size
+    pctCleverTcgl: pctStr(kmClever, kmTcgl),
+    pctFleetbusTcgl: pctStr(kmFleetbus, kmTcgl),
+    pctCleverFleetbus: pctStr(kmClever, kmFleetbus)
   };
 }
 
@@ -1064,7 +1081,7 @@ function aplicarDadosBrutos(src, opcoes = {}) {
 
 function renderResumoVazio() {
   $("statFrota").textContent = FROTA.length;
-  ["statNoArquivo", "statSemRegistro", "statCan", "statKmInicial", "statKmFinal", "statKmPercorrido"].forEach((id) => {
+  ["statNoArquivo", "statPctCleverTcgl", "statPctFleetbusTcgl", "statPctCleverFleetbus"].forEach((id) => {
     $(id).textContent = "—";
   });
 }
@@ -1285,11 +1302,9 @@ function hintFiltrosAtivos() {
 function renderResumo(stats) {
   $("statFrota").textContent = stats.frota;
   $("statNoArquivo").textContent = stats.noArquivo;
-  $("statSemRegistro").textContent = stats.semRegistro ?? "—";
-  $("statCan").textContent = stats.comCan;
-  $("statKmInicial").textContent = stats.comKmInicial;
-  $("statKmFinal").textContent = stats.comKmFinal;
-  $("statKmPercorrido").textContent = stats.comKmPercorrido;
+  $("statPctCleverTcgl").textContent = stats.pctCleverTcgl;
+  $("statPctFleetbusTcgl").textContent = stats.pctFleetbusTcgl;
+  $("statPctCleverFleetbus").textContent = stats.pctCleverFleetbus;
 }
 
 function renderTabelaDados(rows, cols) {
