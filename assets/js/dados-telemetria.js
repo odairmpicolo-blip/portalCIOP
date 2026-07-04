@@ -548,6 +548,7 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
 
   const cleverRaw = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "clever");
 
+  const todasDatasClever = new Set();
   const datasTcglPorVeiculo = new Map();
   tcglMap.forEach((_km, key) => {
     const [dt, v] = key.split("|");
@@ -557,13 +558,15 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
   const datasCleverPorVeiculo = new Map();
   cleverMap.forEach((_km, key) => {
     const [dt, v] = key.split("|");
+    todasDatasClever.add(dt);
     if (!datasCleverPorVeiculo.has(v)) datasCleverPorVeiculo.set(v, new Set());
     datasCleverPorVeiculo.get(v).add(dt);
   });
 
   datasTcglPorVeiculo.forEach((datasTcgl, veiculo) => {
     const datasClever = datasCleverPorVeiculo.get(veiculo) || new Set();
-    const faltando = [...datasTcgl].filter((d) => !datasClever.has(d)).sort();
+    const datasReferencia = new Set([...datasTcgl, ...todasDatasClever]);
+    const faltando = [...datasReferencia].filter((d) => !datasClever.has(d)).sort();
     if (datasClever.size === 0 || faltando.length >= 3) {
       const info = obterAtencao(veiculo);
       info.diasTcgl = datasTcgl.size;
