@@ -566,9 +566,13 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
     datasCleverPorVeiculo.get(v).add(dt);
   });
 
+  const hoje = new Date();
+  hoje.setDate(hoje.getDate() - 3);
+  const corteIso = hoje.toISOString().slice(0, 10);
+
   datasTcglPorVeiculo.forEach((datasTcgl, veiculo) => {
     const datasClever = datasCleverPorVeiculo.get(veiculo) || new Set();
-    const faltando = [...todasDatasClever].filter((d) => !datasClever.has(d)).sort();
+    const faltando = [...todasDatasClever].filter((d) => d <= corteIso && !datasClever.has(d)).sort();
     if (faltando.length >= 3) {
       const info = obterAtencao(veiculo);
       info.diasTcgl = datasTcgl.size;
