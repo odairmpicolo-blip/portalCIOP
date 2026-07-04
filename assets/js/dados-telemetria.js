@@ -940,24 +940,21 @@ function fmtDatasCurtas(datasIso) {
 }
 
 function montarLinhasAtencao() {
-  const colVeiculo = "Veiculo";
-  const headers = [colVeiculo, "Problema", "Dias TCGL", "Dias Clever", "Dias Faltando", "Km Irreal (exemplos)", "Datas Faltando"];
+  const colVeiculo = "Veículo";
+  const headers = [colVeiculo, "Problema", "Dias TCGL", "Dias Clever", "Dias Faltando", "Datas Faltando"];
   const rows = veiculosAtencaoDetalhe.map((info) => {
     const problemas = [];
     if (info.diasClever === 0) problemas.push("Sem Clever");
     else if (info.diasFaltando >= 3) problemas.push("Clever parcial");
     if (info.kmIrreal.length) problemas.push("Km irreal");
-    const kmExemplos = info.kmIrreal.slice(0, 3).map((e) => `${e.data}: ${e.km.toLocaleString("pt-BR")} km`).join(", ");
-    const row = {
+    return {
       [colVeiculo]: info.veiculo,
       "Problema": problemas.join(" + "),
-      "Dias TCGL": info.diasTcgl,
-      "Dias Clever": info.diasClever,
-      "Dias Faltando": info.diasFaltando,
-      "Km Irreal (exemplos)": kmExemplos || "—",
+      "Dias TCGL": String(info.diasTcgl),
+      "Dias Clever": String(info.diasClever),
+      "Dias Faltando": String(info.diasFaltando),
       "Datas Faltando": fmtDatasCurtas(info.datasFaltando) || "—"
     };
-    return row;
   });
   return { headers, rows, colVeiculo, colData: null };
 }
@@ -995,9 +992,9 @@ async function exportarPdfAtencao() {
     return [
       info.veiculo,
       problemas.join(" + "),
-      String(info.diasTcgl || "—"),
-      String(info.diasClever || "—"),
-      String(info.diasFaltando || "—"),
+      String(info.diasTcgl),
+      String(info.diasClever),
+      String(info.diasFaltando),
       fmtDatasCurtas(info.datasFaltando) || "—"
     ];
   });
