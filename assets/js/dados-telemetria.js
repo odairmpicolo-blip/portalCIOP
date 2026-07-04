@@ -951,6 +951,76 @@ function montarLinhasAtencao() {
   return { headers, rows, colVeiculo, colData: null };
 }
 
+async function exportarPdfAtencao() {
+  if (!veiculosAtencaoDetalhe.length) return;
+  if (!window.jspdf?.jsPDF) { alert("Biblioteca PDF não carregou."); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const m = 10;
+
+  doc.setTextColor(6, 36, 92);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("VEÍCULOS QUE PRECISAM DE ATENÇÃO", pageW / 2, 14, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(102, 112, 133);
+  doc.text("Portal CIOP · Telemetria Clever · TCGL", pageW / 2, 20, { align: "center" });
+
+  const de = $("filtroDataDe")?.value || "—";
+  const ate = $("filtroDataAte")?.value || "—";
+  doc.text(`Período: ${de} a ${ate}`, pageW / 2, 25, { align: "center" });
+  doc.text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, pageW - m, 25, { align: "right" });
+  doc.text(`Total: ${veiculosAtencaoDetalhe.length} veículo(s)`, m, 25, { align: "left" });
+
+  const cols = ["Veículo", "Problema", "Dias TCGL", "Dias Clever", "Faltando"];
+  const head = [cols];
+  const body = veiculosAtencaoDetalhe.map((info) => {
+    const problemas = [];
+    if (info.diasClever === 0) problemas.push("Sem Clever");
+    else if (info.diasFaltando >= 3) problemas.push("Clever parcial");
+    if (info.kmIrreal.length) problemas.push("Km irreal");
+    return [
+      info.veiculo,
+      problemas.join(" + "),
+      String(info.diasTcgl || "—"),
+      String(info.diasClever || "—"),
+      String(info.diasFaltando || "—")
+    ];
+  });
+
+  doc.autoTable({
+    head, body, startY: 30,
+    margin: { left: m, right: m },
+    styles: { font: "helvetica", fontSize: 8, cellPadding: 2.5, valign: "middle", textColor: [16, 24, 40] },
+    headStyles: { fillColor: [230, 81, 0], textColor: [255, 255, 255], fontStyle: "bold", halign: "center", fontSize: 7.5 },
+    alternateRowStyles: { fillColor: [255, 243, 224] },
+    columnStyles: {
+      0: { halign: "center", cellWidth: 22 },
+      1: { halign: "left" },
+      2: { halign: "center", cellWidth: 22 },
+      3: { halign: "center", cellWidth: 22 },
+      4: { halign: "center", cellWidth: 22 }
+    },
+    didParseCell: (data) => {
+      if (data.section !== "body" || data.column.index !== 1) return;
+      const raw = data.cell.raw;
+      if (raw.includes("Sem Clever")) data.cell.styles.textColor = [230, 81, 0];
+      else if (raw.includes("Km irreal")) data.cell.styles.textColor = [198, 40, 40];
+    },
+    didDrawPage: (data) => {
+      const pg = doc.internal.getNumberOfPages();
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text(`Página ${data.pageNumber} de ${pg}`, pageW / 2, doc.internal.pageSize.getHeight() - 5, { align: "center" });
+    }
+  });
+
+  const hoje = new Date().toISOString().slice(0, 10);
+  doc.save(`atencao-clever-${hoje}.pdf`);
+}
+
 function aplicarFonteAtiva() {
   if (!snapshotRaw?.dados?.length) return 0;
 
@@ -1471,6 +1541,8 @@ function renderizar() {
   renderResumo(stats);
   renderTabelaDados(rows, cols);
   $("painelVazio").hidden = true;
+  const btnPdf = $("btnExportPdfAtencao");
+  if (btnPdf) btnPdf.hidden = fonteAtiva !== "atencao";
 }
 
 function limparFiltros() {
@@ -1842,6 +1914,9 @@ async function iniciar() {
       selecionarFonte("atencao");
     });
   }
+
+  const btnPdf = $("btnExportPdfAtencao");
+  if (btnPdf) btnPdf.addEventListener("click", () => exportarPdfAtencao());
 
   const temSnapshot = await carregarSnapshotInicial();
   if (!temSnapshot) {
