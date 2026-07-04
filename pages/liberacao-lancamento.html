@@ -724,31 +724,15 @@ async function apiPost(payload){
     return data;
 }
 
-async function salvarPlanilhaLinha(payload){
-    let awsOk=false;
+async function salvarPlanilhaLinha(payload,tentativa=1){
     try{
-        const mod=await import("../assets/js/liberacao-aws.js?v=20260703a");
-        if(await mod.liberacaoAwsDisponivel()){
-            await mod.salvarLinhaPlanilhaAws(payload);
-            awsOk=true;
+        await apiPost(payload);
+    }catch(err){
+        if(tentativa<3&&(err.message.includes("Timeout")||err.message.includes("Failed to fetch"))){
+            await new Promise(r=>setTimeout(r,1500*tentativa));
+            return salvarPlanilhaLinha(payload,tentativa+1);
         }
-    }catch(_){}
-
-    if(awsOk) return;
-
-    let tentativa=1;
-    while(tentativa<=3){
-        try{
-            await apiPost(payload);
-            return;
-        }catch(err){
-            if(tentativa<3&&(err.message.includes("Timeout")||err.message.includes("Failed to fetch"))){
-                await new Promise(r=>setTimeout(r,1500*tentativa));
-                tentativa++;
-                continue;
-            }
-            throw err;
-        }
+        throw err;
     }
 }
 
@@ -1490,13 +1474,6 @@ async function sincronizarJsonHoje(){
 }
 
 async function carregarDiaRemoto(data,vivo){
-    try{
-        const mod=await import("../assets/js/liberacao-aws.js?v=20260703a");
-        if(await mod.liberacaoAwsDisponivel()){
-            const aws=await mod.carregarJanelaLiberacaoAws(data,data);
-            if(aws?.dados?.length) return aws.dados;
-        }
-    }catch(_){}
     const res=await apiGet({
         recurso:"acompanhamento",
         data,
