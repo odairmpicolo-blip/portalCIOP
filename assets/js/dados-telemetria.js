@@ -568,7 +568,7 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
 
   const hoje = new Date();
   hoje.setDate(hoje.getDate() - 3);
-  const corteIso = hoje.toISOString().slice(0, 10);
+  const corteIso = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,"0")}-${String(hoje.getDate()).padStart(2,"0")}`;
 
   datasTcglPorVeiculo.forEach((datasTcgl, veiculo) => {
     const datasClever = datasCleverPorVeiculo.get(veiculo) || new Set();
