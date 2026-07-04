@@ -10,6 +10,19 @@ const SNAPSHOT_CACHE_TTL_MS = 15 * 60 * 1000;
 
 let telemetriaScriptUrlCache = "";
 
+const FONTES_PLANILHA = ["clever", "tcgl", "fleetbus"];
+const JSON_FETCH_TIMEOUT_MS = 90000;
+
+function urlsTelemetriaAsset(relativePath) {
+  const urls = [relativePath];
+  if (typeof window !== "undefined") {
+    const base = window.location.pathname.replace(/\/pages\/.*$/, "").replace(/\/$/, "");
+    const abs = `${base}/${relativePath.replace(/^\.\.\//, "")}`;
+    if (!urls.includes(abs)) urls.push(abs);
+  }
+  return urls;
+}
+
 function runtimeConfigUrls() {
   const urls = [];
   try {
@@ -92,6 +105,7 @@ export function filtrarSnapshotRegistros(snap, { fonte = "todos", de = "", ate =
   if (ate) dados = dados.filter((d) => d.data_iso && d.data_iso <= ate);
   const clever = dados.filter((d) => d.fonte === "clever").length;
   const tcgl = dados.filter((d) => d.fonte === "tcgl").length;
+  const fleetbus = dados.filter((d) => d.fonte === "fleetbus").length;
   const datas = dados.map((d) => d.data_iso).filter(Boolean).sort();
   return {
     ...snap,
@@ -99,9 +113,65 @@ export function filtrarSnapshotRegistros(snap, { fonte = "todos", de = "", ate =
     total: dados.length,
     total_clever: clever,
     total_tcgl: tcgl,
+    total_fleetbus: fleetbus,
     data_de: datas[0] || null,
     data_ate: datas[datas.length - 1] || null
   };
+}
+
+/** Mantém fontes que falharam na planilha; substitui só as que vieram no snapshot novo. */
+export function mesclarSnapshotPorFonte(anterior, novo, { fonte = "todos" } = {}) {
+  if (!novo?.dados?.length) return anterior || null;
+
+  const novosNorm = normalizarFontesRegistros(novo.dados);
+  const novosPorFonte = new Map();
+  novosNorm.forEach((d) => {
+    if (!novosPorFonte.has(d.fonte)) novosPorFonte.set(d.fonte, []);
+    novosPorFonte.get(d.fonte).push(d);
+  });
+
+  const fontesSubstituir = fonte === "todos"
+    ? FONTES_PLANILHA.filter((f) => (novosPorFonte.get(f) || []).length)
+    : (novosPorFonte.has(fonte) ? [fonte] : []);
+
+  const manter = normalizarFontesRegistros(anterior?.dados || []).filter((d) => {
+    if (!FONTES_PLANILHA.includes(d.fonte)) return true;
+    return !fontesSubstituir.includes(d.fonte);
+  });
+
+  const novos = fontesSubstituir.flatMap((f) => novosPorFonte.get(f) || []);
+  const dados = [...manter, ...novos];
+  if (!dados.length) return null;
+
+  const clever = dados.filter((d) => d.fonte === "clever").length;
+  const tcgl = dados.filter((d) => d.fonte === "tcgl").length;
+  const fleetbus = dados.filter((d) => d.fonte === "fleetbus").length;
+  const datas = dados.map((d) => d.data_iso).filter(Boolean).sort();
+
+  return {
+    ...(anterior || {}),
+    ...novo,
+    dados,
+    total: dados.length,
+    total_clever: clever,
+    total_tcgl: tcgl,
+    total_fleetbus: fleetbus,
+    data_de: datas[0] || novo.data_de || null,
+    data_ate: datas[datas.length - 1] || novo.data_ate || null,
+    origem_carregamento: novo.origem_carregamento || anterior?.origem_carregamento || "planilha"
+  };
+}
+
+async function fetchJsonComTimeout(url, timeoutMs = JSON_FETCH_TIMEOUT_MS) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { cache: "no-store", signal: ctrl.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function chaveCacheSnapshot({ fonte, de, ate }) {
@@ -162,25 +232,40 @@ function combinarSnapshotsPlanilha(cleverSnap, tcglSnap, de, ate, fleetbusSnap) 
 }
 
 export async function carregarManifestTelemetria() {
-  try {
-    const res = await fetch(`${TELEMETRIA_MANIFEST_URL}?t=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch (_) {
-    return null;
+  for (const base of urlsTelemetriaAsset(TELEMETRIA_MANIFEST_URL)) {
+    try {
+      const data = await fetchJsonComTimeout(`${base}?t=${Date.now()}`, 30000);
+      if (data?.atualizadoEm) return data;
+    } catch (_) {
+      /* próximo candidato */
+    }
   }
+  return null;
 }
 
 export async function carregarSnapshotTelemetriaJson() {
-  try {
-    const res = await fetch(`${TELEMETRIA_DADOS_URL}?t=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!Array.isArray(data?.dados) || !data.dados.length) return null;
-    return data;
-  } catch (_) {
-    return null;
+  let ultimoErro = "";
+  for (const base of urlsTelemetriaAsset(TELEMETRIA_DADOS_URL)) {
+    for (let tentativa = 1; tentativa <= 2; tentativa++) {
+      try {
+        const data = await fetchJsonComTimeout(`${base}?t=${Date.now()}`);
+        if (!Array.isArray(data?.dados) || !data.dados.length) {
+          ultimoErro = "JSON vazio ou sem registros";
+          break;
+        }
+        return {
+          ...data,
+          dados: normalizarFontesRegistros(data.dados),
+          origem_carregamento: "json"
+        };
+      } catch (err) {
+        ultimoErro = err?.name === "AbortError" ? "timeout ao baixar JSON" : (err?.message || String(err));
+        if (tentativa < 2) await new Promise((r) => setTimeout(r, 800));
+      }
+    }
   }
+  if (ultimoErro) console.warn("Telemetria JSON:", ultimoErro);
+  return null;
 }
 
 export async function carregarResumoTelemetriaPlanilha() {
@@ -301,10 +386,12 @@ async function carregarFleetbusDiretoDaPlanilha(de, ate) {
   }
 }
 
-async function carregarSnapshotTelemetriaPlanilhaFonte(fonte, de, ate) {
+async function carregarSnapshotTelemetriaPlanilhaFonte(fonte, de, ate, { skipCache = false } = {}) {
   const opcoes = { fonte, de, ate };
-  const cached = lerCacheSnapshot(opcoes);
-  if (cached) return cached;
+  if (!skipCache) {
+    const cached = lerCacheSnapshot(opcoes);
+    if (cached) return cached;
+  }
 
   if (fonte === "fleetbus") {
     const direct = await carregarFleetbusDiretoDaPlanilha(de, ate);
@@ -337,24 +424,27 @@ async function carregarSnapshotTelemetriaPlanilhaFonte(fonte, de, ate) {
 
 /**
  * fonte=todos busca Clever e TCGL em paralelo (fonte=todos no Apps Script estoura timeout).
+ * skipCache=true forca busca fresca (usado pelo modo "ao vivo").
  */
-export async function carregarSnapshotTelemetriaPlanilha({ fonte = "todos", de = "", ate = "" } = {}) {
+export async function carregarSnapshotTelemetriaPlanilha({ fonte = "todos", de = "", ate = "", skipCache = false } = {}) {
   if (fonte === "todos") {
     const opcoes = { fonte: "todos", de, ate };
-    const cached = lerCacheSnapshot(opcoes);
-    if (cached) return cached;
+    if (!skipCache) {
+      const cached = lerCacheSnapshot(opcoes);
+      if (cached) return cached;
+    }
 
     const [cleverSnap, tcglSnap, fleetbusSnap] = await Promise.all([
-      carregarSnapshotTelemetriaPlanilhaFonte("clever", de, ate),
-      carregarSnapshotTelemetriaPlanilhaFonte("tcgl", de, ate),
-      carregarSnapshotTelemetriaPlanilhaFonte("fleetbus", de, ate)
+      carregarSnapshotTelemetriaPlanilhaFonte("clever", de, ate, { skipCache }),
+      carregarSnapshotTelemetriaPlanilhaFonte("tcgl", de, ate, { skipCache }),
+      carregarSnapshotTelemetriaPlanilhaFonte("fleetbus", de, ate, { skipCache })
     ]);
     const comb = combinarSnapshotsPlanilha(cleverSnap, tcglSnap, de, ate, fleetbusSnap);
     if (comb) gravarCacheSnapshot(comb, opcoes, "planilha");
     return comb;
   }
 
-  return carregarSnapshotTelemetriaPlanilhaFonte(fonte, de, ate);
+  return carregarSnapshotTelemetriaPlanilhaFonte(fonte, de, ate, { skipCache });
 }
 
 /**

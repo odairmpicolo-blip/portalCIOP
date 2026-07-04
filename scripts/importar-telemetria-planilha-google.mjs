@@ -1,5 +1,5 @@
 /**
- * Importa abas Clever e TCGL da planilha Google → assets/data/telemetria/dados.json
+ * Importa abas Clever, TCGL e FleetBus da planilha Google → assets/data/telemetria/dados.json
  *
  * Uso (XLSX exportado do Google — Arquivo → Fazer download → Excel):
  *   node scripts/importar-telemetria-planilha-google.mjs --arquivo ~/Downloads/planilha.xlsx
@@ -9,7 +9,7 @@
  *
  * Opções:
  *   --sheet-id ID     (padrão: planilha TCGL telemetria)
- *   --gid-clever GID  --gid-tcgl GID
+ *   --gid-clever GID  --gid-tcgl GID  --gid-fleetbus GID
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -25,6 +25,7 @@ const OUT_DIR = path.join(ROOT, "assets/data/telemetria");
 const DEFAULT_SHEET_ID = "1Z_rFA-1jz7-kq4juGp5uFG4WMpVBloML98hDgWcX9gQ";
 const DEFAULT_GID_CLEVER = "0";
 const DEFAULT_GID_TCGL = "1112924394";
+const DEFAULT_GID_FLEETBUS = "1035972881";
 
 function parseArgs(argv) {
   const opts = { sheetId: DEFAULT_SHEET_ID };
@@ -34,6 +35,7 @@ function parseArgs(argv) {
     else if (a === "--sheet-id") opts.sheetId = argv[++i];
     else if (a === "--gid-clever") opts.gidClever = argv[++i];
     else if (a === "--gid-tcgl") opts.gidTcgl = argv[++i];
+    else if (a === "--gid-fleetbus") opts.gidFleetbus = argv[++i];
     else if (!a.startsWith("-")) opts.arquivo = a;
   }
   return opts;
@@ -112,6 +114,7 @@ async function main() {
 
   let clever = [];
   let tcgl = [];
+  let fleetbus = [];
 
   try {
     clever = await carregarFonte(opts, "clever", opts.gidClever || DEFAULT_GID_CLEVER, ["Clever", "CLEVER", "clever"]);
@@ -126,7 +129,13 @@ async function main() {
     throw err;
   }
 
-  const dados = [...clever, ...tcgl].sort((a, b) =>
+  try {
+    fleetbus = await carregarFonte(opts, "fleetbus", opts.gidFleetbus || DEFAULT_GID_FLEETBUS, ["Fleetbus", "FLEETBUS", "FleetBus", "fleetbus"]);
+  } catch (err) {
+    console.warn(`FleetBus: ${err.message || err} — continuando sem FleetBus.`);
+  }
+
+  const dados = [...clever, ...tcgl, ...fleetbus].sort((a, b) =>
     a.data_iso.localeCompare(b.data_iso) || a.veiculo.localeCompare(b.veiculo, "pt-BR", { numeric: true })
   );
   const datas = [...new Set(dados.map((d) => d.data_iso))].sort();
@@ -136,10 +145,11 @@ async function main() {
     atualizadoEm,
     origem: opts.arquivo ? "arquivo-local" : "google-sheets",
     planilhaId: opts.sheetId,
-    fontes: ["clever", "tcgl"],
+    fontes: ["clever", "tcgl", "fleetbus"],
     total: dados.length,
     total_clever: clever.length,
     total_tcgl: tcgl.length,
+    total_fleetbus: fleetbus.length,
     data_de: datas[0] || null,
     data_ate: datas[datas.length - 1] || null,
     dados
@@ -152,6 +162,7 @@ async function main() {
     total: dados.length,
     total_clever: clever.length,
     total_tcgl: tcgl.length,
+    total_fleetbus: fleetbus.length,
     data_de: snapshot.data_de,
     data_ate: snapshot.data_ate
   };
@@ -159,9 +170,10 @@ async function main() {
   fs.writeFileSync(path.join(OUT_DIR, "dados.json"), JSON.stringify(snapshot) + "\n");
   fs.writeFileSync(path.join(OUT_DIR, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
 
-  console.log(`Clever: ${clever.length} registro(s)`);
-  console.log(`TCGL:   ${tcgl.length} registro(s)`);
-  console.log(`Total:  ${dados.length} → ${OUT_DIR}/dados.json`);
+  console.log(`Clever:   ${clever.length} registro(s)`);
+  console.log(`TCGL:     ${tcgl.length} registro(s)`);
+  console.log(`FleetBus: ${fleetbus.length} registro(s)`);
+  console.log(`Total:    ${dados.length} → ${OUT_DIR}/dados.json`);
   if (datas.length) console.log(`Período: ${datas[0]} a ${datas[datas.length - 1]}`);
 }
 

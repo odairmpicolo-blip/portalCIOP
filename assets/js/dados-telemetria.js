@@ -4,6 +4,7 @@ import {
   carregarManifestTelemetria,
   filtrarSnapshotRegistros,
   mesclarRegistrosTelemetria,
+  mesclarSnapshotPorFonte,
   normalizarFontesRegistros,
   inferirFonteRegistro
 } from "./telemetria-dados-leitura.js";
@@ -740,28 +741,26 @@ function fontePlanilhaAtual() {
   return fonteAtiva === "comparacao" ? "todos" : fonteAtiva;
 }
 
-async function atualizarDaPlanilha() {
+function aplicarSnapshotMesclado(snap, { fonte = "todos" } = {}) {
+  const mesclado = mesclarSnapshotPorFonte(snapshotRaw, snap, { fonte });
+  if (!mesclado?.dados?.length) return false;
+  aplicarSnapshotBruto(mesclado);
+  return true;
+}
+
+async function atualizarDaPlanilha({ silencioso = false } = {}) {
   const { de, ate } = periodoCarregamentoAtual();
   const fonte = fontePlanilhaAtual();
   const el = $("statusJson");
-  if (el) {
-    el.textContent = "Carregando planilha…";
+  if (el && !silencioso) {
+    el.textContent = "Atualizando planilha…";
     el.className = "status-json muted";
   }
-  const snap = await carregarSnapshotTelemetriaPlanilha({ fonte, de, ate });
+  const snap = await carregarSnapshotTelemetriaPlanilha({ fonte, de, ate, skipCache: true });
   if (!snap?.dados?.length) return false;
-  if (fonte === "todos") {
-    const outros = (snapshotRaw?.dados || []).filter((d) => {
-      const f = inferirFonteRegistro(d);
-      return f !== "clever" && f !== "tcgl" && f !== "fleetbus";
-    });
-    aplicarSnapshotBruto({ ...snap, dados: [...outros, ...snap.dados] });
-  } else {
-    const manter = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) !== fonte);
-    aplicarSnapshotBruto({ ...snap, dados: [...manter, ...snap.dados] });
-  }
-  atualizarStatusJson();
-  return true;
+  const ok = aplicarSnapshotMesclado(snap, { fonte });
+  if (ok) atualizarStatusJson();
+  return ok;
 }
 
 async function onChavePlanilhaChange() {
@@ -798,15 +797,17 @@ async function garantirDadosFonte(fonte) {
   const snap = await carregarSnapshotTelemetriaPlanilha({ fonte, de, ate });
   if (!snap?.dados?.length) return;
 
-  const manter = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) !== fonte);
-  aplicarSnapshotBruto({ ...snap, dados: [...manter, ...snap.dados] });
+  aplicarSnapshotMesclado(snap, { fonte });
   atualizarStatusJson();
 }
 
 function dataIsoPadrao(offsetDias) {
   const d = new Date();
   d.setDate(d.getDate() + offsetDias);
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dia}`;
 }
 
 function periodoBuscaAws() {
@@ -834,22 +835,29 @@ function aguardar(ms) {
 
 async function carregarSnapshotInicial() {
   const { de, ate } = periodoCarregamentoInicial();
-  $("filtroDataDe").value = de;
-  $("filtroDataAte").value = ate;
+  if ($("filtroDataDe")) $("filtroDataDe").value = de;
+  if ($("filtroDataAte")) $("filtroDataAte").value = ate;
 
   const json = await carregarSnapshotTelemetriaJson();
   if (json?.dados?.length) {
-    aplicarSnapshotBruto(filtrarSnapshotRegistros(json, { fonte: "todos", de, ate }));
+    aplicarSnapshotBruto(json);
     await aguardar(0);
     aplicarFonteAtiva();
     atualizarStatusJson();
   }
 
   if (planilhaAoVivo) {
-    await atualizarDaPlanilha();
-    await aguardar(0);
-    aplicarFonteAtiva();
-    atualizarStatusJson();
+    try {
+      const ok = await atualizarDaPlanilha({ silencioso: Boolean(json?.dados?.length) });
+      if (ok) {
+        await aguardar(0);
+        aplicarFonteAtiva();
+        atualizarStatusJson();
+      }
+    } catch (err) {
+      console.warn("Planilha ao vivo:", err);
+      if (json?.dados?.length) atualizarStatusJson();
+    }
   }
 
   return Boolean(snapshotRaw?.dados?.length);
@@ -1439,22 +1447,24 @@ function montarFiltroDatas(forceReset) {
   const datas = dadosBrutos.rows.map((r) => parseDataCsv(r[dadosBrutos.colData])).filter(Boolean).sort();
   const de = $("filtroDataDe");
   const ate = $("filtroDataAte");
+  const hoje = dataIsoPadrao(0);
   if (!datas.length) {
     if (forceReset) {
       de.value = dataIsoPadrao(-30);
-      ate.value = dataIsoPadrao(0);
+      ate.value = hoje;
     }
     return;
   }
   const min = datas[0];
-  const max = datas[datas.length - 1];
+  const maxDados = datas[datas.length - 1];
+  const max = maxDados > hoje ? maxDados : hoje;
   de.min = min;
   de.max = max;
   ate.min = min;
   ate.max = max;
   if (forceReset || !de.value || !ate.value) {
     de.value = min;
-    ate.value = max;
+    ate.value = hoje;
   } else {
     if (de.value < min) de.value = min;
     if (de.value > max) de.value = max;
@@ -1633,14 +1643,9 @@ async function recarregarComFiltroDatas() {
         el.className = "status-json muted";
       }
       const fonte = fontePlanilhaAtual();
-      const snap = await carregarSnapshotTelemetriaPlanilha({ fonte, de, ate });
+      const snap = await carregarSnapshotTelemetriaPlanilha({ fonte, de, ate, skipCache: true });
       if (snap?.dados?.length) {
-        if (fonte === "todos") {
-          aplicarSnapshotBruto(snap);
-        } else {
-          const manter = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) !== fonte);
-          aplicarSnapshotBruto({ ...snap, dados: [...manter, ...snap.dados] });
-        }
+        aplicarSnapshotMesclado(snap, { fonte });
       }
       atualizarStatusJson();
     }
@@ -1934,15 +1939,24 @@ async function iniciar() {
   const btnPdf = $("btnExportPdfAtencao");
   if (btnPdf) btnPdf.addEventListener("click", () => exportarPdfAtencao());
 
-  const temSnapshot = await carregarSnapshotInicial();
-  if (!temSnapshot) {
-    renderTabelaVazia("Nenhum dado de telemetria. Verifique o Web App da planilha ou exporte XLSX e rode o script de importação.");
+  try {
+    const temSnapshot = await carregarSnapshotInicial();
+    if (!temSnapshot) {
+      renderTabelaVazia("Não foi possível carregar os dados de telemetria. Verifique a conexão ou tente novamente.");
+      const el = $("statusJson");
+      if (el) {
+        el.innerHTML = `Erro no JSON · <a href="${PLANILHA_TELEMETRIA_URL}" target="_blank" rel="noopener">Abrir planilha</a>`;
+        el.className = "status-json warn";
+      }
+    }
+  } catch (err) {
+    console.error("Telemetria:", err);
+    renderTabelaVazia("Erro ao carregar telemetria: " + (err?.message || "falha desconhecida"));
     const el = $("statusJson");
     if (el) {
-      el.innerHTML = `Sem dados · <a href="${PLANILHA_TELEMETRIA_URL}" target="_blank" rel="noopener">Abrir planilha</a>`;
+      el.textContent = "Erro no carregamento";
       el.className = "status-json warn";
     }
-    return;
   }
 }
 
