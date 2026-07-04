@@ -562,7 +562,7 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
   diasTcglPorVeiculo.forEach((diasTcgl, veiculo) => {
     const diasClever = diasCleverPorVeiculo.get(veiculo) || 0;
     const faltando = diasTcgl - diasClever;
-    if (faltando >= 3) {
+    if (diasClever === 0 || faltando >= 3) {
       const info = obterAtencao(veiculo);
       info.diasTcgl = diasTcgl;
       info.diasClever = diasClever;
@@ -934,7 +934,8 @@ function montarLinhasAtencao() {
   const headers = [colVeiculo, "Problema", "Dias TCGL", "Dias Clever", "Dias Faltando", "Km Irreal (exemplos)"];
   const rows = veiculosAtencaoDetalhe.map((info) => {
     const problemas = [];
-    if (info.diasFaltando >= 3) problemas.push("Sem dados Clever");
+    if (info.diasClever === 0) problemas.push("Sem Clever");
+    else if (info.diasFaltando >= 3) problemas.push("Clever parcial");
     if (info.kmIrreal.length) problemas.push("Km irreal");
     const kmExemplos = info.kmIrreal.slice(0, 3).map((e) => `${e.data}: ${e.km.toLocaleString("pt-BR")} km`).join(", ");
     const row = {
