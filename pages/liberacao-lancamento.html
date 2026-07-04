@@ -755,20 +755,27 @@ function horaParaSort(v){
     return p[0].padStart(2,"0")+":"+p[1].padStart(2,"0");
 }
 
+function compararCol(a,b,key,dir){
+    let av=String(val(a,key)||"").trim();
+    let bv=String(val(b,key)||"").trim();
+    if(key==="data") return dataBrParaSort(av).localeCompare(dataBrParaSort(bv))*dir;
+    if(CAMPOS_HORA.has(key)) return horaParaSort(av).localeCompare(horaParaSort(bv))*dir;
+    if(key==="linha"||key==="work_id"){
+        const an=Number(av),bn=Number(bv);
+        if(av!==""&&bv!==""&&!isNaN(an)&&!isNaN(bn)) return (an-bn)*dir;
+    }
+    return av.localeCompare(bv,"pt-BR",{numeric:true,sensitivity:"base"})*dir;
+}
 function sortRows(){
     const key=state.sortKey;
     if(!key) return;
     const dir=state.sortDir==="asc"?1:-1;
     state.dados.sort((a,b)=>{
-        let av=String(val(a,key)||"").trim();
-        let bv=String(val(b,key)||"").trim();
-        if(key==="data") return dataBrParaSort(av).localeCompare(dataBrParaSort(bv))*dir;
-        if(CAMPOS_HORA.has(key)) return horaParaSort(av).localeCompare(horaParaSort(bv))*dir;
-        if(key==="linha"||key==="work_id"){
-            const an=Number(av),bn=Number(bv);
-            if(av!==""&&bv!==""&&!isNaN(an)&&!isNaN(bn)) return (an-bn)*dir;
-        }
-        return av.localeCompare(bv,"pt-BR",{numeric:true,sensitivity:"base"})*dir;
+        const r=compararCol(a,b,key,dir);
+        if(r!==0) return r;
+        if(key==="horario_saida_da_garagem") return compararCol(a,b,"linha",1);
+        if(key==="linha") return compararCol(a,b,"horario_saida_da_garagem",1);
+        return 0;
     });
 }
 
