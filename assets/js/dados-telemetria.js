@@ -542,31 +542,34 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
 
   const atencaoMap = new Map();
   const obterAtencao = (v) => {
-    if (!atencaoMap.has(v)) atencaoMap.set(v, { veiculo: v, diasTcgl: 0, diasClever: 0, diasFaltando: 0, kmIrreal: [] });
+    if (!atencaoMap.has(v)) atencaoMap.set(v, { veiculo: v, diasTcgl: 0, diasClever: 0, diasFaltando: 0, datasFaltando: [], kmIrreal: [] });
     return atencaoMap.get(v);
   };
 
   const cleverRaw = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "clever");
 
-  const diasTcglPorVeiculo = new Map();
+  const datasTcglPorVeiculo = new Map();
   tcglMap.forEach((_km, key) => {
-    const [, v] = key.split("|");
-    diasTcglPorVeiculo.set(v, (diasTcglPorVeiculo.get(v) || 0) + 1);
+    const [dt, v] = key.split("|");
+    if (!datasTcglPorVeiculo.has(v)) datasTcglPorVeiculo.set(v, new Set());
+    datasTcglPorVeiculo.get(v).add(dt);
   });
-  const diasCleverPorVeiculo = new Map();
+  const datasCleverPorVeiculo = new Map();
   cleverMap.forEach((_km, key) => {
-    const [, v] = key.split("|");
-    diasCleverPorVeiculo.set(v, (diasCleverPorVeiculo.get(v) || 0) + 1);
+    const [dt, v] = key.split("|");
+    if (!datasCleverPorVeiculo.has(v)) datasCleverPorVeiculo.set(v, new Set());
+    datasCleverPorVeiculo.get(v).add(dt);
   });
 
-  diasTcglPorVeiculo.forEach((diasTcgl, veiculo) => {
-    const diasClever = diasCleverPorVeiculo.get(veiculo) || 0;
-    const faltando = diasTcgl - diasClever;
-    if (diasClever === 0 || faltando >= 3) {
+  datasTcglPorVeiculo.forEach((datasTcgl, veiculo) => {
+    const datasClever = datasCleverPorVeiculo.get(veiculo) || new Set();
+    const faltando = [...datasTcgl].filter((d) => !datasClever.has(d)).sort();
+    if (datasClever.size === 0 || faltando.length >= 3) {
       const info = obterAtencao(veiculo);
-      info.diasTcgl = diasTcgl;
-      info.diasClever = diasClever;
-      info.diasFaltando = faltando;
+      info.diasTcgl = datasTcgl.size;
+      info.diasClever = datasClever.size;
+      info.diasFaltando = faltando.length;
+      info.datasFaltando = faltando;
     }
   });
 
@@ -929,9 +932,13 @@ function montarLinhasComparacao() {
   };
 }
 
+function fmtDatasCurtas(datasIso) {
+  return (datasIso || []).map((d) => { const p = d.split("-"); return `${p[2]}/${p[1]}`; }).join(", ");
+}
+
 function montarLinhasAtencao() {
   const colVeiculo = "Veiculo";
-  const headers = [colVeiculo, "Problema", "Dias TCGL", "Dias Clever", "Dias Faltando", "Km Irreal (exemplos)"];
+  const headers = [colVeiculo, "Problema", "Dias TCGL", "Dias Clever", "Dias Faltando", "Km Irreal (exemplos)", "Datas Faltando"];
   const rows = veiculosAtencaoDetalhe.map((info) => {
     const problemas = [];
     if (info.diasClever === 0) problemas.push("Sem Clever");
@@ -944,7 +951,8 @@ function montarLinhasAtencao() {
       "Dias TCGL": info.diasTcgl,
       "Dias Clever": info.diasClever,
       "Dias Faltando": info.diasFaltando,
-      "Km Irreal (exemplos)": kmExemplos || "—"
+      "Km Irreal (exemplos)": kmExemplos || "—",
+      "Datas Faltando": fmtDatasCurtas(info.datasFaltando) || "—"
     };
     return row;
   });
@@ -955,7 +963,7 @@ async function exportarPdfAtencao() {
   if (!veiculosAtencaoDetalhe.length) return;
   if (!window.jspdf?.jsPDF) { alert("Biblioteca PDF não carregou."); return; }
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const m = 10;
 
@@ -974,7 +982,7 @@ async function exportarPdfAtencao() {
   doc.text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, pageW - m, 25, { align: "right" });
   doc.text(`Total: ${veiculosAtencaoDetalhe.length} veículo(s)`, m, 25, { align: "left" });
 
-  const cols = ["Veículo", "Problema", "Dias TCGL", "Dias Clever", "Dias Faltando"];
+  const cols = ["Veículo", "Problema", "Dias TCGL", "Dias Clever", "Dias Faltando", "Datas Faltando"];
   const head = [cols];
   const body = veiculosAtencaoDetalhe.map((info) => {
     const problemas = [];
@@ -986,7 +994,8 @@ async function exportarPdfAtencao() {
       problemas.join(" + "),
       String(info.diasTcgl || "—"),
       String(info.diasClever || "—"),
-      String(info.diasFaltando || "—")
+      String(info.diasFaltando || "—"),
+      fmtDatasCurtas(info.datasFaltando) || "—"
     ];
   });
 
@@ -997,11 +1006,12 @@ async function exportarPdfAtencao() {
     headStyles: { fillColor: [230, 81, 0], textColor: [255, 255, 255], fontStyle: "bold", halign: "center", fontSize: 7.5 },
     alternateRowStyles: { fillColor: [255, 243, 224] },
     columnStyles: {
-      0: { halign: "center", cellWidth: 22 },
-      1: { halign: "left" },
-      2: { halign: "center", cellWidth: 22 },
-      3: { halign: "center", cellWidth: 22 },
-      4: { halign: "center", cellWidth: 22 }
+      0: { halign: "center", cellWidth: 18 },
+      1: { halign: "left", cellWidth: 30 },
+      2: { halign: "center", cellWidth: 18 },
+      3: { halign: "center", cellWidth: 18 },
+      4: { halign: "center", cellWidth: 18 },
+      5: { halign: "left" }
     },
     didParseCell: (data) => {
       if (data.section !== "body" || data.column.index !== 1) return;
