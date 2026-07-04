@@ -565,9 +565,8 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
 
   datasTcglPorVeiculo.forEach((datasTcgl, veiculo) => {
     const datasClever = datasCleverPorVeiculo.get(veiculo) || new Set();
-    const datasReferencia = new Set([...datasTcgl, ...todasDatasClever]);
-    const faltando = [...datasReferencia].filter((d) => !datasClever.has(d)).sort();
-    if (datasClever.size === 0 || faltando.length >= 3) {
+    const faltando = [...todasDatasClever].filter((d) => !datasClever.has(d)).sort();
+    if (faltando.length >= 3) {
       const info = obterAtencao(veiculo);
       info.diasTcgl = datasTcgl.size;
       info.diasClever = datasClever.size;
