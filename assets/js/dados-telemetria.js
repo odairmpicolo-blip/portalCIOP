@@ -68,6 +68,9 @@ function colunaOculta(nome) {
 
 function colunasExibiveis(headers, colVeiculo) {
   const headerList = headers || [];
+  if (dadosBrutos?.modo === "atencao" || dadosBrutos?.modo === "comparacao") {
+    return headerList.filter((h) => h !== colVeiculo && !colunaOculta(h));
+  }
   const isComparacao = headerList.includes("Status")
     || headerList.some((h) => /\((Clever|TCGL|FleetBus)\)$/.test(h));
   if (isComparacao) {
@@ -1325,7 +1328,7 @@ function alternarOrdenacao(col) {
 function colunasSelecionadas() {
   if (!dadosBrutos) return [];
   const todas = colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo);
-  if (dadosBrutos.modo === "comparacao") return todas;
+  if (dadosBrutos.modo === "comparacao" || dadosBrutos.modo === "atencao") return todas;
   if (!colunasMarcadas.size) return todas;
   return todas.filter((c) => colunasMarcadas.has(c));
 }
