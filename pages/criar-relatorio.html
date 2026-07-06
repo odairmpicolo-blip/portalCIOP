@@ -345,6 +345,23 @@ select:disabled{
 .signature strong{display:block;font-size:14px}
 .signature span{display:block;font-size:13px;margin-top:2px}
 .print-only{display:none}
+body.pdf-exporting .paper-wrap{
+    border:0;
+    padding:0;
+    background:#fff;
+    overflow:visible;
+}
+body.pdf-exporting .paper{
+    width:210mm;
+    max-width:none;
+    min-height:297mm;
+    border:0;
+    box-shadow:none;
+    padding:12mm 14mm;
+    background:#fff;
+}
+body.pdf-exporting .report-body{display:none}
+body.pdf-exporting .report-body-print{display:block}
 @media (max-width:980px){
     .header{grid-template-columns:1fr;justify-items:center;text-align:center}
     .header > a:first-child{justify-self:center}
@@ -371,6 +388,7 @@ select:disabled{
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
 </head>
 <body>
 <header class="header">
@@ -1185,234 +1203,20 @@ function nomeArquivoPdf() {
     return "Relatorio-CIOP" + (numero || "00000") + "-" + data + ".pdf";
 }
 
-function textoPdf(valor, vazio = "") {
-    return String(valor || "")
-        .replace(/\r/g, "")
-        .replace(/[ \t]+\n/g, "\n")
-        .replace(/\n{3,}/g, "\n\n")
-        .trim() || vazio;
-}
-
-function textoLinhaPdf(valor, vazio = "Não informado") {
-    return textoPdf(valor, vazio).replace(/\s+/g, " ");
-}
-
-function dadosRelatorioPdf() {
-    const tipo = TIPOS_RELATORIO[tipoRelatorio] || {};
-    const informativo = ehInformativo();
-    const assinatura = usuarioCriador;
-    return {
-        informativo,
-        titulo: informativo ? "RELATÓRIO INFORMATIVO" : "RELATÓRIO DE OCORRÊNCIA",
-        modelo: tipo.label || "Relatório operacional",
-        protocolo: formatarNumero(campos.numero.value),
-        data: normalizarDataInput(campos.data.value),
-        registro: textoLinhaPdf(campos.registro.value, ""),
-        nome: textoLinhaPdf(campos.nome.value, ""),
-        funcao: textoLinhaPdf(campos.funcao.value, ""),
-        carro: textoLinhaPdf(campos.carro.value),
-        linha: textoLinhaPdf(campos.linha.value),
-        agente: textoLinhaPdf(campos.agenteOrgaoGestor?.value, ""),
-        descricao: textoPdf(corpoRelatorio.value, "Sem descrição informada."),
-        assinaturaNome: textoLinhaPdf(assinatura?.nome, "Assinatura não disponível"),
-        assinaturaRegistro: assinatura?.registro ? "Registro " + assinatura.registro : "",
-        assinaturaCargo: textoLinhaPdf(textoCargoAssinatura(assinatura), "Cargo não vinculado")
-    };
-}
-
-function desenharSeloPdf(pdf, x, y, w, h, titulo, subtitulo) {
-    pdf.setDrawColor(6, 36, 92);
-    pdf.setLineWidth(0.25);
-    pdf.roundedRect(x, y, w, h, 1.5, 1.5);
-    pdf.setTextColor(6, 36, 92);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(11);
-    pdf.text(titulo, x + w / 2, y + 7.2, { align: "center" });
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(6.8);
-    pdf.text(subtitulo, x + w / 2, y + 11.2, { align: "center" });
-}
-
-function desenharCabecalhoPdf(pdf) {
-    const pageW = pdf.internal.pageSize.getWidth();
-    const margem = 14;
-    pdf.setDrawColor(107, 114, 128);
-    pdf.setLineWidth(0.25);
-    pdf.rect(margem, 12, pageW - margem * 2, 26);
-
-    desenharSeloPdf(pdf, margem + 4, 17, 25, 13, "TCGL", "Operações");
-    desenharSeloPdf(pdf, pageW - margem - 29, 17, 25, 13, "CIOP", "Controle");
-
-    pdf.setTextColor(17, 24, 39);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(10.5);
-    pdf.text("TRANSPORTES COLETIVOS GRANDE LONDRINA", pageW / 2, 22, { align: "center" });
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(8.5);
-    pdf.text("Centro Integrado de Operações - CIOP", pageW / 2, 28, { align: "center" });
-    pdf.text("Documento operacional interno", pageW / 2, 33, { align: "center" });
-
-    pdf.setFillColor(6, 36, 92);
-    pdf.rect(margem, 38.5, pageW - margem * 2, 0.9, "F");
-    pdf.setFillColor(255, 107, 0);
-    pdf.rect(margem, 39.7, pageW - margem * 2, 0.8, "F");
-}
-
-function desenharTituloPdf(pdf, dados, y) {
-    const pageW = pdf.internal.pageSize.getWidth();
-    const margem = 14;
-    pdf.setTextColor(17, 24, 39);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(14);
-    pdf.text(dados.titulo, pageW / 2, y, { align: "center" });
-
-    pdf.setDrawColor(6, 36, 92);
-    pdf.setLineWidth(0.3);
-    pdf.rect(pageW - margem - 47, y - 7.5, 47, 10.5);
-    pdf.setFontSize(9);
-    pdf.setTextColor(220, 38, 38);
-    pdf.text(dados.protocolo, pageW - margem - 23.5, y - 1, { align: "center" });
-    return y + 12;
-}
-
-function desenharCampoPdf(pdf, x, y, w, h, label, valor) {
-    pdf.setDrawColor(156, 163, 175);
-    pdf.setLineWidth(0.2);
-    pdf.rect(x, y, w, h);
-    pdf.setFillColor(248, 250, 252);
-    pdf.rect(x, y, w, 5.2, "F");
-    pdf.setTextColor(71, 84, 103);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(7.2);
-    pdf.text(String(label || "").toUpperCase(), x + 2, y + 3.7);
-    pdf.setTextColor(17, 24, 39);
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(9.2);
-    const linhas = pdf.splitTextToSize(textoLinhaPdf(valor), w - 4).slice(0, 2);
-    pdf.text(linhas, x + 2, y + 9.1);
-}
-
-function desenharCamposPdf(pdf, dados, y) {
-    const pageW = pdf.internal.pageSize.getWidth();
-    const margem = 14;
-    const gap = 4;
-    const totalW = pageW - margem * 2;
-    const colW = (totalW - gap) / 2;
-    const h = 14;
-
-    if (!dados.informativo) {
-        const funcionario = [dados.registro, dados.nome].filter(Boolean).join(" - ");
-        desenharCampoPdf(pdf, margem, y, colW, h, "Funcionário", funcionario);
-        desenharCampoPdf(pdf, margem + colW + gap, y, colW, h, "Função", dados.funcao);
-        y += h;
+async function aguardarImagensPdf(alvo) {
+    if (document.fonts?.ready) {
+        try { await document.fonts.ready; } catch (error) {}
     }
-    desenharCampoPdf(pdf, margem, y, colW, h, "Data", dados.data);
-    desenharCampoPdf(pdf, margem + colW + gap, y, colW, h, "Modelo", dados.modelo);
-    y += h;
-    desenharCampoPdf(pdf, margem, y, colW, h, "Carro", dados.carro);
-    desenharCampoPdf(pdf, margem + colW + gap, y, colW, h, "Linha/Rota", dados.linha);
-    y += h;
-    if (dados.agente) {
-        desenharCampoPdf(pdf, margem, y, totalW, h, "Agente do órgão gestor (CMTU)", dados.agente);
-        y += h;
-    }
-    return y + 8;
-}
-
-function novaPaginaPdf(pdf, dados) {
-    pdf.addPage();
-    desenharCabecalhoPdf(pdf);
-    return 50;
-}
-
-function desenharRotuloSecaoPdf(pdf, y, texto) {
-    const pageW = pdf.internal.pageSize.getWidth();
-    const margem = 14;
-    pdf.setDrawColor(156, 163, 175);
-    pdf.setFillColor(248, 250, 252);
-    pdf.rect(margem, y, pageW - margem * 2, 8, "FD");
-    pdf.setTextColor(17, 24, 39);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(8.5);
-    pdf.text(texto, margem + 2, y + 5.3);
-    return y + 13;
-}
-
-function adicionarDescricaoPdf(pdf, dados, y) {
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const margem = 14;
-    const bottom = pageH - 24;
-    const largura = pageW - margem * 2;
-    const lineH = 5.8;
-    const paragrafos = textoPdf(dados.descricao).split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
-
-    y = desenharRotuloSecaoPdf(pdf, y, "DESCRIÇÃO");
-    pdf.setTextColor(17, 24, 39);
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(10.3);
-
-    for (const paragrafo of paragrafos) {
-        const linhas = pdf.splitTextToSize(paragrafo, largura);
-        for (const linha of linhas) {
-            if (y > bottom) {
-                y = novaPaginaPdf(pdf, dados);
-                y = desenharRotuloSecaoPdf(pdf, y, "DESCRIÇÃO (CONTINUAÇÃO)");
-                pdf.setFont("helvetica", "normal");
-                pdf.setFontSize(10.3);
-            }
-            pdf.text(linha, margem, y);
-            y += lineH;
-        }
-        y += 3;
-    }
-    return y;
-}
-
-function adicionarAssinaturaPdf(pdf, dados, y) {
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const bottom = pageH - 24;
-    if (y + 46 > bottom) y = novaPaginaPdf(pdf, dados);
-
-    y += 18;
-    const linhaW = 95;
-    const linhaX = (pageW - linhaW) / 2;
-    pdf.setDrawColor(17, 24, 39);
-    pdf.setLineWidth(0.25);
-    pdf.line(linhaX, y, linhaX + linhaW, y);
-
-    y += 6;
-    pdf.setTextColor(17, 24, 39);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(10);
-    pdf.text(dados.assinaturaNome, pageW / 2, y, { align: "center" });
-    y += 5;
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(8.8);
-    if (dados.assinaturaRegistro) {
-        pdf.text(dados.assinaturaRegistro, pageW / 2, y, { align: "center" });
-        y += 4.5;
-    }
-    pdf.text(dados.assinaturaCargo, pageW / 2, y, { align: "center" });
-    return y + 8;
-}
-
-function aplicarRodapesPdf(pdf) {
-    const total = pdf.getNumberOfPages();
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const margem = 14;
-    for (let i = 1; i <= total; i += 1) {
-        pdf.setPage(i);
-        pdf.setDrawColor(226, 232, 240);
-        pdf.line(margem, pageH - 15, pageW - margem, pageH - 15);
-        pdf.setFont("helvetica", "normal");
-        pdf.setFontSize(7.5);
-        pdf.setTextColor(100, 116, 139);
-        pdf.text("Portal CIOP - TCGL Operações", margem, pageH - 10);
-        pdf.text("Página " + i + " de " + total, pageW - margem, pageH - 10, { align: "right" });
-    }
+    const imagens = Array.from(alvo.querySelectorAll("img"));
+    await Promise.all(imagens.map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+            const done = () => resolve();
+            img.addEventListener("load", done, { once: true });
+            img.addEventListener("error", done, { once: true });
+            setTimeout(done, 1800);
+        });
+    }));
 }
 
 function abrirJanelaPdfPreparacao() {
@@ -1459,9 +1263,34 @@ function entregarPdf(pdf, nome, janela) {
     return "baixado";
 }
 
+function adicionarCanvasNoPdf(pdf, canvas) {
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const sliceH = Math.floor(canvas.width * pageH / pageW);
+    let origemY = 0;
+    let pagina = 0;
+
+    while (origemY < canvas.height) {
+        const altura = Math.min(sliceH, canvas.height - origemY);
+        const paginaCanvas = document.createElement("canvas");
+        paginaCanvas.width = canvas.width;
+        paginaCanvas.height = altura;
+        const ctx = paginaCanvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, paginaCanvas.width, paginaCanvas.height);
+        ctx.drawImage(canvas, 0, origemY, canvas.width, altura, 0, 0, canvas.width, altura);
+
+        if (pagina > 0) pdf.addPage();
+        const imgH = altura * pageW / canvas.width;
+        pdf.addImage(paginaCanvas.toDataURL("image/jpeg", 0.98), "JPEG", 0, 0, pageW, imgH, undefined, "FAST");
+        origemY += altura;
+        pagina += 1;
+    }
+}
+
 async function exportarPdfRelatorio(botao, janelaPdf) {
     atualizarCorpoPDF();
-    if (!window.jspdf?.jsPDF) {
+    if (!window.jspdf?.jsPDF || !window.html2canvas) {
         setStatus("Biblioteca PDF indisponível. Abrindo impressão como alternativa.", "erro");
         fecharJanelaPdfPreparacao(janelaPdf);
         window.print();
@@ -1469,26 +1298,34 @@ async function exportarPdfRelatorio(botao, janelaPdf) {
         return;
     }
 
+    const folha = document.querySelector(".paper");
+    if (!folha) {
+        setStatus("Não encontrei a prévia do relatório para gerar o PDF.", "erro");
+        fecharJanelaPdfPreparacao(janelaPdf);
+        if (botao) botao.disabled = false;
+        return;
+    }
+
     setStatus("Gerando PDF...", "ia");
     window.portalMostrarCarregando?.("Gerando PDF");
+    document.body.classList.add("pdf-exporting");
 
     try {
-        const dados = dadosRelatorioPdf();
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-        pdf.setProperties?.({
-            title: dados.titulo + " - " + dados.protocolo,
-            subject: dados.modelo,
-            creator: "Portal CIOP"
+        await aguardarImagensPdf(folha);
+        await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+        const canvas = await html2canvas(folha, {
+            scale: 2,
+            backgroundColor: "#ffffff",
+            logging: false,
+            useCORS: true,
+            windowWidth: folha.scrollWidth,
+            windowHeight: folha.scrollHeight
         });
 
-        desenharCabecalhoPdf(pdf);
-        let y = desenharTituloPdf(pdf, dados, 50);
-        y = desenharCamposPdf(pdf, dados, y);
-        y = adicionarDescricaoPdf(pdf, dados, y);
-        adicionarAssinaturaPdf(pdf, dados, y);
-        aplicarRodapesPdf(pdf);
-
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        adicionarCanvasNoPdf(pdf, canvas);
         const destino = entregarPdf(pdf, nomeArquivoPdf(), janelaPdf);
         setStatus(destino === "aberto" ? "PDF aberto em nova aba." : "PDF gerado com sucesso.", "ok");
     } catch (error) {
@@ -1497,6 +1334,7 @@ async function exportarPdfRelatorio(botao, janelaPdf) {
         fecharJanelaPdfPreparacao(janelaPdf);
         window.print();
     } finally {
+        document.body.classList.remove("pdf-exporting");
         window.portalOcultarCarregando?.();
         if (botao) botao.disabled = false;
     }
@@ -1504,7 +1342,7 @@ async function exportarPdfRelatorio(botao, janelaPdf) {
 
 async function gerarPDF() {
     const botao = document.getElementById("pdfTopoBtn");
-    const janelaPdf = window.jspdf?.jsPDF ? abrirJanelaPdfPreparacao() : null;
+    const janelaPdf = window.jspdf?.jsPDF && window.html2canvas ? abrirJanelaPdfPreparacao() : null;
     let registrado = false;
     botao.disabled = true;
     try {
