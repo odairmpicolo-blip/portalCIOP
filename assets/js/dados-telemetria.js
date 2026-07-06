@@ -28,6 +28,7 @@ let periodoCarregado = { de: "", ate: "" };
 let debounceFiltroTimer = null;
 let veiculosAtencao = [];
 let veiculosAtencaoDetalhe = [];
+let veiculosOk = [];
 let filtroAtencaoAtivo = false;
 
 const CHAVES_VEICULO = [
@@ -69,7 +70,7 @@ function colunaOculta(nome) {
 
 function colunasExibiveis(headers, colVeiculo) {
   const headerList = headers || [];
-  if (dadosBrutos?.modo === "atencao" || dadosBrutos?.modo === "comparacao") {
+  if (dadosBrutos?.modo === "atencao" || dadosBrutos?.modo === "comparacao" || dadosBrutos?.modo === "ok") {
     return headerList.filter((h) => h !== colVeiculo && !colunaOculta(h));
   }
   const isComparacao = headerList.includes("Status")
@@ -953,6 +954,84 @@ function fmtDatasCurtas(datasIso) {
   return (datasIso || []).map((d) => { const p = d.split("-"); return `${p[2]}/${p[1]}`; }).join(", ");
 }
 
+function pctAggStr(num, den) {
+  if (!Number.isFinite(num) || !Number.isFinite(den) || den <= 0) return "—";
+  let pct = (num / den) * 100;
+  if (pct > 100) pct = 200 - pct;
+  return `${formatarDecimal(pct, 1)}%`;
+}
+
+function kmMapaPorFonte(regs) {
+  const KM_DIARIO_MAX = 1000;
+  const mapa = new Map();
+  regs.forEach((reg) => {
+    let payload = reg.payload || reg;
+    if (typeof payload === "string") try { payload = JSON.parse(payload); } catch (_) { payload = {}; }
+    const row = normalizarLinhaTelemetria({ ...payload });
+    const km = parseNumero(row["Km Percorrido"]);
+    if (!Number.isFinite(km) || km <= 0 || km > KM_DIARIO_MAX) return;
+    const key = `${reg.data_iso}|${normVeiculo(reg.veiculo)}`;
+    mapa.set(key, (mapa.get(key) || 0) + km);
+  });
+  return mapa;
+}
+
+function somaParVeiculo(mapA, mapB, veiculo) {
+  let somaA = 0;
+  let somaB = 0;
+  mapA.forEach((valA, key) => {
+    const [, v] = key.split("|");
+    if (v !== veiculo) return;
+    const valB = mapB.get(key);
+    if (valB != null && valB > 0) {
+      somaA += valA;
+      somaB += valB;
+    }
+  });
+  return { somaA, somaB };
+}
+
+function montarLinhasOk() {
+  const colVeiculo = "Veículo";
+  const headers = [
+    colVeiculo,
+    "Clever / TCGL %",
+    "FleetBus / TCGL %",
+    "FleetBus / Clever %"
+  ];
+
+  const cleverMap = kmMapaPorFonte(filtrarRegistrosPorPeriodo(registrosDaFonte("clever")));
+  const tcglMap = kmMapaPorFonte(filtrarRegistrosPorPeriodo(registrosDaFonte("tcgl")));
+  const fleetbusMap = kmMapaPorFonte(filtrarRegistrosPorPeriodo(registrosDaFonte("fleetbus")));
+
+  const atencaoSet = new Set(veiculosAtencao.map((v) => normVeiculo(v)));
+  const veiculos = new Set();
+  [cleverMap, tcglMap, fleetbusMap].forEach((mapa) => {
+    mapa.forEach((_km, key) => veiculos.add(key.split("|")[1]));
+  });
+
+  const rows = [];
+  [...veiculos].sort((a, b) => a.localeCompare(b, "pt-BR", { numeric: true })).forEach((veiculo) => {
+    if (atencaoSet.has(veiculo)) return;
+
+    const parCleverTcgl = somaParVeiculo(cleverMap, tcglMap, veiculo);
+    if (parCleverTcgl.somaB <= 0) return;
+
+    const parFleetbusTcgl = somaParVeiculo(fleetbusMap, tcglMap, veiculo);
+    const parFleetbusClever = somaParVeiculo(fleetbusMap, cleverMap, veiculo);
+
+    rows.push({
+      [colVeiculo]: veiculo,
+      "Clever / TCGL %": pctAggStr(parCleverTcgl.somaA, parCleverTcgl.somaB),
+      "FleetBus / TCGL %": parFleetbusTcgl.somaB > 0 ? pctAggStr(parFleetbusTcgl.somaA, parFleetbusTcgl.somaB) : "—",
+      "FleetBus / Clever %": parFleetbusClever.somaB > 0 ? pctAggStr(parFleetbusClever.somaA, parFleetbusClever.somaB) : "—"
+    });
+  });
+
+  veiculosOk = rows.map((r) => r[colVeiculo]);
+  return { headers, rows, colVeiculo, colData: null };
+}
+
 function montarLinhasAtencao() {
   const colVeiculo = "Veículo";
   const headers = [colVeiculo, "Problema", "Dias TCGL", "Dias Clever", "Dias Faltando", "Datas Faltando"];
@@ -1059,6 +1138,17 @@ function aplicarFonteAtiva() {
       arquivos: ["atencao-clever"],
       modo: "atencao"
     };
+  } else if (fonteAtiva === "ok") {
+    const ok = montarLinhasOk();
+    dadosBrutos = {
+      headers: ok.headers,
+      rows: ok.rows,
+      colVeiculo: ok.colVeiculo,
+      colData: ok.colData,
+      colunasKpi: {},
+      arquivos: ["ok-telemetria"],
+      modo: "ok"
+    };
   } else if (fonteAtiva === "comparacao") {
     const comp = montarLinhasComparacao();
     dadosBrutos = {
@@ -1097,11 +1187,12 @@ function aplicarFonteAtiva() {
 }
 
 async function selecionarFonte(fonte) {
-  const validas = ["clever", "tcgl", "fleetbus", "comparacao", "atencao"];
+  const validas = ["clever", "tcgl", "fleetbus", "comparacao", "ok", "atencao"];
   if (!validas.includes(fonte) || fonte === fonteAtiva) return;
   fonteAtiva = fonte;
   sortCol = null;
-  if (fonte !== "atencao") await garantirDadosFonte(fonte);
+  if (fonte === "comparacao" || fonte === "ok") await garantirDadosFonte("comparacao");
+  else if (fonte !== "atencao") await garantirDadosFonte(fonte);
   aplicarFonteAtiva();
   renderAbasFonte();
 }
@@ -1109,16 +1200,18 @@ async function selecionarFonte(fonte) {
 function renderAbasFonte() {
   const container = $("abasFonte");
   if (!container) return;
-  const qtd = veiculosAtencao.length;
+  const qtdAtencao = veiculosAtencao.length;
+  const qtdOk = veiculosOk.length;
   const opcoes = [
     { id: "comparacao", rotulo: "COMPARAÇÃO" },
+    { id: "ok", rotulo: `OK${qtdOk ? ` (${qtdOk})` : ""}` },
     { id: "tcgl", rotulo: "TCGL" },
     { id: "clever", rotulo: "CLEVER" },
     { id: "fleetbus", rotulo: "FLEETBUS" },
-    { id: "atencao", rotulo: `ATENÇÃO${qtd ? ` (${qtd})` : ""}` }
+    { id: "atencao", rotulo: `ATENÇÃO${qtdAtencao ? ` (${qtdAtencao})` : ""}` }
   ];
   container.innerHTML = opcoes.map((o) =>
-    `<button type="button" role="tab" data-fonte="${o.id}" class="${fonteAtiva === o.id ? "ativo" : ""}${o.id === "atencao" && qtd ? " tab-alerta" : ""}" aria-selected="${fonteAtiva === o.id}">${o.rotulo}</button>`
+    `<button type="button" role="tab" data-fonte="${o.id}" class="${fonteAtiva === o.id ? "ativo" : ""}${o.id === "atencao" && qtdAtencao ? " tab-alerta" : ""}${o.id === "ok" && qtdOk ? " tab-ok" : ""}" aria-selected="${fonteAtiva === o.id}">${o.rotulo}</button>`
   ).join("");
   container.querySelectorAll("[data-fonte]").forEach((btn) => {
     btn.addEventListener("click", () => selecionarFonte(btn.getAttribute("data-fonte")));
@@ -1340,7 +1433,7 @@ function alternarOrdenacao(col) {
 function colunasSelecionadas() {
   if (!dadosBrutos) return [];
   const todas = colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo);
-  if (dadosBrutos.modo === "comparacao" || dadosBrutos.modo === "atencao") return todas;
+  if (dadosBrutos.modo === "comparacao" || dadosBrutos.modo === "atencao" || dadosBrutos.modo === "ok") return todas;
   if (!colunasMarcadas.size) return todas;
   return todas.filter((c) => colunasMarcadas.has(c));
 }
@@ -1397,7 +1490,7 @@ function fecharPainelColunas() {
 function montarPainelColunas() {
   const panel = $("filtroColunasPanel");
   const fieldColunas = document.querySelector(".filter-field--colunas");
-  if (fieldColunas) fieldColunas.hidden = dadosBrutos?.modo === "comparacao";
+  if (fieldColunas) fieldColunas.hidden = ["comparacao", "atencao", "ok"].includes(dadosBrutos?.modo);
   if (!dadosBrutos || !panel) return;
   const cols = colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo);
   if (!colunasMarcadas.size) cols.forEach((c) => colunasMarcadas.add(c));
@@ -1553,6 +1646,8 @@ function renderizar() {
     const fontesVivo = ["clever", "fleetbus", "comparacao"];
     const msg = fonteAtiva === "atencao"
       ? "Nenhum veículo com problema detectado. Todos os dados Clever estão normais."
+      : fonteAtiva === "ok"
+      ? "Nenhum veículo OK no período. Veículos precisam ter Clever + TCGL e não estar na aba Atenção."
       : !planilhaAoVivo && fontesVivo.includes(fonteAtiva)
       ? "Sem dados no JSON para esta fonte. Ative Planilha ao vivo para buscar na planilha Google."
       : "Nenhum registro no período. Ative Planilha ao vivo ou ajuste as datas.";
@@ -1560,9 +1655,16 @@ function renderizar() {
     return;
   }
   const cols = colunasSelecionadas();
-  const rowsDados = rowsFiltradasDados();
-  const rows = fonteAtiva === "atencao" ? rowsDados : expandirFrotaSemDados(rowsDados);
+  let rowsDados = rowsFiltradasDados();
   const stats = calcularStats(rowsDados, dadosBrutos.colVeiculo, dadosBrutos.colunasKpi);
+  const ok = montarLinhasOk();
+  if (fonteAtiva === "ok") {
+    dadosBrutos.rows = ok.rows;
+    dadosBrutos.headers = ok.headers;
+    rowsDados = rowsFiltradasDados();
+  }
+  const rows = (fonteAtiva === "atencao" || fonteAtiva === "ok") ? rowsDados : expandirFrotaSemDados(rowsDados);
+  renderAbasFonte();
   hintFiltrosAtivos();
   renderResumo(stats);
   renderTabelaDados(rows, cols);
