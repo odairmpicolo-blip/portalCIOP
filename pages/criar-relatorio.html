@@ -345,6 +345,23 @@ select:disabled{
 .signature strong{display:block;font-size:14px}
 .signature span{display:block;font-size:13px;margin-top:2px}
 .print-only{display:none}
+body.pdf-exporting .paper-wrap{
+    border:0;
+    padding:0;
+    background:#fff;
+    overflow:visible;
+}
+body.pdf-exporting .paper{
+    width:210mm;
+    max-width:none;
+    min-height:297mm;
+    border:0;
+    box-shadow:none;
+    padding:12mm 14mm;
+    background:#fff;
+}
+body.pdf-exporting .report-body{display:none}
+body.pdf-exporting .report-body-print{display:block}
 @media (max-width:980px){
     .header{grid-template-columns:1fr;justify-items:center;text-align:center}
     .header > a:first-child{justify-self:center}
@@ -370,6 +387,8 @@ select:disabled{
     .report-body-print{display:block}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
 </head>
 <body>
 <header class="header">
@@ -1178,12 +1197,104 @@ async function registrarProtocolo() {
     return true;
 }
 
-async function gerarPDF() {
-    const registrado = await registrarProtocolo();
-    if (!registrado && PROTOCOLO_SCRIPT_URL) return;
+function nomeArquivoPdf() {
+    const numero = String(campos.numero.value || "").replace(/\D/g, "");
+    const data = campos.data.value || hojeISO();
+    return "Relatorio-CIOP" + (numero || "00000") + "-" + data + ".pdf";
+}
+
+async function aguardarImagensPdf(alvo) {
+    const imagens = Array.from(alvo.querySelectorAll("img"));
+    await Promise.all(imagens.map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+            const done = () => resolve();
+            img.addEventListener("load", done, { once: true });
+            img.addEventListener("error", done, { once: true });
+            setTimeout(done, 1800);
+        });
+    }));
+}
+
+async function exportarPdfRelatorio(botao) {
     atualizarCorpoPDF();
-    document.title = "Relatorio-" + formatarNumero(campos.numero.value).replace(/\s+/g, "-");
-    window.print();
+    if (!window.jspdf?.jsPDF || !window.html2canvas) {
+        setStatus("Biblioteca PDF indisponível. Abrindo impressão como alternativa.", "erro");
+        window.print();
+        if (botao) botao.disabled = false;
+        return;
+    }
+
+    const folha = document.querySelector(".paper");
+    if (!folha) {
+        setStatus("Não encontrei a prévia do relatório para gerar o PDF.", "erro");
+        if (botao) botao.disabled = false;
+        return;
+    }
+
+    setStatus("Gerando PDF...", "ia");
+    window.portalMostrarCarregando?.("Gerando PDF");
+    document.body.classList.add("pdf-exporting");
+
+    try {
+        await aguardarImagensPdf(folha);
+        await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+        const canvas = await html2canvas(folha, {
+            scale: 2,
+            backgroundColor: "#ffffff",
+            logging: false,
+            useCORS: true,
+            windowWidth: folha.scrollWidth,
+            windowHeight: folha.scrollHeight
+        });
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+        const imgData = canvas.toDataURL("image/png");
+        const imgH = (canvas.height * pageW) / canvas.width;
+
+        let y = 0;
+        let restante = imgH;
+        pdf.addImage(imgData, "PNG", 0, y, pageW, imgH, undefined, "FAST");
+        restante -= pageH;
+        while (restante > 1) {
+            pdf.addPage();
+            y = restante - imgH;
+            pdf.addImage(imgData, "PNG", 0, y, pageW, imgH, undefined, "FAST");
+            restante -= pageH;
+        }
+
+        pdf.save(nomeArquivoPdf());
+        setStatus("PDF gerado com sucesso.", "ok");
+    } catch (error) {
+        console.error(error);
+        setStatus("Falha ao gerar PDF: " + (error.message || "tente novamente."), "erro");
+        window.print();
+    } finally {
+        document.body.classList.remove("pdf-exporting");
+        window.portalOcultarCarregando?.();
+        if (botao) botao.disabled = false;
+    }
+}
+
+async function gerarPDF() {
+    const botao = document.getElementById("pdfTopoBtn");
+    let registrado = false;
+    botao.disabled = true;
+    try {
+        registrado = await registrarProtocolo();
+    } catch (error) {
+        console.error(error);
+        setStatus("Falha ao registrar protocolo: " + (error.message || "tente novamente."), "erro");
+        return;
+    } finally {
+        if (!registrado) botao.disabled = false;
+    }
+    if (!registrado && PROTOCOLO_SCRIPT_URL) return;
+    await exportarPdfRelatorio(botao);
 }
 
 document.getElementById("pdfTopoBtn").addEventListener("click", gerarPDF);
