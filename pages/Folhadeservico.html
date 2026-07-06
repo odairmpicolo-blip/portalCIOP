@@ -1484,7 +1484,7 @@ h1 {
                 <div class="chart-container"><canvas id="chartProblemasOficina"></canvas></div>
             </div>
             <div class="chart-card accent-navy">
-                <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></span><span>Maiores Reincidências de Oficina</span></div>
+                <div class="chart-header"><span class="chart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></span><span>Maiores Reincidências de Oficina no Ano</span></div>
                 <div class="chart-container"><canvas id="chartReincidenciasOficina"></canvas></div>
             </div>
             <div class="chart-card accent-teal">
@@ -3805,7 +3805,9 @@ h1 {
             corTema: corOficina
         });
 
-        const reincidenciasOficina = topContagem(contagemCarroOficina, 8).filter(i => i.qtd > 1);
+        const contagemCarroOficinaAno = contarPor(dadosReincidenciasOficinaAno(), d => d.carro, item =>
+            ocorrenciaEh(item.ocorrencia, "OFICINA"));
+        const reincidenciasOficina = topContagem(contagemCarroOficinaAno, 8).filter(i => i.qtd > 1);
         criarGraficoAnalytics("chartReincidenciasOficina", {
             labels: reincidenciasOficina.length ? reincidenciasOficina.map(i => i.label) : ["Sem reincidência"],
             values: reincidenciasOficina.length ? reincidenciasOficina.map(i => i.qtd) : [0],
@@ -3883,6 +3885,47 @@ h1 {
             values: linhasLogin.length ? linhasLogin.map(i => i.qtd) : [0],
             horizontal: true,
             corTema: corLogin
+        });
+    }
+
+    function anoIsoFiltro(valor) {
+        const m = String(valor || "").match(/^(\d{4})-\d{2}-\d{2}$/);
+        return m ? parseInt(m[1], 10) : null;
+    }
+
+    function anosReincidenciaOficina() {
+        const de = anoIsoFiltro(document.getElementById("filtro-data-de")?.value || "");
+        const ate = anoIsoFiltro(document.getElementById("filtro-data-ate")?.value || "");
+        const anos = new Set();
+        if (de && ate) {
+            const inicio = Math.min(de, ate);
+            const fim = Math.max(de, ate);
+            for (let ano = inicio; ano <= fim; ano++) anos.add(ano);
+        } else if (de || ate) {
+            anos.add(de || ate);
+        } else {
+            anos.add(ANO_ATUAL);
+        }
+        return anos;
+    }
+
+    function dadosReincidenciasOficinaAno() {
+        const anos = anosReincidenciaOficina();
+        const analista = document.getElementById("filtro-analista").value;
+        const motSai = document.getElementById("filtro-mot-sai").value;
+        const ocorrencia = document.getElementById("filtro-ocorrencia").value;
+        const linha = document.getElementById("filtro-linha").value;
+        const situacao = document.getElementById("filtro-situacao").value;
+
+        return dadosMestres.filter(item => {
+            const anoItem = anoIsoFiltro(isoDataRegistro(item));
+            if (!anos.has(anoItem)) return false;
+            if (analista && item.analista !== analista) return false;
+            if (motSai && normTexto(motoristaQueSai(item)) !== normTexto(motSai)) return false;
+            if (ocorrencia && item.ocorrencia !== ocorrencia) return false;
+            if (linha && item.linha !== linha) return false;
+            if (situacao && item.situacao !== situacao) return false;
+            return true;
         });
     }
 
