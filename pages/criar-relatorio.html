@@ -1220,47 +1220,28 @@ function dadosRelatorioPdf() {
     };
 }
 
-async function imagemElementoParaDataUrl(selector) {
-    const img = document.querySelector(selector);
-    if (!img) return null;
-    if (!img.complete) {
-        await new Promise((resolve) => {
-            const done = () => resolve();
-            img.addEventListener("load", done, { once: true });
-            img.addEventListener("error", done, { once: true });
-            setTimeout(done, 1200);
-        });
-    }
-    if (!img.naturalWidth || !img.naturalHeight) return null;
-    try {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-        return canvas.toDataURL("image/png");
-    } catch (error) {
-        return null;
-    }
+function desenharSeloPdf(pdf, x, y, w, h, titulo, subtitulo) {
+    pdf.setDrawColor(6, 36, 92);
+    pdf.setLineWidth(0.25);
+    pdf.roundedRect(x, y, w, h, 1.5, 1.5);
+    pdf.setTextColor(6, 36, 92);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(11);
+    pdf.text(titulo, x + w / 2, y + 7.2, { align: "center" });
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(6.8);
+    pdf.text(subtitulo, x + w / 2, y + 11.2, { align: "center" });
 }
 
-async function carregarAssetsPdf() {
-    const [tcgl, ciop] = await Promise.all([
-        imagemElementoParaDataUrl(".report-head img[alt='TCGL']"),
-        imagemElementoParaDataUrl(".report-head img[alt='CIOP']")
-    ]);
-    return { tcgl, ciop };
-}
-
-function desenharCabecalhoPdf(pdf, dados, assets) {
+function desenharCabecalhoPdf(pdf) {
     const pageW = pdf.internal.pageSize.getWidth();
     const margem = 14;
     pdf.setDrawColor(107, 114, 128);
     pdf.setLineWidth(0.25);
     pdf.rect(margem, 12, pageW - margem * 2, 26);
 
-    if (assets?.tcgl) pdf.addImage(assets.tcgl, "PNG", margem + 4, 17, 25, 13);
-    if (assets?.ciop) pdf.addImage(assets.ciop, "PNG", pageW - margem - 25, 16, 21, 16);
+    desenharSeloPdf(pdf, margem + 4, 17, 25, 13, "TCGL", "Operações");
+    desenharSeloPdf(pdf, pageW - margem - 29, 17, 25, 13, "CIOP", "Controle");
 
     pdf.setTextColor(17, 24, 39);
     pdf.setFont("helvetica", "bold");
@@ -1338,9 +1319,9 @@ function desenharCamposPdf(pdf, dados, y) {
     return y + 8;
 }
 
-function novaPaginaPdf(pdf, dados, assets) {
+function novaPaginaPdf(pdf, dados) {
     pdf.addPage();
-    desenharCabecalhoPdf(pdf, dados, assets);
+    desenharCabecalhoPdf(pdf);
     return 50;
 }
 
@@ -1357,7 +1338,7 @@ function desenharRotuloSecaoPdf(pdf, y, texto) {
     return y + 13;
 }
 
-function adicionarDescricaoPdf(pdf, dados, assets, y) {
+function adicionarDescricaoPdf(pdf, dados, y) {
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
     const margem = 14;
@@ -1375,7 +1356,7 @@ function adicionarDescricaoPdf(pdf, dados, assets, y) {
         const linhas = pdf.splitTextToSize(paragrafo, largura);
         for (const linha of linhas) {
             if (y > bottom) {
-                y = novaPaginaPdf(pdf, dados, assets);
+                y = novaPaginaPdf(pdf, dados);
                 y = desenharRotuloSecaoPdf(pdf, y, "DESCRIÇÃO (CONTINUAÇÃO)");
                 pdf.setFont("helvetica", "normal");
                 pdf.setFontSize(10.3);
@@ -1388,11 +1369,11 @@ function adicionarDescricaoPdf(pdf, dados, assets, y) {
     return y;
 }
 
-function adicionarAssinaturaPdf(pdf, dados, assets, y) {
+function adicionarAssinaturaPdf(pdf, dados, y) {
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
     const bottom = pageH - 24;
-    if (y + 46 > bottom) y = novaPaginaPdf(pdf, dados, assets);
+    if (y + 46 > bottom) y = novaPaginaPdf(pdf, dados);
 
     y += 18;
     const linhaW = 95;
@@ -1434,10 +1415,55 @@ function aplicarRodapesPdf(pdf) {
     }
 }
 
-async function exportarPdfRelatorio(botao) {
+function abrirJanelaPdfPreparacao() {
+    try {
+        const janela = window.open("", "_blank");
+        if (!janela) return null;
+        janela.document.open();
+        janela.document.write(
+            "<!doctype html><html><head><title>Gerando PDF</title>" +
+            "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
+            "<style>body{font-family:Arial,sans-serif;margin:0;min-height:100vh;display:grid;place-items:center;background:#f5f7fb;color:#06245c}" +
+            "div{padding:24px;text-align:center}strong{display:block;font-size:18px;margin-bottom:8px}</style></head>" +
+            "<body><div><strong>Gerando PDF...</strong><span>Aguarde alguns segundos.</span></div></body></html>"
+        );
+        janela.document.close();
+        return janela;
+    } catch (error) {
+        return null;
+    }
+}
+
+function fecharJanelaPdfPreparacao(janela) {
+    try {
+        if (janela && !janela.closed) janela.close();
+    } catch (error) {}
+}
+
+function entregarPdf(pdf, nome, janela) {
+    const blob = pdf.output("blob");
+    const url = URL.createObjectURL(blob);
+    if (janela && !janela.closed) {
+        janela.location.replace(url);
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        return "aberto";
+    }
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = nome;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return "baixado";
+}
+
+async function exportarPdfRelatorio(botao, janelaPdf) {
     atualizarCorpoPDF();
     if (!window.jspdf?.jsPDF) {
         setStatus("Biblioteca PDF indisponível. Abrindo impressão como alternativa.", "erro");
+        fecharJanelaPdfPreparacao(janelaPdf);
         window.print();
         if (botao) botao.disabled = false;
         return;
@@ -1448,7 +1474,6 @@ async function exportarPdfRelatorio(botao) {
 
     try {
         const dados = dadosRelatorioPdf();
-        const assets = await carregarAssetsPdf();
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
         pdf.setProperties?.({
@@ -1457,18 +1482,19 @@ async function exportarPdfRelatorio(botao) {
             creator: "Portal CIOP"
         });
 
-        desenharCabecalhoPdf(pdf, dados, assets);
+        desenharCabecalhoPdf(pdf);
         let y = desenharTituloPdf(pdf, dados, 50);
         y = desenharCamposPdf(pdf, dados, y);
-        y = adicionarDescricaoPdf(pdf, dados, assets, y);
-        adicionarAssinaturaPdf(pdf, dados, assets, y);
+        y = adicionarDescricaoPdf(pdf, dados, y);
+        adicionarAssinaturaPdf(pdf, dados, y);
         aplicarRodapesPdf(pdf);
 
-        pdf.save(nomeArquivoPdf());
-        setStatus("PDF gerado com sucesso.", "ok");
+        const destino = entregarPdf(pdf, nomeArquivoPdf(), janelaPdf);
+        setStatus(destino === "aberto" ? "PDF aberto em nova aba." : "PDF gerado com sucesso.", "ok");
     } catch (error) {
         console.error(error);
         setStatus("Falha ao gerar PDF: " + (error.message || "tente novamente."), "erro");
+        fecharJanelaPdfPreparacao(janelaPdf);
         window.print();
     } finally {
         window.portalOcultarCarregando?.();
@@ -1478,19 +1504,24 @@ async function exportarPdfRelatorio(botao) {
 
 async function gerarPDF() {
     const botao = document.getElementById("pdfTopoBtn");
+    const janelaPdf = window.jspdf?.jsPDF ? abrirJanelaPdfPreparacao() : null;
     let registrado = false;
     botao.disabled = true;
     try {
         registrado = await registrarProtocolo();
     } catch (error) {
         console.error(error);
+        fecharJanelaPdfPreparacao(janelaPdf);
         setStatus("Falha ao registrar protocolo: " + (error.message || "tente novamente."), "erro");
         return;
     } finally {
         if (!registrado) botao.disabled = false;
     }
-    if (!registrado && PROTOCOLO_SCRIPT_URL) return;
-    await exportarPdfRelatorio(botao);
+    if (!registrado && PROTOCOLO_SCRIPT_URL) {
+        fecharJanelaPdfPreparacao(janelaPdf);
+        return;
+    }
+    await exportarPdfRelatorio(botao, janelaPdf);
 }
 
 document.getElementById("pdfTopoBtn").addEventListener("click", gerarPDF);
