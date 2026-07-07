@@ -787,8 +787,10 @@ function setStatus(texto, tipo) {
     statusRelatorio.className = "status" + (tipo ? " " + tipo : "");
 }
 
-function csvUrl(gid) {
-    return "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=csv&gid=" + gid;
+function csvUrl(gid, semCache) {
+    let url = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=csv&gid=" + gid;
+    if (semCache) url += "&_=" + Date.now();
+    return url;
 }
 
 function parseCsv(texto) {
@@ -839,11 +841,14 @@ function lerCacheRelatorioCsv() {
 
 function salvarCacheRelatorioCsv(gids) {
     try {
-        localStorage.setItem(CACHE_RELATORIO_KEY, JSON.stringify({ ts: Date.now(), gids: gids || {} }));
+        const limpo = { ...(gids || {}) };
+        delete limpo[GID_CONT_PROT];
+        localStorage.setItem(CACHE_RELATORIO_KEY, JSON.stringify({ ts: Date.now(), gids: limpo }));
     } catch (error) {}
 }
 
 async function carregarCsvComCache(gid) {
+    if (gid === GID_CONT_PROT) return carregarCsv(gid, { semCache: true });
     const cache = lerCacheRelatorioCsv();
     if (cache && cache[gid]) return cache[gid];
     const linhas = await carregarCsv(gid);
@@ -853,10 +858,16 @@ async function carregarCsvComCache(gid) {
     return linhas;
 }
 
-async function carregarCsv(gid) {
-    const resposta = await fetch(csvUrl(gid), { cache: "no-store" });
+async function carregarCsv(gid, opcoes = {}) {
+    const resposta = await fetch(csvUrl(gid, opcoes.semCache), { cache: "no-store" });
     if (!resposta.ok) throw new Error("Base " + gid + " indisponível.");
     return parseCsv(await resposta.text());
+}
+
+async function carregarProtocoloAtualizado() {
+    const contProtCsv = await carregarCsv(GID_CONT_PROT, { semCache: true });
+    configurarProtocolo(contProtCsv);
+    return protocoloAtual;
 }
 
 function normalizarDataInput(data) {
@@ -1089,17 +1100,17 @@ async function carregarAssinaturaUsuarioLogado() {
 async function iniciarRelatorio() {
     const cacheGids = lerCacheRelatorioCsv();
     let mostrouCache = false;
-    if (cacheGids?.[GID_FUNCIONARIOS] && cacheGids?.[GID_DADOS] && cacheGids?.[GID_CONT_PROT]) {
+    if (cacheGids?.[GID_FUNCIONARIOS] && cacheGids?.[GID_DADOS]) {
         campos.data.value = hojeISO();
         carregarFuncionarios(cacheGids[GID_FUNCIONARIOS]);
         carregarDadosGerais(cacheGids[GID_DADOS]);
-        configurarProtocolo(cacheGids[GID_CONT_PROT]);
         await carregarAssinaturaUsuarioLogado();
         montarMenuModelos();
         selecionarModelo("carro_adiantado", { silencioso: true });
         corpoRelatorio.value = gerarCorpoPadrao();
         autoGrow();
         atualizarPreview();
+        setStatus("Base carregada do cache. Atualizando protocolo livre...", "ia");
     }
 
     if (!mostrouCache) window.portalMostrarCarregando?.("Carregando relatório");
@@ -1108,7 +1119,7 @@ async function iniciarRelatorio() {
         const [funcionariosCsv, dadosCsv, contProtCsv] = await Promise.all([
             carregarCsvComCache(GID_FUNCIONARIOS),
             carregarCsvComCache(GID_DADOS),
-            carregarCsvComCache(GID_CONT_PROT)
+            carregarCsv(GID_CONT_PROT, { semCache: true })
         ]);
         carregarFuncionarios(funcionariosCsv);
         carregarDadosGerais(dadosCsv);
@@ -1153,13 +1164,22 @@ document.addEventListener("click", (ev) => {
 function dadosProtocolo() {
     const analista = usuarioCriador;
     const informativo = ehInformativo();
+    const registroFuncionario = informativo ? "INFORMATIVO" : String(campos.registro.value || "").trim();
+    const analistaTexto = analista ? ((analista.registro ? analista.registro + " - " : "") + analista.nome).toUpperCase() : "";
     return {
+        acao: "registrarProtocolo",
         protocolo: campos.numero.value,
         linhaPlanilha: protocoloAtual?.linhaPlanilha || "",
         tipoDocumento: informativo ? "R. INFORMATIVO" : TIPO_DOCUMENTO_PROTOCOLO,
-        funcionario: informativo ? "INFORMATIVO" : String(campos.registro.value || "").trim(),
+        funcionario: registroFuncionario,
+        registroFuncionario,
+        nomeFuncionario: informativo ? "INFORMATIVO" : String(campos.nome.value || "").trim(),
+        funcaoFuncionario: informativo ? "" : String(campos.funcao.value || "").trim(),
         dataDocumento: normalizarDataInput(campos.data.value),
-        analista: analista ? ((analista.registro ? analista.registro + " - " : "") + analista.nome).toUpperCase() : "",
+        dataDocumentoIso: campos.data.value,
+        carro: String(campos.carro.value || "").trim(),
+        linha: String(campos.linha.value || "").trim(),
+        analista: analistaTexto,
         cargoAnalista: textoCargoAssinatura(analista)
     };
 }
@@ -1172,12 +1192,32 @@ function mensagemErroProtocolo(error) {
     return msg || "Falha ao registrar protocolo.";
 }
 
+function linhaProtocoloPreenchida(linhas, dados) {
+    const idx = Number(dados.linhaPlanilha) - 1;
+    if (!Number.isFinite(idx) || idx < 0) return false;
+    const linha = linhas[idx] || [];
+    const protocoloOk = String(linha[0] || "").trim() === String(dados.protocolo || "").trim();
+    const preenchida = [1, 2, 3, 4, 5].some((coluna) => String(linha[coluna] || "").trim());
+    return protocoloOk && preenchida;
+}
+
+function aguardar(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function confirmarProtocoloNaPlanilha(dados) {
+    for (let tentativa = 0; tentativa < 8; tentativa += 1) {
+        await aguardar(tentativa === 0 ? 900 : 700);
+        const linhas = await carregarCsv(GID_CONT_PROT, { semCache: true });
+        if (linhaProtocoloPreenchida(linhas, dados)) {
+            configurarProtocolo(linhas);
+            return true;
+        }
+    }
+    return false;
+}
+
 async function enviarProtocoloSemCors(dados) {
-    /*
-        Apps Script pode bloquear a leitura da resposta por CORS quando o portal roda
-        no GitHub Pages. Em modo no-cors a requisição ainda é enviada ao doPost(e),
-        porém o navegador não permite ler o retorno. Por isso não usamos resposta.ok.
-    */
     await fetch(PROTOCOLO_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
@@ -1189,6 +1229,19 @@ async function enviarProtocoloSemCors(dados) {
 
 async function registrarProtocolo() {
     if (protocoloRegistrado) return true;
+
+    if (!PROTOCOLO_SCRIPT_URL) {
+        setStatus("Para gravar na planilha, falta publicar o Apps Script de gravação da aba CONT. PROT.", "erro");
+        return false;
+    }
+
+    setStatus("Atualizando próximo protocolo livre...", "ia");
+    try {
+        await carregarProtocoloAtualizado();
+    } catch (error) {
+        throw new Error("Não foi possível atualizar a aba CONT. PROT antes do registro: " + (error.message || error));
+    }
+
     const dados = dadosProtocolo();
     if (!dados.protocolo || !dados.linhaPlanilha) {
         setStatus("Não foi possível identificar o próximo protocolo livre.", "erro");
@@ -1202,15 +1255,16 @@ async function registrarProtocolo() {
         setStatus("Não encontrei o registro do usuário logado para preencher o analista.", "erro");
         return false;
     }
-    if (!PROTOCOLO_SCRIPT_URL) {
-        setStatus("Protocolo " + dados.protocolo + " separado. Para gravar na planilha, falta publicar o Apps Script de gravação da aba CONT. PROT.", "erro");
-        return false;
-    }
 
     try {
+        setStatus("Registrando protocolo " + dados.protocolo + " na planilha...", "ia");
         await enviarProtocoloSemCors(dados);
+        const confirmado = await confirmarProtocoloNaPlanilha(dados);
+        if (!confirmado) {
+            throw new Error("O protocolo foi enviado, mas não apareceu preenchido na aba CONT. PROT. Verifique o Apps Script e as colunas da planilha.");
+        }
         protocoloRegistrado = true;
-        setStatus("Protocolo " + dados.protocolo + " enviado para registro na planilha.", "ok");
+        setStatus("Protocolo " + dados.protocolo + " registrado e confirmado na planilha.", "ok");
         return true;
     } catch (error) {
         throw new Error(mensagemErroProtocolo(error));
