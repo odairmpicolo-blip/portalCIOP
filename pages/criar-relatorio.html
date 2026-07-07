@@ -12,7 +12,7 @@ document.documentElement.classList.add("portal-auth-pending");
 <meta http-equiv="Expires" content="0">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Relatório de Ocorrência - Portal CIOP</title>
+<title>Relatório - Portal CIOP</title>
 <style>
 :root{
     --blue:#06245c;
@@ -43,7 +43,11 @@ body{
     padding:6px 20px;
     border-bottom:1px solid #e8edf6;
 }
-.header > a:first-child.portal-brand-mark{justify-self:start}
+.header > a:first-child{
+    justify-self:start;
+    display:flex;
+    align-items:center;
+}
 .logo-ciop{height:40px;object-fit:contain}
 .logo-tcgl{height:45px;object-fit:contain}
 h1{margin:0;text-align:center;color:var(--blue);font-size:22px}
@@ -63,7 +67,27 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px}
     justify-content:center;
     min-width:0;
 }
-.relatorio-title-art{margin:0;display:flex;align-items:center;justify-content:center;min-width:0;line-height:0}
+.relatorio-title-art{
+    margin:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-width:0;
+    line-height:1;
+}
+.relatorio-title-art span{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:min(420px, 34vw);
+    height:42px;
+    padding:0 28px;
+    color:var(--blue);
+    font-size:26px;
+    font-weight:900;
+    letter-spacing:0;
+    text-transform:uppercase;
+}
 
 .ciop-session{
     display:flex;
@@ -177,7 +201,7 @@ select:disabled{
     color:var(--red);
     font-weight:900;
 }
-.cargo-vinculado,.assinatura-vinculada{
+.cargo-vinculado{
     min-height:38px;
     display:flex;
     align-items:center;
@@ -189,28 +213,7 @@ select:disabled{
     font-size:14px;
     font-weight:700;
 }
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:flex-start}
-.modelo-wrap{position:relative;flex:1 1 100%}
-.modelo-btn{width:100%;justify-content:space-between}
-.modelo-menu{
-    position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;
-    background:#fff;border:1px solid var(--border);border-radius:8px;
-    box-shadow:0 12px 28px rgba(16,24,40,.14);padding:6px;max-height:280px;overflow:auto;
-}
-.modelo-menu[hidden]{display:none!important}
-.modelo-item{
-    display:block;width:100%;border:0;background:transparent;border-radius:6px;
-    padding:9px 10px;font:inherit;font-size:12px;font-weight:700;text-align:left;
-    color:var(--blue);cursor:pointer;
-}
-.modelo-item:hover,.modelo-item.active{background:#effcfb}
-.modelo-item.active{color:var(--blue)}
-.ia-actions{display:flex;gap:8px;flex-wrap:wrap;width:100%}
-.ia-actions .btn{flex:1 1 calc(50% - 4px);min-width:140px}
-.bloco-funcionario.oculto{display:none!important}
-.preview-funcionario.oculto{display:none!important}
-.report-title-informativo{font-size:17px}
-.status.ia{color:var(--blue)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .status{min-height:18px;margin-top:10px;font-size:12px;font-weight:700;color:var(--muted)}
 .status.erro{color:var(--red)}
 .status.ok{color:var(--green)}
@@ -345,28 +348,11 @@ select:disabled{
 .signature strong{display:block;font-size:14px}
 .signature span{display:block;font-size:13px;margin-top:2px}
 .print-only{display:none}
-body.pdf-exporting .paper-wrap{
-    border:0;
-    padding:0;
-    background:#fff;
-    overflow:visible;
-}
-body.pdf-exporting .paper{
-    width:210mm;
-    max-width:none;
-    min-height:297mm;
-    border:0;
-    box-shadow:none;
-    padding:12mm 14mm;
-    background:#fff;
-}
-body.pdf-exporting .report-body{display:none}
-body.pdf-exporting .report-body-print{display:block}
 @media (max-width:980px){
     .header{grid-template-columns:1fr;justify-items:center;text-align:center}
     .header > a:first-child{justify-self:center}
     .header-actions{justify-self:center;min-width:0;flex-wrap:wrap}
-    
+    .relatorio-title-art span{min-width:0;width:min(420px, 84vw);font-size:23px}
     .workspace{grid-template-columns:1fr}
     .paper{padding:24px 18px;min-height:auto}
     .report-head{grid-template-columns:78px 1fr 78px}
@@ -387,21 +373,21 @@ body.pdf-exporting .report-body-print{display:block}
     .report-body-print{display:block}
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
 </head>
-<body>
+<body data-require-perfis="Analista,Supervisor,Administrador">
 <header class="header">
-    <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
+    <a href="https://mov1.com.br" target="_blank">
+        <img class="logo-ciop" src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
+    </a>
     <div class="relatorio-title-wrap">
-        <h1 class="relatorio-title-art" aria-label="Relatório de Ocorrência"><img src="../assets/img/titulo-relatorio.png" alt="Relatório de Ocorrência"></h1>
+        <h1 class="relatorio-title-art" aria-label="Relatório"><span>RELATÓRIO</span></h1>
     </div>
     <div class="header-actions">
         <img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
         <div class="ciop-session" aria-label="Usuário logado">
             <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
-            <span class="ciop-session-cargo" id="perfilUsuario" hidden></span>
-            <button type="button" class="btn-logout" onclick="logout()">Sair</button>
+            <span class="ciop-session-profile" id="perfilUsuario">Perfil</span>
+            <button type="button" class="btn-logout" onclick="window.portalLogout && window.portalLogout()">Sair</button>
         </div>
     </div>
 </header>
@@ -419,16 +405,7 @@ body.pdf-exporting .report-body-print{display:block}
         <aside class="panel">
             <h2 class="panel-title">Dados do relatório</h2>
 
-            <label for="modeloRelatorio">Modelo do relatório</label>
-            <div class="modelo-wrap">
-                <button type="button" class="btn btn-secondary modelo-btn" id="modeloBtn" aria-haspopup="listbox" aria-expanded="false">
-                    <span id="modeloBtnLabel">Selecione o modelo</span>
-                    <span aria-hidden="true">▾</span>
-                </button>
-                <div class="modelo-menu" id="modeloMenu" role="listbox" hidden></div>
-            </div>
-
-            <div class="field-grid bloco-funcionario" id="blocoFuncionario">
+            <div class="field-grid">
                 <div>
                     <label for="registroFuncionario">Registro do funcionário</label>
                     <input id="registroFuncionario" type="text" inputmode="numeric" autocomplete="off" list="listaFuncionarios" placeholder="Digite o registro">
@@ -446,13 +423,6 @@ body.pdf-exporting .report-body-print{display:block}
                     <label for="funcaoFuncionario">Função</label>
                     <input id="funcaoFuncionario" type="text" readonly>
                 </div>
-            </div>
-
-            <div class="field-grid">
-                <div class="full" id="wrapProtocoloInformativo" hidden>
-                    <label for="numeroRelatorioInfo">Nº Protocolo</label>
-                    <input id="numeroRelatorioInfo" type="text" readonly>
-                </div>
                 <div>
                     <label for="dataRelatorio">Data</label>
                     <input id="dataRelatorio" type="date">
@@ -467,24 +437,18 @@ body.pdf-exporting .report-body-print{display:block}
                     <input id="linhaRelatorio" list="listaLinhas" type="text">
                     <datalist id="listaLinhas"></datalist>
                 </div>
-                <div class="full" id="wrapAgenteOrgaoGestor" hidden>
-                    <label for="agenteOrgaoGestor">Agente do órgão gestor (CMTU)</label>
-                    <input id="agenteOrgaoGestor" type="text" placeholder="Nome do agente que repassou a ordem">
-                </div>
             </div>
 
-            <label>Assinatura</label>
-            <div id="assinaturaResponsavel" class="assinatura-vinculada">Carregando assinatura...</div>
+            <label for="assinaturaSelect">Assinatura</label>
+            <select id="assinaturaSelect">
+                <option value="">Carregando usuários...</option>
+            </select>
 
             <label>Cargo da assinatura</label>
             <div id="cargoAssinaturaTexto" class="cargo-vinculado">Cargo não vinculado</div>
 
             <div class="actions">
-                <div class="ia-actions">
-                    <button class="btn btn-secondary" type="button" id="iaGerarBtn">Gerar com IA</button>
-                    <button class="btn btn-secondary" type="button" id="iaCorrigirBtn">Corrigir texto</button>
-                </div>
-                <button class="btn btn-secondary" type="button" id="gerarTextoBtn">Gerar texto padrão</button>
+                <button class="btn btn-secondary" type="button" id="gerarTextoBtn">Gerar texto</button>
                 <button class="btn btn-secondary" type="button" id="limparBtn">Limpar</button>
             </div>
             <div class="status" id="statusRelatorio">Preparando base do relatório...</div>
@@ -499,14 +463,14 @@ body.pdf-exporting .report-body-print{display:block}
                 </div>
 
                 <div class="report-title">
-                    <h2 id="previewTitulo">RELATÓRIO DE OCORRÊNCIA</h2>
+                    <h2>RELATÓRIO</h2>
                     <div class="report-number" id="previewNumero">N° CIOP00000</div>
                 </div>
 
                 <div class="report-fields">
-                    <div class="report-line preview-funcionario" id="previewLinhaRegistro"><span class="report-label">Funcionário:</span> <span id="previewRegistro"></span></div>
-                    <div class="report-line preview-funcionario" id="previewLinhaNome"><span class="report-label">Nome:</span> <span id="previewNome"></span></div>
-                    <div class="report-line preview-funcionario" id="previewLinhaFuncao"><span class="report-label">Função:</span> <span id="previewFuncao"></span></div>
+                    <div class="report-line"><span class="report-label">Funcionário:</span> <span id="previewRegistro"></span></div>
+                    <div class="report-line"><span class="report-label">Nome:</span> <span id="previewNome"></span></div>
+                    <div class="report-line"><span class="report-label">Função:</span> <span id="previewFuncao"></span></div>
                     <div class="report-line"><span class="report-label">Carro:</span> <span id="previewCarro"></span></div>
                     <div class="report-line"><span class="report-label">Data:</span> <span id="previewData"></span></div>
                     <div class="report-line"><span class="report-label">Linha/Rota:</span> <span id="previewLinha"></span></div>
@@ -529,33 +493,20 @@ body.pdf-exporting .report-body-print{display:block}
     </section>
 </main>
 
-<link rel="stylesheet" href="../assets/css/portal-senha.css">
-<link rel="stylesheet" href="../assets/css/portal-titulos.css">
-<link rel="stylesheet" href="../assets/css/portal-brand.css">
-<link rel="stylesheet" href="../assets/css/portal-header.css">
-<link rel="stylesheet" href="../assets/css/portal-session.css">
 <script type="module" src="../assets/js/auth.js"></script>
-<script src="../assets/js/portal-senha.js" defer></script>
 <script type="module">
-import { buscarUsuarioFirestore, normalizarCadastro } from "../assets/js/portal-firestore.js";
+import { listarUsuariosFirestore, normalizarCadastro } from "../assets/js/portal-firestore.js";
 import { usuarios as usuariosLocais } from "../assets/js/usuarios.js";
-import { TIPOS_RELATORIO, gerarTextoModelo, gerarTextoIA, corrigirTextoIA, configurarRelatorioIa, resumirErroIa } from "../assets/js/relatorio-ia.js?v=20260701b";
 
 const SHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const GID_RO = "665320337";
 const GID_CONT_PROT = "1001265560";
 const GID_FUNCIONARIOS = "1931884858";
 const GID_DADOS = "665133219";
-const CACHE_RELATORIO_KEY = "portal_criar_relatorio_csv_v1";
-const CACHE_RELATORIO_TTL_MS = 60 * 60 * 1000;
 const PROTOCOLO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGuAS3XN7FQkaqj2n4pjZTcGOt_mIvdMG1rg14bS9F928A-zMUDEI2nZneKm8vUtCcOA/exec";
-/** Cole aqui a URL /exec do Apps Script (scripts/relatorio-ia.gs) após implantar. */
-const RELATORIO_IA_SCRIPT_URL = "";
 const TIPO_DOCUMENTO_PROTOCOLO = "R. OCORRÊNCIA";
 
-configurarRelatorioIa({ scriptUrl: RELATORIO_IA_SCRIPT_URL });
-
-const assinaturaResponsavel = document.getElementById("assinaturaResponsavel");
+const assinaturaSelect = document.getElementById("assinaturaSelect");
 const cargoAssinaturaTexto = document.getElementById("cargoAssinaturaTexto");
 const statusRelatorio = document.getElementById("statusRelatorio");
 const corpoRelatorio = document.getElementById("corpoRelatorio");
@@ -568,10 +519,9 @@ const campos = {
     data: document.getElementById("dataRelatorio"),
     carro: document.getElementById("carroRelatorio"),
     linha: document.getElementById("linhaRelatorio"),
-    agenteOrgaoGestor: document.getElementById("agenteOrgaoGestor")
+
 };
 const preview = {
-    titulo: document.getElementById("previewTitulo"),
     numero: document.getElementById("previewNumero"),
     registro: document.getElementById("previewRegistro"),
     nome: document.getElementById("previewNome"),
@@ -583,204 +533,13 @@ const preview = {
     assinaturaRegistro: document.getElementById("previewAssinaturaRegistro"),
     assinaturaCargo: document.getElementById("previewAssinaturaCargo")
 };
-const blocoFuncionario = document.getElementById("blocoFuncionario");
-const wrapProtocoloInformativo = document.getElementById("wrapProtocoloInformativo");
-const numeroRelatorioInfo = document.getElementById("numeroRelatorioInfo");
-const modeloBtn = document.getElementById("modeloBtn");
-const modeloBtnLabel = document.getElementById("modeloBtnLabel");
-const modeloMenu = document.getElementById("modeloMenu");
 
 let funcionarios = [];
+let usuariosAssinatura = [];
 let protocoloAtual = null;
 let usuarioCriador = null;
 let protocoloRegistrado = false;
 let corpoFoiEditado = false;
-let dadosGeraisLinhas = [];
-let colunasDadosGerais = { carro: 6, linha: 7, motorista: 5 };
-let tipoRelatorio = null;
-let iaBusy = false;
-
-function ehInformativo() {
-    return !!TIPOS_RELATORIO[tipoRelatorio]?.informativo;
-}
-
-function contextoRelatorio() {
-    const params = new URLSearchParams(window.location.search);
-    return {
-        data: normalizarDataInput(campos.data.value),
-        nome: campos.nome.value,
-        registro: campos.registro.value,
-        funcao: campos.funcao.value,
-        carro: campos.carro.value,
-        linha: campos.linha.value,
-        quantidade: params.get("quantidade") || params.get("minutos") || "",
-        agenteOrgaoGestor: campos.agenteOrgaoGestor?.value || params.get("agente") || params.get("agenteCmtu") || ""
-    };
-}
-
-function montarMenuModelos() {
-    if (!modeloMenu) return;
-    modeloMenu.innerHTML = Object.values(TIPOS_RELATORIO).map((tipo) =>
-        "<button type=\"button\" class=\"modelo-item" + (tipoRelatorio === tipo.id ? " active" : "") + "\" data-tipo=\"" + tipo.id + "\" role=\"option\">" + escapeOption(tipo.label) + "</button>"
-    ).join("");
-    modeloMenu.querySelectorAll(".modelo-item").forEach((btn) => {
-        btn.addEventListener("click", () => selecionarModelo(btn.dataset.tipo));
-    });
-}
-
-function fecharMenuModelos() {
-    if (!modeloMenu || !modeloBtn) return;
-    modeloMenu.hidden = true;
-    modeloBtn.setAttribute("aria-expanded", "false");
-}
-
-function abrirMenuModelos() {
-    if (!modeloMenu || !modeloBtn) return;
-    montarMenuModelos();
-    modeloMenu.hidden = false;
-    modeloBtn.setAttribute("aria-expanded", "true");
-}
-
-function aplicarCamposModelo() {
-    const wrap = document.getElementById("wrapAgenteOrgaoGestor");
-    if (wrap) wrap.hidden = tipoRelatorio !== "nao_acatou_cmtu";
-}
-
-function aplicarModoInformativo() {
-    const informativo = ehInformativo();
-    blocoFuncionario?.classList.toggle("oculto", informativo);
-    wrapProtocoloInformativo.hidden = !informativo;
-    document.querySelectorAll(".preview-funcionario").forEach((el) => el.classList.toggle("oculto", informativo));
-    if (preview.titulo) {
-        preview.titulo.textContent = informativo ? "RELATÓRIO INFORMATIVO" : "RELATÓRIO DE OCORRÊNCIA";
-        preview.titulo.classList.toggle("report-title-informativo", informativo);
-    }
-    if (informativo) {
-        campos.registro.value = "";
-        campos.nome.value = "";
-        campos.funcao.value = "";
-        if (numeroRelatorioInfo) numeroRelatorioInfo.value = campos.numero.value;
-    }
-}
-
-function selecionarModelo(tipoId, opts) {
-    if (!TIPOS_RELATORIO[tipoId]) return;
-    tipoRelatorio = tipoId;
-    if (modeloBtnLabel) modeloBtnLabel.textContent = TIPOS_RELATORIO[tipoId].label;
-    aplicarModoInformativo();
-    aplicarCamposModelo();
-    fecharMenuModelos();
-    if (!opts?.silencioso) {
-        corpoFoiEditado = false;
-        corpoRelatorio.value = gerarCorpoPadrao();
-        autoGrow();
-    }
-    atualizarPreview();
-    setStatus("Modelo selecionado: " + TIPOS_RELATORIO[tipoId].label + ".", "ok");
-}
-
-async function executarGeracaoIA() {
-    if (!tipoRelatorio) {
-        setStatus("Selecione um modelo de relatório antes de gerar com IA.", "erro");
-        return;
-    }
-    if (!ehInformativo() && !String(campos.registro.value || "").trim()) {
-        setStatus("Informe o registro do funcionário ou escolha Relatório informativo.", "erro");
-        return;
-    }
-    if (iaBusy) return;
-    iaBusy = true;
-    setStatus("Gerando texto com IA...", "ia");
-    window.portalMostrarCarregando?.("Gerando texto com IA");
-    try {
-        const res = await gerarTextoIA(tipoRelatorio, contextoRelatorio());
-        corpoFoiEditado = false;
-        corpoRelatorio.value = res.texto;
-        autoGrow();
-        setStatus(res.origem === "ia"
-            ? "Texto gerado com IA. Revise antes de gerar o PDF."
-            : "Modelo padrão aplicado — " + resumirErroIa(res.erro), res.origem === "ia" ? "ok" : "erro");
-    } catch (err) {
-        console.error(err);
-        corpoRelatorio.value = gerarCorpoPadrao();
-        autoGrow();
-        setStatus("Não foi possível usar a IA. Modelo padrão aplicado.", "erro");
-    } finally {
-        iaBusy = false;
-        window.portalOcultarCarregando?.();
-    }
-}
-
-async function executarCorrecaoIA() {
-    const base = String(corpoRelatorio.value || "").trim();
-    if (!base) {
-        setStatus("Digite ou gere um texto antes de corrigir.", "erro");
-        return;
-    }
-    if (iaBusy) return;
-    iaBusy = true;
-    setStatus("Corrigindo texto com IA...", "ia");
-    window.portalMostrarCarregando?.("Corrigindo texto");
-    try {
-        const res = await corrigirTextoIA(base);
-        corpoFoiEditado = true;
-        corpoRelatorio.value = res.texto;
-        autoGrow();
-        setStatus(res.origem === "ia"
-            ? "Texto corrigido com IA."
-            : "Correções básicas aplicadas — " + resumirErroIa(res.erro), res.origem === "ia" ? "ok" : "erro");
-    } catch (err) {
-        console.error(err);
-        setStatus("Falha ao corrigir o texto.", "erro");
-    } finally {
-        iaBusy = false;
-        window.portalOcultarCarregando?.();
-    }
-}
-
-function normalizarCabecalho(valor) {
-    return String(valor || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim()
-        .toUpperCase();
-}
-
-function indiceColunaPlanilha(linhas, nomes) {
-    const cabecalho = (linhas[0] || []).map(normalizarCabecalho);
-    const candidatos = Array.isArray(nomes) ? nomes : [nomes];
-    for (const nome of candidatos) {
-        const idx = cabecalho.indexOf(normalizarCabecalho(nome));
-        if (idx >= 0) return idx;
-    }
-    return -1;
-}
-
-function valorDadoPlanilha(valor) {
-    const texto = String(valor || "").trim();
-    return texto && texto !== "-" ? texto : "";
-}
-
-function mapearColunasDadosGerais(linhas) {
-    colunasDadosGerais = {
-        motorista: indiceColunaPlanilha(linhas, "MOTORISTA"),
-        carro: indiceColunaPlanilha(linhas, "CARRO"),
-        linha: indiceColunaPlanilha(linhas, ["LINHA", "LINHA/ROTA", "ROTA"])
-    };
-}
-
-function buscarCarroLinhaPorRegistro(registro) {
-    const registroNorm = String(registro || "").trim();
-    if (!registroNorm || colunasDadosGerais.motorista < 0) return null;
-    const linha = dadosGeraisLinhas.slice(1).find((item) => {
-        return String(item[colunasDadosGerais.motorista] || "").trim() === registroNorm;
-    });
-    if (!linha) return null;
-    return {
-        carro: valorDadoPlanilha(linha[colunasDadosGerais.carro]),
-        linha: valorDadoPlanilha(linha[colunasDadosGerais.linha])
-    };
-}
 
 function setStatus(texto, tipo) {
     statusRelatorio.textContent = texto;
@@ -821,35 +580,6 @@ function parseCsv(texto) {
     }
     linha.push(campo);
     if (linha.some((item) => String(item).trim())) linhas.push(linha);
-    return linhas;
-}
-
-function lerCacheRelatorioCsv() {
-    try {
-        const raw = localStorage.getItem(CACHE_RELATORIO_KEY);
-        if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        if (!parsed?.gids || !parsed?.ts) return null;
-        if (Date.now() - parsed.ts > CACHE_RELATORIO_TTL_MS) return null;
-        return parsed.gids;
-    } catch (error) {
-        return null;
-    }
-}
-
-function salvarCacheRelatorioCsv(gids) {
-    try {
-        localStorage.setItem(CACHE_RELATORIO_KEY, JSON.stringify({ ts: Date.now(), gids: gids || {} }));
-    } catch (error) {}
-}
-
-async function carregarCsvComCache(gid) {
-    const cache = lerCacheRelatorioCsv();
-    if (cache && cache[gid]) return cache[gid];
-    const linhas = await carregarCsv(gid);
-    const gids = cache || {};
-    gids[gid] = linhas;
-    salvarCacheRelatorioCsv(gids);
     return linhas;
 }
 
@@ -905,12 +635,8 @@ function carregarFuncionarios(linhas) {
 }
 
 function carregarDadosGerais(linhas) {
-    dadosGeraisLinhas = linhas;
-    mapearColunasDadosGerais(linhas);
-    const idxCarro = colunasDadosGerais.carro;
-    const idxLinha = colunasDadosGerais.linha;
-    preencherDatalist("listaCarros", linhas.slice(1).map((linha) => valorDadoPlanilha(linha[idxCarro])));
-    preencherDatalist("listaLinhas", linhas.slice(1).map((linha) => valorDadoPlanilha(linha[idxLinha])));
+    preencherDatalist("listaCarros", linhas.slice(1).map((linha) => linha[4]));
+    preencherDatalist("listaLinhas", linhas.slice(1).map((linha) => linha[5]));
 }
 
 function protocoloDisponivel(linhas) {
@@ -941,7 +667,6 @@ function configurarProtocolo(linhas) {
 }
 
 function gerarCorpoPadrao() {
-    if (tipoRelatorio) return gerarTextoModelo(tipoRelatorio, contextoRelatorio());
     const data = normalizarDataInput(campos.data.value);
     const nome = campos.nome.value || "nome do funcionário";
     const registro = campos.registro.value || "registro";
@@ -961,67 +686,35 @@ function autoGrow() {
     atualizarCorpoPDF();
 }
 
-function textoCargoAssinatura(user) {
-    if (!user) return "Cargo não vinculado";
-    return String(user.cargo || user.perfil || "").trim() || "Cargo não vinculado";
-}
-
-function montarUsuarioAssinaturaLogado(cadastro, email) {
-    const base = normalizarCadastro(cadastro || {}, email);
-    const sessao = window.portalUsuario || {};
-    return normalizarUsuarioAssinatura({
-        email: base.email || email,
-        nome: base.nome || sessao.nome || email,
-        perfil: base.perfil || sessao.perfil || "Usuario",
-        registro: base.registro || sessao.registro || "",
-        cargo: base.cargo || sessao.cargo || "",
-        ativo: base.ativo !== false
-    }, email);
-}
-
 function atualizarPreview() {
     preview.numero.textContent = formatarNumero(campos.numero.value);
-    if (numeroRelatorioInfo) numeroRelatorioInfo.value = campos.numero.value;
     preview.registro.textContent = campos.registro.value || "";
     preview.nome.textContent = campos.nome.value || "";
     preview.funcao.textContent = campos.funcao.value || "";
     preview.data.textContent = normalizarDataInput(campos.data.value);
     preview.carro.textContent = campos.carro.value || "";
     preview.linha.textContent = campos.linha.value || "";
-    const user = usuarioCriador;
-    preview.assinaturaNome.textContent = user?.nome || "Assinatura não disponível";
-    preview.assinaturaRegistro.textContent = user?.registro ? "Registro " + user.registro : "";
-    preview.assinaturaCargo.textContent = textoCargoAssinatura(user);
-    cargoAssinaturaTexto.textContent = textoCargoAssinatura(user);
-    if (assinaturaResponsavel) {
-        assinaturaResponsavel.textContent = user
-            ? ((user.registro ? user.registro + " - " : "") + user.nome)
-            : "Assinatura não disponível para este usuário";
-    }
-    if (!corpoFoiEditado && (tipoRelatorio || campos.registro.value || ehInformativo())) {
+    const opcao = assinaturaSelect.selectedOptions[0];
+    preview.assinaturaNome.textContent = opcao?.dataset.nome || "Selecione o usuário para assinatura";
+    const cargo = usuarioCriador?.cargo || "";
+    preview.assinaturaRegistro.textContent = opcao?.dataset.registro ? "Registro " + opcao.dataset.registro : "";
+    preview.assinaturaCargo.textContent = cargo;
+    cargoAssinaturaTexto.textContent = cargo || "Cargo não vinculado";
+    if (!corpoFoiEditado && campos.registro.value) {
         corpoRelatorio.value = gerarCorpoPadrao();
         autoGrow();
     }
 }
 
 function preencherFuncionarioPorRegistro() {
-    if (ehInformativo()) return;
     const registro = String(campos.registro.value || "").trim();
     const funcionario = funcionarios.find((item) => item.registro === registro);
     campos.nome.value = funcionario?.nome || "";
     campos.funcao.value = funcionario?.funcao || "";
-    const vinculo = buscarCarroLinhaPorRegistro(registro);
-    if (vinculo) {
-        campos.carro.value = vinculo.carro || "";
-        campos.linha.value = vinculo.linha || "";
-    }
     if (!funcionario && registro) {
         setStatus("Registro " + registro + " não encontrado na base de funcionários.", "erro");
     } else if (funcionario) {
-        const extra = vinculo?.carro || vinculo?.linha
-            ? " Carro/linha preenchidos conforme a base."
-            : "";
-        setStatus("Funcionário carregado: " + funcionario.registro + " - " + funcionario.nome + "." + extra, "ok");
+        setStatus("Funcionário carregado: " + funcionario.registro + " - " + funcionario.nome + ".", "ok");
     }
     if (!corpoFoiEditado) corpoRelatorio.value = gerarCorpoPadrao();
     atualizarPreview();
@@ -1034,103 +727,80 @@ function normalizarUsuarioAssinatura(cadastro, email) {
         nome: String(user.nome || email || "").trim(),
         registro: String(user.registro || "").trim(),
         cargo: String(user.cargo || "").trim(),
-        perfil: String(user.perfil || "").trim(),
         ativo: user.ativo !== false
     };
 }
 
-async function carregarAssinaturaUsuarioLogado() {
-    const email = String(window.portalUsuario?.email || "").trim().toLowerCase();
-    if (!email) {
-        usuarioCriador = null;
-        atualizarPreview();
+async function carregarAssinaturas() {
+    const mapa = new Map();
+    Object.entries(usuariosLocais || {}).forEach(([email, cadastro]) => {
+        const user = normalizarUsuarioAssinatura(cadastro, email);
+        const chave = user.registro || user.email;
+        if (chave) mapa.set(chave, user);
+    });
+    try {
+        const online = await listarUsuariosFirestore();
+        Object.entries(online).forEach(([email, cadastro]) => {
+            const user = normalizarUsuarioAssinatura(cadastro, email);
+            if (!user.ativo) return;
+            const chave = user.registro || user.email;
+            if (chave) mapa.set(chave, user);
+        });
+    } catch (error) {
+        console.warn("Assinaturas online indisponíveis:", error);
+    }
+    const lista = [...mapa.values()]
+        .filter((user) => user.nome)
+        .sort((a, b) => (Number(a.registro) || 999999) - (Number(b.registro) || 999999) || a.nome.localeCompare(b.nome, "pt-BR"));
+    usuariosAssinatura = lista;
+    const emailLogado = String(window.portalUsuario?.email || "").trim().toLowerCase();
+    usuarioCriador = lista.find((user) => String(user.email || "").trim().toLowerCase() === emailLogado) || null;
+    assinaturaSelect.innerHTML = "<option value=\"\">Selecione registro e nome</option>" + lista.map((user) => {
+        const label = (user.registro ? user.registro + " - " : "") + user.nome;
+        return "<option value=\"" + escapeOption(user.registro || user.email) + "\" data-nome=\"" + escapeOption(user.nome) + "\" data-registro=\"" + escapeOption(user.registro) + "\">" + escapeOption(label) + "</option>";
+    }).join("");
+    vincularAssinaturaAoUsuarioLogado();
+}
+
+function vincularAssinaturaAoUsuarioLogado() {
+    if (!usuarioCriador) {
+        assinaturaSelect.disabled = false;
         return;
     }
-
-    let cadastro = {
-        email,
-        nome: window.portalUsuario?.nome || "",
-        perfil: window.portalUsuario?.perfil || "Usuario",
-        registro: window.portalUsuario?.registro || "",
-        cargo: window.portalUsuario?.cargo || ""
-    };
-
-    try {
-        const online = await buscarUsuarioFirestore(email);
-        if (online) {
-            cadastro = {
-                email,
-                nome: online.nome || cadastro.nome,
-                perfil: online.perfil || cadastro.perfil,
-                registro: online.registro || cadastro.registro,
-                cargo: online.cargo || cadastro.cargo,
-                ativo: online.ativo !== false
-            };
-        }
-    } catch (error) {
-        console.warn("Assinatura online indisponível:", error);
-    }
-
-    if (!cadastro.registro && !cadastro.cargo) {
-        const local = usuariosLocais?.[email] || usuariosLocais?.[window.portalUsuario?.email];
-        if (local) {
-            const loc = normalizarCadastro(local, email);
-            cadastro.registro = loc.registro || cadastro.registro;
-            cadastro.cargo = loc.cargo || cadastro.cargo;
-            cadastro.nome = loc.nome || cadastro.nome;
-        }
-    }
-
-    usuarioCriador = montarUsuarioAssinaturaLogado(cadastro, email);
-    if (!usuarioCriador?.nome) usuarioCriador = null;
+    assinaturaSelect.value = usuarioCriador.registro || usuarioCriador.email;
+    assinaturaSelect.disabled = true;
     atualizarPreview();
 }
 
 async function iniciarRelatorio() {
-    const cacheGids = lerCacheRelatorioCsv();
-    let mostrouCache = false;
-    if (cacheGids?.[GID_FUNCIONARIOS] && cacheGids?.[GID_DADOS] && cacheGids?.[GID_CONT_PROT]) {
-        campos.data.value = hojeISO();
-        carregarFuncionarios(cacheGids[GID_FUNCIONARIOS]);
-        carregarDadosGerais(cacheGids[GID_DADOS]);
-        configurarProtocolo(cacheGids[GID_CONT_PROT]);
-        await carregarAssinaturaUsuarioLogado();
-        montarMenuModelos();
-        selecionarModelo("carro_adiantado", { silencioso: true });
-        corpoRelatorio.value = gerarCorpoPadrao();
-        autoGrow();
-        atualizarPreview();
-    }
-
-    if (!mostrouCache) window.portalMostrarCarregando?.("Carregando relatório");
+    window.portalMostrarCarregando?.("Carregando relatório");
     campos.data.value = hojeISO();
     try {
         const [funcionariosCsv, dadosCsv, contProtCsv] = await Promise.all([
-            carregarCsvComCache(GID_FUNCIONARIOS),
-            carregarCsvComCache(GID_DADOS),
-            carregarCsvComCache(GID_CONT_PROT)
+            carregarCsv(GID_FUNCIONARIOS),
+            carregarCsv(GID_DADOS),
+            carregarCsv(GID_CONT_PROT)
         ]);
         carregarFuncionarios(funcionariosCsv);
         carregarDadosGerais(dadosCsv);
         configurarProtocolo(contProtCsv);
-        await carregarAssinaturaUsuarioLogado();
+        await carregarAssinaturas();
         corpoRelatorio.value = gerarCorpoPadrao();
         autoGrow();
         atualizarPreview();
         const protocoloTexto = protocoloAtual ? " Próximo protocolo: " + protocoloAtual.protocolo + "." : "";
-        setStatus("Base carregada." + protocoloTexto + " Selecione o modelo e preencha os dados.", "ok");
-        montarMenuModelos();
-        selecionarModelo("carro_adiantado", { silencioso: true });
+        setStatus("Base carregada." + protocoloTexto + " Digite o registro do funcionário e edite o corpo do relatório.", "ok");
     } catch (error) {
         console.error(error);
-        if (!mostrouCache) setStatus("Não foi possível carregar a base da planilha: " + error.message, "erro");
+        setStatus("Não foi possível carregar a base da planilha: " + error.message, "erro");
     } finally {
-        if (!mostrouCache) window.portalOcultarCarregando?.();
+        window.portalOcultarCarregando?.();
     }
 }
 
 campos.registro.addEventListener("change", preencherFuncionarioPorRegistro);
 campos.registro.addEventListener("blur", preencherFuncionarioPorRegistro);
+assinaturaSelect.addEventListener("change", atualizarPreview);
 Object.values(campos).forEach((campo) => campo.addEventListener("input", atualizarPreview));
 corpoRelatorio.addEventListener("input", () => {
     corpoFoiEditado = true;
@@ -1141,26 +811,16 @@ document.getElementById("gerarTextoBtn").addEventListener("click", () => {
     corpoRelatorio.value = gerarCorpoPadrao();
     autoGrow();
 });
-document.getElementById("iaGerarBtn").addEventListener("click", executarGeracaoIA);
-document.getElementById("iaCorrigirBtn").addEventListener("click", executarCorrecaoIA);
-modeloBtn?.addEventListener("click", () => {
-    if (modeloMenu?.hidden) abrirMenuModelos();
-    else fecharMenuModelos();
-});
-document.addEventListener("click", (ev) => {
-    if (!ev.target.closest(".modelo-wrap")) fecharMenuModelos();
-});
 function dadosProtocolo() {
-    const analista = usuarioCriador;
-    const informativo = ehInformativo();
+    const analista = usuarioCriador || usuariosAssinatura.find((user) => (user.registro || user.email) === assinaturaSelect.value) || null;
     return {
         protocolo: campos.numero.value,
         linhaPlanilha: protocoloAtual?.linhaPlanilha || "",
-        tipoDocumento: informativo ? "R. INFORMATIVO" : TIPO_DOCUMENTO_PROTOCOLO,
-        funcionario: informativo ? "INFORMATIVO" : String(campos.registro.value || "").trim(),
+        tipoDocumento: TIPO_DOCUMENTO_PROTOCOLO,
+        funcionario: String(campos.registro.value || "").trim(),
         dataDocumento: normalizarDataInput(campos.data.value),
         analista: analista ? ((analista.registro ? analista.registro + " - " : "") + analista.nome).toUpperCase() : "",
-        cargoAnalista: textoCargoAssinatura(analista)
+        cargoAnalista: analista?.cargo || ""
     };
 }
 
@@ -1171,7 +831,7 @@ async function registrarProtocolo() {
         setStatus("Não foi possível identificar o próximo protocolo livre.", "erro");
         return false;
     }
-    if (!ehInformativo() && (!dados.funcionario || !campos.nome.value)) {
+    if (!dados.funcionario || !campos.nome.value) {
         setStatus("Digite um registro de funcionário válido antes de gerar o PDF.", "erro");
         return false;
     }
@@ -1197,116 +857,23 @@ async function registrarProtocolo() {
     return true;
 }
 
-function nomeArquivoPdf() {
-    const numero = String(campos.numero.value || "").replace(/\D/g, "");
-    const data = campos.data.value || hojeISO();
-    return "Relatorio-CIOP" + (numero || "00000") + "-" + data + ".pdf";
-}
-
-async function aguardarImagensPdf(alvo) {
-    const imagens = Array.from(alvo.querySelectorAll("img"));
-    await Promise.all(imagens.map((img) => {
-        if (img.complete) return Promise.resolve();
-        return new Promise((resolve) => {
-            const done = () => resolve();
-            img.addEventListener("load", done, { once: true });
-            img.addEventListener("error", done, { once: true });
-            setTimeout(done, 1800);
-        });
-    }));
-}
-
-async function exportarPdfRelatorio(botao) {
-    atualizarCorpoPDF();
-    if (!window.jspdf?.jsPDF || !window.html2canvas) {
-        setStatus("Biblioteca PDF indisponível. Abrindo impressão como alternativa.", "erro");
-        window.print();
-        if (botao) botao.disabled = false;
-        return;
-    }
-
-    const folha = document.querySelector(".paper");
-    if (!folha) {
-        setStatus("Não encontrei a prévia do relatório para gerar o PDF.", "erro");
-        if (botao) botao.disabled = false;
-        return;
-    }
-
-    setStatus("Gerando PDF...", "ia");
-    window.portalMostrarCarregando?.("Gerando PDF");
-    document.body.classList.add("pdf-exporting");
-
-    try {
-        await aguardarImagensPdf(folha);
-        await new Promise((resolve) => requestAnimationFrame(() => resolve()));
-
-        const canvas = await html2canvas(folha, {
-            scale: 2,
-            backgroundColor: "#ffffff",
-            logging: false,
-            useCORS: true,
-            windowWidth: folha.scrollWidth,
-            windowHeight: folha.scrollHeight
-        });
-
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-        const pageW = pdf.internal.pageSize.getWidth();
-        const pageH = pdf.internal.pageSize.getHeight();
-        const imgData = canvas.toDataURL("image/png");
-        const imgH = (canvas.height * pageW) / canvas.width;
-
-        let y = 0;
-        let restante = imgH;
-        pdf.addImage(imgData, "PNG", 0, y, pageW, imgH, undefined, "FAST");
-        restante -= pageH;
-        while (restante > 1) {
-            pdf.addPage();
-            y = restante - imgH;
-            pdf.addImage(imgData, "PNG", 0, y, pageW, imgH, undefined, "FAST");
-            restante -= pageH;
-        }
-
-        pdf.save(nomeArquivoPdf());
-        setStatus("PDF gerado com sucesso.", "ok");
-    } catch (error) {
-        console.error(error);
-        setStatus("Falha ao gerar PDF: " + (error.message || "tente novamente."), "erro");
-        window.print();
-    } finally {
-        document.body.classList.remove("pdf-exporting");
-        window.portalOcultarCarregando?.();
-        if (botao) botao.disabled = false;
-    }
-}
-
 async function gerarPDF() {
-    const botao = document.getElementById("pdfTopoBtn");
-    let registrado = false;
-    botao.disabled = true;
-    try {
-        registrado = await registrarProtocolo();
-    } catch (error) {
-        console.error(error);
-        setStatus("Falha ao registrar protocolo: " + (error.message || "tente novamente."), "erro");
-        return;
-    } finally {
-        if (!registrado) botao.disabled = false;
-    }
+    const registrado = await registrarProtocolo();
     if (!registrado && PROTOCOLO_SCRIPT_URL) return;
-    await exportarPdfRelatorio(botao);
+    atualizarCorpoPDF();
+    document.title = "Relatorio-" + formatarNumero(campos.numero.value).replace(/\s+/g, "-");
+    window.print();
 }
 
 document.getElementById("pdfTopoBtn").addEventListener("click", gerarPDF);
 window.addEventListener("beforeprint", atualizarCorpoPDF);
 document.getElementById("limparBtn").addEventListener("click", () => {
-    if (!ehInformativo()) {
-        campos.registro.value = "";
-        campos.nome.value = "";
-        campos.funcao.value = "";
-    }
+    campos.registro.value = "";
+    campos.nome.value = "";
+    campos.funcao.value = "";
     campos.carro.value = "";
     campos.linha.value = "";
+    vincularAssinaturaAoUsuarioLogado();
     corpoFoiEditado = false;
     corpoRelatorio.value = gerarCorpoPadrao();
     autoGrow();
