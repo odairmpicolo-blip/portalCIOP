@@ -1250,14 +1250,14 @@ async function exportarPdfRelatorio(botao) {
         setStatus("Biblioteca PDF indisponível. Abrindo impressão como alternativa.", "erro");
         window.print();
         if (botao) botao.disabled = false;
-        return;
+        return false;
     }
 
     const folha = document.querySelector(".paper");
     if (!folha) {
         setStatus("Não encontrei a prévia do relatório para gerar o PDF.", "erro");
         if (botao) botao.disabled = false;
-        return;
+        return false;
     }
 
     setStatus("Gerando PDF...", "ia");
@@ -1281,10 +1281,12 @@ async function exportarPdfRelatorio(botao) {
         adicionarCapturaAoPdf(pdf, canvas);
         pdf.save(nomeArquivoPdf());
         setStatus("PDF gerado com sucesso.", "ok");
+        return true;
     } catch (error) {
         console.error(error);
         setStatus("Falha ao gerar PDF: " + (error.message || "tente novamente."), "erro");
         window.print();
+        return false;
     } finally {
         document.body.classList.remove("pdf-exporting");
         window.portalOcultarCarregando?.();
@@ -1295,10 +1297,21 @@ async function exportarPdfRelatorio(botao) {
 async function gerarPDF() {
     const botao = document.getElementById("pdfTopoBtn");
     if (botao) botao.disabled = true;
+    let avisoProtocolo = false;
     try {
-        const registrado = await registrarProtocolo();
-        if (!registrado && PROTOCOLO_SCRIPT_URL) return;
-        await exportarPdfRelatorio(botao);
+        let registrado = false;
+        try {
+            registrado = await registrarProtocolo();
+        } catch (error) {
+            console.warn("Falha ao registrar protocolo antes do PDF.", error);
+            avisoProtocolo = true;
+            setStatus("Não consegui gravar o protocolo na planilha agora. Gerando o PDF mesmo assim.", "erro");
+        }
+        if (!registrado && PROTOCOLO_SCRIPT_URL && !avisoProtocolo) return;
+        const pdfGerado = await exportarPdfRelatorio(botao);
+        if (pdfGerado && avisoProtocolo) {
+            setStatus("PDF gerado. Atenção: o protocolo pode não ter sido gravado na planilha.", "erro");
+        }
     } catch (error) {
         console.error(error);
         setStatus("Falha ao gerar PDF: " + (error.message || "tente novamente."), "erro");
