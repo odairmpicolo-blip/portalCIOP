@@ -1164,23 +1164,55 @@ document.addEventListener("click", (ev) => {
 function dadosProtocolo() {
     const analista = usuarioCriador;
     const informativo = ehInformativo();
+    const tipoDocumento = informativo ? "R. INFORMATIVO" : TIPO_DOCUMENTO_PROTOCOLO;
     const registroFuncionario = informativo ? "INFORMATIVO" : String(campos.registro.value || "").trim();
+    const nomeFuncionario = informativo ? "INFORMATIVO" : String(campos.nome.value || "").trim();
+    const funcaoFuncionario = informativo ? "" : String(campos.funcao.value || "").trim();
+    const dataDocumento = normalizarDataInput(campos.data.value);
+    const dataDocumentoIso = campos.data.value;
     const analistaTexto = analista ? ((analista.registro ? analista.registro + " - " : "") + analista.nome).toUpperCase() : "";
+    const cargoAnalista = textoCargoAssinatura(analista);
+    const funcionarioTexto = nomeFuncionario && registroFuncionario && registroFuncionario !== "INFORMATIVO"
+        ? registroFuncionario + " - " + nomeFuncionario
+        : registroFuncionario;
+
     return {
         acao: "registrarProtocolo",
         protocolo: campos.numero.value,
         linhaPlanilha: protocoloAtual?.linhaPlanilha || "",
-        tipoDocumento: informativo ? "R. INFORMATIVO" : TIPO_DOCUMENTO_PROTOCOLO,
+
+        // Chaves usadas pelo Apps Script atual/antigo.
+        tipoDocumento,
         funcionario: registroFuncionario,
+        funcionário: registroFuncionario,
         registroFuncionario,
-        nomeFuncionario: informativo ? "INFORMATIVO" : String(campos.nome.value || "").trim(),
-        funcaoFuncionario: informativo ? "" : String(campos.funcao.value || "").trim(),
-        dataDocumento: normalizarDataInput(campos.data.value),
-        dataDocumentoIso: campos.data.value,
+        funcionarioTexto,
+        nomeFuncionario,
+        funcaoFuncionario,
+        dataDocumento,
+        dataDocumentoIso,
+        data: dataDocumento,
         carro: String(campos.carro.value || "").trim(),
         linha: String(campos.linha.value || "").trim(),
         analista: analistaTexto,
-        cargoAnalista: textoCargoAssinatura(analista)
+        cargoAnalista,
+
+        // Chaves com o mesmo nome dos cabeçalhos da aba CONT. PROT.
+        "TIPO DE DOCUMENTO": tipoDocumento,
+        "TIPO_DOCUMENTO": tipoDocumento,
+        "FUNCIONÁRIO": registroFuncionario,
+        "FUNCIONARIO": registroFuncionario,
+        "FUNCIONÁRIO/NOME": funcionarioTexto,
+        "FUNCIONARIO/NOME": funcionarioTexto,
+        "NOME FUNCIONÁRIO": nomeFuncionario,
+        "NOME FUNCIONARIO": nomeFuncionario,
+        "FUNÇÃO": funcaoFuncionario,
+        "FUNCAO": funcaoFuncionario,
+        "DATA DO DOCUMENTO": dataDocumento,
+        "DATA_DOCUMENTO": dataDocumento,
+        "DATA DO DOCUMENTO ISO": dataDocumentoIso,
+        "ANALISTA": analistaTexto,
+        "CARGO ANALISTA": cargoAnalista
     };
 }
 
@@ -1197,8 +1229,11 @@ function linhaProtocoloPreenchida(linhas, dados) {
     if (!Number.isFinite(idx) || idx < 0) return false;
     const linha = linhas[idx] || [];
     const protocoloOk = String(linha[0] || "").trim() === String(dados.protocolo || "").trim();
-    const preenchida = [1, 2, 3, 4, 5].some((coluna) => String(linha[coluna] || "").trim());
-    return protocoloOk && preenchida;
+
+    // Na aba CONT. PROT, além do protocolo, estas colunas precisam voltar preenchidas:
+    // B = TIPO DE DOCUMENTO, C = FUNCIONÁRIO, D = DATA DO DOCUMENTO, E = ANALISTA.
+    const camposObrigatorios = [1, 2, 3, 4].every((coluna) => String(linha[coluna] || "").trim());
+    return protocoloOk && camposObrigatorios;
 }
 
 function aguardar(ms) {
@@ -1218,6 +1253,7 @@ async function confirmarProtocoloNaPlanilha(dados) {
 }
 
 async function enviarProtocoloSemCors(dados) {
+    console.info("Dados enviados para registro de protocolo:", dados);
     await fetch(PROTOCOLO_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
