@@ -69,7 +69,7 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!native || !biometricEnabled) {
-      setUnlocked(true)
+      queueMicrotask(() => setUnlocked(true))
       return
     }
     if (!user) {
