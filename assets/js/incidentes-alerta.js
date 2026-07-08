@@ -26,6 +26,18 @@ function normalizarNome(valor) {
   .trim();
 }
 
+function dentroDosUltimos30Dias(dataStr) {
+  const partes = String(dataStr || "").split("/");
+  if (partes.length !== 3) return false;
+  const iso = partes[2] + "-" + partes[1].padStart(2, "0") + "-" + partes[0].padStart(2, "0");
+  const dataIncidente = new Date(iso + "T00:00:00");
+  if (Number.isNaN(dataIncidente.getTime())) return false;
+  const limite = new Date();
+  limite.setHours(0, 0, 0, 0);
+  limite.setDate(limite.getDate() - 30);
+  return dataIncidente.getTime() >= limite.getTime();
+}  
+
 function construirModal() {
   const existente = document.getElementById("alertaIncidentesOverlay");
   if (existente) return existente;
@@ -95,6 +107,7 @@ try {
     if (normalizarNome(linha?.criadoPor) !== alvo) return false;
     if (normalizarNome(linha?.proprietario) !== alvo) return false;
     if (!String(linha?.natureOfProblem || "").trim()) return false;
+    if (!dentroDosUltimos30Dias(linha?.data)) return false;
     if (!String(linha?.instructions || "").trim()) return false;
     return true;
   });
