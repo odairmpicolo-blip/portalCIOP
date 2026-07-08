@@ -1253,14 +1253,19 @@ async function confirmarProtocoloNaPlanilha(dados) {
 }
 
 async function enviarProtocoloSemCors(dados) {
-    console.info("Dados enviados para registro de protocolo:", dados);
-    await fetch(PROTOCOLO_SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        cache: "no-store",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(dados)
-    });
+        console.info("Dados enviados para registro de protocolo:", dados);
+        const resposta = await fetch(PROTOCOLO_SCRIPT_URL, {
+                    method: "POST",
+                    cache: "no-store",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify(dados)
+        });
+        const texto = await resposta.text();
+        try {
+                    return JSON.parse(texto);
+        } catch (erroParse) {
+                    return { ok: false, erro: "Resposta inválida do Apps Script: " + texto.slice(0, 200) };
+        }
 }
 
 async function registrarProtocolo() {
@@ -1293,15 +1298,27 @@ async function registrarProtocolo() {
     }
 
     try {
-        setStatus("Registrando protocolo " + dados.protocolo + " na planilha...", "ia");
-        await enviarProtocoloSemCors(dados);
-        const confirmado = await confirmarProtocoloNaPlanilha(dados);
-        if (!confirmado) {
-            throw new Error("O protocolo foi enviado, mas não apareceu preenchido na aba CONT. PROT. Verifique o Apps Script e as colunas da planilha.");
-        }
-        protocoloRegistrado = true;
-        setStatus("Protocolo " + dados.protocolo + " registrado e confirmado na planilha.", "ok");
-        return true;
+        let dadosEnvio = dados;
+                let resultado = null;
+                for (let tentativaEnvio = 0; tentativaEnvio < 3; tentativaEnvio += 1) {
+                            setStatus("Registrando protocolo " + dadosEnvio.protocolo + " na planilha...", "ia");
+                            resultado = await enviarProtocoloSemCors(dadosEnvio);
+                            if (resultado && resultado.ok) break;
+                            const msgErroEnvio = String((resultado && resultado.erro) || "");
+                            const podeTentarDeNovo = /já foi preenchido|protocolo da linha mudou|linha inválida/i.test(msgErroEnvio);
+                            if (!podeTentarDeNovo || tentativaEnvio >= 2) {
+                                        throw new Error(msgErroEnvio || "Falha ao registrar protocolo.");
+                            }
+                            setStatus("Protocolo " + dadosEnvio.protocolo + " já foi usado por outra pessoa. Buscando o próximo...", "ia");
+                            await carregarProtocoloAtualizado();
+                            dadosEnvio = dadosProtocolo();
+                            if (!dadosEnvio.protocolo || !dadosEnvio.linhaPlanilha) {
+                                        throw new Error("Não foi possível encontrar um novo protocolo livre.");
+                            }
+                }
+                protocoloRegistrado = true;
+                setStatus("Protocolo " + resultado.protocolo + " registrado e confirmado na planilha.", "ok");
+                return true;
     } catch (error) {
         throw new Error(mensagemErroProtocolo(error));
     }
