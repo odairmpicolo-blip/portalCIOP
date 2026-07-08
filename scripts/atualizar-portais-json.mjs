@@ -7,22 +7,16 @@ const RETRY_DELAY_MS = Number(process.env.PORTAL_JSON_RETRY_DELAY_MS || 6000);
 const portalRoot = process.env.PORTAL_ROOT || process.cwd();
 
 const PONTUALIDADE = {
-  padrao: process.env.PONTUALIDADE_PADRAO_URL
-    || "https://script.google.com/macros/s/AKfycbwp-s3tzcxQl0gsm20zSfBb7Rw0bQwKnIX0hB9j_nLDIALZKvu3xeGL9G1jo-SSsXhQ9A/exec",
-  alternativo: process.env.PONTUALIDADE_ALT_URL
-    || "https://script.google.com/macros/s/AKfycbypfszDiFW2RTgoIvnzSYNSHALfCePOINDaFfcViFIcYqXEj3-O9NXsbs-mdRJ2I2jF/exec"
+    padrao: process.env.PONTUALIDADE_PADRAO_URL || "",
+    alternativo: process.env.PONTUALIDADE_ALT_URL || ""
 };
 
-const AUTUACOES_URL = process.env.AUTUACOES_API_URL
-  || "https://script.google.com/macros/s/AKfycbylz8scwboPQLeOKWUpw9YqKxomjts1aa8KUwodAuq5IE3T9s7RXd6GJcfMnS9qu6DI/exec";
+const AUTUACOES_URL = process.env.AUTUACOES_API_URL || "";
 const AUTUACOES_DATA_DE = process.env.AUTUACOES_DATA_DE || "2015-01-01";
 
-const LIBERACAO_URL = process.env.LIBERACAO_API_URL
-  || process.env.FOLHA_SERVICO_API_URL
-  || "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
+const LIBERACAO_URL = process.env.LIBERACAO_API_URL || process.env.FOLHA_SERVICO_API_URL || "";
 
-const ESCALA_SAIDA_URL = process.env.ESCALA_SAIDA_API_URL
-  || "https://script.google.com/macros/s/AKfycbzhuM5h2MzGXnfHb4WmLZb3ZOrmXpGKOdtT0fiCazRV0yPJ5dlcchtlLThiagLcg8P4/exec";
+const ESCALA_SAIDA_URL = process.env.ESCALA_SAIDA_API_URL || "";
 
 const DIAS_JANELA_LANCAMENTO = Number(process.env.LIBERACAO_DIAS_JANELA || 7);
 const PORTAL_TZ = process.env.PORTAL_TZ || "America/Sao_Paulo";
@@ -96,11 +90,16 @@ function escreverJson(arquivo, payload) {
 }
 
 async function atualizarPontualidade() {
+    if (!PONTUALIDADE.padrao && !PONTUALIDADE.alternativo) {
+          console.warn("PONTUALIDADE_PADRAO_URL e PONTUALIDADE_ALT_URL nao configuradas — pulando pontualidade.");
+          return;
+    }
   const dir = path.join(portalRoot, "assets", "data", "pontualidade");
   const totais = {};
   const atualizadoEm = new Date().toISOString();
 
   for (const [cenario, url] of Object.entries(PONTUALIDADE)) {
+        if (!url) continue;
     console.log(`Baixando pontualidade (${cenario})...`);
     const raw = await fetchJson(url);
     const dados = Array.isArray(raw) ? raw : (raw.data || raw.dados || raw.rows || raw.valores || raw);
@@ -122,6 +121,10 @@ async function atualizarPontualidade() {
 }
 
 async function atualizarAutuacoes() {
+    if (!AUTUACOES_URL) {
+          console.warn("AUTUACOES_API_URL nao configurada — pulando autuacoes.");
+          return;
+    }
   const dir = path.join(portalRoot, "assets", "data", "autuacoes");
   const dataAte = isoHoje();
   const url = `${AUTUACOES_URL}?${new URLSearchParams({ data_de: AUTUACOES_DATA_DE, data_ate: dataAte, completo: "1" })}`;
@@ -240,6 +243,10 @@ async function buscarEscalaSaidaDia(data, timeoutMs = TIMEOUT_MS) {
 }
 
 async function atualizarEscalaSaida() {
+    if (!ESCALA_SAIDA_URL && !LIBERACAO_URL) {
+          console.warn("ESCALA_SAIDA_API_URL e LIBERACAO_API_URL nao configuradas — pulando escala de saida.");
+          return;
+    }
   const dir = path.join(portalRoot, "assets", "data", "escala-saida");
   const hoje = isoHoje();
   const amanha = isoAmanha();
@@ -260,6 +267,10 @@ async function atualizarEscalaSaida() {
 }
 
 async function atualizarLiberacaoSomenteHoje() {
+    if (!LIBERACAO_URL) {
+          console.warn("LIBERACAO_API_URL nao configurada — pulando liberacao (hoje).");
+          return;
+    }
   const dir = path.join(portalRoot, "assets", "data", "liberacao");
   const hoje = isoHoje();
   const atualizadoEm = new Date().toISOString();
@@ -287,6 +298,10 @@ async function atualizarLiberacaoSomenteHoje() {
 }
 
 async function atualizarLiberacao() {
+    if (!LIBERACAO_URL) {
+          console.warn("LIBERACAO_API_URL nao configurada — pulando liberacao.");
+          return;
+    }
   const dir = path.join(portalRoot, "assets", "data", "liberacao");
   const hoje = isoHoje();
   const atualizadoEm = new Date().toISOString();
