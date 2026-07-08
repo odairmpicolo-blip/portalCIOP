@@ -73,14 +73,14 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
       return
     }
     if (!user) {
-      setUnlocked(false)
+      queueMicrotask(() => setUnlocked(false))
       return
     }
     if (consumeBiometricSkip() || isBiometricSessionValid()) {
-      setUnlocked(true)
+      queueMicrotask(() => setUnlocked(true))
       return
     }
-    setUnlocked(false)
+    queueMicrotask(() => setUnlocked(false))
   }, [native, user, biometricEnabled])
 
   useEffect(() => {
