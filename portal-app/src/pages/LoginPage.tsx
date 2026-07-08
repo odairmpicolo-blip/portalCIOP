@@ -77,9 +77,11 @@ export function LoginPage() {
     if (!canSaveLoginLocally()) return
     const saved = loadSavedLogin()
     if (!saved) return
-    setEmail(saved.email)
-    setUsarBiometria(true)
-    setTemLoginSalvo(true)
+    queueMicrotask(() => {
+      setEmail(saved.email)
+      setUsarBiometria(true)
+      setTemLoginSalvo(true)
+    })
   }, [])
 
   async function onSubmit(event: FormEvent) {
