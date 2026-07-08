@@ -1,8 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const APPS_SCRIPT_URL = process.env.FOLHA_SERVICO_API_URL
-  || "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
+const APPS_SCRIPT_URL = process.env.FOLHA_SERVICO_API_URL || "";
+if (!APPS_SCRIPT_URL) {
+    console.warn("FOLHA_SERVICO_API_URL nao esta configurada — mantendo snapshots existentes.");
+    process.exit(0);
+}
 const DASHBOARD_VERSAO = process.env.FOLHA_SERVICO_VERSAO || "2026-06-23-dashboard-anos-planilha";
 const PAGE_SIZE = Number(process.env.FOLHA_SERVICO_PAGINA || 3500);
 const TIMEOUT_MS = Number(process.env.FOLHA_SERVICO_TIMEOUT_MS || 120000);
