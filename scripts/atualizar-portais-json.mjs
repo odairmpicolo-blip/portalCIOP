@@ -217,18 +217,15 @@ async function buscarEscalaSaidaDia(data, timeoutMs = TIMEOUT_MS) {
     { url: LIBERACAO_URL, params: { liberacao: "1", recurso: "saida_carros", data } },
     { url: LIBERACAO_URL, params: { liberacao: "1", recurso: "saida_carros", data, ignorar_data: "1" } }
   ];
+  const resultados = await Promise.allSettled(
+    bases.map(({ url, params }) => fetchJson(`${url}?${new URLSearchParams(params)}`, timeoutMs))
+  );
   let melhor = null;
-  for (const { url, params } of bases) {
-    try {
-      const res = await fetchJson(`${url}?${new URLSearchParams(params)}`, timeoutMs);
-      if (!res.ok) continue;
-      const total = (res.dados || []).length;
-      if (!melhor || total > (melhor.dados || []).length) {
-        melhor = res;
-      }
-      if (total > 0) break;
-    } catch (_) {
-      /* tenta próxima fonte */
+  for (const r of resultados) {
+    if (r.status !== "fulfilled" || !r.value.ok) continue;
+    const total = (r.value.dados || []).length;
+    if (!melhor || total > (melhor.dados || []).length) {
+      melhor = r.value;
     }
   }
   if (!melhor) throw new Error(`Falha ao baixar escala de saída (${data})`);
