@@ -793,7 +793,22 @@ function salvarCacheIncidentes(payload) {
     } catch (error) {}
 }
 
-function aplicarPayloadIncidentes(payload) {
+let filtrosUrlAplicados = false;
+    function aplicarFiltrosDaUrl() {
+        if (filtrosUrlAplicados) return;
+        const params = new URLSearchParams(window.location.search);
+        const criador = params.get("criador");
+        const proprietario = params.get("proprietario");
+        if (criador && Array.from(fields.criado.options).some((opt) => opt.value === criador)) {
+            fields.criado.value = criador;
+        }
+        if (proprietario && Array.from(fields.proprietario.options).some((opt) => opt.value === proprietario)) {
+            fields.proprietario.value = proprietario;
+        }
+        filtrosUrlAplicados = true;
+    }
+
+    function aplicarPayloadIncidentes(payload) {
     state.all = (payload.incidentes || []).filter((row) => String(row.empresa || "").toUpperCase() === "TCGL");
     populateSelect(fields.estado, state.all, "estado");
     populateSelectTipo(fields.tipo, state.all);
@@ -801,6 +816,7 @@ function aplicarPayloadIncidentes(payload) {
     populateSelect(fields.veiculo, state.all, "veiculo");
     populateSelect(fields.criado, state.all, "criadoPor");
     populateSelect(fields.proprietario, state.all, "proprietario");
+    aplicarFiltrosDaUrl();
     applyFilters();
     atualizarStatusLinha(payload, state.all.length);
 }
