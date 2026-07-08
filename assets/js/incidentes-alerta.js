@@ -36,7 +36,7 @@ const style = document.createElement("style");
     "#alertaIncidentesOverlay.hide{display:none}",
     ".alerta-incidentes-box{max-width:420px;width:100%;background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(16,24,40,.35);padding:24px;font-family:Arial,Helvetica,sans-serif;color:#101828}",
     ".alerta-incidentes-icone{width:48px;height:48px;border-radius:50%;background:#fff4e5;color:#ff6b00;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;margin-bottom:14px}",
-    ".alerta-incidentes-titulo{font-size:17px;font-weight:900;color:#06245c;margin:0 0 8px}"
+    ".alerta-incidentes-titulo{font-size:17px;font-weight:900;color:#06245c;margin:0 0 8px}",
     ".alerta-incidentes-texto{font-size:13.5px;line-height:1.5;color:#344054;margin:0 0 18px;white-space:pre-line}",
     ".alerta-incidentes-acoes{display:flex;gap:10px;justify-content:flex-end}",
     ".alerta-incidentes-btn{border:0;border-radius:8px;padding:10px 16px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit}",
