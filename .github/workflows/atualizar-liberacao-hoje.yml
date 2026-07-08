@@ -2,8 +2,8 @@ name: Atualizar JSON liberação hoje
 
 on:
   schedule:
-    # A cada 1 minuto — JSON + DSQL para leitura ao vivo rápida no portal
-    - cron: "*/1 * * * *"
+        # A cada 5 minutos — JSON + DSQL para leitura ao vivo rápida no portal
+        - cron: "*/5 * * * *" # Runs every 5 minutes
   workflow_dispatch:
   repository_dispatch:
     types: [folha-servico, liberacao]
@@ -34,6 +34,7 @@ jobs:
         env:
           PORTAL_ROOT: ${{ github.workspace }}
           PORTAL_JSON_TIMEOUT_MS: 180000
+          LIBERACAO_API_URL: ${{ secrets.LIBERACAO_API_URL }}
         run: node scripts/atualizar-portais-json.mjs --liberacao-hoje
 
       - name: Sincronizar antes do commit
