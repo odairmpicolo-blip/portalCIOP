@@ -5,7 +5,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 USER_NAME="portal-ciop-github-actions"
-CLUSTER_ID="ort34httzig7iktrneb4ytcy5u"
+CLUSTER_ID="${DSQL_CLUSTER_ID:?Defina DSQL_CLUSTER_ID antes de rodar este script}"
 REGION="sa-east-1"
 ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
 POLICY_DOC=$(cat <<EOF
