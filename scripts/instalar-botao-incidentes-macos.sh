@@ -23,8 +23,8 @@ if [[ ! -f "$ENV_FILE" ]]; then
 fi
 
 if [[ ! -f "$BACKEND_ENV" ]]; then
-  cat > "$BACKEND_ENV" <<'EOF'
-DSQL_CLUSTER_ID=ort34httzig7iktrneb4ytcy5u
+      cat > "$BACKEND_ENV" <<EOF
+DSQL_CLUSTER_ID=${DSQL_CLUSTER_ID:-SEU_CLUSTER_ID_AQUI}
 DSQL_REGION=sa-east-1
 DSQL_USER=admin
 EOF
