@@ -22,7 +22,6 @@ export function useBiometryLabels() {
 
   useEffect(() => {
     if (!native) {
-      setLoading(false)
       return
     }
     let cancelled = false
