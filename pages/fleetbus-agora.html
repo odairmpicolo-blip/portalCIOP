@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>FleetBus Agora | Portal CIOP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="../assets/css/portal-senha.css">
+<link rel="stylesheet" href="../assets/css/portal-brand.css">
+<link rel="stylesheet" href="../assets/css/portal-header.css">
+<link rel="stylesheet" href="../assets/css/portal-session.css">
+<style>
+:root{
+  --blue:#06245c;--blue-soft:#0b3a8a;--teal:#2db4bf;--orange:#ff6b00;
+  --bg:#f5f7fb;--surface:#fff;--surface-2:#f8fafc;--border:#dfe5ef;
+  --text:#101828;--muted:#667085;--ok:#059669;--warn:#d97706;--bad:#dc2626;
+  --shadow:0 1px 2px rgba(15,23,42,.06),0 16px 40px rgba(6,36,92,.10);
+  --radius:18px;
+}
+*{box-sizing:border-box}
+body.fb-page{
+  margin:0;min-height:100vh;display:flex;flex-direction:column;
+  font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--text);background:var(--bg);
+  -webkit-font-smoothing:antialiased;
+}
+.header{
+  background:rgba(255,255,255,.97);backdrop-filter:blur(12px);
+  display:grid;grid-template-columns:minmax(160px,1fr) auto minmax(240px,1fr);gap:16px;align-items:center;
+  padding:10px 20px;border-bottom:1px solid var(--border);box-shadow:0 2px 10px rgba(0,0,0,.05);
+}
+.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.page-kicker{margin:0 0 4px;color:var(--teal);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.page-title{margin:0;color:var(--blue);font-size:24px;font-weight:800;letter-spacing:-.02em}
+.page-desc{margin:4px 0 0;color:var(--muted);font-size:13px;font-weight:500}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.ciop-session{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--blue);background:#fff}
+.ciop-session-user{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.btn-logout{background:#ef4444;color:#fff;border:0;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer}
+
+.shell{max-width:1560px;margin:0 auto;padding:18px 18px 36px;width:100%;flex:1}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.topbar-left,.topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 16px;border-radius:999px;border:1px solid transparent;font:inherit;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;transition:.18s ease}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-primary{background:var(--blue);color:#fff;box-shadow:0 8px 20px rgba(6,36,92,.18)}
+.btn-primary:hover{background:var(--blue-soft);transform:translateY(-1px)}
+.btn-ghost{background:#fff;color:var(--blue);border-color:var(--border)}
+.btn-ghost:hover{background:var(--surface-2)}
+
+.live-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:#fff;border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(5,150,105,.15)}
+.live-dot.busy{background:var(--orange);animation:pulse 1.2s ease-in-out infinite}
+.live-dot.off{background:var(--bad);box-shadow:0 0 0 4px rgba(220,38,38,.15)}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+.layout{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:stretch}
+@media(max-width:1080px){.layout{grid-template-columns:1fr}}
+
+.sidebar{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.card-pad{padding:16px 18px}
+.card-title{margin:0 0 4px;font-size:15px;font-weight:800;color:var(--blue)}
+.card-sub{margin:0 0 12px;font-size:12px;color:var(--muted);line-height:1.45;font-weight:500}
+
+.field{display:grid;gap:6px;margin-bottom:10px}
+.field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.input{
+  width:100%;height:44px;border:1px solid var(--border);border-radius:12px;padding:0 12px;
+  font:inherit;font-size:14px;font-weight:500;background:var(--surface-2);color:var(--text)
+}
+.input:focus{outline:none;border-color:#7dd3dc;box-shadow:0 0 0 4px rgba(45,180,191,.15);background:#fff}
+
+.veiculos{max-height:calc(100vh - 420px);min-height:220px;overflow:auto;display:grid;gap:4px}
+.veic-btn{width:100%;display:flex;align-items:center;gap:10px;border:1px solid transparent;background:transparent;border-radius:12px;padding:9px 10px;cursor:pointer;font:inherit;text-align:left;transition:.15s ease;color:var(--text)}
+.veic-btn:hover{background:var(--surface-2)}
+.veic-btn.active{background:#effcfb;border-color:rgba(45,180,191,.35)}
+.veic-chip{width:44px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex:0 0 auto;background:var(--blue-soft)}
+.veic-meta{min-width:0;flex:1}
+.veic-num{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.veic-sub{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.main{display:flex;flex-direction:column;min-height:720px}
+.panel-wrap{flex:1;padding:14px;display:flex;flex-direction:column;gap:14px;min-height:0}
+.panel{flex:1;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;position:relative;min-height:420px}
+#mapa{width:100%;height:100%;min-height:420px;background:#dbeafe}
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat-card{padding:12px 14px;border-radius:14px;background:var(--surface-2);border:1px solid var(--border)}
+.stat-card b{display:block;font-size:20px;font-weight:800;color:var(--blue);letter-spacing:-.02em}
+.stat-card span{font-size:11px;color:var(--muted);font-weight:600}
+.stat-card small{display:block;margin-top:2px;font-size:10px;color:var(--muted);font-weight:500}
+
+.empty{padding:40px 20px;text-align:center;color:var(--muted)}
+.empty h3{margin:0 0 8px;color:var(--blue);font-size:18px;font-weight:800}
+
+.bus-marker{
+  width:30px;height:30px;border-radius:50% 50% 50% 0;background:var(--blue);
+  transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 10px rgba(6,36,92,.35);border:2px solid #fff;
+}
+.bus-marker span{transform:rotate(45deg);color:#fff;font-size:11px;font-weight:800}
+</style>
+</head>
+<body class="fb-page" data-require-usuarios="">
+<div id="portalLoadingOverlay"></div>
+<header class="header">
+    <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações">
+        <img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP">
+        <span class="portal-brand-meta">TCGL · Operações</span>
+    </a>
+    <div class="title-wrap">
+        <p class="page-kicker">On-demand · FleetBus</p>
+        <h1 class="page-title">FleetBus Agora</h1>
+        <p class="page-desc">GPS, velocidade, aceleração, odômetro e combustível ao vivo · 1 veículo por vez</p>
+    </div>
+    <div class="header-actions">
+        <div class="ciop-session">
+            <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
+            <button class="btn-logout" type="button" onclick="logout()">Sair</button>
+        </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+    </div>
+</header>
+
+<main class="shell">
+    <div class="topbar">
+        <div class="topbar-left">
+            <a class="btn btn-primary" href="../index.html">
+                <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+                Portal
+            </a>
+            <span class="live-pill" id="livePill">
+                <span class="live-dot off" id="liveDot"></span>
+                <span id="liveText">Selecione um veículo</span>
+            </span>
+        </div>
+        <div class="topbar-actions">
+            <button type="button" class="btn btn-ghost" id="btnAtualizar">Atualizar agora</button>
+        </div>
+    </div>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="card card-pad">
+                <h2 class="card-title">Buscar veículo</h2>
+                <p class="card-sub">Frota em serviço no FleetBus. Clique para acompanhar ao vivo (1 por vez).</p>
+                <div class="field">
+                    <label for="buscaVeiculo">Número / prefixo</label>
+                    <input class="input" id="buscaVeiculo" type="search" placeholder="Ex.: 3127" autocomplete="off">
+                </div>
+            </div>
+            <div class="card card-pad" style="flex:1;display:flex;flex-direction:column;min-height:0">
+                <h2 class="card-title">Veículos em serviço</h2>
+                <p class="card-sub" id="contadorVeiculos">Carregando...</p>
+                <div class="veiculos" id="listaVeiculos"></div>
+            </div>
+        </aside>
+
+        <section class="card main">
+            <div class="panel-wrap">
+                <div class="panel">
+                    <div id="mapa"></div>
+                </div>
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card"><b id="stSpeed">—</b><span>Velocidade</span><small>km/h</small></div>
+                    <div class="stat-card"><b id="stAccel">—</b><span>Aceleração</span><small>m/s²</small></div>
+                    <div class="stat-card"><b id="stOdo">—</b><span>Odômetro</span><small>km</small></div>
+                    <div class="stat-card"><b id="stFuelTotal">—</b><span>Combustível total acumulado</span><small>L</small></div>
+                    <div class="stat-card"><b id="stFuelLevel">—</b><span>Nível de combustível</span><small>%</small></div>
+                    <div class="stat-card"><b id="stCoolant">—</b><span>Temp. líquido de arrefecimento</span><small>°C</small></div>
+                    <div class="stat-card"><b id="stUpdated">—</b><span>Última atualização</span><small id="stUpdatedSub">—</small></div>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script src="../assets/js/loading.js"></script>
+<script type="module" src="../assets/js/auth.js"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+// Preencha com a ApiBaseUrl mostrada no fim de scripts/deploy-fleetbus-lambda.sh
+// (saída "ApiBaseUrl" do CloudFormation), ex.: https://abc123.execute-api.sa-east-1.amazonaws.com
+const API_BASE = "https://REPLACE-ME.execute-api.sa-east-1.amazonaws.com";
+const POLL_MS = 25000;
+
+const state = {
+  vehicles: [],
+  filtered: [],
+  selectedId: null,
+  pollTimer: null,
+  mapa: null,
+  marker: null
+};
+
+const $ = (id) => document.getElementById(id);
+
+function initMapa(){
+  state.mapa = L.map("mapa", { zoomControl: true }).setView([-23.31, -51.16], 12);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "© OpenStreetMap"
+  }).addTo(state.mapa);
+}
+
+function busIcon(){
+  return L.divIcon({
+    className: "",
+    html: '<div class="bus-marker"><span>🚌</span></div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 26]
+  });
+}
+
+function setLive(status, texto){
+  $("liveDot").className = "live-dot" + (status === "busy" ? " busy" : status === "off" ? " off" : "");
+  $("liveText").textContent = texto;
+}
+
+function fmtNum(v, casas){
+  if (v == null || Number.isNaN(v)) return "—";
+  return Number(v).toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
+}
+
+function fmtHora(iso){
+  if (!iso) return "—";
+  try { return new Date(iso).toLocaleTimeString("pt-BR"); } catch { return "—"; }
+}
+
+async function carregarVeiculos(){
+  try {
+    const res = await fetch(API_BASE + "/vehicles", { cache: "no-store" });
+    const json = await res.json();
+    state.vehicles = Array.isArray(json.vehicles) ? json.vehicles : [];
+    aplicarFiltro();
+  } catch (err) {
+    $("contadorVeiculos").textContent = "Falha ao carregar veículos.";
+    console.error("Erro ao carregar veículos FleetBus:", err);
+  }
+}
+
+function aplicarFiltro(){
+  const termo = ($("buscaVeiculo").value || "").trim().toLowerCase();
+  state.filtered = !termo
+    ? state.vehicles
+    : state.vehicles.filter((v) => String(v.vehicleNumber || "").toLowerCase().includes(termo));
+  $("contadorVeiculos").textContent = state.filtered.length + " de " + state.vehicles.length + " veículo(s)";
+  renderLista();
+}
+
+function renderLista(){
+  const container = $("listaVeiculos");
+  container.innerHTML = "";
+  state.filtered.forEach((v) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "veic-btn" + (v.vehicleId === state.selectedId ? " active" : "");
+    const numero = (v.vehicleNumber || "").split(" - ")[0] || "?";
+    btn.innerHTML =
+      '<span class="veic-chip">' + escHtml(numero) + '</span>' +
+      '<span class="veic-meta">' +
+        '<span class="veic-num">' + escHtml(v.vehicleNumber || v.vehicleId) + '</span>' +
+        '<span class="veic-sub">' + escHtml((v.manufacturer || "") + " " + (v.model || "")).trim() + '</span>' +
+      '</span>';
+    btn.addEventListener("click", () => selecionarVeiculo(v.vehicleId));
+    container.appendChild(btn);
+  });
+}
+
+function escHtml(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+function selecionarVeiculo(vehicleId){
+  state.selectedId = vehicleId;
+  renderLista();
+  if (state.pollTimer) clearInterval(state.pollTimer);
+  setLive("busy", "Conectando ao FleetBus...");
+  buscarLive();
+  state.pollTimer = setInterval(buscarLive, POLL_MS);
+}
+
+async function buscarLive(){
+  if (!state.selectedId) return;
+  setLive("busy", "Atualizando...");
+  try {
+    const res = await fetch(API_BASE + "/live?vehicleId=" + encodeURIComponent(state.selectedId), { cache: "no-store" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || ("HTTP " + res.status));
+    atualizarPainel(data);
+    setLive("ok", "Ao vivo · atualizado " + fmtHora(data.updatedAt));
+  } catch (err) {
+    setLive("off", "Falha ao atualizar: " + (err.message || err));
+    console.error("Erro ao buscar dados ao vivo FleetBus:", err);
+  }
+}
+
+function atualizarPainel(v){
+  $("stSpeed").textContent = fmtNum(v.speedKmh, 0);
+  $("stAccel").textContent = fmtNum(v.accelMs2, 2);
+  $("stOdo").textContent = fmtNum(v.odometerKm, 1);
+  $("stFuelTotal").textContent = fmtNum(v.fuelTotalL, 1);
+  $("stFuelLevel").textContent = fmtNum(v.fuelLevelPct, 0);
+  $("stCoolant").textContent = fmtNum(v.coolantTempC, 0);
+  $("stUpdated").textContent = fmtHora(v.updatedAt);
+  $("stUpdatedSub").textContent = v.lastSeenAt ? ("último sinal " + fmtHora(v.lastSeenAt)) : "aguardando sinal";
+
+  if (v.lat != null && v.lng != null && state.mapa){
+    const latlng = [v.lat, v.lng];
+    if (!state.marker){
+      state.marker = L.marker(latlng, { icon: busIcon() }).addTo(state.mapa);
+      state.mapa.setView(latlng, 15);
+    } else {
+      state.marker.setLatLng(latlng);
+    }
+  }
+}
+
+function iniciar(){
+  initMapa();
+  carregarVeiculos();
+  $("buscaVeiculo").addEventListener("input", aplicarFiltro);
+  $("btnAtualizar").addEventListener("click", buscarLive);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden){
+      if (state.pollTimer) clearInterval(state.pollTimer);
+    } else if (state.selectedId){
+      buscarLive();
+      state.pollTimer = setInterval(buscarLive, POLL_MS);
+    }
+  });
+}
+
+if (document.readyState === "loading"){
+  document.addEventListener("DOMContentLoaded", iniciar);
+} else {
+  iniciar();
+}
+</script>
+</body>
+</html>
