@@ -80,7 +80,7 @@ function mostrarAlerta(quantidade, nomeExato) {
   + "\nEles podem precisar de acompanhamento.";
 
 overlay.querySelector("#alertaIncidentesVer").onclick = () => {
-  const params = new URLSearchParams({ criador: nomeExato, proprietario: nomeExato });
+  const params = new URLSearchParams({ criador: nomeExato, proprietario: nomeExato , somentePendentes: "1"});
   window.location.href = "pages/incidentes-dashboard.html?" + params.toString();
 };
 
