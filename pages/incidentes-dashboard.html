@@ -518,6 +518,10 @@ function applyFilters() {
         if (exact.veiculo && row.veiculo !== exact.veiculo) return false;
         if (exact.criadoPor && row.criadoPor !== exact.criadoPor) return false;
         if (exact.proprietario && row.proprietario !== exact.proprietario) return false;
+        if (filtroSomentePendentes) {
+            if (!String(row.natureOfProblem || "").trim()) return false;
+            if (!String(row.instructions || "").trim()) return false;
+        }
         if (!search) return true;
         return normalizeText([row.id, row.data, row.hora, row.veiculo, row.linha, row.criadoPor, tipoOriginalIncidente(row), tipoExibicaoIncidente(row), row.proprietario, row.estado, row.natureOfProblem, row.instructions].join(" ")).includes(search);
     });
@@ -794,6 +798,7 @@ function salvarCacheIncidentes(payload) {
 }
 
 let filtrosUrlAplicados = false;
+    let filtroSomentePendentes = false;
     function aplicarFiltrosDaUrl() {
         if (filtrosUrlAplicados) return;
         const params = new URLSearchParams(window.location.search);
@@ -804,6 +809,9 @@ let filtrosUrlAplicados = false;
         }
         if (proprietario && Array.from(fields.proprietario.options).some((opt) => opt.value === proprietario)) {
             fields.proprietario.value = proprietario;
+        }
+        if (params.get("somentePendentes") === "1") {
+            filtroSomentePendentes = true;
         }
         filtrosUrlAplicados = true;
     }
