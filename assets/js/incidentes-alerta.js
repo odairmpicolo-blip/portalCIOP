@@ -20,13 +20,17 @@ const MAPA_ANALISTAS = {
 
 function normalizarNome(valor) {
   return String(valor || "")
-  .normalize("NFD")
-.replace(/[^\x00-\x7F]/g, "")
-  .toUpperCase()
-  .trim();
+    .normalize("NFD")
+    .replace(/[^\x00-\x7F]/g, "") // remove acentos
+    .replace(/[.,]/g, "") // remove pontuação (ex: "M." vs "M")
+    .replace(/\s+/g, " ") // colapsa espaços duplicados
+    .toUpperCase()
+    .trim();
 }
 
-function dentroDosUltimos30Dias(dataStr) {
+const JANELA_DIAS_ALERTA = 10;
+
+function dentroDosUltimosDias(dataStr, dias) {
   const partes = String(dataStr || "").split("/");
   if (partes.length !== 3) return false;
   const iso = partes[2] + "-" + partes[1].padStart(2, "0") + "-" + partes[0].padStart(2, "0");
@@ -34,15 +38,15 @@ function dentroDosUltimos30Dias(dataStr) {
   if (Number.isNaN(dataIncidente.getTime())) return false;
   const limite = new Date();
   limite.setHours(0, 0, 0, 0);
-  limite.setDate(limite.getDate() - 30);
+  limite.setDate(limite.getDate() - dias);
   return dataIncidente.getTime() >= limite.getTime();
-}  
+}
 
 function construirModal() {
   const existente = document.getElementById("alertaIncidentesOverlay");
   if (existente) return existente;
 
-const style = document.createElement("style");
+  const style = document.createElement("style");
   style.textContent = [
     "#alertaIncidentesOverlay{position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;background:rgba(6,36,92,.55);padding:16px}",
     "#alertaIncidentesOverlay.hide{display:none}",
@@ -58,33 +62,33 @@ const style = document.createElement("style");
   ].join("");
   document.head.appendChild(style);
 
-const overlay = document.createElement("div");
+  const overlay = document.createElement("div");
   overlay.id = "alertaIncidentesOverlay";
   overlay.innerHTML = '<div class="alerta-incidentes-box" role="alertdialog" aria-modal="true" aria-labelledby="alertaIncidentesTitulo"><div class="alerta-incidentes-icone" aria-hidden="true">!</div><h2 class="alerta-incidentes-titulo" id="alertaIncidentesTitulo">Incidentes pendentes com você</h2><p class="alerta-incidentes-texto" id="alertaIncidentesTexto"></p><div class="alerta-incidentes-acoes"><button type="button" class="alerta-incidentes-btn secundario" id="alertaIncidentesFechar">Fechar</button><button type="button" class="alerta-incidentes-btn primario" id="alertaIncidentesVer">Ver incidentes</button></div></div>';
   document.body.appendChild(overlay);
 
-overlay.querySelector("#alertaIncidentesFechar").addEventListener("click", () => overlay.classList.add("hide"));
+  overlay.querySelector("#alertaIncidentesFechar").addEventListener("click", () => overlay.classList.add("hide"));
   overlay.addEventListener("click", (evento) => {
     if (evento.target === overlay) overlay.classList.add("hide");
   });
 
-return overlay;
+  return overlay;
 }
 
 function mostrarAlerta(quantidade, nomeExato) {
   const overlay = construirModal();
   const texto = overlay.querySelector("#alertaIncidentesTexto");
   texto.textContent = (quantidade === 1
-                       ? "Você tem 1 incidente em que é o analista e o proprietário, já com Natureza do Problema e Instrução preenchidas."
-                       : "Você tem " + quantidade + " incidentes em que é o analista e o proprietário, já com Natureza do Problema e Instrução preenchidas.")
-  + "\nEles podem precisar de acompanhamento.";
+    ? "Você tem 1 incidente em que é o analista e o proprietário, já com Natureza do Problema e Instrução preenchidas."
+    : "Você tem " + quantidade + " incidentes em que é o analista e o proprietário, já com Natureza do Problema e Instrução preenchidas.")
+    + "\nEles podem precisar de acompanhamento.";
 
-overlay.querySelector("#alertaIncidentesVer").onclick = () => {
-  const params = new URLSearchParams({ criador: nomeExato, proprietario: nomeExato , somentePendentes: "1"});
-  window.location.href = "pages/incidentes-dashboard.html?" + params.toString();
-};
+  overlay.querySelector("#alertaIncidentesVer").onclick = () => {
+    const params = new URLSearchParams({ criador: nomeExato, proprietario: nomeExato, somentePendentes: "1" });
+    window.location.href = "pages/incidentes-dashboard.html?" + params.toString();
+  };
 
-overlay.classList.remove("hide");
+  overlay.classList.remove("hide");
 }
 
 async function verificarIncidentesDoUsuario() {
@@ -92,33 +96,42 @@ async function verificarIncidentesDoUsuario() {
   const registro = String(usuario?.registro || "").trim();
   if (!registro) return;
 
-const nomeAnalista = MAPA_ANALISTAS[registro];
+  const nomeAnalista = MAPA_ANALISTAS[registro];
   if (!nomeAnalista) return;
 
-const alvo = normalizarNome(nomeAnalista);
+  const alvo = normalizarNome(nomeAnalista);
 
-try {
-  const { payload } = await carregarDadosIncidentes({});
-  const incidentes = Array.isArray(payload?.incidentes) ? payload.incidentes : [];
+  try {
+    const { payload } = await carregarDadosIncidentes({});
+    const incidentes = Array.isArray(payload?.incidentes) ? payload.incidentes : [];
 
-  const pendentes = incidentes.filter((linha) => {
-    if (String(linha?.empresa || "").toUpperCase() !== "TCGL") return false;
-    if (String(linha?.estado || "").trim() === "Cancelado") return false;
-    if (normalizarNome(linha?.criadoPor) !== alvo) return false;
-    if (normalizarNome(linha?.proprietario) !== alvo) return false;
-    if (!String(linha?.natureOfProblem || "").trim()) return false;
-    if (!dentroDosUltimos30Dias(linha?.data)) return false;
-    if (!String(linha?.instructions || "").trim()) return false;
-    return true;
-  });
+    const pendentes = incidentes.filter((linha) => {
+      if (String(linha?.empresa || "").toUpperCase() !== "TCGL") return false;
 
-  if (pendentes.length > 0) {
-    const nomeExato = pendentes[0].criadoPor || nomeAnalista;
-    mostrarAlerta(pendentes.length, nomeExato);
+      // analista (criadoPor) e agente (proprietario) precisam ser a mesma pessoa,
+      // e essa pessoa precisa ser o usuário logado
+      const analista = normalizarNome(linha?.criadoPor);
+      const agente = normalizarNome(linha?.proprietario);
+      if (!analista || analista !== agente) return false;
+      if (analista !== alvo) return false;
+
+      // Natureza do Problema e Instrução precisam estar preenchidas
+      if (!String(linha?.natureOfProblem || "").trim()) return false;
+      if (!String(linha?.instructions || "").trim()) return false;
+
+      // dentro da janela de dias configurada
+      if (!dentroDosUltimosDias(linha?.data, JANELA_DIAS_ALERTA)) return false;
+
+      return true;
+    });
+
+    if (pendentes.length > 0) {
+      const nomeExato = pendentes[0].criadoPor || nomeAnalista;
+      mostrarAlerta(pendentes.length, nomeExato);
+    }
+  } catch (erro) {
+    console.warn("Não foi possível verificar alerta de incidentes:", erro);
   }
-} catch (erro) {
-  console.warn("Não foi possível verificar alerta de incidentes:", erro);
-}
 }
 
 export function iniciarAlertaIncidentes() {
