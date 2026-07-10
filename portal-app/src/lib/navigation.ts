@@ -250,6 +250,20 @@ export const portalCards: PortalCard[] = [
     section: 'operacao',
   },
   {
+    id: 'escala-saida-carros',
+    title: 'Saída de carros',
+    description:
+      'Importa a planilha e cruza com o pátio — início entre 04:10 e 07:00, substituto quando pedido ou sem saída.',
+    action: 'Acessar',
+    theme: 'indigo',
+    legacyPath: '/pages/escala-saida-carros.html',
+    access: {
+      perfis: ['Administrador', 'Supervisor'],
+      usuarios: ['pedroisrael2009@gmail.com'],
+    },
+    section: 'operacao',
+  },
+  {
     id: 'relatorios',
     title: 'Relatórios',
     description: 'Relatórios operacionais com exportação CSV, Excel e PDF.',
@@ -270,11 +284,20 @@ export const portalCards: PortalCard[] = [
   },
   {
     id: 'pontualidade',
-    title: 'Pontualidade',
-    description: 'Indicadores operacionais.',
+    title: 'IPV',
+    description: 'Índice de Pontualidade das Viagens.',
     action: 'Acessar',
     theme: 'teal',
     legacyPath: '/pages/pontualidade.html',
+    section: 'dashboards',
+  },
+  {
+    id: 'icv',
+    title: 'ICV',
+    description: 'Índice de Cumprimento de Viagem.',
+    action: 'Acessar',
+    theme: 'sky',
+    legacyPath: '/pages/icv.html',
     section: 'dashboards',
   },
   {
@@ -309,11 +332,21 @@ export const portalCards: PortalCard[] = [
   {
     id: 'km-dashboard',
     title: 'Comparação de KM',
-    description: 'Comparativo TCGL, Noxxon, Fleetbus e GPS Reports.',
+    description: 'Comparativo mensal e diário TCGL, Clever e Noxxon.',
     action: 'Acessar',
     theme: 'sky',
-    legacyPath: '/pages/km-dashboard.html',
+    legacyPath: '/pages/comparacao-km.html',
     access: adminSupervisorGerencia,
+    section: 'dashboards',
+  },
+  {
+    id: 'dados-telemetria',
+    title: 'Dados de telemetria',
+    description: 'Comparativo de telemetria: TCGL, Clever e FleetBus.',
+    action: 'Acessar',
+    theme: 'teal',
+    legacyPath: '/pages/dados-telemetria.html',
+    access: { perfis: ['Administrador'] },
     section: 'dashboards',
   },
 ]
