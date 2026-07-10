@@ -59,6 +59,9 @@ const icons: Record<string, (p: IconProps) => ReactElement> = {
   'saida-carros': (p) => (
     <Svg {...p}><path d="M7 17h10M5 11h14l-1.5-4H6.5L5 11z" /><circle cx="7.5" cy="17" r="1.5" /><circle cx="16.5" cy="17" r="1.5" /></Svg>
   ),
+  'escala-saida-carros': (p) => (
+    <Svg {...p}><path d="M4 6h16v12H4z" /><path d="M8 10h8" /><path d="M8 14h5" /><path d="M16 3v3" /><path d="M8 3v3" /></Svg>
+  ),
   'diarios-bordo': (p) => (
     <Svg {...p}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></Svg>
   ),
@@ -71,6 +74,12 @@ const icons: Record<string, (p: IconProps) => ReactElement> = {
   pontualidade: (p) => (
     <Svg {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></Svg>
   ),
+  icv: (p) => (
+    <Svg {...p}><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 16v-5" /><path d="M12 16V8" /><path d="M16 16v-7" /></Svg>
+  ),
+  'dados-telemetria': (p) => (
+    <Svg {...p}><path d="M4 6h16v12H4z" /><path d="M8 10h8" /><path d="M8 14h5" /><circle cx="17" cy="17" r="3" /></Svg>
+  ),
   autuacoes: (p) => (
     <Svg {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M12 18v-6M9 15h6" /></Svg>
   ),
@@ -81,7 +90,7 @@ const icons: Record<string, (p: IconProps) => ReactElement> = {
     <Svg {...p}><path d="M4 19V5M4 19h16M8 16V9M12 16V6M16 16v-4" /></Svg>
   ),
   'km-dashboard': (p) => (
-    <Svg {...p}><path d="M3 3v18h18" /><path d="M7 16l4-6 4 3 5-8" /></Svg>
+    <Svg {...p}><path d="M3 12h4l2-5 4 10 2-5h6" /></Svg>
   ),
   default: (p) => (
     <Svg {...p}><rect x="4" y="4" width="16" height="16" rx="3" /><path d="M9 9h6v6H9z" /></Svg>
