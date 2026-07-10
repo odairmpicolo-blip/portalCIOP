@@ -618,7 +618,7 @@ if (state.page > totalPages) state.page = totalPages;
 const start = (state.page - 1) * state.pageSize;
 const pageRows = state.filtered.slice(start, start + state.pageSize);
 tbody.innerHTML = pageRows.map((row) => '<tr>' +
-'<td><a class="pill" href="incidentes-dashboard.html?id=' + encodeURIComponent(row.id) + '" title="Abrir somente este incidente">' + escapeHtml(row.id) + '</a></td>' +
+'<td><a class="pill" href="https://cioplondrina.com.br/CADIncidentManagement/" target="_blank" rel="noopener" data-incidente-id="' + escapeHtml(row.id) + '" title="Abrir CAD Incident Management e copiar numero do incidente">' + escapeHtml(row.id) + '</a></td>' +
 '<td>' + escapeHtml(row.data) + '</td>' +
 '<td>' + escapeHtml(row.hora) + '</td>' +
 '<td title="' + escapeHtml(row.veiculoDescricao || row.veiculo) + '">' + escapeHtml(row.veiculo) + '</td>' +
@@ -898,6 +898,32 @@ carregandoIncidentes = false;
 btn.disabled = false;
 }
 }
+
+function mostrarToastCopiado(id) {
+var toast = document.getElementById("toastCopiaIncidente");
+if (!toast) {
+toast = document.createElement("div");
+toast.id = "toastCopiaIncidente";
+toast.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#06245c;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;box-shadow:0 8px 24px rgba(16,24,40,.25);z-index:99999;opacity:0;transition:opacity .2s;pointer-events:none";
+document.body.appendChild(toast);
+}
+toast.textContent = "Numero " + id + " copiado - cole na busca do CAD Incident Management";
+toast.style.opacity = "1";
+clearTimeout(toast._timer);
+toast._timer = setTimeout(function () { toast.style.opacity = "0"; }, 3000);
+}
+
+document.getElementById("tabelaIncidentes").addEventListener("click", function (event) {
+var link = event.target.closest("a[data-incidente-id]");
+if (!link) return;
+var id = link.dataset.incidenteId;
+if (!id) return;
+if (navigator.clipboard && navigator.clipboard.writeText) {
+navigator.clipboard.writeText(id).then(function () { mostrarToastCopiado(id); }).catch(function () { mostrarToastCopiado(id); });
+} else {
+mostrarToastCopiado(id);
+}
+});
 
 Object.values(fields).forEach((field) => field.addEventListener("input", applyFilters));
 Object.values(fields).forEach((field) => field.addEventListener("change", applyFilters));
