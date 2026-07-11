@@ -33,7 +33,6 @@ export function MobileModulesPage() {
   const dashboards = portalCards.filter(
     (c) => c.section === 'dashboards' && usuarioPodeAcessar(user, c.access),
   )
-  const ciop = portalCards.filter((c) => c.section === 'operacao' && usuarioPodeAcessar(user, c.access))
   const primeiroNome = user?.nome?.split(' ')[0] || 'usuário'
 
   return (
@@ -58,17 +57,6 @@ export function MobileModulesPage() {
           <ModuleTile key={card.id} card={card} />
         ))}
       </div>
-
-      {ciop.length ? (
-        <>
-          <h2 className="mobile-modules-section-title">CIOP</h2>
-          <div className="mobile-modules-grid">
-            {ciop.map((card) => (
-              <ModuleTile key={card.id} card={card} />
-            ))}
-          </div>
-        </>
-      ) : null}
     </div>
   )
 }
