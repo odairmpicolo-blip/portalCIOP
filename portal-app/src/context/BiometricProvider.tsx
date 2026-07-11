@@ -10,6 +10,7 @@ import {
   consumeBiometricSkip,
   isBiometricSessionValid,
   markBiometricUnlocked,
+  BACKGROUND_LOCK_MS,
 } from '../lib/biometric-session'
 import { useAppPreferences } from './app-preferences-context'
 import { useAuth } from '../hooks/useAuth'
@@ -87,10 +88,18 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
     if (!native || !user || !biometricEnabled) return
     let removed = false
     let handle: { remove: () => Promise<void> } | undefined
+    let backgroundedAt = 0
 
     void App.addListener('appStateChange', ({ isActive }) => {
-      if (!isActive) return
+      if (!isActive) {
+        backgroundedAt = Date.now()
+        return
+      }
       if (!user) return
+      const elapsedBackground = backgroundedAt ? Date.now() - backgroundedAt : 0
+      if (elapsedBackground < BACKGROUND_LOCK_MS) {
+        return
+      }
       if (isBiometricSessionValid()) {
         setUnlocked(true)
         return
