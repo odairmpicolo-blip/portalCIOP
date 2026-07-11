@@ -16,6 +16,7 @@ export function MobileTabBar({ sidebarOpen, onMenuToggle }: MobileTabBarProps) {
   const inOnibus = pathname.includes('onibus-agora') && !inHorarios
   const inAjustes = pathname === '/ajustes'
   const inLegado = pathname.startsWith('/legado')
+  const inCiop = pathname.startsWith('/ciop')
   const inInicio =
     pathname === '/' ||
     pathname === '/modulos' ||
@@ -32,6 +33,10 @@ export function MobileTabBar({ sidebarOpen, onMenuToggle }: MobileTabBarProps) {
       <NavLink to="/" className={() => `mobile-tab${routeTabActive && inInicio ? ' active' : ''}`} end>
         <TabIcon name="home" className="mobile-tab-icon" />
         <span>Início</span>
+      </NavLink>
+      <NavLink to="/ciop" className={() => 'mobile-tab' + (routeTabActive && inCiop ? ' active' : '')}>
+        <TabIcon name="grid" className="mobile-tab-icon" />
+        <span>CIOP</span>
       </NavLink>
       {podeOnibus ? (
         <NavLink to={onibusAgoraRoute!} className={() => `mobile-tab${routeTabActive && inOnibus ? ' active' : ''}`}>
