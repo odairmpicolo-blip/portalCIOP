@@ -37,18 +37,18 @@ export function HomePage() {
       <NoticeBoardContainer />
 
       <section className="cards-section">
-        <h2>Operação</h2>
+        <h2>Dashboards</h2>
         <div className="cards-grid">
-          {operacao.map((card) => (
+          {dashboards.map((card) => (
             <PortalCardItem key={card.id} card={card} />
           ))}
         </div>
       </section>
 
       <section className="cards-section">
-        <h2>Dashboards</h2>
+        <h2>CIOP</h2>
         <div className="cards-grid">
-          {dashboards.map((card) => (
+          {operacao.map((card) => (
             <PortalCardItem key={card.id} card={card} />
           ))}
         </div>
