@@ -68,6 +68,9 @@ export function Sidebar({ open, onClose, onAvisos }: SidebarProps) {
               </NavLink>
             )
           })}
+          <NavLink to="/ciop" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} onClick={onClose}>
+            CIOP
+            </NavLink>
           <a
             className="sidebar-link sidebar-link-muted"
             href="https://www.portalciop.com.br/"
