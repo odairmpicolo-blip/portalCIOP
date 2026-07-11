@@ -9,9 +9,6 @@ export function HomePage() {
   const { user } = useAuth()
   const native = isNativeApp()
 
-  const operacao = portalCards.filter(
-    (card) => card.section === 'operacao' && usuarioPodeAcessar(user, card.access),
-  )
   const dashboards = portalCards.filter(
     (card) => card.section === 'dashboards' && usuarioPodeAcessar(user, card.access),
   )
@@ -40,15 +37,6 @@ export function HomePage() {
         <h2>Dashboards</h2>
         <div className="cards-grid">
           {dashboards.map((card) => (
-            <PortalCardItem key={card.id} card={card} />
-          ))}
-        </div>
-      </section>
-
-      <section className="cards-section">
-        <h2>CIOP</h2>
-        <div className="cards-grid">
-          {operacao.map((card) => (
             <PortalCardItem key={card.id} card={card} />
           ))}
         </div>
