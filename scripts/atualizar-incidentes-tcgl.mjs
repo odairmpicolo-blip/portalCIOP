@@ -23,6 +23,8 @@ const detailLimit = Number(process.env.CIOP_INCIDENTES_DETALHES_LIMITE || 0);
 const loadDetails = process.env.CIOP_INCIDENTES_DETALHES !== '0';
 const pageLength = Number(process.env.CIOP_INCIDENTES_LOTE || 2000);
 const DATA_MINIMA_ISO = String(process.env.CIOP_INCIDENTES_DATA_MIN || "2026-01-01").trim();
+const JANELA_ATUALIZACAO_DIAS = Number(process.env.CIOP_INCIDENTES_JANELA_ATUALIZACAO_DIAS || 10);
+const JANELA_ATUALIZACAO_DIAS = Number(process.env.CIOP_INCIDENTES_JANELA_ATUALIZACAO_DIAS || 10);
 
 if (!usuario || !senha) {
   throw new Error('Configure CIOP_INCIDENTES_USUARIO e CIOP_INCIDENTES_SENHA antes de atualizar os incidentes.');
@@ -37,6 +39,10 @@ function parseIsoDate(iso) {
 }
 
 const minDateCutoff = parseIsoDate(DATA_MINIMA_ISO);
+
+const janelaAtualizacaoCutoff = new Date();
+janelaAtualizacaoCutoff.setHours(0, 0, 0, 0);
+janelaAtualizacaoCutoff.setDate(janelaAtualizacaoCutoff.getDate() - JANELA_ATUALIZACAO_DIAS);
 
 const columns = [
   'IncidentID',
@@ -286,6 +292,12 @@ function isOnOrAfterMinDate(row) {
   return date >= minDateCutoff;
 }
 
+function isDentroJanelaAtualizacao(row) {
+  const date = parseBrazilianDate(row.data);
+  if (!date) return true;
+  return date >= janelaAtualizacaoCutoff;
+}
+
 function applyTipoVazio(row) {
   const semNatureza = !String(row.natureOfProblem || "").trim();
   const semInstrucoes = !String(row.instructions || "").trim();
@@ -480,9 +492,11 @@ async function enrichDetails(jar, rows, candidateRows = rows) {
     }
   });
 
-  let pending = candidateRows.filter((row) => {
+let pending = candidateRows.filter((row) => {
     const key = rowKey(row);
-    return !row.natureOfProblem && !row.instructions && key && !existingPayload.checkedDetailIds.has(key);
+    if (!key) return false;
+    if (isDentroJanelaAtualizacao(row)) return true;
+    return !row.natureOfProblem && !row.instructions && !existingPayload.checkedDetailIds.has(key);
   });
   if (detailLimit > 0) pending = pending.slice(0, detailLimit);
   if (!pending.length) {
@@ -594,9 +608,13 @@ while (total === null || start < total) {
     console.log(`Atualização: lote anterior a ${DATA_MINIMA_ISO}. Encerrando paginação.`);
     break;
   }
-  if (chunkNormalizedAll.length > 0 && chunkSemNovidade(chunkNormalizedAll, existingPayload)) {
-    console.log("Atualização: lote sem incidentes novos nem mudança de estado. Encerrando paginação.");
-    break;
+if (chunkNormalizedAll.length > 0 && chunkSemNovidade(chunkNormalizedAll, existingPayload)) {
+    const chunkDentroJanela = chunkNormalizedAll.some(isDentroJanelaAtualizacao);
+    if (!chunkDentroJanela) {
+      console.log(`Atualização: lote sem novidades e fora da janela de ${JANELA_ATUALIZACAO_DIAS} dias. Encerrando paginação.`);
+      break;
+    }
+    console.log(`Atualização: lote sem novidades, mas dentro da janela de ${JANELA_ATUALIZACAO_DIAS} dias - continuando para garantir cobertura completa.`);
   }
   start += pageLength;
 }
@@ -608,14 +626,15 @@ if (fs.existsSync(outputFile) && countNovos === 0 && countEstado === 0 && countD
   process.exit(0);
 }
 const novosParaDetalhe = mergedRows.filter((row) => {
-  const key = rowKey(row);
-  return key && novosIds.has(key)
-    && !existingPayload.checkedDetailIds.has(key)
-    && !String(row.natureOfProblem || "").trim()
-    && !String(row.instructions || "").trim();
-});
-await enrichDetails(jar, mergedRows, novosParaDetalhe);
-mergedRows.forEach((row) => {
+    const key = rowKey(row);
+    if (!key) return false;
+    const semDetalhe = !String(row.natureOfProblem || "").trim() && !String(row.instructions || "").trim();
+    if (novosIds.has(key) && semDetalhe) return true;
+    if (isDentroJanelaAtualizacao(row)) return true;
+    return false;
+  });
+  await enrichDetails(jar, mergedRows, novosParaDetalhe);
+  mergedRows.forEach((row) => {
   ensureTipoOriginal(row);
   applyTipoVazio(row);
 });
