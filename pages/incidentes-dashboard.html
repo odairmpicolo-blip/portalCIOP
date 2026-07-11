@@ -231,7 +231,23 @@ h1{font-size:20px}
 @media (max-width: 480px) {
   .kpi-grid { grid-template-columns: 1fr !important; }
 }
-/* Fim modernizacao iPhone */
+@media (max-width: 720px) {
+  body { background: radial-gradient(1200px 600px at 20% -10%, color-mix(in srgb, var(--dk-accent) 16%, transparent), transparent 60%), radial-gradient(900px 500px at 100% 0%, color-mix(in srgb, var(--dk-accent-2) 10%, transparent), transparent 55%), linear-gradient(180deg, var(--dk-bg) 0%, var(--dk-bg-2) 100%) !important; }
+  .header { background: var(--dk-glass-bg) !important; border-bottom: 1px solid var(--dk-glass-border) !important; backdrop-filter: var(--dk-glass-blur) !important; -webkit-backdrop-filter: var(--dk-glass-blur) !important; box-shadow: none !important; }
+  h1, .title-wrap { color: var(--dk-text) !important; }
+  .ciop-session { background: var(--dk-glass-bg) !important; border-color: var(--dk-glass-border) !important; color: var(--dk-text) !important; }
+  .ciop-session-profile { color: var(--dk-muted) !important; }
+  .dk-theme-toggle { display: flex !important; }
+  .kpi, .chart-card, .table-card { background: var(--dk-glass-bg) !important; border: 1px solid var(--dk-glass-border) !important; backdrop-filter: var(--dk-glass-blur) !important; -webkit-backdrop-filter: var(--dk-glass-blur) !important; box-shadow: var(--dk-glass-shadow) !important; }
+  .kpi { position: relative; overflow: hidden; }
+  .kpi-label { color: var(--dk-muted) !important; }
+  .kpi-value { color: var(--dk-text) !important; }
+  .kpi-sub { color: var(--dk-muted) !important; }
+  .chart-card h3, .table-card h3, .card-title { color: var(--dk-text) !important; }
+  thead th { background: var(--dk-glass-bg) !important; color: var(--dk-text) !important; border-color: var(--dk-glass-border) !important; }
+  tbody td { color: var(--dk-text) !important; border-color: var(--dk-glass-border) !important; }
+  tbody tr:hover { background: rgba(255,255,255,.06) !important; }
+}/* Fim modernizacao iPhone */
 </style>
 </head>
 <body data-require-perfis="Administrador,Supervisor,Gerência,Gerencia,Analista">
@@ -239,7 +255,8 @@ h1{font-size:20px}
 <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
 <div class="title-wrap"><h1 class="incidentes-title-art" aria-label="Dashboard de Incidentes"><img src="../assets/img/titulo-incidentes.png" alt="Dashboard de Incidentes"></h1></div>
 <div class="header-actions">
-<div class="ciop-session" aria-label="Usuário logado">
+<button class="dk-theme-toggle" type="button" id="dkThemeToggle" aria-label="Alternar tema claro/escuro"><span class="dk-icon-moon">&#9789;</span><span class="dk-icon-sun">&#9728;</span></button>
+  <div class="ciop-session" aria-label="Usuário logado">
 <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
 <span class="ciop-session-cargo" id="perfilUsuario" hidden></span>
 <button class="btn-logout" type="button" id="btnLogout" onclick="logout()">Sair</button>
@@ -381,12 +398,12 @@ h1{font-size:20px}
 <th data-sort="id"><span class="sort-label">ID <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="data"><span class="sort-label">Data <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="hora"><span class="sort-label">Hora <span class="sort-icon" aria-hidden="true">↕</span></span></th>
-<th data-sort="departamento"><span class="sort-label">Departamento <span class="sort-icon" aria-hidden="true">↕</span>span></span>span></th>th>
+<th data-sort="departamento"><span class="sort-label">Departamento <span class="sort-icon" aria-hidden="true">↕</span></span></th>th>
 <th data-sort="veiculo"><span class="sort-label">Veículo <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="linha"><span class="sort-label">Linha <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="criadoPor"><span class="sort-label">Analista <span class="sort-icon" aria-hidden="true">↕</span></span></th>
-<th data-sort="motoristaNr"><span class="sort-label">Nr. Motorista <span class="sort-icon" aria-hidden="true">↕</span>span></span>span></th>th>
-<th data-sort="motorista"><span class="sort-label">Motorista <span class="sort-icon" aria-hidden="true">↕</span>span></span>span></th>th>
+<th data-sort="motoristaNr"><span class="sort-label">Nr. Motorista <span class="sort-icon" aria-hidden="true">↕</span></span></th>th>
+<th data-sort="motorista"><span class="sort-label">Motorista <span class="sort-icon" aria-hidden="true">↕</span></span></th>th>
 <th data-sort="tipo"><span class="sort-label">Tipo do incidente <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="proprietario"><span class="sort-label">Agente <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="estado"><span class="sort-label">Status <span class="sort-icon" aria-hidden="true">↕</span></span></th>
@@ -422,6 +439,8 @@ h1{font-size:20px}
 <link rel="stylesheet" href="../assets/css/portal-filtros.css">
 <script type="module" src="../assets/js/auth.js"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
+<link rel="stylesheet" href="../assets/css/dashboard-kit.css">
+<script src="../assets/js/theme-toggle.js"></script>
 <script>
 const state = {
 all: [],
