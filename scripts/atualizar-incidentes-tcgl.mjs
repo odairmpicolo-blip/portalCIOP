@@ -609,10 +609,10 @@ while (total === null || start < total) {
 if (chunkNormalizedAll.length > 0 && chunkSemNovidade(chunkNormalizedAll, existingPayload)) {
     const chunkDentroJanela = chunkNormalizedAll.some(isDentroJanelaAtualizacao);
     if (!chunkDentroJanela) {
-      console.log(`Atualização: lote sem novidades e fora da janela de ${JANELA_ATUALIZACAO_DIAS} dias. Encerrando paginação.`);
-      break;
+      console.log(`Atualização: lote sem novidades e fora da janela de ${JANELA_ATUALIZACAO_DIAS} dias - continuando mesmo assim para manter incidentes antigos atualizados (ex: mudança de proprietário).`);
+    } else {
+      console.log(`Atualização: lote sem novidades, mas dentro da janela de ${JANELA_ATUALIZACAO_DIAS} dias - continuando para garantir cobertura completa.`);
     }
-    console.log(`Atualização: lote sem novidades, mas dentro da janela de ${JANELA_ATUALIZACAO_DIAS} dias - continuando para garantir cobertura completa.`);
   }
   start += pageLength;
 }
