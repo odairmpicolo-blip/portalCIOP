@@ -991,3 +991,169 @@ border-radius: 20px;
 padding: 20px;
 }
 }
+
+/* ================================================================
+   iOS 26 "Liquid Glass" — native app shell
+   Floating tab bar, glass module cards, bottom-sheet menu.
+   Scoped to native-only classes/hooks (.mobile-tab-bar only renders
+   when native; html.native-app is set by useNativeApp()), so the
+   desktop and mobile-web (non-Capacitor) experience is untouched.
+   ================================================================ */
+
+.mobile-tab-bar {
+position: fixed;
+left: 12px;
+right: 12px;
+bottom: calc(10px + env(safe-area-inset-bottom));
+z-index: 50;
+display: flex;
+justify-content: space-around;
+align-items: center;
+gap: 2px;
+padding: 8px 6px;
+border-radius: 26px;
+background: rgba(255, 255, 255, 0.62);
+backdrop-filter: blur(26px) saturate(180%);
+-webkit-backdrop-filter: blur(26px) saturate(180%);
+border: 1px solid rgba(255, 255, 255, 0.7);
+box-shadow: 0 16px 36px rgba(6, 36, 92, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.mobile-tab {
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 3px;
+padding: 7px 10px;
+border-radius: 18px;
+color: #8a95a8;
+font-size: 9.5px;
+font-weight: 700;
+background: transparent;
+border: none;
+appearance: none;
+-webkit-appearance: none;
+text-decoration: none;
+transition: background 0.25s var(--ease-smooth, ease), color 0.2s ease, transform 0.15s ease;
+}
+
+.mobile-tab-icon {
+width: 20px;
+height: 20px;
+}
+
+.mobile-tab.active {
+color: var(--blue);
+background: linear-gradient(135deg, rgba(6, 36, 92, 0.12), rgba(255, 107, 0, 0.1));
+}
+
+.mobile-tab:active {
+transform: scale(0.94);
+}
+
+html.native-app .app-content {
+padding-bottom: calc(100px + env(safe-area-inset-bottom));
+}
+
+.app-shell--native .btn-legacy-portal {
+display: none;
+}
+
+.portal-card:has(.card-icon-wrap) .card-top {
+grid-template-columns: 44px 1fr;
+align-items: center;
+}
+
+.card-icon-wrap {
+display: flex;
+align-items: center;
+justify-content: center;
+width: 40px;
+height: 40px;
+border-radius: 13px;
+background: linear-gradient(135deg, var(--accent, var(--blue)), var(--blue-2));
+box-shadow: 0 8px 18px -4px var(--accent, rgba(6, 36, 92, 0.4));
+}
+
+.card-module-icon {
+width: 19px;
+height: 19px;
+color: #fff;
+}
+
+.sidebar--sheet {
+top: auto;
+left: 0;
+right: 0;
+bottom: 0;
+width: 100%;
+height: auto;
+max-height: 80vh;
+border-right: none;
+border-radius: 28px 28px 0 0;
+transform: translateY(100%);
+transition: transform 0.3s var(--ease-smooth, ease);
+background: rgba(255, 255, 255, 0.86);
+backdrop-filter: blur(30px) saturate(180%);
+-webkit-backdrop-filter: blur(30px) saturate(180%);
+border: 1px solid rgba(255, 255, 255, 0.7);
+border-bottom: none;
+box-shadow: 0 -24px 60px rgba(6, 36, 92, 0.25);
+padding-bottom: env(safe-area-inset-bottom);
+}
+
+.sidebar--sheet.open {
+transform: translateY(0);
+}
+
+.sidebar--sheet .sidebar-header {
+border-bottom: none;
+padding: 20px 20px 10px;
+position: relative;
+}
+
+.sidebar--sheet .sidebar-header::before {
+content: "";
+position: absolute;
+top: 8px;
+left: 50%;
+transform: translateX(-50%);
+width: 38px;
+height: 5px;
+border-radius: 3px;
+background: rgba(6, 36, 92, 0.22);
+}
+
+.sidebar--sheet .sidebar-header h2 {
+font-size: 1.05rem;
+}
+
+.sidebar--sheet .sidebar-close {
+width: 28px;
+height: 28px;
+border-radius: 50%;
+background: rgba(6, 36, 92, 0.08);
+font-size: 1.1rem;
+line-height: 1;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+.sidebar--sheet .sidebar-nav {
+padding: 6px 14px 4px;
+}
+
+.sidebar--sheet .sidebar-link {
+border-radius: 14px;
+}
+
+@media (max-width: 900px) {
+.mobile-tab-bar {
+padding: 7px 4px;
+}
+
+.mobile-tab {
+padding: 6px 8px;
+}
+}
