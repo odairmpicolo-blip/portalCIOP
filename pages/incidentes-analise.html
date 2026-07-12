@@ -365,26 +365,26 @@ select option{color:#101828}
 
 <article class="chart-card span-12">
 <div class="card-head">
-<h2 class="card-title">Top agentes (proprietário)</h2>
-<p class="card-note">quantidade de incidentes por agente responsável</p>
-</div>
-<div class="chart-wrap tall"><canvas id="chartAgente"></canvas></div>
-</article>
-
-<article class="chart-card span-12">
-<div class="card-head">
 <h2 class="card-title">Tendência de incidentes no tempo</h2>
 <p class="card-note" id="tendenciaNote">últimos dias do período filtrado</p>
 </div>
 <div class="chart-wrap tall"><canvas id="chartTendencia"></canvas></div>
 </article>
 
-<article class="chart-card span-12">
+<article class="chart-card span-6">
+<div class="card-head">
+<h2 class="card-title">Top agentes CMTU (proprietário)</h2>
+<p class="card-note">quantidade de incidentes por agente responsável</p>
+</div>
+<div class="chart-wrap tall"><canvas id="chartAgente"></canvas></div>
+</article>
+
+<article class="chart-card span-6">
 <div class="card-head">
 <h2 class="card-title">Incidentes mês a mês</h2>
 <p class="card-note" id="tendenciaMensalNote">total de incidentes por mês no período filtrado</p>
 </div>
-<div class="chart-wrap"><canvas id="chartTendenciaMensal"></canvas></div>
+<div class="chart-wrap tall"><canvas id="chartTendenciaMensal"></canvas></div>
 </article>
 
 <article class="chart-card span-4">
@@ -796,11 +796,14 @@ function render(){
   const rows = state.filtered;
   const statsRows = rows.filter((row) => !isRegistroVazio(row));
   const motoristaRows = statsRows.filter((r) => String(r.motorista || "").trim());
-  const agenteRows = statsRows.filter((r) => !AGENTES_EXCLUIDOS.has(String(r.proprietario || "").trim().toUpperCase()));
+  const agenteRows = statsRows.filter((r) => {
+    const nome = String(r.proprietario || "").trim().toUpperCase();
+    return nome.includes("CMTU") && !AGENTES_EXCLUIDOS.has(nome);
+  });
   const aprovacaoRows = statsRows.filter((r) => r.estado === "Aprovado" || r.estado === "Reprovado");
   renderKpis(rows);
   renderBarRanking("analista", statsRows, (r) => r.criadoPor, 12, false);
-  renderBarRanking("agente", agenteRows, (r) => r.proprietario, 12, false);
+  renderBarRanking("agente", agenteRows, (r) => r.proprietario, 12, true);
   renderTendencia(rows);
   renderTendenciaMensal(rows);
   renderDoughnut("tipo", statsRows, (r) => rotuloTipo(tipoOriginalIncidente(r)), 8);
