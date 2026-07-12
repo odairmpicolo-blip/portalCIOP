@@ -171,7 +171,7 @@ select option{color:#101828}
 .filter-actions{display:flex;gap:8px;align-items:end}
 
 /* ---------- KPIs ---------- */
-.kpi-grid{display:grid;grid-template-columns:repeat(6,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.kpi-grid{display:grid;grid-template-columns:repeat(7,minmax(130px,1fr));gap:12px;margin-bottom:16px}
 .kpi{
   background:var(--dk-glass-bg);
   border:1px solid var(--dk-glass-border);
@@ -197,6 +197,7 @@ select option{color:#101828}
 .kpi.accent-tipos::after{background:linear-gradient(90deg,var(--violet),var(--pink))}
 .kpi.accent-linha::after{background:linear-gradient(90deg,var(--cyan),var(--dk-accent))}
 .kpi.accent-analista::after{background:linear-gradient(90deg,var(--pink),var(--violet))}
+.kpi.accent-agente::after{background:linear-gradient(90deg,var(--teal),var(--dk-accent-2))}
 .kpi-label{font-size:10px;font-weight:900;color:var(--dk-muted);text-transform:uppercase;letter-spacing:.04em}
 .kpi-value{margin-top:6px;color:var(--dk-text);font-size:23px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums}
 .kpi-sub{margin-top:4px;color:var(--dk-muted);font-size:11px;font-weight:700;line-height:1.25}
@@ -226,7 +227,7 @@ select option{color:#101828}
 .chart-empty{padding:40px 10px;text-align:center;color:var(--dk-muted);font-weight:700;font-size:12px}
 
 @media (max-width:1180px){
-  .kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
   .filters-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .chart-card.span-8,.chart-card.span-6,.chart-card.span-4{grid-column:span 12}
 }
@@ -346,9 +347,30 @@ select option{color:#101828}
 <div class="kpi-value" id="kpiAnalista">-</div>
 <div class="kpi-sub" id="kpiAnalistaQtd">0 incidentes</div>
 </article>
+<article class="kpi accent-agente">
+<div class="kpi-label">Agente com mais registros</div>
+<div class="kpi-value" id="kpiAgente">-</div>
+<div class="kpi-sub" id="kpiAgenteQtd">0 incidentes</div>
+</article>
 </section>
 
 <section class="charts" aria-label="Gráficos">
+<article class="chart-card span-12">
+<div class="card-head">
+<h2 class="card-title">Top analistas (criado por)</h2>
+<p class="card-note">quantidade de incidentes registrados por analista</p>
+</div>
+<div class="chart-wrap tall"><canvas id="chartAnalista"></canvas></div>
+</article>
+
+<article class="chart-card span-12">
+<div class="card-head">
+<h2 class="card-title">Top agentes (proprietário)</h2>
+<p class="card-note">quantidade de incidentes por agente responsável</p>
+</div>
+<div class="chart-wrap tall"><canvas id="chartAgente"></canvas></div>
+</article>
+
 <article class="chart-card span-12">
 <div class="card-head">
 <h2 class="card-title">Tendência de incidentes no tempo</h2>
@@ -357,17 +379,21 @@ select option{color:#101828}
 <div class="chart-wrap tall"><canvas id="chartTendencia"></canvas></div>
 </article>
 
-<article class="chart-card span-4">
+<article class="chart-card span-12">
+<div class="card-head">
+<h2 class="card-title">Incidentes mês a mês</h2>
+<p class="card-note" id="tendenciaMensalNote">total de incidentes por mês no período filtrado</p>
+</div>
+<div class="chart-wrap"><canvas id="chartTendenciaMensal"></canvas></div>
+</article>
+
+<article class="chart-card span-6">
 <div class="card-head"><h2 class="card-title">Por tipo de incidente</h2></div>
 <div class="chart-wrap"><canvas id="chartTipo"></canvas></div>
 </article>
-<article class="chart-card span-4">
+<article class="chart-card span-6">
 <div class="card-head"><h2 class="card-title">Por status</h2></div>
 <div class="chart-wrap"><canvas id="chartStatus"></canvas></div>
-</article>
-<article class="chart-card span-4">
-<div class="card-head"><h2 class="card-title">Por empresa</h2></div>
-<div class="chart-wrap"><canvas id="chartEmpresa"></canvas></div>
 </article>
 
 <article class="chart-card span-6">
@@ -386,14 +412,6 @@ select option{color:#101828}
 <article class="chart-card span-6">
 <div class="card-head"><h2 class="card-title">Top veículos</h2></div>
 <div class="chart-wrap tall"><canvas id="chartVeiculo"></canvas></div>
-</article>
-
-<article class="chart-card span-12">
-<div class="card-head">
-<h2 class="card-title">Ranking de analistas (criado por)</h2>
-<p class="card-note">quantidade de incidentes registrados por analista</p>
-</div>
-<div class="chart-wrap tall"><canvas id="chartAnalista"></canvas></div>
 </article>
 </section>
 </main>
@@ -591,6 +609,52 @@ function renderTendencia(rows){
   });
 }
 
+const MESES_ABREV = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+
+function renderTendenciaMensal(rows){
+  destroyChart("tendenciaMensal");
+  const canvas = document.getElementById("chartTendenciaMensal");
+  const map = new Map();
+  rows.forEach((row) => {
+    const iso = dateToIso(row.data);
+    if (!iso) return;
+    const chave = iso.slice(0, 7);
+    map.set(chave, (map.get(chave) || 0) + 1);
+  });
+  const meses = Array.from(map.keys()).sort();
+  const labels = meses.map((m) => {
+    const [y, mm] = m.split("-");
+    return MESES_ABREV[Number(mm) - 1] + "/" + y.slice(2);
+  });
+  const valores = meses.map((m) => map.get(m));
+  document.getElementById("tendenciaMensalNote").textContent = meses.length
+    ? meses.length + " mes(es) com registro no período filtrado"
+    : "sem dados no período";
+
+  if (!meses.length) { showEmpty("chartTendenciaMensal"); return; }
+
+  charts.tendenciaMensal = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Incidentes",
+        data: valores,
+        backgroundColor: isDarkTheme() ? "#ff9f0a" : "#ff9500",
+        borderRadius: 8,
+        maxBarThickness: 46
+      }]
+    },
+    options: baseOptions({
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: themeMutedColor(), font: { size: 11 } }, grid: { display: false } },
+        y: { beginAtZero: true, ticks: { color: themeMutedColor(), precision: 0 }, grid: { color: themeGridColor(), drawBorder: false } }
+      }
+    })
+  });
+}
+
 function renderDoughnut(id, rows, getLabel, limit){
   destroyChart(id);
   const data = countBy(rows, getLabel, limit || 8);
@@ -676,6 +740,7 @@ function renderKpis(rows){
   const hojeCount = statsRows.filter((row) => dateToIso(row.data) === hojeIso).length;
   const linhaTop = countBy(statsRows, (r) => r.linha, 1)[0] || { label: "-", total: 0 };
   const analistaTop = countBy(statsRows, (r) => r.criadoPor, 1)[0] || { label: "-", total: 0 };
+  const agenteTop = countBy(statsRows, (r) => r.proprietario, 1)[0] || { label: "-", total: 0 };
   const tiposDistintos = new Set(statsRows.map(tipoOriginalIncidente).filter(Boolean)).size;
 
   const dias = new Set(statsRows.map((r) => dateToIso(r.data)).filter(Boolean)).size || 1;
@@ -690,21 +755,25 @@ function renderKpis(rows){
   document.getElementById("kpiLinhaQtd").textContent = formatNumber(linhaTop.total) + " incidentes";
   document.getElementById("kpiAnalista").textContent = analistaTop.label;
   document.getElementById("kpiAnalistaQtd").textContent = formatNumber(analistaTop.total) + " incidentes";
+  document.getElementById("kpiAgente").textContent = agenteTop.label;
+  document.getElementById("kpiAgenteQtd").textContent = formatNumber(agenteTop.total) + " incidentes";
 }
 
 function render(){
   const rows = state.filtered;
   const statsRows = rows.filter((row) => !isRegistroVazio(row));
+  const motoristaRows = statsRows.filter((r) => String(r.motorista || "").trim());
   renderKpis(rows);
+  renderBarRanking("analista", statsRows, (r) => r.criadoPor, 12, false);
+  renderBarRanking("agente", statsRows, (r) => r.proprietario, 12, false);
   renderTendencia(rows);
+  renderTendenciaMensal(rows);
   renderDoughnut("tipo", statsRows, (r) => rotuloTipo(tipoOriginalIncidente(r)), 8);
   renderDoughnut("status", statsRows, (r) => r.estado, 8);
-  renderDoughnut("empresa", statsRows, (r) => r.empresa, 6);
   renderBarRanking("departamento", statsRows, (r) => r.departamento, 8);
   renderBarRanking("linha", statsRows, (r) => r.linha, 10);
-  renderBarRanking("motorista", statsRows, (r) => r.motorista ? (r.motoristaNr ? r.motoristaNr + " · " + r.motorista : r.motorista) : "", 10);
-  renderBarRanking("veiculo", statsRows, (r) => r.veiculo, 10);
-  renderBarRanking("analista", statsRows, (r) => r.criadoPor, 12, false);
+  renderBarRanking("motorista", motoristaRows, (r) => r.motoristaNr ? r.motoristaNr + " · " + r.motorista : r.motorista, 10);
+  renderBarRanking("veiculo", statsRows, (r) => r.veiculo ? (r.veiculo + (r.veiculoDescricao ? " · " + r.veiculoDescricao : "")) : "", 10);
 }
 
 function aplicarPayloadIncidentes(payload){
