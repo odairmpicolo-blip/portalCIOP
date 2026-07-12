@@ -387,13 +387,20 @@ select option{color:#101828}
 <div class="chart-wrap"><canvas id="chartTendenciaMensal"></canvas></div>
 </article>
 
-<article class="chart-card span-6">
+<article class="chart-card span-4">
 <div class="card-head"><h2 class="card-title">Por tipo de incidente</h2></div>
 <div class="chart-wrap"><canvas id="chartTipo"></canvas></div>
 </article>
-<article class="chart-card span-6">
+<article class="chart-card span-4">
 <div class="card-head"><h2 class="card-title">Por status</h2></div>
 <div class="chart-wrap"><canvas id="chartStatus"></canvas></div>
+</article>
+<article class="chart-card span-4">
+<div class="card-head">
+<h2 class="card-title">Aprovado x Reprovado</h2>
+<p class="card-note" id="aprovacaoNote">% de incidentes aprovados</p>
+</div>
+<div class="chart-wrap"><canvas id="chartAprovacao"></canvas></div>
 </article>
 
 <article class="chart-card span-6">
@@ -655,18 +662,21 @@ function renderTendenciaMensal(rows){
   });
 }
 
-function renderDoughnut(id, rows, getLabel, limit){
+function renderDoughnut(id, rows, getLabel, limit, colorMap){
   destroyChart(id);
   const data = countBy(rows, getLabel, limit || 8);
   const target = document.getElementById(canvasIdFor(id));
   if (!data.length){ showEmpty(canvasIdFor(id)); return; }
+  const colors = colorMap
+    ? data.map((d) => colorMap[d.label] || "#8e8e93")
+    : PALETTE;
   charts[id] = new Chart(target, {
     type: "doughnut",
     data: {
       labels: data.map((d) => d.label),
       datasets: [{
         data: data.map((d) => d.total),
-        backgroundColor: PALETTE,
+        backgroundColor: colors,
         borderColor: isDarkTheme() ? "#060b14" : "#eef2f8",
         borderWidth: 2,
         hoverOffset: 6
@@ -684,7 +694,14 @@ function renderDoughnut(id, rows, getLabel, limit){
         tooltip: {
           backgroundColor: isDarkTheme() ? "rgba(20,20,24,.92)" : "rgba(255,255,255,.96)",
           titleColor: themeTextColor(),
-          bodyColor: themeTextColor()
+          bodyColor: themeTextColor(),
+          callbacks: {
+            label: function(ctx){
+              const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+              const pct = total ? (ctx.parsed / total * 100) : 0;
+              return " " + ctx.label + ": " + formatNumber(ctx.parsed) + " (" + pct.toFixed(1) + "%)";
+            }
+          }
         }
       }
     }
@@ -759,21 +776,47 @@ function renderKpis(rows){
   document.getElementById("kpiAgenteQtd").textContent = formatNumber(agenteTop.total) + " incidentes";
 }
 
+const AGENTES_EXCLUIDOS = new Set([
+  "LUIZ C. REHDER",
+  "GABRIEL H. DUARTE",
+  "GABRIEL L. TCGL",
+  "FELIPE K. TCGL",
+  "CLEONICE F. TCGL",
+  "SERGIO C. TCGL",
+  "ISLAN SANTIAGO",
+  "JOSE OSSETTI",
+  "ANDRE G. TCGL"
+]);
+
+function linhaNumero(linha){
+  return String(linha || "").split(":")[0].trim();
+}
+
 function render(){
   const rows = state.filtered;
   const statsRows = rows.filter((row) => !isRegistroVazio(row));
   const motoristaRows = statsRows.filter((r) => String(r.motorista || "").trim());
+  const agenteRows = statsRows.filter((r) => !AGENTES_EXCLUIDOS.has(String(r.proprietario || "").trim().toUpperCase()));
+  const aprovacaoRows = statsRows.filter((r) => r.estado === "Aprovado" || r.estado === "Reprovado");
   renderKpis(rows);
   renderBarRanking("analista", statsRows, (r) => r.criadoPor, 12, false);
-  renderBarRanking("agente", statsRows, (r) => r.proprietario, 12, false);
+  renderBarRanking("agente", agenteRows, (r) => r.proprietario, 12, false);
   renderTendencia(rows);
   renderTendenciaMensal(rows);
   renderDoughnut("tipo", statsRows, (r) => rotuloTipo(tipoOriginalIncidente(r)), 8);
   renderDoughnut("status", statsRows, (r) => r.estado, 8);
+  renderDoughnut("aprovacao", aprovacaoRows, (r) => r.estado, 2, { "Aprovado": "#30d158", "Reprovado": "#ff453a" });
+  const aprovados = aprovacaoRows.filter((r) => r.estado === "Aprovado").length;
+  const notaAprovacao = document.getElementById("aprovacaoNote");
+  if (notaAprovacao) {
+    notaAprovacao.textContent = aprovacaoRows.length
+      ? (aprovados / aprovacaoRows.length * 100).toFixed(1) + "% aprovados (" + formatNumber(aprovacaoRows.length) + " avaliados)"
+      : "sem avaliações no período";
+  }
   renderBarRanking("departamento", statsRows, (r) => r.departamento, 8);
-  renderBarRanking("linha", statsRows, (r) => r.linha, 10);
+  renderBarRanking("linha", statsRows, (r) => linhaNumero(r.linha), 10);
   renderBarRanking("motorista", motoristaRows, (r) => r.motoristaNr ? r.motoristaNr + " · " + r.motorista : r.motorista, 10);
-  renderBarRanking("veiculo", statsRows, (r) => r.veiculo ? (r.veiculo + (r.veiculoDescricao ? " · " + r.veiculoDescricao : "")) : "", 10);
+  renderBarRanking("veiculo", statsRows, (r) => r.veiculo || "", 10);
 }
 
 function aplicarPayloadIncidentes(payload){
