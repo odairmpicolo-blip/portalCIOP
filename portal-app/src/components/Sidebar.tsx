@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { sidebarLinks } from '../lib/navigation'
 import { usuarioPodeAcessar } from '../lib/permissions'
+import { isNativeApp } from '../lib/portal-origin'
 
 type SidebarProps = {
   open: boolean
@@ -11,12 +12,16 @@ type SidebarProps = {
 
 export function Sidebar({ open, onClose, onAvisos }: SidebarProps) {
   const { user } = useAuth()
+  const native = isNativeApp()
   const links = sidebarLinks.filter((item) => usuarioPodeAcessar(user, item.access))
 
   return (
     <>
       <div className={`sidebar-backdrop ${open ? 'visible' : ''}`} onClick={onClose} aria-hidden="true" />
-      <aside className={`sidebar ${open ? 'open' : ''}`} aria-label="Links operacionais">
+      <aside
+        className={`sidebar ${native ? 'sidebar--sheet' : ''} ${open ? 'open' : ''}`}
+        aria-label="Links operacionais"
+      >
         <div className="sidebar-header">
           <h2>Links Operacionais</h2>
           <button type="button" className="sidebar-close" onClick={onClose} aria-label="Fechar menu">
