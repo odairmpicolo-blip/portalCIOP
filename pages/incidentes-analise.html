@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>
+document.documentElement.classList.add("portal-auth-pending");
+</script>
+<style id="portalAuthBootStyle">
+.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}
+</style>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analytics de Incidentes - Portal CIOP</title>
+<style>
+:root{
+  --blue:#06245c;
+  --blue2:#0b3a8a;
+  --orange:#ff6b00;
+  --border:#dfe5ef;
+  --text:#101828;
+  --muted:#667085;
+  --white:#fff;
+  --red:#dc2626;
+  --green:#15803d;
+  --cyan:#0369a1;
+  --amber:#b45309;
+  --violet:#7c3aed;
+  --pink:#ec4899;
+  --teal:#06b6d4;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  color:var(--dk-text);
+  font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  min-height:100vh;
+  background:
+    radial-gradient(1100px 560px at 12% -8%, color-mix(in srgb, var(--dk-accent) 20%, transparent), transparent 58%),
+    radial-gradient(900px 520px at 100% 0%, color-mix(in srgb, var(--dk-accent-2) 14%, transparent), transparent 55%),
+    linear-gradient(180deg, var(--dk-bg) 0%, var(--dk-bg-2) 100%);
+  transition:background .25s ease, color .25s ease;
+}
+
+/* ---------- Header ---------- */
+.header{
+  background:var(--dk-glass-bg);
+  backdrop-filter:var(--dk-glass-blur);
+  -webkit-backdrop-filter:var(--dk-glass-blur);
+  border-bottom:1px solid var(--dk-glass-border);
+  display:grid;
+  grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);
+  gap:16px;
+  align-items:center;
+  padding:8px 20px;
+  position:sticky;
+  top:0;
+  z-index:30;
+}
+.header > a:first-child.portal-brand-mark{justify-self:start}
+.logo-tcgl{height:40px;object-fit:contain}
+.title-wrap{justify-self:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0}
+.title-wrap h1{
+  margin:0;
+  font-size:20px;
+  font-weight:900;
+  letter-spacing:.02em;
+  color:var(--dk-text);
+  background:linear-gradient(90deg, var(--dk-accent), var(--dk-accent-2));
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+  white-space:nowrap;
+}
+.title-wrap .title-sub{
+  margin-top:2px;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--dk-muted);
+}
+.header-actions{justify-self:end;display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}
+.dk-theme-toggle{display:inline-flex !important}
+.ciop-session{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  max-width:260px;
+  padding:4px 6px;
+  border:1px solid var(--dk-glass-border);
+  border-radius:8px;
+  background:var(--dk-glass-bg);
+  color:var(--dk-text);
+  font-size:11px;
+  line-height:1;
+}
+.ciop-session-user{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.ciop-session-profile{color:var(--dk-muted);font-weight:600}
+.btn-logout,.btn{
+  border:0;
+  border-radius:6px;
+  padding:8px 10px;
+  font-weight:800;
+  cursor:pointer;
+  font-family:inherit;
+}
+.ciop-session .btn-logout{background:var(--red);color:#fff;padding:4px 7px;font-size:11px}
+
+/* ---------- Layout ---------- */
+.container{max-width:1580px;margin:22px auto 40px;padding:0 18px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.btn-portal,.btn-primary,.btn-secondary{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:38px;
+  text-decoration:none;
+  border-radius:8px;
+  font-size:12px;
+  transition:transform .15s, box-shadow .15s, background .15s;
+}
+.btn-portal,.btn-primary{background:linear-gradient(135deg,var(--dk-accent),var(--blue2));color:#fff;padding:8px 16px;font-weight:800;box-shadow:0 8px 20px color-mix(in srgb, var(--dk-accent) 35%, transparent)}
+.btn-portal:hover,.btn-primary:hover{transform:translateY(-1px)}
+.btn-secondary{background:var(--dk-glass-bg);color:var(--dk-text);border:1px solid var(--dk-glass-border);padding:8px 14px;font-weight:700}
+.btn-secondary:hover{border-color:var(--dk-accent)}
+.btn-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex:0 0 auto}
+.btn-icon svg{width:16px;height:16px;display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.status-line{color:var(--dk-muted);font-size:12px;font-weight:700}
+.source-status{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.btn-refresh:disabled{opacity:.55;cursor:not-allowed}
+
+/* ---------- Filtros ---------- */
+.filters-panel{
+  background:var(--dk-glass-bg);
+  border:1px solid var(--dk-glass-border);
+  backdrop-filter:var(--dk-glass-blur);
+  -webkit-backdrop-filter:var(--dk-glass-blur);
+  box-shadow:var(--dk-glass-shadow);
+  border-radius:16px;
+  padding:14px 16px;
+  margin-bottom:16px;
+  position:relative;
+  overflow:hidden;
+}
+.filters-panel::before{
+  content:"";
+  position:absolute;
+  inset:0 auto auto 0;
+  width:100%;
+  height:2px;
+  background:linear-gradient(90deg, var(--dk-accent), var(--dk-accent-2), var(--violet));
+  opacity:.9;
+}
+.filters-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.field label{display:block;margin:0 0 5px;color:var(--dk-muted);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+input,select{
+  width:100%;
+  border:1px solid var(--dk-glass-border);
+  border-radius:8px;
+  padding:9px 10px;
+  font-size:12.5px;
+  font-family:inherit;
+  background:color-mix(in srgb, var(--dk-bg) 40%, transparent);
+  color:var(--dk-text);
+}
+select option{color:#101828}
+.filter-actions{display:flex;gap:8px;align-items:end}
+
+/* ---------- KPIs ---------- */
+.kpi-grid{display:grid;grid-template-columns:repeat(6,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.kpi{
+  background:var(--dk-glass-bg);
+  border:1px solid var(--dk-glass-border);
+  backdrop-filter:var(--dk-glass-blur);
+  -webkit-backdrop-filter:var(--dk-glass-blur);
+  box-shadow:var(--dk-glass-shadow);
+  border-radius:14px;
+  padding:13px 14px;
+  min-height:88px;
+  position:relative;
+  overflow:hidden;
+}
+.kpi::after{
+  content:"";
+  position:absolute;
+  inset:auto 0 0 0;
+  height:3px;
+  opacity:.9;
+}
+.kpi.accent-total::after{background:linear-gradient(90deg,var(--dk-accent),var(--teal))}
+.kpi.accent-media::after{background:linear-gradient(90deg,var(--dk-accent-2),var(--amber))}
+.kpi.accent-hoje::after{background:linear-gradient(90deg,var(--green),var(--teal))}
+.kpi.accent-tipos::after{background:linear-gradient(90deg,var(--violet),var(--pink))}
+.kpi.accent-linha::after{background:linear-gradient(90deg,var(--cyan),var(--dk-accent))}
+.kpi.accent-analista::after{background:linear-gradient(90deg,var(--pink),var(--violet))}
+.kpi-label{font-size:10px;font-weight:900;color:var(--dk-muted);text-transform:uppercase;letter-spacing:.04em}
+.kpi-value{margin-top:6px;color:var(--dk-text);font-size:23px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums}
+.kpi-sub{margin-top:4px;color:var(--dk-muted);font-size:11px;font-weight:700;line-height:1.25}
+
+/* ---------- Charts ---------- */
+.charts{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;margin-bottom:16px}
+.chart-card{
+  background:var(--dk-glass-bg);
+  border:1px solid var(--dk-glass-border);
+  backdrop-filter:var(--dk-glass-blur);
+  -webkit-backdrop-filter:var(--dk-glass-blur);
+  box-shadow:var(--dk-glass-shadow);
+  border-radius:16px;
+  padding:16px;
+  position:relative;
+  overflow:hidden;
+}
+.chart-card.span-12{grid-column:span 12}
+.chart-card.span-8{grid-column:span 8}
+.chart-card.span-6{grid-column:span 6}
+.chart-card.span-4{grid-column:span 4}
+.chart-card .card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.card-title{margin:0;color:var(--dk-text);font-size:14px;font-weight:900;letter-spacing:.01em}
+.card-note{margin:0;color:var(--dk-muted);font-size:10.5px;font-weight:700}
+.chart-wrap{position:relative;height:260px}
+.chart-wrap.tall{height:320px}
+.chart-empty{padding:40px 10px;text-align:center;color:var(--dk-muted);font-weight:700;font-size:12px}
+
+@media (max-width:1180px){
+  .kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .filters-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .chart-card.span-8,.chart-card.span-6,.chart-card.span-4{grid-column:span 12}
+}
+@media (max-width:720px){
+  .header{grid-template-columns:1fr;padding:10px 14px;row-gap:8px}
+  .header > a:first-child:not(.portal-brand-mark),.header-actions,.title-wrap{justify-self:center}
+  .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .filters-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .filter-actions{align-items:stretch;flex-direction:column}
+  .title-wrap h1{font-size:16px}
+  .chart-wrap{height:220px}
+  .chart-wrap.tall{height:260px}
+}
+@media (max-width:480px){
+  .kpi-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body data-require-perfis="Administrador,Supervisor,Gerência,Gerencia,Analista">
+<header class="header">
+<a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
+<div class="title-wrap">
+  <h1>Analytics de Incidentes</h1>
+  <span class="title-sub">Painel visual · TCGL</span>
+</div>
+<div class="header-actions">
+<button class="dk-theme-toggle" type="button" id="dkThemeToggle" aria-label="Alternar tema claro/escuro"><span class="dk-icon-moon">&#9789;</span><span class="dk-icon-sun">&#9728;</span></button>
+<div class="ciop-session" aria-label="Usuário logado">
+<span class="ciop-session-user" id="usuarioLogado">Usuário</span>
+<span class="ciop-session-cargo" id="perfilUsuario" hidden></span>
+<button class="btn-logout" type="button" id="btnLogout" onclick="logout()">Sair</button>
+</div>
+<a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener" style="display:flex">
+<img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+</a>
+</div>
+</header>
+
+<main class="container">
+<div class="topbar">
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<a class="btn-portal" href="../index.html" aria-label="Voltar ao portal">
+<span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>
+<span>Portal</span>
+</a>
+<a class="btn-secondary" href="incidentes-dashboard.html" aria-label="Ver tabela detalhada de incidentes">
+<span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18"/></svg></span>
+<span>Tabela detalhada</span>
+</a>
+</div>
+<div class="source-status">
+<div class="status-line" id="statusLine">Carregando incidentes TCGL...</div>
+<button class="btn btn-secondary btn-refresh" type="button" id="btnAtualizar">Atualizar</button>
+</div>
+</div>
+
+<section class="filters-panel" aria-label="Filtros">
+<div class="filters-grid">
+<div class="field">
+<label for="dataInicioFiltro">Data inicial</label>
+<input id="dataInicioFiltro" type="date">
+</div>
+<div class="field">
+<label for="dataFimFiltro">Data final</label>
+<input id="dataFimFiltro" type="date">
+</div>
+<div class="field">
+<label for="empresaFiltro">Empresa</label>
+<select id="empresaFiltro"><option value="">Todas</option></select>
+</div>
+<div class="field">
+<label for="departamentoFiltro">Departamento</label>
+<select id="departamentoFiltro"><option value="">Todos</option></select>
+</div>
+<div class="field">
+<label for="tipoFiltro">Tipo do incidente</label>
+<select id="tipoFiltro"><option value="">Todos</option></select>
+</div>
+<div class="field">
+<label for="estadoFiltro">Status</label>
+<select id="estadoFiltro"><option value="">Todos</option></select>
+</div>
+</div>
+<div class="filter-actions" style="margin-top:10px">
+<button class="btn btn-secondary" type="button" id="limparFiltros">Limpar filtros</button>
+</div>
+</section>
+
+<section class="kpi-grid" aria-label="Indicadores principais">
+<article class="kpi accent-total">
+<div class="kpi-label">Total no período</div>
+<div class="kpi-value" id="kpiTotal">0</div>
+<div class="kpi-sub" id="kpiTotalSub">Todos os registros TCGL</div>
+</article>
+<article class="kpi accent-media">
+<div class="kpi-label">Média por dia</div>
+<div class="kpi-value" id="kpiMedia">0</div>
+<div class="kpi-sub">incidentes/dia no período</div>
+</article>
+<article class="kpi accent-hoje">
+<div class="kpi-label">Incidentes hoje</div>
+<div class="kpi-value" id="kpiHoje">0</div>
+<div class="kpi-sub" id="kpiHojeSub">registrados hoje</div>
+</article>
+<article class="kpi accent-tipos">
+<div class="kpi-label">Tipos distintos</div>
+<div class="kpi-value" id="kpiTiposDistintos">0</div>
+<div class="kpi-sub">categorias diferentes</div>
+</article>
+<article class="kpi accent-linha">
+<div class="kpi-label">Linha com mais incidentes</div>
+<div class="kpi-value" id="kpiLinha">-</div>
+<div class="kpi-sub" id="kpiLinhaQtd">0 incidentes</div>
+</article>
+<article class="kpi accent-analista">
+<div class="kpi-label">Analista com mais registros</div>
+<div class="kpi-value" id="kpiAnalista">-</div>
+<div class="kpi-sub" id="kpiAnalistaQtd">0 incidentes</div>
+</article>
+</section>
+
+<section class="charts" aria-label="Gráficos">
+<article class="chart-card span-12">
+<div class="card-head">
+<h2 class="card-title">Tendência de incidentes no tempo</h2>
+<p class="card-note" id="tendenciaNote">últimos dias do período filtrado</p>
+</div>
+<div class="chart-wrap tall"><canvas id="chartTendencia"></canvas></div>
+</article>
+
+<article class="chart-card span-4">
+<div class="card-head"><h2 class="card-title">Por tipo de incidente</h2></div>
+<div class="chart-wrap"><canvas id="chartTipo"></canvas></div>
+</article>
+<article class="chart-card span-4">
+<div class="card-head"><h2 class="card-title">Por status</h2></div>
+<div class="chart-wrap"><canvas id="chartStatus"></canvas></div>
+</article>
+<article class="chart-card span-4">
+<div class="card-head"><h2 class="card-title">Por empresa</h2></div>
+<div class="chart-wrap"><canvas id="chartEmpresa"></canvas></div>
+</article>
+
+<article class="chart-card span-6">
+<div class="card-head"><h2 class="card-title">Top departamentos</h2></div>
+<div class="chart-wrap"><canvas id="chartDepartamento"></canvas></div>
+</article>
+<article class="chart-card span-6">
+<div class="card-head"><h2 class="card-title">Top linhas com mais ocorrências</h2></div>
+<div class="chart-wrap"><canvas id="chartLinha"></canvas></div>
+</article>
+
+<article class="chart-card span-6">
+<div class="card-head"><h2 class="card-title">Top motoristas</h2></div>
+<div class="chart-wrap tall"><canvas id="chartMotorista"></canvas></div>
+</article>
+<article class="chart-card span-6">
+<div class="card-head"><h2 class="card-title">Top veículos</h2></div>
+<div class="chart-wrap tall"><canvas id="chartVeiculo"></canvas></div>
+</article>
+
+<article class="chart-card span-12">
+<div class="card-head">
+<h2 class="card-title">Ranking de analistas (criado por)</h2>
+<p class="card-note">quantidade de incidentes registrados por analista</p>
+</div>
+<div class="chart-wrap tall"><canvas id="chartAnalista"></canvas></div>
+</article>
+</section>
+</main>
+
+<link rel="stylesheet" href="../assets/css/portal-senha.css">
+<link rel="stylesheet" href="../assets/css/portal-titulos.css">
+<link rel="stylesheet" href="../assets/css/portal-brand.css">
+<link rel="stylesheet" href="../assets/css/portal-header.css">
+<link rel="stylesheet" href="../assets/css/portal-session.css">
+<link rel="stylesheet" href="../assets/css/portal-filtros.css">
+<script type="module" src="../assets/js/auth.js"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+<link rel="stylesheet" href="../assets/css/dashboard-kit.css">
+<script src="../assets/js/theme-toggle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+const PALETTE = ["#0a84ff","#ff9f0a","#7c3aed","#06b6d4","#ec4899","#30d158","#ff453a","#eab308","#818cf8","#f472b6","#34d399","#fb923c"];
+
+const state = { all: [], filtered: [] };
+const charts = {};
+
+const fields = {
+  dataInicio: document.getElementById("dataInicioFiltro"),
+  dataFim: document.getElementById("dataFimFiltro"),
+  empresa: document.getElementById("empresaFiltro"),
+  departamento: document.getElementById("departamentoFiltro"),
+  tipo: document.getElementById("tipoFiltro"),
+  estado: document.getElementById("estadoFiltro")
+};
+
+function isDarkTheme(){
+  const cls = document.documentElement.classList;
+  if (cls.contains("dk-dark")) return true;
+  if (cls.contains("dk-light")) return false;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+function themeTextColor(){ return isDarkTheme() ? "#f5f5f7" : "#1c1c1e"; }
+function themeMutedColor(){ return isDarkTheme() ? "#98989d" : "#636366"; }
+function themeGridColor(){ return isDarkTheme() ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.07)"; }
+
+function formatNumber(value){ return Number(value || 0).toLocaleString("pt-BR"); }
+
+function normalizeText(value){
+  return String(value || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
+function dateToIso(value){
+  const parts = String(value || "").split("/");
+  if (parts.length !== 3) return "";
+  return parts[2] + "-" + parts[1].padStart(2, "0") + "-" + parts[0].padStart(2, "0");
+}
+
+function isRegistroVazio(row){
+  if (row?.registroVazio === true) return true;
+  return !String(row?.natureOfProblem || "").trim() && !String(row?.instructions || "").trim();
+}
+
+function tipoOriginalIncidente(row){
+  const original = String(row?.tipoOriginal || "").trim();
+  if (original && original.toUpperCase() !== "VAZIO") return original;
+  const tipo = String(row?.tipo || "").trim();
+  return tipo || "Sem informação";
+}
+
+function rotuloTipo(value){
+  const tipo = String(value || "").trim();
+  if (tipo.toUpperCase() === "AE") return tipo + " (Botão de Emergência)";
+  return tipo || "Sem informação";
+}
+
+function escapeHtml(value){
+  return String(value || "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+
+function populateSelect(select, rows, getValue){
+  const previous = select.value;
+  const values = Array.from(new Set(rows.map(getValue).filter(Boolean)))
+    .sort((a, b) => String(a).localeCompare(String(b), "pt-BR", { numeric: true }));
+  select.innerHTML = '<option value="">Todos</option>' + values.map((v) => '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>').join("");
+  if (values.includes(previous)) select.value = previous;
+}
+
+function countBy(rows, getLabel, limit){
+  const map = new Map();
+  rows.forEach((row) => {
+    const label = getLabel(row) || "Sem informação";
+    map.set(label, (map.get(label) || 0) + 1);
+  });
+  const list = Array.from(map, ([label, total]) => ({ label, total }))
+    .sort((a, b) => b.total - a.total || a.label.localeCompare(b.label, "pt-BR"));
+  return limit ? list.slice(0, limit) : list;
+}
+
+function applyFilters(){
+  const start = fields.dataInicio.value;
+  const end = fields.dataFim.value;
+  const exact = {
+    empresa: fields.empresa.value,
+    departamento: fields.departamento.value,
+    tipo: fields.tipo.value,
+    estado: fields.estado.value
+  };
+  state.filtered = state.all.filter((row) => {
+    const iso = dateToIso(row.data);
+    if (start && iso < start) return false;
+    if (end && iso > end) return false;
+    if (exact.empresa && row.empresa !== exact.empresa) return false;
+    if (exact.departamento && row.departamento !== exact.departamento) return false;
+    if (exact.tipo && tipoOriginalIncidente(row) !== exact.tipo) return false;
+    if (exact.estado && row.estado !== exact.estado) return false;
+    return true;
+  });
+  render();
+}
+
+function destroyChart(id){
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+function baseOptions(extra){
+  const text = themeTextColor();
+  const grid = themeGridColor();
+  return Object.assign({
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 500 },
+    plugins: {
+      legend: { display: false, labels: { color: text } },
+      tooltip: {
+        backgroundColor: isDarkTheme() ? "rgba(20,20,24,.92)" : "rgba(255,255,255,.96)",
+        titleColor: text,
+        bodyColor: text,
+        borderColor: grid,
+        borderWidth: 1,
+        padding: 10,
+        cornerRadius: 8
+      }
+    },
+    scales: {
+      x: { ticks: { color: themeMutedColor(), font: { size: 10.5 } }, grid: { color: grid, drawBorder: false } },
+      y: { ticks: { color: themeMutedColor(), font: { size: 10.5 } }, grid: { color: grid, drawBorder: false } }
+    }
+  }, extra || {});
+}
+
+function renderTendencia(rows){
+  destroyChart("tendencia");
+  const canvas = document.getElementById("chartTendencia");
+  const map = new Map();
+  rows.forEach((row) => {
+    const iso = dateToIso(row.data);
+    if (!iso) return;
+    map.set(iso, (map.get(iso) || 0) + 1);
+  });
+  const dias = Array.from(map.keys()).sort();
+  const labels = dias.map((d) => {
+    const [y, m, day] = d.split("-");
+    return day + "/" + m;
+  });
+  const valores = dias.map((d) => map.get(d));
+  document.getElementById("tendenciaNote").textContent = dias.length
+    ? dias.length + " dias com registro no período filtrado"
+    : "sem dados no período";
+
+  const ctx = canvas.getContext("2d");
+  const accent = isDarkTheme() ? "#0a84ff" : "#007aff";
+  const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+  gradient.addColorStop(0, isDarkTheme() ? "rgba(10,132,255,.45)" : "rgba(0,122,255,.35)");
+  gradient.addColorStop(1, "rgba(10,132,255,0)");
+
+  charts.tendencia = new Chart(canvas, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: "Incidentes",
+        data: valores,
+        borderColor: accent,
+        backgroundColor: gradient,
+        fill: true,
+        tension: 0.35,
+        pointRadius: labels.length > 40 ? 0 : 3,
+        pointBackgroundColor: accent,
+        pointHoverRadius: 5,
+        borderWidth: 2.5
+      }]
+    },
+    options: baseOptions({
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: themeMutedColor(), maxRotation: 0, autoSkip: true, maxTicksLimit: 16, font: { size: 10.5 } }, grid: { display: false } },
+        y: { beginAtZero: true, ticks: { color: themeMutedColor(), precision: 0, font: { size: 10.5 } }, grid: { color: themeGridColor(), drawBorder: false } }
+      }
+    })
+  });
+}
+
+function renderDoughnut(id, rows, getLabel, limit){
+  destroyChart(id);
+  const data = countBy(rows, getLabel, limit || 8);
+  const target = document.getElementById(canvasIdFor(id));
+  if (!data.length){ showEmpty(canvasIdFor(id)); return; }
+  charts[id] = new Chart(target, {
+    type: "doughnut",
+    data: {
+      labels: data.map((d) => d.label),
+      datasets: [{
+        data: data.map((d) => d.total),
+        backgroundColor: PALETTE,
+        borderColor: isDarkTheme() ? "#060b14" : "#eef2f8",
+        borderWidth: 2,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "62%",
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: { color: themeTextColor(), boxWidth: 10, font: { size: 10.5 }, padding: 10 }
+        },
+        tooltip: {
+          backgroundColor: isDarkTheme() ? "rgba(20,20,24,.92)" : "rgba(255,255,255,.96)",
+          titleColor: themeTextColor(),
+          bodyColor: themeTextColor()
+        }
+      }
+    }
+  });
+}
+
+function canvasIdFor(key){
+  return "chart" + key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+function showEmpty(canvasId){
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const wrap = canvas.closest(".chart-wrap");
+  if (wrap) wrap.innerHTML = '<div class="chart-empty">Sem dados para o filtro selecionado</div>';
+}
+
+function renderBarRanking(key, rows, getLabel, limit, horizontal){
+  destroyChart(key);
+  const canvasId = canvasIdFor(key);
+  const data = countBy(rows, getLabel, limit || 10).reverse();
+  const target = document.getElementById(canvasId);
+  if (!data.length){ showEmpty(canvasId); return; }
+  charts[key] = new Chart(target, {
+    type: "bar",
+    data: {
+      labels: data.map((d) => d.label),
+      datasets: [{
+        label: "Incidentes",
+        data: data.map((d) => d.total),
+        backgroundColor: data.map((_, i) => PALETTE[i % PALETTE.length]),
+        borderRadius: 6,
+        maxBarThickness: 26
+      }]
+    },
+    options: baseOptions({
+      indexAxis: horizontal === false ? "x" : "y",
+      plugins: { legend: { display: false } },
+      scales: horizontal === false ? {
+        x: { ticks: { color: themeMutedColor(), font: { size: 10.5 } }, grid: { display: false } },
+        y: { beginAtZero: true, ticks: { color: themeMutedColor(), precision: 0 }, grid: { color: themeGridColor(), drawBorder: false } }
+      } : {
+        x: { beginAtZero: true, ticks: { color: themeMutedColor(), precision: 0 }, grid: { color: themeGridColor(), drawBorder: false } },
+        y: { ticks: { color: themeMutedColor(), font: { size: 10.5 }, autoSkip: false }, grid: { display: false } }
+      }
+    })
+  });
+}
+
+function renderKpis(rows){
+  const statsRows = rows.filter((row) => !isRegistroVazio(row));
+  const hojeIso = new Date().toISOString().slice(0, 10);
+  const hojeCount = statsRows.filter((row) => dateToIso(row.data) === hojeIso).length;
+  const linhaTop = countBy(statsRows, (r) => r.linha, 1)[0] || { label: "-", total: 0 };
+  const analistaTop = countBy(statsRows, (r) => r.criadoPor, 1)[0] || { label: "-", total: 0 };
+  const tiposDistintos = new Set(statsRows.map(tipoOriginalIncidente).filter(Boolean)).size;
+
+  const dias = new Set(statsRows.map((r) => dateToIso(r.data)).filter(Boolean)).size || 1;
+  const media = statsRows.length / dias;
+
+  document.getElementById("kpiTotal").textContent = formatNumber(rows.length);
+  document.getElementById("kpiTotalSub").textContent = rows.length === state.all.length ? "Todos os registros TCGL" : "Resultado filtrado";
+  document.getElementById("kpiMedia").textContent = media.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+  document.getElementById("kpiHoje").textContent = formatNumber(hojeCount);
+  document.getElementById("kpiTiposDistintos").textContent = formatNumber(tiposDistintos);
+  document.getElementById("kpiLinha").textContent = linhaTop.label;
+  document.getElementById("kpiLinhaQtd").textContent = formatNumber(linhaTop.total) + " incidentes";
+  document.getElementById("kpiAnalista").textContent = analistaTop.label;
+  document.getElementById("kpiAnalistaQtd").textContent = formatNumber(analistaTop.total) + " incidentes";
+}
+
+function render(){
+  const rows = state.filtered;
+  const statsRows = rows.filter((row) => !isRegistroVazio(row));
+  renderKpis(rows);
+  renderTendencia(rows);
+  renderDoughnut("tipo", statsRows, (r) => rotuloTipo(tipoOriginalIncidente(r)), 8);
+  renderDoughnut("status", statsRows, (r) => r.estado, 8);
+  renderDoughnut("empresa", statsRows, (r) => r.empresa, 6);
+  renderBarRanking("departamento", statsRows, (r) => r.departamento, 8);
+  renderBarRanking("linha", statsRows, (r) => r.linha, 10);
+  renderBarRanking("motorista", statsRows, (r) => r.motorista ? (r.motoristaNr ? r.motoristaNr + " · " + r.motorista : r.motorista) : "", 10);
+  renderBarRanking("veiculo", statsRows, (r) => r.veiculo, 10);
+  renderBarRanking("analista", statsRows, (r) => r.criadoPor, 12, false);
+}
+
+function aplicarPayloadIncidentes(payload){
+  state.all = (payload.incidentes || []).filter((row) => String(row.empresa || "").toUpperCase() === "TCGL" || !row.empresa);
+  populateSelect(fields.empresa, payload.incidentes || [], (r) => r.empresa);
+  populateSelect(fields.departamento, state.all, (r) => r.departamento);
+  populateSelect(fields.tipo, state.all, (r) => tipoOriginalIncidente(r));
+  populateSelect(fields.estado, state.all, (r) => r.estado);
+  state.filtered = state.all;
+  applyFilters();
+  atualizarStatusLinha(payload, state.all.length);
+}
+
+function atualizarStatusLinha(payload, total){
+  const quando = payload?.atualizadoEm ? new Date(payload.atualizadoEm).toLocaleString("pt-BR") : "data desconhecida";
+  document.getElementById("statusLine").textContent = "Atualizado em " + quando + " · " + formatNumber(total) + " incidentes TCGL";
+}
+
+let carregando = false;
+const CACHE_KEY = "portal_incidentes_v4";
+const CACHE_TTL_MS = 15 * 60 * 1000;
+
+function lerCache(){
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.payload || !parsed?.ts) return null;
+    if (Date.now() - parsed.ts > CACHE_TTL_MS) return null;
+    return parsed.payload;
+  } catch (e) { return null; }
+}
+
+function salvarCache(payload){
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), payload })); } catch (e) {}
+}
+
+async function carregarIncidentes(forcar){
+  if (carregando) return;
+  carregando = true;
+  const btn = document.getElementById("btnAtualizar");
+  const status = document.getElementById("statusLine");
+  btn.disabled = true;
+
+  if (forcar) { try { localStorage.removeItem(CACHE_KEY); } catch (e) {} }
+
+  const cacheLocal = !forcar ? lerCache() : null;
+  if (cacheLocal) {
+    aplicarPayloadIncidentes(cacheLocal);
+    status.textContent += " · clique em Atualizar para buscar novos dados";
+    carregando = false;
+    btn.disabled = false;
+    return;
+  }
+
+  status.textContent = forcar ? "Atualizando..." : "Carregando incidentes...";
+  try {
+    const mod = await import("../assets/js/incidentes-dados-leitura.js?v=20260627a");
+    const res = await mod.carregarDadosIncidentes({
+      onProgress: (msg) => { status.textContent = msg; }
+    });
+    const incidentes = res?.payload?.incidentes || [];
+    if (!incidentes.length && !cacheLocal) throw new Error("Nenhum incidente encontrado (AWS/JSON).");
+    if (res?.payload) {
+      salvarCache(res.payload);
+      aplicarPayloadIncidentes(res.payload);
+      if (res.origem) document.getElementById("statusLine").textContent += " · " + res.origem;
+    }
+  } catch (error) {
+    if (!cacheLocal) {
+      status.textContent = error.message || "Erro ao atualizar incidentes.";
+    } else {
+      status.textContent = "Cache local · falha ao atualizar (" + (error.message || "erro") + ")";
+    }
+  } finally {
+    carregando = false;
+    btn.disabled = false;
+  }
+}
+
+Object.values(fields).forEach((field) => {
+  field.addEventListener("input", applyFilters);
+  field.addEventListener("change", applyFilters);
+});
+document.getElementById("limparFiltros").addEventListener("click", () => {
+  Object.values(fields).forEach((field) => field.value = "");
+  applyFilters();
+});
+document.getElementById("btnAtualizar").addEventListener("click", () => {
+  carregarIncidentes(true).catch(() => {});
+});
+document.getElementById("dkThemeToggle").addEventListener("click", () => {
+  setTimeout(() => render(), 60);
+});
+
+if (window.portalUsuarioValidado) carregarIncidentes(false).catch(() => {});
+else window.addEventListener("portal:usuario-validado", () => carregarIncidentes(false).catch(() => {}), { once: true });
+</script>
+</body>
+</html>
