@@ -202,10 +202,10 @@ h1 { margin: 0; text-align: center; color: #071f57; font-size: 22px; font-weight
 
 .chart-card {
     background: white;
-    border-radius: 6px;
-    padding: 14px;
+    border-radius: 16px;
+    padding: 16px;
     border: 1px solid var(--border);
-    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.06);
+    box-shadow: 0 12px 32px rgba(16, 24, 40, 0.08);
     height: 320px;
     display: flex;
     flex-direction: column;
@@ -1806,42 +1806,83 @@ const ctx = document.getElementById('lineChartCanvas').getContext('2d');
                     label: 'No Horário',
                     data: chartNoHorario,
                     borderColor: '#2563eb',
-                    backgroundColor: 'rgba(46, 155, 69, 0.05)',
+                    backgroundColor: function(context) {
+                        const chart = context.chart;
+                        const { ctx: c, chartArea } = chart;
+                        if (!chartArea) return 'rgba(37, 99, 235, 0.12)';
+                        const g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                        g.addColorStop(0, 'rgba(37, 99, 235, 0.32)');
+                        g.addColorStop(1, 'rgba(37, 99, 235, 0.02)');
+                        return g;
+                    },
                     borderWidth: 2.5,
-                    tension: 0.15,
-                    pointRadius: 4,
-                    fill: false
+                    tension: 0.38,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    pointBackgroundColor: '#2563eb',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1.5,
+                    fill: true,
+                    order: 1
                 },
                 {
                     label: 'Adiantado',
                     data: chartAdiantado,
                     borderColor: '#de1b1b',
-                    backgroundColor: 'rgba(222, 27, 27, 0.05)',
-                    borderWidth: 2.5,
-                    tension: 0.15,
-                    pointRadius: 4,
-                    fill: false
+                    backgroundColor: function(context) {
+                        const chart = context.chart;
+                        const { ctx: c, chartArea } = chart;
+                        if (!chartArea) return 'rgba(222, 27, 27, 0.1)';
+                        const g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                        g.addColorStop(0, 'rgba(222, 27, 27, 0.26)');
+                        g.addColorStop(1, 'rgba(222, 27, 27, 0.02)');
+                        return g;
+                    },
+                    borderWidth: 2,
+                    tension: 0.38,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    pointBackgroundColor: '#de1b1b',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1.5,
+                    fill: true,
+                    order: 3
                 },
                 {
                     label: 'Atrasado',
                     data: chartAtrasado,
                     borderColor: '#f6bf26',
-                    backgroundColor: 'rgba(246, 191, 38, 0.05)',
-                    borderWidth: 2.5,
-                    tension: 0.15,
-                    pointRadius: 4,
-                    fill: false
+                    backgroundColor: function(context) {
+                        const chart = context.chart;
+                        const { ctx: c, chartArea } = chart;
+                        if (!chartArea) return 'rgba(246, 191, 38, 0.1)';
+                        const g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                        g.addColorStop(0, 'rgba(246, 191, 38, 0.26)');
+                        g.addColorStop(1, 'rgba(246, 191, 38, 0.02)');
+                        return g;
+                    },
+                    borderWidth: 2,
+                    tension: 0.38,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    pointBackgroundColor: '#f6bf26',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1.5,
+                    fill: true,
+                    order: 2
                 },
                 {
                     label: 'Meta 93%',
                     data: chartLabels.map(() => 93),
                     borderColor: '#0f7a2d',
                     backgroundColor: '#0f7a2d',
-                    borderWidth: 4,
-                    borderDash: [10, 5],
+                    borderWidth: 2.5,
+                    borderDash: [8, 5],
                     pointRadius: 0,
                     pointHoverRadius: 0,
+                    tension: 0,
                     fill: false,
+                    order: 0,
                     datalabels: {
                         display: function(context) {
                             return context.dataIndex === context.dataset.data.length - 1;
@@ -1862,6 +1903,7 @@ const ctx = document.getElementById('lineChartCanvas').getContext('2d');
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
             scales: {
                 y: {
                     beginAtZero: false,
@@ -1900,7 +1942,7 @@ const ctx = document.getElementById('lineChartCanvas').getContext('2d');
                     titleFont: { size: 12, weight: '700' },
                     bodyFont: { size: 12 },
                     padding: 10,
-                    cornerRadius: 6,
+                    cornerRadius: 8,
                     displayColors: true,
                     callbacks: {
                         label: function(context) {
