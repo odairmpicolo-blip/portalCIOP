@@ -206,7 +206,7 @@ h1 { margin: 0; text-align: center; color: #071f57; font-size: 22px; font-weight
     padding: 16px;
     border: 1px solid var(--border);
     box-shadow: 0 12px 32px rgba(16, 24, 40, 0.08);
-    height: 320px;
+    height: 380px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -1846,7 +1846,18 @@ const ctx = document.getElementById('lineChartCanvas').getContext('2d');
                     pointBorderColor: '#fff',
                     pointBorderWidth: 1.5,
                     fill: true,
-                    order: 3
+                    order: 3,
+                    datalabels: {
+                        align: 'bottom',
+                        anchor: 'end',
+                        offset: 6,
+                        display: function(context) {
+                            return showLabelsOnPoints ? 'auto' : false;
+                        },
+                        color: '#344054',
+                        font: { size: 9, weight: '700' },
+                        formatter: function(value) { return value.toFixed(1) + '%'; }
+                    }
                 },
                 {
                     label: 'Atrasado',
@@ -1904,6 +1915,9 @@ const ctx = document.getElementById('lineChartCanvas').getContext('2d');
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
+            layout: {
+                padding: { top: 28, right: 64, left: 4, bottom: 4 }
+            },
             scales: {
                 y: {
                     beginAtZero: false,
@@ -1919,9 +1933,10 @@ const ctx = document.getElementById('lineChartCanvas').getContext('2d');
                     }
                 },
                 x: {
+                    offset: true,
                     border: { display: false },
                     grid: { display: false },
-                    ticks: { color: '#667085', font: { size: 10, weight: '600' }, maxRotation: 0 }
+                    ticks: { color: '#667085', font: { size: 10, weight: '600' }, maxRotation: 0, autoSkipPadding: 12 }
                 }
             },
             plugins: {
