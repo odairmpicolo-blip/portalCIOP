@@ -2,6 +2,15 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { portalAsset } from '../lib/portal-origin'
 
+function initials(name?: string): string {
+  if (!name) return '?'
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (!parts.length) return '?'
+  const first = parts[0][0] || ''
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : ''
+  return (first + last).toUpperCase()
+}
+
 export function Header({
   onMenuToggle,
   native = false,
@@ -42,6 +51,7 @@ export function Header({
           Portal clássico
         </a>
         <div className="session-chip session-chip-modern" aria-label="Sessão do usuário">
+          <span className="session-avatar" aria-hidden="true">{initials(user?.nome)}</span>
           <div className="session-info">
             <span className="session-name">{user?.nome || 'Usuário'}</span>
             {user?.cargo ? <span className="session-profile">{user.cargo}</span> : null}
