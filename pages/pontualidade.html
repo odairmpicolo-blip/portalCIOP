@@ -980,20 +980,53 @@ h1 {
 /* Fim modernizacao iPhone */
 /* ===== Redesign iOS26 Liquid Glass (mobile/app nativo) =====
    Obs.: o cabeçalho (.header) e a tab bar são do shell React e ficam
-   escondidos/sobrepostos aqui — este bloco cuida só do conteúdo. */
+   escondidos/sobrepostos aqui — este bloco cuida só do conteúdo.
+   Suporta escuro (padrão) e claro (html.native-light), sincronizado
+   pelo próprio shell nativo. */
 @media (max-width:720px){
   :root{
     --jewel-1:#7a5cff;
     --jewel-2:#c04fd6;
     --jewel-shadow:0 10px 26px -8px rgba(122,92,255,.65);
+
     --glass-bg:rgba(255,255,255,.08);
-    --glass-bg-strong:rgba(255,255,255,.12);
-    --glass-border:rgba(255,255,255,.15);
+    --glass-bg-strong:rgba(255,255,255,.13);
+    --glass-border:rgba(255,255,255,.16);
     --glass-blur:blur(30px) saturate(180%);
     --glass-shadow:0 20px 40px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18);
+
+    --ink:#fff;
+    --ink-soft:rgba(255,255,255,.6);
+    --ink-faint:rgba(255,255,255,.48);
+    --field-bg:rgba(255,255,255,.07);
+    --row-div:rgba(255,255,255,.08);
+    --th-bg:rgba(255,255,255,.05);
+    --toggle-bg:rgba(255,255,255,.06);
+
     --g-green:#4ade80;
     --g-amber:#fbbf24;
     --g-red:#f87171;
+    --g-blue:#60a5fa;
+  }
+
+  html.native-light{
+    --glass-bg:rgba(255,255,255,.6);
+    --glass-bg-strong:rgba(255,255,255,.8);
+    --glass-border:rgba(30,20,70,.10);
+    --glass-shadow:0 16px 34px -16px rgba(40,25,90,.22), inset 0 1px 0 rgba(255,255,255,.75);
+
+    --ink:#18182a;
+    --ink-soft:rgba(24,24,42,.62);
+    --ink-faint:rgba(24,24,42,.5);
+    --field-bg:rgba(255,255,255,.8);
+    --row-div:rgba(30,20,70,.08);
+    --th-bg:rgba(30,20,70,.045);
+    --toggle-bg:rgba(30,20,70,.05);
+
+    --g-green:#15803d;
+    --g-amber:#b45309;
+    --g-red:#dc2626;
+    --g-blue:#2563eb;
   }
 
   body{
@@ -1004,7 +1037,16 @@ h1 {
       radial-gradient(circle at 85% 78%, rgba(255,170,60,.2) 0%, transparent 40%),
       radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
       #0d0e14 !important;
-    color:#fff !important;
+    color:var(--ink) !important;
+  }
+  html.native-light body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(122,92,255,.3) 0%, transparent 40%),
+      radial-gradient(circle at 90% 15%, rgba(255,110,180,.24) 0%, transparent 38%),
+      radial-gradient(circle at 20% 60%, rgba(60,180,255,.2) 0%, transparent 42%),
+      radial-gradient(circle at 85% 78%, rgba(255,170,60,.18) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
+      #f2effa !important;
   }
 
   .header{display:none !important;}
@@ -1049,7 +1091,7 @@ h1 {
     flex:1 !important;
     background:var(--glass-bg) !important;
     border:1px solid var(--glass-border) !important;
-    color:#fff !important;
+    color:var(--ink) !important;
     box-shadow:none !important;
     border-radius:16px !important;
     min-height:46px !important;
@@ -1058,11 +1100,11 @@ h1 {
   .btn-modulo-link:hover{
     background:var(--glass-bg-strong) !important;
   }
-  .pdf-status{color:rgba(255,255,255,.55) !important;}
+  .pdf-status{color:var(--ink-soft) !important;}
 
   .scenario-label{
     justify-self:auto !important;
-    color:rgba(255,255,255,.55) !important;
+    color:var(--ink-soft) !important;
     font-size:11px !important;
     font-weight:800 !important;
     text-transform:uppercase !important;
@@ -1073,20 +1115,20 @@ h1 {
     width:100% !important;
     max-width:none !important;
     margin:0 !important;
-    background:rgba(255,255,255,.05) !important;
+    background:var(--toggle-bg) !important;
     border:1px solid var(--glass-border) !important;
     border-radius:18px !important;
     grid-template-columns:1fr 1fr !important;
   }
   .scenario-button{
     background:transparent !important;
-    color:rgba(255,255,255,.55) !important;
+    color:var(--ink-soft) !important;
     border:1px solid transparent !important;
     border-radius:14px !important;
     min-height:52px !important;
   }
   .scenario-button:hover{
-    color:#fff !important;
+    color:var(--ink) !important;
     border-color:color-mix(in srgb, var(--jewel-1) 40%, transparent) !important;
   }
   .scenario-button.active,
@@ -1125,11 +1167,11 @@ h1 {
     min-height:96px;
   }
   .kpi-title{
-    color:rgba(255,255,255,.55) !important;
+    color:var(--ink-soft) !important;
     font-size:10.5px !important;
     letter-spacing:.04em;
   }
-  .kpi-value{color:#fff !important;font-size:20px !important;}
+  .kpi-value{color:var(--ink) !important;font-size:20px !important;}
   .melhor-indice-data{order:2;}
   #melhorHorario{order:1;}
 
@@ -1141,12 +1183,12 @@ h1 {
     border-top:3px solid var(--jewel-1) !important;
     padding:22px 18px !important;
   }
-  .kpi-card.highlight .kpi-value{color:#fff !important;font-size:34px !important;}
+  .kpi-card.highlight .kpi-value{color:var(--ink) !important;font-size:34px !important;}
   .kpi-card.highlight #melhorHorario{font-size:34px !important;}
   #melhorData{color:var(--g-green) !important;font-weight:800;}
 
-  .kpi-card.kpi-no-horario{border-top-color:#60a5fa !important;}
-  .kpi-card.kpi-no-horario .kpi-value{color:#60a5fa !important;}
+  .kpi-card.kpi-no-horario{border-top-color:var(--g-blue) !important;}
+  .kpi-card.kpi-no-horario .kpi-value{color:var(--g-blue) !important;}
   .kpi-card[style*="--red"]{border-top-color:var(--g-red) !important;}
   .kpi-card[style*="--yellow"]{border-top-color:var(--g-amber) !important;}
   #kpiAdiantado{color:var(--g-red) !important;}
@@ -1164,17 +1206,17 @@ h1 {
   }
   .sidebar.portal-filters-bar::before{display:none !important;}
   .filter-group label{
-    color:rgba(255,255,255,.5) !important;
+    color:var(--ink-faint) !important;
     font-size:10.5px !important;
     text-transform:uppercase;
     letter-spacing:.05em;
     font-weight:700;
   }
   .filter-select{
-    background:rgba(255,255,255,.06) !important;
+    background:var(--field-bg) !important;
     border:1px solid var(--glass-border) !important;
     border-radius:14px !important;
-    color:#fff !important;
+    color:var(--ink) !important;
     padding:10px 12px !important;
   }
 
@@ -1189,7 +1231,7 @@ h1 {
     padding:18px !important;
     height:300px !important;
   }
-  .chart-title{color:#fff !important;font-size:13px !important;text-transform:uppercase;letter-spacing:.03em;}
+  .chart-title{color:var(--ink) !important;font-size:13px !important;text-transform:uppercase;letter-spacing:.03em;}
   .meta-badge{
     background:color-mix(in srgb, var(--g-green) 20%, transparent) !important;
     border:1px solid color-mix(in srgb, var(--g-green) 45%, transparent) !important;
@@ -1208,21 +1250,21 @@ h1 {
   }
   .table-wrapper{background:transparent !important;border:0 !important;}
   .table-card-header{
-    color:#fff !important;
+    color:var(--ink) !important;
     background:transparent !important;
     border-bottom:1px solid var(--glass-border) !important;
     padding:16px 18px !important;
     font-size:13px !important;
   }
   th{
-    background:rgba(255,255,255,.04) !important;
-    color:rgba(255,255,255,.55) !important;
+    background:var(--th-bg) !important;
+    color:var(--ink-soft) !important;
     border-bottom:1px solid var(--glass-border) !important;
     padding:10px 12px !important;
   }
   td{
-    color:#fff !important;
-    border-bottom:1px solid rgba(255,255,255,.06) !important;
+    color:var(--ink) !important;
+    border-bottom:1px solid var(--row-div) !important;
     padding:10px 12px !important;
   }
   tr:hover td{background:color-mix(in srgb, var(--jewel-1) 10%, transparent) !important;}
@@ -1230,7 +1272,7 @@ h1 {
     background-color:color-mix(in srgb, var(--g-green) 18%, transparent) !important;
     color:var(--g-green) !important;
   }
-  .no-data{color:rgba(255,255,255,.5) !important;}
+  .no-data{color:var(--ink-faint) !important;}
 }
 </style>
 <script src="../assets/js/loading.js"></script>
