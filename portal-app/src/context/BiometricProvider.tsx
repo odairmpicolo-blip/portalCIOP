@@ -7,10 +7,10 @@ import {
 } from '../lib/biometric-auth'
 import { isBiometricEnabled, setBiometricEnabled as persistBiometricEnabled } from '../lib/app-preferences'
 import {
+  BACKGROUND_LOCK_MS,
   consumeBiometricSkip,
   isBiometricSessionValid,
   markBiometricUnlocked,
-  BACKGROUND_LOCK_MS,
 } from '../lib/biometric-session'
 import { useAppPreferences } from './app-preferences-context'
 import { useAuth } from '../hooks/useAuth'
@@ -70,24 +70,30 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!native || !biometricEnabled) {
-      queueMicrotask(() => setUnlocked(true))
+      setUnlocked(true)
       return
     }
     if (!user) {
-      queueMicrotask(() => setUnlocked(false))
+      setUnlocked(false)
       return
     }
     if (consumeBiometricSkip() || isBiometricSessionValid()) {
-      queueMicrotask(() => setUnlocked(true))
+      setUnlocked(true)
       return
     }
-    queueMicrotask(() => setUnlocked(false))
+    setUnlocked(false)
   }, [native, user, biometricEnabled])
 
   useEffect(() => {
     if (!native || !user || !biometricEnabled) return
     let removed = false
     let handle: { remove: () => Promise<void> } | undefined
+    // Quando o próprio prompt de Face ID aparece, o iOS reporta o app como
+    // "inativo" por um instante e depois "ativo" de novo assim que a folha
+    // do sistema fecha. Sem esse controle, esse blink re-trancava o app
+    // imediatamente após o usuário validar o Face ID (loop). Só voltamos a
+    // exigir biometria se o app realmente ficou em segundo plano por mais
+    // tempo que BACKGROUND_LOCK_MS.
     let backgroundedAt = 0
 
     void App.addListener('appStateChange', ({ isActive }) => {
@@ -96,12 +102,12 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
         return
       }
       if (!user) return
-      const elapsedBackground = backgroundedAt ? Date.now() - backgroundedAt : 0
-      if (elapsedBackground < BACKGROUND_LOCK_MS) {
-        return
-      }
+      if (unlockInFlight.current) return
       if (isBiometricSessionValid()) {
         setUnlocked(true)
+        return
+      }
+      if (backgroundedAt && Date.now() - backgroundedAt < BACKGROUND_LOCK_MS) {
         return
       }
       setUnlocked(false)
