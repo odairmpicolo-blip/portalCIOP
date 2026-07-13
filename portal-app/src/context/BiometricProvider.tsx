@@ -68,6 +68,10 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
     setUnlocked(true)
   }, [setBiometricEnabled])
 
+  /* eslint-disable react-hooks/set-state-in-effect --
+     Sincroniza o estado de trava com login/preferência de biometria —
+     é derivado de props externas (native, user, biometricEnabled), não
+     um efeito colateral evitável. */
   useEffect(() => {
     if (!native || !biometricEnabled) {
       setUnlocked(true)
@@ -83,6 +87,7 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
     }
     setUnlocked(false)
   }, [native, user, biometricEnabled])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!native || !user || !biometricEnabled) return
