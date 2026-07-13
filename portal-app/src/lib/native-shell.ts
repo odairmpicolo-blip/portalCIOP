@@ -7,7 +7,7 @@ import { portalAsset } from './portal-origin'
 import { watchNativeTheme } from './native-theme'
 
 const NATIVE_CSS_ID = 'portal-app-native-css'
-const NATIVE_CSS_VERSION = '20260710a'
+const NATIVE_CSS_VERSION = '20260713a'
 
 export function isNativePlatform(): boolean {
   try {
@@ -66,12 +66,15 @@ export function injectLegacyNativeFrame(doc: Document): void {
     'width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1',
   )
 
-  if (!doc.getElementById(NATIVE_CSS_ID)) {
+  const existingLink = doc.getElementById(NATIVE_CSS_ID) as HTMLLinkElement | null
+  if (!existingLink) {
     const link = doc.createElement('link')
     link.id = NATIVE_CSS_ID
     link.rel = 'stylesheet'
     link.href = `${portalAsset('/assets/css/app-native.css')}?v=${NATIVE_CSS_VERSION}`
     doc.head.appendChild(link)
+  } else if (!existingLink.href.includes(`v=${NATIVE_CSS_VERSION}`)) {
+    existingLink.href = `${portalAsset('/assets/css/app-native.css')}?v=${NATIVE_CSS_VERSION}`
   }
 
   if (!doc.getElementById('oa-safe-area-bridge')) {
