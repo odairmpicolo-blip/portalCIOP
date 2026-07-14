@@ -111,6 +111,16 @@ min-height:82px;
 .kpi.accent-owner{border-top:4px solid var(--amber)}
 .kpi.accent-types{border-top:4px solid #7c3aed}
 .field label{display:block;margin:0 0 5px;color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase}
+.field-headrow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.field-headrow label{margin:0 0 5px}
+.linha-produtiva-toggle{display:inline-flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;font-weight:600;color:var(--muted);user-select:none}
+.linha-produtiva-toggle input{position:absolute;opacity:0;width:0;height:0}
+.linha-produtiva-toggle .lpt-track{position:relative;width:32px;height:18px;border-radius:999px;background:var(--border);border:1px solid var(--border);flex:0 0 auto;transition:background .18s ease,border-color .18s ease}
+.linha-produtiva-toggle .lpt-thumb{position:absolute;top:1px;left:1px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .18s ease}
+.linha-produtiva-toggle input:checked ~ .lpt-track{background:var(--orange);border-color:var(--orange)}
+.linha-produtiva-toggle input:checked ~ .lpt-track .lpt-thumb{transform:translateX(14px)}
+.linha-produtiva-toggle input:focus-visible ~ .lpt-track{outline:2px solid var(--blue2);outline-offset:2px}
+.linha-produtiva-toggle .lpt-text{white-space:nowrap;font-size:11px}
 input,select{
 width:100%;
 border:1px solid var(--border);
@@ -380,7 +390,14 @@ h1{font-size:20px}
 <select id="tipoFiltro"><option value="">Todos</option></select>
 </div>
 <div class="field">
+<div class="field-headrow">
 <label for="linhaFiltro">Linha</label>
+<label class="linha-produtiva-toggle" title="Mostrar somente linhas produtivas (numéricas) - oculta ociosas como DH, PI, PO">
+<input type="checkbox" id="linhaProdutivaFiltro">
+<span class="lpt-track"><span class="lpt-thumb"></span></span>
+<span class="lpt-text">Só produtivas</span>
+</label>
+</div>
 <select id="linhaFiltro"><option value="">Todas</option></select>
 </div>
 <div class="field">
@@ -504,10 +521,20 @@ dataFim: document.getElementById("dataFimFiltro"),
 estado: document.getElementById("estadoFiltro"),
 tipo: document.getElementById("tipoFiltro"),
 linha: document.getElementById("linhaFiltro"),
+linhaProdutiva: document.getElementById("linhaProdutivaFiltro"),
 veiculo: document.getElementById("veiculoFiltro"),
 criado: document.getElementById("criadoFiltro"),
 proprietario: document.getElementById("proprietarioFiltro")
 };
+
+/** Linhas produtivas têm código numérico (ex: 101, 205). Linhas
+ *  ociosas (não produtivas) começam com letra, ex: DH (deslocamento),
+ *  PI (pull-in), PO (pull-out). */
+function linhaEhProdutiva(linha) {
+var s = String(linha == null ? "" : linha).trim();
+if (!s) return false;
+return /^[0-9]/.test(s);
+}
 
 function formatNumber(value) {
 return Number(value || 0).toLocaleString("pt-BR");
@@ -610,6 +637,7 @@ if (end && iso > end) return false;
 if (exact.estado && row.estado !== exact.estado) return false;
 if (exact.tipo && tipoOriginalIncidente(row) !== exact.tipo) return false;
 if (exact.linha && row.linha !== exact.linha) return false;
+if (fields.linhaProdutiva.checked && !linhaEhProdutiva(row.linha)) return false;
 if (exact.veiculo && row.veiculo !== exact.veiculo) return false;
 if (exact.criadoPor && row.criadoPor !== exact.criadoPor) return false;
 if (exact.proprietario && row.proprietario !== exact.proprietario) return false;
@@ -1024,6 +1052,7 @@ Object.values(fields).forEach((field) => field.addEventListener("input", applyFi
 Object.values(fields).forEach((field) => field.addEventListener("change", applyFilters));
 document.getElementById("limparFiltros").addEventListener("click", () => {
 Object.values(fields).forEach((field) => field.value = "");
+fields.linhaProdutiva.checked = false;
 filtroIdExato = "";
 filtroSomentePendentes = false;
 applyFilters();
