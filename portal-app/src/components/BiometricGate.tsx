@@ -39,10 +39,15 @@ export function BiometricGate({ children }: BiometricGateProps) {
       <div className="biometric-lock-page">
         <div className="biometric-lock-card app-glass">
           <div className="biometric-lock-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <path d="M12 11c1.66 0 3-1.34 3-3S13.66 5 12 5 9 6.34 9 8s1.34 3 3 3z" />
-              <path d="M18 20v-1.5a4.5 4.5 0 0 0-9 0V20" />
-              <rect x="3" y="11" width="18" height="10" rx="2.5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7 3.5H5.5a2 2 0 0 0-2 2V7" />
+              <path d="M17 3.5h1.5a2 2 0 0 1 2 2V7" />
+              <path d="M7 20.5H5.5a2 2 0 0 1-2-2V17" />
+              <path d="M17 20.5h1.5a2 2 0 0 0 2-2V17" />
+              <circle cx="9" cy="10.2" r="0.9" fill="currentColor" stroke="none" />
+              <circle cx="15" cy="10.2" r="0.9" fill="currentColor" stroke="none" />
+              <path d="M12 10v3.2c0 .5-.4.8-.9.8H10.6" />
+              <path d="M8.5 16.2c.9.9 2.1 1.4 3.5 1.4s2.6-.5 3.5-1.4" />
             </svg>
           </div>
           <h1>Portal CIOP</h1>

@@ -56,7 +56,9 @@ export function AppLayout() {
         >
           {tracking ? null : <Header onMenuToggle={toggleSidebar} native={native} home={native && (inHome || inAjustes)} />}
           <main className="app-content">
-            <Outlet />
+            <div key={pathname} className="route-transition">
+              <Outlet />
+            </div>
           </main>
           {!native ? (
             <footer className="app-footer portal-site-footer">
