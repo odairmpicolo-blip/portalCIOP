@@ -405,6 +405,11 @@ html.native-app .mobile-modules-page {
 }
 
 html.native-app .app-main--home .app-content {
+  /* Sem pílula de marca fixa na Início/CIOP: não precisa reservar os
+     44px do cabeçalho, só a área segura (status bar/dynamic island).
+     Esse valor tem que ser IDÊNTICO ao `top` do card sticky abaixo,
+     senão o card "pula" de posição ao começar a rolar. */
+  padding-top: calc(8px + var(--safe-top)) !important;
   padding-bottom: calc(8px + var(--app-nav-h)) !important;
 }
 
@@ -416,7 +421,10 @@ html.native-app .mobile-inicio-hero {
   padding: 18px;
   border-radius: 24px;
   position: sticky;
-  top: 0;
+  /* Mesmo valor do padding-top acima: garante que o card fique na
+     mesma posição visual tanto em repouso quanto "grudado" no topo,
+     sem pulo ao rolar. */
+  top: calc(8px + var(--safe-top));
   z-index: 6;
   overflow: hidden;
   background:
