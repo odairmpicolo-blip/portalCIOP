@@ -36,7 +36,7 @@ export async function initNativeShell(): Promise<void> {
 }
 
 /** Aplica tema app dentro de iframes legados (mesma origem). */
-export function injectLegacyNativeFrame(doc: Document): void {
+export function injectLegacyNativeFrame(doc: Document, opts?: { tracking?: boolean }): void {
   if (!isNativePlatform()) return
 
   doc.documentElement.classList.add('native-app', 'native-embedded')
@@ -88,6 +88,24 @@ export function injectLegacyNativeFrame(doc: Document): void {
       }
     `
     doc.head.appendChild(style)
+  }
+
+  /* Corrige bug clássico do WKWebView: iframe same-origin com scroll de
+     documento (html/body) não responde a gestos de toque. Força o body a
+     virar a própria caixa de rolagem (altura fixa + overflow + momentum). */
+  if (!opts?.tracking && !doc.getElementById('oa-scroll-fix-bridge')) {
+    const scrollStyle = doc.createElement('style')
+    scrollStyle.id = 'oa-scroll-fix-bridge'
+    scrollStyle.textContent = `
+      html.native-embedded { height: 100%; }
+      html.native-embedded body {
+        height: 100% !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior-y: contain;
+      }
+    `
+    doc.head.appendChild(scrollStyle)
   }
 
   const frameWin = doc.defaultView as (Window & { portalReinitNativeMode?: () => void }) | null
