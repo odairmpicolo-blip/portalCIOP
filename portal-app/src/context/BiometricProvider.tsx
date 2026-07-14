@@ -1,4 +1,3 @@
-import { App } from '@capacitor/app'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   isBiometricAvailable,
@@ -7,7 +6,7 @@ import {
 } from '../lib/biometric-auth'
 import { isBiometricEnabled, setBiometricEnabled as persistBiometricEnabled } from '../lib/app-preferences'
 import {
-  BACKGROUND_LOCK_MS,
+  clearBiometricSession,
   consumeBiometricSkip,
   isBiometricSessionValid,
   markBiometricUnlocked,
@@ -78,6 +77,12 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
       return
     }
     if (!user) {
+      // Sessão encerrada (logout) — limpa o desbloqueio salvo pra o
+      // próximo login pedir Face ID de novo. Face ID valida só uma vez
+      // por sessão: não trava mais o app por causa de tempo ou de ter
+      // ido pro background, só quando a sessão de login realmente
+      // termina.
+      clearBiometricSession()
       setUnlocked(false)
       return
     }
@@ -88,47 +93,6 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
     setUnlocked(false)
   }, [native, user, biometricEnabled])
   /* eslint-enable react-hooks/set-state-in-effect */
-
-  useEffect(() => {
-    if (!native || !user || !biometricEnabled) return
-    let removed = false
-    let handle: { remove: () => Promise<void> } | undefined
-    // Quando o próprio prompt de Face ID aparece, o iOS reporta o app como
-    // "inativo" por um instante e depois "ativo" de novo assim que a folha
-    // do sistema fecha. Sem esse controle, esse blink re-trancava o app
-    // imediatamente após o usuário validar o Face ID (loop). Só voltamos a
-    // exigir biometria se o app realmente ficou em segundo plano por mais
-    // tempo que BACKGROUND_LOCK_MS.
-    let backgroundedAt = 0
-
-    void App.addListener('appStateChange', ({ isActive }) => {
-      if (!isActive) {
-        backgroundedAt = Date.now()
-        return
-      }
-      if (!user) return
-      if (unlockInFlight.current) return
-      if (isBiometricSessionValid()) {
-        setUnlocked(true)
-        return
-      }
-      if (backgroundedAt && Date.now() - backgroundedAt < BACKGROUND_LOCK_MS) {
-        return
-      }
-      setUnlocked(false)
-    }).then((listener) => {
-      if (removed) {
-        void listener.remove()
-        return
-      }
-      handle = listener
-    })
-
-    return () => {
-      removed = true
-      void handle?.remove()
-    }
-  }, [native, user, biometricEnabled])
 
   const value = useMemo<BiometricContextValue>(
     () => ({
