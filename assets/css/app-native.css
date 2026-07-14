@@ -1392,20 +1392,21 @@ html.native-app .loading-box {
   border-radius: var(--app-glass-radius) !important;
 }
 
+/* Página legada ocupa a tela inteira, edge-to-edge, só respeitando a
+   status bar/dynamic island no topo (sem colunas/margens laterais). */
 html.native-app .app-content:has(.legacy-page--native:not(.legacy-page--tracking)) {
-  padding-top: calc(8px + var(--safe-top));
-  padding-left: calc(8px + var(--safe-left));
-  padding-right: calc(8px + var(--safe-right));
+  padding-top: var(--safe-top);
+  padding-left: 0;
+  padding-right: 0;
 }
 
-/* Página legada ocupa a tela inteira abaixo da status bar/dynamic island —
-   remove a pílula de marca fixa (não sobra nada nela além do status bar). */
+/* Nenhuma pílula de marca fixa sobre a página legada — só o status bar fica fixo. */
 html.native-app .app-main:has(.legacy-page--native:not(.legacy-page--tracking)) .header-brand-mobile {
   display: none !important;
 }
 
 html.native-app .legacy-page--native:not(.legacy-page--tracking) .legacy-frame {
-  min-height: calc(100dvh - var(--app-header-h) - var(--app-nav-h) - 16px);
+  min-height: calc(100dvh - var(--safe-top) - var(--app-nav-h));
   border: none;
   border-radius: 0;
   box-shadow: none;
