@@ -533,22 +533,37 @@ html.native-app .mobile-modules-grid {
 }
 
 html.native-app .mobile-module-tile {
+  /* Ícone em cima, título embaixo — layout clássico de grid de apps,
+     mais fácil de escanear que ícone+texto lado a lado e com espaço
+     para um título maior sem espremer a linha. */
+  position: relative;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  gap: 14px;
-  min-height: 84px;
-  padding: 16px 18px;
-  border-radius: 20px;
+  justify-content: center;
+  gap: 12px;
+  min-height: 132px;
+  padding: 22px 14px 18px;
+  border-radius: 24px;
   background: var(--app-glass-bg);
   border: 1px solid var(--app-glass-border);
   backdrop-filter: var(--app-glass-blur);
   -webkit-backdrop-filter: var(--app-glass-blur);
-  box-shadow: var(--app-glass-shadow), 0 14px 28px -16px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--app-glass-shadow), 0 16px 32px -18px rgba(0, 0, 0, 0.32);
   text-decoration: none;
   color: var(--app-text);
+  overflow: hidden;
   transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+/* Brilho sutil no canto superior — o mesmo truque "jewel" do card
+   Bem-vindo, só que discreto, pros cards não ficarem lisos/genéricos. */
+html.native-app .mobile-module-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120px 90px at 18% -10%, color-mix(in srgb, var(--app-jewel-1) 16%, transparent), transparent 70%);
+  pointer-events: none;
 }
 
 html.native-app .mobile-module-tile:active {
@@ -558,20 +573,21 @@ html.native-app .mobile-module-tile:active {
 }
 
 html.native-app .mobile-module-icon {
+  position: relative;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
   background: linear-gradient(135deg, var(--app-accent), color-mix(in srgb, var(--app-accent) 70%, #000 10%));
   color: #fff;
-  box-shadow: 0 8px 18px -6px color-mix(in srgb, var(--app-accent) 65%, transparent);
+  box-shadow: 0 10px 22px -8px color-mix(in srgb, var(--app-accent) 65%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
 html.native-app .mobile-module-icon svg {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
 }
 
 html.native-app .mobile-module-icon.theme-blue { background: linear-gradient(135deg, #60a5fa, #2563eb); box-shadow: 0 8px 18px -6px rgba(37, 99, 235, 0.55); }
@@ -588,12 +604,12 @@ html.native-app .mobile-module-icon.theme-indigo { background: linear-gradient(1
 html.native-app .mobile-module-icon.theme-red { background: linear-gradient(135deg, #f87171, #dc2626); box-shadow: 0 8px 18px -6px rgba(220, 38, 38, 0.55); }
 
 html.native-app .mobile-module-label {
-  font-size: 1rem;
+  position: relative;
+  font-size: 1.08rem;
   font-weight: 800;
-  text-align: left;
-  line-height: 1.25;
-  flex: 1 1 auto;
-  min-width: 0;
+  letter-spacing: -0.01em;
+  text-align: center;
+  line-height: 1.22;
   max-width: 100%;
   overflow-wrap: anywhere;
 }
