@@ -86,6 +86,9 @@ const icons: Record<string, (p: IconProps) => ReactElement> = {
   incidentes: (p) => (
     <Svg {...p}><path d="M12 2 2 22h20L12 2z" /><path d="M12 10v4M12 18h.01" /></Svg>
   ),
+  'incidentes-analise': (p) => (
+    <Svg {...p}><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 16v-4M12 16V9M16 16v-7" /><circle cx="17.5" cy="6.5" r="2.5" /><path d="m19.3 8.3 1.9 1.9" /></Svg>
+  ),
   'liberacao-dashboard': (p) => (
     <Svg {...p}><path d="M4 19V5M4 19h16M8 16V9M12 16V6M16 16v-4" /></Svg>
   ),

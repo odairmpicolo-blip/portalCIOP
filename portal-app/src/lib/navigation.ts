@@ -99,6 +99,16 @@ export const portalCards: PortalCard[] = [
     section: 'dashboards',
   },
   {
+    id: 'incidentes-analise',
+    title: 'Análise de Incidentes',
+    description: 'Análise detalhada e indicadores dos incidentes.',
+    action: 'Acessar',
+    theme: 'indigo',
+    legacyPath: '/pages/incidentes-analise.html',
+    access: adminSupervisorGerenciaAnalista,
+    section: 'dashboards',
+  },
+  {
     id: 'dados-telemetria',
     title: 'Dados de telemetria',
     description: 'Comparativo de telemetria: TCGL, Clever e FleetBus.',
