@@ -399,18 +399,38 @@ html.native-app .mobile-tab.active .mobile-tab-icon {
 /* ── Módulos (grid) ─────────────────────────────────────────────────────── */
 
 html.native-app .mobile-modules-page {
-  display: grid;
-  gap: 16px;
+  /* Era display:grid com o header em position:sticky — o WebKit do
+     WKWebView tem um bug conhecido de cálculo de altura de track quando
+     um item de grid é sticky, fazendo a fileira seguinte (os ícones dos
+     módulos) renderizar por baixo do card, cortando os ícones ao meio.
+     Layout em bloco normal + margin-bottom explícito no header evita
+     esse bug (sticky em fluxo normal é o cenário mais bem suportado). */
+  display: block;
   padding-bottom: calc(12px + var(--app-nav-h));
+}
+
+html.native-app .app-main--home {
+  /* Trava a altura do shell em 100dvh e isola a rolagem dentro de
+     .app-content (regra abaixo). Sem isso o documento inteiro rola no
+     WKWebView nativo, que faz "rubber-band" (bounce elástico) ao
+     puxar além do topo — o card sticky some/pula e o fundo pisca para
+     a cor base do app por baixo do gradiente, dando a sensação de
+     "página balançando". Rolagem presa num elemento com overflow:auto
+     respeita overscroll-behavior de verdade, o scroll do documento
+     (WKWebView) não. */
+  height: 100dvh;
+  overflow: hidden;
 }
 
 html.native-app .app-main--home .app-content {
   /* Sem pílula de marca fixa na Início/CIOP: não precisa reservar os
-     44px do cabeçalho, só a área segura (status bar/dynamic island).
-     Esse valor tem que ser IDÊNTICO ao `top` do card sticky abaixo,
-     senão o card "pula" de posição ao começar a rolar. */
+     44px do cabeçalho, só a área segura (status bar/dynamic island). */
   padding-top: calc(8px + var(--safe-top)) !important;
   padding-bottom: calc(8px + var(--app-nav-h)) !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  min-height: 0;
 }
 
 html.native-app .mobile-modules-hero {
@@ -419,12 +439,15 @@ html.native-app .mobile-modules-hero {
 
 html.native-app .mobile-inicio-hero {
   padding: 18px;
+  margin-bottom: 16px;
   border-radius: 24px;
   position: sticky;
-  /* Mesmo valor do padding-top acima: garante que o card fique na
-     mesma posição visual tanto em repouso quanto "grudado" no topo,
-     sem pulo ao rolar. */
-  top: calc(8px + var(--safe-top));
+  /* .app-content (acima) agora é o próprio contêiner com scroll, então
+     o offset sticky é resolvido a partir do topo da ÁREA DE PADDING
+     dele — que já reserva a safe-area via padding-top. Por isso aqui é
+     `top: 0` (e não somar a safe-area de novo), senão o card fica mais
+     baixo quando gruda do que quando está em repouso. */
+  top: 0;
   z-index: 6;
   overflow: hidden;
   background:
