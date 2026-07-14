@@ -40,7 +40,7 @@ export function AppLayout() {
   const inOnibus = pathname.includes('onibus-agora') && !inHorarios
   const inAjustes = pathname === '/ajustes'
   const tracking = inOnibus || inHorarios
-  const inHome = pathname === '/' || pathname === '/modulos'
+  const inHome = pathname === '/' || pathname === '/modulos' || pathname === '/ciop'
   const nativeShell = native || tracking
 
   return (
