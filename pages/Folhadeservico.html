@@ -478,6 +478,63 @@ document.documentElement.classList.add("portal-auth-pending");
         .filter-wrapper {
             margin-bottom: 24px;
         }
+        .filter-group-headrow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .linha-produtiva-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            text-transform: none;
+            user-select: none;
+        }
+        .linha-produtiva-toggle input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .linha-produtiva-toggle .lpt-track {
+            position: relative;
+            width: 34px;
+            height: 19px;
+            border-radius: 999px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            flex: 0 0 auto;
+            transition: background .18s ease, border-color .18s ease;
+        }
+        .linha-produtiva-toggle .lpt-thumb {
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            transition: transform .18s ease;
+        }
+        .linha-produtiva-toggle input:checked ~ .lpt-track {
+            background: var(--orange);
+            border-color: var(--orange);
+        }
+        .linha-produtiva-toggle input:checked ~ .lpt-track .lpt-thumb {
+            transform: translateX(15px);
+        }
+        .linha-produtiva-toggle input:focus-visible ~ .lpt-track {
+            outline: 2px solid var(--blue2);
+            outline-offset: 2px;
+        }
+        .linha-produtiva-toggle .lpt-text {
+            white-space: nowrap;
+            font-size: 12px;
+        }
         .kpi-grid {
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 18px;
@@ -1485,6 +1542,15 @@ h1 {
     letter-spacing:.05em;
     font-weight:700;
   }
+  .linha-produtiva-toggle{text-transform:none !important;letter-spacing:normal !important;}
+  .linha-produtiva-toggle .lpt-track{
+    background:var(--field-bg) !important;
+    border-color:var(--glass-border) !important;
+  }
+  .linha-produtiva-toggle input:checked ~ .lpt-track{
+    background:linear-gradient(135deg, var(--jewel-1), var(--jewel-2)) !important;
+    border-color:transparent !important;
+  }
   .filter-group input,
   .filter-group select{
     background:var(--field-bg) !important;
@@ -1631,7 +1697,14 @@ h1 {
                 </select>
             </div>
             <div class="filter-group filter-group--select">
-                <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><path d="M9 18h4a5 5 0 0 0 0-10h-2"/></svg></span><span>Linha</span></label>
+                <div class="filter-group-headrow">
+                    <label><span class="filter-label-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><path d="M9 18h4a5 5 0 0 0 0-10h-2"/></svg></span><span>Linha</span></label>
+                    <label class="linha-produtiva-toggle" title="Mostrar somente linhas produtivas (numéricas) - oculta ociosas como DH, PI, PO">
+                        <input type="checkbox" id="filtro-linha-produtiva" onchange="filtrarDashboard()">
+                        <span class="lpt-track"><span class="lpt-thumb"></span></span>
+                        <span class="lpt-text">Só produtivas</span>
+                    </label>
+                </div>
                 <select id="filtro-linha" onchange="filtrarDashboard()">
                     <option value="">Todas as Linhas</option>
                 </select>
@@ -2439,6 +2512,19 @@ h1 {
         return filtrado ? n + " registro(s) filtrado(s)" : n + " registro(s)";
     }
 
+    /** Linhas produtivas têm código numérico (ex: 101, 205). Linhas
+     *  ociosas (não produtivas) começam com letra, ex: DH (deslocamento),
+     *  PI (pull-in), PO (pull-out). */
+    function linhaEhProdutiva(linha) {
+        const s = String(linha ?? "").trim();
+        if (!s) return false;
+        return /^[0-9]/.test(s);
+    }
+
+    function somenteLinhasProdutivas() {
+        return !!document.getElementById("filtro-linha-produtiva")?.checked;
+    }
+
     function filtrosAtivos() {
         const dDe = document.getElementById("filtro-data-de")?.value || "";
         const dAte = document.getElementById("filtro-data-ate")?.value || "";
@@ -2447,7 +2533,8 @@ h1 {
         const ocorrencia = document.getElementById("filtro-ocorrencia")?.value || "";
         const linha = document.getElementById("filtro-linha")?.value || "";
         const situacao = document.getElementById("filtro-situacao")?.value || "";
-        return !!(dDe || dAte || analista || motSai || ocorrencia || linha || situacao);
+        const soProdutivas = somenteLinhasProdutivas();
+        return !!(dDe || dAte || analista || motSai || ocorrencia || linha || situacao || soProdutivas);
     }
 
     function atualizarBannerRegistros(qtd) {
@@ -4137,6 +4224,7 @@ h1 {
         const ocorrencia = document.getElementById("filtro-ocorrencia").value;
         const linha = document.getElementById("filtro-linha").value;
         const situacao = document.getElementById("filtro-situacao").value;
+        const soProdutivas = somenteLinhasProdutivas();
 
         return dadosMestres.filter(item => {
             const anoItem = anoIsoFiltro(isoDataRegistro(item));
@@ -4145,6 +4233,7 @@ h1 {
             if (motSai && normTexto(motoristaQueSai(item)) !== normTexto(motSai)) return false;
             if (ocorrencia && item.ocorrencia !== ocorrencia) return false;
             if (linha && item.linha !== linha) return false;
+            if (soProdutivas && !linhaEhProdutiva(item.linha)) return false;
             if (situacao && item.situacao !== situacao) return false;
             return true;
         });
@@ -4158,6 +4247,7 @@ h1 {
         const ocorrencia = document.getElementById("filtro-ocorrencia").value;
         const linha = document.getElementById("filtro-linha").value;
         const situacao = document.getElementById("filtro-situacao").value;
+        const soProdutivas = somenteLinhasProdutivas();
 
         return dadosMestres.filter(item => {
             const iso = isoDataRegistro(item);
@@ -4167,6 +4257,7 @@ h1 {
             if (motSai && normTexto(motoristaQueSai(item)) !== normTexto(motSai)) return false;
             if (ocorrencia && item.ocorrencia !== ocorrencia) return false;
             if (linha && item.linha !== linha) return false;
+            if (soProdutivas && !linhaEhProdutiva(item.linha)) return false;
             if (situacao && item.situacao !== situacao) return false;
             return true;
         });
