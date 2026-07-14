@@ -36,7 +36,12 @@ const config: CapacitorConfig = {
   },
   ios: {
     backgroundColor: '#0f172a',
-    contentInset: 'automatic',
+    // 'automatic' reserva um "gutter" nativo (cor sólida, fora do alcance
+    // do CSS) atrás da status bar/dynamic island. Com 'never' o WKWebView
+    // desenha em full-bleed e o próprio gradiente do body (que já respeita
+    // env(safe-area-inset-top) via app-native.css) aparece por trás do
+    // notch, em vez de uma faixa sólida separada.
+    contentInset: 'never',
     scrollEnabled: true,
     preferredContentMode: 'mobile',
   },
