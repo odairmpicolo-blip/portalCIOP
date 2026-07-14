@@ -912,19 +912,50 @@ html.native-app .biometric-lock-card p {
 html.native-app .biometric-lock-icon {
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   margin: 0 auto;
-  border-radius: 16px;
+  border-radius: 18px;
   color: #fff;
   background: linear-gradient(135deg, var(--app-jewel-1), var(--app-jewel-2));
   border: 1px solid var(--app-glass-border);
   box-shadow: var(--app-jewel-shadow);
+  animation: app-biometric-pulse 2.4s ease-in-out infinite;
 }
 
 html.native-app .biometric-lock-icon svg {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
+}
+
+@keyframes app-biometric-pulse {
+  0%, 100% {
+    box-shadow: var(--app-jewel-shadow), 0 0 0 0 color-mix(in srgb, var(--app-jewel-1) 35%, transparent);
+  }
+  50% {
+    box-shadow: var(--app-jewel-shadow), 0 0 0 9px color-mix(in srgb, var(--app-jewel-1) 0%, transparent);
+  }
+}
+
+/* Transição de tela: fade suave ao trocar de rota. Só opacity (sem
+   transform/filter) pra não criar containing block novo nos ancestrais
+   e quebrar o header/tab-bar fixos ou o hero sticky da Inicio. */
+@keyframes app-route-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+html.native-app .route-transition {
+  animation: app-route-in 0.28s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.native-app .biometric-lock-icon {
+    animation: none;
+  }
+  html.native-app .route-transition {
+    animation: none;
+  }
 }
 
 html.native-app .biometric-lock-spinner {
