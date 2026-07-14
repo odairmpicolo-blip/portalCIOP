@@ -872,8 +872,159 @@ h1 {
     }
 }
 /* Fim ajuste Codex */
-@media (max-width:720px){body{background:var(--dk-bg) !important;color:var(--dk-text) !important;}.header{background:var(--dk-glass-bg) !important;backdrop-filter:blur(var(--dk-glass-blur)) !important;border-bottom:1px solid var(--dk-glass-border) !important;}.dk-theme-toggle{display:flex !important;}.summary-panel,.exchange-card,.terminal-kpi-card,.terminal-card,.panel{background:var(--dk-glass-bg) !important;border:1px solid var(--dk-glass-border) !important;box-shadow:var(--dk-glass-shadow) !important;}.kpi-label{color:var(--dk-muted) !important;}.kpi-value{color:var(--dk-text) !important;}.terminal-kpi-name,.terminal-name{color:var(--dk-text) !important;}.table-wrap{background:var(--dk-glass-bg) !important;border:1px solid var(--dk-glass-border) !important;}}
+/* ===== Redesign iOS26 Liquid Glass (mobile/app nativo) =====
+   Suporta escuro (padrão) e claro (html.native-light), sincronizado
+   pelo shell nativo. Fontes ampliadas para leitura confortável. */
+@media (max-width:720px){
+  :root{
+    --jewel-1:#7a5cff;
+    --jewel-2:#c04fd6;
+    --jewel-shadow:0 10px 26px -8px rgba(122,92,255,.65);
 
+    --glass-bg:rgba(255,255,255,.08);
+    --glass-bg-strong:rgba(255,255,255,.13);
+    --glass-border:rgba(255,255,255,.16);
+    --glass-blur:blur(30px) saturate(180%);
+    --glass-shadow:0 20px 40px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18);
+
+    --ink:#fff;
+    --ink-soft:rgba(255,255,255,.6);
+    --ink-faint:rgba(255,255,255,.48);
+    --field-bg:rgba(255,255,255,.07);
+
+    --g-green:#4ade80;
+    --g-amber:#fbbf24;
+    --g-red:#f87171;
+  }
+
+  html.native-light{
+    --glass-bg:rgba(255,255,255,.6);
+    --glass-bg-strong:rgba(255,255,255,.8);
+    --glass-border:rgba(30,20,70,.10);
+    --glass-shadow:0 16px 34px -16px rgba(40,25,90,.22), inset 0 1px 0 rgba(255,255,255,.75);
+
+    --ink:#18182a;
+    --ink-soft:rgba(24,24,42,.62);
+    --ink-faint:rgba(24,24,42,.5);
+    --field-bg:rgba(255,255,255,.8);
+
+    --g-green:#15803d;
+    --g-amber:#b45309;
+    --g-red:#dc2626;
+  }
+
+  body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(122,92,255,.4) 0%, transparent 40%),
+      radial-gradient(circle at 90% 15%, rgba(255,110,180,.3) 0%, transparent 38%),
+      radial-gradient(circle at 20% 60%, rgba(60,180,255,.26) 0%, transparent 42%),
+      radial-gradient(circle at 85% 78%, rgba(255,170,60,.2) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
+      #0d0e14 !important;
+    color:var(--ink) !important;
+  }
+  html.native-light body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(122,92,255,.3) 0%, transparent 40%),
+      radial-gradient(circle at 90% 15%, rgba(255,110,180,.24) 0%, transparent 38%),
+      radial-gradient(circle at 20% 60%, rgba(60,180,255,.2) 0%, transparent 42%),
+      radial-gradient(circle at 85% 78%, rgba(255,170,60,.18) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
+      #f2effa !important;
+  }
+
+  .header{display:none !important;}
+
+  .container{
+    max-width:none !important;
+    margin:0 !important;
+    padding:calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-left)) 28px calc(14px + env(safe-area-inset-right)) !important;
+  }
+  html.native-embedded .container{padding-top:14px !important;}
+
+  .topbar{flex-direction:column !important;align-items:stretch !important;gap:12px !important;}
+  .btn-portal,.btn,.btn-primary,.btn-secondary{
+    min-height:46px !important;
+    border-radius:14px !important;
+    font-size:15px !important;
+  }
+  .btn-portal{
+    background:linear-gradient(135deg, var(--jewel-1), var(--jewel-2)) !important;
+    box-shadow:var(--jewel-shadow) !important;
+    color:#fff !important;
+  }
+  .btn-primary{background:linear-gradient(135deg, var(--jewel-1), var(--jewel-2)) !important;box-shadow:var(--jewel-shadow) !important;color:#fff !important;}
+  .btn-secondary{background:var(--glass-bg-strong) !important;color:var(--ink) !important;}
+  .source-status{
+    background:var(--glass-bg) !important;
+    border:1px solid var(--glass-border) !important;
+    border-radius:16px !important;
+    padding:10px 12px !important;
+    color:var(--ink-soft) !important;
+    font-size:13px !important;
+  }
+  .error-box{color:var(--g-red) !important;}
+
+  .summary-panel{grid-template-columns:1fr !important;gap:14px !important;}
+  .exchange-card,.terminal-kpi-card,.panel{
+    background:var(--glass-bg) !important;
+    backdrop-filter:var(--glass-blur) !important;
+    -webkit-backdrop-filter:var(--glass-blur) !important;
+    border:1px solid var(--glass-border) !important;
+    border-radius:22px !important;
+    box-shadow:var(--glass-shadow) !important;
+  }
+  .kpi-label{color:var(--ink-faint) !important;font-size:12.5px !important;}
+  .kpi-value{color:var(--ink) !important;font-size:26px !important;}
+  .kpi-sub{color:var(--ink-faint) !important;font-size:13px !important;}
+  .exchange-meta{color:var(--ink-soft) !important;font-size:13px !important;}
+  .empty{color:var(--ink-faint) !important;font-size:14.5px !important;}
+  .section-title h2{color:var(--ink) !important;font-size:15px !important;}
+  .section-title span{color:var(--ink-faint) !important;font-size:13px !important;}
+  .fiscal-lead-card{background:var(--glass-bg-strong) !important;border:1px solid var(--glass-border) !important;}
+  .fiscal-lead-name{color:var(--ink) !important;font-size:14px !important;}
+  .fiscal-lead-meta{color:var(--ink-faint) !important;font-size:12.5px !important;}
+  .terminal-kpi-name,.terminal-name{color:var(--ink) !important;font-size:14.5px !important;}
+
+  .controls{grid-template-columns:1fr !important;gap:12px !important;}
+  .controls label{color:var(--ink-faint) !important;font-size:13px !important;font-weight:700 !important;}
+  .controls input,.controls select{
+    background:var(--field-bg) !important;
+    border:1px solid var(--glass-border) !important;
+    border-radius:14px !important;
+    color:var(--ink) !important;
+    padding:12px !important;
+    font-size:16px !important;
+    min-height:46px !important;
+    width:100%;
+  }
+  .segmented{background:var(--field-bg) !important;border:1px solid var(--glass-border) !important;border-radius:14px !important;}
+  .segmented button{color:var(--ink-soft) !important;min-height:44px !important;font-size:14px !important;}
+  .segmented button[aria-pressed="true"],.segmented button.active{
+    background:linear-gradient(135deg, var(--jewel-1), var(--jewel-2)) !important;
+    color:#fff !important;
+  }
+
+  .table-wrap{
+    background:var(--glass-bg) !important;
+    backdrop-filter:var(--glass-blur) !important;
+    -webkit-backdrop-filter:var(--glass-blur) !important;
+    border:1px solid var(--glass-border) !important;
+    border-radius:20px !important;
+    max-height:60vh !important;
+  }
+  table th{
+    background:var(--glass-bg-strong) !important;
+    color:var(--ink-soft) !important;
+    border-color:var(--glass-border) !important;
+    font-size:12.5px !important;
+  }
+  table td{
+    color:var(--ink) !important;
+    border-color:var(--glass-border) !important;
+    font-size:14.5px !important;
+  }
+}
 </style>
 <script src="../assets/js/loading.js"></script>
 <link rel="stylesheet" href="../assets/css/portal-senha.css">
