@@ -4,7 +4,7 @@ import { injectLegacyNativeFrame } from '../lib/native-shell'
 import { useNativeApp } from '../hooks/useNativeApp'
 import { legacyUrl } from '../lib/navigation'
 
-const BUS_FRAME_SRC = legacyUrl('/pages/onibus-agora.html?embed=native-app&v=20260714e')
+const BUS_FRAME_SRC = legacyUrl('/pages/onibus-agora.html?embed=native-app&v=20260714f')
 
 function postBusMode(frame: HTMLIFrameElement | null, horarios: boolean) {
   if (!frame?.contentWindow) return
@@ -22,7 +22,7 @@ export function LegacyPage() {
   const isHorarios = path.includes('onibus-horarios')
   const src = useMemo(() => {
     if (tracking) return BUS_FRAME_SRC
-    const url = legacyUrl(`/${path}?v=20260714e`)
+    const url = legacyUrl(`/${path}?v=20260714f`)
     if (!native) return url
     const sep = url.includes('?') ? '&' : '?'
     return `${url}${sep}embed=native-app`
