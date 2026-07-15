@@ -30,25 +30,16 @@ document.documentElement.classList.add("portal-auth-pending");
   --pink:#ec4899;
   --teal:#06b6d4;
 
-  /* Tokens --dk-* usados no resto do arquivo nunca tinham sido
-     definidos — a página inteira renderizava quebrada (fundos e
-     textos transparentes). Definindo aqui no tom jewel/glass. */
+  /* Portal web (desktop): sempre claro, sem alternância.
+     App nativo mobile (@media abaixo): escuro por padrão, claro via
+     html.native-light (definido pelo shell nativo), inalterado. */
   --dk-accent:#7a5cff;
   --dk-accent-2:#c04fd6;
-  --dk-bg:#0d0e14;
-  --dk-bg-2:#15131f;
-  --dk-glass-bg:rgba(255,255,255,.08);
-  --dk-glass-border:rgba(255,255,255,.16);
-  --dk-glass-blur:blur(30px) saturate(180%);
-  --dk-glass-shadow:0 20px 40px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18);
-  --dk-text:#fff;
-  --dk-muted:rgba(255,255,255,.6);
-}
-html.native-light{
   --dk-bg:#f2effa;
   --dk-bg-2:#e9e4f6;
   --dk-glass-bg:rgba(255,255,255,.6);
   --dk-glass-border:rgba(30,20,70,.10);
+  --dk-glass-blur:blur(30px) saturate(180%);
   --dk-glass-shadow:0 16px 34px -16px rgba(40,25,90,.22), inset 0 1px 0 rgba(255,255,255,.75);
   --dk-text:#18182a;
   --dk-muted:rgba(24,24,42,.62);
@@ -106,7 +97,7 @@ body{
   color:var(--dk-muted);
 }
 .header-actions{justify-self:end;display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}
-.dk-theme-toggle{display:inline-flex !important}
+.dk-theme-toggle{display:none !important}
 .ciop-session{
   display:flex;
   align-items:center;
@@ -265,6 +256,27 @@ select option{color:#101828}
   .chart-card.span-8,.chart-card.span-6,.chart-card.span-4{grid-column:span 12}
 }
 @media (max-width:720px){
+  /* App nativo mobile: escuro por padrão, claro via html.native-light
+     (definido pelo shell nativo) — comportamento original, inalterado. */
+  :root{
+    --dk-bg:#0d0e14;
+    --dk-bg-2:#15131f;
+    --dk-glass-bg:rgba(255,255,255,.08);
+    --dk-glass-border:rgba(255,255,255,.16);
+    --dk-glass-shadow:0 20px 40px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18);
+    --dk-text:#fff;
+    --dk-muted:rgba(255,255,255,.6);
+  }
+  html.native-light{
+    --dk-bg:#f2effa;
+    --dk-bg-2:#e9e4f6;
+    --dk-glass-bg:rgba(255,255,255,.6);
+    --dk-glass-border:rgba(30,20,70,.10);
+    --dk-glass-shadow:0 16px 34px -16px rgba(40,25,90,.22), inset 0 1px 0 rgba(255,255,255,.75);
+    --dk-text:#18182a;
+    --dk-muted:rgba(24,24,42,.62);
+  }
+
   .header{display:none !important;}
 
   .container{
@@ -530,10 +542,8 @@ function linhaEhProdutiva(linha){
 }
 
 function isDarkTheme(){
-  const cls = document.documentElement.classList;
-  if (cls.contains("dk-dark")) return true;
-  if (cls.contains("dk-light")) return false;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  if (window.innerWidth > 720) return false;
+  return !document.documentElement.classList.contains("native-light");
 }
 function themeTextColor(){ return isDarkTheme() ? "#f5f5f7" : "#1c1c1e"; }
 function themeMutedColor(){ return isDarkTheme() ? "#98989d" : "#636366"; }
