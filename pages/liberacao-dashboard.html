@@ -75,38 +75,18 @@
    Suporta escuro (padrão) e claro (html.native-light), sincronizado
    pelo shell nativo. Fontes ampliadas para leitura confortável. */
 /* ===== Redesign iOS26 Liquid Glass — jewel/glass em toda a página =====
-   Escuro (padrão) e claro (html.native-light no app nativo, html.dk-light
-   pelo botão de alternância no portal web), aplicado em qualquer largura.
-   Camada de layout mobile-only fica no @media abaixo. */
+   Portal web (desktop): somente modo claro, sem alternância.
+   App nativo mobile: continua escuro por padrão (html.native-light
+   controlado pelo shell), inalterado — ver @media abaixo. */
 :root{
   --jewel-1:#7a5cff;
   --jewel-2:#c04fd6;
   --jewel-shadow:0 10px 26px -8px rgba(122,92,255,.65);
 
-  --glass-bg:rgba(255,255,255,.08);
-  --glass-bg-strong:rgba(255,255,255,.13);
-  --glass-border:rgba(255,255,255,.16);
-  --glass-blur:blur(30px) saturate(180%);
-  --glass-shadow:0 20px 40px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18);
-
-  --ink:#fff;
-  --ink-soft:rgba(255,255,255,.6);
-  --ink-faint:rgba(255,255,255,.48);
-  --field-bg:rgba(255,255,255,.07);
-
-  --g-green:#4ade80;
-  --g-amber:#fbbf24;
-  --g-red:#f87171;
-  --g-green-a20:rgba(74,222,128,.2);
-  --g-amber-a20:rgba(251,191,36,.2);
-  --g-red-a20:rgba(248,113,113,.2);
-}
-
-html.native-light,
-html.dk-light{
   --glass-bg:rgba(255,255,255,.6);
   --glass-bg-strong:rgba(255,255,255,.8);
   --glass-border:rgba(30,20,70,.10);
+  --glass-blur:blur(30px) saturate(180%);
   --glass-shadow:0 16px 34px -16px rgba(40,25,90,.22), inset 0 1px 0 rgba(255,255,255,.75);
 
   --ink:#18182a;
@@ -124,26 +104,16 @@ html.dk-light{
 
 body{
   background:
-    radial-gradient(circle at 15% 8%, rgba(122,92,255,.4) 0%, transparent 40%),
-    radial-gradient(circle at 90% 15%, rgba(255,110,180,.3) 0%, transparent 38%),
-    radial-gradient(circle at 20% 60%, rgba(60,180,255,.26) 0%, transparent 42%),
-    radial-gradient(circle at 85% 78%, rgba(255,170,60,.2) 0%, transparent 40%),
-    radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
-    #0d0e14 !important;
-  color:var(--ink) !important;
-}
-html.native-light body,
-html.dk-light body{
-  background:
     radial-gradient(circle at 15% 8%, rgba(122,92,255,.3) 0%, transparent 40%),
     radial-gradient(circle at 90% 15%, rgba(255,110,180,.24) 0%, transparent 38%),
     radial-gradient(circle at 20% 60%, rgba(60,180,255,.2) 0%, transparent 42%),
     radial-gradient(circle at 85% 78%, rgba(255,170,60,.18) 0%, transparent 40%),
     radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
     #f2effa !important;
+  color:var(--ink) !important;
 }
 
-.dk-theme-toggle{display:inline-flex !important}
+.dk-theme-toggle{display:none !important}
 
 .header{
   background:var(--glass-bg) !important;
@@ -210,6 +180,64 @@ html.dk-light body{
 }
 
 @media (max-width:720px){
+  /* App nativo mobile: escuro por padrão, claro via html.native-light
+     (definido pelo shell nativo) — comportamento original, inalterado. */
+  :root{
+    --glass-bg:rgba(255,255,255,.08);
+    --glass-bg-strong:rgba(255,255,255,.13);
+    --glass-border:rgba(255,255,255,.16);
+    --glass-shadow:0 20px 40px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18);
+
+    --ink:#fff;
+    --ink-soft:rgba(255,255,255,.6);
+    --ink-faint:rgba(255,255,255,.48);
+    --field-bg:rgba(255,255,255,.07);
+
+    --g-green:#4ade80;
+    --g-amber:#fbbf24;
+    --g-red:#f87171;
+    --g-green-a20:rgba(74,222,128,.2);
+    --g-amber-a20:rgba(251,191,36,.2);
+    --g-red-a20:rgba(248,113,113,.2);
+  }
+  html.native-light{
+    --glass-bg:rgba(255,255,255,.6);
+    --glass-bg-strong:rgba(255,255,255,.8);
+    --glass-border:rgba(30,20,70,.10);
+    --glass-shadow:0 16px 34px -16px rgba(40,25,90,.22), inset 0 1px 0 rgba(255,255,255,.75);
+
+    --ink:#18182a;
+    --ink-soft:rgba(24,24,42,.62);
+    --ink-faint:rgba(24,24,42,.5);
+    --field-bg:rgba(255,255,255,.8);
+
+    --g-green:#15803d;
+    --g-amber:#b45309;
+    --g-red:#dc2626;
+    --g-green-a20:rgba(21,128,61,.2);
+    --g-amber-a20:rgba(180,83,9,.2);
+    --g-red-a20:rgba(220,38,38,.2);
+  }
+  body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(122,92,255,.4) 0%, transparent 40%),
+      radial-gradient(circle at 90% 15%, rgba(255,110,180,.3) 0%, transparent 38%),
+      radial-gradient(circle at 20% 60%, rgba(60,180,255,.26) 0%, transparent 42%),
+      radial-gradient(circle at 85% 78%, rgba(255,170,60,.2) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
+      #0d0e14 !important;
+    color:var(--ink) !important;
+  }
+  html.native-light body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(122,92,255,.3) 0%, transparent 40%),
+      radial-gradient(circle at 90% 15%, rgba(255,110,180,.24) 0%, transparent 38%),
+      radial-gradient(circle at 20% 60%, rgba(60,180,255,.2) 0%, transparent 42%),
+      radial-gradient(circle at 85% 78%, rgba(255,170,60,.18) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
+      #f2effa !important;
+  }
+
   .header{display:none !important;}
 
   .container{
@@ -471,10 +499,8 @@ return "rgba("+c.r+","+c.g+","+c.b+","+alpha+")";
 }
 
 function isDarkTheme(){
-const cls = document.documentElement.classList;
-if (cls.contains("dk-dark")) return true;
-if (cls.contains("dk-light") || cls.contains("native-light")) return false;
-return window.matchMedia("(prefers-color-scheme: dark)").matches;
+if (window.innerWidth > 720) return false;
+return !document.documentElement.classList.contains("native-light");
 }
 
 function gradienteBarras(chart, cor){
@@ -769,6 +795,9 @@ $("dataAte").value=hoje;
 $("dataDe").addEventListener("change", agendarRecarga);
 $("dataAte").addEventListener("change", agendarRecarga);
 $("btnPdf").addEventListener("click", () => gerarPdf().catch(e => setStatus(e.message,"erro")));
+document.getElementById("dkThemeToggle")?.addEventListener("click", () => {
+if(Object.keys(state.charts).length) renderGraficos();
+});
 carregar().catch(e => setStatus(e.message,"erro"));
 }
 
