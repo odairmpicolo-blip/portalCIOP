@@ -100,7 +100,7 @@ export const portalCards: PortalCard[] = [
   },
   {
     id: 'incidentes-analise',
-    title: 'Análise de Incidentes',
+    title: 'Dashboard de Incidentes',
     description: 'Análise detalhada e indicadores dos incidentes.',
     action: 'Acessar',
     theme: 'indigo',
