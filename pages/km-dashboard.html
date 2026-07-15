@@ -67,54 +67,132 @@ td{padding:10px;border-right:1px solid #e5eaf3;border-bottom:1px solid #e5eaf3;f
 /* ===== Redesign iOS26 Liquid Glass (mobile/app nativo) =====
    Suporta escuro (padrão) e claro (html.native-light), sincronizado
    pelo shell nativo. Fontes ampliadas para leitura confortável. */
+/* ===== Redesign iOS26 Liquid Glass — jewel/glass em toda a página =====
+   Escuro (padrão) e claro (html.native-light no app nativo, html.dk-light
+   pelo botão de alternância no portal web), aplicado em qualquer largura.
+   Camada de layout mobile-only fica no @media abaixo. */
+:root{
+  --jewel-1:#7a5cff;
+  --jewel-2:#c04fd6;
+  --jewel-shadow:0 10px 26px -8px rgba(122,92,255,.65);
+
+  --glass-bg:rgba(255,255,255,.08);
+  --glass-bg-strong:rgba(255,255,255,.13);
+  --glass-border:rgba(255,255,255,.16);
+  --glass-blur:blur(30px) saturate(180%);
+  --glass-shadow:0 20px 40px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18);
+
+  --ink:#fff;
+  --ink-soft:rgba(255,255,255,.6);
+  --ink-faint:rgba(255,255,255,.48);
+}
+
+html.native-light,
+html.dk-light{
+  --glass-bg:rgba(255,255,255,.6);
+  --glass-bg-strong:rgba(255,255,255,.8);
+  --glass-border:rgba(30,20,70,.10);
+  --glass-shadow:0 16px 34px -16px rgba(40,25,90,.22), inset 0 1px 0 rgba(255,255,255,.75);
+
+  --ink:#18182a;
+  --ink-soft:rgba(24,24,42,.62);
+  --ink-faint:rgba(24,24,42,.5);
+}
+
+body{
+  overflow:visible !important;
+  height:auto !important;
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 15% 8%, rgba(122,92,255,.4) 0%, transparent 40%),
+    radial-gradient(circle at 90% 15%, rgba(255,110,180,.3) 0%, transparent 38%),
+    radial-gradient(circle at 20% 60%, rgba(60,180,255,.26) 0%, transparent 42%),
+    radial-gradient(circle at 85% 78%, rgba(255,170,60,.2) 0%, transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
+    #0d0e14 !important;
+  color:var(--ink) !important;
+}
+html.native-light body,
+html.dk-light body{
+  background:
+    radial-gradient(circle at 15% 8%, rgba(122,92,255,.3) 0%, transparent 40%),
+    radial-gradient(circle at 90% 15%, rgba(255,110,180,.24) 0%, transparent 38%),
+    radial-gradient(circle at 20% 60%, rgba(60,180,255,.2) 0%, transparent 42%),
+    radial-gradient(circle at 85% 78%, rgba(255,170,60,.18) 0%, transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
+    #f2effa !important;
+}
+
+.dk-theme-toggle{display:inline-flex !important}
+
+.header{
+  background:var(--glass-bg) !important;
+  backdrop-filter:var(--glass-blur) !important;
+  -webkit-backdrop-filter:var(--glass-blur) !important;
+  border-bottom:1px solid var(--glass-border) !important;
+  position:sticky !important;
+  top:0 !important;
+  z-index:30 !important;
+}
+.subtitle{color:var(--ink-faint) !important}
+.ciop-session{background:var(--glass-bg) !important;border:1px solid var(--glass-border) !important;color:var(--ink) !important;box-shadow:none !important}
+.ciop-session-profile{color:var(--ink-faint) !important}
+
+.btn-portal{
+  background:linear-gradient(135deg, var(--jewel-1), var(--jewel-2)) !important;
+  box-shadow:var(--jewel-shadow) !important;
+  color:#fff !important;
+}
+
+.card{
+  background:var(--glass-bg) !important;
+  backdrop-filter:var(--glass-blur) !important;
+  -webkit-backdrop-filter:var(--glass-blur) !important;
+  border:1px solid var(--glass-border) !important;
+  box-shadow:var(--glass-shadow) !important;
+}
+.card-title{color:var(--ink-soft) !important}
+.card-value{color:var(--ink) !important}
+.card-sub{color:var(--ink-faint) !important}
+
+.panel{
+  background:var(--glass-bg) !important;
+  border:1px solid var(--glass-border) !important;
+}
+.filters label{color:var(--ink-faint) !important}
+.filters input,.filters select{
+  background:var(--glass-bg-strong) !important;
+  border:1px solid var(--glass-border) !important;
+  color:var(--ink) !important;
+}
+
+.comp{
+  background:var(--glass-bg) !important;
+  backdrop-filter:var(--glass-blur) !important;
+  -webkit-backdrop-filter:var(--glass-blur) !important;
+  border:1px solid var(--glass-border) !important;
+  box-shadow:var(--glass-shadow) !important;
+}
+.comp h3{color:var(--ink) !important}
+.metric{background:var(--glass-bg-strong) !important;}
+.metric b{color:var(--ink) !important}
+.metric span{color:var(--ink-faint) !important}
+
+.table-wrap{
+  background:var(--glass-bg) !important;
+  backdrop-filter:var(--glass-blur) !important;
+  -webkit-backdrop-filter:var(--glass-blur) !important;
+  border:1px solid var(--glass-border) !important;
+}
+th{background:var(--glass-bg-strong) !important;color:var(--ink-soft) !important;}
+td{color:var(--ink) !important;border-color:var(--glass-border) !important;}
+a{color:#8fb4ff !important;}
+.small{color:var(--ink-faint) !important;}
+
 @media (max-width:720px){
-  :root{
-    --jewel-1:#7a5cff;
-    --jewel-2:#c04fd6;
-    --jewel-shadow:0 10px 26px -8px rgba(122,92,255,.65);
-
-    --glass-bg:rgba(255,255,255,.08);
-    --glass-bg-strong:rgba(255,255,255,.13);
-    --glass-border:rgba(255,255,255,.16);
-    --glass-blur:blur(30px) saturate(180%);
-    --glass-shadow:0 20px 40px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18);
-
-    --ink:#fff;
-    --ink-soft:rgba(255,255,255,.6);
-    --ink-faint:rgba(255,255,255,.48);
-  }
-
-  html.native-light{
-    --glass-bg:rgba(255,255,255,.6);
-    --glass-bg-strong:rgba(255,255,255,.8);
-    --glass-border:rgba(30,20,70,.10);
-    --glass-shadow:0 16px 34px -16px rgba(40,25,90,.22), inset 0 1px 0 rgba(255,255,255,.75);
-
-    --ink:#18182a;
-    --ink-soft:rgba(24,24,42,.62);
-    --ink-faint:rgba(24,24,42,.5);
-  }
-
   body{
     height:auto !important;
     overflow:visible !important;
-    background:
-      radial-gradient(circle at 15% 8%, rgba(122,92,255,.4) 0%, transparent 40%),
-      radial-gradient(circle at 90% 15%, rgba(255,110,180,.3) 0%, transparent 38%),
-      radial-gradient(circle at 20% 60%, rgba(60,180,255,.26) 0%, transparent 42%),
-      radial-gradient(circle at 85% 78%, rgba(255,170,60,.2) 0%, transparent 40%),
-      radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
-      #0d0e14 !important;
-    color:var(--ink) !important;
-  }
-  html.native-light body{
-    background:
-      radial-gradient(circle at 15% 8%, rgba(122,92,255,.3) 0%, transparent 40%),
-      radial-gradient(circle at 90% 15%, rgba(255,110,180,.24) 0%, transparent 38%),
-      radial-gradient(circle at 20% 60%, rgba(60,180,255,.2) 0%, transparent 42%),
-      radial-gradient(circle at 85% 78%, rgba(255,170,60,.18) 0%, transparent 40%),
-      radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
-      #f2effa !important;
   }
 
   .header{display:none !important;}
@@ -133,8 +211,6 @@ td{padding:10px;border-right:1px solid #e5eaf3;border-bottom:1px solid #e5eaf3;f
   .btn-portal{
     width:100% !important;
     justify-content:center !important;
-    background:linear-gradient(135deg, var(--jewel-1), var(--jewel-2)) !important;
-    box-shadow:var(--jewel-shadow) !important;
     min-height:46px !important;
     border-radius:14px !important;
     font-size:15px !important;
@@ -142,49 +218,30 @@ td{padding:10px;border-right:1px solid #e5eaf3;border-bottom:1px solid #e5eaf3;f
 
   .cards{grid-template-columns:repeat(2, minmax(0,1fr)) !important;gap:12px !important;}
   .card{
-    background:var(--glass-bg) !important;
-    backdrop-filter:var(--glass-blur) !important;
-    -webkit-backdrop-filter:var(--glass-blur) !important;
-    border:1px solid var(--glass-border) !important;
     border-radius:18px !important;
-    box-shadow:var(--glass-shadow) !important;
   }
-  .card-title{color:var(--ink-soft) !important;font-size:12.5px !important;}
-  .card-value{color:var(--ink) !important;font-size:20px !important;}
-  .card-sub{color:var(--ink-faint) !important;font-size:12.5px !important;}
+  .card-title{font-size:12.5px !important;}
+  .card-value{font-size:20px !important;}
+  .card-sub{font-size:12.5px !important;}
 
   .panel{
-    background:var(--glass-bg) !important;
-    border:1px solid var(--glass-border) !important;
     border-radius:18px !important;
   }
 
   .comparisons{grid-template-columns:1fr !important;gap:14px !important;}
   .comp{
-    background:var(--glass-bg) !important;
-    backdrop-filter:var(--glass-blur) !important;
-    -webkit-backdrop-filter:var(--glass-blur) !important;
-    border:1px solid var(--glass-border) !important;
     border-radius:18px !important;
-    box-shadow:var(--glass-shadow) !important;
   }
-  .comp h3{color:var(--ink) !important;font-size:15px !important;}
-  .metric{background:var(--glass-bg-strong) !important;}
-  .metric b{color:var(--ink) !important;font-size:18px !important;}
-  .metric span{color:var(--ink-faint) !important;font-size:12px !important;}
+  .comp h3{font-size:15px !important;}
+  .metric b{font-size:18px !important;}
+  .metric span{font-size:12px !important;}
 
   .table-wrap{
-    background:var(--glass-bg) !important;
-    backdrop-filter:var(--glass-blur) !important;
-    -webkit-backdrop-filter:var(--glass-blur) !important;
-    border:1px solid var(--glass-border) !important;
     border-radius:18px !important;
     max-height:60vh !important;
   }
-  th{background:var(--glass-bg-strong) !important;color:var(--ink-soft) !important;font-size:12px !important;}
-  td{color:var(--ink) !important;border-color:var(--glass-border) !important;font-size:14px !important;}
-  a{color:#8fb4ff !important;}
-  .small{color:var(--ink-faint) !important;}
+  th{font-size:12px !important;}
+  td{font-size:14px !important;}
 }
 </style>
 <link rel="stylesheet" href="../assets/css/portal-senha.css">
@@ -193,6 +250,8 @@ td{padding:10px;border-right:1px solid #e5eaf3;border-bottom:1px solid #e5eaf3;f
 <link rel="stylesheet" href="../assets/css/portal-header.css">
 <link rel="stylesheet" href="../assets/css/portal-session.css">
 <link rel="stylesheet" href="../assets/css/portal-filtros.css">
+<link rel="stylesheet" href="../assets/css/dashboard-kit.css">
+<script src="../assets/js/theme-toggle.js"></script>
 <script type="module" src="../assets/js/auth.js"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 </head>
@@ -201,6 +260,7 @@ td{padding:10px;border-right:1px solid #e5eaf3;border-bottom:1px solid #e5eaf3;f
   <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
   <div class="km-title-wrap"><h1 class="km-title-art" aria-label="Comparação de KM"><img src="../assets/img/titulo-comparacao-km.png" alt="Comparação de KM"></h1><div class="subtitle">TCGL - Foto • Noxxon • Fleetbus • GPS Reports</div></div>
   <div class="header-actions">
+    <button class="dk-theme-toggle" type="button" id="dkThemeToggle" aria-label="Alternar tema claro/escuro"><span class="dk-icon-moon">&#9789;</span><span class="dk-icon-sun">&#9728;</span></button>
     <div class="ciop-session" aria-label="Usuário logado">
       <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
       <span class="ciop-session-cargo" id="perfilUsuario" hidden></span>
