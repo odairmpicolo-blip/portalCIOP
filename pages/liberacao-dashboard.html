@@ -97,6 +97,9 @@
   --g-green:#4ade80;
   --g-amber:#fbbf24;
   --g-red:#f87171;
+  --g-green-a20:rgba(74,222,128,.2);
+  --g-amber-a20:rgba(251,191,36,.2);
+  --g-red-a20:rgba(248,113,113,.2);
 }
 
 html.native-light,
@@ -114,6 +117,9 @@ html.dk-light{
   --g-green:#15803d;
   --g-amber:#b45309;
   --g-red:#dc2626;
+  --g-green-a20:rgba(21,128,61,.2);
+  --g-amber-a20:rgba(180,83,9,.2);
+  --g-red-a20:rgba(220,38,38,.2);
 }
 
 body{
@@ -193,8 +199,8 @@ html.dk-light body{
 }
 .chart-title{color:var(--ink) !important}
 .chart-total{color:var(--ink-faint) !important}
-.badge.orientar{background:color-mix(in srgb, var(--g-green) 20%, transparent) !important;color:var(--g-green) !important;}
-.badge.grave{background:color-mix(in srgb, var(--g-red) 20%, transparent) !important;color:var(--g-red) !important;}
+.badge.orientar{background:var(--g-green-a20) !important;color:var(--g-green) !important;}
+.badge.grave{background:var(--g-red-a20) !important;color:var(--g-red) !important;}
 .chart-body.tone-rosa,.chart-body.tone-laranja,.chart-body.tone-vermelha{background:transparent !important;}
 .chart-empty{color:var(--ink-faint) !important;background:transparent !important;}
 .empty-page{
@@ -464,6 +470,13 @@ const c = hexToRgb(hex);
 return "rgba("+c.r+","+c.g+","+c.b+","+alpha+")";
 }
 
+function isDarkTheme(){
+const cls = document.documentElement.classList;
+if (cls.contains("dk-dark")) return true;
+if (cls.contains("dk-light") || cls.contains("native-light")) return false;
+return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
 function gradienteBarras(chart, cor){
 const { ctx, chartArea } = chart;
 if(!chartArea) return cor;
@@ -568,7 +581,7 @@ anchor: "end",
 align: "end",
 offset: 6,
 clamp: true,
-color: "#101828",
+color: "#fff",
 font: { size: 10, weight: "800" },
 formatter(v){ return formatNumber(v); }
 }
@@ -584,7 +597,7 @@ border: { display: false }
 y: {
 ticks: {
 font: { size: 10, weight: "700" },
-color: "#344054",
+color: isDarkTheme() ? "rgba(255,255,255,.85)" : "#18182a",
 padding: 6
 },
 grid: { display: false },
