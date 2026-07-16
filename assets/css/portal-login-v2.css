@@ -13,8 +13,15 @@ body.login-v2 {
   margin: 0;
   min-height: 100vh;
   font-family: Inter, Arial, Helvetica, sans-serif;
-  background: var(--fundo);
+  background: #f2f1ed;
   color: var(--texto);
+}
+
+.bg-wall{
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: #f2f1ed;
 }
 
 .login-page-v2 {
@@ -27,14 +34,60 @@ body.login-v2 {
 
 .login-card-v2 {
   width: min(420px, 100%);
-  background: #fff;
-  border: 1px solid var(--borda);
-  border-radius: 16px;
-  padding: 28px;
-  box-shadow: var(--sombra);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  padding: 32px 28px;
+  box-shadow:
+    0 24px 60px -20px rgba(20, 20, 40, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
   display: grid;
   gap: 10px;
   box-sizing: border-box;
+  position: relative;
+  isolation: isolate;
+}
+
+.login-card-v2::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 40%);
+  opacity: .7;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Manchas de cor desfocadas atras do card, para o vidro ter o que refratar */
+.login-blobs{
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.login-blobs::before,
+.login-blobs::after{
+  content: "";
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: .35;
+}
+.login-blobs::before{
+  top: -100px;
+  left: -60px;
+  background: radial-gradient(circle at 30% 30%, #7a5cff, transparent 70%);
+}
+.login-blobs::after{
+  bottom: -120px;
+  right: -60px;
+  background: radial-gradient(circle at 60% 40%, #c04fd6, transparent 70%);
 }
 
 .login-brand-v2 {
@@ -64,25 +117,29 @@ body.login-v2 {
 
 .login-card-v2 input {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   margin: 0;
-  border: 1px solid var(--borda);
-  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
   font-size: 15px;
   box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .login-card-v2 .btn-primary {
   width: 100%;
-  padding: 12px 16px;
+  padding: 14px 16px;
   margin-top: 4px;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   font-weight: 700;
   font-size: 15px;
-  background: linear-gradient(135deg, var(--azul), var(--azul-hover));
+  background: linear-gradient(135deg, #7a5cff, #c04fd6);
   color: #fff;
+  box-shadow: 0 12px 26px -10px rgba(122, 92, 255, 0.55);
 }
 
 .login-card-v2 .btn-primary:hover {
