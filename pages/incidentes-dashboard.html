@@ -265,6 +265,10 @@ h1{font-size:20px}
    aqui, remove o cabeçalho fixo antigo (o app nativo já cuida da
    status bar) e ajusta o vão do topo para não somar 2x. */
 @media (max-width:720px){
+  .body-bg-wall,
+  .body-bg-stain{
+    display:none !important;
+  }
   :root{
     --dk-accent:#7a5cff;
     --dk-accent-2:#c04fd6;
@@ -304,9 +308,129 @@ h1{font-size:20px}
   thead th{font-size:12px !important;}
   tbody td{font-size:14.5px !important;}
 }
+
+/* ===== Redesign iOS26 Liquid Glass (desktop) =====
+   Fundo com parede de traços + mancha do laço do mês, vidro no
+   header/cards/sessão, hover nos botões. */
+@media (min-width:721px){
+  body{
+    position:relative;
+    background:var(--bg);
+  }
+  .body-bg-wall{
+    position:fixed;
+    inset:0;
+    z-index:-2;
+    pointer-events:none;
+  }
+  .body-bg-stain{
+    position:fixed;
+    inset:0;
+    z-index:-1;
+    pointer-events:none;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(46,155,69,.22) 0%, rgba(46,155,69,.10) 22%, transparent 48%),
+      radial-gradient(circle at 100% 100%, rgba(246,191,38,.22) 0%, rgba(246,191,38,.10) 22%, transparent 48%);
+    filter:blur(60px);
+  }
+
+  .header{
+    background:rgba(255,255,255,.6);
+    backdrop-filter:blur(18px) saturate(190%);
+    -webkit-backdrop-filter:blur(18px) saturate(190%);
+    border-bottom:1px solid rgba(255,255,255,.5);
+    box-shadow:0 10px 28px -16px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.4);
+  }
+
+  .kpi,.chart-card,.table-card{
+    background:rgba(255,255,255,.55);
+    backdrop-filter:blur(16px) saturate(190%);
+    -webkit-backdrop-filter:blur(16px) saturate(190%);
+    border:1px solid rgba(255,255,255,.5);
+    box-shadow:0 12px 30px -16px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.4);
+  }
+
+  .ciop-session{
+    background:rgba(255,255,255,.6);
+    backdrop-filter:blur(14px) saturate(190%);
+    -webkit-backdrop-filter:blur(14px) saturate(190%);
+    border:1px solid rgba(255,255,255,.5);
+  }
+
+  .btn-portal,.btn-primary{
+    background:linear-gradient(135deg, rgba(6,36,92,.85), rgba(11,58,138,.85));
+  }
+  .btn-portal:hover,.btn-primary:hover{
+    background:linear-gradient(135deg, var(--orange), #ff8f3d);
+    transform:translateY(-2px);
+    box-shadow:0 14px 28px -12px rgba(255,107,0,.5), inset 0 1px 0 rgba(255,255,255,.35);
+  }
+  .btn-secondary{
+    background:rgba(255,255,255,.55);
+  }
+  .btn-secondary:hover{
+    background:rgba(224,235,255,.85);
+    transform:translateY(-2px);
+    box-shadow:0 14px 28px -14px rgba(6,36,92,.35), inset 0 1px 0 rgba(255,255,255,.6);
+  }
+  .btn-portal,.btn-primary,.btn-secondary{
+    transition:transform .2s ease, background .25s ease, box-shadow .25s ease, color .25s ease !important;
+  }
+}
 </style>
 </head>
 <body data-require-perfis="Administrador,Supervisor,Gerência,Gerencia,Analista">
+<svg class="body-bg-wall" viewBox="0 0 1456 1088" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs><linearGradient id="blueTraces" x1="0" y1="0" x2="1456" y2="1088" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#d4e4fa"/><stop offset="45%" stop-color="#a9c6f5"/><stop offset="100%" stop-color="#7ba6ea"/></linearGradient></defs>
+<rect width="1456" height="1088" fill="#eef3fc"/>
+<g opacity="0.55" fill="none" stroke="url(#blueTraces)" stroke-width="2">
+<circle cx="120" cy="140" r="60"/>
+<circle cx="1300" cy="180" r="90"/>
+<circle cx="220" cy="900" r="120"/>
+<circle cx="1240" cy="920" r="70"/>
+<circle cx="700" cy="60" r="40"/>
+<circle cx="60" cy="560" r="50"/>
+<circle cx="1400" cy="560" r="55"/>
+</g>
+<g opacity="0.5" fill="none" stroke="url(#blueTraces)" stroke-width="1.5">
+<polygon points="180,300 220,280 260,300 260,340 220,360 180,340"/>
+<polygon points="1180,340 1220,320 1260,340 1260,380 1220,400 1180,380"/>
+<polygon points="400,760 440,740 480,760 480,800 440,820 400,800"/>
+<polygon points="980,780 1020,760 1060,780 1060,820 1020,840 980,820"/>
+<polygon points="620,180 660,160 700,180 700,220 660,240 620,220"/>
+<polygon points="820,940 860,920 900,940 900,980 860,1000 820,980"/>
+</g>
+<g opacity="0.45" stroke="url(#blueTraces)" stroke-width="1.5" fill="none">
+<path d="M60,80 L400,80 L460,140 L900,140 L960,80 L1396,80"/>
+<path d="M60,1008 L400,1008 L460,948 L900,948 L960,1008 L1396,1008"/>
+<path d="M60,80 L60,400 L120,460 L120,700"/>
+<path d="M1396,80 L1396,400 L1336,460 L1336,700"/>
+<path d="M120,700 L60,760 L60,1008"/>
+<path d="M1336,700 L1396,760 L1396,1008"/>
+<path d="M460,140 L460,400 L560,500 L560,700 L460,800 L460,948"/>
+<path d="M960,140 L960,400 L860,500 L860,700 L960,800 L960,948"/>
+<path d="M560,500 L860,500"/>
+</g>
+<g opacity="0.4" fill="url(#blueTraces)">
+<circle cx="120" cy="140" r="6"/>
+<circle cx="1396" cy="80" r="6"/>
+<circle cx="60" cy="1008" r="6"/>
+<circle cx="1396" cy="1008" r="6"/>
+<circle cx="460" cy="140" r="5"/>
+<circle cx="960" cy="140" r="5"/>
+<circle cx="460" cy="948" r="5"/>
+<circle cx="960" cy="948" r="5"/>
+<circle cx="560" cy="500" r="5"/>
+<circle cx="860" cy="500" r="5"/>
+<circle cx="120" cy="700" r="5"/>
+<circle cx="1336" cy="700" r="5"/>
+</g>
+<g opacity="0.35" fill="none" stroke="url(#blueTraces)" stroke-width="1">
+<circle cx="300" cy="500" r="180"/>
+<circle cx="1150" cy="620" r="150"/>
+</g>
+</svg>
+<div class="body-bg-stain" aria-hidden="true"></div>
 <header class="header">
 <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
 <div class="title-wrap"><h1 class="incidentes-title-art" aria-label="Incidentes"><img src="../assets/img/titulo-incidentes-so.png" alt="Incidentes"></h1></div>
