@@ -1118,7 +1118,8 @@ h1 {
         .launch-toolbar-info{ flex:1; min-width:0; text-align:center; }
         .launch-toolbar .launch-section-title{ justify-content:center; text-align:center; margin:0 0 3px 0; font-size:14px; }
         .launch-toolbar-text { color: var(--muted); font-size: 12px; font-weight: 600; line-height: 1.3; }
-        .launch-toolbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .launch-toolbar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .launch-toolbar-actions .sync-status { margin-top: 0; white-space: nowrap; }
         .btn-sync-opcoes {
             border: 1px solid rgba(6, 36, 92, 0.14);
             border-radius: 8px;
@@ -1769,10 +1770,9 @@ h1 {
         <div class="launch-toolbar">
             <div class="launch-toolbar-info">
                 <div class="launch-section-title"><span class="section-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg></span><span>Lançamento de Folha de Serviço</span></div>
-                <div class="launch-toolbar-text">Listas padronizadas da aba DADOS (planilha CIOP, colunas A–Z).</div>
-                <div id="sync-status" class="sync-status">Listas: carregando do cache local...</div>
             </div>
             <div class="launch-toolbar-actions">
+                <div id="sync-status" class="sync-status">Listas: carregando do cache local...</div>
                 <button type="button" class="btn-sync-opcoes" id="btn-sync-opcoes" onclick="sincronizarOpcoesPlanilha(true)">Atualizar listas da planilha</button>
             </div>
         </div>
@@ -2442,7 +2442,7 @@ h1 {
         salvarCacheLancamentos(cache.lancamentos, opcoesPlanilha);
         preencherSelectsDoFormulario(dadosMestres);
         const total = camposFormularioComOpcoes.reduce((n, c) => n + (opcoesPlanilha[c.key] || []).length, 0);
-        atualizarStatusSync(`Listas da planilha (${origem}): ${total} opções carregadas.`);
+        atualizarStatusSync(`${total} opções carregadas.`);
     }
 
     async function buscarOpcoesRemotas() {
