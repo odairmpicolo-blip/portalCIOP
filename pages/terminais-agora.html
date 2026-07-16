@@ -87,9 +87,9 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
 .ciop-session .btn-logout{background:var(--red);color:#fff;padding:4px 7px;font-size:11px}
 .container{max-width:1280px;margin:20px auto 28px;padding:0 18px}
 .topbar{
-    display:flex;
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
     align-items:center;
-    justify-content:flex-start;
     gap:12px;
     margin-bottom:14px;
     padding:10px 16px;
@@ -97,7 +97,13 @@ h1{margin:0;color:var(--blue);font-size:24px;line-height:1.1}
     border:1px solid #d9e2f0;
     border-radius:14px;
     box-shadow:0 8px 24px rgba(6,36,92,.06);
+}
+.topbar-left{
+    display:flex;
+    align-items:center;
+    gap:12px;
     flex-wrap:wrap;
+    min-width:0;
 }
 .btn-link{
     display:inline-flex;
@@ -696,20 +702,17 @@ td{padding:10px;border-bottom:1px solid #eef2f7;border-right:1px solid #eef2f7;f
     box-shadow:0 6px 12px rgba(6,36,92,.10);
     transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
 }
-.topbar-terminals-info{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    margin-left:auto;
-    flex-wrap:wrap;
-}
-.topbar-terminals-info h2{
+.topbar-title{
     margin:0;
+    text-align:center;
     color:var(--blue);
     font-size:18px;
     font-weight:900;
     letter-spacing:.2px;
     white-space:nowrap;
+}
+.topbar > .fiscal-lead-card{
+    justify-self:end;
 }
 .btn-refresh:hover{
     transform:translateY(-1px);
@@ -967,7 +970,9 @@ h1 {
   }
   html.native-embedded .container{padding-top:14px !important;}
 
-  .topbar{flex-direction:column !important;align-items:stretch !important;gap:12px !important;}
+  .topbar{grid-template-columns:1fr !important;flex-direction:column !important;align-items:stretch !important;gap:12px !important;}
+  .topbar-title{text-align:center !important;}
+  .topbar > .fiscal-lead-card{justify-self:stretch !important;}
   .btn-portal,.btn,.btn-primary,.btn-secondary{
     min-height:46px !important;
     border-radius:14px !important;
@@ -1208,23 +1213,23 @@ h1 {
 
 <main class="container">
     <div class="topbar">
-        <a href="../index.html" class="btn-link btn-portal" aria-label="Voltar ao portal">
-            <span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>
-            <span>Portal</span>
-        </a>
-        <button class="btn btn-secondary btn-refresh" id="btnAtualizarPlanilha" type="button" onclick="carregarPlanilha(true)">Atualizar</button>
-        <div class="source-status" aria-live="polite">
-            <span id="sourceDot" class="dot"></span>
-            <span id="sourceText">Aguardando dados</span>
+        <div class="topbar-left">
+            <a href="../index.html" class="btn-link btn-portal" aria-label="Voltar ao portal">
+                <span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>
+                <span>Portal</span>
+            </a>
+            <button class="btn btn-secondary btn-refresh" id="btnAtualizarPlanilha" type="button" onclick="carregarPlanilha(true)">Atualizar</button>
+            <div class="source-status" aria-live="polite">
+                <span id="sourceDot" class="dot"></span>
+                <span id="sourceText">Aguardando dados</span>
+            </div>
         </div>
-        <div class="topbar-terminals-info">
-            <h2>Terminais</h2>
-            <div class="fiscal-lead-card" aria-label="Contato do fiscal">
-                <div class="fiscal-lead-name">Marcelo Selhost</div>
-                <div class="fiscal-lead-meta">
-                    <span class="fiscal-lead-reg">Reg. 9825</span>
-                    <div class="terminal-kpi-phone-inline" id="fiscalLeadPhone"></div>
-                </div>
+        <h2 class="topbar-title">Terminais</h2>
+        <div class="fiscal-lead-card" aria-label="Contato do fiscal">
+            <div class="fiscal-lead-name">Marcelo Selhost</div>
+            <div class="fiscal-lead-meta">
+                <span class="fiscal-lead-reg">Reg. 9825</span>
+                <div class="terminal-kpi-phone-inline" id="fiscalLeadPhone"></div>
             </div>
         </div>
     </div>
