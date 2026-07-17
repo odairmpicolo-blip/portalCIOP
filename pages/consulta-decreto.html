@@ -55,24 +55,36 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
 .ai-console-title{font-size:30px;font-weight:900;line-height:1.22;margin:0 0 12px;max-width:600px;background:linear-gradient(90deg,#ffffff 20%,#bcd4ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .ai-console-desc{margin:0 0 28px;color:rgba(255,255,255,.62);font-size:14.5px;line-height:1.65;max-width:540px;font-weight:500}
 
-.ai-console-body{display:flex;gap:32px;flex-wrap:wrap;align-items:stretch}
-.ai-console-main{flex:1;min-width:280px;display:flex;flex-direction:column;justify-content:center}
+.ai-console-body{display:flex;flex-direction:column;gap:16px}
 
-.ai-chat{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:20px 20px 18px;max-width:460px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.ai-chat{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:20px 20px 18px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .ai-chat-topbar{display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.08)}
 .ai-chat-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18)}
 .ai-chat-topbar span{font-size:11px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em;margin-left:4px}
-.ai-chat-msg{font-size:13.5px;line-height:1.55;padding:11px 15px;border-radius:14px;max-width:90%;margin-bottom:10px}
-.ai-chat-user{margin-left:auto;background:rgba(59,130,246,.18);color:#e3edff;border:1px solid rgba(59,130,246,.3);border-bottom-right-radius:4px}
-.ai-chat-bot{display:flex;gap:10px;align-items:flex-start;background:rgba(255,255,255,.055);color:rgba(255,255,255,.86);border:1px solid rgba(255,255,255,.1);border-bottom-left-radius:4px;margin-bottom:0}
+.ai-chat-log{display:flex;flex-direction:column;gap:10px;max-height:420px;overflow-y:auto;padding-right:4px;margin-bottom:16px;scroll-behavior:smooth}
+.ai-chat-log::-webkit-scrollbar{width:6px}
+.ai-chat-log::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:99px}
+.ai-chat-msg{font-size:13.5px;line-height:1.55;padding:11px 15px;border-radius:14px;max-width:88%;white-space:pre-wrap}
+.ai-chat-user{align-self:flex-end;background:rgba(59,130,246,.18);color:#e3edff;border:1px solid rgba(59,130,246,.3);border-bottom-right-radius:4px}
+.ai-chat-bot{align-self:flex-start;display:flex;gap:10px;align-items:flex-start;background:rgba(255,255,255,.055);color:rgba(255,255,255,.86);border:1px solid rgba(255,255,255,.1);border-bottom-left-radius:4px;max-width:92%}
+.ai-chat-bot.ai-chat-error{background:rgba(220,38,38,.12);border-color:rgba(248,113,113,.35);color:#fecaca}
 .ai-chat-avatar{flex:0 0 auto;width:22px;height:22px;margin-top:1px;border-radius:7px;background:linear-gradient(135deg,var(--ai-1),var(--ai-2));display:flex;align-items:center;justify-content:center}
 .ai-chat-avatar svg{width:12px;height:12px;fill:#fff}
+.ai-chat-typing{display:inline-flex;gap:4px;align-items:center;padding:2px 0}
+.ai-chat-typing span{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.6);animation:aiTyping 1s infinite ease-in-out}
+.ai-chat-typing span:nth-child(2){animation-delay:.15s}
+.ai-chat-typing span:nth-child(3){animation-delay:.3s}
+@keyframes aiTyping{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
 
-.ai-console-actions{flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;gap:14px;min-width:230px}
-.btn-ai{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:14px 24px;border-radius:14px;background:linear-gradient(135deg,var(--ai-1),var(--ai-2));color:#fff;text-decoration:none;font-size:15px;font-weight:800;box-shadow:0 18px 36px -16px rgba(59,130,246,.55);transition:transform .2s ease,box-shadow .2s ease,background .2s ease}
-.btn-ai:hover{transform:translateY(-2px);background:linear-gradient(135deg,var(--orange),var(--ai-2));box-shadow:0 22px 42px -16px rgba(255,107,0,.5)}
-.btn-ai svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
-.ai-console-hint{display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.55;color:rgba(255,255,255,.42);font-weight:600}
+.ai-chat-form{display:flex;gap:10px;align-items:center}
+.ai-chat-input{flex:1;min-height:48px;padding:0 16px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#fff;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s ease,background .2s ease}
+.ai-chat-input::placeholder{color:rgba(255,255,255,.38)}
+.ai-chat-input:focus{border-color:rgba(59,130,246,.6);background:rgba(255,255,255,.09)}
+.ai-chat-send{flex:0 0 auto;width:48px;height:48px;border-radius:14px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--ai-1),var(--ai-2));color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 28px -14px rgba(59,130,246,.6);transition:transform .2s ease,box-shadow .2s ease,background .2s ease}
+.ai-chat-send:hover{transform:translateY(-2px);background:linear-gradient(135deg,var(--orange),var(--ai-2));box-shadow:0 18px 32px -14px rgba(255,107,0,.5)}
+.ai-chat-send:disabled{opacity:.5;cursor:default;transform:none}
+.ai-chat-send svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ai-console-hint{display:flex;align-items:flex-start;gap:8px;font-size:11.5px;line-height:1.55;color:rgba(255,255,255,.4);font-weight:600;margin:12px 0 0}
 .ai-console-hint svg{width:14px;height:14px;flex:0 0 auto;margin-top:2px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 .ai-features{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
@@ -100,10 +112,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
   .container { padding: 0 14px !important; margin: 16px auto 28px !important; }
   .ai-console { border-radius: 22px !important; padding: 26px 22px !important; }
   .ai-console-title{font-size:23px !important}
-  .ai-console-body{flex-direction:column}
-  .ai-chat{max-width:100%}
-  .ai-console-actions{width:100%}
-  .btn-ai{width:100%}
+  .ai-chat-log{max-height:320px !important}
   .ai-features{grid-template-columns:1fr !important;gap:10px !important}
   .btn-portal { min-height: 44px !important; border-radius: 12px !important; }
 }
@@ -280,7 +289,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
     <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
     <div class="title-wrap">
         <h1 class="page-title">Consulta do Decreto</h1>
-        <div class="header-subtitle">Assistente de IA · NotebookLM</div>
+        <div class="header-subtitle">Assistente de IA · Decretos 1082/2008 e 1666/2024</div>
     </div>
     <div class="header-actions">
         <button class="dk-theme-toggle" type="button" id="dkThemeToggle" aria-label="Alternar tema claro/escuro"><span class="dk-icon-moon">&#9789;</span><span class="dk-icon-sun">&#9728;</span></button>
@@ -303,32 +312,31 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
         <div class="ai-console-glow-b" aria-hidden="true"></div>
         <div class="ai-console-grid" aria-hidden="true"></div>
 
-        <span class="ai-console-badge"><span class="ai-pulse"></span>IA conectada · NotebookLM</span>
+        <span class="ai-console-badge"><span class="ai-pulse"></span>IA conectada · Decreto 1082/2008 e 1666/2024</span>
         <h2 class="ai-console-title">Pergunte qualquer coisa sobre o decreto</h2>
-        <p class="ai-console-desc">Assistente treinado exclusivamente com o texto oficial do decreto. Respostas instantâneas e fundamentadas no documento — sem inventar informação.</p>
+        <p class="ai-console-desc">Assistente treinado exclusivamente com o texto oficial dos decretos. Respostas instantâneas e fundamentadas no documento — sem inventar informação.</p>
 
         <div class="ai-console-body">
-            <div class="ai-console-main">
-                <div class="ai-chat">
-                    <div class="ai-chat-topbar">
-                        <span class="ai-chat-dot"></span><span class="ai-chat-dot"></span><span class="ai-chat-dot"></span>
-                        <span>Consulta do decreto</span>
-                    </div>
-                    <div class="ai-chat-msg ai-chat-user">Quais são os prazos previstos no decreto?</div>
+            <div class="ai-chat">
+                <div class="ai-chat-topbar">
+                    <span class="ai-chat-dot"></span><span class="ai-chat-dot"></span><span class="ai-chat-dot"></span>
+                    <span>Consulta do decreto</span>
+                </div>
+                <div class="ai-chat-log" id="aiChatLog">
                     <div class="ai-chat-msg ai-chat-bot">
                         <span class="ai-chat-avatar"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/></svg></span>
-                        <span>Com base no texto oficial, o prazo de regularização é de 30 dias corridos a partir da publicação...</span>
+                        <span>Olá! Pergunte algo sobre o Decreto 1082/2008 (Regulamento do Transporte Coletivo) ou o Decreto 1666/2024, que o altera. Por exemplo: "Quais são os prazos previstos no decreto?"</span>
                     </div>
                 </div>
-            </div>
-            <div class="ai-console-actions">
-                <a class="btn-ai" href="https://notebooklm.google.com/notebook/88ed2059-2438-450c-b57a-41b1e0ea8dbc" target="_blank" rel="noopener">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/></svg>
-                    Abrir assistente do decreto
-                </a>
+                <form class="ai-chat-form" id="aiChatForm">
+                    <input type="text" class="ai-chat-input" id="aiChatInput" placeholder="Digite sua pergunta sobre o decreto..." autocomplete="off" maxlength="2000">
+                    <button type="submit" class="ai-chat-send" id="aiChatSend" aria-label="Enviar pergunta">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                    </button>
+                </form>
                 <p class="ai-console-hint">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>
-                    Abre em nova aba · requer login com conta Google
+                    Respostas geradas por IA com base no texto oficial dos decretos — podem conter imprecisões. Em caso de dúvida, consulte o texto original.
                 </p>
             </div>
         </div>
@@ -351,5 +359,86 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
 </main>
 
 <footer class="page-footer">Portal CIOP · Consulta do Decreto · TCGL</footer>
+<script>
+(function(){
+  var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyZq6C3GCHBmDOE6OK1cseTD8qXx450BPcNLtWKBn7yBJegM6jx7zQxTiE1VR2Nwu7L/exec";
+
+  var form = document.getElementById('aiChatForm');
+  var input = document.getElementById('aiChatInput');
+  var sendBtn = document.getElementById('aiChatSend');
+  var log = document.getElementById('aiChatLog');
+
+  function scrollToEnd(){
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function addUserMsg(texto){
+    var div = document.createElement('div');
+    div.className = 'ai-chat-msg ai-chat-user';
+    div.textContent = texto;
+    log.appendChild(div);
+    scrollToEnd();
+  }
+
+  function addBotTyping(){
+    var wrap = document.createElement('div');
+    wrap.className = 'ai-chat-msg ai-chat-bot';
+    wrap.innerHTML = '<span class="ai-chat-avatar"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/></svg></span>' +
+      '<span class="ai-chat-typing"><span></span><span></span><span></span></span>';
+    log.appendChild(wrap);
+    scrollToEnd();
+    return wrap;
+  }
+
+  function setBotText(wrap, texto, isError){
+    if (isError) wrap.classList.add('ai-chat-error');
+    wrap.innerHTML = '<span class="ai-chat-avatar"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/></svg></span><span></span>';
+    wrap.querySelector('span:last-child').textContent = texto;
+    scrollToEnd();
+  }
+
+  form.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var pergunta = input.value.trim();
+    if (!pergunta) return;
+
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('COLE_AQUI') === 0){
+      addUserMsg(pergunta);
+      var wrapCfg = addBotTyping();
+      setBotText(wrapCfg, 'Assistente ainda não configurado. Peça ao administrador do portal para concluir a integração.', true);
+      input.value = '';
+      return;
+    }
+
+    addUserMsg(pergunta);
+    input.value = '';
+    input.disabled = true;
+    sendBtn.disabled = true;
+    var wrap = addBotTyping();
+
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ pergunta: pergunta })
+    })
+    .then(function(resp){ return resp.json(); })
+    .then(function(data){
+      if (data && data.resposta){
+        setBotText(wrap, data.resposta, false);
+      } else {
+        setBotText(wrap, (data && data.erro) || 'Não foi possível obter uma resposta agora. Tente novamente.', true);
+      }
+    })
+    .catch(function(){
+      setBotText(wrap, 'Falha ao conectar com o assistente. Verifique sua conexão e tente novamente.', true);
+    })
+    .finally(function(){
+      input.disabled = false;
+      sendBtn.disabled = false;
+      input.focus();
+    });
+  });
+})();
+</script>
 </body>
 </html>
