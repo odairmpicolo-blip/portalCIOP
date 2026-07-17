@@ -14,12 +14,167 @@ const ASSINATURA_PADRAO = { nome: "emerson borges de medeiros", codigo: "42" };
 const FILE_RE =
   /^(\d{2}\.\d{2}\.\d{4})\s*-\s*(.+?)\s*-\s*Carro\s+(\S+)\s*-\s*Linha\s+(\S+)\s*-\s*Mot\s+(\S+)/i;
 
+const SHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
+const GID_FUNCIONARIOS = "1931884858";
+const FUNC_CACHE_KEY = "ciop_evidencias_funcionarios_v1";
+
 let db;
 let autos = [];
 let selectedId = null;
 let dirty = false;
+let funcionarios = [];
+let autuacoesIndex = new Map();
 
 const $ = (id) => document.getElementById(id);
+
+function placaDoCarro(carro) {
+  const key = String(carro || "").trim();
+  const map = window.CIOP_VEICULOS_PLACA || {};
+  return map[key] || "";
+}
+
+function funcionarioPorMatricula(matricula) {
+  const reg = String(matricula || "").trim();
+  if (!reg) return null;
+  return funcionarios.find((f) => f.registro === reg) || null;
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let inQuotes = false;
+  const src = String(text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    const next = src[i + 1];
+    if (ch === '"') {
+      if (inQuotes && next === '"') {
+        cell += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (ch === "," && !inQuotes) {
+      row.push(cell);
+      cell = "";
+      continue;
+    }
+    if (ch === "\n" && !inQuotes) {
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+      continue;
+    }
+    cell += ch;
+  }
+  if (cell.length || row.length) {
+    row.push(cell);
+    rows.push(row);
+  }
+  return rows;
+}
+
+async function carregarFuncionarios() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(FUNC_CACHE_KEY) || "null");
+    if (cached?.ts && Date.now() - cached.ts < 6 * 60 * 60 * 1000 && Array.isArray(cached.dados)) {
+      funcionarios = cached.dados;
+      preencherDatalistFuncionarios();
+    }
+  } catch (_) {}
+
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_FUNCIONARIOS}`;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("Falha ao carregar funcionários (" + res.status + ")");
+  const rows = parseCsv(await res.text());
+  funcionarios = rows
+    .slice(1)
+    .map((linha) => ({
+      registro: String(linha[0] || "").trim(),
+      nome: String(linha[1] || "").trim(),
+      funcao: String(linha[2] || "").trim()
+    }))
+    .filter((item) => item.registro && item.nome);
+  localStorage.setItem(FUNC_CACHE_KEY, JSON.stringify({ ts: Date.now(), dados: funcionarios }));
+  preencherDatalistFuncionarios();
+}
+
+function preencherDatalistFuncionarios() {
+  const lista = $("listaFuncionarios");
+  if (!lista) return;
+  lista.innerHTML = funcionarios
+    .map((f) => `<option value="${escapeHtml(f.registro)}">${escapeHtml(f.nome)} — ${escapeHtml(f.funcao)}</option>`)
+    .join("");
+  const listaCarros = $("listaCarros");
+  if (listaCarros) {
+    const carros = Object.keys(window.CIOP_VEICULOS_PLACA || {}).sort();
+    listaCarros.innerHTML = carros.map((c) => `<option value="${escapeHtml(c)}"></option>`).join("");
+  }
+}
+
+async function carregarAutuacoes() {
+  try {
+    const res = await fetch("../assets/data/autuacoes/dados.json", { cache: "no-store" });
+    if (!res.ok) return;
+    const payload = await res.json();
+    const arr = Array.isArray(payload?.data) ? payload.data : [];
+    autuacoesIndex = new Map();
+    arr.forEach((item) => {
+      const notif = String(item.notificacao || "").trim();
+      if (notif) autuacoesIndex.set(notif, item);
+      const auto = String(item.auto || "").replace(/^0+/, "");
+      if (notif && auto) autuacoesIndex.set(`${notif}#${auto}`, item);
+    });
+  } catch (err) {
+    console.warn("Autuações não carregadas:", err);
+  }
+}
+
+function enriquecerComCatalogos(auto) {
+  if (auto.carro && !auto.placa) {
+    auto.placa = placaDoCarro(auto.carro);
+  }
+  if (auto.matricula && !auto.motorista) {
+    const func = funcionarioPorMatricula(auto.matricula);
+    if (func) auto.motorista = func.nome;
+  }
+
+  const notif = String(auto.notificacao || "").trim();
+  const autoId = String(auto.autoId || "").replace(/^0+/, "");
+  let hit = null;
+  if (notif && autoId) hit = autuacoesIndex.get(`${notif}#${autoId}`);
+  if (!hit && notif) hit = autuacoesIndex.get(notif);
+  if (hit) {
+    if (!auto.motivo) auto.motivo = hit.motivo || "";
+    if (!auto.data) auto.data = hit.data_br || "";
+    if (!auto.autoNumero || /^\d{2,6}$/.test(auto.autoNumero) || /^-?M\d+$/.test(auto.autoNumero) || /^\d{4,5}\/\d{4}-M\d+$/.test(auto.autoNumero)) {
+      const mPart = String(hit.auto || "").padStart(7, "0");
+      auto.autoNumero = `${hit.notificacao}-M${mPart}`;
+      auto.notificacao = hit.notificacao;
+    }
+  }
+  return auto;
+}
+
+function aplicarLookupFormulario() {
+  const auto = selected();
+  if (!auto) return;
+  const carro = $("fCarro").value.trim();
+  const matricula = $("fMatricula").value.trim();
+  if (carro) {
+    const placa = placaDoCarro(carro);
+    if (placa) $("fPlaca").value = placa;
+  }
+  if (matricula) {
+    const func = funcionarioPorMatricula(matricula);
+    if (func) $("fMotorista").value = func.nome;
+  }
+  dirty = true;
+}
 
 function uid() {
   return `ev_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -74,6 +229,8 @@ function blankAuto(extra = {}) {
     lote: "",
     origem: "manual",
     autoNumero: "",
+    notificacao: "",
+    autoId: "",
     data: "",
     horario: "",
     carro: "",
@@ -111,15 +268,72 @@ function parseEvidenceFilename(name) {
   };
 }
 
-function extractAutoHints(text) {
-  const t = String(text || "");
+function extractPageText(page) {
+  return page.getTextContent().then((tc) => tc.items.map((it) => it.str).join(" "));
+}
+
+function extractAutoHints(textNotif, textAuto = "") {
+  const t = `${textNotif || ""}\n${textAuto || ""}`;
   const dates = [...t.matchAll(/\b(\d{2}\/\d{2}\/\d{4})\b/g)].map((m) => m[1]);
+  const notif =
+    (t.match(/Notifica[cç][aã]o\s*(?:n[oº°.]?\s*)?(\d{4,5}\/\d{4})/i) || [])[1] ||
+    (t.match(/\b(\d{5}\/\d{4})\b/) || [])[1] ||
+    "";
   const autoMatch =
     t.match(/Auto\s+de\s+Infra[cç][aã]o\s+de\s+n[oº°.]?\s*0*(\d{2,6})/i) ||
     t.match(/\bn[oº°.]?\s*0*(\d{2,6})\b/i);
+  const autoId = autoMatch ? String(autoMatch[1]) : "";
+
+  const hourMatch =
+    t.match(/\b(?:[àa]s\s*)?(\d{1,2})[h:](\d{2})\b/i) ||
+    t.match(/\b(\d{2}):(\d{2})\b/);
+  const horario = hourMatch
+    ? `${String(hourMatch[1]).padStart(2, "0")}:${hourMatch[2]}`
+    : "";
+
+  const linhaMatch =
+    t.match(/\bLinha\s*[:\-]?\s*(\d{2,4})\b/i) ||
+    t.match(/\bL\.?\s*(\d{2,4})\b/);
+  const carroMatch = t.match(/\b(?:Carro|Ve[ií]culo|Prefixo)\s*[:\-]?\s*(\d{3,4})\b/i);
+
+  const motivoKeys = [
+    ["ATRASO", /atraso/i],
+    ["SUPRESSÃO", /supress/i],
+    ["PERMANÊNCIA", /perman/i],
+    ["NÃO REALIZOU LOGIN", /login|n[aã]o\s+realizou/i],
+    ["ELEVADOR DEFEITUOSO", /elevador/i],
+    ["ADIANTADO", /adiantad/i]
+  ];
+  let motivo = "";
+  for (const [label, re] of motivoKeys) {
+    if (re.test(t)) {
+      motivo = label;
+      break;
+    }
+  }
+
+  const localMatch =
+    t.match(/Lugar\s+da\s+Infra[cç][aã]o\s*[:\-]?\s*([^\n]{4,80})/i) ||
+    t.match(/\b(?:Terminal|Garagem|Av\.|Avenida|Rua)\s+[^\n,]{3,60}/i);
+  const local = localMatch ? String(localMatch[1] || localMatch[0] || "").trim() : "";
+
+  let autoNumero = "";
+  if (notif && autoId) {
+    autoNumero = `${notif}-M${String(autoId).padStart(7, "0")}`;
+  } else if (autoId) {
+    autoNumero = String(autoId).padStart(4, "0");
+  }
+
   return {
-    data: dates[0] || "",
-    autoNumero: autoMatch ? String(autoMatch[1]).padStart(4, "0") : ""
+    data: dates.find((d) => !d.startsWith("01/01")) || dates[0] || "",
+    horario,
+    linha: linhaMatch ? linhaMatch[1] : "",
+    carro: carroMatch ? carroMatch[1] : "",
+    motivo,
+    local,
+    notificacao: notif,
+    autoId,
+    autoNumero
   };
 }
 
@@ -144,23 +358,38 @@ async function importNotificationPdf(file, onProgress) {
     if (onProgress) onProgress(i, total);
     const notifPage = i;
     const autoPage = Math.min(i + 1, total);
-    const textNotif = (await (await pdf.getPage(notifPage)).getTextContent())
-      .items.map((it) => it.str)
-      .join(" ");
-    const hints = extractAutoHints(textNotif);
+    const pageNotif = await pdf.getPage(notifPage);
+    const pageAutoObj = autoPage !== notifPage ? await pdf.getPage(autoPage) : null;
+    const textNotif = await extractPageText(pageNotif);
+    const textAuto = pageAutoObj ? await extractPageText(pageAutoObj) : "";
+    const hints = extractAutoHints(textNotif, textAuto);
     const paginaNotif = await renderPdfPage(pdf, notifPage, 1.15);
     const paginaAuto = autoPage !== notifPage ? await renderPdfPage(pdf, autoPage, 1.25) : "";
 
-    const item = blankAuto({
-      lote,
-      origem: "notificacao-cmtu",
-      autoNumero: hints.autoNumero,
-      data: hints.data,
-      motivo: "",
-      paginaNotif,
-      paginaAuto,
-      imagens: paginaAuto ? [{ id: uid(), dataUrl: paginaAuto, tipo: "auto-cmtu" }] : []
-    });
+    const item = enriquecerComCatalogos(
+      blankAuto({
+        lote,
+        origem: "notificacao-cmtu",
+        autoNumero: hints.autoNumero,
+        notificacao: hints.notificacao,
+        autoId: hints.autoId,
+        data: hints.data,
+        horario: hints.horario,
+        linha: hints.linha,
+        carro: hints.carro,
+        local: hints.local,
+        motivo: hints.motivo,
+        paginaNotif,
+        paginaAuto,
+        imagens: paginaAuto ? [{ id: uid(), dataUrl: paginaAuto, tipo: "auto-cmtu" }] : []
+      })
+    );
+    if (item.carro && item.motivo && !item.texto1) {
+      item.texto1 = `Através do CAD, consta que o veículo ${item.carro} foi autuado por ${String(item.motivo).toLowerCase()}.`;
+    }
+    if (item.horario && !item.texto2) {
+      item.texto2 = `Horário de tabela CMTU - ${item.horario}`;
+    }
     created.push(item);
     await dbPut(item);
   }
@@ -172,19 +401,21 @@ async function importEvidencePdf(file) {
   const buffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
   const first = await renderPdfPage(pdf, 1, 1.2);
-  const item = blankAuto({
-    lote: file.name,
-    origem: "evidencia-pdf",
-    data: parsed.data || "",
-    motivo: parsed.motivo || "",
-    carro: parsed.carro || "",
-    linha: parsed.linha || "",
-    matricula: parsed.matricula || "",
-    paginaAuto: first,
-    imagens: [{ id: uid(), dataUrl: first, tipo: "evidencia-pdf" }]
-  });
-  if (parsed.carro && parsed.motivo) {
-    item.texto1 = `Através do CAD, consta que o veículo ${parsed.carro} foi autuado por ${parsed.motivo.toLowerCase()}.`;
+  const item = enriquecerComCatalogos(
+    blankAuto({
+      lote: file.name,
+      origem: "evidencia-pdf",
+      data: parsed.data || "",
+      motivo: parsed.motivo || "",
+      carro: parsed.carro || "",
+      linha: parsed.linha || "",
+      matricula: parsed.matricula || "",
+      paginaAuto: first,
+      imagens: [{ id: uid(), dataUrl: first, tipo: "evidencia-pdf" }]
+    })
+  );
+  if (item.carro && item.motivo && !item.texto1) {
+    item.texto1 = `Através do CAD, consta que o veículo ${item.carro} foi autuado por ${String(item.motivo).toLowerCase()}.`;
   }
   await dbPut(item);
   return item;
@@ -345,6 +576,7 @@ async function selectAuto(id) {
   selectedId = id;
   const auto = selected();
   if (!auto) return;
+  enriquecerComCatalogos(auto);
   fillForm(auto);
   renderList();
 }
@@ -621,11 +853,31 @@ function bindFormDirty() {
       dirty = true;
     });
   });
+
+  ["fCarro", "fMatricula"].forEach((id) => {
+    $(id).addEventListener("change", aplicarLookupFormulario);
+    $(id).addEventListener("blur", aplicarLookupFormulario);
+  });
+  $("fCarro").addEventListener("input", () => {
+    const placa = placaDoCarro($("fCarro").value);
+    if (placa) $("fPlaca").value = placa;
+  });
+  $("fMatricula").addEventListener("input", () => {
+    const func = funcionarioPorMatricula($("fMatricula").value);
+    if (func) $("fMotorista").value = func.nome;
+  });
 }
 
 async function boot() {
   db = await openDb();
-  autos = await dbGetAll();
+  await Promise.all([
+    carregarAutuacoes().catch((err) => console.warn(err)),
+    carregarFuncionarios().catch((err) => {
+      console.warn(err);
+      setStatus("Funcionários indisponíveis no momento — preencha a matrícula manualmente.", true);
+    })
+  ]);
+  autos = (await dbGetAll()).map((a) => enriquecerComCatalogos(a));
   renderList();
   if (autos[0]) selectAuto(autos[0].id);
   else {
@@ -656,7 +908,9 @@ async function boot() {
     if (e.target.id === "previewModal") closePreview();
   });
   bindFormDirty();
-  setStatus(`${autos.length} evidência(s) no rascunho local.`);
+  setStatus(
+    `${autos.length} evidência(s) · ${funcionarios.length} funcionários · ${Object.keys(window.CIOP_VEICULOS_PLACA || {}).length} placas.`
+  );
 }
 
 window.portalAguardarUsuario(() => {
