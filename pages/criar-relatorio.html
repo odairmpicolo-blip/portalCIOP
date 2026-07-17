@@ -597,6 +597,18 @@ body.pdf-exporting .report-body-print{display:block}
     transform:translateY(-2px) !important;
     box-shadow:0 14px 28px -14px rgba(6,36,92,.35), inset 0 1px 0 rgba(255,255,255,.6) !important;
   }
+  #emailTopoBtn{
+    background:rgba(255,255,255,.55) !important;
+    color:var(--blue) !important;
+    border-left:3px solid var(--orange) !important;
+    box-shadow:0 10px 24px -14px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.5) !important;
+  }
+  #emailTopoBtn:hover{
+    background:rgba(224,235,255,.85) !important;
+    color:var(--blue) !important;
+    transform:translateY(-2px) !important;
+    box-shadow:0 14px 28px -14px rgba(6,36,92,.35), inset 0 1px 0 rgba(255,255,255,.6) !important;
+  }
   .btn-secondary{
     background:rgba(255,255,255,.55);
   }
@@ -639,6 +651,7 @@ body.pdf-exporting .report-body-print{display:block}
             <span>Portal</span>
         </a>
         <button class="btn btn-primary" type="button" id="pdfTopoBtn">Gerar PDF</button>
+        <button class="btn btn-secondary" type="button" id="emailTopoBtn">Enviar por E-mail</button>
     </div>
 
     <section class="workspace">
@@ -1571,57 +1584,57 @@ async function aguardarImagensPdf(alvo) {
     }));
 }
 
-async function exportarPdfRelatorio(botao) {
+async function construirPdfRelatorio() {
     atualizarCorpoPDF();
     if (!window.jspdf?.jsPDF || !window.html2canvas) {
-        setStatus("Biblioteca PDF indisponível. Abrindo impressão como alternativa.", "erro");
-        window.print();
-        if (botao) botao.disabled = false;
-        return;
+        throw new Error("Biblioteca PDF indisponível.");
     }
 
     const folha = document.querySelector(".paper");
     if (!folha) {
-        setStatus("Não encontrei a prévia do relatório para gerar o PDF.", "erro");
-        if (botao) botao.disabled = false;
-        return;
+        throw new Error("Não encontrei a prévia do relatório para gerar o PDF.");
     }
 
+    await aguardarImagensPdf(folha);
+    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+    const canvas = await html2canvas(folha, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        logging: false,
+        useCORS: true,
+        windowWidth: folha.scrollWidth,
+        windowHeight: folha.scrollHeight
+    });
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const imgData = canvas.toDataURL("image/png");
+    const imgH = (canvas.height * pageW) / canvas.width;
+
+    let y = 0;
+    let restante = imgH;
+    pdf.addImage(imgData, "PNG", 0, y, pageW, imgH, undefined, "FAST");
+    restante -= pageH;
+    while (restante > 1) {
+        pdf.addPage();
+        y = restante - imgH;
+        pdf.addImage(imgData, "PNG", 0, y, pageW, imgH, undefined, "FAST");
+        restante -= pageH;
+    }
+
+    return pdf;
+}
+
+async function exportarPdfRelatorio(botao) {
     setStatus("Gerando PDF...", "ia");
     window.portalMostrarCarregando?.("Gerando PDF");
     document.body.classList.add("pdf-exporting");
 
     try {
-        await aguardarImagensPdf(folha);
-        await new Promise((resolve) => requestAnimationFrame(() => resolve()));
-
-        const canvas = await html2canvas(folha, {
-            scale: 2,
-            backgroundColor: "#ffffff",
-            logging: false,
-            useCORS: true,
-            windowWidth: folha.scrollWidth,
-            windowHeight: folha.scrollHeight
-        });
-
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-        const pageW = pdf.internal.pageSize.getWidth();
-        const pageH = pdf.internal.pageSize.getHeight();
-        const imgData = canvas.toDataURL("image/png");
-        const imgH = (canvas.height * pageW) / canvas.width;
-
-        let y = 0;
-        let restante = imgH;
-        pdf.addImage(imgData, "PNG", 0, y, pageW, imgH, undefined, "FAST");
-        restante -= pageH;
-        while (restante > 1) {
-            pdf.addPage();
-            y = restante - imgH;
-            pdf.addImage(imgData, "PNG", 0, y, pageW, imgH, undefined, "FAST");
-            restante -= pageH;
-        }
-
+        const pdf = await construirPdfRelatorio();
         pdf.save(nomeArquivoPdf());
         setStatus("PDF gerado com sucesso.", "ok");
     } catch (error) {
@@ -1653,6 +1666,82 @@ async function gerarPDF() {
 }
 
 document.getElementById("pdfTopoBtn").addEventListener("click", gerarPDF);
+
+// ==== Envio do relatório por e-mail (Google Apps Script + Gmail) ====
+// Depois de publicar o Apps Script (ver guia), cole aqui a URL do Web App
+// (termina em /exec) e, se tiver definido um TOKEN no script, repita o
+// mesmo valor abaixo.
+const EMAIL_SCRIPT_URL = "";
+const EMAIL_SCRIPT_TOKEN = "";
+const EMAIL_DESTINATARIOS = [
+    "rh@tcgl.com.br",
+    "monitoramento@tcgl.com.br",
+    "danielmartins@tcgl.com.br",
+    "planejamento@tcgl.com.br",
+    "rehder@tcgl.com.br"
+];
+
+function pdfParaBase64(pdf) {
+    const dataUri = pdf.output("datauristring");
+    const virgula = dataUri.indexOf(",");
+    return dataUri.slice(virgula + 1);
+}
+
+async function enviarRelatorioPorEmail() {
+    const botao = document.getElementById("emailTopoBtn");
+    if (!EMAIL_SCRIPT_URL) {
+        setStatus("Para enviar por e-mail, falta publicar o Apps Script de envio e colar a URL em EMAIL_SCRIPT_URL.", "erro");
+        return;
+    }
+
+    botao.disabled = true;
+    window.portalMostrarCarregando?.("Enviando relatório por e-mail");
+    document.body.classList.add("pdf-exporting");
+
+    try {
+        setStatus("Gerando PDF para envio...", "ia");
+        const pdf = await construirPdfRelatorio();
+        const base64 = pdfParaBase64(pdf);
+        const filename = nomeArquivoPdf();
+        const numero = String(campos.numero.value || "").replace(/\D/g, "") || "00000";
+        const dataRel = campos.data.value || hojeISO();
+
+        setStatus("Enviando e-mail...", "ia");
+        const resposta = await fetch(EMAIL_SCRIPT_URL, {
+            method: "POST",
+            cache: "no-store",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+                token: EMAIL_SCRIPT_TOKEN,
+                destinatarios: EMAIL_DESTINATARIOS,
+                assunto: "Relatório de Ocorrência CIOP " + numero + " - " + dataRel,
+                filename,
+                base64
+            })
+        });
+        const texto = await resposta.text();
+        let resultado;
+        try {
+            resultado = JSON.parse(texto);
+        } catch (erroParse) {
+            resultado = { ok: false, erro: "Resposta inválida do Apps Script: " + texto.slice(0, 200) };
+        }
+
+        if (!resultado.ok) {
+            throw new Error(resultado.erro || "Falha ao enviar e-mail.");
+        }
+        setStatus("Relatório enviado por e-mail com sucesso.", "ok");
+    } catch (error) {
+        console.error(error);
+        setStatus("Falha ao enviar e-mail: " + (error.message || "tente novamente."), "erro");
+    } finally {
+        document.body.classList.remove("pdf-exporting");
+        window.portalOcultarCarregando?.();
+        botao.disabled = false;
+    }
+}
+
+document.getElementById("emailTopoBtn").addEventListener("click", enviarRelatorioPorEmail);
 window.addEventListener("beforeprint", atualizarCorpoPDF);
 document.getElementById("limparBtn").addEventListener("click", () => {
     if (!ehInformativo()) {
