@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>Evidências de Autuações | Portal CIOP</title>
+<style>
+:root{
+  --blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;
+  --jewel-1:#7a5cff;--jewel-2:#c04fd6;
+  --jewel-shadow:0 10px 26px -8px rgba(122,92,255,.65);
+  --glass-bg:rgba(255,255,255,.6);
+  --glass-bg-strong:rgba(255,255,255,.8);
+  --glass-border:rgba(30,20,70,.10);
+  --glass-blur:blur(24px) saturate(190%);
+  --glass-shadow:0 16px 34px -16px rgba(40,25,90,.22), inset 0 1px 0 rgba(255,255,255,.75);
+  --ink:#18182a;--ink-soft:rgba(24,24,42,.62);--ink-faint:rgba(24,24,42,.5);
+  --field-bg:rgba(255,255,255,.82);
+  --muted:#667085;--red:#dc2626;--green:#15803d;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;display:flex;flex-direction:column;
+  font-family:Inter,Arial,Helvetica,sans-serif;color:var(--ink);
+  background:
+    radial-gradient(circle at 15% 8%, rgba(122,92,255,.28) 0%, transparent 40%),
+    radial-gradient(circle at 90% 15%, rgba(255,110,180,.22) 0%, transparent 38%),
+    radial-gradient(circle at 20% 60%, rgba(60,180,255,.18) 0%, transparent 42%),
+    #f2effa;
+}
+.body-bg-wall,.body-bg-stain{display:none}
+.header{
+  display:grid;grid-template-columns:minmax(160px,1fr) auto minmax(240px,1fr);
+  gap:12px;align-items:center;padding:10px 18px;
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border-bottom:1px solid var(--glass-border);position:sticky;top:0;z-index:30;
+  box-shadow:var(--glass-shadow);
+}
+.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.page-kicker{margin:0 0 2px;color:var(--orange);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.page-title{margin:0;font-size:22px;font-weight:900;letter-spacing:.02em;color:var(--blue)}
+.page-desc{margin:3px 0 0;color:var(--ink-faint);font-size:12px;font-weight:600}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.ciop-session{
+  display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;
+  background:var(--glass-bg);border:1px solid var(--glass-border);font-size:11px;color:var(--ink);
+}
+.ciop-session-user{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.ciop-session-profile{color:var(--ink-faint);font-weight:600}
+.btn-logout{border:0;border-radius:999px;background:var(--red);color:#fff;padding:5px 10px;font-weight:700;cursor:pointer;font-size:11px}
+.wrap{max-width:1600px;width:100%;margin:0 auto;padding:14px 16px 28px;flex:1}
+.topbar{
+  display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px;
+  padding:10px 14px;border-radius:14px;background:var(--glass-bg);backdrop-filter:blur(14px) saturate(190%);
+  -webkit-backdrop-filter:blur(14px) saturate(190%);border:1px solid rgba(255,255,255,.6);box-shadow:var(--glass-shadow);
+}
+.btn,.btn-portal{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;
+  padding:9px 14px;font-weight:800;cursor:pointer;font-size:12px;text-decoration:none;font-family:inherit;
+}
+.btn-portal,.btn-primary{
+  background:linear-gradient(135deg,var(--jewel-1),var(--jewel-2));color:#fff;box-shadow:var(--jewel-shadow);
+}
+.btn-secondary{background:var(--glass-bg-strong);color:var(--ink);border:1px solid var(--glass-border)}
+.btn-accent{background:linear-gradient(135deg,#ff6b00,#ff8a33);color:#fff}
+.btn-danger{background:rgba(254,226,226,.9);color:#991b1b;border:1px solid rgba(220,38,38,.2)}
+.btn-ghost{background:transparent;border:1px solid var(--glass-border);color:var(--ink)}
+.status-line{font-size:12px;font-weight:700;color:var(--ink-faint)}
+.status-line.is-error{color:var(--red)}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.kpi{
+  background:var(--glass-bg);backdrop-filter:blur(16px) saturate(180%);-webkit-backdrop-filter:blur(16px) saturate(180%);
+  border:1px solid rgba(255,255,255,.55);border-radius:16px;padding:12px 14px;box-shadow:var(--glass-shadow);
+  position:relative;overflow:hidden;
+}
+.kpi::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:linear-gradient(180deg,var(--jewel-1),var(--orange))}
+.kpi-label{font-size:11px;font-weight:800;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em}
+.kpi-value{font-size:28px;font-weight:900;color:var(--blue);line-height:1.1;margin-top:4px}
+.layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:14px;min-height:70vh}
+.panel{
+  background:var(--glass-bg);backdrop-filter:blur(20px) saturate(190%);-webkit-backdrop-filter:blur(20px) saturate(190%);
+  border:1px solid rgba(255,255,255,.55);border-radius:18px;box-shadow:var(--glass-shadow);overflow:hidden;
+}
+.panel-head{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.35);
+}
+.panel-head h2{margin:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--blue)}
+.drop{
+  margin:12px;border:1.5px dashed rgba(122,92,255,.35);border-radius:14px;padding:16px 12px;text-align:center;
+  background:rgba(255,255,255,.35);cursor:pointer;transition:.15s ease;
+}
+.drop:hover,.drop.is-drag{border-color:var(--jewel-1);background:rgba(122,92,255,.10);transform:translateY(-1px)}
+.drop strong{display:block;color:var(--blue);font-size:13px}
+.drop span{display:block;margin-top:4px;color:var(--ink-faint);font-size:11px;font-weight:600;line-height:1.35}
+.list-tools{padding:0 12px 8px}
+.list-tools input{
+  width:100%;border:1px solid var(--glass-border);border-radius:12px;padding:9px 10px;font:inherit;font-size:12px;background:var(--field-bg);
+}
+.lista{padding:0 8px 12px;max-height:calc(100vh - 420px);overflow:auto}
+.list-empty{padding:18px 10px;text-align:center;color:var(--ink-faint);font-size:12px;font-weight:700}
+.auto-item{
+  width:100%;text-align:left;border:1px solid transparent;background:rgba(255,255,255,.45);border-radius:12px;
+  padding:10px;margin-bottom:6px;cursor:pointer;font:inherit;
+}
+.auto-item:hover{border-color:rgba(122,92,255,.35)}
+.auto-item.is-active{border-color:rgba(122,92,255,.45);background:rgba(255,255,255,.75);box-shadow:0 8px 18px rgba(40,25,90,.1)}
+.auto-item-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.auto-item-top strong{font-size:15px;color:var(--blue)}
+.pill{font-size:10px;font-weight:800;padding:3px 7px;border-radius:999px;background:rgba(122,92,255,.12);color:var(--jewel-1)}
+.status-pronto .pill,.status-finalizado .pill{background:rgba(21,128,61,.15);color:var(--green)}
+.status-evidenciado .pill{background:rgba(255,107,0,.15);color:#9a3412}
+.status-rascunho .pill{background:rgba(100,116,139,.15);color:#475569}
+.auto-item-meta,.auto-item-sub{font-size:11px;color:var(--ink-faint);margin-top:3px;font-weight:600}
+.editor{padding:14px}
+.editor-empty{display:grid;place-items:center;min-height:420px;color:var(--ink-faint);font-weight:700;text-align:center;padding:24px}
+.sheet-live{
+  border:1px solid rgba(255,255,255,.55);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.72);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
+}
+.sheet-head{
+  display:grid;grid-template-columns:90px 1fr 90px;gap:10px;align-items:center;
+  padding:12px 14px;border-bottom:2px solid var(--blue);background:rgba(255,255,255,.55);
+}
+.sheet-logo{height:48px;object-fit:contain;justify-self:center}
+.sheet-org{text-align:center;font-weight:800;color:var(--blue);font-size:12px}
+.sheet-title{text-align:center;font-weight:900;font-size:20px;margin-top:4px;color:#071f57}
+.sheet-auto-line{margin-top:6px}
+.sheet-auto-line input{
+  width:100%;border:1px solid rgba(255,107,0,.35);background:rgba(255,247,237,.9);border-radius:10px;padding:8px 10px;
+  text-align:center;font-weight:800;color:#9a3412;font-size:13px;
+}
+.sheet-gallery-wrap{padding:12px;border-bottom:1px solid rgba(255,255,255,.5)}
+.drop-images{
+  border:1.5px dashed rgba(255,107,0,.4);border-radius:12px;padding:14px;text-align:center;cursor:pointer;
+  background:rgba(255,247,237,.55);
+}
+.drop-images strong{color:#9a3412}
+.image-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
+.img-card{position:relative;border:1px solid var(--glass-border);border-radius:10px;overflow:hidden;background:#f8fafc}
+.img-card img{display:block;width:100%;height:120px;object-fit:cover}
+.img-remove{
+  position:absolute;top:4px;right:4px;border:0;width:24px;height:24px;border-radius:50%;
+  background:rgba(220,38,38,.92);color:#fff;font-weight:900;cursor:pointer;
+}
+.img-label{display:block;padding:4px 6px;font-size:10px;font-weight:700;color:var(--muted)}
+.sheet-body{padding:12px 14px}
+.texts textarea,.fields input,.sign-row input{
+  width:100%;border:1px solid var(--glass-border);border-radius:10px;padding:9px 10px;font:inherit;font-size:13px;background:var(--field-bg);
+}
+.texts{display:grid;gap:8px;margin-bottom:12px}
+.texts textarea{min-height:58px;resize:vertical}
+.fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.field label{display:block;font-size:10px;font-weight:800;color:var(--ink-faint);text-transform:uppercase;margin-bottom:4px}
+.field.span-2{grid-column:span 2}
+.obs-row{margin-top:10px}
+.sign-row{display:grid;grid-template-columns:1fr 100px;gap:8px;margin-top:12px;max-width:360px;margin-left:auto}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.5)}
+.modal{position:fixed;inset:0;background:rgba(24,24,42,.45);display:grid;place-items:center;padding:20px;z-index:50;backdrop-filter:blur(6px)}
+.modal[hidden]{display:none!important}
+.modal-card{
+  width:min(920px,100%);max-height:92vh;overflow:auto;background:rgba(255,255,255,.88);
+  backdrop-filter:blur(20px);border-radius:18px;padding:16px;border:1px solid rgba(255,255,255,.65);box-shadow:var(--glass-shadow);
+}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px}
+.preview-sheet .sheet-head{display:grid;grid-template-columns:90px 1fr 90px;gap:10px;align-items:center;border-bottom:2px solid var(--blue);padding-bottom:10px}
+.preview-sheet .sheet-logo{height:52px;object-fit:contain}
+.preview-sheet .sheet-org{text-align:center;font-weight:800;color:var(--blue);font-size:12px}
+.preview-sheet .sheet-title{text-align:center;font-weight:900;font-size:20px;margin-top:4px}
+.preview-sheet .sheet-auto{text-align:center;font-size:12px;font-weight:700;color:var(--orange);margin-top:4px}
+.preview-sheet .sheet-gallery{margin:12px 0;min-height:180px;border:1px dashed #c9d4e5;padding:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+.preview-sheet .sheet-gallery img{width:100%;border:1px solid #dfe5ef}
+.preview-sheet .sheet-text p{margin:0 0 8px;font-size:13px;line-height:1.45}
+.preview-sheet .sheet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.preview-sheet .sheet-grid div{border:1px solid #dfe5ef;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.7)}
+.preview-sheet .sheet-grid .span-2{grid-column:span 2}
+.preview-sheet .sheet-grid span{display:block;font-size:10px;color:#667085;font-weight:700;text-transform:uppercase}
+.preview-sheet .sheet-obs{margin:12px 0;font-size:12px;font-weight:700}
+.preview-sheet .sheet-sign{display:flex;justify-content:flex-end;margin-top:20px}
+.preview-sheet .sign-name{font-weight:800}
+.preview-sheet .sign-code{font-size:12px;color:#667085}
+footer.portal-site-footer{
+  background:var(--glass-bg);backdrop-filter:blur(16px) saturate(190%);-webkit-backdrop-filter:blur(16px) saturate(190%);
+  border-top:1px solid rgba(255,255,255,.5);padding:14px 22px;margin-top:auto;
+}
+footer.portal-site-footer .footer-inner{max-width:1200px;margin:0 auto;text-align:center}
+footer.portal-site-footer .footer-text{color:#3f4757;font-size:12px}
+
+@media (min-width:721px){
+  body{background:transparent !important}
+  .body-bg-wall{
+    display:block;position:fixed;inset:0;z-index:-3;
+    background-image:url('../assets/img/portal-bg-onibus.jpg?v=20260716a');
+    background-size:cover;background-position:center;background-repeat:no-repeat;
+  }
+  .body-bg-stain{
+    display:block;position:fixed;inset:0;z-index:-2;pointer-events:none;
+    background:linear-gradient(180deg, rgba(6,20,50,.12) 0%, rgba(6,20,50,.30) 100%);
+  }
+  .header{
+    background:rgba(255,255,255,.6) !important;
+    backdrop-filter:blur(18px) saturate(190%) !important;
+    -webkit-backdrop-filter:blur(18px) saturate(190%) !important;
+    border-bottom:1px solid rgba(255,255,255,.5) !important;
+  }
+}
+
+@media (max-width:1100px){
+  .layout{grid-template-columns:1fr}
+  .fields{grid-template-columns:1fr 1fr}
+  .lista{max-height:280px}
+  .header{grid-template-columns:1fr;text-align:center}
+  .header-actions,.header > a:first-child{justify-self:center}
+}
+@media (max-width:700px){
+  .kpis{grid-template-columns:1fr}
+  .fields{grid-template-columns:1fr}
+  .field.span-2{grid-column:auto}
+}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-brand.css">
+<link rel="stylesheet" href="../assets/css/portal-header.css">
+<link rel="stylesheet" href="../assets/css/portal-session.css">
+<link rel="stylesheet" href="../assets/css/portal-footer.css">
+<script src="../assets/js/loading.js"></script>
+<script type="module" src="../assets/js/auth.js"></script>
+</head>
+<body data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
+<div class="body-bg-wall" aria-hidden="true"></div>
+<div class="body-bg-stain" aria-hidden="true"></div>
+
+<header class="header">
+  <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações">
+    <img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP">
+    <span class="portal-brand-meta">TCGL · Operações</span>
+  </a>
+  <div class="title-wrap">
+    <p class="page-kicker">CMTU · CIOP</p>
+    <h1 class="page-title">Evidências de Autuações</h1>
+    <p class="page-desc">Importar autos · anexar imagens · ficha CIOP</p>
+  </div>
+  <div class="header-actions">
+    <div class="ciop-session">
+      <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
+      <span class="ciop-session-profile" id="perfilUsuario">Perfil</span>
+      <button class="btn-logout" type="button" id="btnLogout" onclick="logout()">Sair</button>
+    </div>
+    <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener">
+      <img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+    </a>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="topbar">
+    <a class="btn-portal" href="../index.html">Portal</a>
+    <div class="status-line" id="statusLine">Carregando...</div>
+  </div>
+
+  <section class="kpis" aria-label="Resumo">
+    <article class="kpi"><div class="kpi-label">Autos no lote</div><div class="kpi-value" id="kpiTotal">0</div></article>
+    <article class="kpi"><div class="kpi-label">Prontos / finalizados</div><div class="kpi-value" id="kpiProntos">0</div></article>
+    <article class="kpi"><div class="kpi-label">Rascunhos</div><div class="kpi-value" id="kpiRascunhos">0</div></article>
+  </section>
+
+  <div class="layout">
+    <aside class="panel">
+      <div class="panel-head">
+        <h2>Importar</h2>
+        <button class="btn btn-secondary" type="button" id="btnNovo">+ Novo</button>
+      </div>
+      <div class="drop" id="dropImport" role="button" tabindex="0">
+        <strong>Solte o PDF da notificação CMTU</strong>
+        <span>Ou PDFs no padrão:<br>20.05.2026 - Atraso - Carro 4610 - Linha 932 - Mot 12483.pdf</span>
+        <input id="fileImport" type="file" accept=".pdf,image/*" multiple hidden>
+      </div>
+      <div class="list-tools">
+        <input id="buscaLista" type="search" placeholder="Buscar carro, linha, auto, motivo...">
+      </div>
+      <div class="lista" id="listaAutos"></div>
+    </aside>
+
+    <section class="panel editor">
+      <div id="editorEmpty" class="editor-empty">
+        Importe a notificação CMTU para replicar os autos automaticamente,<br>
+        depois anexe as evidências em imagem em cada ficha.
+      </div>
+
+      <div id="editorPanel" hidden>
+        <div class="panel-head" style="margin:-14px -14px 14px;border-radius:18px 18px 0 0">
+          <h2 id="sheetTitle">Evidência</h2>
+        </div>
+
+        <div class="sheet-live">
+          <div class="sheet-head">
+            <img class="sheet-logo" src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
+            <div>
+              <div class="sheet-org">CENTRO DE INTELIGÊNCIA OPERACIONAL DE LONDRINA - PR</div>
+              <div class="sheet-title">AUTO DE INFRAÇÃO</div>
+              <div class="sheet-auto-line">
+                <input id="fAutoNumero" placeholder="Nº do auto / artigo (ex.: 31740/2026-M0001027 - ART...)">
+              </div>
+            </div>
+            <img class="sheet-logo" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+          </div>
+
+          <div class="sheet-gallery-wrap">
+            <div class="drop-images" id="dropImages">
+              <strong>Caixa de evidências (imagens)</strong>
+              <div style="margin-top:4px;font-size:11px;color:var(--ink-faint);font-weight:700">Solte prints do CAD / GPS / tabelas por auto</div>
+              <input id="fileImages" type="file" accept="image/*" multiple hidden>
+            </div>
+            <div class="image-grid" id="imageGrid"></div>
+          </div>
+
+          <div class="sheet-body">
+            <div class="texts">
+              <textarea id="fTexto1" placeholder="Texto 1 — narrativa operacional (CAD / partida / atraso...)"></textarea>
+              <textarea id="fTexto2" placeholder="Texto 2 — horário de tabela CMTU / contexto"></textarea>
+              <textarea id="fTexto3" placeholder="Texto 3 — complemento / baldeação / justificativa"></textarea>
+            </div>
+
+            <div class="fields">
+              <div class="field"><label>Carro</label><input id="fCarro" placeholder="3109"></div>
+              <div class="field"><label>Placa</label><input id="fPlaca" placeholder="TBJ 2D48"></div>
+              <div class="field"><label>Data</label><input id="fData" placeholder="05/05/2026"></div>
+              <div class="field"><label>Horário</label><input id="fHorario" placeholder="13:49"></div>
+              <div class="field"><label>Linha</label><input id="fLinha" placeholder="112"></div>
+              <div class="field span-2"><label>Local</label><input id="fLocal" placeholder="Terminal / ponto"></div>
+              <div class="field"><label>Matrícula</label><input id="fMatricula" placeholder="10701"></div>
+              <div class="field span-2"><label>Motorista</label><input id="fMotorista" placeholder="Nome completo"></div>
+              <div class="field span-2"><label>Motivo</label><input id="fMotivo" placeholder="Atraso, Supressão, Permanência..."></div>
+            </div>
+
+            <div class="obs-row field">
+              <label>Observação</label>
+              <input id="fObs">
+            </div>
+
+            <div class="sign-row">
+              <div class="field"><label>Assinatura</label><input id="fAssinaturaNome"></div>
+              <div class="field"><label>Cód.</label><input id="fAssinaturaCodigo"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="button" id="btnSalvar">Salvar rascunho</button>
+          <button class="btn btn-accent" type="button" id="btnPreview">Ver antes de publicar</button>
+          <button class="btn btn-secondary" type="button" id="btnPrint">Exportar / Imprimir PDF</button>
+          <button class="btn btn-ghost" type="button" id="btnFinalizar">Marcar finalizado</button>
+          <button class="btn btn-danger" type="button" id="btnExcluir">Excluir</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="portal-site-footer">
+  <div class="footer-inner"><div class="footer-text">Portal CIOP · Evidências de Autuações · acesso exclusivo</div></div>
+</footer>
+
+<div class="modal" id="previewModal" hidden>
+  <div class="modal-card">
+    <div class="modal-actions">
+      <button class="btn btn-secondary" type="button" id="btnPrintPreview">Imprimir / PDF</button>
+      <button class="btn btn-primary" type="button" id="btnClosePreview">Fechar</button>
+    </div>
+    <div class="preview-sheet" id="previewBody"></div>
+  </div>
+</div>
+
+<script type="module" src="../assets/js/evidencias-autuacoes.js"></script>
+</body>
+</html>
