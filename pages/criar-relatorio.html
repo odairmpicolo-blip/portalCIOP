@@ -139,6 +139,27 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px}
 }
 .btn-primary{background:var(--blue);color:#fff}
 .btn-secondary{background:#e8edf6;color:var(--blue)}
+.anexos-status{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 10px;
+    border-radius:8px;
+    background:#eef4ff;
+    color:var(--blue);
+    font-size:11px;
+    font-weight:700;
+}
+.anexos-status button{
+    border:0;
+    background:transparent;
+    color:var(--blue);
+    cursor:pointer;
+    font-weight:800;
+    font-size:13px;
+    line-height:1;
+    padding:0;
+}
 .btn-danger{background:var(--red);color:#fff}
 .workspace{
     display:grid;
@@ -609,6 +630,18 @@ body.pdf-exporting .report-body-print{display:block}
     transform:translateY(-2px) !important;
     box-shadow:0 14px 28px -14px rgba(6,36,92,.35), inset 0 1px 0 rgba(255,255,255,.6) !important;
   }
+  #anexosBtn{
+    background:rgba(255,255,255,.55) !important;
+    color:var(--blue) !important;
+    border-left:3px solid var(--orange) !important;
+    box-shadow:0 10px 24px -14px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.5) !important;
+  }
+  #anexosBtn:hover{
+    background:rgba(224,235,255,.85) !important;
+    color:var(--blue) !important;
+    transform:translateY(-2px) !important;
+    box-shadow:0 14px 28px -14px rgba(6,36,92,.35), inset 0 1px 0 rgba(255,255,255,.6) !important;
+  }
   .btn-secondary{
     background:rgba(255,255,255,.55);
   }
@@ -651,6 +684,9 @@ body.pdf-exporting .report-body-print{display:block}
             <span>Portal</span>
         </a>
         <button class="btn btn-primary" type="button" id="pdfTopoBtn">Gerar PDF</button>
+        <button class="btn btn-secondary" type="button" id="anexosBtn">+ Anexo</button>
+        <input type="file" id="anexosInput" multiple hidden>
+        <span class="anexos-status" id="anexosStatus" hidden></span>
         <button class="btn btn-secondary" type="button" id="emailTopoBtn">Enviar por E-mail</button>
     </div>
 
@@ -1687,10 +1723,69 @@ function pdfParaBase64(pdf) {
     return dataUri.slice(virgula + 1);
 }
 
+function arquivoParaBase64(arquivo) {
+    return new Promise((resolve, reject) => {
+        const leitor = new FileReader();
+        leitor.onload = () => {
+            const resultado = String(leitor.result || "");
+            const virgula = resultado.indexOf(",");
+            resolve(virgula >= 0 ? resultado.slice(virgula + 1) : resultado);
+        };
+        leitor.onerror = () => reject(new Error("Falha ao ler o arquivo " + arquivo.name));
+        leitor.readAsDataURL(arquivo);
+    });
+}
+
+// ---- Anexos extras (além do PDF do relatório) ----
+let anexosExtras = [];
+const TAMANHO_MAX_TOTAL_ANEXOS = 20 * 1024 * 1024; // 20MB (limite prático do Gmail é ~25MB)
+
+function atualizarAnexosStatus() {
+    const status = document.getElementById("anexosStatus");
+    if (!anexosExtras.length) {
+        status.hidden = true;
+        status.innerHTML = "";
+        return;
+    }
+    status.hidden = false;
+    const label = anexosExtras.length === 1 ? "1 anexo extra" : anexosExtras.length + " anexos extras";
+    status.innerHTML = "";
+    const texto = document.createElement("span");
+    texto.textContent = label;
+    const limpar = document.createElement("button");
+    limpar.type = "button";
+    limpar.title = "Remover anexos extras";
+    limpar.textContent = "×";
+    limpar.addEventListener("click", () => {
+        anexosExtras = [];
+        document.getElementById("anexosInput").value = "";
+        atualizarAnexosStatus();
+    });
+    status.appendChild(texto);
+    status.appendChild(limpar);
+}
+
+document.getElementById("anexosBtn").addEventListener("click", () => {
+    document.getElementById("anexosInput").click();
+});
+
+document.getElementById("anexosInput").addEventListener("change", (evento) => {
+    const novos = Array.from(evento.target.files || []);
+    anexosExtras = anexosExtras.concat(novos);
+    evento.target.value = "";
+    atualizarAnexosStatus();
+});
+
 async function enviarRelatorioPorEmail() {
     const botao = document.getElementById("emailTopoBtn");
     if (!EMAIL_SCRIPT_URL) {
         setStatus("Para enviar por e-mail, falta publicar o Apps Script de envio e colar a URL em EMAIL_SCRIPT_URL.", "erro");
+        return;
+    }
+
+    const tamanhoExtras = anexosExtras.reduce((soma, arquivo) => soma + arquivo.size, 0);
+    if (tamanhoExtras > TAMANHO_MAX_TOTAL_ANEXOS) {
+        setStatus("Os anexos extras somam mais de 20MB — remova algum arquivo antes de enviar.", "erro");
         return;
     }
 
@@ -1701,10 +1796,26 @@ async function enviarRelatorioPorEmail() {
     try {
         setStatus("Gerando PDF para envio...", "ia");
         const pdf = await construirPdfRelatorio();
-        const base64 = pdfParaBase64(pdf);
-        const filename = nomeArquivoPdf();
-        const numero = String(campos.numero.value || "").replace(/\D/g, "") || "00000";
-        const dataRel = campos.data.value || hojeISO();
+        const anexos = [
+            {
+                filename: nomeArquivoPdf(),
+                mimeType: "application/pdf",
+                base64: pdfParaBase64(pdf)
+            }
+        ];
+
+        if (anexosExtras.length) {
+            setStatus("Preparando anexos extras...", "ia");
+            for (const arquivo of anexosExtras) {
+                anexos.push({
+                    filename: arquivo.name,
+                    mimeType: arquivo.type || "application/octet-stream",
+                    base64: await arquivoParaBase64(arquivo)
+                });
+            }
+        }
+
+        const nome = String(campos.nome.value || "").trim() || "informado no relatório";
 
         setStatus("Enviando e-mail...", "ia");
         const resposta = await fetch(EMAIL_SCRIPT_URL, {
@@ -1714,9 +1825,9 @@ async function enviarRelatorioPorEmail() {
             body: JSON.stringify({
                 token: EMAIL_SCRIPT_TOKEN,
                 destinatarios: EMAIL_DESTINATARIOS,
-                assunto: "Relatório de Ocorrência CIOP " + numero + " - " + dataRel,
-                filename,
-                base64
+                assunto: "Relatório de ocorrência",
+                corpo: "Em anexo o relatório de ocorrência do mot. " + nome,
+                anexos
             })
         });
         const texto = await resposta.text();
@@ -1731,6 +1842,8 @@ async function enviarRelatorioPorEmail() {
             throw new Error(resultado.erro || "Falha ao enviar e-mail.");
         }
         setStatus("Relatório enviado por e-mail com sucesso.", "ok");
+        anexosExtras = [];
+        atualizarAnexosStatus();
     } catch (error) {
         console.error(error);
         setStatus("Falha ao enviar e-mail: " + (error.message || "tente novamente."), "erro");
