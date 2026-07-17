@@ -264,6 +264,7 @@ function fillForm(auto) {
   renderImageGrid(auto);
   $("editorEmpty").hidden = true;
   $("editorPanel").hidden = false;
+  if ($("actionsBar")) $("actionsBar").hidden = false;
   $("sheetTitle").textContent = auto.carro
     ? `${auto.carro} — ${auto.data || "sem data"}`
     : "Nova evidência";
@@ -390,16 +391,18 @@ function buildSheetHtml(auto) {
     .map((img) => `<img src="${img.dataUrl}" alt="Evidência">`)
     .join("");
   return `
-    <article class="sheet">
-      <header class="sheet-head">
-        <img class="sheet-logo" src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
-        <div class="sheet-head-center">
-          <div class="sheet-org">CENTRO DE INTELIGÊNCIA OPERACIONAL DE LONDRINA - PR</div>
-          <div class="sheet-title">AUTO DE INFRAÇÃO</div>
-          <div class="sheet-auto">${auto.autoNumero || "—"}</div>
+    <article class="sheet-a4">
+      <div class="sheet-brand">
+        <img src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
+        <div class="sheet-org">Centro de Inteligência Operacional de Londrina - PR</div>
+        <img src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+      </div>
+      <div class="sheet-capa">
+        <div class="sheet-capa-title">Auto de Infração</div>
+        <div class="sheet-capa-numero">
+          <div class="sheet-capa-numero-text">${escapeHtml(auto.autoNumero) || "—"}</div>
         </div>
-        <img class="sheet-logo sheet-logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
-      </header>
+      </div>
       <section class="sheet-gallery ${imgs ? "" : "is-empty"}">
         ${imgs || "<div class='sheet-gallery-empty'>Área de evidências (imagens)</div>"}
       </section>
@@ -414,9 +417,9 @@ function buildSheetHtml(auto) {
         <div><span>Data</span><b>${escapeHtml(auto.data)}</b></div>
         <div><span>Horário</span><b>${escapeHtml(auto.horario)}</b></div>
         <div><span>Linha</span><b>${escapeHtml(auto.linha)}</b></div>
-        <div><span>Local</span><b>${escapeHtml(auto.local)}</b></div>
+        <div class="span-2"><span>Local</span><b>${escapeHtml(auto.local)}</b></div>
         <div><span>Matrícula</span><b>${escapeHtml(auto.matricula)}</b></div>
-        <div><span>Motorista</span><b>${escapeHtml(auto.motorista)}</b></div>
+        <div class="span-2"><span>Motorista</span><b>${escapeHtml(auto.motorista)}</b></div>
         <div class="span-2"><span>Motivo</span><b>${escapeHtml(auto.motivo)}</b></div>
       </section>
       <p class="sheet-obs">${escapeHtml(auto.obs)}</p>
@@ -461,27 +464,29 @@ function printPreview() {
   }
   win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Evidência ${auto.carro || ""}</title>
     <style>
-      @page{size:A4;margin:12mm}
-      body{font-family:Arial,Helvetica,sans-serif;color:#101828;margin:0}
-      .sheet{border:1px solid #dfe5ef;padding:14px}
-      .sheet-head{display:grid;grid-template-columns:90px 1fr 90px;gap:10px;align-items:center;border-bottom:2px solid #06245c;padding-bottom:10px}
-      .sheet-logo{height:52px;object-fit:contain}
-      .sheet-logo-tcgl{height:56px}
-      .sheet-org{text-align:center;font-weight:800;color:#06245c;font-size:12px}
-      .sheet-title{text-align:center;font-weight:900;font-size:20px;margin-top:4px;color:#071f57}
-      .sheet-auto{text-align:center;font-size:12px;font-weight:700;color:#ff6b00;margin-top:4px}
-      .sheet-gallery{margin:12px 0;min-height:220px;border:1px dashed #c9d4e5;padding:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
-      .sheet-gallery img{width:100%;height:auto;border:1px solid #dfe5ef}
+      @page{size:A4;margin:10mm}
+      body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0}
+      .sheet-a4{border:1px solid #c9d0dc}
+      .sheet-brand{display:grid;grid-template-columns:90px 1fr 90px;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid #ddd}
+      .sheet-brand img{height:48px;object-fit:contain;justify-self:center}
+      .sheet-org{text-align:center;font-weight:800;color:#06245c;font-size:13px;text-transform:uppercase}
+      .sheet-capa{display:grid;grid-template-columns:28% 1fr;border-bottom:2px solid #1a1a1a;min-height:52px}
+      .sheet-capa-title{display:flex;align-items:center;justify-content:center;border-right:2px solid #1a1a1a;background:#f7f8fa;font-size:16px;font-weight:900;text-transform:uppercase;color:#0b1b3f;padding:10px}
+      .sheet-capa-numero{display:flex;align-items:center;padding:8px 12px}
+      .sheet-capa-numero-text{font-size:16px;font-weight:800;color:#06245c}
+      .sheet-gallery{margin:10px 12px;min-height:220px;border:1px dashed #c9d4e5;padding:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+      .sheet-gallery img{width:100%;border:1px solid #dfe5ef}
       .sheet-gallery-empty{display:grid;place-items:center;color:#667085;min-height:200px}
+      .sheet-text{padding:0 14px}
       .sheet-text p{margin:0 0 8px;font-size:13px;line-height:1.45}
-      .sheet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
-      .sheet-grid div{border:1px solid #dfe5ef;padding:6px 8px;border-radius:4px}
+      .sheet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px 14px}
+      .sheet-grid div{border:1px solid #dfe5ef;padding:6px 8px}
       .sheet-grid .span-2{grid-column:span 2}
       .sheet-grid span{display:block;font-size:10px;color:#667085;font-weight:700;text-transform:uppercase}
       .sheet-grid b{font-size:13px}
-      .sheet-obs{margin:12px 0;font-size:12px;font-weight:700}
-      .sheet-sign{display:flex;justify-content:flex-end;margin-top:24px}
-      .sign-name{font-weight:800;text-transform:lowercase}
+      .sheet-obs{padding:0 14px;font-size:12px;font-weight:700}
+      .sheet-sign{display:flex;justify-content:flex-end;padding:20px 14px}
+      .sign-name{font-weight:800}
       .sign-code{font-size:12px;color:#667085}
     </style></head><body>${buildSheetHtml(auto)}</body></html>`);
   win.document.close();
@@ -511,6 +516,7 @@ async function deleteCurrent() {
   else {
     $("editorEmpty").hidden = false;
     $("editorPanel").hidden = true;
+    if ($("actionsBar")) $("actionsBar").hidden = true;
   }
   renderList();
   setStatus("Evidência excluída.");
@@ -625,6 +631,7 @@ async function boot() {
   else {
     $("editorEmpty").hidden = false;
     $("editorPanel").hidden = true;
+    if ($("actionsBar")) $("actionsBar").hidden = true;
   }
 
   wireDropZone($("dropImport"), $("fileImport"), handleFiles);
