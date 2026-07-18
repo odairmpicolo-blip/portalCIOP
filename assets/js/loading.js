@@ -3,6 +3,10 @@
   const STYLE_ID = "portalLoadingStyle";
   let hideTimer = null;
 
+  function assetBase() {
+    return window.location.pathname.includes("/pages/") ? "../assets/" : "assets/";
+  }
+
   function ensureStyle() {
     if (document.getElementById(STYLE_ID)) return;
     const style = document.createElement("style");
@@ -15,59 +19,213 @@
         display:flex;
         align-items:center;
         justify-content:center;
-        background:rgba(255,255,255,.38);
-        backdrop-filter:blur(2px);
-        transition:opacity .28s ease,visibility .28s ease;
+        padding:24px;
+        background:
+          linear-gradient(180deg, rgba(6,20,50,.42) 0%, rgba(6,20,50,.62) 100%),
+          var(--portal-loading-bg, #0a1424) center/cover no-repeat;
+        backdrop-filter:blur(18px) saturate(160%);
+        -webkit-backdrop-filter:blur(18px) saturate(160%);
+        transition:opacity .32s ease,visibility .32s ease;
+        overflow:hidden;
       }
-      .portal-loading-overlay.hide{opacity:0;visibility:hidden}
+      .portal-loading-overlay::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        pointer-events:none;
+        background:
+          radial-gradient(ellipse 70% 50% at 50% 42%, rgba(11,58,138,.28), transparent 70%),
+          linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+        background-size:auto, 48px 48px, 48px 48px;
+        opacity:.85;
+        animation:portalGridDrift 18s linear infinite;
+      }
+      .portal-loading-overlay::after{
+        content:"";
+        position:absolute;
+        left:0;right:0;
+        height:28%;
+        top:-28%;
+        pointer-events:none;
+        background:linear-gradient(180deg, transparent, rgba(255,107,0,.12), transparent);
+        animation:portalScan 3.2s ease-in-out infinite;
+      }
+      .portal-loading-overlay.hide{opacity:0;visibility:hidden;pointer-events:none}
       .portal-loading-box{
-        min-width:240px;
-        padding:26px 30px;
+        position:relative;
+        z-index:1;
+        width:min(360px, 92vw);
+        padding:28px 26px 24px;
         display:flex;
         flex-direction:column;
         align-items:center;
         gap:14px;
-        border:1px solid rgba(6,36,92,.14);
-        border-radius:10px;
-        background:rgba(255,255,255,.82);
-        box-shadow:0 16px 45px rgba(16,24,40,.14);
-        color:#06245c;
-        font-family:Arial,Helvetica,sans-serif;
+        text-align:center;
+        border-radius:22px;
+        border:1px solid rgba(255,255,255,.42);
+        background:rgba(255,255,255,.22);
+        backdrop-filter:blur(28px) saturate(190%);
+        -webkit-backdrop-filter:blur(28px) saturate(190%);
+        box-shadow:
+          0 24px 60px -20px rgba(0,0,0,.45),
+          inset 0 1px 0 rgba(255,255,255,.55),
+          inset 0 -1px 0 rgba(255,255,255,.08);
+        color:#f5f7fb;
+        font-family:"SF Pro Display","Segoe UI",system-ui,-apple-system,sans-serif;
+        overflow:hidden;
       }
-      .portal-loading-mark{position:relative;width:58px;height:58px}
-      .portal-loading-mark::before,.portal-loading-mark::after{
+      .portal-loading-box::before{
         content:"";
         position:absolute;
         inset:0;
+        border-radius:inherit;
+        pointer-events:none;
+        background:linear-gradient(145deg, rgba(255,255,255,.28) 0%, transparent 42%, transparent 58%, rgba(255,107,0,.08) 100%);
+      }
+      .portal-loading-brand{
+        position:relative;
+        z-index:1;
+        font-size:11px;
+        font-weight:700;
+        letter-spacing:.22em;
+        text-transform:uppercase;
+        color:rgba(255,255,255,.72);
+      }
+      .portal-loading-brand span{color:#ff8a3d}
+      .portal-loading-mark{
+        position:relative;
+        z-index:1;
+        width:88px;
+        height:88px;
+        display:grid;
+        place-items:center;
+      }
+      .portal-loading-ring,
+      .portal-loading-ring-2{
+        position:absolute;
+        inset:0;
         border-radius:50%;
-        border:4px solid transparent;
+        border:1.5px solid transparent;
       }
-      .portal-loading-mark::before{
-        border-top-color:#06245c;
-        border-right-color:#0b3a8a;
-        animation:portalSpin .85s linear infinite;
+      .portal-loading-ring{
+        border-top-color:rgba(255,255,255,.85);
+        border-right-color:rgba(10,132,255,.7);
+        animation:portalSpin 1.1s linear infinite;
+        filter:drop-shadow(0 0 8px rgba(10,132,255,.45));
       }
-      .portal-loading-mark::after{
+      .portal-loading-ring-2{
         inset:10px;
         border-bottom-color:#ff6b00;
-        border-left-color:#ff6b00;
-        animation:portalSpin 1.15s linear infinite reverse;
+        border-left-color:rgba(255,107,0,.55);
+        animation:portalSpin 1.7s linear infinite reverse;
+        filter:drop-shadow(0 0 6px rgba(255,107,0,.4));
       }
-      .portal-loading-title{font-size:15px;font-weight:800;letter-spacing:.2px}
-      .portal-loading-dots{display:flex;gap:5px}
-      .portal-loading-dots span{
-        width:6px;
-        height:6px;
-        border-radius:50%;
-        background:#ff6b00;
-        animation:portalPulse 1s ease-in-out infinite;
+      .portal-loading-core{
+        width:54px;
+        height:54px;
+        border-radius:16px;
+        display:grid;
+        place-items:center;
+        background:rgba(6,36,92,.45);
+        border:1px solid rgba(255,255,255,.28);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 8px 20px rgba(0,0,0,.25);
       }
-      .portal-loading-dots span:nth-child(2){animation-delay:.15s}
-      .portal-loading-dots span:nth-child(3){animation-delay:.3s}
+      .portal-loading-core svg{
+        width:30px;
+        height:30px;
+        fill:none;
+        stroke:#fff;
+        stroke-width:1.7;
+        stroke-linecap:round;
+        stroke-linejoin:round;
+      }
+      .portal-loading-title{
+        position:relative;
+        z-index:1;
+        margin:0;
+        font-size:16px;
+        font-weight:700;
+        letter-spacing:.01em;
+        color:#fff;
+        text-shadow:0 1px 8px rgba(0,0,0,.25);
+        max-width:100%;
+      }
+      .portal-loading-sub{
+        position:relative;
+        z-index:1;
+        margin:-4px 0 0;
+        font-size:12px;
+        font-weight:500;
+        letter-spacing:.04em;
+        color:rgba(255,255,255,.68);
+      }
+      .portal-loading-bar{
+        position:relative;
+        z-index:1;
+        width:72%;
+        height:3px;
+        margin-top:4px;
+        border-radius:999px;
+        overflow:hidden;
+        background:rgba(255,255,255,.16);
+      }
+      .portal-loading-bar > i{
+        display:block;
+        width:42%;
+        height:100%;
+        border-radius:inherit;
+        background:linear-gradient(90deg, #0a84ff, #ff6b00);
+        animation:portalBar 1.35s ease-in-out infinite;
+        box-shadow:0 0 12px rgba(255,107,0,.55);
+      }
+      .portal-loading-dots{display:none}
       @keyframes portalSpin{to{transform:rotate(360deg)}}
-      @keyframes portalPulse{0%,80%,100%{opacity:.35;transform:translateY(0)}40%{opacity:1;transform:translateY(-4px)}}
+      @keyframes portalBar{
+        0%{transform:translateX(-120%)}
+        100%{transform:translateX(280%)}
+      }
+      @keyframes portalScan{
+        0%{transform:translateY(0);opacity:0}
+        15%{opacity:.9}
+        85%{opacity:.55}
+        100%{transform:translateY(460%);opacity:0}
+      }
+      @keyframes portalGridDrift{
+        to{background-position:0 0, 48px 48px, 48px 0}
+      }
+      @media (prefers-reduced-motion:reduce){
+        .portal-loading-ring,
+        .portal-loading-ring-2,
+        .portal-loading-bar > i,
+        .portal-loading-overlay::before,
+        .portal-loading-overlay::after{animation:none}
+      }
     `;
     document.head.appendChild(style);
+  }
+
+  function buildMarkup() {
+    return `
+      <div class="portal-loading-box">
+        <div class="portal-loading-brand">Portal <span>CIOP</span></div>
+        <div class="portal-loading-mark" aria-hidden="true">
+          <span class="portal-loading-ring"></span>
+          <span class="portal-loading-ring-2"></span>
+          <div class="portal-loading-core">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 15V8.5A3.5 3.5 0 0 1 7.5 5h9A3.5 3.5 0 0 1 20 8.5V15"/>
+              <path d="M3 15h18v2.5a1.5 1.5 0 0 1-1.5 1.5H4.5A1.5 1.5 0 0 1 3 17.5V15z"/>
+              <circle cx="7.5" cy="18.5" r="1.4"/>
+              <circle cx="16.5" cy="18.5" r="1.4"/>
+              <path d="M7 9h10M7 12h4"/>
+            </svg>
+          </div>
+        </div>
+        <p class="portal-loading-title"></p>
+        <p class="portal-loading-sub">Monitoramento em tempo real</p>
+        <div class="portal-loading-bar" aria-hidden="true"><i></i></div>
+      </div>`;
   }
 
   function mostrar(texto = "Carregando") {
@@ -80,15 +238,15 @@
       overlay.className = "portal-loading-overlay";
       overlay.setAttribute("role", "status");
       overlay.setAttribute("aria-live", "polite");
-      overlay.innerHTML = `
-        <div class="portal-loading-box">
-          <div class="portal-loading-mark" aria-hidden="true"></div>
-          <div class="portal-loading-title"></div>
-          <div class="portal-loading-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-        </div>`;
+      overlay.style.setProperty(
+        "--portal-loading-bg",
+        `url("${assetBase()}img/portal-bg-onibus.jpg?v=20260716a")`
+      );
+      overlay.innerHTML = buildMarkup();
       document.body.appendChild(overlay);
     }
-    overlay.querySelector(".portal-loading-title").textContent = texto;
+    const title = overlay.querySelector(".portal-loading-title");
+    if (title) title.textContent = texto;
     overlay.classList.remove("hide");
   }
 
@@ -97,7 +255,7 @@
     if (!overlay) return;
     window.clearTimeout(hideTimer);
     overlay.classList.add("hide");
-    hideTimer = window.setTimeout(() => overlay.remove(), 300);
+    hideTimer = window.setTimeout(() => overlay.remove(), 320);
   }
 
   window.portalUsuarioValidado = window.portalUsuarioValidado || false;
@@ -108,24 +266,25 @@
     }
     window.addEventListener("portal:usuario-validado", callback, { once: true });
   };
+
   function irParaLoginPorTimeout() {
     const path = window.location.pathname.toLowerCase();
-    if (path.endsWith('/login.html') || path.endsWith('login.html')) {
-      document.documentElement.classList.remove('portal-auth-pending');
+    if (path.endsWith("/login.html") || path.endsWith("login.html")) {
+      document.documentElement.classList.remove("portal-auth-pending");
       ocultar();
       return;
     }
 
-    mostrar('Tempo excedido. Voltando ao login');
+    mostrar("Tempo excedido. Voltando ao login");
     window.setTimeout(() => {
-      const inPages = window.location.pathname.includes('/pages/');
-      window.location.href = (inPages ? '../' : '') + 'login.html?erro=tempo';
+      const inPages = window.location.pathname.includes("/pages/");
+      window.location.href = (inPages ? "../" : "") + "login.html?erro=tempo";
     }, 1200);
   }
 
   window.portalLoadingWatchdog = window.setTimeout(() => {
     const overlay = document.getElementById(ID);
-    if (!overlay || overlay.classList.contains('hide')) return;
+    if (!overlay || overlay.classList.contains("hide")) return;
     if (window.portalUsuarioValidado) return;
     irParaLoginPorTimeout();
   }, 15000);
