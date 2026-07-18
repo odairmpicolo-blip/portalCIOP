@@ -93,16 +93,31 @@ function estadoVazio() {
   return { acessos: defaultsAcessos(), usuarios: {} };
 }
 
+/** Garante chaves de perfil conhecidas + mapa de usuários válido. */
+export function normalizarEstado(raw) {
+  const base = defaultsAcessos();
+  const acessosIn = raw?.acessos && typeof raw.acessos === "object" ? raw.acessos : {};
+  const acessos = { ...base };
+  Object.keys(acessosIn).forEach((key) => {
+    const lista = acessosIn[key];
+    if (Array.isArray(lista)) acessos[key] = lista;
+  });
+  const usuariosIn = raw?.usuarios && typeof raw.usuarios === "object" ? raw.usuarios : {};
+  const usuarios = {};
+  Object.keys(usuariosIn).forEach((email) => {
+    const lista = usuariosIn[email];
+    if (Array.isArray(lista)) usuarios[normalizarEmailKey(email)] = lista;
+  });
+  return { acessos, usuarios };
+}
+
 function lerCache() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
     if (!data || typeof data !== "object") return null;
-    return {
-      acessos: data.acessos && typeof data.acessos === "object" ? data.acessos : defaultsAcessos(),
-      usuarios: data.usuarios && typeof data.usuarios === "object" ? data.usuarios : {},
-    };
+    return normalizarEstado(data);
   } catch (_) {
     return null;
   }
@@ -134,11 +149,7 @@ export async function carregarAcessosPerfis() {
   try {
     const snap = await getDoc(doc(db, ...DOC_PATH));
     if (snap.exists()) {
-      const data = snap.data() || {};
-      const estado = {
-        acessos: data.acessos && typeof data.acessos === "object" ? data.acessos : defaultsAcessos(),
-        usuarios: data.usuarios && typeof data.usuarios === "object" ? data.usuarios : {},
-      };
+      const estado = normalizarEstado(snap.data() || {});
       gravarCache(estado);
       return aplicarEstadoGlobal(estado);
     }
@@ -152,15 +163,16 @@ export async function carregarAcessosPerfis() {
 }
 
 export async function salvarAcessosPerfis(estado) {
+  const normalizado = normalizarEstado(estado);
   const payload = {
-    acessos: estado.acessos || {},
-    usuarios: estado.usuarios || {},
+    acessos: normalizado.acessos,
+    usuarios: normalizado.usuarios,
     atualizadoEm: serverTimestamp(),
     atualizadoPor: String(window.portalUsuario?.email || "").toLowerCase(),
   };
   await setDoc(doc(db, ...DOC_PATH), payload, { merge: true });
-  gravarCache(payload);
-  return aplicarEstadoGlobal(payload);
+  gravarCache(normalizado);
+  return aplicarEstadoGlobal(normalizado);
 }
 
 export function listaModulosDePerfil(perfil, mapa) {

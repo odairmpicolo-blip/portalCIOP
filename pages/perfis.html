@@ -140,6 +140,15 @@ body{
 }
 .btn:hover{transform:translateY(-1px);filter:brightness(1.05)}
 .btn-primary{background:linear-gradient(135deg,var(--orange),#ff8f3d);color:#fff}
+.btn-primary.is-saved{
+  background:linear-gradient(135deg,#15803d,#22c55e);
+  animation:btnSaved .8s ease;
+}
+@keyframes btnSaved{
+  0%{transform:scale(1)}
+  35%{transform:scale(1.06)}
+  100%{transform:scale(1)}
+}
 .btn-secondary{background:rgba(6,36,92,.12);color:var(--blue);border:1px solid rgba(6,36,92,.12)}
 .btn-ghost{background:rgba(255,255,255,.4);color:var(--blue);border:1px solid rgba(255,255,255,.45)}
 .btn-danger{background:rgba(220,38,38,.14);color:#b91c1c;border:1px solid rgba(220,38,38,.2)}
@@ -148,6 +157,44 @@ body{
   font-size:.86rem;font-weight:800;
 }
 .status.ok{color:#15803d}.status.erro{color:#dc2626}.status.load{color:#a16207}
+.status.ok.is-pulse{
+  animation:statusPulse .7s ease;
+}
+@keyframes statusPulse{
+  0%{transform:scale(.98);opacity:.55}
+  40%{transform:scale(1.03);opacity:1}
+  100%{transform:scale(1);opacity:1}
+}
+.save-toast{
+  position:fixed;right:22px;bottom:22px;z-index:1200;
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;border-radius:16px;
+  background:linear-gradient(135deg,#15803d,#16a34a);
+  color:#fff;font-weight:800;font-size:.9rem;
+  box-shadow:0 14px 36px rgba(21,128,61,.35);
+  transform:translateY(120%);opacity:0;
+  pointer-events:none;
+  transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .35s ease;
+}
+.save-toast.is-show{transform:translateY(0);opacity:1}
+.save-toast .save-check{
+  width:28px;height:28px;border-radius:50%;
+  display:inline-grid;place-items:center;
+  background:rgba(255,255,255,.22);
+  animation:checkPop .55s ease;
+}
+@keyframes checkPop{
+  0%{transform:scale(.4);opacity:0}
+  55%{transform:scale(1.18);opacity:1}
+  100%{transform:scale(1)}
+}
+.checks.is-syncing .check{
+  animation:checkReveal .45s ease both;
+}
+@keyframes checkReveal{
+  from{opacity:.35;transform:translateY(4px)}
+  to{opacity:1;transform:none}
+}
 .badge{
   display:inline-flex;align-items:center;gap:6px;
   padding:5px 10px;border-radius:999px;font-size:.72rem;font-weight:800;
@@ -220,7 +267,7 @@ html.dk-dark .mode-tab{color:#e2e8f0}
 <link rel="stylesheet" href="../assets/css/portal-session.css?v=20260718h">
 <link rel="stylesheet" href="../assets/css/dashboard-kit.css">
 <script src="../assets/js/theme-toggle.js?v=20260718aa"></script>
-<script type="module" src="../assets/js/auth.js?v=20260718aa"></script>
+<script type="module" src="../assets/js/auth.js?v=20260718ac"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260718aa">
 <link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260718ab">
@@ -244,6 +291,11 @@ html.dk-dark .mode-tab{color:#e2e8f0}
     </div>
   </div>
 </header>
+
+<div id="saveToast" class="save-toast" role="status" aria-live="polite" hidden>
+  <span class="save-check" aria-hidden="true">✓</span>
+  <span>Salvo com sucesso</span>
+</div>
 
 <main class="container">
   <div id="adminNegado" class="panel">
@@ -308,11 +360,12 @@ import {
   EMAIL_DONO_PERFIS,
   normalizarPerfilKey,
   normalizarEmailKey,
+  normalizarEstado,
   defaultsAcessos,
   listaModulosDePerfil,
   carregarAcessosPerfis,
   salvarAcessosPerfis
-} from "../assets/js/portal-perfis-acesso.js?v=20260718aa";
+} from "../assets/js/portal-perfis-acesso.js?v=20260718ac";
 import { listarUsuariosFirestore } from "../assets/js/portal-firestore.js";
 
 const statusEl = document.getElementById("statusPerfis");
@@ -322,16 +375,37 @@ const usuarioBusca = document.getElementById("usuarioBusca");
 const rootEl = document.getElementById("modulosRoot");
 const metaBadge = document.getElementById("metaBadge");
 const metaUsuario = document.getElementById("metaUsuario");
+const saveToast = document.getElementById("saveToast");
 
 let modo = "perfil";
-let estado = { acessos: defaultsAcessos(), usuarios: {} };
+let estado = normalizarEstado({ acessos: defaultsAcessos(), usuarios: {} });
 let perfilAtual = normalizarPerfilKey(PERFIS_PORTAL[0]);
 let usuarioAtual = "";
 let usuariosLista = [];
+let dirty = false;
+let toastTimer = 0;
 
 function setStatus(msg, tipo = "") {
   statusEl.textContent = msg || "";
   statusEl.className = "status" + (tipo ? " " + tipo : "");
+  if (tipo === "ok") {
+    statusEl.classList.remove("is-pulse");
+    void statusEl.offsetWidth;
+    statusEl.classList.add("is-pulse");
+  }
+}
+
+function mostrarSalvo() {
+  if (!saveToast) return;
+  saveToast.hidden = false;
+  saveToast.classList.remove("is-show");
+  void saveToast.offsetWidth;
+  saveToast.classList.add("is-show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    saveToast.classList.remove("is-show");
+    setTimeout(() => { saveToast.hidden = true; }, 380);
+  }, 2200);
 }
 
 function escapeHtml(v) {
@@ -343,16 +417,16 @@ function escapeHtml(v) {
 }
 
 function setModo(novo) {
-  persistDraft();
+  if (dirty) persistDraft();
   modo = novo;
+  dirty = false;
   document.body.classList.toggle("mode-perfil", modo === "perfil");
   document.body.classList.toggle("mode-usuario", modo === "usuario");
   document.querySelectorAll(".mode-tab").forEach((btn) => {
     btn.classList.toggle("is-active", btn.dataset.mode === modo);
   });
   metaBadge.textContent = modo === "perfil" ? "Modo perfil" : "Modo usuário";
-  renderModulos();
-  atualizarMetaUsuario();
+  renderModulos({ syncAnim: true });
 }
 
 function renderPerfilSelect() {
@@ -393,6 +467,7 @@ function renderUsuarioSelect() {
   usuarioSelect.value = usuarioAtual;
 }
 
+/** Módulos já liberados para o perfil/usuário selecionado. */
 function listaAtiva() {
   if (modo === "usuario") {
     const email = normalizarEmailKey(usuarioAtual);
@@ -405,7 +480,7 @@ function listaAtiva() {
       }
     }
     const user = usuariosLista.find((u) => u.email === email);
-    const herdado = listaModulosDePerfil(user?.perfil || "Usuario", estado.acessos) || [];
+    const herdado = listaModulosDePerfil(user?.perfil || "", estado.acessos) || [];
     return new Set(herdado);
   }
   const lista = listaModulosDePerfil(perfilAtual, estado.acessos) || [];
@@ -424,7 +499,20 @@ function atualizarMetaUsuario() {
   metaUsuario.classList.toggle("warn", !!personalizado);
 }
 
-function renderModulos() {
+function bindChecks() {
+  rootEl.querySelectorAll('input[type="checkbox"]').forEach((el) => {
+    el.addEventListener("change", () => {
+      dirty = true;
+      if (modo === "usuario") {
+        metaUsuario.hidden = false;
+        metaUsuario.textContent = "Alterações locais (não salvas)";
+        metaUsuario.classList.add("warn");
+      }
+    });
+  });
+}
+
+function renderModulos(opts = {}) {
   const ativos = listaAtiva();
   const grupos = {};
   MODULOS_PORTAL.forEach((m) => {
@@ -435,9 +523,22 @@ function renderModulos() {
       const checked = ativos.has(m.id) ? " checked" : "";
       return `<label class="check"><input type="checkbox" data-modulo="${m.id}"${checked}><span>${escapeHtml(m.label)}</span></label>`;
     }).join("");
-    return `<div class="grupo">${escapeHtml(grupo)}</div><div class="checks">${checks}</div>`;
+    return `<div class="grupo">${escapeHtml(grupo)}</div><div class="checks${opts.syncAnim ? " is-syncing" : ""}">${checks}</div>`;
   }).join("");
+  bindChecks();
   atualizarMetaUsuario();
+  const qtd = ativos.size;
+  if (modo === "perfil") {
+    setStatus(`Perfil carregado · ${qtd} módulo(s) marcados.`, "");
+  } else if (usuarioAtual) {
+    const personalizado = Object.prototype.hasOwnProperty.call(estado.usuarios, normalizarEmailKey(usuarioAtual));
+    setStatus(
+      personalizado
+        ? `Usuário carregado · ${qtd} módulo(s) personalizados marcados.`
+        : `Usuário carregado · ${qtd} módulo(s) herdados do perfil marcados.`,
+      ""
+    );
+  }
 }
 
 function coletarMarcados() {
@@ -448,17 +549,20 @@ function persistDraft() {
   const marcados = coletarMarcados();
   if (modo === "perfil") {
     estado.acessos[perfilAtual] = perfilAtual === "administrador" ? ["*"] : marcados;
+    dirty = false;
     return;
   }
   const email = normalizarEmailKey(usuarioAtual);
   if (!email) return;
   estado.usuarios[email] = marcados;
+  dirty = false;
 }
 
 function marcarTodos(val) {
   rootEl.querySelectorAll('input[type="checkbox"]').forEach((el) => {
     el.checked = !!val;
   });
+  dirty = true;
 }
 
 async function salvar() {
@@ -470,9 +574,15 @@ async function salvar() {
   persistDraft();
   setStatus("Salvando no Firestore...", "load");
   try {
-    await salvarAcessosPerfis(estado);
-    setStatus("Acessos salvos. Valem na próxima abertura da home.", "ok");
+    estado = await salvarAcessosPerfis(estado);
+    dirty = false;
+    setStatus("Acessos salvos com sucesso.", "ok");
+    mostrarSalvo();
     atualizarMetaUsuario();
+    document.querySelectorAll("#btnSalvarPerfis, #btnSalvarPerfis2").forEach((btn) => {
+      btn.classList.add("is-saved");
+      setTimeout(() => btn.classList.remove("is-saved"), 900);
+    });
   } catch (err) {
     setStatus(err.message || "Falha ao salvar no Firestore.", "erro");
   }
@@ -482,8 +592,23 @@ function limparUsuario() {
   const email = normalizarEmailKey(usuarioAtual);
   if (!email) return;
   delete estado.usuarios[email];
-  renderModulos();
+  dirty = true;
+  renderModulos({ syncAnim: true });
   setStatus("Usuário voltará a herdar o perfil ao salvar.", "ok");
+}
+
+function trocarPerfil(novo) {
+  if (dirty) persistDraft();
+  perfilAtual = novo;
+  dirty = false;
+  renderModulos({ syncAnim: true });
+}
+
+function trocarUsuario(novo) {
+  if (dirty) persistDraft();
+  usuarioAtual = novo;
+  dirty = false;
+  renderModulos({ syncAnim: true });
 }
 
 async function carregarUsuarios() {
@@ -516,30 +641,22 @@ async function iniciar() {
   }
   document.getElementById("adminNegado").style.display = "none";
   setStatus("Carregando perfis e usuários...", "load");
-  estado = await carregarAcessosPerfis();
-  if (!estado.usuarios) estado.usuarios = {};
-  if (!estado.acessos) estado.acessos = defaultsAcessos();
+  estado = normalizarEstado(await carregarAcessosPerfis());
   renderPerfilSelect();
   await carregarUsuarios();
-  renderModulos();
-  setStatus("Pronto. Edite por perfil ou por usuário e salve.", "ok");
+  renderModulos({ syncAnim: true });
+  setStatus("Pronto. Selecione um perfil ou usuário — os acessos já vêm marcados.", "ok");
 }
 
 document.getElementById("tabPerfil").addEventListener("click", () => setModo("perfil"));
 document.getElementById("tabUsuario").addEventListener("click", () => setModo("usuario"));
-perfilSelect.addEventListener("change", () => {
-  persistDraft();
-  perfilAtual = perfilSelect.value;
-  renderModulos();
-});
-usuarioSelect.addEventListener("change", () => {
-  persistDraft();
-  usuarioAtual = usuarioSelect.value;
-  renderModulos();
-});
+perfilSelect.addEventListener("change", () => trocarPerfil(perfilSelect.value));
+usuarioSelect.addEventListener("change", () => trocarUsuario(usuarioSelect.value));
 usuarioBusca.addEventListener("input", () => {
+  const antes = usuarioAtual;
   renderUsuarioSelect();
-  renderModulos();
+  if (usuarioAtual !== antes) trocarUsuario(usuarioAtual);
+  else renderModulos({ syncAnim: false });
 });
 document.getElementById("btnMarcarTodos").addEventListener("click", () => marcarTodos(true));
 document.getElementById("btnDesmarcarTodos").addEventListener("click", () => marcarTodos(false));

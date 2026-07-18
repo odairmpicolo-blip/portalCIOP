@@ -13,7 +13,7 @@ import {
 import { app, buscarUsuarioFirestore, normalizarCadastro } from "./portal-firestore.js";
 import { usuarios } from "./usuarios.js";
 import { aplicarSaudacaoHero } from "./portal-saudacao.js?v=20260704a";
-import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260718aa";
+import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260718ac";
 
 const auth = getAuth(app);
 
