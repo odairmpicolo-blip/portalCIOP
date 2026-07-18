@@ -128,30 +128,57 @@ body{
   text-transform:uppercase;
 }
 
-/* CAPA DO AUTO — igual Excel: título | número */
+/* CAPA DO AUTO — igual Excel: título | número (sempre lado a lado) */
 .sheet-capa{
   display:grid;
-  grid-template-columns:minmax(180px,28%) minmax(0,1fr);
+  grid-template-columns:minmax(160px,26%) minmax(0,1fr);
   border-bottom:2px solid var(--sheet-line);
-  min-height:56px;
+  min-height:52px;
 }
 .sheet-capa-title{
   display:flex;align-items:center;justify-content:center;
   border-right:2px solid var(--sheet-line);
   background:#f7f8fa;
-  padding:10px 12px;
-  font-size:18px;font-weight:900;letter-spacing:.04em;color:#0b1b3f;
+  padding:8px 10px;
+  font-size:clamp(13px,1.6vw,18px);font-weight:900;letter-spacing:.04em;color:#0b1b3f;
   text-transform:uppercase;
 }
 .sheet-capa-numero{
-  display:flex;align-items:center;padding:8px 12px;background:#fff;
+  display:flex;align-items:center;padding:8px 12px;background:#fff;min-width:0;
 }
 .sheet-capa-numero input{
   width:100%;border:0;outline:0;background:transparent;
-  font-size:clamp(14px,1.7vw,18px);font-weight:800;color:#06245c;
+  font-size:clamp(12px,1.5vw,17px);font-weight:800;color:#06245c;
   letter-spacing:.01em;font-family:Arial,Helvetica,sans-serif;
 }
 .sheet-capa-numero input::placeholder{color:#94a3b8;font-weight:700}
+
+/* Notificação (capa) + Auto lado a lado — como no Excel */
+.sheet-docs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:0;
+  border-bottom:1px solid #ddd;
+  background:#f3f5f8;
+  min-height:280px;
+}
+.sheet-docs-pane{
+  min-width:0;padding:8px;display:flex;flex-direction:column;gap:6px;
+  border-right:1px solid #d5deee;
+}
+.sheet-docs-pane:last-child{border-right:0}
+.sheet-docs-pane label{
+  font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em;
+}
+.sheet-docs-pane img{
+  width:100%;height:auto;max-height:420px;object-fit:contain;
+  background:#fff;border:1px solid #c9d0dc;
+}
+.sheet-docs-empty{
+  flex:1;min-height:240px;display:grid;place-items:center;
+  border:1.5px dashed #c9d4e5;background:#fff;color:#94a3b8;
+  font-size:12px;font-weight:700;text-align:center;padding:12px;
+}
 
 .sheet-gallery-wrap{padding:10px 12px;border-bottom:1px solid #ddd}
 .drop-images{
@@ -186,7 +213,6 @@ body{
 .field.span-3{grid-column:span 3}
 .field.span-4{grid-column:span 4}
 .obs-row{margin-top:8px}
-.sign-row{display:grid;grid-template-columns:1fr 90px;gap:8px;margin-top:16px;max-width:340px;margin-left:auto}
 
 .modal{position:fixed;inset:0;background:rgba(24,24,42,.5);display:grid;place-items:center;padding:16px;z-index:50;backdrop-filter:blur(6px)}
 .modal[hidden]{display:none!important}
@@ -216,10 +242,12 @@ body{
 .preview-sheet .sheet-grid div{border:1px solid #dfe5ef;padding:6px 8px}
 .preview-sheet .sheet-grid .span-2{grid-column:span 2}
 .preview-sheet .sheet-grid span{display:block;font-size:10px;color:#667085;font-weight:700;text-transform:uppercase}
-.preview-sheet .sheet-obs{padding:0 14px;font-size:12px;font-weight:700}
-.preview-sheet .sheet-sign{display:flex;justify-content:flex-end;padding:16px 14px 20px}
-.preview-sheet .sign-name{font-weight:800}
-.preview-sheet .sign-code{font-size:12px;color:#667085}
+.preview-sheet .sheet-obs{padding:0 14px 16px;font-size:12px;font-weight:700}
+.preview-sheet .sheet-docs{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid #ddd;background:#f3f5f8}
+.preview-sheet .sheet-docs-pane{padding:8px;border-right:1px solid #d5deee}
+.preview-sheet .sheet-docs-pane:last-child{border-right:0}
+.preview-sheet .sheet-docs-pane label{display:block;font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:4px}
+.preview-sheet .sheet-docs-pane img{width:100%;border:1px solid #c9d0dc;background:#fff}
 
 footer.portal-site-footer{
   flex:0 0 auto;background:var(--glass-bg);backdrop-filter:blur(14px);
@@ -247,8 +275,8 @@ footer.portal-site-footer .footer-text{color:#3f4757;font-size:11px}
   .field.span-2,.field.span-3,.field.span-4{grid-column:span 1}
   .header{grid-template-columns:1fr;text-align:center}
   .header-actions{justify-self:center}
-  .sheet-capa{grid-template-columns:1fr}
-  .sheet-capa-title{border-right:0;border-bottom:2px solid var(--sheet-line)}
+  .sheet-docs{min-height:200px}
+  .sheet-docs-pane img{max-height:280px}
 }
 </style>
 <link rel="stylesheet" href="../assets/css/portal-brand.css">
@@ -314,7 +342,7 @@ footer.portal-site-footer .footer-text{color:#3f4757;font-size:11px}
   <section class="panel editor">
     <div class="editor-toolbar">
       <h2 id="sheetTitle">Ficha de evidência</h2>
-      <span class="status-line">Layout igual Excel · capa + número do auto</span>
+      <span class="status-line">Layout Excel · capa + auto lado a lado</span>
     </div>
 
     <div class="editor-scroll">
@@ -332,7 +360,7 @@ footer.portal-site-footer .footer-text{color:#3f4757;font-size:11px}
             <img src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
           </div>
 
-          <!-- CAPA DO AUTO (título + número) -->
+          <!-- CAPA: título | número (sempre lado a lado, como Excel A32|E32) -->
           <div class="sheet-capa" aria-label="Capa do auto">
             <div class="sheet-capa-title">Auto de Infração</div>
             <div class="sheet-capa-numero">
@@ -341,6 +369,18 @@ footer.portal-site-footer .footer-text{color:#3f4757;font-size:11px}
                 placeholder="31841/2026-M0000056 - 1666-24- ART.089.01/10"
                 autocomplete="off"
               >
+            </div>
+          </div>
+
+          <!-- Notificação (capa) + Auto CMTU lado a lado -->
+          <div class="sheet-docs" id="sheetDocs" aria-label="Capa e auto lado a lado">
+            <div class="sheet-docs-pane">
+              <label>Capa / Notificação</label>
+              <div id="paneNotif" class="sheet-docs-empty">Importe o PDF da CMTU para ver a capa</div>
+            </div>
+            <div class="sheet-docs-pane">
+              <label>Auto</label>
+              <div id="paneAuto" class="sheet-docs-empty">Página do auto</div>
             </div>
           </div>
 
@@ -383,11 +423,6 @@ footer.portal-site-footer .footer-text{color:#3f4757;font-size:11px}
               <label>Observação</label>
               <input id="fObs">
             </div>
-
-            <div class="sign-row">
-              <div class="field"><label>Assinatura</label><input id="fAssinaturaNome"></div>
-              <div class="field"><label>Cód.</label><input id="fAssinaturaCodigo"></div>
-            </div>
           </div>
         </article>
       </div>
@@ -417,7 +452,7 @@ footer.portal-site-footer .footer-text{color:#3f4757;font-size:11px}
   </div>
 </div>
 
-<script src="../assets/js/veiculos-placa-data.js?v=20260717c"></script>
-<script type="module" src="../assets/js/evidencias-autuacoes.js?v=20260717c"></script>
+<script src="../assets/js/veiculos-placa-data.js?v=20260717d"></script>
+<script type="module" src="../assets/js/evidencias-autuacoes.js?v=20260717d"></script>
 </body>
 </html>

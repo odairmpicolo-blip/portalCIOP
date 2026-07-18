@@ -9,7 +9,6 @@ const DB_VERSION = 1;
 const STORE = "autos";
 const OBS_PADRAO =
   "OBS: Existe uma solicitação de alteração da tabela horária para o próximo cenário.";
-const ASSINATURA_PADRAO = { nome: "emerson borges de medeiros", codigo: "42" };
 
 const FILE_RE =
   /^(\d{2}\.\d{2}\.\d{4})\s*-\s*(.+?)\s*-\s*Carro\s+(\S+)\s*-\s*Linha\s+(\S+)\s*-\s*Mot\s+(\S+)/i;
@@ -244,8 +243,6 @@ function blankAuto(extra = {}) {
     texto2: "",
     texto3: "",
     obs: OBS_PADRAO,
-    assinaturaNome: ASSINATURA_PADRAO.nome,
-    assinaturaCodigo: ASSINATURA_PADRAO.codigo,
     imagens: [],
     paginaAuto: "",
     paginaNotif: "",
@@ -381,7 +378,7 @@ async function importNotificationPdf(file, onProgress) {
         motivo: hints.motivo,
         paginaNotif,
         paginaAuto,
-        imagens: paginaAuto ? [{ id: uid(), dataUrl: paginaAuto, tipo: "auto-cmtu" }] : []
+        imagens: []
       })
     );
     if (item.carro && item.motivo && !item.texto1) {
@@ -411,7 +408,7 @@ async function importEvidencePdf(file) {
       linha: parsed.linha || "",
       matricula: parsed.matricula || "",
       paginaAuto: first,
-      imagens: [{ id: uid(), dataUrl: first, tipo: "evidencia-pdf" }]
+      imagens: []
     })
   );
   if (item.carro && item.motivo && !item.texto1) {
@@ -467,8 +464,6 @@ function readFormInto(auto) {
   auto.texto2 = $("fTexto2").value.trim();
   auto.texto3 = $("fTexto3").value.trim();
   auto.obs = $("fObs").value.trim();
-  auto.assinaturaNome = $("fAssinaturaNome").value.trim();
-  auto.assinaturaCodigo = $("fAssinaturaCodigo").value.trim();
   auto.status = computeStatus(auto);
   auto.atualizadoEm = new Date().toISOString();
   dirty = true;
@@ -489,9 +484,8 @@ function fillForm(auto) {
   $("fTexto2").value = auto.texto2 || "";
   $("fTexto3").value = auto.texto3 || "";
   $("fObs").value = auto.obs || OBS_PADRAO;
-  $("fAssinaturaNome").value = auto.assinaturaNome || ASSINATURA_PADRAO.nome;
-  $("fAssinaturaCodigo").value = auto.assinaturaCodigo || ASSINATURA_PADRAO.codigo;
   dirty = false;
+  renderDocsPanes(auto);
   renderImageGrid(auto);
   $("editorEmpty").hidden = true;
   $("editorPanel").hidden = false;
@@ -501,10 +495,33 @@ function fillForm(auto) {
     : "Nova evidência";
 }
 
+function renderDocsPanes(auto) {
+  const notifEl = $("paneNotif");
+  const autoEl = $("paneAuto");
+  if (!notifEl || !autoEl) return;
+
+  // Rascunhos antigos: auto-cmtu na galeria vira painel do auto
+  if (!auto.paginaAuto) {
+    const legacy = (auto.imagens || []).find((i) => i.tipo === "auto-cmtu");
+    if (legacy) auto.paginaAuto = legacy.dataUrl;
+  }
+
+  notifEl.outerHTML = auto.paginaNotif
+    ? `<img id="paneNotif" src="${auto.paginaNotif}" alt="Capa / Notificação">`
+    : `<div id="paneNotif" class="sheet-docs-empty">Importe o PDF da CMTU para ver a capa</div>`;
+  autoEl.outerHTML = auto.paginaAuto
+    ? `<img id="paneAuto" src="${auto.paginaAuto}" alt="Auto">`
+    : `<div id="paneAuto" class="sheet-docs-empty">Página do auto</div>`;
+}
+
+function evidenciasSomente(auto) {
+  return (auto.imagens || []).filter((i) => i.tipo !== "auto-cmtu" && i.tipo !== "notif-cmtu");
+}
+
 function renderImageGrid(auto) {
   const grid = $("imageGrid");
   grid.innerHTML = "";
-  (auto.imagens || []).forEach((img, idx) => {
+  evidenciasSomente(auto).forEach((img, idx) => {
     const card = document.createElement("div");
     card.className = "img-card";
     card.innerHTML = `
@@ -619,9 +636,15 @@ function readFileAsDataUrl(file) {
 }
 
 function buildSheetHtml(auto) {
-  const imgs = (auto.imagens || [])
+  const imgs = evidenciasSomente(auto)
     .map((img) => `<img src="${img.dataUrl}" alt="Evidência">`)
     .join("");
+  const notif = auto.paginaNotif
+    ? `<img src="${auto.paginaNotif}" alt="Capa">`
+    : `<div class="sheet-docs-empty">Sem capa</div>`;
+  const autoPage = auto.paginaAuto
+    ? `<img src="${auto.paginaAuto}" alt="Auto">`
+    : `<div class="sheet-docs-empty">Sem auto</div>`;
   return `
     <article class="sheet-a4">
       <div class="sheet-brand">
@@ -635,6 +658,10 @@ function buildSheetHtml(auto) {
           <div class="sheet-capa-numero-text">${escapeHtml(auto.autoNumero) || "—"}</div>
         </div>
       </div>
+      <section class="sheet-docs">
+        <div class="sheet-docs-pane"><label>Capa / Notificação</label>${notif}</div>
+        <div class="sheet-docs-pane"><label>Auto</label>${autoPage}</div>
+      </section>
       <section class="sheet-gallery ${imgs ? "" : "is-empty"}">
         ${imgs || "<div class='sheet-gallery-empty'>Área de evidências (imagens)</div>"}
       </section>
@@ -655,12 +682,6 @@ function buildSheetHtml(auto) {
         <div class="span-2"><span>Motivo</span><b>${escapeHtml(auto.motivo)}</b></div>
       </section>
       <p class="sheet-obs">${escapeHtml(auto.obs)}</p>
-      <footer class="sheet-sign">
-        <div>
-          <div class="sign-name">${escapeHtml(auto.assinaturaNome)}</div>
-          <div class="sign-code">${escapeHtml(auto.assinaturaCodigo)}</div>
-        </div>
-      </footer>
     </article>
   `;
 }
@@ -702,13 +723,19 @@ function printPreview() {
       .sheet-brand{display:grid;grid-template-columns:90px 1fr 90px;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid #ddd}
       .sheet-brand img{height:48px;object-fit:contain;justify-self:center}
       .sheet-org{text-align:center;font-weight:800;color:#06245c;font-size:13px;text-transform:uppercase}
-      .sheet-capa{display:grid;grid-template-columns:28% 1fr;border-bottom:2px solid #1a1a1a;min-height:52px}
-      .sheet-capa-title{display:flex;align-items:center;justify-content:center;border-right:2px solid #1a1a1a;background:#f7f8fa;font-size:16px;font-weight:900;text-transform:uppercase;color:#0b1b3f;padding:10px}
+      .sheet-capa{display:grid;grid-template-columns:26% 1fr;border-bottom:2px solid #1a1a1a;min-height:48px}
+      .sheet-capa-title{display:flex;align-items:center;justify-content:center;border-right:2px solid #1a1a1a;background:#f7f8fa;font-size:15px;font-weight:900;text-transform:uppercase;color:#0b1b3f;padding:8px}
       .sheet-capa-numero{display:flex;align-items:center;padding:8px 12px}
-      .sheet-capa-numero-text{font-size:16px;font-weight:800;color:#06245c}
-      .sheet-gallery{margin:10px 12px;min-height:220px;border:1px dashed #c9d4e5;padding:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+      .sheet-capa-numero-text{font-size:15px;font-weight:800;color:#06245c}
+      .sheet-docs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #ddd;background:#f3f5f8}
+      .sheet-docs-pane{padding:6px;border-right:1px solid #d5deee}
+      .sheet-docs-pane:last-child{border-right:0}
+      .sheet-docs-pane label{display:block;font-size:9px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:4px}
+      .sheet-docs-pane img{width:100%;border:1px solid #c9d0dc;background:#fff}
+      .sheet-docs-empty{min-height:180px;display:grid;place-items:center;border:1px dashed #c9d4e5;background:#fff;color:#94a3b8;font-size:11px;font-weight:700}
+      .sheet-gallery{margin:10px 12px;min-height:160px;border:1px dashed #c9d4e5;padding:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
       .sheet-gallery img{width:100%;border:1px solid #dfe5ef}
-      .sheet-gallery-empty{display:grid;place-items:center;color:#667085;min-height:200px}
+      .sheet-gallery-empty{display:grid;place-items:center;color:#667085;min-height:120px}
       .sheet-text{padding:0 14px}
       .sheet-text p{margin:0 0 8px;font-size:13px;line-height:1.45}
       .sheet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px 14px}
@@ -716,10 +743,7 @@ function printPreview() {
       .sheet-grid .span-2{grid-column:span 2}
       .sheet-grid span{display:block;font-size:10px;color:#667085;font-weight:700;text-transform:uppercase}
       .sheet-grid b{font-size:13px}
-      .sheet-obs{padding:0 14px;font-size:12px;font-weight:700}
-      .sheet-sign{display:flex;justify-content:flex-end;padding:20px 14px}
-      .sign-name{font-weight:800}
-      .sign-code{font-size:12px;color:#667085}
+      .sheet-obs{padding:0 14px 16px;font-size:12px;font-weight:700}
     </style></head><body>${buildSheetHtml(auto)}</body></html>`);
   win.document.close();
   win.focus();
@@ -845,9 +869,7 @@ function bindFormDirty() {
     "fTexto1",
     "fTexto2",
     "fTexto3",
-    "fObs",
-    "fAssinaturaNome",
-    "fAssinaturaCodigo"
+    "fObs"
   ].forEach((id) => {
     $(id).addEventListener("input", () => {
       dirty = true;
