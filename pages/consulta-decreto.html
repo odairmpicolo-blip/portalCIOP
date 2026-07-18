@@ -21,7 +21,227 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
 .page-title-art img{display:block;width:min(340px,30vw);height:40px;max-height:40px;object-fit:contain}
 .title-wrap .subtitle{margin-top:4px;text-align:center;font-size:13px;color:var(--blue);font-weight:800;letter-spacing:0;text-transform:uppercase}
 .header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
-/* session container: portal-session.css?v=20260718f'../assets/img/portal-bg-onibus.jpg?v=20260716a');
+/* session container: portal-session.css?v=20260718e */
+/* session user styles: portal-session.css?v=20260718e */
+/* session profile styles: portal-session.css?v=20260718e */
+/* session logout: portal-session.css?v=20260718e */
+.container{max-width:min(1680px,96vw);margin:24px auto 40px;padding:0 20px;flex:1;width:100%;display:flex;flex-direction:column}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.btn-portal{display:inline-flex;align-items:center;gap:8px;min-height:44px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;background:var(--blue);color:#fff}
+.btn-portal:hover{background:var(--blue2)}
+.btn-icon{display:inline-flex;width:16px;height:16px;flex:0 0 auto}
+.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.ai-console{
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(160deg,#0a0f2e 0%,#111a4d 48%,#0c1638 100%);
+  border-radius:28px;
+  padding:42px 46px;
+  margin-bottom:22px;
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:0 32px 64px -30px rgba(6,10,35,.6);
+  color:#fff;
+  isolation:isolate;
+  display:flex;
+  flex-direction:column;
+  flex:1;
+  min-height:420px;
+}
+.ai-console-glow-a,.ai-console-glow-b{position:absolute;border-radius:50%;pointer-events:none;z-index:-1;filter:blur(6px)}
+.ai-console-glow-a{width:440px;height:440px;background:radial-gradient(circle,rgba(59,130,246,.35),transparent 70%);top:-160px;right:-140px}
+.ai-console-glow-b{width:360px;height:360px;background:radial-gradient(circle,rgba(255,107,0,.22),transparent 70%);bottom:-160px;left:-100px}
+.ai-console-grid{position:absolute;inset:0;z-index:-1;opacity:.35;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:34px 34px;-webkit-mask-image:radial-gradient(ellipse 60% 70% at 30% 20%,#000 0%,transparent 75%);mask-image:radial-gradient(ellipse 60% 70% at 30% 20%,#000 0%,transparent 75%)}
+
+.ai-console-badge{display:inline-flex;align-items:center;gap:8px;padding:7px 14px 7px 10px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#a9d6ff;margin-bottom:20px}
+.ai-pulse{width:8px;height:8px;border-radius:50%;background:#34d399;flex:0 0 auto;animation:aiPulse 1.8s infinite}
+@keyframes aiPulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.55)}70%{box-shadow:0 0 0 9px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+
+.ai-console-title{font-size:30px;font-weight:900;line-height:1.22;margin:0 0 12px;max-width:600px;background:linear-gradient(90deg,#ffffff 20%,#bcd4ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ai-console-desc{margin:0 0 28px;color:rgba(255,255,255,.62);font-size:14.5px;line-height:1.65;max-width:540px;font-weight:500}
+
+.ai-console-body{display:flex;flex-direction:column;gap:16px;flex:1;min-height:0}
+
+.ai-chat{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:20px 20px 18px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;flex-direction:column;flex:1;min-height:0}
+.ai-chat-topbar{display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.08)}
+.ai-chat-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18)}
+.ai-chat-topbar span{font-size:11px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em;margin-left:4px}
+.ai-chat-log{display:flex;flex-direction:column;gap:10px;flex:1;min-height:220px;overflow-y:auto;padding-right:4px;margin-bottom:16px;scroll-behavior:smooth}
+.ai-chat-log::-webkit-scrollbar{width:6px}
+.ai-chat-log::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:99px}
+.ai-chat-msg{font-size:13.5px;line-height:1.55;padding:11px 15px;border-radius:14px;max-width:88%;white-space:pre-wrap}
+.ai-chat-user{align-self:flex-end;background:rgba(59,130,246,.18);color:#e3edff;border:1px solid rgba(59,130,246,.3);border-bottom-right-radius:4px}
+.ai-chat-bot{align-self:flex-start;display:flex;gap:10px;align-items:flex-start;background:rgba(255,255,255,.055);color:rgba(255,255,255,.86);border:1px solid rgba(255,255,255,.1);border-bottom-left-radius:4px;max-width:92%}
+.ai-chat-bot.ai-chat-error{background:rgba(220,38,38,.12);border-color:rgba(248,113,113,.35);color:#fecaca}
+.ai-chat-content{white-space:normal;min-width:0}
+.ai-chat-content p{margin:0 0 8px}
+.ai-chat-content p:last-child{margin-bottom:0}
+.ai-chat-content ul{margin:0 0 8px;padding-left:18px}
+.ai-chat-content ul:last-child{margin-bottom:0}
+.ai-chat-content li{margin-bottom:4px}
+.ai-chat-content strong{color:#fff;font-weight:800}
+.ai-chat-content em{font-style:italic}
+.ai-chat-content blockquote{margin:0 0 8px;padding:8px 12px;border-left:3px solid rgba(255,255,255,.25);background:rgba(255,255,255,.05);border-radius:0 8px 8px 0;font-style:italic;color:rgba(255,255,255,.78)}
+.ai-chat-content blockquote:last-child{margin-bottom:0}
+.ai-chat-avatar{flex:0 0 auto;width:22px;height:22px;margin-top:1px;border-radius:7px;background:linear-gradient(135deg,var(--ai-1),var(--ai-2));display:flex;align-items:center;justify-content:center}
+.ai-chat-avatar svg{width:12px;height:12px;fill:#fff}
+.ai-chat-typing{display:inline-flex;gap:4px;align-items:center;padding:2px 0}
+.ai-chat-typing span{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.6);animation:aiTyping 1s infinite ease-in-out}
+.ai-chat-typing span:nth-child(2){animation-delay:.15s}
+.ai-chat-typing span:nth-child(3){animation-delay:.3s}
+@keyframes aiTyping{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+
+.ai-chat-form{display:flex;gap:10px;align-items:center}
+.ai-chat-input{flex:1;min-height:48px;padding:0 16px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#fff;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s ease,background .2s ease}
+.ai-chat-input::placeholder{color:rgba(255,255,255,.38)}
+.ai-chat-input:focus{border-color:rgba(59,130,246,.6);background:rgba(255,255,255,.09)}
+.ai-chat-send{flex:0 0 auto;width:48px;height:48px;border-radius:14px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--ai-1),var(--ai-2));color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 28px -14px rgba(59,130,246,.6);transition:transform .2s ease,box-shadow .2s ease,background .2s ease}
+.ai-chat-send:hover{transform:translateY(-2px);background:linear-gradient(135deg,var(--orange),var(--ai-2));box-shadow:0 18px 32px -14px rgba(255,107,0,.5)}
+.ai-chat-send:disabled{opacity:.5;cursor:default;transform:none}
+.ai-chat-send svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ai-console-hint{display:flex;align-items:flex-start;gap:8px;font-size:11.5px;line-height:1.55;color:rgba(255,255,255,.4);font-weight:600;margin:12px 0 0}
+.ai-console-hint svg{width:14px;height:14px;flex:0 0 auto;margin-top:2px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.ai-features{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.ai-feature{display:flex;align-items:center;gap:12px;background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:0 10px 26px rgba(16,24,40,.05)}
+.ai-feature-icon{flex:0 0 auto;width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef2ff,#e0e7ff);color:var(--ai-2)}
+.ai-feature-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.ai-feature-text{min-width:0}
+.ai-feature-text strong{display:block;font-size:12.5px;font-weight:800;color:var(--blue);margin-bottom:2px}
+.ai-feature-text span{display:block;font-size:11.5px;color:var(--muted);font-weight:600;line-height:1.4}
+
+.page-footer{padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-top:1px solid var(--border);background:var(--white)}
+@media(max-width:720px){.header{grid-template-columns:1fr;text-align:center}}
+@media (max-width: 720px) {
+  body { background: linear-gradient(180deg, #f5f7fb 0%, #eef2f9 100%) !important; }
+  .header {
+    position: sticky; top: 0; z-index: 20;
+    padding-top: calc(10px + env(safe-area-inset-top)) !important;
+    padding-left: calc(14px + env(safe-area-inset-left)) !important;
+    padding-right: calc(14px + env(safe-area-inset-right)) !important;
+    background: rgba(255,255,255,.92) !important;
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    box-shadow: 0 6px 18px rgba(6,36,92,.08) !important;
+  }
+  .container { padding: 0 14px !important; margin: 16px auto 28px !important; }
+  .ai-console { border-radius: 22px !important; padding: 26px 22px !important; }
+  .ai-console-title{font-size:23px !important}
+  .ai-chat-log{min-height:260px !important;max-height:55vh !important}
+  .ai-features{grid-template-columns:1fr !important;gap:10px !important}
+  .btn-portal { min-height: 44px !important; border-radius: 12px !important; }
+}
+/* Fim modernizacao iPhone */
+
+/* ===== Redesign iOS26 Liquid Glass (mobile/app nativo) =====
+   Suporta escuro (padrão) e claro (html.native-light), sincronizado
+   pelo shell nativo. Fontes ampliadas para leitura confortável. */
+@media (max-width:720px){
+  .body-bg-wall,
+  .body-bg-stain{
+    display:none !important;
+  }
+  :root{
+    --jewel-1:#7a5cff;
+    --jewel-2:#c04fd6;
+    --jewel-shadow:0 10px 26px -8px rgba(122,92,255,.65);
+
+    --glass-bg:rgba(255,255,255,.08);
+    --glass-bg-strong:rgba(255,255,255,.13);
+    --glass-border:rgba(255,255,255,.16);
+    --glass-blur:blur(30px) saturate(180%);
+    --glass-shadow:0 20px 40px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18);
+
+    --ink:#fff;
+    --ink-soft:rgba(255,255,255,.6);
+    --ink-faint:rgba(255,255,255,.48);
+  }
+
+  html.native-light{
+    --glass-bg:rgba(255,255,255,.6);
+    --glass-bg-strong:rgba(255,255,255,.8);
+    --glass-border:rgba(30,20,70,.10);
+    --glass-shadow:0 16px 34px -16px rgba(40,25,90,.22), inset 0 1px 0 rgba(255,255,255,.75);
+
+    --ink:#18182a;
+    --ink-soft:rgba(24,24,42,.62);
+    --ink-faint:rgba(24,24,42,.5);
+  }
+
+  body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(122,92,255,.4) 0%, transparent 40%),
+      radial-gradient(circle at 90% 15%, rgba(255,110,180,.3) 0%, transparent 38%),
+      radial-gradient(circle at 20% 60%, rgba(60,180,255,.26) 0%, transparent 42%),
+      radial-gradient(circle at 85% 78%, rgba(255,170,60,.2) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
+      #0d0e14 !important;
+    color:var(--ink) !important;
+  }
+  html.native-light body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(122,92,255,.3) 0%, transparent 40%),
+      radial-gradient(circle at 90% 15%, rgba(255,110,180,.24) 0%, transparent 38%),
+      radial-gradient(circle at 20% 60%, rgba(60,180,255,.2) 0%, transparent 42%),
+      radial-gradient(circle at 85% 78%, rgba(255,170,60,.18) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
+      #f2effa !important;
+  }
+
+  .header{display:none !important;}
+
+  .container{
+    max-width:none !important;
+    margin:0 !important;
+    padding:calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-left)) 28px calc(14px + env(safe-area-inset-right)) !important;
+  }
+  html.native-embedded .container{padding-top:14px !important;}
+
+  .toolbar{width:100%;}
+  .btn-portal{
+    width:100% !important;
+    justify-content:center !important;
+    background:linear-gradient(135deg, var(--jewel-1), var(--jewel-2)) !important;
+    box-shadow:var(--jewel-shadow) !important;
+    min-height:46px !important;
+    border-radius:14px !important;
+    font-size:15px !important;
+  }
+
+  .ai-feature{
+    background:var(--glass-bg) !important;
+    backdrop-filter:var(--glass-blur) !important;
+    -webkit-backdrop-filter:var(--glass-blur) !important;
+    border:1px solid var(--glass-border) !important;
+    box-shadow:var(--glass-shadow) !important;
+  }
+  .ai-feature-text strong{color:var(--ink) !important}
+  .ai-feature-text span{color:var(--ink-faint) !important}
+  .ai-feature-icon{background:linear-gradient(135deg, var(--jewel-1), var(--jewel-2)) !important;color:#fff !important}
+  footer.portal-site-footer{
+    display:block !important;
+    background:var(--glass-bg) !important;
+    backdrop-filter:var(--glass-blur) !important;
+    -webkit-backdrop-filter:var(--glass-blur) !important;
+    border:1px solid var(--glass-border) !important;
+    border-radius:16px !important;
+    box-shadow:var(--glass-shadow) !important;
+    margin:16px calc(14px + env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left)) !important;
+    padding:14px !important;
+  }
+  footer.portal-site-footer .footer-text{color:var(--ink-faint) !important}
+}
+
+/* ===== Fundo padrao-parede (tracos azul degrade) + mancha julho + vidro iOS 26 (desktop/portal web) ===== */
+@media (min-width:721px){
+  body{
+    background: transparent !important;
+  }
+  .body-bg-wall{
+    position: fixed;
+    inset: 0;
+    z-index: -3;
+    background-image:url('../assets/img/portal-bg-onibus.jpg?v=20260716a');
     background-size:cover;
     background-position:center;
     background-repeat:no-repeat;
@@ -47,7 +267,36 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
     border: 1px solid rgba(255,255,255,.55) !important;
     box-shadow: 0 14px 32px -20px rgba(20,20,40,.28), inset 0 1px 0 rgba(255,255,255,.5) !important;
   }
-  /* session container: portal-session.css?v=20260718f"stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
+  /* session container: portal-session.css?v=20260718e */
+  .btn-portal{
+    min-height:44px !important;padding:8px 14px !important;border-radius:10px !important;font-size:14px !important;
+    gap:8px !important;font-weight:800 !important;
+    transition: transform .2s ease, background .25s ease, box-shadow .25s ease, color .25s ease !important;
+    background: linear-gradient(135deg, rgba(6,36,92,.85), rgba(11,58,138,.85)) !important;
+    backdrop-filter: blur(14px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(190%) !important;
+    border: 1px solid rgba(255,255,255,.4) !important;
+    box-shadow: 0 10px 24px -14px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.25) !important;
+    color: #fff !important;
+  }
+  .btn-portal:hover{
+    background: linear-gradient(135deg, var(--orange), #ff8f3d) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 14px 28px -12px rgba(255,107,0,.5), inset 0 1px 0 rgba(255,255,255,.35) !important;
+  }
+  footer.portal-site-footer{
+    background:rgba(255,255,255,.42) !important;
+    backdrop-filter: blur(16px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(190%) !important;
+    border-top: 1px solid rgba(255,255,255,.5) !important;
+    box-shadow: 0 -10px 28px -16px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.4) !important;
+  }
+  footer.portal-site-footer .footer-text{
+    color: #3f4757 !important;
+  }
+}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
 <link rel="stylesheet" href="../assets/css/portal-titulos.css">
 <link rel="stylesheet" href="../assets/css/portal-brand.css">
 <link rel="stylesheet" href="../assets/css/portal-header.css">
