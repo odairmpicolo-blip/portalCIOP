@@ -1,132 +1,227 @@
-/* Portal CIOP — vidro desktop mais escuro + contraste de texto
-   Escopo: páginas com .body-bg-wall (foto do ônibus).
-   Carregar por último (após overrides inline / dashboard-kit). */
-@media (min-width: 721px) {
-  body:has(.body-bg-wall) {
-    --portal-glass-panel: rgba(255, 255, 255, 0.42);
-    --portal-glass-frost: rgba(255, 255, 255, 0.72);
-    --portal-glass-border: rgba(255, 255, 255, 0.5);
-    --portal-glass-label: #344054;
-    --portal-glass-muted: #3f4757;
-    --portal-glass-text: #101828;
-    --muted: #3f4757;
-  }
+/* Portal CIOP — Liquid Glass iOS 27 (Control Center)
+   Escopo: home (.bg-wall) e páginas (.body-bg-wall).
+   Carregar por último nas páginas; na home, após os CSS de sessão/header. */
 
-  body:has(.body-bg-wall) .body-bg-stain {
-    background: linear-gradient(
-      180deg,
-      rgba(6, 20, 50, 0.3) 0%,
-      rgba(6, 20, 50, 0.55) 100%
-    ) !important;
-  }
+:root {
+  --lg-fill: rgba(255, 255, 255, 0.28);
+  --lg-fill-strong: rgba(255, 255, 255, 0.42);
+  --lg-fill-hover: rgba(255, 255, 255, 0.38);
+  --lg-blur: blur(40px) saturate(190%);
+  --lg-blur-soft: blur(28px) saturate(180%);
+  --lg-border: rgba(255, 255, 255, 0.42);
+  --lg-edge: 1px solid rgba(255, 255, 255, 0.42);
+  --lg-shadow:
+    0 18px 48px -24px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.12);
+  --lg-text: #0f172a;
+  --lg-label: #334155;
+  --lg-muted: #475569;
 
-  body:has(.body-bg-wall) .header {
-    background: var(--portal-glass-panel) !important;
-    backdrop-filter: blur(20px) saturate(190%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(190%) !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.45) !important;
-    box-shadow:
-      0 12px 30px -16px rgba(6, 20, 50, 0.4),
-      inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
-  }
+  /* aliases usados pela home */
+  --ciop-glass-bg: var(--lg-fill);
+  --ciop-glass-bg-hover: var(--lg-fill-hover);
+  --ciop-glass-blur: var(--lg-blur);
+  --ciop-glass-border: var(--lg-edge);
+  --ciop-glass-shadow: var(--lg-shadow);
+}
 
-  body:has(.body-bg-wall) footer.portal-site-footer {
-    background: var(--portal-glass-panel) !important;
-    backdrop-filter: blur(16px) saturate(190%) !important;
-    -webkit-backdrop-filter: blur(16px) saturate(190%) !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.45) !important;
-    box-shadow:
-      0 -10px 28px -16px rgba(6, 20, 50, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
-  }
+/* Sem mancha azul — wallpaper aparece limpa atrás do vidro */
+body:has(.bg-wall) .bg-blobs,
+body:has(.bg-wall) .bg-blob-mid,
+body:has(.body-bg-wall) .body-bg-stain {
+  display: none !important;
+  background: none !important;
+  opacity: 0 !important;
+}
 
-  body:has(.body-bg-wall) footer.portal-site-footer .footer-text {
-    color: var(--portal-glass-muted) !important;
-  }
+.ciop-liquid-glass,
+body:has(.bg-wall) .header,
+body:has(.bg-wall) .header.header-v2,
+body:has(.bg-wall) .hero-pro-panel,
+body:has(.bg-wall) .ciop-session,
+body:has(.bg-wall) .ciop-session.ciop-session-modern,
+body:has(.bg-wall) .card,
+body:has(.bg-wall) .notice-board,
+body:has(.bg-wall) .notice-item,
+body:has(.bg-wall) .toolbar-whatsapp,
+body:has(.bg-wall) .menu-toggle,
+body:has(.bg-wall) footer.portal-site-footer,
+body:has(.body-bg-wall) .header,
+body:has(.body-bg-wall) .header.header-v2,
+body:has(.body-bg-wall) .ciop-session,
+body:has(.body-bg-wall) .ciop-session.ciop-session-modern,
+body:has(.body-bg-wall) .topbar,
+body:has(.body-bg-wall) .toolbar,
+body:has(.body-bg-wall) .filters-panel,
+body:has(.body-bg-wall) .filters,
+body:has(.body-bg-wall) .filter-bar,
+body:has(.body-bg-wall) .portal-filters-bar,
+body:has(.body-bg-wall) .sidebar.portal-filters-bar,
+body:has(.body-bg-wall) .panel,
+body:has(.body-bg-wall) .kpi,
+body:has(.body-bg-wall) .kpi-card,
+body:has(.body-bg-wall) .stat-card,
+body:has(.body-bg-wall) .empty-page,
+body:has(.body-bg-wall) footer.portal-site-footer {
+  background: var(--lg-fill) !important;
+  backdrop-filter: var(--lg-blur) !important;
+  -webkit-backdrop-filter: var(--lg-blur) !important;
+  border-color: var(--lg-border) !important;
+  box-shadow: var(--lg-shadow) !important;
+  color: var(--lg-text);
+}
 
-  body:has(.body-bg-wall) .topbar,
-  body:has(.body-bg-wall) .toolbar,
-  body:has(.body-bg-wall) .filters-panel,
-  body:has(.body-bg-wall) .filters,
-  body:has(.body-bg-wall) .filter-bar,
-  body:has(.body-bg-wall) .portal-filters-bar,
-  body:has(.body-bg-wall) .sidebar.portal-filters-bar,
-  body:has(.body-bg-wall) .panel,
-  body:has(.body-bg-wall) .kpi,
-  body:has(.body-bg-wall) .kpi-card,
-  body:has(.body-bg-wall) .stat-card,
-  body:has(.body-bg-wall) .empty-page {
-    background: var(--portal-glass-panel) !important;
-    backdrop-filter: blur(16px) saturate(190%) !important;
-    -webkit-backdrop-filter: blur(16px) saturate(190%) !important;
-    border-color: var(--portal-glass-border) !important;
-    box-shadow:
-      0 12px 30px -16px rgba(6, 20, 50, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
-  }
+/* Barras full-bleed (header / footer) */
+body:has(.bg-wall) .header,
+body:has(.bg-wall) .header.header-v2,
+body:has(.body-bg-wall) .header,
+body:has(.body-bg-wall) .header.header-v2 {
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid var(--lg-border) !important;
+}
 
-  /* Gráficos e tabelas: mais foscos para leitura */
-  body:has(.body-bg-wall) .chart-card,
-  body:has(.body-bg-wall) .table-card,
-  body:has(.body-bg-wall) .table-panel,
-  body:has(.body-bg-wall) .telemetria-table-panel,
-  body:has(.body-bg-wall) .telemetria-filters,
-  body:has(.body-bg-wall) .data-table-wrap,
-  body:has(.body-bg-wall) .table-wrap,
-  body:has(.body-bg-wall) .km-content,
-  body:has(.body-bg-wall) .report-panel,
-  body:has(.body-bg-wall) .planilha-wrap,
-  body:has(.body-bg-wall) .grid-panel,
-  body:has(.body-bg-wall) .lista-panel,
-  body:has(.body-bg-wall) .detail-panel,
-  body:has(.body-bg-wall) .content-card,
-  body:has(.body-bg-wall) .main-panel {
-    background: var(--portal-glass-frost) !important;
-    backdrop-filter: blur(18px) saturate(190%) !important;
-    -webkit-backdrop-filter: blur(18px) saturate(190%) !important;
-    border-color: var(--portal-glass-border) !important;
-    box-shadow:
-      0 14px 32px -16px rgba(6, 20, 50, 0.38),
-      inset 0 1px 0 rgba(255, 255, 255, 0.45) !important;
-  }
+body:has(.bg-wall) footer.portal-site-footer,
+body:has(.body-bg-wall) footer.portal-site-footer {
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-radius: 0 !important;
+  border-top: 1px solid var(--lg-border) !important;
+  box-shadow:
+    0 -14px 40px -22px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45) !important;
+}
 
-  body:has(.body-bg-wall) .table-card-header,
-  body:has(.body-bg-wall) thead th,
-  body:has(.body-bg-wall) table.planilha-detalhe th {
-    background: rgba(255, 255, 255, 0.84) !important;
-    color: var(--portal-glass-muted) !important;
-  }
+body:has(.bg-wall) footer.portal-site-footer .footer-text,
+body:has(.body-bg-wall) footer.portal-site-footer .footer-text {
+  color: var(--lg-muted) !important;
+}
 
-  /* Textos: evitar cinza apagado sobre o vidro */
-  body:has(.body-bg-wall) .kpi-label,
-  body:has(.body-bg-wall) .kpi-title,
-  body:has(.body-bg-wall) .kpi-sub,
-  body:has(.body-bg-wall) .kpi-card .lbl,
-  body:has(.body-bg-wall) .stat-card .lbl,
-  body:has(.body-bg-wall) .card-note,
-  body:has(.body-bg-wall) .chart-note,
-  body:has(.body-bg-wall) .chart-total,
-  body:has(.body-bg-wall) .field label,
-  body:has(.body-bg-wall) .status-line,
-  body:has(.body-bg-wall) .header-subtitle,
-  body:has(.body-bg-wall) .subtitle,
-  body:has(.body-bg-wall) .pdf-status,
-  body:has(.body-bg-wall) .title-wrap .title-sub,
-  body:has(.body-bg-wall) .no-data,
-  body:has(.body-bg-wall) .empty,
-  body:has(.body-bg-wall) .chart-empty,
-  body:has(.body-bg-wall) .muted,
-  body:has(.body-bg-wall) .help-text {
-    color: var(--portal-glass-label) !important;
-  }
+/* Pílulas / cards arredondados */
+body:has(.bg-wall) .hero-pro-panel,
+body:has(.bg-wall) .card,
+body:has(.bg-wall) .notice-board,
+body:has(.body-bg-wall) .panel,
+body:has(.body-bg-wall) .kpi-card,
+body:has(.body-bg-wall) .stat-card,
+body:has(.body-bg-wall) .topbar {
+  border: var(--lg-edge) !important;
+  border-radius: 22px !important;
+}
 
-  body:has(.body-bg-wall) .kpi-value,
-  body:has(.body-bg-wall) .stat-card .val,
-  body:has(.body-bg-wall) .kpi-card .val {
-    color: var(--portal-glass-text) !important;
-  }
+body:has(.bg-wall) .ciop-session,
+body:has(.bg-wall) .ciop-session.ciop-session-modern,
+body:has(.body-bg-wall) .ciop-session,
+body:has(.body-bg-wall) .ciop-session.ciop-session-modern {
+  border: var(--lg-edge) !important;
+  border-radius: 999px !important;
+}
 
-  body:has(.body-bg-wall) .btn-secondary {
-    background: rgba(255, 255, 255, 0.5) !important;
+body:has(.bg-wall) .menu-toggle {
+  border: var(--lg-edge) !important;
+  border-radius: 18px !important;
+}
+
+body:has(.bg-wall) .card:hover,
+body:has(.bg-wall) .card:focus-visible {
+  background: var(--lg-fill-hover) !important;
+}
+
+/* Painéis densos (tabelas/gráficos): um pouco mais foscos para leitura */
+body:has(.body-bg-wall) .chart-card,
+body:has(.body-bg-wall) .table-card,
+body:has(.body-bg-wall) .table-panel,
+body:has(.body-bg-wall) .telemetria-table-panel,
+body:has(.body-bg-wall) .telemetria-filters,
+body:has(.body-bg-wall) .data-table-wrap,
+body:has(.body-bg-wall) .table-wrap,
+body:has(.body-bg-wall) .km-content,
+body:has(.body-bg-wall) .report-panel,
+body:has(.body-bg-wall) .planilha-wrap,
+body:has(.body-bg-wall) .grid-panel,
+body:has(.body-bg-wall) .lista-panel,
+body:has(.body-bg-wall) .detail-panel,
+body:has(.body-bg-wall) .content-card,
+body:has(.body-bg-wall) .main-panel {
+  background: var(--lg-fill-strong) !important;
+  backdrop-filter: var(--lg-blur-soft) !important;
+  -webkit-backdrop-filter: var(--lg-blur-soft) !important;
+  border: var(--lg-edge) !important;
+  box-shadow: var(--lg-shadow) !important;
+  border-radius: 20px !important;
+}
+
+body:has(.body-bg-wall) .table-card-header,
+body:has(.body-bg-wall) thead th,
+body:has(.body-bg-wall) table.planilha-detalhe th {
+  background: rgba(255, 255, 255, 0.55) !important;
+  color: var(--lg-label) !important;
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+}
+
+/* Tipografia sobre vidro */
+body:has(.bg-wall) .card-title,
+body:has(.bg-wall) .card-desc,
+body:has(.body-bg-wall) .kpi-label,
+body:has(.body-bg-wall) .kpi-title,
+body:has(.body-bg-wall) .kpi-sub,
+body:has(.body-bg-wall) .kpi-card .lbl,
+body:has(.body-bg-wall) .stat-card .lbl,
+body:has(.body-bg-wall) .card-note,
+body:has(.body-bg-wall) .chart-note,
+body:has(.body-bg-wall) .chart-total,
+body:has(.body-bg-wall) .field label,
+body:has(.body-bg-wall) .status-line,
+body:has(.body-bg-wall) .header-subtitle,
+body:has(.body-bg-wall) .subtitle,
+body:has(.body-bg-wall) .pdf-status,
+body:has(.body-bg-wall) .title-wrap .title-sub,
+body:has(.body-bg-wall) .no-data,
+body:has(.body-bg-wall) .empty,
+body:has(.body-bg-wall) .chart-empty,
+body:has(.body-bg-wall) .muted,
+body:has(.body-bg-wall) .help-text {
+  color: var(--lg-label) !important;
+}
+
+body:has(.bg-wall) .card-title {
+  color: var(--lg-text) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+body:has(.body-bg-wall) .kpi-value,
+body:has(.body-bg-wall) .stat-card .val,
+body:has(.body-bg-wall) .kpi-card .val {
+  color: var(--lg-text) !important;
+}
+
+body:has(.body-bg-wall) .btn-secondary {
+  background: rgba(255, 255, 255, 0.35) !important;
+  border: 1px solid var(--lg-border) !important;
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+}
+
+/* Sem aura colorida na saudação */
+body:has(.bg-wall) .hero-pro-aura,
+body:has(.bg-wall) .header-hero-pro .hero-pro-aura,
+body:has(.bg-wall) .hero-pro-panel::before,
+body:has(.bg-wall) .header::before,
+body:has(.bg-wall) .header::after {
+  display: none !important;
+  content: none !important;
+  opacity: 0 !important;
+}
+
+@media (max-width: 720px) {
+  :root {
+    --lg-fill: rgba(255, 255, 255, 0.48);
+    --lg-fill-strong: rgba(255, 255, 255, 0.62);
+    --lg-blur: blur(28px) saturate(180%);
   }
 }
