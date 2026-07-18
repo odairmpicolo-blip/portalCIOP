@@ -99,17 +99,30 @@ html.dk-dark img.logo-right[src*="LOGO_TCGL-dark"] {
   display: none !important;
 }
 
-/* —— Command center compacto —— */
+/* —— Command center + busca —— */
+.ciop-command-row {
+  position: relative;
+  z-index: 1;
+  max-width: 1100px;
+  margin: 6px auto 0;
+  padding: 0 18px;
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) minmax(220px, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
 .ciop-command {
   position: relative;
   z-index: 1;
-  max-width: 720px;
-  margin: 6px auto 0;
-  padding: 0 18px;
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 .ciop-command-inner {
   position: relative;
+  height: 100%;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
@@ -171,6 +184,132 @@ html.dk-dark img.logo-right[src*="LOGO_TCGL-dark"] {
   font-size: 0.58rem;
   font-weight: 600;
   color: #64748b;
+}
+
+/* Barra de busca moderna */
+.ciop-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 100%;
+  padding: 0 14px 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.28) 100%);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  box-shadow:
+    0 10px 28px -18px rgba(6, 36, 92, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.ciop-search:focus-within {
+  border-color: rgba(255, 107, 0, 0.55);
+  box-shadow:
+    0 0 0 3px rgba(255, 107, 0, 0.14),
+    0 12px 28px -16px rgba(6, 36, 92, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transform: translateY(-1px);
+}
+
+.ciop-search-icon {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  color: #0b3a8a;
+}
+
+.ciop-search-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ciop-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 42px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #0f172a;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.ciop-search-input::placeholder {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.ciop-search-input::-webkit-search-decoration,
+.ciop-search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.ciop-search-clear {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(6, 36, 92, 0.1);
+  color: #0b3a8a;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.ciop-search-clear:hover {
+  background: rgba(255, 107, 0, 0.18);
+  color: #c2410c;
+}
+
+html.dk-dark .ciop-search {
+  background: rgba(8, 14, 32, 0.78) !important;
+  border-color: rgba(148, 163, 184, 0.4) !important;
+}
+
+html.dk-dark .ciop-search-input,
+html.dk-dark .ciop-search-icon,
+html.dk-dark .ciop-search-clear {
+  color: #f8fafc !important;
+}
+
+html.dk-dark .ciop-search-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.dk-dark .ciop-search-clear {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.grid .card.ciop-search-hidden {
+  display: none !important;
+}
+
+.card-section.ciop-search-empty .card-section-corpo::after {
+  content: "Nenhum módulo encontrado";
+  display: block;
+  padding: 18px 8px;
+  text-align: center;
+  color: #fff;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 /* Saudação: barra lateral com cores do mês */
@@ -773,8 +912,17 @@ html.dk-dark body:has(.body-bg-wall) .dk-theme-toggle {
 }
 
 @media (max-width: 900px) {
+  .ciop-command-row {
+    grid-template-columns: 1fr;
+    max-width: 720px;
+  }
+
   .ciop-command-inner {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ciop-search {
+    min-height: 46px;
   }
 
   .header-actions .live-pill,
@@ -784,7 +932,7 @@ html.dk-dark body:has(.body-bg-wall) .dk-theme-toggle {
 }
 
 @media (max-width: 520px) {
-  .ciop-command {
+  .ciop-command-row {
     padding: 0 12px;
   }
 

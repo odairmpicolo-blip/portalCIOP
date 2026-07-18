@@ -2,6 +2,7 @@
 (function () {
   function countVisibleCards() {
     return Array.from(document.querySelectorAll(".card")).filter((el) => {
+      if (el.classList.contains("ciop-search-hidden")) return false;
       const style = window.getComputedStyle(el);
       return style.display !== "none" && style.visibility !== "hidden";
     }).length;
@@ -181,10 +182,57 @@
     });
   }
 
+  function bindModuleSearch() {
+    const input = document.getElementById("ciopBuscaModulos");
+    const clearBtn = document.getElementById("ciopBuscaLimpar");
+    if (!input || document.body.classList.contains("oa-page")) return;
+
+    function norm(s) {
+      return String(s || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+    }
+
+    function aplicar() {
+      const q = norm(input.value);
+      if (clearBtn) clearBtn.hidden = !q;
+
+      document.querySelectorAll(".grid .card").forEach(function (card) {
+        if (card.hidden && !card.classList.contains("ciop-search-hidden")) return;
+        const title = card.querySelector(".card-title")?.textContent || "";
+        const desc = card.querySelector(".card-desc")?.textContent || "";
+        const hit = !q || norm(title + " " + desc).includes(q);
+        card.classList.toggle("ciop-search-hidden", !hit);
+      });
+
+      document.querySelectorAll(".card-section").forEach(function (sec) {
+        const cards = sec.querySelectorAll(".grid .card");
+        const visible = Array.from(cards).some(function (c) {
+          return !c.classList.contains("ciop-search-hidden") && !c.hidden;
+        });
+        sec.classList.toggle("ciop-search-empty", !!q && !visible);
+      });
+
+      atualizarCommandCenter();
+    }
+
+    input.addEventListener("input", aplicar);
+    if (clearBtn) {
+      clearBtn.addEventListener("click", function () {
+        input.value = "";
+        input.focus();
+        aplicar();
+      });
+    }
+  }
+
   function init() {
     ensureIconGradient();
     enhanceDuotoneIcons();
     ensureHud();
+    bindModuleSearch();
     atualizarCommandCenter();
     staggerCards();
     bindRipples();
