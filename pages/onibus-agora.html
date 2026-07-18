@@ -928,8 +928,8 @@ function resolverBasePortal(){
 function normalizarProxyBase(apiUrl){
     let url = String(apiUrl || "").trim().replace(/\/+$/, "");
     if (!url) return "";
-    if (url.endsWith("/mov1")) return url;
-    return url + "/mov1";
+    if (url.endsWith("/bus2")) return url;
+    return url + "/bus2";
 }
 
 async function fetchJson(url){
@@ -1743,28 +1743,31 @@ async function configurarTrajetoLinha(route, tt){
 }
 
 async function buscarVeiculosRota(route){
+    const tt = await obterTimetable(route.routeId);
+    const trips = tt?.timetable?.trips || [];
     const found = [];
-    try {
-        const resp = await fetchBus2Live("getvehicles?rt=" + encodeURIComponent(route.shortName));
-        const lista = resp?.["bustime-response"]?.vehicle || [];
-        lista.forEach(v => {
-          const lat = Number(v.lat);
-          const lng = Number(v.lon);
-          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-          found.push({
-            vehicleId: v.vid,
-            lat,
-            lng,
-            delay: null,
-            routeId: route.routeId,
-            route,
-            tripId: v.tatripid || null,
-            tripDesc: v.des || null,
-            key: String(v.vid) + ":" + route.routeId
-          });
-        });
-    } catch { /* linha sem veículo online */ }
-      return found;
+    for (const trip of trips){
+        try {
+            const list = await fetchBus2Live("vehicles?origin=web&trip_id=" + trip.tripId + "&route_id=" + route.routeId);
+            if (!Array.isArray(list)) continue;
+            list.forEach(v => {
+                const lat = Number(v.lat);
+                const lng = Number(v.lng);
+                if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+                found.push({
+                    ...v,
+                    lat,
+                    lng,
+                    routeId: route.routeId,
+                    route,
+                    tripId: trip.tripId,
+                    tripDesc: trip.tripDesc,
+                    key: String(v.vehicleId) + ":" + route.routeId
+                });
+            });
+        } catch { /* linha sem veículo online */ }
+    }
+    return found;
 }
 
 async function pollLote(){
