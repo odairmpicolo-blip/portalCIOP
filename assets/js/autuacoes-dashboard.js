@@ -855,7 +855,7 @@ function drawPie(items, total) {
         const pct = ((val / total) * 100);
         const cor = COLORS[i % COLORS.length];
         return `<div class="legend-row">
-            <span class="dot" style="background:${cor};box-shadow:0 0 8px ${rgbaHex(cor, 0.55)}"></span>
+            <span class="dot" style="background:${cor}"></span>
             <span class="legend-name">${escapeHtml(name)}</span>
             <span class="legend-bar-wrap"><span class="legend-bar" style="width:${pct.toFixed(1)}%;background:linear-gradient(90deg,${cor},${rgbaHex(cor, 0.45)})"></span></span>
             <b>${pct.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</b>
