@@ -155,6 +155,61 @@ function convertFleetSignal(id, value) {
   return v;
 }
 
+/** IDs usados pelo On-Demand + equivalentes do enum Clever/AVM. */
+const FLEET_SIGNAL_ALIASES = {
+  speed: ["6054", "20", "100", "99", "168"],
+  rpm: ["4670", "11", "50", "140"],
+  odometer: ["4669", "4563", "19", "66", "67", "122", "244", "68"],
+  fuel: ["4660", "25", "63", "64", "9", "10"],
+  temp: ["166", "38", "47", "48"]
+};
+
+function normalizeFleetSignals(signals) {
+  const out = { ...(signals || {}) };
+  for (const [name, ids] of Object.entries(FLEET_SIGNAL_ALIASES)) {
+    for (const id of ids) {
+      if (out[id] != null && Number.isFinite(Number(out[id]))) {
+        out[name] = Number(out[id]);
+        break;
+      }
+    }
+  }
+  // Fallback combustível: alguns veículos publicam % em objectIds fora do mapa oficial.
+  if (out.fuel == null) {
+    for (const [id, val] of Object.entries(signals || {})) {
+      const n = Number(val);
+      if (!Number.isFinite(n)) continue;
+      if ((id === "33" || id === "81") && n >= 0 && n <= 100) {
+        out.fuel = n;
+        out[id] = n;
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+/** Cache em memória entre invocações warm: acumula sinais por veículo. */
+const fleetLiveCache = new Map();
+
+function mergeFleetLiveCache(vehicleId, signals, gps) {
+  const prev = fleetLiveCache.get(String(vehicleId)) || { signals: {}, gps: null, updatedAt: 0 };
+  const mergedSignals = { ...prev.signals, ...(signals || {}) };
+  const mergedGps = gps || prev.gps;
+  const entry = {
+    signals: mergedSignals,
+    gps: mergedGps,
+    updatedAt: Date.now()
+  };
+  fleetLiveCache.set(String(vehicleId), entry);
+  return entry;
+}
+
+function hasCoreFleetSignals(signals) {
+  const n = normalizeFleetSignals(signals);
+  return n.speed != null || n.rpm != null || n.odometer != null || n.fuel != null || n.temp != null;
+}
+
 function ingestFleetLiveBlock(block, signals, state) {
   // FleetBus usa \r (sem \n) como separador de linhas no SSE.
   const lines = String(block || "").split(/\r\n|\n|\r/).filter((l) => l.length > 0);
@@ -256,11 +311,12 @@ async function collectFleetLive(vehicleId, token, waitMs = 5500) {
         const parts = splitFleetSseBlocks(buf);
         buf = parts.pop() || "";
         for (const block of parts) ingestFleetLiveBlock(block, signals, state);
-        // Após o 1º GPS, espera um pouco mais para pegar velocidade/RPM/combustível.
+        // Só encerra cedo se já tiver sinal de cluster (além do GPS).
         if (
           state.gps &&
           (state.gps["504"] != null || state.gps["505"] != null) &&
-          (Object.keys(signals).length > 0 || Date.now() - started >= 2200 || state.events >= 12)
+          hasCoreFleetSignals(signals) &&
+          (Date.now() - started >= 1800 || state.events >= 8)
         ) {
           meta.earlyExit = true;
           controller.abort();
@@ -306,17 +362,20 @@ async function proxyFleetbus(event) {
         body: JSON.stringify({ ok: false, erro: "Informe vehicleId." })
       };
     }
-    const waitMs = Number(qs.get("waitMs") || 5500);
+    const waitMs = Number(qs.get("waitMs") || 8000);
     const debug = qs.get("debug") === "1";
     const live = await collectFleetLive(vehicleId, token, waitMs);
+    const merged = mergeFleetLiveCache(vehicleId, live.signals, live.gps);
+    const normalized = normalizeFleetSignals(merged.signals);
     const body = {
       ok: true,
       vehicleId,
-      signals: live.signals,
-      gps: live.gps,
+      signals: merged.signals,
+      normalized,
+      gps: merged.gps,
       collectedAt: new Date().toISOString()
     };
-    if (debug && live.meta) body.meta = live.meta;
+    if (debug && live.meta) body.meta = { ...live.meta, cacheSignals: Object.keys(merged.signals).length };
     return {
       statusCode: 200,
       headers: corsHeaders(),

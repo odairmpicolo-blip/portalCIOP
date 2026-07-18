@@ -418,14 +418,14 @@ const FB = {
   proxyBase: null,
   centro: [-23.303, -51.166],
   zoom: 13,
-  pollMs: 5000,
-  // Signal IDs oficiais do FleetBus On-Demand
+  pollMs: 4000,
+  // IDs On-Demand + equivalentes Clever/AVM
   signals: {
-    speed: ["6054", "20"],
-    rpm: ["4670", "11"],
-    odometer: ["4669", "4563", "19"],
-    fuel: ["25", "4660"],
-    temp: ["166", "38"],
+    speed: ["6054", "20", "100", "99", "168"],
+    rpm: ["4670", "11", "50", "140"],
+    odometer: ["4669", "4563", "19", "66", "67", "122", "244", "68"],
+    fuel: ["4660", "25", "63", "64", "9", "10", "33", "81"],
+    temp: ["166", "38", "47", "48"],
     gps: "5555"
   }
 };
@@ -625,6 +625,34 @@ function pickSignal(signals, ids){
   return null;
 }
 
+function applyLiveUpdate(signals, gps, normalized){
+  const src = { ...(signals || {}), ...(normalized || {}) };
+  const nextSpeed = pickSignal(src, FB.signals.speed);
+  const nextRpm = pickSignal(src, FB.signals.rpm);
+  const nextOdo = pickSignal(src, FB.signals.odometer);
+  const nextFuel = pickSignal(src, FB.signals.fuel);
+  const nextTemp = pickSignal(src, FB.signals.temp);
+
+  // Acumula: não apaga valor anterior se o poll não trouxe o sinal.
+  if (nextSpeed != null) state.live.speed = nextSpeed;
+  if (nextRpm != null) state.live.rpm = nextRpm;
+  if (nextOdo != null) state.live.odometer = nextOdo;
+  if (nextFuel != null) state.live.fuel = nextFuel;
+  if (nextTemp != null) state.live.temp = nextTemp;
+
+  if (gps && gps["504"] != null) state.live.lat = Number(gps["504"]);
+  if (gps && gps["505"] != null) state.live.lng = Number(gps["505"]);
+
+  const hasGps = state.live.lat != null && state.live.lng != null;
+  // Com GPS ao vivo e sem telemetria de motor, espelha o FleetBus (mostra 0).
+  if (hasGps) {
+    if (state.live.speed == null) state.live.speed = 0;
+    if (state.live.rpm == null) state.live.rpm = 0;
+    if (state.live.temp == null) state.live.temp = 0;
+  }
+  state.live.updatedAt = Date.now();
+}
+
 async function selecionarVeiculo(vehicleId){
   const v = state.vehicles.find(x => String(x.vehicleId) === String(vehicleId));
   if (!v) return;
@@ -640,26 +668,20 @@ async function pollLive(){
   if (!state.selected) return;
   setLive("Atualizando telemetria...", "busy");
   try {
-    const data = await fbGet("live?vehicleId=" + encodeURIComponent(state.selected.vehicleId) + "&waitMs=6000");
-    const signals = data.signals || {};
-    const gps = data.gps || {};
-    state.live.speed = pickSignal(signals, FB.signals.speed);
-    state.live.rpm = pickSignal(signals, FB.signals.rpm);
-    state.live.odometer = pickSignal(signals, FB.signals.odometer);
-    state.live.fuel = pickSignal(signals, FB.signals.fuel);
-    state.live.temp = pickSignal(signals, FB.signals.temp);
-    if (gps["504"] != null) state.live.lat = Number(gps["504"]);
-    if (gps["505"] != null) state.live.lng = Number(gps["505"]);
-    state.live.updatedAt = Date.now();
+    const data = await fbGet("live?vehicleId=" + encodeURIComponent(state.selected.vehicleId) + "&waitMs=9000");
+    applyLiveUpdate(data.signals || {}, data.gps || {}, data.normalized || {});
     renderCluster();
     const hora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     const hasGps = state.live.lat != null && state.live.lng != null;
-    const nSig = Object.keys(signals).length;
+    const hasCluster =
+      state.live.odometer != null || state.live.fuel != null ||
+      (state.live.speed != null && state.live.speed > 0) ||
+      (state.live.rpm != null && state.live.rpm > 0);
     setLive(
       prefixo(state.selected.vehicleNumber) + " · " + hora +
       (hasGps ? "" : " · sem GPS") +
-      (nSig || hasGps ? "" : " · sem sinais"),
-      hasGps || nSig ? null : "busy"
+      (hasCluster || hasGps ? "" : " · aguardando sinais"),
+      hasGps ? null : "busy"
     );
   } catch (err) {
     setLive(err.message || "Falha na telemetria", "err");
