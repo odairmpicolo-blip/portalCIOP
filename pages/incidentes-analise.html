@@ -144,13 +144,22 @@ body{
 }
 .filters-panel::before{display:none}
 .filters-grid{
-  display:grid;
-  grid-template-columns:repeat(7,minmax(0,1fr)) auto;
+  display:flex !important;
+  flex-wrap:nowrap !important;
   gap:8px;
-  align-items:end;
+  align-items:flex-end;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.filters-grid .field{
+  flex:1 1 0;
+  min-width:0;
+}
+.filters-grid .filter-actions{
+  flex:0 0 auto;
 }
 .field label{display:block;margin:0 0 3px;color:var(--muted);font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
-.field-headrow{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.field-headrow{display:flex;align-items:center;justify-content:space-between;gap:4px;flex-wrap:nowrap;min-width:0}
 .field-headrow label{margin:0 0 3px}
 .linha-produtiva-toggle{display:inline-flex;align-items:center;gap:5px;cursor:pointer;text-transform:none;font-weight:600;color:var(--blue);user-select:none;height:auto}
 .linha-produtiva-toggle input{position:absolute;opacity:0;width:0;height:0}
@@ -233,8 +242,7 @@ select option{color:#101828}
 
 @media (max-width:1180px){
   .kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
-  .filters-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
-  .filter-actions{grid-column:1 / -1;justify-content:flex-end}
+  .filters-grid{flex-wrap:nowrap !important}
   .chart-card.span-8,.chart-card.span-6,.chart-card.span-4{grid-column:span 12}
 }
 @media (max-width:720px){
@@ -305,8 +313,15 @@ select option{color:#101828}
   .status-line{font-size:13px !important;}
 
   .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
-  .filters-grid{grid-template-columns:1fr !important;gap:12px !important;}
-  .filter-actions{align-items:stretch;flex-direction:column}
+  .filters-grid{
+    flex-wrap:nowrap !important;
+    gap:8px !important;
+  }
+  .filters-grid .field{
+    flex:0 0 148px !important;
+    min-width:148px !important;
+  }
+  .filter-actions{align-items:stretch;flex-direction:row;flex:0 0 auto}
   .field label{font-size:12px !important;}
   .field input,.field select{font-size:16px !important;min-height:46px !important;}
   .title-wrap h1{font-size:19px !important;}
