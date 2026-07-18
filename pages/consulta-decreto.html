@@ -72,6 +72,16 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
 .ai-chat-user{align-self:flex-end;background:rgba(59,130,246,.18);color:#e3edff;border:1px solid rgba(59,130,246,.3);border-bottom-right-radius:4px}
 .ai-chat-bot{align-self:flex-start;display:flex;gap:10px;align-items:flex-start;background:rgba(255,255,255,.055);color:rgba(255,255,255,.86);border:1px solid rgba(255,255,255,.1);border-bottom-left-radius:4px;max-width:92%}
 .ai-chat-bot.ai-chat-error{background:rgba(220,38,38,.12);border-color:rgba(248,113,113,.35);color:#fecaca}
+.ai-chat-content{white-space:normal;min-width:0}
+.ai-chat-content p{margin:0 0 8px}
+.ai-chat-content p:last-child{margin-bottom:0}
+.ai-chat-content ul{margin:0 0 8px;padding-left:18px}
+.ai-chat-content ul:last-child{margin-bottom:0}
+.ai-chat-content li{margin-bottom:4px}
+.ai-chat-content strong{color:#fff;font-weight:800}
+.ai-chat-content em{font-style:italic}
+.ai-chat-content blockquote{margin:0 0 8px;padding:8px 12px;border-left:3px solid rgba(255,255,255,.25);background:rgba(255,255,255,.05);border-radius:0 8px 8px 0;font-style:italic;color:rgba(255,255,255,.78)}
+.ai-chat-content blockquote:last-child{margin-bottom:0}
 .ai-chat-avatar{flex:0 0 auto;width:22px;height:22px;margin-top:1px;border-radius:7px;background:linear-gradient(135deg,var(--ai-1),var(--ai-2));display:flex;align-items:center;justify-content:center}
 .ai-chat-avatar svg{width:12px;height:12px;fill:#fff}
 .ai-chat-typing{display:inline-flex;gap:4px;align-items:center;padding:2px 0}
@@ -394,10 +404,54 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
     return wrap;
   }
 
+  function escapeHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function mdToHtml(texto){
+    var lines = escapeHtml(texto).replace(/\r\n/g,'\n').split('\n');
+    var html = '';
+    var inList = false;
+    for (var i = 0; i < lines.length; i++){
+      var raw = lines[i];
+      var trimmed = raw.trim();
+      var bulletMatch = /^[-*]\s+(.*)$/.exec(trimmed);
+      var quoteMatch = /^&gt;\s?(.*)$/.exec(trimmed);
+      if (bulletMatch){
+        if (!inList){ html += '<ul>'; inList = true; }
+        html += '<li>' + inline(bulletMatch[1]) + '</li>';
+        continue;
+      }
+      if (inList){ html += '</ul>'; inList = false; }
+      if (quoteMatch){
+        html += '<blockquote>' + inline(quoteMatch[1]) + '</blockquote>';
+      } else if (trimmed === ''){
+        // linha em branco: apenas separa parágrafos, não emite tag vazia
+      } else {
+        html += '<p>' + inline(trimmed) + '</p>';
+      }
+    }
+    if (inList) html += '</ul>';
+    return html || inline(escapeHtml(texto));
+
+    function inline(s){
+      // negrito **texto**
+      s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      // itálico simples *texto* (depois do negrito, para não conflitar)
+      s = s.replace(/(^|[^*])\*([^*]+)\*([^*]|$)/g, '$1<em>$2</em>$3');
+      return s;
+    }
+  }
+
   function setBotText(wrap, texto, isError){
     if (isError) wrap.classList.add('ai-chat-error');
-    wrap.innerHTML = '<span class="ai-chat-avatar"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/></svg></span><span></span>';
-    wrap.querySelector('span:last-child').textContent = texto;
+    wrap.innerHTML = '<span class="ai-chat-avatar"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/></svg></span><span class="ai-chat-content"></span>';
+    var contentEl = wrap.querySelector('.ai-chat-content');
+    if (isError){
+      contentEl.textContent = texto;
+    } else {
+      contentEl.innerHTML = mdToHtml(texto);
+    }
     scrollToEnd();
   }
 
