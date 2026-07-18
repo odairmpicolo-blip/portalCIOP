@@ -75,6 +75,25 @@
     });
   }
 
+  function enhanceDuotoneIcons() {
+    if (document.body.classList.contains("oa-page")) return;
+    const ns = "http://www.w3.org/2000/svg";
+    document.querySelectorAll(".grid .card-figure svg").forEach(function (svg) {
+      if (svg.dataset.duotone === "1") return;
+      svg.dataset.duotone = "1";
+      if (!svg.getAttribute("viewBox")) svg.setAttribute("viewBox", "0 0 24 24");
+      const soft = document.createElementNS(ns, "circle");
+      soft.setAttribute("class", "ciop-duo-soft");
+      soft.setAttribute("cx", "12");
+      soft.setAttribute("cy", "12");
+      soft.setAttribute("r", "9.2");
+      soft.setAttribute("fill", "url(#ciopCardIconGrad)");
+      soft.setAttribute("fill-opacity", "0.2");
+      soft.setAttribute("stroke", "none");
+      svg.insertBefore(soft, svg.firstChild);
+    });
+  }
+
   function ensureIconGradient() {
     if (document.getElementById("ciopCardIconGrad")) return;
     const ns = "http://www.w3.org/2000/svg";
@@ -138,6 +157,7 @@
 
   function init() {
     ensureIconGradient();
+    enhanceDuotoneIcons();
     ensureHud();
     atualizarCommandCenter();
     staggerCards();
@@ -147,7 +167,10 @@
     window.addEventListener("online", atualizarCommandCenter);
     window.addEventListener("offline", atualizarCommandCenter);
     window.addEventListener("portal:usuario-validado", () => {
-      setTimeout(atualizarCommandCenter, 200);
+      setTimeout(function () {
+        enhanceDuotoneIcons();
+        atualizarCommandCenter();
+      }, 200);
     });
   }
 
