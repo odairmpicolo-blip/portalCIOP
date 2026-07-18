@@ -192,13 +192,19 @@ function normalizeFleetSignals(signals) {
 /** Cache em memória entre invocações warm: acumula sinais por veículo. */
 const fleetLiveCache = new Map();
 
-function mergeFleetLiveCache(vehicleId, signals, gps) {
-  const prev = fleetLiveCache.get(String(vehicleId)) || { signals: {}, gps: null, updatedAt: 0 };
+function mergeFleetLiveCache(vehicleId, signals, gps, faults) {
+  const prev = fleetLiveCache.get(String(vehicleId)) || { signals: {}, gps: null, faults: [], updatedAt: 0 };
   const mergedSignals = { ...prev.signals, ...(signals || {}) };
   const mergedGps = gps || prev.gps;
+  const faultMap = new Map();
+  for (const f of [...(prev.faults || []), ...(faults || [])]) {
+    const key = `${f.objectId || ""}|${f.description || ""}`;
+    faultMap.set(key, f);
+  }
   const entry = {
     signals: mergedSignals,
     gps: mergedGps,
+    faults: Array.from(faultMap.values()).slice(-40),
     updatedAt: Date.now()
   };
   fleetLiveCache.set(String(vehicleId), entry);
@@ -220,9 +226,22 @@ function ingestFleetLiveBlock(block, signals, state) {
     if (line.startsWith("data:")) dataLine += line.slice(5).trim();
   }
   if (!dataLine || dataLine === "-1") return;
-  // Aceita liveDataEvent; também JSON sem event name (alguns proxies normalizam SSE).
-  if (eventName && eventName !== "message" && eventName !== "liveDataEvent") return;
   try {
+    if (eventName === "faultEvent") {
+      const d = JSON.parse(dataLine);
+      state.events += 1;
+      if (!Array.isArray(state.faults)) state.faults = [];
+      state.faults.push({
+        objectId: d.ObjectId ?? d.objectId ?? null,
+        description: d.CommonDescription ?? d.commonDescription ?? d.description ?? "Falha",
+        severity: d.Severity ?? d.severity ?? d.Criticity ?? d.criticity ?? null,
+        dateTimeUTC: d.DateTimeUTC ?? d.dateTimeUTC ?? null,
+        duration: d.Duration ?? d.duration ?? 0
+      });
+      return;
+    }
+    // Aceita liveDataEvent; também JSON sem event name (alguns proxies normalizam SSE).
+    if (eventName && eventName !== "message" && eventName !== "liveDataEvent") return;
     const d = JSON.parse(dataLine);
     state.events += 1;
     const id = String(d.id ?? "");
@@ -254,7 +273,7 @@ async function collectFleetLive(vehicleId, token, waitMs = 5500) {
     `?vehicleId=${encodeURIComponent(vehicleId)}` +
     `&access_token=${encodeURIComponent(token)}`;
   const signals = {};
-  const state = { gps: null, events: 0, parseErrors: 0, bytes: 0 };
+  const state = { gps: null, faults: [], events: 0, parseErrors: 0, bytes: 0 };
   const meta = {
     httpStatus: 0,
     contentType: "",
@@ -336,7 +355,7 @@ async function collectFleetLive(vehicleId, token, waitMs = 5500) {
     meta.preview = rawPreview.replace(/access_token=[^&\s"]+/gi, "access_token=REDACTED");
   }
 
-  return { signals, gps: state.gps, meta };
+  return { signals, gps: state.gps, faults: state.faults || [], meta };
 }
 
 async function proxyFleetbus(event) {
@@ -365,7 +384,7 @@ async function proxyFleetbus(event) {
     const waitMs = Number(qs.get("waitMs") || 8000);
     const debug = qs.get("debug") === "1";
     const live = await collectFleetLive(vehicleId, token, waitMs);
-    const merged = mergeFleetLiveCache(vehicleId, live.signals, live.gps);
+    const merged = mergeFleetLiveCache(vehicleId, live.signals, live.gps, live.faults);
     const normalized = normalizeFleetSignals(merged.signals);
     const body = {
       ok: true,
@@ -373,6 +392,7 @@ async function proxyFleetbus(event) {
       signals: merged.signals,
       normalized,
       gps: merged.gps,
+      faults: merged.faults || [],
       collectedAt: new Date().toISOString()
     };
     if (debug && live.meta) body.meta = { ...live.meta, cacheSignals: Object.keys(merged.signals).length };
