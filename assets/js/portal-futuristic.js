@@ -38,6 +38,7 @@
   }
 
   function staggerCards() {
+    if (document.body.classList.contains("oa-page")) return;
     const cards = document.querySelectorAll(".grid .card");
     cards.forEach((card, i) => {
       card.classList.add("ciop-card-enter");
@@ -46,7 +47,8 @@
   }
 
   function bindRipples() {
-    document.querySelectorAll(".card-btn").forEach((btn) => {
+    if (document.body.classList.contains("oa-page")) return;
+    document.querySelectorAll(".grid .card-btn").forEach((btn) => {
       btn.addEventListener("click", function (ev) {
         const rect = btn.getBoundingClientRect();
         const ripple = document.createElement("span");
@@ -74,6 +76,7 @@
   }
 
   function ensureHud() {
+    if (document.body.classList.contains("oa-page")) return;
     if (!document.querySelector(".portal-hud-overlay")) {
       const overlay = document.createElement("div");
       overlay.className = "portal-hud-overlay";
