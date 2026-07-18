@@ -235,11 +235,21 @@ function atualizarSaudacaoHero(cadastroOuNome) {
   aplicarSaudacaoHero(nome, { genero });
 }
 
+const PORTAL_SESSION_CSS_V = "20260718g";
+
 function garantirCssSessao() {
-  if (document.querySelector("link[data-portal-session]")) return;
+  const href = portalPath(`assets/css/portal-session.css?v=${PORTAL_SESSION_CSS_V}`);
+  const existing = document.querySelector('link[href*="portal-session.css"]');
+  if (existing) {
+    existing.dataset.portalSession = "1";
+    if (!String(existing.getAttribute("href") || "").includes(`v=${PORTAL_SESSION_CSS_V}`)) {
+      existing.href = href;
+    }
+    return;
+  }
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-session.css");
+  link.href = href;
   link.dataset.portalSession = "1";
   document.head.appendChild(link);
 }

@@ -1,5 +1,19 @@
 /* Portal CIOP — usuário logado: pílula Liquid Glass iOS */
 
+/* Header com blur “engole” o backdrop dos filhos: no fundo foto, header transparente */
+body:has(.bg-wall) .header,
+body:has(.bg-wall) .header.header-v2,
+body:has(.body-bg-wall) .header,
+body:has(.body-bg-wall) .header.header-v2 {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  isolation: auto !important;
+  box-shadow: none !important;
+  border-bottom: none !important;
+}
+
+.ciop-session,
 .ciop-session.ciop-session-modern {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -14,39 +28,41 @@
   position: relative;
   isolation: isolate;
   border-radius: 999px !important;
-  border: 1px solid rgba(255, 255, 255, 0.55) !important;
-  background: rgba(255, 255, 255, 0.14) !important;
-  backdrop-filter: blur(30px) saturate(200%) !important;
-  -webkit-backdrop-filter: blur(30px) saturate(200%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.62) !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+  backdrop-filter: blur(28px) saturate(210%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(210%) !important;
   box-shadow:
-    0 12px 32px -16px rgba(6, 20, 50, 0.42),
-    0 1px 0 rgba(255, 255, 255, 0.45) inset,
-    0 -1px 0 rgba(255, 255, 255, 0.08) inset !important;
+    0 14px 36px -18px rgba(6, 20, 50, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.55) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.1) inset !important;
   color: #06245c;
   font-size: inherit !important;
 }
 
 /* Brilho superior fino (sem leite) */
-.ciop-session.ciop-session-modern::before {
+.ciop-session.ciop-session-modern::before,
+.ciop-session::before {
   content: "";
   position: absolute;
   left: 10px;
   right: 10px;
   top: 1px;
-  height: 42%;
+  height: 40%;
   border-radius: 999px;
   pointer-events: none;
   z-index: 0;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.38) 0%,
+    rgba(255, 255, 255, 0.42) 0%,
     rgba(255, 255, 255, 0) 100%
   );
-  opacity: 0.85;
+  opacity: 0.7;
 }
 
 /* Barra CIOP azul → laranja */
-.ciop-session.ciop-session-modern::after {
+.ciop-session.ciop-session-modern::after,
+.ciop-session::after {
   content: "";
   position: absolute;
   left: 5px;
@@ -121,22 +137,24 @@
   align-items: center;
   gap: 5px;
   padding-left: 10px;
-  border-left: 1px solid rgba(255, 255, 255, 0.35);
+  border-left: 1px solid rgba(255, 255, 255, 0.4);
   position: relative;
   z-index: 1;
 }
 
 .ciop-session .btn-senha-portal,
-.ciop-session .btn-logout:not(.btn-senha-portal) {
+.ciop-session .btn-logout:not(.btn-senha-portal),
+.ciop-session button.btn-senha-portal,
+.ciop-session button.btn-logout {
   grid-column: unset !important;
   grid-row: unset !important;
   justify-self: unset !important;
   align-self: unset !important;
   min-width: 46px;
-  border-radius: 999px;
-  padding: 7px 11px;
-  font-size: 0.68rem;
-  font-weight: 700;
+  border-radius: 999px !important;
+  padding: 7px 11px !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
   line-height: 1;
   cursor: pointer;
   transition:
@@ -148,63 +166,52 @@
 }
 
 /* Senha: vidro azul */
-.ciop-session .btn-senha-portal {
-  background: rgba(6, 36, 92, 0.45) !important;
+.ciop-session .btn-senha-portal,
+.ciop-session button.btn-senha-portal {
+  background: rgba(6, 36, 92, 0.38) !important;
   color: #fff !important;
-  border: 1px solid rgba(255, 255, 255, 0.35) !important;
-  backdrop-filter: blur(12px) saturate(170%);
-  -webkit-backdrop-filter: blur(12px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.42) !important;
+  backdrop-filter: blur(14px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(180%) !important;
   box-shadow:
-    0 4px 14px rgba(6, 36, 92, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    0 4px 14px rgba(6, 36, 92, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
 }
 
 .ciop-session .btn-senha-portal:hover,
-.ciop-session .btn-senha-portal:focus-visible {
-  background: rgba(255, 107, 0, 0.72) !important;
+.ciop-session .btn-senha-portal:focus-visible,
+.ciop-session button.btn-senha-portal:hover,
+.ciop-session button.btn-senha-portal:focus-visible {
+  background: rgba(255, 107, 0, 0.62) !important;
   color: #fff !important;
-  border-color: rgba(255, 255, 255, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
   transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(255, 107, 0, 0.28);
+  box-shadow: 0 8px 18px rgba(255, 107, 0, 0.28) !important;
 }
 
-/* Sair: vidro claro */
-.ciop-session .btn-logout:not(.btn-senha-portal) {
-  background: rgba(255, 255, 255, 0.28) !important;
+/* Sair: vidro claro + texto vermelho (não botão vermelho sólido) */
+.ciop-session .btn-logout:not(.btn-senha-portal),
+.ciop-session button.btn-logout:not(.btn-senha-portal) {
+  background: rgba(255, 255, 255, 0.32) !important;
   color: #b91c1c !important;
-  border: 1px solid rgba(255, 255, 255, 0.48) !important;
-  backdrop-filter: blur(12px) saturate(170%);
-  -webkit-backdrop-filter: blur(12px) saturate(170%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(14px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(180%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
 }
 
 .ciop-session .btn-logout:not(.btn-senha-portal):hover,
-.ciop-session .btn-logout:not(.btn-senha-portal):focus-visible {
-  background: rgba(220, 38, 38, 0.78) !important;
+.ciop-session .btn-logout:not(.btn-senha-portal):focus-visible,
+.ciop-session button.btn-logout:not(.btn-senha-portal):hover,
+.ciop-session button.btn-logout:not(.btn-senha-portal):focus-visible {
+  background: rgba(220, 38, 38, 0.72) !important;
   color: #fff !important;
   border-color: rgba(255, 255, 255, 0.4) !important;
   transform: translateY(-1px);
 }
 
-/* fallback sem JS de modernização */
-.ciop-session:not(.ciop-session-modern) {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto;
-  gap: 3px 10px;
-  padding: 7px 11px !important;
-  border-radius: 999px !important;
-  border: 1px solid rgba(255, 255, 255, 0.55) !important;
-  background: rgba(255, 255, 255, 0.14) !important;
-  backdrop-filter: blur(30px) saturate(200%) !important;
-  -webkit-backdrop-filter: blur(30px) saturate(200%) !important;
-  box-shadow:
-    0 12px 32px -16px rgba(6, 20, 50, 0.38),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45) !important;
-  font-size: 10px;
-}
-
 @media (max-width: 520px) {
+  .ciop-session,
   .ciop-session.ciop-session-modern {
     max-width: min(320px, 92vw);
     padding: 6px 10px !important;
@@ -226,20 +233,24 @@
   }
 
   .ciop-session .btn-senha-portal,
-  .ciop-session .btn-logout:not(.btn-senha-portal) {
+  .ciop-session .btn-logout:not(.btn-senha-portal),
+  .ciop-session button.btn-senha-portal,
+  .ciop-session button.btn-logout {
     min-width: 42px;
-    padding: 6px 9px;
-    font-size: 0.64rem;
+    padding: 6px 9px !important;
+    font-size: 0.64rem !important;
   }
 }
 
-/* Desktop com foto do ônibus: vidro ainda mais aberto */
+/* Desktop com foto: vidro mais aberto para o ônibus aparecer */
 @media (min-width: 721px) {
+  body:has(.bg-wall) .ciop-session,
+  body:has(.bg-wall) .ciop-session.ciop-session-modern,
   body:has(.body-bg-wall) .ciop-session,
   body:has(.body-bg-wall) .ciop-session.ciop-session-modern {
-    background: rgba(255, 255, 255, 0.12) !important;
-    border-color: rgba(255, 255, 255, 0.58) !important;
-    backdrop-filter: blur(32px) saturate(210%) !important;
-    -webkit-backdrop-filter: blur(32px) saturate(210%) !important;
+    background: rgba(255, 255, 255, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.65) !important;
+    backdrop-filter: blur(32px) saturate(220%) !important;
+    -webkit-backdrop-filter: blur(32px) saturate(220%) !important;
   }
 }
