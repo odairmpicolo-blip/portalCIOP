@@ -32,7 +32,6 @@
     const hora = document.getElementById("ciopKpiHora");
     const mods = document.getElementById("ciopKpiModulos");
     const avisos = document.getElementById("ciopKpiAvisos");
-    const status = document.getElementById("ciopKpiStatus");
 
     if (data) data.textContent = dataCompletaLabel();
     if (hora) hora.textContent = horaLabel();
@@ -44,8 +43,6 @@
       const n = Number.parseInt(raw, 10);
       avisos.textContent = Number.isFinite(n) ? String(n) : raw || "—";
     }
-
-    if (status) status.textContent = navigator.onLine ? "Online" : "Offline";
   }
 
   function staggerCards() {
@@ -261,8 +258,6 @@
     bindRipples();
     bindFlashSalvar();
     setInterval(atualizarCommandCenter, 1000);
-    window.addEventListener("online", atualizarCommandCenter);
-    window.addEventListener("offline", atualizarCommandCenter);
     window.addEventListener("portal:usuario-validado", () => {
       setTimeout(function () {
         enhanceDuotoneIcons();
