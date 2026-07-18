@@ -7,6 +7,19 @@ const BUSTIME_BASE = (process.env.BUSTIME_BASE_URL || "https://csr.mov1.com.br/b
 const BUSTIME_KEY = process.env.BUSTIME_API_KEY || "";
 const BUSTIME_REFERER = process.env.BUSTIME_REFERER || "https://csr.mov1.com.br/map";
 
+const FLEETBUS_ORIGIN = (process.env.FLEETBUS_ORIGIN || "https://fleetbus.app").replace(/\/+$/, "");
+const FLEETBUS_TOKEN = process.env.FLEETBUS_ACCESS_TOKEN || "";
+const FLEETBUS_REFRESH = process.env.FLEETBUS_REFRESH_TOKEN || "";
+const FLEETBUS_TOKEN_URL = process.env.FLEETBUS_TOKEN_URL || `${FLEETBUS_ORIGIN}/oidc/oauth2/token`;
+const FLEETBUS_CLIENT_ID = process.env.FLEETBUS_CLIENT_ID || "cd-avm4-spa";
+
+/** Cache em memória do access token (refresh sob demanda). */
+let fleetTokenCache = {
+  access: FLEETBUS_TOKEN,
+  refresh: FLEETBUS_REFRESH,
+  exp: 0
+};
+
 function corsHeaders(contentType = "application/json") {
   return {
     "Content-Type": contentType,
@@ -79,6 +92,254 @@ async function proxyMov1(event) {
     statusCode: res.statusCode,
     headers: corsHeaders("application/json"),
     body: res.body
+  };
+}
+
+async function ensureFleetbusToken() {
+  if (fleetTokenCache.access && fleetTokenCache.exp > Date.now() + 60_000) {
+    return fleetTokenCache.access;
+  }
+  if (fleetTokenCache.access && !fleetTokenCache.refresh) {
+    return fleetTokenCache.access;
+  }
+  if (!fleetTokenCache.refresh) {
+    if (fleetTokenCache.access) return fleetTokenCache.access;
+    throw new Error("FLEETBUS_ACCESS_TOKEN não configurado na Lambda.");
+  }
+
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: fleetTokenCache.refresh,
+    client_id: FLEETBUS_CLIENT_ID
+  });
+  const res = await fetch(FLEETBUS_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+    body,
+    signal: AbortSignal.timeout(20000)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.access_token) {
+    if (fleetTokenCache.access) return fleetTokenCache.access;
+    throw new Error(data.error_description || data.error || "Falha ao renovar token FleetBus.");
+  }
+  fleetTokenCache.access = data.access_token;
+  if (data.refresh_token) fleetTokenCache.refresh = data.refresh_token;
+  fleetTokenCache.exp = Date.now() + Math.max(60, Number(data.expires_in) || 3600) * 1000;
+  return fleetTokenCache.access;
+}
+
+async function fleetbusFetch(pathAndQuery, token) {
+  const url = `${FLEETBUS_ORIGIN}${pathAndQuery.startsWith("/") ? "" : "/"}${pathAndQuery}`;
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+      Referer: `${FLEETBUS_ORIGIN}/on-demand/real-time`,
+      Origin: FLEETBUS_ORIGIN,
+      "User-Agent": "Mozilla/5.0 (compatible; PortalCIOP/1.0)"
+    },
+    signal: AbortSignal.timeout(24000)
+  });
+  const text = await res.text();
+  return { status: res.status, text, contentType: res.headers.get("content-type") || "application/json" };
+}
+
+function convertFleetSignal(id, value) {
+  const sid = String(id);
+  let v = Number(value);
+  if (!Number.isFinite(v)) return null;
+  // Conversões do próprio FleetBus (convertSignalDataValue)
+  if (sid === "19" || sid === "4669") v = v / 1000; // metros → km
+  if (sid === "5722") v = v / 832; // gramas → litros (aprox.)
+  return v;
+}
+
+function ingestFleetLiveBlock(block, signals, state) {
+  // FleetBus usa \r (sem \n) como separador de linhas no SSE.
+  const lines = String(block || "").split(/\r\n|\n|\r/).filter((l) => l.length > 0);
+  let eventName = "message";
+  let dataLine = "";
+  for (const line of lines) {
+    if (line.startsWith("event:")) eventName = line.slice(6).trim();
+    if (line.startsWith("data:")) dataLine += line.slice(5).trim();
+  }
+  if (!dataLine || dataLine === "-1") return;
+  // Aceita liveDataEvent; também JSON sem event name (alguns proxies normalizam SSE).
+  if (eventName && eventName !== "message" && eventName !== "liveDataEvent") return;
+  try {
+    const d = JSON.parse(dataLine);
+    state.events += 1;
+    const id = String(d.id ?? "");
+    if (!id) return;
+    if (id === "5555" && Array.isArray(d.keyValue)) {
+      state.gps = {};
+      for (const kv of d.keyValue) {
+        const key = kv?.Key ?? kv?.key;
+        if (key != null) state.gps[String(key)] = kv.Value ?? kv.value;
+      }
+    } else if (d.value != null) {
+      const converted = convertFleetSignal(id, d.value);
+      if (converted != null) signals[id] = converted;
+    }
+  } catch {
+    state.parseErrors += 1;
+  }
+}
+
+function splitFleetSseBlocks(buf) {
+  // Separador de eventos no FleetBus: \r\r (também aceita \n\n / \r\n\r\n).
+  return String(buf || "").split(/\r\n\r\n|\n\n|\r\r/);
+}
+
+async function collectFleetLive(vehicleId, token, waitMs = 5500) {
+  // Mesmo formato do SPA FleetBus (EventSource + access_token na query).
+  const url =
+    `${FLEETBUS_ORIGIN}/api/v1/fluxlivedata/startConsume` +
+    `?vehicleId=${encodeURIComponent(vehicleId)}` +
+    `&access_token=${encodeURIComponent(token)}`;
+  const signals = {};
+  const state = { gps: null, events: 0, parseErrors: 0, bytes: 0 };
+  const meta = {
+    httpStatus: 0,
+    contentType: "",
+    bytes: 0,
+    events: 0,
+    parseErrors: 0,
+    waitedMs: 0,
+    earlyExit: false,
+    preview: ""
+  };
+  let rawPreview = "";
+  const budget = Math.max(1500, Math.min(12000, Number(waitMs) || 5500));
+  const started = Date.now();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), budget);
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        Accept: "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Accept-Encoding": "identity",
+        Authorization: `Bearer ${token}`,
+        Referer: `${FLEETBUS_ORIGIN}/on-demand/real-time`,
+        Origin: FLEETBUS_ORIGIN,
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      },
+      signal: controller.signal
+    });
+    meta.httpStatus = res.status;
+    meta.contentType = res.headers.get("content-type") || "";
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "");
+      throw new Error(`FleetBus live HTTP ${res.status}${errBody ? `: ${errBody.slice(0, 120)}` : ""}`);
+    }
+    if (!res.body || typeof res.body.getReader !== "function") {
+      const text = await res.text();
+      state.bytes = text.length;
+      rawPreview = text.slice(0, 240);
+      const parts = splitFleetSseBlocks(text);
+      for (const block of parts) ingestFleetLiveBlock(block, signals, state);
+    } else {
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        state.bytes += chunk.length;
+        if (rawPreview.length < 240) rawPreview += chunk.slice(0, 240 - rawPreview.length);
+        buf += chunk;
+        const parts = splitFleetSseBlocks(buf);
+        buf = parts.pop() || "";
+        for (const block of parts) ingestFleetLiveBlock(block, signals, state);
+        // Após o 1º GPS, espera um pouco mais para pegar velocidade/RPM/combustível.
+        if (
+          state.gps &&
+          (state.gps["504"] != null || state.gps["505"] != null) &&
+          (Object.keys(signals).length > 0 || Date.now() - started >= 2200 || state.events >= 12)
+        ) {
+          meta.earlyExit = true;
+          controller.abort();
+          break;
+        }
+      }
+      if (buf.trim()) ingestFleetLiveBlock(buf, signals, state);
+    }
+  } catch (err) {
+    if (err?.name !== "AbortError") throw err;
+  } finally {
+    clearTimeout(timer);
+    meta.waitedMs = Date.now() - started;
+    meta.bytes = state.bytes;
+    meta.events = state.events;
+    meta.parseErrors = state.parseErrors;
+    meta.preview = rawPreview.replace(/access_token=[^&\s"]+/gi, "access_token=REDACTED");
+  }
+
+  return { signals, gps: state.gps, meta };
+}
+
+async function proxyFleetbus(event) {
+  const rawPath = event.rawPath || event.path || "";
+  const qs = new URLSearchParams(event.rawQueryString || "");
+  const token = await ensureFleetbusToken();
+
+  if (rawPath === "/fleetbus/vehicles" || rawPath.startsWith("/fleetbus/vehicles?")) {
+    const upstream = await fleetbusFetch("/api/v1/i/vehicles?onlyVehiclesInService=true", token);
+    return {
+      statusCode: upstream.status,
+      headers: corsHeaders(upstream.contentType),
+      body: upstream.text
+    };
+  }
+
+  if (rawPath.startsWith("/fleetbus/live")) {
+    const vehicleId = qs.get("vehicleId");
+    if (!vehicleId) {
+      return {
+        statusCode: 400,
+        headers: corsHeaders(),
+        body: JSON.stringify({ ok: false, erro: "Informe vehicleId." })
+      };
+    }
+    const waitMs = Number(qs.get("waitMs") || 5500);
+    const debug = qs.get("debug") === "1";
+    const live = await collectFleetLive(vehicleId, token, waitMs);
+    const body = {
+      ok: true,
+      vehicleId,
+      signals: live.signals,
+      gps: live.gps,
+      collectedAt: new Date().toISOString()
+    };
+    if (debug && live.meta) body.meta = live.meta;
+    return {
+      statusCode: 200,
+      headers: corsHeaders(),
+      body: JSON.stringify(body)
+    };
+  }
+
+  if (rawPath === "/fleetbus/health") {
+    return {
+      statusCode: 200,
+      headers: corsHeaders(),
+      body: JSON.stringify({
+        ok: true,
+        fleetbus: !!fleetTokenCache.access || !!FLEETBUS_TOKEN,
+        hasRefresh: !!(fleetTokenCache.refresh || FLEETBUS_REFRESH)
+      })
+    };
+  }
+
+  return {
+    statusCode: 404,
+    headers: corsHeaders(),
+    body: JSON.stringify({ ok: false, erro: "Use /fleetbus/vehicles ou /fleetbus/live?vehicleId=..." })
   };
 }
 
@@ -166,6 +427,7 @@ export async function handler(event) {
         usage: {
           mov1: "GET /mov1/getvehicles?rt=203 — BusTime csr.mov1.com.br",
           bus2: "GET /bus2/vehicles?... — Mobilibus (legado)",
+          fleetbus: "GET /fleetbus/vehicles · GET /fleetbus/live?vehicleId=",
           relatorioIa: "POST /relatorio-ia — Gemini para relatórios"
         }
       })
@@ -176,18 +438,19 @@ export async function handler(event) {
     return {
       statusCode: 200,
       headers: corsHeaders(),
-      body: JSON.stringify({ ok: true, service: "portal-ciop-live-proxy", bustime: !!BUSTIME_KEY })
+      body: JSON.stringify({ ok: true, service: "portal-ciop-live-proxy", bustime: !!BUSTIME_KEY, fleetbus: !!(fleetTokenCache.access || FLEETBUS_TOKEN) })
     };
   }
 
   try {
     if (method === "POST" && rawPath === "/relatorio-ia") return await proxyRelatorioIa(event);
+    if (rawPath.startsWith("/fleetbus")) return await proxyFleetbus(event);
     if (rawPath.startsWith("/mov1")) return await proxyMov1(event);
     if (rawPath.startsWith("/bus2")) return await proxyBus2(event);
     return {
       statusCode: 404,
       headers: corsHeaders(),
-      body: JSON.stringify({ ok: false, erro: "Use /mov1/... ou /bus2/..." })
+      body: JSON.stringify({ ok: false, erro: "Use /mov1/..., /bus2/... ou /fleetbus/..." })
     };
   } catch (err) {
     return {
