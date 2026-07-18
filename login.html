@@ -55,14 +55,7 @@ if (/[?&](app|novo)=1(?:&|$)/.test(location.search)) {
   </form>
 </div>
 
-<div id="loginLoading" class="login-loading-overlay" role="status" aria-live="polite">
-  <div class="login-loading-box">
-    <div class="login-loading-mark" aria-hidden="true"></div>
-    <div id="loginLoadingText" class="login-loading-title">Carregando</div>
-    <div class="login-loading-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-  </div>
-</div>
-
+<script src="assets/js/loading.js?v=20260718c"></script>
 <script type="module">
 
 import { initializeApp }
@@ -82,12 +75,11 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 function mostrarCarregando(texto) {
-  document.getElementById("loginLoadingText").textContent = texto || "Carregando";
-  document.getElementById("loginLoading").classList.add("active");
+  window.portalMostrarCarregando?.(texto || "Carregando");
 }
 
 function ocultarCarregando() {
-  document.getElementById("loginLoading").classList.remove("active");
+  window.portalOcultarCarregando?.();
 }
 
 function mostrarErro(mensagem) {

@@ -90,20 +90,20 @@ function mostrarCarregando(texto = "Carregando portal") {
     .portal-loading-overlay::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 70% 50% at 50% 42%,rgba(11,58,138,.28),transparent 70%),linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:auto,48px 48px,48px 48px;opacity:.85;animation:portalGridDrift 18s linear infinite}
     .portal-loading-overlay::after{content:"";position:absolute;left:0;right:0;height:28%;top:-28%;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(255,107,0,.12),transparent);animation:portalScan 3.2s ease-in-out infinite}
     .portal-loading-overlay.hide{opacity:0;visibility:hidden;pointer-events:none}
-    .portal-loading-box{position:relative;z-index:1;width:min(360px,92vw);padding:28px 26px 24px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;border-radius:22px;border:1px solid rgba(255,255,255,.42);background:rgba(255,255,255,.22);backdrop-filter:blur(28px) saturate(190%);-webkit-backdrop-filter:blur(28px) saturate(190%);box-shadow:0 24px 60px -20px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.08);color:#f5f7fb;font-family:"SF Pro Display","Segoe UI",system-ui,-apple-system,sans-serif;overflow:hidden}
+    .portal-loading-box{position:relative;z-index:1;width:min(520px,94vw);min-height:340px;padding:44px 40px 36px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;border-radius:28px;border:1px solid rgba(255,255,255,.42);background:rgba(255,255,255,.24);backdrop-filter:blur(28px) saturate(190%);-webkit-backdrop-filter:blur(28px) saturate(190%);box-shadow:0 28px 70px -22px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.08);color:#f5f7fb;font-family:"SF Pro Display","Segoe UI",system-ui,-apple-system,sans-serif;overflow:hidden}
     .portal-loading-box::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(145deg,rgba(255,255,255,.28) 0%,transparent 42%,transparent 58%,rgba(255,107,0,.08) 100%)}
-    .portal-loading-brand{position:relative;z-index:1;font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.72)}
+    .portal-loading-brand{position:relative;z-index:1;font-size:13px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:rgba(255,255,255,.75)}
     .portal-loading-brand span{color:#ff8a3d}
-    .portal-loading-mark{position:relative;z-index:1;width:88px;height:88px;display:grid;place-items:center}
-    .portal-loading-ring,.portal-loading-ring-2{position:absolute;inset:0;border-radius:50%;border:1.5px solid transparent}
-    .portal-loading-ring{border-top-color:rgba(255,255,255,.85);border-right-color:rgba(10,132,255,.7);animation:portalSpin 1.1s linear infinite;filter:drop-shadow(0 0 8px rgba(10,132,255,.45))}
-    .portal-loading-ring-2{inset:10px;border-bottom-color:#ff6b00;border-left-color:rgba(255,107,0,.55);animation:portalSpin 1.7s linear infinite reverse;filter:drop-shadow(0 0 6px rgba(255,107,0,.4))}
-    .portal-loading-core{width:54px;height:54px;border-radius:16px;display:grid;place-items:center;background:rgba(6,36,92,.45);border:1px solid rgba(255,255,255,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 8px 20px rgba(0,0,0,.25)}
-    .portal-loading-core svg{width:30px;height:30px;fill:none;stroke:#fff;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-    .portal-loading-title{position:relative;z-index:1;margin:0;font-size:16px;font-weight:700;letter-spacing:.01em;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.25);max-width:100%}
-    .portal-loading-sub{position:relative;z-index:1;margin:-4px 0 0;font-size:12px;font-weight:500;letter-spacing:.04em;color:rgba(255,255,255,.68)}
-    .portal-loading-bar{position:relative;z-index:1;width:72%;height:3px;margin-top:4px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.16)}
-    .portal-loading-bar>i{display:block;width:42%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#0a84ff,#ff6b00);animation:portalBar 1.35s ease-in-out infinite;box-shadow:0 0 12px rgba(255,107,0,.55)}
+    .portal-loading-mark{position:relative;z-index:1;width:124px;height:124px;display:grid;place-items:center;margin:4px 0}
+    .portal-loading-ring,.portal-loading-ring-2{position:absolute;inset:0;border-radius:50%;border:2px solid transparent}
+    .portal-loading-ring{border-top-color:rgba(255,255,255,.85);border-right-color:rgba(10,132,255,.7);animation:portalSpin 1.1s linear infinite;filter:drop-shadow(0 0 10px rgba(10,132,255,.5))}
+    .portal-loading-ring-2{inset:14px;border-bottom-color:#ff6b00;border-left-color:rgba(255,107,0,.55);animation:portalSpin 1.7s linear infinite reverse;filter:drop-shadow(0 0 8px rgba(255,107,0,.45))}
+    .portal-loading-core{width:72px;height:72px;border-radius:20px;display:grid;place-items:center;background:rgba(6,36,92,.45);border:1px solid rgba(255,255,255,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 10px 24px rgba(0,0,0,.28)}
+    .portal-loading-core svg{width:40px;height:40px;fill:none;stroke:#fff;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+    .portal-loading-title{position:relative;z-index:1;margin:0;font-size:20px;font-weight:700;letter-spacing:.01em;color:#fff;text-shadow:0 1px 10px rgba(0,0,0,.28);max-width:100%;line-height:1.3}
+    .portal-loading-sub{position:relative;z-index:1;margin:-2px 0 0;font-size:13px;font-weight:500;letter-spacing:.05em;color:rgba(255,255,255,.7)}
+    .portal-loading-bar{position:relative;z-index:1;width:78%;height:4px;margin-top:8px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.16)}
+    .portal-loading-bar>i{display:block;width:42%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#0a84ff,#ff6b00);animation:portalBar 1.35s ease-in-out infinite;box-shadow:0 0 14px rgba(255,107,0,.55)}
     @keyframes portalSpin{to{transform:rotate(360deg)}}
     @keyframes portalBar{0%{transform:translateX(-120%)}100%{transform:translateX(280%)}}
     @keyframes portalScan{0%{transform:translateY(0);opacity:0}15%{opacity:.9}85%{opacity:.55}100%{transform:translateY(460%);opacity:0}}
