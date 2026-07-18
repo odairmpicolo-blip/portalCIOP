@@ -75,6 +75,51 @@
     });
   }
 
+  function ensureIconGradient() {
+    if (document.getElementById("ciopCardIconGrad")) return;
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    svg.setAttribute("width", "0");
+    svg.setAttribute("height", "0");
+    svg.style.cssText = "position:absolute;width:0;height:0;overflow:hidden";
+
+    function addGrad(id, stops) {
+      const grad = document.createElementNS(ns, "linearGradient");
+      grad.setAttribute("id", id);
+      grad.setAttribute("x1", "0%");
+      grad.setAttribute("y1", "0%");
+      grad.setAttribute("x2", "100%");
+      grad.setAttribute("y2", "100%");
+      stops.forEach(function (s) {
+        const stop = document.createElementNS(ns, "stop");
+        stop.setAttribute("offset", s[0]);
+        stop.setAttribute("stop-color", s[1]);
+        grad.appendChild(stop);
+      });
+      return grad;
+    }
+
+    const defs = document.createElementNS(ns, "defs");
+    defs.appendChild(
+      addGrad("ciopCardIconGrad", [
+        ["0%", "#06245c"],
+        ["45%", "#0b3a8a"],
+        ["100%", "#ff6b00"],
+      ])
+    );
+    defs.appendChild(
+      addGrad("ciopCardIconGradDark", [
+        ["0%", "#38bdf8"],
+        ["50%", "#0b3a8a"],
+        ["100%", "#ff6b00"],
+      ])
+    );
+    svg.appendChild(defs);
+    document.body.prepend(svg);
+  }
+
   function ensureHud() {
     if (document.body.classList.contains("oa-page")) return;
     if (!document.querySelector(".portal-hud-overlay")) {
@@ -92,6 +137,7 @@
   }
 
   function init() {
+    ensureIconGradient();
     ensureHud();
     atualizarCommandCenter();
     staggerCards();
