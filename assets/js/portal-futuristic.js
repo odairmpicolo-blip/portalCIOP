@@ -9,6 +9,16 @@
     return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
   }
 
+  function dataLabel() {
+    const d = new Date();
+    return d.toLocaleDateString("pt-BR", {
+      weekday: "short",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
   function countVisibleCards() {
     return Array.from(document.querySelectorAll(".card")).filter((el) => {
       const style = window.getComputedStyle(el);
@@ -18,12 +28,17 @@
 
   function atualizarCommandCenter() {
     const hora = document.getElementById("ciopKpiHora");
+    const headerHora = document.getElementById("ciopHeaderHora");
+    const headerData = document.getElementById("ciopHeaderData");
     const mods = document.getElementById("ciopKpiModulos");
     const avisos = document.getElementById("ciopKpiAvisos");
     const status = document.getElementById("ciopKpiStatus");
     const liveText = document.getElementById("ciopLiveText");
+    const agora = agoraLabel();
 
-    if (hora) hora.textContent = agoraLabel();
+    if (hora) hora.textContent = agora;
+    if (headerHora) headerHora.textContent = agora;
+    if (headerData) headerData.textContent = dataLabel();
     if (mods) mods.textContent = String(countVisibleCards());
 
     if (avisos) {
