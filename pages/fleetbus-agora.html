@@ -41,8 +41,8 @@ h1.fleetbus-title-art{margin:0;display:flex;align-items:center;justify-content:c
 @media(max-width:1100px){.fleetbus-title-art img{width:min(340px,84vw);height:38px;max-height:38px}}
 @media(max-width:560px){.fleetbus-title-art img{width:min(290px,88vw);height:34px;max-height:34px}}
 .header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
-.ciop-session{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--blue);background:#fff}
-.ciop-session-user{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+/* session container: portal-session.css */
+/* session user styles: portal-session.css */
 .btn-logout{background:#ef4444;color:#fff;border:0;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer}
 
 .shell{
@@ -244,13 +244,12 @@ h1.fleetbus-title-art{margin:0;display:flex;align-items:center;justify-content:c
   }
   #mapa{background:#dbeafe}
 
-  .live-pill,.ciop-session{
+  .live-pill{
     background:rgba(255,255,255,.6);
     backdrop-filter:blur(14px) saturate(190%);
     -webkit-backdrop-filter:blur(14px) saturate(190%);
   }
-
-  .topbar{
+.topbar{
     background:rgba(255,255,255,.55);
     backdrop-filter:blur(18px) saturate(190%);
     -webkit-backdrop-filter:blur(18px) saturate(190%);
@@ -350,6 +349,7 @@ h1.fleetbus-title-art{margin:0;display:flex;align-items:center;justify-content:c
 <link rel="stylesheet" href="../assets/css/portal-brand.css">
 <link rel="stylesheet" href="../assets/css/portal-header.css">
 <link rel="stylesheet" href="../assets/css/portal-session.css">
+<script src="../assets/js/portal-senha.js" defer></script>
 <link rel="stylesheet" href="../assets/css/dashboard-kit.css">
 <link rel="stylesheet" href="../assets/css/app-native.css">
 <script src="../assets/js/theme-toggle.js"></script>
@@ -373,10 +373,12 @@ h1.fleetbus-title-art{margin:0;display:flex;align-items:center;justify-content:c
   </div>
   <div class="header-actions">
     <button class="dk-theme-toggle" type="button" id="dkThemeToggle" aria-label="Alternar tema claro/escuro"><span class="dk-icon-moon">&#9789;</span><span class="dk-icon-sun">&#9728;</span></button>
-    <div class="ciop-session">
-      <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
-      <button class="btn-logout" type="button" onclick="logout()">Sair</button>
-    </div>
+    <div class="ciop-session" aria-label="Sessão do usuário">
+    <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+    <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+    <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+    <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+</div>
     <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
   </div>
 </header>

@@ -16,10 +16,10 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
 .title-wrap{justify-self:center;text-align:center}
 .header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700}
 .header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
-.ciop-session{display:flex;align-items:center;gap:6px;max-width:260px;padding:4px 8px;border:1px solid rgba(6,36,92,.12);border-radius:6px;background:var(--white);color:var(--blue);font-size:11px}
-.ciop-session-user{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
-.ciop-session-profile{color:var(--muted);font-weight:600}
-.ciop-session .btn-logout{background:var(--red);color:#fff;border:none;border-radius:5px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer}
+/* session container: portal-session.css */
+/* session user styles: portal-session.css */
+/* session profile styles: portal-session.css */
+/* session logout: portal-session.css */
 .container{max-width:100%;margin:20px auto 32px;padding:0 20px;flex:1;width:100%}
 .toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap}
 .toolbar-left{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;flex:1;min-width:0}
@@ -267,13 +267,7 @@ table.relatorio tbody tr.row-div td{box-shadow:inset 3px 0 0 var(--orange)}
     border: 1px solid rgba(255,255,255,.6) !important;
     box-shadow: 0 8px 20px -14px rgba(20,20,40,.3) !important;
   }
-  .ciop-session{
-    background: rgba(255,255,255,.55) !important;
-    backdrop-filter: blur(14px) saturate(190%) !important;
-    -webkit-backdrop-filter: blur(14px) saturate(190%) !important;
-    border: 1px solid rgba(255,255,255,.6) !important;
-    box-shadow: 0 8px 20px -14px rgba(20,20,40,.3) !important;
-  }
+  /* session container: portal-session.css */
   .toolbar-filtros-linha input:not([type="checkbox"]),
   .toolbar-filtros-linha select,
   .filter-multi-btn{
@@ -380,11 +374,12 @@ table.relatorio tbody tr.row-div td{box-shadow:inset 3px 0 0 var(--orange)}
         <div class="header-subtitle">Relatório operacional · exportação CSV · Excel · PDF</div>
     </div>
     <div class="header-actions">
-        <div class="ciop-session">
-            <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
-            <span class="ciop-session-cargo" id="perfilUsuario" hidden></span>
-            <button class="btn-logout" type="button" onclick="logout()">Sair</button>
-        </div>
+        <div class="ciop-session" aria-label="Sessão do usuário">
+    <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+    <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+    <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+    <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+</div>
         <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
     </div>
 </header>

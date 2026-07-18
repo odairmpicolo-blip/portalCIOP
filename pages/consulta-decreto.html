@@ -20,10 +20,10 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
 .page-title{margin:0;color:var(--blue);font-size:24px;font-weight:800;letter-spacing:-.02em}
 .header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
-.ciop-session{display:flex;align-items:center;gap:6px;max-width:260px;padding:4px 8px;border:1px solid rgba(6,36,92,.12);border-radius:6px;background:var(--white);color:var(--blue);font-size:11px}
-.ciop-session-user{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
-.ciop-session-profile{color:var(--muted);font-weight:600}
-.ciop-session .btn-logout{background:var(--red);color:#fff;border:none;border-radius:5px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer}
+/* session container: portal-session.css */
+/* session user styles: portal-session.css */
+/* session profile styles: portal-session.css */
+/* session logout: portal-session.css */
 .container{max-width:min(1680px,96vw);margin:24px auto 40px;padding:0 20px;flex:1;width:100%;display:flex;flex-direction:column}
 .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
 .btn-portal{display:inline-flex;align-items:center;gap:8px;min-height:44px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;background:var(--blue);color:#fff}
@@ -266,13 +266,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
     border: 1px solid rgba(255,255,255,.55) !important;
     box-shadow: 0 14px 32px -20px rgba(20,20,40,.28), inset 0 1px 0 rgba(255,255,255,.5) !important;
   }
-  .ciop-session{
-    background: rgba(255,255,255,.55) !important;
-    backdrop-filter: blur(14px) saturate(190%) !important;
-    -webkit-backdrop-filter: blur(14px) saturate(190%) !important;
-    border: 1px solid rgba(255,255,255,.6) !important;
-    box-shadow: 0 8px 20px -14px rgba(20,20,40,.3) !important;
-  }
+  /* session container: portal-session.css */
   .btn-portal{
     min-height:44px !important;padding:8px 14px !important;border-radius:10px !important;font-size:14px !important;
     gap:8px !important;font-weight:800 !important;
@@ -321,11 +315,12 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
     </div>
     <div class="header-actions">
         <button class="dk-theme-toggle" type="button" id="dkThemeToggle" aria-label="Alternar tema claro/escuro"><span class="dk-icon-moon">&#9789;</span><span class="dk-icon-sun">&#9728;</span></button>
-        <div class="ciop-session">
-            <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
-            <span class="ciop-session-cargo" id="perfilUsuario" hidden></span>
-            <button class="btn-logout" type="button" onclick="logout()">Sair</button>
-        </div>
+        <div class="ciop-session" aria-label="Sessão do usuário">
+    <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+    <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+    <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+    <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+</div>
         <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
     </div>
 </header>
