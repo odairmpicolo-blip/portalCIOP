@@ -32,6 +32,9 @@
     const hora = document.getElementById("ciopKpiHora");
     const mods = document.getElementById("ciopKpiModulos");
     const avisos = document.getElementById("ciopKpiAvisos");
+    const online = document.getElementById("ciopOnlineChip");
+    const onlineText = online ? online.querySelector(".ciop-online-text") : null;
+    const isOnline = navigator.onLine !== false;
 
     if (data) data.textContent = dataCompletaLabel();
     if (hora) hora.textContent = horaLabel();
@@ -42,6 +45,13 @@
       const raw = contador ? String(contador.textContent || "").trim() : "";
       const n = Number.parseInt(raw, 10);
       avisos.textContent = Number.isFinite(n) ? String(n) : raw || "—";
+    }
+
+    if (online) {
+      online.classList.toggle("is-offline", !isOnline);
+      online.title = isOnline ? "Portal online" : "Portal offline";
+      online.setAttribute("aria-label", isOnline ? "Portal online" : "Portal offline");
+      if (onlineText) onlineText.textContent = isOnline ? "Online" : "Offline";
     }
   }
 
