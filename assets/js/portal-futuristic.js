@@ -8,11 +8,24 @@
     }).length;
   }
 
+  function dataCompletaLabel() {
+    const d = new Date();
+    const texto = d.toLocaleDateString("pt-BR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+    return texto.charAt(0).toUpperCase() + texto.slice(1);
+  }
+
   function atualizarCommandCenter() {
+    const data = document.getElementById("ciopKpiData");
     const mods = document.getElementById("ciopKpiModulos");
     const avisos = document.getElementById("ciopKpiAvisos");
     const status = document.getElementById("ciopKpiStatus");
 
+    if (data) data.textContent = dataCompletaLabel();
     if (mods) mods.textContent = String(countVisibleCards());
 
     if (avisos) {
