@@ -1299,21 +1299,34 @@ function ativarGestosMapa(mapa){
         container.style.pointerEvents = "auto";
         container.classList.add("oa-touch-map");
         if (!container.dataset.oaTouchBound){
+            // Evita zoom da página no Safari; o zoom do mapa fica no Leaflet (wheel/touch).
             const keepNativeZoomOut = (ev) => ev.preventDefault();
             container.addEventListener("gesturestart", keepNativeZoomOut, { passive: false });
             container.addEventListener("gesturechange", keepNativeZoomOut, { passive: false });
+            // Touchpad Mac: pinch chega como wheel+ctrl; reforça captura sem scroll da página.
+            container.addEventListener("wheel", (ev) => {
+                if (ev.ctrlKey || ev.metaKey) ev.preventDefault();
+            }, { passive: false });
             container.dataset.oaTouchBound = "1";
         }
     }
     mapa.dragging?.enable?.();
     mapa.touchZoom?.enable?.();
     mapa.doubleClickZoom?.enable?.();
-    mapa.scrollWheelZoom?.disable?.();
+    // Touchpad usa scrollWheelZoom (dois dedos / pinch). Não desabilitar.
+    mapa.scrollWheelZoom?.enable?.();
+    if (mapa.options) {
+        mapa.options.wheelPxPerZoomLevel = 36;
+        mapa.options.wheelDebounceTime = 16;
+        mapa.options.inertiaDeceleration = 2500;
+        mapa.options.inertiaMaxSpeed = 2200;
+    }
     mapa.boxZoom?.disable?.();
-    mapa.keyboard?.disable?.();
+    mapa.keyboard?.enable?.();
     setTimeout(() => {
         mapa.dragging?.enable?.();
         mapa.touchZoom?.enable?.();
+        mapa.scrollWheelZoom?.enable?.();
         mapa.invalidateSize?.();
     }, 120);
 }
@@ -1326,16 +1339,23 @@ window.addEventListener("message", (event) => {
 function initMapa(){
     if (state.mapa) return;
     if (typeof L === "undefined") throw new Error("Mapa indisponível: biblioteca Leaflet não carregou.");
-    const nativeMap = isNativeEmbedded() && !OA_HORARIOS;
     state.mapa = L.map("mapa", {
         zoomControl: true,
         dragging: true,
         touchZoom: true,
+        bounceAtZoomLimits: true,
         inertia: true,
-        scrollWheelZoom: !nativeMap,
+        inertiaDeceleration: 2500,
+        inertiaMaxSpeed: 2200,
+        // Touchpad: dois dedos / pinch → wheel events do Leaflet
+        scrollWheelZoom: true,
+        wheelPxPerZoomLevel: 36,
+        wheelDebounceTime: 16,
         doubleClickZoom: true,
         tap: true,
-        boxZoom: false
+        tapTolerance: 22,
+        boxZoom: false,
+        preferCanvas: false
     }).setView(BUS2.centro, BUS2.zoom);
     state.tileLayer = L.tileLayer(BUS2.tiles.light, {
         maxZoom: 18,
@@ -1643,10 +1663,16 @@ function initMapaViagem(){
         zoomControl: true,
         dragging: true,
         touchZoom: true,
+        bounceAtZoomLimits: true,
         inertia: true,
-        scrollWheelZoom: false,
+        inertiaDeceleration: 2500,
+        inertiaMaxSpeed: 2200,
+        scrollWheelZoom: true,
+        wheelPxPerZoomLevel: 36,
+        wheelDebounceTime: 16,
         doubleClickZoom: true,
         tap: true,
+        tapTolerance: 22,
         boxZoom: false
     }).setView(BUS2.centro, BUS2.zoom);
     state.tileLayerViagem = L.tileLayer(BUS2.tiles.light, {
