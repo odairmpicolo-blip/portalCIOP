@@ -50,7 +50,7 @@ body{
 
 .workspace{
   flex:1;min-height:0;display:grid;grid-template-columns:280px minmax(0,1fr);
-  gap:12px;padding:12px;width:100%;
+  gap:12px;padding:10px 12px;width:100%;
 }
 .panel{
   background:var(--glass-bg);backdrop-filter:blur(18px) saturate(190%);
@@ -58,6 +58,7 @@ body{
   border:1px solid rgba(255,255,255,.55);border-radius:16px;box-shadow:var(--glass-shadow);
   min-height:0;display:flex;flex-direction:column;overflow:hidden;
 }
+[hidden]{display:none!important}
 .side{min-width:0}
 .side-head,.editor-toolbar{
   display:flex;align-items:center;justify-content:space-between;gap:8px;
@@ -102,30 +103,41 @@ body{
 .auto-item-meta,.auto-item-sub{font-size:10px;color:var(--ink-faint);margin-top:2px;font-weight:600}
 
 .editor{min-width:0}
-.editor-scroll{flex:1;min-height:0;overflow:auto;padding:12px}
-.editor-empty{display:grid;place-items:center;min-height:60vh;color:var(--ink-faint);font-weight:700;text-align:center;padding:24px}
+.editor-scroll{
+  flex:1;min-height:0;overflow:auto;padding:10px 12px 14px;
+  display:flex;flex-direction:column;align-items:stretch;
+}
+.editor-empty{
+  flex:1;display:grid;place-items:center;
+  color:var(--ink-faint);font-weight:700;text-align:center;padding:24px;
+  line-height:1.5;
+}
+#editorPanel{
+  flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;
+}
 .actions-bar{
   display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;border-top:1px solid rgba(255,255,255,.45);
-  background:rgba(255,255,255,.35);flex:0 0 auto;
+  background:rgba(255,255,255,.35);flex:0 0 auto;justify-content:flex-start;align-items:center;
 }
 
 /* ===== Ficha A4 estilo Excel ===== */
 .sheet-a4{
-  width:min(980px,100%);
+  width:min(920px,100%);
   margin:0 auto;
   background:#fff;
   border:1px solid #c9d0dc;
-  box-shadow:0 18px 40px rgba(20,20,40,.18);
+  box-shadow:0 12px 28px rgba(20,20,40,.14);
   color:#111;
+  flex:0 0 auto;
 }
 .sheet-brand{
-  display:grid;grid-template-columns:90px 1fr 90px;gap:8px;align-items:center;
-  padding:10px 14px 8px;border-bottom:1px solid #ddd;
+  display:grid;grid-template-columns:72px 1fr 72px;gap:10px;align-items:center;
+  padding:10px 14px;border-bottom:1px solid #ddd;
 }
-.sheet-brand img{height:48px;object-fit:contain;justify-self:center}
+.sheet-brand img{height:42px;width:100%;object-fit:contain;justify-self:center}
 .sheet-org{
-  text-align:center;font-weight:800;color:var(--blue);font-size:13px;letter-spacing:.02em;
-  text-transform:uppercase;
+  text-align:center;font-weight:800;color:var(--blue);font-size:12px;letter-spacing:.02em;
+  text-transform:uppercase;line-height:1.25;
 }
 
 /* CAPA DO AUTO — igual Excel: título | número (sempre lado a lado) */
@@ -160,7 +172,7 @@ body{
   gap:0;
   border-bottom:1px solid #ddd;
   background:#f3f5f8;
-  min-height:280px;
+  align-items:stretch;
 }
 .sheet-docs-pane{
   min-width:0;padding:8px;display:flex;flex-direction:column;gap:6px;
@@ -171,19 +183,19 @@ body{
   font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em;
 }
 .sheet-docs-pane img{
-  width:100%;height:auto;max-height:420px;object-fit:contain;
+  width:100%;height:auto;max-height:360px;object-fit:contain;
   background:#fff;border:1px solid #c9d0dc;
 }
 .sheet-docs-empty{
-  flex:1;min-height:240px;display:grid;place-items:center;
+  flex:1;min-height:200px;display:grid;place-items:center;
   border:1.5px dashed #c9d4e5;background:#fff;color:#94a3b8;
   font-size:12px;font-weight:700;text-align:center;padding:12px;
 }
 
 .sheet-gallery-wrap{padding:10px 12px;border-bottom:1px solid #ddd}
 .drop-images{
-  border:1.5px dashed rgba(6,36,92,.28);border-radius:4px;padding:14px;text-align:center;cursor:pointer;
-  background:#fafbfe;min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border:1.5px dashed rgba(6,36,92,.28);border-radius:4px;padding:12px;text-align:center;cursor:pointer;
+  background:#fafbfe;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;
 }
 .drop-images strong{color:var(--blue);font-size:13px}
 .drop-images span{margin-top:4px;font-size:11px;color:var(--muted);font-weight:600}
@@ -196,14 +208,14 @@ body{
 }
 .img-label{display:block;padding:4px 6px;font-size:10px;font-weight:700;color:var(--muted);border-top:1px solid #eee}
 
-.sheet-body{padding:10px 14px 16px}
+.sheet-body{padding:12px 14px 14px}
 .texts{display:grid;gap:6px;margin-bottom:10px}
 .texts textarea{
   width:100%;border:1px solid #d5deee;border-radius:2px;padding:8px 10px;font:inherit;font-size:13px;
-  min-height:52px;resize:vertical;background:#fff;
+  min-height:48px;resize:vertical;background:#fff;
 }
-.fields-excel{display:grid;gap:6px}
-.row-excel{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+.fields-excel{display:grid;gap:8px}
+.row-excel{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;align-items:end}
 .field{min-width:0}
 .field label{display:block;font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:3px}
 .field input{
@@ -212,7 +224,7 @@ body{
 .field.span-2{grid-column:span 2}
 .field.span-3{grid-column:span 3}
 .field.span-4{grid-column:span 4}
-.obs-row{margin-top:8px}
+.obs-row{margin-top:10px}
 
 .modal{position:fixed;inset:0;background:rgba(24,24,42,.5);display:grid;place-items:center;padding:16px;z-index:50;backdrop-filter:blur(6px)}
 .modal[hidden]{display:none!important}
@@ -275,8 +287,8 @@ footer.portal-site-footer .footer-text{color:#3f4757;font-size:11px}
   .field.span-2,.field.span-3,.field.span-4{grid-column:span 1}
   .header{grid-template-columns:1fr;text-align:center}
   .header-actions{justify-self:center}
-  .sheet-docs{min-height:200px}
-  .sheet-docs-pane img{max-height:280px}
+  .sheet-docs-pane img{max-height:240px}
+  .sheet-docs-empty{min-height:160px}
 }
 </style>
 <link rel="stylesheet" href="../assets/css/portal-brand.css">
@@ -452,7 +464,7 @@ footer.portal-site-footer .footer-text{color:#3f4757;font-size:11px}
   </div>
 </div>
 
-<script src="../assets/js/veiculos-placa-data.js?v=20260717d"></script>
-<script type="module" src="../assets/js/evidencias-autuacoes.js?v=20260717d"></script>
+<script src="../assets/js/veiculos-placa-data.js?v=20260717e"></script>
+<script type="module" src="../assets/js/evidencias-autuacoes.js?v=20260717e"></script>
 </body>
 </html>
