@@ -3,13 +3,17 @@
    Carregar por último nas páginas; na home, após os CSS de sessão/header. */
 
 :root {
-  --lg-fill: rgba(255, 255, 255, 0.28);
-  --lg-fill-strong: rgba(255, 255, 255, 0.42);
-  --lg-fill-hover: rgba(255, 255, 255, 0.38);
+  --lg-fill: rgba(255, 255, 255, 0.32);
+  --lg-fill-strong: rgba(255, 255, 255, 0.58);
+  --lg-fill-hover: rgba(255, 255, 255, 0.42);
+  /* Painéis de dados (gráficos/tabelas): bem mais foscos */
+  --lg-fill-data: rgba(255, 255, 255, 0.9);
+  --lg-fill-data-head: rgba(255, 255, 255, 0.96);
   --lg-blur: blur(40px) saturate(190%);
-  --lg-blur-soft: blur(28px) saturate(180%);
-  --lg-border: rgba(255, 255, 255, 0.42);
-  --lg-edge: 1px solid rgba(255, 255, 255, 0.42);
+  --lg-blur-soft: blur(28px) saturate(170%);
+  --lg-blur-data: blur(22px) saturate(140%);
+  --lg-border: rgba(255, 255, 255, 0.5);
+  --lg-edge: 1px solid rgba(255, 255, 255, 0.5);
   --lg-shadow:
     0 18px 48px -24px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.55),
@@ -18,7 +22,6 @@
   --lg-label: #334155;
   --lg-muted: #475569;
 
-  /* aliases usados pela home */
   --ciop-glass-bg: var(--lg-fill);
   --ciop-glass-bg-hover: var(--lg-fill-hover);
   --ciop-glass-blur: var(--lg-blur);
@@ -26,13 +29,20 @@
   --ciop-glass-shadow: var(--lg-shadow);
 }
 
-/* Sem mancha azul — wallpaper aparece limpa atrás do vidro */
+/* Sem mancha azul — wallpaper limpa atrás do vidro */
 body:has(.bg-wall) .bg-blobs,
 body:has(.bg-wall) .bg-blob-mid,
 body:has(.body-bg-wall) .body-bg-stain {
   display: none !important;
   background: none !important;
   opacity: 0 !important;
+}
+
+/* Wallpaper sempre visível nas páginas internas */
+body:has(.body-bg-wall) .body-bg-wall {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .ciop-liquid-glass,
@@ -63,6 +73,10 @@ body:has(.body-bg-wall) .kpi,
 body:has(.body-bg-wall) .kpi-card,
 body:has(.body-bg-wall) .stat-card,
 body:has(.body-bg-wall) .empty-page,
+body:has(.body-bg-wall) .card,
+body:has(.body-bg-wall) .lancamento-card,
+body:has(.body-bg-wall) .result-box,
+body:has(.body-bg-wall) .password-panel,
 body:has(.body-bg-wall) footer.portal-site-footer {
   background: var(--lg-fill) !important;
   backdrop-filter: var(--lg-blur) !important;
@@ -72,7 +86,7 @@ body:has(.body-bg-wall) footer.portal-site-footer {
   color: var(--lg-text);
 }
 
-/* Barras full-bleed (header / footer) */
+/* Barras full-bleed */
 body:has(.bg-wall) .header,
 body:has(.bg-wall) .header.header-v2,
 body:has(.body-bg-wall) .header,
@@ -108,7 +122,9 @@ body:has(.bg-wall) .notice-board,
 body:has(.body-bg-wall) .panel,
 body:has(.body-bg-wall) .kpi-card,
 body:has(.body-bg-wall) .stat-card,
-body:has(.body-bg-wall) .topbar {
+body:has(.body-bg-wall) .kpi,
+body:has(.body-bg-wall) .topbar,
+body:has(.body-bg-wall) .card {
   border: var(--lg-edge) !important;
   border-radius: 22px !important;
 }
@@ -127,11 +143,13 @@ body:has(.bg-wall) .menu-toggle {
 }
 
 body:has(.bg-wall) .card:hover,
-body:has(.bg-wall) .card:focus-visible {
+body:has(.bg-wall) .card:focus-visible,
+body:has(.body-bg-wall) .card:hover,
+body:has(.body-bg-wall) .card:focus-visible {
   background: var(--lg-fill-hover) !important;
 }
 
-/* Painéis densos (tabelas/gráficos): um pouco mais foscos para leitura */
+/* —— Dados: gráficos e tabelas bem mais foscos —— */
 body:has(.body-bg-wall) .chart-card,
 body:has(.body-bg-wall) .table-card,
 body:has(.body-bg-wall) .table-panel,
@@ -146,22 +164,72 @@ body:has(.body-bg-wall) .grid-panel,
 body:has(.body-bg-wall) .lista-panel,
 body:has(.body-bg-wall) .detail-panel,
 body:has(.body-bg-wall) .content-card,
-body:has(.body-bg-wall) .main-panel {
-  background: var(--lg-fill-strong) !important;
-  backdrop-filter: var(--lg-blur-soft) !important;
-  -webkit-backdrop-filter: var(--lg-blur-soft) !important;
-  border: var(--lg-edge) !important;
-  box-shadow: var(--lg-shadow) !important;
+body:has(.body-bg-wall) .main-panel,
+body:has(.body-bg-wall) .chart-body,
+body:has(.body-bg-wall) .charts .chart-card,
+body:has(.body-bg-wall) .panel.editor,
+body:has(.body-bg-wall) .panel.side,
+body:has(.body-bg-wall) .lancamento-card,
+body:has(.body-bg-wall) .result-box,
+body:has(.body-bg-wall) .modal-card,
+body:has(.body-bg-wall) .user-modal,
+body:has(.body-bg-wall) .ai-console,
+body:has(.body-bg-wall) .console-card,
+body:has(.body-bg-wall) .lista-card,
+body:has(.body-bg-wall) .detail-card,
+body:has(.body-bg-wall) .folha-card,
+body:has(.body-bg-wall) .relatorio-card,
+body:has(.body-bg-wall) .dash-card,
+body:has(.body-bg-wall) .map-side-panel,
+body:has(.body-bg-wall):not(.oa-page) .card.theme-orange,
+body:has(.body-bg-wall):not(.oa-page) .card.theme-blue {
+  background: var(--lg-fill-data) !important;
+  backdrop-filter: var(--lg-blur-data) !important;
+  -webkit-backdrop-filter: var(--lg-blur-data) !important;
+  border: 1px solid rgba(255, 255, 255, 0.62) !important;
+  box-shadow:
+    0 16px 40px -20px rgba(6, 36, 92, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
   border-radius: 20px !important;
+  color: var(--lg-text) !important;
 }
 
+/* Cabeçalhos de tabela / planilha: ainda mais foscos */
 body:has(.body-bg-wall) .table-card-header,
+body:has(.body-bg-wall) .table-head,
 body:has(.body-bg-wall) thead th,
-body:has(.body-bg-wall) table.planilha-detalhe th {
-  background: rgba(255, 255, 255, 0.55) !important;
+body:has(.body-bg-wall) table.planilha th,
+body:has(.body-bg-wall) table.planilha-detalhe th,
+body:has(.body-bg-wall) .data-table thead th {
+  background: var(--lg-fill-data-head) !important;
   color: var(--lg-label) !important;
-  backdrop-filter: blur(12px) saturate(160%);
-  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(150%) !important;
+}
+
+/* Corpo da tabela legível sobre o fosco */
+body:has(.body-bg-wall) .table-wrap,
+body:has(.body-bg-wall) .table-wrap table,
+body:has(.body-bg-wall) table.planilha,
+body:has(.body-bg-wall) table.planilha-detalhe,
+body:has(.body-bg-wall) .data-table {
+  background: rgba(255, 255, 255, 0.72) !important;
+  color: var(--lg-text) !important;
+}
+
+body:has(.body-bg-wall) .table-wrap td,
+body:has(.body-bg-wall) table.planilha td,
+body:has(.body-bg-wall) table.planilha-detalhe td {
+  color: var(--lg-text) !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+body:has(.body-bg-wall) .chart-card .card-title,
+body:has(.body-bg-wall) .table-card .card-title,
+body:has(.body-bg-wall) .table-head .card-title,
+body:has(.body-bg-wall) .panel-title {
+  color: var(--lg-text) !important;
+  text-shadow: none !important;
 }
 
 /* Tipografia sobre vidro */
@@ -188,7 +256,8 @@ body:has(.body-bg-wall) .no-data,
 body:has(.body-bg-wall) .empty,
 body:has(.body-bg-wall) .chart-empty,
 body:has(.body-bg-wall) .muted,
-body:has(.body-bg-wall) .help-text {
+body:has(.body-bg-wall) .help-text,
+body:has(.body-bg-wall) .table-sub {
   color: var(--lg-label) !important;
 }
 
@@ -209,7 +278,7 @@ body:has(.body-bg-wall) .kpi-card .val {
 }
 
 body:has(.body-bg-wall) .btn-secondary {
-  background: rgba(255, 255, 255, 0.35) !important;
+  background: rgba(255, 255, 255, 0.45) !important;
   border: 1px solid var(--lg-border) !important;
   backdrop-filter: blur(12px) saturate(160%);
   -webkit-backdrop-filter: blur(12px) saturate(160%);
@@ -226,20 +295,31 @@ body:has(.bg-wall) .header::after {
   opacity: 0 !important;
 }
 
+/* Mapas: não forçar fosco no canvas/mapa */
+body.oa-page .map-shell,
+body.oa-page #map,
+body.oa-page .leaflet-container {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 @media (max-width: 720px) {
   :root {
-    --lg-fill: rgba(255, 255, 255, 0.48);
-    --lg-fill-strong: rgba(255, 255, 255, 0.62);
+    --lg-fill: rgba(255, 255, 255, 0.52);
+    --lg-fill-strong: rgba(255, 255, 255, 0.7);
+    --lg-fill-data: rgba(255, 255, 255, 0.94);
     --lg-blur: blur(28px) saturate(180%);
   }
 }
 
-
-/* dark-mode vars injected */
+/* Dark mode */
 html.dk-dark {
   --lg-fill: rgba(8, 14, 32, 0.78);
   --lg-fill-strong: rgba(8, 14, 32, 0.88);
   --lg-fill-hover: rgba(16, 28, 55, 0.84);
+  --lg-fill-data: rgba(8, 14, 32, 0.94);
+  --lg-fill-data-head: rgba(12, 22, 48, 0.98);
   --lg-border: rgba(148, 163, 184, 0.38);
   --lg-edge: 1px solid rgba(148, 163, 184, 0.38);
   --lg-text: #ffffff;
@@ -248,6 +328,24 @@ html.dk-dark {
   --ciop-glass-bg: var(--lg-fill);
   --ciop-glass-bg-hover: var(--lg-fill-hover);
 }
+
+html.dk-dark .bg-wall,
 html.dk-dark .body-bg-wall {
   filter: brightness(0.4) saturate(1.08) contrast(1.06);
+}
+
+html.dk-dark body:has(.body-bg-wall) .table-wrap,
+html.dk-dark body:has(.body-bg-wall) .table-wrap table,
+html.dk-dark body:has(.body-bg-wall) table.planilha,
+html.dk-dark body:has(.body-bg-wall) table.planilha-detalhe,
+html.dk-dark body:has(.body-bg-wall) .data-table {
+  background: rgba(8, 14, 32, 0.82) !important;
+  color: #f8fafc !important;
+}
+
+html.dk-dark body:has(.body-bg-wall) .table-wrap td,
+html.dk-dark body:has(.body-bg-wall) table.planilha td,
+html.dk-dark body:has(.body-bg-wall) table.planilha-detalhe td {
+  color: #f1f5f9 !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
 }

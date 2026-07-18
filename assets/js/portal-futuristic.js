@@ -188,7 +188,9 @@
   }
 
   function ensureHud() {
+    /* HUD só na home — nas páginas de dados atrapalha gráficos/tabelas */
     if (document.body.classList.contains("oa-page")) return;
+    if (!document.querySelector(".bg-wall")) return;
     if (!document.querySelector(".portal-hud-overlay")) {
       const overlay = document.createElement("div");
       overlay.className = "portal-hud-overlay";
