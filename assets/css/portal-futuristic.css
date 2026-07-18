@@ -1,0 +1,430 @@
+/* Portal CIOP — pack futurístico (Liquid Glass + HUD + cockpit) */
+
+:root {
+  --fx-cyan: #38bdf8;
+  --fx-orange: #ff6b00;
+  --fx-blue: #06245c;
+  --fx-glow: 0 0 24px rgba(56, 189, 248, 0.28);
+  --fx-accent: linear-gradient(135deg, #06245c 0%, #0b3a8a 45%, #ff6b00 100%);
+}
+
+/* —— HUD overlay (circuitos sutis) —— */
+.portal-hud-overlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.22;
+  background:
+    radial-gradient(ellipse 40% 30% at 8% 12%, rgba(56, 189, 248, 0.35), transparent 70%),
+    radial-gradient(ellipse 35% 28% at 92% 88%, rgba(255, 107, 0, 0.22), transparent 70%),
+    linear-gradient(90deg, transparent 0 48%, rgba(56, 189, 248, 0.06) 50%, transparent 52%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 72px,
+      rgba(56, 189, 248, 0.04) 72px 73px
+    );
+  mix-blend-mode: screen;
+}
+
+.portal-hud-scan {
+  pointer-events: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 50;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.65), transparent);
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.55);
+  animation: portal-hud-scan 7s ease-in-out infinite;
+  opacity: 0.45;
+}
+
+@keyframes portal-hud-scan {
+  0% { top: -2%; opacity: 0; }
+  8% { opacity: 0.5; }
+  92% { opacity: 0.35; }
+  100% { top: 102%; opacity: 0; }
+}
+
+/* —— Live pill + theme toggle —— */
+.header-actions .live-pill,
+.ciop-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  color: #0f172a;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.ciop-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+  animation: ciop-pulse 1.8s ease-out infinite;
+}
+
+@keyframes ciop-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+  70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.header-actions .dk-theme-toggle {
+  display: inline-flex !important;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  color: #06245c;
+  cursor: pointer;
+  flex: 0 0 auto;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.header-actions .dk-theme-toggle:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.header-actions .dk-theme-toggle .dk-icon-sun { display: none; }
+html.dk-dark .header-actions .dk-theme-toggle .dk-icon-moon { display: none; }
+html.dk-dark .header-actions .dk-theme-toggle .dk-icon-sun { display: inline; }
+
+/* —— Command center —— */
+.ciop-command {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 10px auto 0;
+  padding: 0 18px;
+}
+
+.ciop-command-inner {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(40px) saturate(190%);
+  -webkit-backdrop-filter: blur(40px) saturate(190%);
+  box-shadow:
+    0 18px 48px -24px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  overflow: hidden;
+}
+
+.ciop-command-inner::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--fx-accent);
+  opacity: 0.95;
+}
+
+.ciop-kpi {
+  position: relative;
+  min-width: 0;
+  padding: 6px 10px 6px 14px;
+  border-left: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.ciop-kpi:first-child {
+  border-left: none;
+}
+
+.ciop-kpi-label {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+.ciop-kpi-value {
+  display: block;
+  font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.ciop-kpi-sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* —— Tipografia cockpit —— */
+.card-section-title {
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  font-weight: 900 !important;
+  text-shadow: 0 0 24px rgba(56, 189, 248, 0.25);
+}
+
+/* —— Liquid Glass 2.0 nos cards —— */
+.card {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease,
+    background 0.22s ease;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  left: -40%;
+  top: -60%;
+  width: 50%;
+  height: 220%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.28) 48%,
+    transparent 62%
+  );
+  transform: translateX(-120%) rotate(12deg);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(56, 189, 248, 0.55) !important;
+  box-shadow:
+    0 18px 40px -18px rgba(6, 36, 92, 0.35),
+    0 0 0 1px rgba(255, 107, 0, 0.18),
+    var(--fx-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65) !important;
+}
+
+.card:hover::after {
+  opacity: 1;
+  animation: ciop-shine 0.85s ease forwards;
+}
+
+@keyframes ciop-shine {
+  to { transform: translateX(320%) rotate(12deg); }
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--fx-accent);
+  opacity: 0.85;
+  z-index: 2;
+}
+
+.card-figure {
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.card:hover .card-figure {
+  transform: scale(1.04);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+}
+
+/* Stagger entrance */
+.card.ciop-card-enter {
+  opacity: 0;
+  transform: translateY(14px) scale(0.98);
+  animation: ciop-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes ciop-card-in {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Ripple no botão do card */
+.card-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.ciop-ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ciop-ripple 0.55s ease-out;
+  background: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
+
+@keyframes ciop-ripple {
+  to {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+/* Skeleton loading (vidro) */
+.ciop-skeleton {
+  border-radius: 16px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.42) 50%,
+    rgba(255, 255, 255, 0.22) 100%
+  );
+  background-size: 200% 100%;
+  animation: ciop-skel 1.2s ease-in-out infinite;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(16px);
+}
+
+@keyframes ciop-skel {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* Feedback flash */
+.ciop-flash-ok {
+  animation: ciop-flash-ok 0.7s ease;
+}
+
+@keyframes ciop-flash-ok {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+  40% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.25); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+/* —— Dark cockpit —— */
+html.dk-dark body {
+  color: #e2e8f0;
+}
+
+html.dk-dark .bg-wall {
+  filter: brightness(0.55) saturate(1.05);
+}
+
+html.dk-dark .header,
+html.dk-dark .header.header-v2,
+html.dk-dark .hero-pro-panel,
+html.dk-dark .ciop-session,
+html.dk-dark .card,
+html.dk-dark .notice-board,
+html.dk-dark .notice-item,
+html.dk-dark .toolbar-whatsapp,
+html.dk-dark .menu-toggle,
+html.dk-dark footer.portal-site-footer,
+html.dk-dark .ciop-command-inner,
+html.dk-dark .ciop-live-pill,
+html.dk-dark .header-actions .dk-theme-toggle {
+  background: rgba(15, 23, 42, 0.42) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: #e2e8f0 !important;
+  box-shadow:
+    0 18px 48px -24px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+html.dk-dark .card-title,
+html.dk-dark .hero-pro-nome,
+html.dk-dark .ciop-session-user,
+html.dk-dark .ciop-kpi-value,
+html.dk-dark .card-section-title {
+  color: #f8fafc !important;
+  text-shadow: 0 0 18px rgba(56, 189, 248, 0.2);
+}
+
+html.dk-dark .card-desc,
+html.dk-dark .ciop-kpi-label,
+html.dk-dark .ciop-kpi-sub,
+html.dk-dark .ciop-session-cargo,
+html.dk-dark .notice-board-title,
+html.dk-dark footer.portal-site-footer .footer-text {
+  color: #94a3b8 !important;
+}
+
+html.dk-dark .card-btn {
+  background: linear-gradient(135deg, #0b3a8a, #06245c) !important;
+  color: #fff !important;
+}
+
+html.dk-dark .ciop-live-pill {
+  color: #e2e8f0 !important;
+}
+
+@media (max-width: 900px) {
+  .ciop-command-inner {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .header-actions .live-pill,
+  .ciop-live-pill {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .ciop-command {
+    padding: 0 12px;
+  }
+
+  .ciop-command-inner {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .portal-hud-scan {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-hud-scan,
+  .ciop-live-dot,
+  .card::after,
+  .card.ciop-card-enter {
+    animation: none !important;
+  }
+
+  .card.ciop-card-enter {
+    opacity: 1;
+    transform: none;
+  }
+}
