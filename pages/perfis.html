@@ -10,33 +10,208 @@
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <title>Perfis de acesso - Portal CIOP</title>
 <style>
-:root{--blue:#06245c;--orange:#ff6b00;--border:#dfe5ef;--text:#101828;--muted:#3f4757;--white:#fff}
+:root{
+  --blue:#06245c;
+  --blue2:#0b3a8a;
+  --orange:#ff6b00;
+  --text:#0f172a;
+  --muted:#475569;
+  --fx-accent:linear-gradient(135deg,#06245c 0%,#0b3a8a 45%,#ff6b00 100%);
+}
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--text);min-height:100vh}
-.header{display:grid;grid-template-columns:180px 1fr minmax(260px,auto);gap:14px;align-items:center;padding:10px 22px}
-.header h1{margin:0;text-align:center;color:var(--blue);font-size:22px}
+body{
+  margin:0;
+  min-height:100vh;
+  color:var(--text);
+  font-family:"Segoe UI",Arial,Helvetica,sans-serif;
+  background:#0b1220;
+}
+.header{
+  display:grid;
+  grid-template-columns:180px 1fr minmax(260px,auto);
+  gap:14px;
+  align-items:center;
+  padding:10px 22px;
+}
+.header h1{
+  margin:0;
+  text-align:center;
+  color:#fff;
+  font-size:clamp(18px,2.4vw,24px);
+  font-weight:900;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  text-shadow:0 1px 3px rgba(0,0,0,.35);
+}
 .header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
-.container{max-width:1100px;margin:20px auto;padding:0 18px}
-.panel{padding:16px;border-radius:16px;margin-bottom:16px}
-.panel-title{margin:0 0 8px;color:var(--blue);font-size:16px;font-weight:900}
-.help{color:var(--muted);font-size:13px;line-height:1.45;margin:0 0 14px;font-weight:600}
-.toolbar-row{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:14px}
-label{display:block;font-size:12px;font-weight:800;color:var(--blue);margin-bottom:4px}
-select,button{font:inherit}
-select{height:38px;min-width:220px;border:1px solid var(--border);border-radius:8px;padding:0 10px;background:#fff}
-.btn{border:0;border-radius:8px;padding:10px 14px;font-weight:800;cursor:pointer}
+.container{max-width:1180px;margin:18px auto 40px;padding:0 18px}
+.panel{
+  position:relative;
+  overflow:hidden;
+  padding:18px 18px 20px;
+  border-radius:22px;
+  margin-bottom:16px;
+}
+.panel::before{
+  content:"";
+  position:absolute;
+  left:0;top:12px;bottom:12px;
+  width:3px;border-radius:999px;
+  background:var(--fx-accent);
+  opacity:.95;
+}
+.panel-head{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  align-items:flex-start;
+  justify-content:space-between;
+  margin-bottom:14px;
+}
+.panel-title{
+  margin:0 0 6px;
+  color:var(--blue);
+  font-size:1.15rem;
+  font-weight:900;
+}
+.help{
+  margin:0;
+  max-width:62ch;
+  color:var(--muted);
+  font-size:.88rem;
+  line-height:1.45;
+  font-weight:600;
+}
+.btn-portal{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:8px 12px;border-radius:999px;
+  background:linear-gradient(135deg,var(--blue),var(--blue2));
+  color:#fff;text-decoration:none;font-weight:800;font-size:12px;
+  border:1px solid rgba(255,255,255,.28);
+}
+.mode-tabs{
+  display:inline-flex;
+  gap:4px;
+  padding:4px;
+  border-radius:999px;
+  background:rgba(255,255,255,.35);
+  border:1px solid rgba(255,255,255,.45);
+  margin-bottom:14px;
+}
+.mode-tab{
+  border:0;cursor:pointer;font:inherit;font-weight:800;font-size:.82rem;
+  padding:8px 14px;border-radius:999px;color:var(--blue);
+  background:transparent;transition:.18s ease;
+}
+.mode-tab.is-active{
+  background:linear-gradient(135deg,var(--orange),#ff8f3d);
+  color:#fff;
+  box-shadow:0 6px 16px rgba(255,107,0,.25);
+}
+.toolbar{
+  display:grid;
+  grid-template-columns:minmax(180px,240px) minmax(220px,1fr) auto;
+  gap:10px;
+  align-items:end;
+  margin-bottom:12px;
+}
+.field label{
+  display:block;margin-bottom:5px;
+  font-size:.68rem;font-weight:900;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--blue);
+}
+.field select,.field input{
+  width:100%;height:42px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.5);
+  background:rgba(255,255,255,.55);
+  backdrop-filter:blur(16px);
+  padding:0 12px;font:inherit;font-weight:700;color:var(--text);
+  outline:none;
+}
+.field select:focus,.field input:focus{
+  border-color:rgba(255,107,0,.55);
+  box-shadow:0 0 0 3px rgba(255,107,0,.14);
+}
+.actions-inline{display:flex;flex-wrap:wrap;gap:8px}
+.btn{
+  border:0;border-radius:999px;padding:10px 14px;
+  font:inherit;font-weight:800;cursor:pointer;
+  transition:transform .15s ease,filter .15s ease;
+}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.05)}
 .btn-primary{background:linear-gradient(135deg,var(--orange),#ff8f3d);color:#fff}
-.btn-secondary{background:rgba(6,36,92,.1);color:var(--blue)}
-.status{min-height:20px;font-size:13px;font-weight:700;margin-bottom:10px}
+.btn-secondary{background:rgba(6,36,92,.12);color:var(--blue);border:1px solid rgba(6,36,92,.12)}
+.btn-ghost{background:rgba(255,255,255,.4);color:var(--blue);border:1px solid rgba(255,255,255,.45)}
+.btn-danger{background:rgba(220,38,38,.14);color:#b91c1c;border:1px solid rgba(220,38,38,.2)}
+.status{
+  min-height:22px;margin:0 0 12px;
+  font-size:.86rem;font-weight:800;
+}
 .status.ok{color:#15803d}.status.erro{color:#dc2626}.status.load{color:#a16207}
-.grupo{margin:14px 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:900;color:var(--blue)}
-.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
-.check{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border:1px solid rgba(255,255,255,.45);border-radius:12px;background:rgba(255,255,255,.55);font-size:13px;font-weight:700;cursor:pointer}
-.check input{margin-top:2px}
-.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
-.btn-link{display:inline-flex;align-items:center;background:var(--blue);color:#fff;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:800;font-size:12px}
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 10px;border-radius:999px;font-size:.72rem;font-weight:800;
+  background:rgba(11,58,138,.12);color:var(--blue2);
+  border:1px solid rgba(11,58,138,.15);
+}
+.badge.warn{background:rgba(255,107,0,.14);color:#c2410c;border-color:rgba(255,107,0,.22)}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.grupo{
+  margin:16px 0 8px;
+  font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;
+  font-weight:900;color:var(--blue);
+}
+.checks{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  gap:8px;
+}
+.check{
+  position:relative;
+  display:flex;gap:10px;align-items:flex-start;
+  padding:11px 12px 11px 12px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.48);
+  background:rgba(255,255,255,.48);
+  backdrop-filter:blur(14px);
+  font-size:.86rem;font-weight:700;cursor:pointer;
+  transition:border-color .15s ease, transform .15s ease, background .15s ease;
+}
+.check:hover{transform:translateY(-1px);border-color:rgba(255,107,0,.4)}
+.check:has(input:checked){
+  background:linear-gradient(145deg,rgba(255,107,0,.16),rgba(11,58,138,.14));
+  border-color:rgba(11,58,138,.35);
+}
+.check input{margin-top:2px;accent-color:var(--orange)}
+.foot-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
 #adminNegado{display:none}
-@media(max-width:720px){.header{grid-template-columns:1fr}.header-actions{justify-self:center}}
+.user-only{display:none}
+body.mode-usuario .user-only{display:block}
+body.mode-usuario .perfil-only{display:none}
+@media(max-width:900px){
+  .toolbar{grid-template-columns:1fr}
+  .header{grid-template-columns:1fr}
+  .header-actions{justify-self:center}
+}
+html.dk-dark .panel-title,
+html.dk-dark .field label,
+html.dk-dark .grupo,
+html.dk-dark .check,
+html.dk-dark .btn-secondary,
+html.dk-dark .btn-ghost{color:#f8fafc !important}
+html.dk-dark .help{color:#cbd5e1 !important}
+html.dk-dark .field select,
+html.dk-dark .field input{
+  background:rgba(255,255,255,.08) !important;
+  color:#fff !important;
+  border-color:rgba(148,163,184,.4) !important;
+}
+html.dk-dark .check{
+  background:rgba(8,14,32,.72) !important;
+  border-color:rgba(148,163,184,.35) !important;
+}
+html.dk-dark .mode-tabs{background:rgba(8,14,32,.55)}
+html.dk-dark .mode-tab{color:#e2e8f0}
 </style>
 <script src="../assets/js/loading.js?v=20260718d"></script>
 <link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
@@ -44,14 +219,15 @@ select{height:38px;min-width:220px;border:1px solid var(--border);border-radius:
 <link rel="stylesheet" href="../assets/css/portal-header.css">
 <link rel="stylesheet" href="../assets/css/portal-session.css?v=20260718h">
 <link rel="stylesheet" href="../assets/css/dashboard-kit.css">
-<script src="../assets/js/theme-toggle.js?v=20260718y"></script>
-<script type="module" src="../assets/js/auth.js?v=20260718y"></script>
+<script src="../assets/js/theme-toggle.js?v=20260718aa"></script>
+<script type="module" src="../assets/js/auth.js?v=20260718aa"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
-<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260718y">
-<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260718z">
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260718aa">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260718aa">
 </head>
-<body data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
+<body class="mode-perfil" data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
 <div class="body-bg-wall" aria-hidden="true"></div>
+
 <header class="header">
   <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP">
     <img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP">
@@ -70,29 +246,57 @@ select{height:38px;min-width:220px;border:1px solid var(--border);border-radius:
 </header>
 
 <main class="container">
-  <div id="adminNegado" class="panel">Acesso restrito. Somente você pode gerenciar os perfis.</div>
+  <div id="adminNegado" class="panel">
+    <h2 class="panel-title">Acesso restrito</h2>
+    <p class="help">Somente você pode gerenciar os acessos por perfil e por usuário.</p>
+  </div>
 
   <section class="panel" id="adminConteudo">
-    <div class="portal-return" style="margin-bottom:12px">
-      <a href="../index.html" class="btn-link">← Portal</a>
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">Controle de módulos</h2>
+        <p class="help">Defina o acesso por <strong>perfil</strong> ou personalize por <strong>usuário</strong>. Usuário sobrescreve o perfil. Módulos exclusivos do seu e-mail continuam protegidos.</p>
+      </div>
+      <a href="../index.html" class="btn-portal">← Portal</a>
     </div>
-    <h2 class="panel-title">O que cada perfil pode acessar</h2>
-    <p class="help">Selecione o perfil e marque os módulos liberados. As alterações valem na home e no menu lateral. Módulos exclusivos seus (Ônibus Agora, Evidências etc.) continuam só para o seu e-mail.</p>
+
+    <div class="mode-tabs" role="tablist" aria-label="Modo de edição">
+      <button type="button" class="mode-tab is-active" data-mode="perfil" id="tabPerfil">Por perfil</button>
+      <button type="button" class="mode-tab" data-mode="usuario" id="tabUsuario">Por usuário</button>
+    </div>
+
     <div id="statusPerfis" class="status"></div>
 
-    <div class="toolbar-row">
-      <div>
+    <div class="toolbar">
+      <div class="field perfil-only">
         <label for="perfilSelect">Perfil</label>
         <select id="perfilSelect"></select>
       </div>
-      <button class="btn btn-secondary" type="button" id="btnMarcarTodos">Marcar todos</button>
-      <button class="btn btn-secondary" type="button" id="btnDesmarcarTodos">Desmarcar todos</button>
-      <button class="btn btn-primary" type="button" id="btnSalvarPerfis">Salvar acesso</button>
+      <div class="field user-only">
+        <label for="usuarioBusca">Buscar usuário</label>
+        <input id="usuarioBusca" type="search" placeholder="Nome, e-mail ou perfil..." autocomplete="off">
+      </div>
+      <div class="field user-only">
+        <label for="usuarioSelect">Usuário</label>
+        <select id="usuarioSelect"></select>
+      </div>
+      <div class="actions-inline">
+        <button class="btn btn-ghost" type="button" id="btnMarcarTodos">Marcar todos</button>
+        <button class="btn btn-ghost" type="button" id="btnDesmarcarTodos">Limpar</button>
+        <button class="btn btn-danger user-only" type="button" id="btnLimparUsuario" title="Volta a herdar o perfil">Herdar perfil</button>
+        <button class="btn btn-primary" type="button" id="btnSalvarPerfis">Salvar</button>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <span class="badge" id="metaBadge">Modo perfil</span>
+      <span class="badge warn user-only" id="metaUsuario" hidden>Personalizado</span>
     </div>
 
     <div id="modulosRoot"></div>
-    <div class="actions">
-      <button class="btn btn-primary" type="button" id="btnSalvarPerfis2">Salvar acesso</button>
+
+    <div class="foot-actions">
+      <button class="btn btn-primary" type="button" id="btnSalvarPerfis2">Salvar alterações</button>
     </div>
   </section>
 </main>
@@ -103,55 +307,152 @@ import {
   MODULOS_PORTAL,
   EMAIL_DONO_PERFIS,
   normalizarPerfilKey,
+  normalizarEmailKey,
   defaultsAcessos,
+  listaModulosDePerfil,
   carregarAcessosPerfis,
   salvarAcessosPerfis
-} from "../assets/js/portal-perfis-acesso.js?v=20260718y";
+} from "../assets/js/portal-perfis-acesso.js?v=20260718aa";
+import { listarUsuariosFirestore } from "../assets/js/portal-firestore.js";
 
 const statusEl = document.getElementById("statusPerfis");
-const selectEl = document.getElementById("perfilSelect");
+const perfilSelect = document.getElementById("perfilSelect");
+const usuarioSelect = document.getElementById("usuarioSelect");
+const usuarioBusca = document.getElementById("usuarioBusca");
 const rootEl = document.getElementById("modulosRoot");
-let acessos = defaultsAcessos();
+const metaBadge = document.getElementById("metaBadge");
+const metaUsuario = document.getElementById("metaUsuario");
+
+let modo = "perfil";
+let estado = { acessos: defaultsAcessos(), usuarios: {} };
 let perfilAtual = normalizarPerfilKey(PERFIS_PORTAL[0]);
+let usuarioAtual = "";
+let usuariosLista = [];
 
 function setStatus(msg, tipo = "") {
   statusEl.textContent = msg || "";
   statusEl.className = "status" + (tipo ? " " + tipo : "");
 }
 
-function renderSelect() {
-  selectEl.innerHTML = PERFIS_PORTAL.map((p) => {
-    const key = normalizarPerfilKey(p);
-    return `<option value="${key}">${p}</option>`;
-  }).join("");
-  selectEl.value = perfilAtual;
+function escapeHtml(v) {
+  return String(v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
-function listaDoPerfil(key) {
-  const lista = acessos[key];
-  if (!Array.isArray(lista)) return new Set(MODULOS_PORTAL.map((m) => m.id));
-  if (lista.includes("*")) return new Set(MODULOS_PORTAL.map((m) => m.id));
+function setModo(novo) {
+  persistDraft();
+  modo = novo;
+  document.body.classList.toggle("mode-perfil", modo === "perfil");
+  document.body.classList.toggle("mode-usuario", modo === "usuario");
+  document.querySelectorAll(".mode-tab").forEach((btn) => {
+    btn.classList.toggle("is-active", btn.dataset.mode === modo);
+  });
+  metaBadge.textContent = modo === "perfil" ? "Modo perfil" : "Modo usuário";
+  renderModulos();
+  atualizarMetaUsuario();
+}
+
+function renderPerfilSelect() {
+  perfilSelect.innerHTML = PERFIS_PORTAL.map((p) => {
+    const key = normalizarPerfilKey(p);
+    return `<option value="${key}">${escapeHtml(p)}</option>`;
+  }).join("");
+  perfilSelect.value = perfilAtual;
+}
+
+function usuariosFiltrados() {
+  const q = String(usuarioBusca.value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+  return usuariosLista.filter((u) => {
+    if (!q) return true;
+    const blob = `${u.nome} ${u.email} ${u.perfil} ${u.cargo}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    return blob.includes(q);
+  });
+}
+
+function renderUsuarioSelect() {
+  const lista = usuariosFiltrados();
+  if (!lista.length) {
+    usuarioSelect.innerHTML = `<option value="">Nenhum usuário encontrado</option>`;
+    usuarioAtual = "";
+    return;
+  }
+  usuarioSelect.innerHTML = lista.map((u) => {
+    const label = `${u.nome || u.email} · ${u.perfil || "—"}`;
+    return `<option value="${escapeHtml(u.email)}">${escapeHtml(label)}</option>`;
+  }).join("");
+  if (!lista.some((u) => u.email === usuarioAtual)) {
+    usuarioAtual = lista[0].email;
+  }
+  usuarioSelect.value = usuarioAtual;
+}
+
+function listaAtiva() {
+  if (modo === "usuario") {
+    const email = normalizarEmailKey(usuarioAtual);
+    if (!email) return new Set();
+    if (Object.prototype.hasOwnProperty.call(estado.usuarios, email)) {
+      const lista = estado.usuarios[email];
+      if (Array.isArray(lista)) {
+        if (lista.includes("*")) return new Set(MODULOS_PORTAL.map((m) => m.id));
+        return new Set(lista);
+      }
+    }
+    const user = usuariosLista.find((u) => u.email === email);
+    const herdado = listaModulosDePerfil(user?.perfil || "Usuario", estado.acessos) || [];
+    return new Set(herdado);
+  }
+  const lista = listaModulosDePerfil(perfilAtual, estado.acessos) || [];
   return new Set(lista);
 }
 
+function atualizarMetaUsuario() {
+  if (modo !== "usuario") {
+    metaUsuario.hidden = true;
+    return;
+  }
+  const email = normalizarEmailKey(usuarioAtual);
+  const personalizado = email && Object.prototype.hasOwnProperty.call(estado.usuarios, email);
+  metaUsuario.hidden = false;
+  metaUsuario.textContent = personalizado ? "Personalizado para este usuário" : "Herdando do perfil";
+  metaUsuario.classList.toggle("warn", !!personalizado);
+}
+
 function renderModulos() {
-  const ativos = listaDoPerfil(perfilAtual);
+  const ativos = listaAtiva();
   const grupos = {};
   MODULOS_PORTAL.forEach((m) => {
     (grupos[m.grupo] ||= []).push(m);
   });
-
   rootEl.innerHTML = Object.entries(grupos).map(([grupo, itens]) => {
     const checks = itens.map((m) => {
       const checked = ativos.has(m.id) ? " checked" : "";
-      return `<label class="check"><input type="checkbox" data-modulo="${m.id}"${checked}><span>${m.label}</span></label>`;
+      return `<label class="check"><input type="checkbox" data-modulo="${m.id}"${checked}><span>${escapeHtml(m.label)}</span></label>`;
     }).join("");
-    return `<div class="grupo">${grupo}</div><div class="checks">${checks}</div>`;
+    return `<div class="grupo">${escapeHtml(grupo)}</div><div class="checks">${checks}</div>`;
   }).join("");
+  atualizarMetaUsuario();
 }
 
 function coletarMarcados() {
   return Array.from(rootEl.querySelectorAll('input[type="checkbox"]:checked')).map((el) => el.dataset.modulo);
+}
+
+function persistDraft() {
+  const marcados = coletarMarcados();
+  if (modo === "perfil") {
+    estado.acessos[perfilAtual] = perfilAtual === "administrador" ? ["*"] : marcados;
+    return;
+  }
+  const email = normalizarEmailKey(usuarioAtual);
+  if (!email) return;
+  estado.usuarios[email] = marcados;
 }
 
 function marcarTodos(val) {
@@ -166,19 +467,44 @@ async function salvar() {
     setStatus("Somente o dono do portal pode salvar.", "erro");
     return;
   }
-  setStatus("Salvando...", "load");
-  const marcados = coletarMarcados();
-  if (perfilAtual === "administrador") {
-    acessos[perfilAtual] = ["*"];
-  } else {
-    acessos[perfilAtual] = marcados;
-  }
+  persistDraft();
+  setStatus("Salvando no Firestore...", "load");
   try {
-    await salvarAcessosPerfis(acessos);
-    setStatus("Acessos salvos. Já valem na próxima abertura da home.", "ok");
+    await salvarAcessosPerfis(estado);
+    setStatus("Acessos salvos. Valem na próxima abertura da home.", "ok");
+    atualizarMetaUsuario();
   } catch (err) {
     setStatus(err.message || "Falha ao salvar no Firestore.", "erro");
   }
+}
+
+function limparUsuario() {
+  const email = normalizarEmailKey(usuarioAtual);
+  if (!email) return;
+  delete estado.usuarios[email];
+  renderModulos();
+  setStatus("Usuário voltará a herdar o perfil ao salvar.", "ok");
+}
+
+async function carregarUsuarios() {
+  try {
+    const mapa = await listarUsuariosFirestore();
+    usuariosLista = Object.values(mapa || {})
+      .map((u) => ({
+        email: normalizarEmailKey(u.email),
+        nome: String(u.nome || "").trim() || u.email,
+        perfil: String(u.perfil || "Usuario").trim(),
+        cargo: String(u.cargo || "").trim(),
+        ativo: u.ativo !== false,
+      }))
+      .filter((u) => u.email && u.ativo)
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  } catch (err) {
+    usuariosLista = [];
+    console.warn(err);
+  }
+  if (!usuarioAtual && usuariosLista[0]) usuarioAtual = usuariosLista[0].email;
+  renderUsuarioSelect();
 }
 
 async function iniciar() {
@@ -189,20 +515,35 @@ async function iniciar() {
     return;
   }
   document.getElementById("adminNegado").style.display = "none";
-  setStatus("Carregando acessos...", "load");
-  acessos = await carregarAcessosPerfis();
-  renderSelect();
+  setStatus("Carregando perfis e usuários...", "load");
+  estado = await carregarAcessosPerfis();
+  if (!estado.usuarios) estado.usuarios = {};
+  if (!estado.acessos) estado.acessos = defaultsAcessos();
+  renderPerfilSelect();
+  await carregarUsuarios();
   renderModulos();
-  setStatus("Pronto. Escolha o perfil e marque os módulos.", "ok");
+  setStatus("Pronto. Edite por perfil ou por usuário e salve.", "ok");
 }
 
-selectEl.addEventListener("change", () => {
-  acessos[perfilAtual] = coletarMarcados();
-  perfilAtual = selectEl.value;
+document.getElementById("tabPerfil").addEventListener("click", () => setModo("perfil"));
+document.getElementById("tabUsuario").addEventListener("click", () => setModo("usuario"));
+perfilSelect.addEventListener("change", () => {
+  persistDraft();
+  perfilAtual = perfilSelect.value;
+  renderModulos();
+});
+usuarioSelect.addEventListener("change", () => {
+  persistDraft();
+  usuarioAtual = usuarioSelect.value;
+  renderModulos();
+});
+usuarioBusca.addEventListener("input", () => {
+  renderUsuarioSelect();
   renderModulos();
 });
 document.getElementById("btnMarcarTodos").addEventListener("click", () => marcarTodos(true));
 document.getElementById("btnDesmarcarTodos").addEventListener("click", () => marcarTodos(false));
+document.getElementById("btnLimparUsuario").addEventListener("click", limparUsuario);
 document.getElementById("btnSalvarPerfis").addEventListener("click", salvar);
 document.getElementById("btnSalvarPerfis2").addEventListener("click", salvar);
 
@@ -212,6 +553,6 @@ if (typeof window.portalAguardarUsuario === "function") {
   window.addEventListener("portal:usuario-validado", iniciar, { once: true });
 }
 </script>
-<script src="../assets/js/portal-futuristic.js?v=20260718z" defer></script>
+<script src="../assets/js/portal-futuristic.js?v=20260718aa" defer></script>
 </body>
 </html>

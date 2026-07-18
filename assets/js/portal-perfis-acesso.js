@@ -1,9 +1,9 @@
-/* Portal CIOP — catálogo e persistência de acesso por perfil */
+/* Portal CIOP — catálogo e persistência de acesso por perfil/usuário */
 import { db } from "./portal-firestore.js";
 import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 export const EMAIL_DONO_PERFIS = "odair.marin@icloud.com";
-export const STORAGE_KEY = "portal-perfis-acesso-v1";
+export const STORAGE_KEY = "portal-perfis-acesso-v2";
 export const DOC_PATH = ["config", "perfisAcesso"];
 
 export const PERFIS_PORTAL = [
@@ -74,6 +74,10 @@ export function normalizarPerfilKey(perfil) {
     .trim();
 }
 
+export function normalizarEmailKey(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
 export function defaultsAcessos() {
   const todos = MODULOS_PORTAL.map((m) => m.id);
   const mapa = {};
@@ -85,70 +89,105 @@ export function defaultsAcessos() {
   return mapa;
 }
 
+function estadoVazio() {
+  return { acessos: defaultsAcessos(), usuarios: {} };
+}
+
 function lerCache() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    return data?.acessos && typeof data.acessos === "object" ? data.acessos : null;
+    if (!data || typeof data !== "object") return null;
+    return {
+      acessos: data.acessos && typeof data.acessos === "object" ? data.acessos : defaultsAcessos(),
+      usuarios: data.usuarios && typeof data.usuarios === "object" ? data.usuarios : {},
+    };
   } catch (_) {
     return null;
   }
 }
 
-function gravarCache(acessos) {
+function gravarCache(estado) {
   try {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ acessos, atualizadoEm: new Date().toISOString() })
+      JSON.stringify({
+        acessos: estado.acessos || {},
+        usuarios: estado.usuarios || {},
+        atualizadoEm: new Date().toISOString(),
+      })
     );
   } catch (_) {}
 }
 
+function aplicarEstadoGlobal(estado) {
+  window.portalPerfisAcesso = estado.acessos || {};
+  window.portalUsuariosAcesso = estado.usuarios || {};
+  return estado;
+}
+
 export async function carregarAcessosPerfis() {
   const cache = lerCache();
-  if (cache) {
-    window.portalPerfisAcesso = cache;
-  }
+  if (cache) aplicarEstadoGlobal(cache);
 
   try {
     const snap = await getDoc(doc(db, ...DOC_PATH));
     if (snap.exists()) {
-      const acessos = snap.data()?.acessos;
-      if (acessos && typeof acessos === "object") {
-        window.portalPerfisAcesso = acessos;
-        gravarCache(acessos);
-        return acessos;
-      }
+      const data = snap.data() || {};
+      const estado = {
+        acessos: data.acessos && typeof data.acessos === "object" ? data.acessos : defaultsAcessos(),
+        usuarios: data.usuarios && typeof data.usuarios === "object" ? data.usuarios : {},
+      };
+      gravarCache(estado);
+      return aplicarEstadoGlobal(estado);
     }
   } catch (err) {
     console.warn("Não foi possível carregar acessos de perfis:", err);
   }
 
   if (cache) return cache;
-  const defaults = defaultsAcessos();
-  window.portalPerfisAcesso = defaults;
-  return defaults;
+  const defaults = estadoVazio();
+  return aplicarEstadoGlobal(defaults);
 }
 
-export async function salvarAcessosPerfis(acessos) {
+export async function salvarAcessosPerfis(estado) {
   const payload = {
-    acessos,
+    acessos: estado.acessos || {},
+    usuarios: estado.usuarios || {},
     atualizadoEm: serverTimestamp(),
     atualizadoPor: String(window.portalUsuario?.email || "").toLowerCase(),
   };
   await setDoc(doc(db, ...DOC_PATH), payload, { merge: true });
-  window.portalPerfisAcesso = acessos;
-  gravarCache(acessos);
-  return acessos;
+  gravarCache(payload);
+  return aplicarEstadoGlobal(payload);
+}
+
+export function listaModulosDePerfil(perfil, mapa) {
+  const key = normalizarPerfilKey(perfil);
+  const acessos = mapa || window.portalPerfisAcesso;
+  if (!acessos) return null;
+  const lista = acessos[key];
+  if (!Array.isArray(lista)) return null;
+  if (lista.includes("*")) return MODULOS_PORTAL.map((m) => m.id);
+  return lista;
 }
 
 export function perfilTemModulo(perfil, moduloId, mapa) {
-  const key = normalizarPerfilKey(perfil);
-  const acessos = mapa || window.portalPerfisAcesso;
-  if (!acessos || !moduloId) return null;
-  const lista = acessos[key];
-  if (!Array.isArray(lista)) return null;
-  if (lista.includes("*")) return true;
-  return lista.includes(moduloId);
+  const lista = listaModulosDePerfil(perfil, mapa);
+  if (!lista || !moduloId) return null;
+  return lista.includes(moduloId) || lista.includes("*");
+}
+
+export function usuarioTemModulo(email, perfil, moduloId) {
+  if (!moduloId) return null;
+  const emailKey = normalizarEmailKey(email);
+  const usuarios = window.portalUsuariosAcesso;
+  if (usuarios && Object.prototype.hasOwnProperty.call(usuarios, emailKey)) {
+    const lista = usuarios[emailKey];
+    if (!Array.isArray(lista)) return null;
+    if (lista.includes("*")) return true;
+    return lista.includes(moduloId);
+  }
+  return perfilTemModulo(perfil, moduloId);
 }

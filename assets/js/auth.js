@@ -13,7 +13,7 @@ import {
 import { app, buscarUsuarioFirestore, normalizarCadastro } from "./portal-firestore.js";
 import { usuarios } from "./usuarios.js";
 import { aplicarSaudacaoHero } from "./portal-saudacao.js?v=20260704a";
-import { carregarAcessosPerfis, perfilTemModulo } from "./portal-perfis-acesso.js?v=20260718y";
+import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260718aa";
 
 const auth = getAuth(app);
 
@@ -483,7 +483,7 @@ function usuarioPodeVer(el, cadastro) {
 
   const moduloId = String(el.dataset.modulo || "").trim();
   if (moduloId) {
-    const decisaoModulo = perfilTemModulo(perfil, moduloId);
+    const decisaoModulo = usuarioTemModulo(email, perfil, moduloId);
     if (decisaoModulo !== null) return decisaoModulo;
   }
 
