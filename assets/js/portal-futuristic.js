@@ -19,13 +19,23 @@
     return texto.charAt(0).toUpperCase() + texto.slice(1);
   }
 
+  function horaLabel() {
+    return new Date().toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  }
+
   function atualizarCommandCenter() {
     const data = document.getElementById("ciopKpiData");
+    const hora = document.getElementById("ciopKpiHora");
     const mods = document.getElementById("ciopKpiModulos");
     const avisos = document.getElementById("ciopKpiAvisos");
     const status = document.getElementById("ciopKpiStatus");
 
     if (data) data.textContent = dataCompletaLabel();
+    if (hora) hora.textContent = horaLabel();
     if (mods) mods.textContent = String(countVisibleCards());
 
     if (avisos) {
