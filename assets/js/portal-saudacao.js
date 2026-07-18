@@ -269,6 +269,11 @@ export function aplicarSaudacaoHero(nome, opts = {}) {
     hero.style.setProperty("--hero-mes-cor", tema.cor);
     hero.style.setProperty("--hero-mes-escura", tema.corEscura);
     hero.style.setProperty("--hero-mes-gradiente", tema.gradiente);
+    if (bloc) {
+        bloc.style.setProperty("--hero-mes-cor", tema.cor);
+        bloc.style.setProperty("--hero-mes-escura", tema.corEscura);
+        bloc.style.setProperty("--hero-mes-gradiente", tema.gradiente);
+    }
 
     if (mesNomeEl) mesNomeEl.textContent = campanha.mes;
     if (campanhaDestaqueEl) campanhaDestaqueEl.textContent = campanha.destaque;

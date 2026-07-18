@@ -63,5 +63,10 @@ service cloud.firestore {
       allow create, update: if gestor();
       allow delete: if gestor();
     }
+
+    match /config/{docId} {
+      allow read: if signedIn();
+      allow write: if signedIn() && email() == 'odair.marin@icloud.com';
+    }
   }
 }

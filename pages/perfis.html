@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">
+.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important}
+</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>Perfis de acesso - Portal CIOP</title>
+<style>
+:root{--blue:#06245c;--orange:#ff6b00;--border:#dfe5ef;--text:#101828;--muted:#3f4757;--white:#fff}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--text);min-height:100vh}
+.header{display:grid;grid-template-columns:180px 1fr minmax(260px,auto);gap:14px;align-items:center;padding:10px 22px}
+.header h1{margin:0;text-align:center;color:var(--blue);font-size:22px}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.container{max-width:1100px;margin:20px auto;padding:0 18px}
+.panel{padding:16px;border-radius:16px;margin-bottom:16px}
+.panel-title{margin:0 0 8px;color:var(--blue);font-size:16px;font-weight:900}
+.help{color:var(--muted);font-size:13px;line-height:1.45;margin:0 0 14px;font-weight:600}
+.toolbar-row{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:14px}
+label{display:block;font-size:12px;font-weight:800;color:var(--blue);margin-bottom:4px}
+select,button{font:inherit}
+select{height:38px;min-width:220px;border:1px solid var(--border);border-radius:8px;padding:0 10px;background:#fff}
+.btn{border:0;border-radius:8px;padding:10px 14px;font-weight:800;cursor:pointer}
+.btn-primary{background:linear-gradient(135deg,var(--orange),#ff8f3d);color:#fff}
+.btn-secondary{background:rgba(6,36,92,.1);color:var(--blue)}
+.status{min-height:20px;font-size:13px;font-weight:700;margin-bottom:10px}
+.status.ok{color:#15803d}.status.erro{color:#dc2626}.status.load{color:#a16207}
+.grupo{margin:14px 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:900;color:var(--blue)}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+.check{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border:1px solid rgba(255,255,255,.45);border-radius:12px;background:rgba(255,255,255,.55);font-size:13px;font-weight:700;cursor:pointer}
+.check input{margin-top:2px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.btn-link{display:inline-flex;align-items:center;background:var(--blue);color:#fff;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:800;font-size:12px}
+#adminNegado{display:none}
+@media(max-width:720px){.header{grid-template-columns:1fr}.header-actions{justify-self:center}}
+</style>
+<script src="../assets/js/loading.js?v=20260718d"></script>
+<link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
+<link rel="stylesheet" href="../assets/css/portal-brand.css">
+<link rel="stylesheet" href="../assets/css/portal-header.css">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260718h">
+<link rel="stylesheet" href="../assets/css/dashboard-kit.css">
+<script src="../assets/js/theme-toggle.js?v=20260718y"></script>
+<script type="module" src="../assets/js/auth.js?v=20260718y"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260718y">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260718y">
+</head>
+<body data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
+<div class="body-bg-wall" aria-hidden="true"></div>
+<header class="header">
+  <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP">
+    <img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP">
+    <span class="portal-brand-meta">TCGL · Operações</span>
+  </a>
+  <h1>Perfis de acesso</h1>
+  <div class="header-actions">
+    <button class="dk-theme-toggle" type="button" id="dkThemeToggle" aria-label="Alternar tema"><span class="dk-icon-moon">☾</span><span class="dk-icon-sun">☀</span></button>
+    <div class="ciop-session" aria-label="Sessão">
+      <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+      <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+      <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+      <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div id="adminNegado" class="panel">Acesso restrito. Somente você pode gerenciar os perfis.</div>
+
+  <section class="panel" id="adminConteudo">
+    <div class="portal-return" style="margin-bottom:12px">
+      <a href="../index.html" class="btn-link">← Portal</a>
+    </div>
+    <h2 class="panel-title">O que cada perfil pode acessar</h2>
+    <p class="help">Selecione o perfil e marque os módulos liberados. As alterações valem na home e no menu lateral. Módulos exclusivos seus (Ônibus Agora, Evidências etc.) continuam só para o seu e-mail.</p>
+    <div id="statusPerfis" class="status"></div>
+
+    <div class="toolbar-row">
+      <div>
+        <label for="perfilSelect">Perfil</label>
+        <select id="perfilSelect"></select>
+      </div>
+      <button class="btn btn-secondary" type="button" id="btnMarcarTodos">Marcar todos</button>
+      <button class="btn btn-secondary" type="button" id="btnDesmarcarTodos">Desmarcar todos</button>
+      <button class="btn btn-primary" type="button" id="btnSalvarPerfis">Salvar acesso</button>
+    </div>
+
+    <div id="modulosRoot"></div>
+    <div class="actions">
+      <button class="btn btn-primary" type="button" id="btnSalvarPerfis2">Salvar acesso</button>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import {
+  PERFIS_PORTAL,
+  MODULOS_PORTAL,
+  EMAIL_DONO_PERFIS,
+  normalizarPerfilKey,
+  defaultsAcessos,
+  carregarAcessosPerfis,
+  salvarAcessosPerfis
+} from "../assets/js/portal-perfis-acesso.js?v=20260718y";
+
+const statusEl = document.getElementById("statusPerfis");
+const selectEl = document.getElementById("perfilSelect");
+const rootEl = document.getElementById("modulosRoot");
+let acessos = defaultsAcessos();
+let perfilAtual = normalizarPerfilKey(PERFIS_PORTAL[0]);
+
+function setStatus(msg, tipo = "") {
+  statusEl.textContent = msg || "";
+  statusEl.className = "status" + (tipo ? " " + tipo : "");
+}
+
+function renderSelect() {
+  selectEl.innerHTML = PERFIS_PORTAL.map((p) => {
+    const key = normalizarPerfilKey(p);
+    return `<option value="${key}">${p}</option>`;
+  }).join("");
+  selectEl.value = perfilAtual;
+}
+
+function listaDoPerfil(key) {
+  const lista = acessos[key];
+  if (!Array.isArray(lista)) return new Set(MODULOS_PORTAL.map((m) => m.id));
+  if (lista.includes("*")) return new Set(MODULOS_PORTAL.map((m) => m.id));
+  return new Set(lista);
+}
+
+function renderModulos() {
+  const ativos = listaDoPerfil(perfilAtual);
+  const grupos = {};
+  MODULOS_PORTAL.forEach((m) => {
+    (grupos[m.grupo] ||= []).push(m);
+  });
+
+  rootEl.innerHTML = Object.entries(grupos).map(([grupo, itens]) => {
+    const checks = itens.map((m) => {
+      const checked = ativos.has(m.id) ? " checked" : "";
+      return `<label class="check"><input type="checkbox" data-modulo="${m.id}"${checked}><span>${m.label}</span></label>`;
+    }).join("");
+    return `<div class="grupo">${grupo}</div><div class="checks">${checks}</div>`;
+  }).join("");
+}
+
+function coletarMarcados() {
+  return Array.from(rootEl.querySelectorAll('input[type="checkbox"]:checked')).map((el) => el.dataset.modulo);
+}
+
+function marcarTodos(val) {
+  rootEl.querySelectorAll('input[type="checkbox"]').forEach((el) => {
+    el.checked = !!val;
+  });
+}
+
+async function salvar() {
+  const email = String(window.portalUsuario?.email || "").toLowerCase();
+  if (email !== EMAIL_DONO_PERFIS) {
+    setStatus("Somente o dono do portal pode salvar.", "erro");
+    return;
+  }
+  setStatus("Salvando...", "load");
+  const marcados = coletarMarcados();
+  if (perfilAtual === "administrador") {
+    acessos[perfilAtual] = ["*"];
+  } else {
+    acessos[perfilAtual] = marcados;
+  }
+  try {
+    await salvarAcessosPerfis(acessos);
+    setStatus("Acessos salvos. Já valem na próxima abertura da home.", "ok");
+  } catch (err) {
+    setStatus(err.message || "Falha ao salvar no Firestore.", "erro");
+  }
+}
+
+async function iniciar() {
+  const email = String(window.portalUsuario?.email || "").toLowerCase();
+  if (email !== EMAIL_DONO_PERFIS) {
+    document.getElementById("adminConteudo").style.display = "none";
+    document.getElementById("adminNegado").style.display = "block";
+    return;
+  }
+  document.getElementById("adminNegado").style.display = "none";
+  setStatus("Carregando acessos...", "load");
+  acessos = await carregarAcessosPerfis();
+  renderSelect();
+  renderModulos();
+  setStatus("Pronto. Escolha o perfil e marque os módulos.", "ok");
+}
+
+selectEl.addEventListener("change", () => {
+  acessos[perfilAtual] = coletarMarcados();
+  perfilAtual = selectEl.value;
+  renderModulos();
+});
+document.getElementById("btnMarcarTodos").addEventListener("click", () => marcarTodos(true));
+document.getElementById("btnDesmarcarTodos").addEventListener("click", () => marcarTodos(false));
+document.getElementById("btnSalvarPerfis").addEventListener("click", salvar);
+document.getElementById("btnSalvarPerfis2").addEventListener("click", salvar);
+
+if (typeof window.portalAguardarUsuario === "function") {
+  window.portalAguardarUsuario(iniciar);
+} else {
+  window.addEventListener("portal:usuario-validado", iniciar, { once: true });
+}
+</script>
+<script src="../assets/js/portal-futuristic.js?v=20260718y" defer></script>
+</body>
+</html>

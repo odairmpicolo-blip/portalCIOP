@@ -13,6 +13,7 @@ import {
 import { app, buscarUsuarioFirestore, normalizarCadastro } from "./portal-firestore.js";
 import { usuarios } from "./usuarios.js";
 import { aplicarSaudacaoHero } from "./portal-saudacao.js?v=20260704a";
+import { carregarAcessosPerfis, perfilTemModulo } from "./portal-perfis-acesso.js?v=20260718y";
 
 const auth = getAuth(app);
 
@@ -480,6 +481,12 @@ function usuarioPodeVer(el, cadastro) {
     return usuariosPermitidos.includes(email);
   }
 
+  const moduloId = String(el.dataset.modulo || "").trim();
+  if (moduloId) {
+    const decisaoModulo = perfilTemModulo(perfil, moduloId);
+    if (decisaoModulo !== null) return decisaoModulo;
+  }
+
   if (isAdministrador(cadastro)) return true;
 
   const perfisPermitidos = listaAtributo(el.dataset.perfis);
@@ -602,6 +609,7 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
     }
     atualizarSaudacaoHero(cadastro);
     modernizarSessaoUsuario();
+    await carregarAcessosPerfis().catch(() => null);
     if (aplicarPermissoes(cadastro) !== false) {
       window.portalUsuarioValidado = true;
       liberarHtmlValidado();

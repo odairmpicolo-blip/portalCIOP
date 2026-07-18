@@ -1,24 +1,5 @@
 /* Portal CIOP — comportamento do pack futurístico */
 (function () {
-  function pad(n) {
-    return String(n).padStart(2, "0");
-  }
-
-  function agoraLabel() {
-    const d = new Date();
-    return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
-  }
-
-  function dataLabel() {
-    const d = new Date();
-    return d.toLocaleDateString("pt-BR", {
-      weekday: "short",
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  }
-
   function countVisibleCards() {
     return Array.from(document.querySelectorAll(".card")).filter((el) => {
       const style = window.getComputedStyle(el);
@@ -27,18 +8,10 @@
   }
 
   function atualizarCommandCenter() {
-    const hora = document.getElementById("ciopKpiHora");
-    const headerHora = document.getElementById("ciopHeaderHora");
-    const headerData = document.getElementById("ciopHeaderData");
     const mods = document.getElementById("ciopKpiModulos");
     const avisos = document.getElementById("ciopKpiAvisos");
     const status = document.getElementById("ciopKpiStatus");
-    const liveText = document.getElementById("ciopLiveText");
-    const agora = agoraLabel();
 
-    if (hora) hora.textContent = agora;
-    if (headerHora) headerHora.textContent = agora;
-    if (headerData) headerData.textContent = dataLabel();
     if (mods) mods.textContent = String(countVisibleCards());
 
     if (avisos) {
@@ -49,7 +22,6 @@
     }
 
     if (status) status.textContent = navigator.onLine ? "Online" : "Offline";
-    if (liveText) liveText.textContent = navigator.onLine ? "Ao vivo" : "Offline";
   }
 
   function staggerCards() {
@@ -203,21 +175,10 @@
   }
 
   function ensureHud() {
-    /* HUD só na home — nas páginas de dados atrapalha gráficos/tabelas */
-    if (document.body.classList.contains("oa-page")) return;
-    if (!document.querySelector(".bg-wall")) return;
-    if (!document.querySelector(".portal-hud-overlay")) {
-      const overlay = document.createElement("div");
-      overlay.className = "portal-hud-overlay";
-      overlay.setAttribute("aria-hidden", "true");
-      document.body.prepend(overlay);
-    }
-    if (!document.querySelector(".portal-hud-scan")) {
-      const scan = document.createElement("div");
-      scan.className = "portal-hud-scan";
-      scan.setAttribute("aria-hidden", "true");
-      document.body.appendChild(scan);
-    }
+    /* HUD desativado */
+    document.querySelectorAll(".portal-hud-overlay, .portal-hud-scan").forEach(function (el) {
+      el.remove();
+    });
   }
 
   function init() {
