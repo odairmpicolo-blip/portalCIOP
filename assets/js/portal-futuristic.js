@@ -78,19 +78,67 @@
   function enhanceDuotoneIcons() {
     if (document.body.classList.contains("oa-page")) return;
     const ns = "http://www.w3.org/2000/svg";
-    document.querySelectorAll(".grid .card-figure svg").forEach(function (svg) {
+
+    document.querySelectorAll(".grid .card-figure svg").forEach(function (svg, index) {
       if (svg.dataset.duotone === "1") return;
       svg.dataset.duotone = "1";
       if (!svg.getAttribute("viewBox")) svg.setAttribute("viewBox", "0 0 24 24");
-      const soft = document.createElementNS(ns, "circle");
+
+      var gradId = "ciopDuoGrad-" + index;
+      var softId = "ciopDuoSoft-" + index;
+      var isDark = document.documentElement.classList.contains("dk-dark");
+      var stops = isDark
+        ? [
+            ["0%", "#38bdf8"],
+            ["50%", "#0b3a8a"],
+            ["100%", "#ff6b00"],
+          ]
+        : [
+            ["0%", "#06245c"],
+            ["45%", "#0b3a8a"],
+            ["100%", "#ff6b00"],
+          ];
+
+      var defs = document.createElementNS(ns, "defs");
+      var grad = document.createElementNS(ns, "linearGradient");
+      grad.setAttribute("id", gradId);
+      grad.setAttribute("x1", "0%");
+      grad.setAttribute("y1", "0%");
+      grad.setAttribute("x2", "100%");
+      grad.setAttribute("y2", "100%");
+      stops.forEach(function (s) {
+        var stop = document.createElementNS(ns, "stop");
+        stop.setAttribute("offset", s[0]);
+        stop.setAttribute("stop-color", s[1]);
+        grad.appendChild(stop);
+      });
+      defs.appendChild(grad);
+      svg.insertBefore(defs, svg.firstChild);
+
+      var soft = document.createElementNS(ns, "circle");
       soft.setAttribute("class", "ciop-duo-soft");
+      soft.setAttribute("id", softId);
       soft.setAttribute("cx", "12");
       soft.setAttribute("cy", "12");
       soft.setAttribute("r", "9.2");
-      soft.setAttribute("fill", "url(#ciopCardIconGrad)");
-      soft.setAttribute("fill-opacity", "0.2");
+      soft.setAttribute("fill", "url(#" + gradId + ")");
+      soft.setAttribute("fill-opacity", "0.18");
       soft.setAttribute("stroke", "none");
-      svg.insertBefore(soft, svg.firstChild);
+      svg.insertBefore(soft, defs.nextSibling);
+
+      svg.querySelectorAll("path, line, polyline, polygon, circle, rect").forEach(function (el) {
+        if (el.classList && el.classList.contains("ciop-duo-soft")) return;
+        el.setAttribute("stroke", "url(#" + gradId + ")");
+        el.setAttribute("stroke-width", el.getAttribute("stroke-width") || "2.15");
+        el.setAttribute("stroke-linecap", "round");
+        el.setAttribute("stroke-linejoin", "round");
+        el.setAttribute("fill", "none");
+        var tag = el.tagName.toLowerCase();
+        if (tag === "circle" || tag === "rect") {
+          el.setAttribute("fill", isDark ? "#ff8f3d" : "#ff6b00");
+          el.setAttribute("fill-opacity", "0.2");
+        }
+      });
     });
   }
 
