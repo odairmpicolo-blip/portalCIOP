@@ -100,11 +100,20 @@ h1{
 .toolbar-inner{
     width:100%;
     margin:0;
-    padding:0 25px;
+    padding:0 20px;
     display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:clamp(10px, 2vw, 14px);
+    align-items:flex-start;
+    justify-content:flex-start;
+    gap:12px;
+    box-sizing:border-box;
+}
+
+.toolbar-main{
+    flex:1 1 auto;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
 }
 
 .menu-toggle{
@@ -614,7 +623,12 @@ footer{
 }
 /* Inicio Codex quadro de avisos */
 .toolbar-inner{
-    flex-wrap:wrap;
+    flex-wrap:nowrap;
+}
+.toolbar-inner > .menu-toggle,
+.toolbar-inner > .toolbar-whatsapp{
+    flex:0 0 auto;
+    align-self:center;
 }
 
 .notice-board{
@@ -1265,11 +1279,15 @@ footer{
 
 @media(max-width:980px){
     .toolbar-inner{
-        justify-content:center;
+        justify-content:space-between;
+        flex-wrap:wrap;
     }
-    .notice-board{
+    .toolbar-main{
         order:3;
         flex-basis:100%;
+        width:100%;
+    }
+    .notice-board{
         max-width:none;
     }
 }
@@ -1566,7 +1584,11 @@ body{
     border-bottom:1px solid rgba(30,30,46,.08) !important;
 }
 .toolbar-inner{
-    align-items:center !important;
+    align-items:flex-start !important;
+}
+.toolbar-inner > .menu-toggle,
+.toolbar-inner > .toolbar-whatsapp{
+    align-self:center !important;
 }
 .menu-toggle{
     width:40px;
@@ -1777,11 +1799,18 @@ body{
 <style>
 /* ===== Round 4: overrides finais (depois de todos os CSS externos) — avisos/saudacao mais largos, vidro visivel, texto sem corte ===== */
 
-/* Quadro de avisos e command center fluidos — sem cortar texto */
+/* Quadro de avisos e command center — mesma coluna, alinhados e fluidos */
+.toolbar-main{
+    flex:1 1 auto !important;
+    min-width:0 !important;
+    display:flex !important;
+    flex-direction:column !important;
+    gap:8px !important;
+}
 .notice-board{
     max-width:none !important;
     width:100% !important;
-    flex:1 1 auto !important;
+    flex:0 0 auto !important;
     align-self:stretch !important;
 }
 .notice-item-title,
@@ -1799,27 +1828,24 @@ body{
     word-break:break-word !important;
 }
 
-/* Command center alinhado e sem ellipsis */
 .ciop-command{
     max-width:none !important;
     width:100% !important;
-    flex:1 1 auto !important;
     min-width:0 !important;
 }
 .ciop-command-row{
-    padding-left:18px !important;
-    padding-right:18px !important;
+    width:100% !important;
+    margin:0 !important;
+    padding:0 !important;
 }
 .ciop-command-inner{
-    overflow:visible !important;
-    height:auto !important;
-    align-items:center !important;
+    width:100% !important;
+    box-sizing:border-box !important;
 }
-.ciop-kpi-value,
 .ciop-kpi-value-data{
-    white-space:normal !important;
-    overflow:visible !important;
-    text-overflow:clip !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
 }
 
 /* Saudacao mais larga e sem cortar texto */
@@ -2041,7 +2067,7 @@ body{
 
 </style>
 <link rel="stylesheet" href="assets/css/portal-glass-desktop.css?v=20260718al">
-<link rel="stylesheet" href="assets/css/portal-futuristic.css?v=20260718ao">
+<link rel="stylesheet" href="assets/css/portal-futuristic.css?v=20260718ap">
 <script src="assets/js/theme-toggle.js?v=20260718aj"></script>
 <script src="assets/js/portal-futuristic.js?v=20260718am" defer></script>
 <script src="assets/js/portal-senha.js" defer></script>
@@ -2274,21 +2300,65 @@ body{
         <button class="menu-toggle" onclick="toggleMenu()" type="button" aria-label="Abrir links operacionais">
             <span class="menu-bars" aria-hidden="true"><span></span><span></span><span></span></span>
         </button>
-        <section class="notice-board" aria-label="Quadro de avisos">
-            <div class="notice-board-head">
-                <span class="notice-board-title">Avisos</span>
-                <span id="avisosContador" class="notice-count" hidden>0</span>
-            </div>
-            <div class="notice-carousel-wrap">
-                <div id="avisosLista" class="notice-list notice-carousel-track">
-                    <div class="notice-empty">Carregando avisos...</div>
+        <div class="toolbar-main">
+            <section class="notice-board" aria-label="Quadro de avisos">
+                <div class="notice-board-head">
+                    <span class="notice-board-title">Avisos</span>
+                    <span id="avisosContador" class="notice-count" hidden>0</span>
                 </div>
-                <div id="avisosDots" class="notice-carousel-dots" hidden aria-label="Navegação de avisos"></div>
-                <div id="avisosProgress" class="notice-carousel-progress" hidden aria-hidden="true">
-                    <span class="notice-carousel-progress-bar"></span>
+                <div class="notice-carousel-wrap">
+                    <div id="avisosLista" class="notice-list notice-carousel-track">
+                        <div class="notice-empty">Carregando avisos...</div>
+                    </div>
+                    <div id="avisosDots" class="notice-carousel-dots" hidden aria-label="Navegação de avisos"></div>
+                    <div id="avisosProgress" class="notice-carousel-progress" hidden aria-hidden="true">
+                        <span class="notice-carousel-progress-bar"></span>
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
+            <section class="ciop-command-row" aria-label="Central de comando e busca">
+                <div class="ciop-command">
+                    <div class="ciop-command-inner">
+                        <div class="ciop-kpi ciop-kpi-datetime">
+                            <div class="ciop-datetime-row">
+                                <span class="ciop-online-chip" id="ciopOnlineChip" title="Portal online">
+                                    <span class="ciop-online-dot" aria-hidden="true"></span>
+                                    <span class="ciop-online-text">Online</span>
+                                </span>
+                                <div class="ciop-kpi-pair">
+                                    <div class="ciop-kpi-slot">
+                                        <span class="ciop-kpi-label">Data</span>
+                                        <span class="ciop-kpi-value ciop-kpi-value-data" id="ciopKpiData">—</span>
+                                    </div>
+                                    <div class="ciop-kpi-slot ciop-kpi-slot-hora">
+                                        <span class="ciop-kpi-label">Hora</span>
+                                        <span class="ciop-kpi-value ciop-kpi-value-hora" id="ciopKpiHora">—</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="ciop-kpi-sub">Hoje</span>
+                        </div>
+                        <div class="ciop-kpi">
+                            <span class="ciop-kpi-label">Módulos</span>
+                            <span class="ciop-kpi-value" id="ciopKpiModulos">—</span>
+                            <span class="ciop-kpi-sub">Disponíveis</span>
+                        </div>
+                        <div class="ciop-kpi">
+                            <span class="ciop-kpi-label">Avisos</span>
+                            <span class="ciop-kpi-value" id="ciopKpiAvisos">—</span>
+                            <span class="ciop-kpi-sub">Quadro ativo</span>
+                        </div>
+                        <label class="ciop-search" for="ciopBuscaModulos">
+                            <span class="ciop-search-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                            </span>
+                            <input id="ciopBuscaModulos" class="ciop-search-input" type="search" placeholder="Buscar módulos..." autocomplete="off" enterkeyhint="search">
+                            <button class="ciop-search-clear" type="button" id="ciopBuscaLimpar" aria-label="Limpar busca" hidden>×</button>
+                        </label>
+                    </div>
+                </div>
+            </section>
+        </div>
         <a class="toolbar-whatsapp" href="https://web.whatsapp.com/" target="_blank" rel="noopener noreferrer" aria-label="Conectar ao WhatsApp">
             <span class="toolbar-whatsapp-icon" aria-hidden="true">
                 <svg viewBox="0 0 32 32" role="img" focusable="false">
@@ -2299,49 +2369,6 @@ body{
         </a>
     </div>
 </div>
-
-<section class="ciop-command-row" aria-label="Central de comando e busca">
-    <div class="ciop-command">
-        <div class="ciop-command-inner">
-            <div class="ciop-kpi ciop-kpi-datetime">
-                <div class="ciop-datetime-row">
-                    <span class="ciop-online-chip" id="ciopOnlineChip" title="Portal online">
-                        <span class="ciop-online-dot" aria-hidden="true"></span>
-                        <span class="ciop-online-text">Online</span>
-                    </span>
-                    <div class="ciop-kpi-pair">
-                        <div class="ciop-kpi-slot">
-                            <span class="ciop-kpi-label">Data</span>
-                            <span class="ciop-kpi-value ciop-kpi-value-data" id="ciopKpiData">—</span>
-                        </div>
-                        <div class="ciop-kpi-slot ciop-kpi-slot-hora">
-                            <span class="ciop-kpi-label">Hora</span>
-                            <span class="ciop-kpi-value ciop-kpi-value-hora" id="ciopKpiHora">—</span>
-                        </div>
-                    </div>
-                </div>
-                <span class="ciop-kpi-sub">Hoje</span>
-            </div>
-            <div class="ciop-kpi">
-                <span class="ciop-kpi-label">Módulos</span>
-                <span class="ciop-kpi-value" id="ciopKpiModulos">—</span>
-                <span class="ciop-kpi-sub">Disponíveis</span>
-            </div>
-            <div class="ciop-kpi">
-                <span class="ciop-kpi-label">Avisos</span>
-                <span class="ciop-kpi-value" id="ciopKpiAvisos">—</span>
-                <span class="ciop-kpi-sub">Quadro ativo</span>
-            </div>
-            <label class="ciop-search" for="ciopBuscaModulos">
-                <span class="ciop-search-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-                </span>
-                <input id="ciopBuscaModulos" class="ciop-search-input" type="search" placeholder="Buscar módulos..." autocomplete="off" enterkeyhint="search">
-                <button class="ciop-search-clear" type="button" id="ciopBuscaLimpar" aria-label="Limpar busca" hidden>×</button>
-            </label>
-        </div>
-    </div>
-</section>
 
 <div id="avisoModal" class="notice-modal-backdrop" hidden>
     <div class="notice-modal" role="dialog" aria-modal="true" aria-labelledby="avisoModalTitulo">

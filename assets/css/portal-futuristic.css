@@ -107,18 +107,15 @@ html.dk-dark img.logo-right[src*="LOGO_TCGL-dark"] {
   z-index: 1;
   width: 100%;
   max-width: none;
-  margin: 8px auto 0;
-  padding: 0 18px;
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
-  display: flex;
-  justify-content: center;
-  align-items: stretch;
+  display: block;
 }
 
 .ciop-command {
   position: relative;
   z-index: 1;
-  flex: 1 1 auto;
   width: 100%;
   min-width: 0;
   max-width: none;
@@ -130,11 +127,11 @@ html.dk-dark img.logo-right[src*="LOGO_TCGL-dark"] {
   position: relative;
   height: auto;
   display: grid;
-  grid-template-columns: minmax(220px, 1.6fr) minmax(72px, 0.55fr) minmax(72px, 0.55fr) minmax(200px, 1.4fr);
-  gap: 0;
+  grid-template-columns: minmax(0, 1.8fr) minmax(64px, 0.45fr) minmax(64px, 0.45fr) minmax(180px, 1.35fr);
+  gap: 0 4px;
   align-items: center;
   padding: 6px 10px 6px 14px;
-  min-height: 44px;
+  min-height: 46px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.58);
   background:
@@ -144,7 +141,7 @@ html.dk-dark img.logo-right[src*="LOGO_TCGL-dark"] {
   box-shadow:
     0 8px 22px -16px rgba(6, 36, 92, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.72);
-  overflow: visible;
+  overflow: hidden;
 }
 
 .ciop-command-inner::before {
@@ -323,9 +320,9 @@ html.dk-dark .ciop-online-chip.is-offline {
   line-height: 1.2;
   letter-spacing: -0.01em;
   text-transform: capitalize;
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ciop-kpi-value-hora {
@@ -448,31 +445,51 @@ html.dk-dark .ciop-online-chip.is-offline {
   color: #c2410c;
 }
 
-/* Avisos centralizados na toolbar (home) */
+/* Coluna central: avisos + command alinhados e fluidos */
 body:has(.bg-wall) .toolbar-inner {
-  display: grid !important;
-  grid-template-columns: minmax(88px, 0.55fr) minmax(0, 1fr) minmax(88px, 0.55fr);
-  align-items: start;
+  display: flex !important;
+  flex-wrap: nowrap;
+  align-items: flex-start;
   gap: 12px;
-  padding: 0 18px !important;
+  padding: 0 20px !important;
   box-sizing: border-box;
+  width: 100%;
 }
 
 body:has(.bg-wall) .toolbar-inner > .menu-toggle {
-  justify-self: start;
-  margin-top: 6px;
+  flex: 0 0 auto;
+  align-self: center;
+  margin-top: 0;
 }
 
-body:has(.bg-wall) .toolbar-inner > .notice-board {
+body:has(.bg-wall) .toolbar-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+body:has(.bg-wall) .toolbar-inner > .notice-board,
+body:has(.bg-wall) .toolbar-main > .notice-board {
   justify-self: stretch;
   width: 100%;
   max-width: none;
   margin: 0;
+  flex: 0 0 auto;
 }
 
 body:has(.bg-wall) .toolbar-inner > .toolbar-whatsapp {
+  flex: 0 0 auto;
+  align-self: center;
+  margin-top: 0;
   justify-self: end;
-  margin-top: 6px;
+}
+
+body:has(.bg-wall) .toolbar-main > .ciop-command-row {
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 body:has(.bg-wall) .notice-board {
@@ -1110,12 +1127,12 @@ body:has(.body-bg-wall) .dk-theme-toggle:not(.side-link) {
 
 @media (max-width: 900px) {
   .ciop-command-row {
-    padding: 0 16px;
+    padding: 0;
   }
 
   .ciop-command-inner {
-    grid-template-columns: 1.5fr repeat(2, minmax(0, 0.85fr));
-    padding: 5px 8px;
+    grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 0.7fr));
+    padding: 6px 8px;
     min-height: 42px;
   }
 
@@ -1127,8 +1144,14 @@ body:has(.body-bg-wall) .dk-theme-toggle:not(.side-link) {
   }
 
   body:has(.bg-wall) .toolbar-inner {
-    grid-template-columns: auto 1fr auto;
+    display: flex !important;
+    flex-wrap: wrap;
     padding: 0 16px !important;
+  }
+
+  body:has(.bg-wall) .toolbar-main {
+    flex: 1 1 100%;
+    order: 3;
   }
 
   .header-actions .live-pill,
@@ -1141,19 +1164,26 @@ body:has(.body-bg-wall) .dk-theme-toggle:not(.side-link) {
   body:has(.bg-wall) .toolbar-inner {
     display: flex !important;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  body:has(.bg-wall) .toolbar-main {
+    order: 3;
+    flex: 1 1 100%;
+    width: 100%;
   }
 
   body:has(.bg-wall) .toolbar-inner > .notice-board {
-    order: 3;
-    flex: 1 1 100%;
+    order: unset;
+    flex: none;
     max-width: none;
   }
 }
 
 @media (max-width: 640px) {
   .ciop-command-row {
-    padding: 0 16px;
+    padding: 0;
   }
 
   .ciop-command-inner {
