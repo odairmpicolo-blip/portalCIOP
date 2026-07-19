@@ -47,15 +47,33 @@ service cloud.firestore {
     }
 
     function eMembroSala() {
-      return signedIn()
-        && resource.data.membros is list
-        && email() in resource.data.membros;
+      // Preferência: id da sala (sempre com e-mails em minúsculas) + lista membros.
+      return signedIn() && (
+        email() in salaId.split('__')
+        || (
+          resource.data.membros is list
+          && (email() in resource.data.membros || request.auth.token.email in resource.data.membros)
+        )
+      );
     }
 
     function seraMembroSala() {
       return signedIn()
         && request.resource.data.membros is list
         && email() in request.resource.data.membros;
+    }
+
+    function podeLerMensagensSala() {
+      return donoPortal()
+        || (signedIn() && email() in salaId.split('__'))
+        || (
+          signedIn()
+          && get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros is list
+          && (
+            email() in get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros
+            || request.auth.token.email in get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros
+          )
+        );
     }
 
     match /avisos/{avisoId} {
@@ -101,17 +119,22 @@ service cloud.firestore {
       allow delete: if donoPortal();
 
       match /mensagens/{msgId} {
-        allow read: if donoPortal()
-          || (signedIn()
-              && get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros is list
-              && email() in get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros);
+        allow read: if podeLerMensagensSala();
         allow create: if signedIn()
           && request.resource.data.de == email()
           && request.resource.data.texto is string
           && request.resource.data.texto.size() > 0
           && request.resource.data.texto.size() <= 4000
-          && get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros is list
-          && email() in get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros;
+          && (
+            email() in salaId.split('__')
+            || (
+              get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros is list
+              && (
+                email() in get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros
+                || request.auth.token.email in get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros
+              )
+            )
+          );
         allow update, delete: if donoPortal();
       }
     }

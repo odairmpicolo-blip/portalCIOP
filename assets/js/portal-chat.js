@@ -140,6 +140,89 @@ export function ouvirPresenca(callback) {
   };
 }
 
+const SALAS_LOCAL_KEY = "portal_chat_salas_conhecidas_v1";
+
+function lerSalasLocais(email) {
+  const key = normalizarEmailChat(email);
+  if (!key) return [];
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SALAS_LOCAL_KEY) || "{}");
+    const lista = parsed?.[key];
+    return Array.isArray(lista) ? lista.filter(Boolean) : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+export function lembrarSalaLocal(salaId, email = window.portalUsuario?.email) {
+  const key = normalizarEmailChat(email);
+  if (!key || !salaId) return;
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SALAS_LOCAL_KEY) || "{}");
+    const atual = Array.isArray(parsed[key]) ? parsed[key] : [];
+    if (!atual.includes(salaId)) {
+      parsed[key] = [salaId, ...atual].slice(0, 80);
+      localStorage.setItem(SALAS_LOCAL_KEY, JSON.stringify(parsed));
+    }
+  } catch (_) {}
+}
+
+async function repararMembrosSala(salaId, data, emailsExtra = []) {
+  const atuais = Array.isArray(data?.membros) ? data.membros : [];
+  const normalizados = [...new Set([
+    ...atuais.map(normalizarEmailChat),
+    ...emailsExtra.map(normalizarEmailChat)
+  ].filter(Boolean))].sort();
+  const iguais = atuais.length === normalizados.length
+    && atuais.every((v, i) => v === normalizados[i]);
+  if (iguais) return { id: salaId, ...data, membros: normalizados };
+  try {
+    await updateDoc(doc(db, COLECAO_SALAS, salaId), { membros: normalizados });
+  } catch (err) {
+    console.warn("Não foi possível reparar membros da sala:", err);
+  }
+  return { id: salaId, ...data, membros: normalizados };
+}
+
+function mesclarSalasPorId(listas) {
+  const mapa = new Map();
+  (listas || []).flat().forEach((sala) => {
+    if (!sala?.id) return;
+    const prev = mapa.get(sala.id);
+    if (!prev) {
+      mapa.set(sala.id, sala);
+      return;
+    }
+    const tPrev = timestampMs(prev.atualizadoEm || prev.ultimaMensagemEm);
+    const tNovo = timestampMs(sala.atualizadoEm || sala.ultimaMensagemEm);
+    if (tNovo >= tPrev) mapa.set(sala.id, sala);
+  });
+  return [...mapa.values()].sort(
+    (a, b) => timestampMs(b.atualizadoEm || b.ultimaMensagemEm) - timestampMs(a.atualizadoEm || a.ultimaMensagemEm)
+  );
+}
+
+export async function buscarSalasPorIds(ids = []) {
+  const unicos = [...new Set((ids || []).filter(Boolean))];
+  const salas = [];
+  for (const salaId of unicos) {
+    try {
+      const snap = await getDoc(doc(db, COLECAO_SALAS, salaId));
+      if (!snap.exists()) continue;
+      const reparada = await repararMembrosSala(salaId, snap.data());
+      salas.push(reparada);
+      lembrarSalaLocal(salaId);
+    } catch (_) {}
+  }
+  return salas;
+}
+
+export async function descobrirSalasComEmails(meuEmail, emails = []) {
+  const me = normalizarEmailChat(meuEmail);
+  const ids = (emails || []).map((e) => salaIdDm(me, e)).filter(Boolean);
+  return buscarSalasPorIds(ids);
+}
+
 export async function garantirSalaDm(emailA, emailB) {
   const a = normalizarEmailChat(emailA);
   const b = normalizarEmailChat(emailB);
@@ -148,7 +231,12 @@ export async function garantirSalaDm(emailA, emailB) {
 
   const ref = doc(db, COLECAO_SALAS, salaId);
   const snap = await getDoc(ref);
-  if (snap.exists()) return { id: salaId, ...snap.data() };
+  if (snap.exists()) {
+    const reparada = await repararMembrosSala(salaId, snap.data(), [a, b]);
+    lembrarSalaLocal(salaId, a);
+    lembrarSalaLocal(salaId, b);
+    return reparada;
+  }
 
   const payload = {
     tipo: "dm",
@@ -160,6 +248,8 @@ export async function garantirSalaDm(emailA, emailB) {
     criadoPor: a
   };
   await setDoc(ref, payload);
+  lembrarSalaLocal(salaId, a);
+  lembrarSalaLocal(salaId, b);
   return { id: salaId, ...payload };
 }
 
@@ -208,15 +298,16 @@ export function ouvirMensagens(salaId, callback, max = 200) {
 export async function listarMinhasSalas(email = window.portalUsuario?.email) {
   const key = normalizarEmailChat(email);
   if (!key) return [];
-  const q = query(collection(db, COLECAO_SALAS), where("membros", "array-contains", key));
-  const snap = await getDocs(q);
-  return snap.docs
-    .map((d) => ({ id: d.id, ...d.data() }))
-    .sort((a, b) => {
-      const ta = a.atualizadoEm?.toMillis?.() || 0;
-      const tb = b.atualizadoEm?.toMillis?.() || 0;
-      return tb - ta;
-    });
+  let querySalas = [];
+  try {
+    const q = query(collection(db, COLECAO_SALAS), where("membros", "array-contains", key));
+    const snap = await getDocs(q);
+    querySalas = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.warn("Falha ao listar salas (query):", err);
+  }
+  const locais = await buscarSalasPorIds(lerSalasLocais(key));
+  return mesclarSalasPorId([querySalas, locais]);
 }
 
 export async function listarTodasSalas() {
@@ -300,18 +391,48 @@ export function ouvirMinhasSalas(email, callback) {
     callback([]);
     return () => {};
   }
+
+  let querySalas = [];
+  let extrasSalas = [];
+  let cancelado = false;
+
+  const emitir = () => {
+    if (cancelado) return;
+    callback(mesclarSalasPorId([querySalas, extrasSalas]));
+  };
+
+  const carregarExtras = async (emailsOnline = []) => {
+    try {
+      const descobertas = await descobrirSalasComEmails(key, emailsOnline);
+      const locais = await buscarSalasPorIds(lerSalasLocais(key));
+      extrasSalas = mesclarSalasPorId([descobertas, locais]);
+      emitir();
+    } catch (err) {
+      console.warn("Falha ao carregar salas extras:", err);
+    }
+  };
+
+  carregarExtras([]);
+
   const q = query(collection(db, COLECAO_SALAS), where("membros", "array-contains", key));
-  return onSnapshot(
+  const unsub = onSnapshot(
     q,
     (snap) => {
-      const salas = snap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => timestampMs(b.atualizadoEm || b.ultimaMensagemEm) - timestampMs(a.atualizadoEm || a.ultimaMensagemEm));
-      callback(salas);
+      querySalas = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      querySalas.forEach((s) => lembrarSalaLocal(s.id, key));
+      emitir();
     },
     (err) => {
       console.warn("Falha ao ouvir salas de chat:", err);
-      callback([]);
+      querySalas = [];
+      emitir();
     }
   );
+
+  ouvirMinhasSalas.redescobrir = (emailsOnline = []) => carregarExtras(emailsOnline);
+
+  return () => {
+    cancelado = true;
+    unsub();
+  };
 }
