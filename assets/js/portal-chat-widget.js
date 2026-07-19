@@ -12,7 +12,7 @@ import {
   salaTemNaoLida,
   contarNaoLidas,
   marcarSalaLida
-} from "./portal-chat.js?v=20260719g";
+} from "./portal-chat.js?v=20260719i";
 
 const ICON_CHAT = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C7.03 3 3 6.58 3 11c0 2.39 1.19 4.53 3.08 6.01L5 21l4.2-1.4c.9.27 1.84.4 2.8.4 4.97 0 9-3.58 9-8s-4.03-8-9-8zm0 14.5c-.78 0-1.54-.12-2.25-.35l-.5-.16-2.24.75.62-2.03-.17-.5C6.55 13.85 6 12.48 6 11c0-3.31 2.69-6 6-6s6 2.69 6 6-2.69 6-6 6z"/></svg>`;
 const ICON_SEND = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;
@@ -105,39 +105,45 @@ function pedirPermissaoNotificacao() {
   }
 }
 
-async function ativarSomEAlertas() {
-  desbloquearAudio();
-  gravarSomPermitido();
-  const perm = await pedirPermissaoNotificacao();
-  // Toca bip de teste no mesmo gesto do usuário (necessário para o navegador liberar áudio).
-  tocarSomLeve();
-  return perm;
-}
-
-function notificarSistema(titulo, corpo) {
+function notificarSistema(titulo, corpo, forcar = false) {
   try {
     if (!("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
-    if (!document.hidden && document.hasFocus()) return;
+    // Mostra também com a aba em foco — o toast in-app já cobre, mas o SO reforça o alerta.
+    if (!forcar && !document.hidden && document.hasFocus()) {
+      // ainda assim notifica: usuário pediu alerta confiável
+    }
     const n = new Notification(titulo || "Nova mensagem", {
       body: corpo || "",
-      tag: "portal-chat",
+      tag: "portal-chat-" + String(Date.now()),
       renotify: true,
-      silent: false
+      silent: false,
+      requireInteraction: false
     });
     n.onclick = () => {
       try { window.focus(); } catch (_) {}
       n.close();
     };
-    setTimeout(() => n.close(), 8000);
+    setTimeout(() => n.close(), 10000);
   } catch (_) {}
+}
+
+async function ativarSomEAlertas() {
+  desbloquearAudio();
+  gravarSomPermitido();
+  const perm = await pedirPermissaoNotificacao();
+  tocarSomLeve();
+  if (perm === "granted") {
+    notificarSistema("Chat Portal CIOP", "Alertas de mensagem ativados.", true);
+  }
+  return perm;
 }
 
 function garantirCss() {
   if (document.querySelector("link[data-portal-chat-widget]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-chat-widget.css?v=20260719h");
+  link.href = portalPath("assets/css/portal-chat-widget.css?v=20260719i");
   link.dataset.portalChatWidget = "1";
   document.head.appendChild(link);
 }
@@ -164,8 +170,7 @@ class PortalChatWidget {
   }
 
   podeUsar() {
-    // Bolha para qualquer usuário logado (não depende do módulo side-chat do menu).
-    if (paginaChatFull()) return false;
+    // Bolha em qualquer página autenticada, inclusive chat.html (para alertas).
     return Boolean(this.meuEmail);
   }
 
@@ -286,8 +291,14 @@ class PortalChatWidget {
     this.meuEmail = normalizarEmailChat(user?.email);
     if (!this.podeUsar()) return;
     this.montarDom();
+    // Na página cheia do chat, esconde só a bolha — mantém listener de alertas.
+    if (paginaChatFull() && this.root) {
+      this.root.classList.add("pcw-embedded-page");
+    }
     if (this.unsubSalas) this.unsubSalas();
     if (this.unsubPresenca) this.unsubPresenca();
+    this.vistoInicialSalas = false;
+    this.fingerprints = new Map();
     this.unsubSalas = ouvirMinhasSalas(this.meuEmail, (salas) => this.onSalas(salas));
     this.unsubPresenca = ouvirPresenca((lista) => {
       this.online = lista || [];
@@ -387,7 +398,7 @@ class PortalChatWidget {
     if (this.painelAberto && this.view === "lista") this.renderLista();
     this.atualizarBadge();
     tocarSomLeve();
-    notificarSistema(nome, texto);
+    notificarSistema(nome, texto, true);
   }
 
   esconderToast() {
