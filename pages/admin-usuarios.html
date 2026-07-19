@@ -1165,9 +1165,11 @@ function renderUsuarios() {
             : (ehProprioUsuario && !proprioUsuarioPodeEditar
                 ? "<button class=\"btn btn-secondary\" type=\"button\" disabled title=\"Você não pode editar o próprio usuário.\">Editar</button>"
                 : "<button class=\"btn btn-primary\" type=\"button\" onclick=\"abrirEditorUsuario('" + emailParam + "')\">Editar</button>");
-        const botaoModulos = cadastroProtegidoDoDono
-            ? "<button class=\"btn btn-secondary\" type=\"button\" disabled title=\"Cadastro protegido. Apenas odair.marin@icloud.com pode alterar este usuário.\">Módulos</button>"
-            : "<button class=\"btn btn-modulos\" type=\"button\" onclick=\"abrirModulosUsuario('" + emailParam + "')\">Módulos</button>";
+        const botaoModulos = !usuarioLogadoEhDonoPerfil()
+            ? "<button class=\"btn btn-secondary\" type=\"button\" disabled title=\"Somente odair.marin@icloud.com pode alterar as configurações de módulos.\">Módulos</button>"
+            : (ehProprioUsuario
+                ? "<button class=\"btn btn-modulos\" type=\"button\" onclick=\"abrirModulosUsuario('" + emailParam + "')\" title=\"Somente você pode alterar estas configurações.\">Módulos</button>"
+                : "<button class=\"btn btn-modulos\" type=\"button\" onclick=\"abrirModulosUsuario('" + emailParam + "')\">Módulos</button>");
         const botaoAcesso = cadastroProtegidoDoDono
             ? "<button class=\"btn btn-secondary\" type=\"button\" disabled title=\"Cadastro protegido. Apenas odair.marin@icloud.com pode alterar este usuário.\">" + acaoLabel + "</button>"
             : "<button class=\"btn " + acaoClass + "\" type=\"button\" onclick=\"alternarAcesso('" + emailParam + "')\">" + acaoLabel + "</button>";
@@ -1346,14 +1348,15 @@ function renderChecksModulosUsuario(email, user) {
 }
 
 window.abrirModulosUsuario = async function (emailParam) {
+    if (!usuarioLogadoEhDonoPerfil()) {
+        atualizarStatus("Somente odair.marin@icloud.com pode alterar as configurações de módulos.", "erro");
+        return;
+    }
+
     const email = normalizarEmailLocal(decodificarEmailParam(emailParam));
     const user = usuariosEditados[email];
     if (!user) {
         atualizarStatus("Usuário não encontrado para editar módulos.", "erro");
-        return;
-    }
-    if (usuarioEhDonoPerfil(email) && !usuarioEhLogado(email)) {
-        atualizarStatus("Cadastro protegido. Apenas odair.marin@icloud.com pode alterar este usuário.", "erro");
         return;
     }
 
@@ -1392,6 +1395,10 @@ window.fecharModulosUsuario = function () {
 };
 
 window.marcarTodosModulosUsuario = function (marcar) {
+    if (!usuarioLogadoEhDonoPerfil()) {
+        setStatusModulos("Somente odair.marin@icloud.com pode alterar estas configurações.", "erro");
+        return;
+    }
     document.querySelectorAll("#modulosUsuarioRoot input[type='checkbox']").forEach((el) => {
         el.checked = !!marcar;
     });
@@ -1402,6 +1409,10 @@ window.marcarTodosModulosUsuario = function (marcar) {
 };
 
 window.herdarPerfilModulosUsuario = function () {
+    if (!usuarioLogadoEhDonoPerfil()) {
+        setStatusModulos("Somente odair.marin@icloud.com pode alterar estas configurações.", "erro");
+        return;
+    }
     const email = emailModulosEmEdicao;
     const user = usuariosEditados[email];
     if (!email || !user) return;
@@ -1411,6 +1422,11 @@ window.herdarPerfilModulosUsuario = function () {
 };
 
 window.salvarModulosUsuario = async function () {
+    if (!usuarioLogadoEhDonoPerfil()) {
+        setStatusModulos("Somente odair.marin@icloud.com pode salvar configurações de módulos.", "erro");
+        return;
+    }
+
     const email = normalizarEmailKey(emailModulosEmEdicao);
     const user = usuariosEditados[email];
     if (!email || !user) {
