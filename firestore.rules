@@ -46,7 +46,7 @@ service cloud.firestore {
       return signedIn() && email() == 'odair.marin@icloud.com';
     }
 
-    function eMembroSala() {
+    function eMembroSala(salaId) {
       // Preferência: id da sala (sempre com e-mails em minúsculas) + lista membros.
       return signedIn() && (
         email() in salaId.split('__')
@@ -63,7 +63,7 @@ service cloud.firestore {
         && email() in request.resource.data.membros;
     }
 
-    function podeLerMensagensSala() {
+    function podeLerMensagensSala(salaId) {
       return donoPortal()
         || (signedIn() && email() in salaId.split('__'))
         || (
@@ -111,15 +111,15 @@ service cloud.firestore {
     }
 
     match /chatSalas/{salaId} {
-      allow read: if donoPortal() || eMembroSala();
+      allow read: if donoPortal() || eMembroSala(salaId);
       allow create: if seraMembroSala()
         && request.resource.data.tipo == 'dm'
         && request.resource.data.membros.size() == 2;
-      allow update: if donoPortal() || eMembroSala();
+      allow update: if donoPortal() || eMembroSala(salaId);
       allow delete: if donoPortal();
 
       match /mensagens/{msgId} {
-        allow read: if podeLerMensagensSala();
+        allow read: if podeLerMensagensSala(salaId);
         allow create: if signedIn()
           && request.resource.data.de == email()
           && request.resource.data.texto is string
