@@ -63,7 +63,7 @@ function garantirCss() {
   if (document.querySelector("link[data-portal-chat-widget]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-chat-widget.css?v=20260719c");
+  link.href = portalPath("assets/css/portal-chat-widget.css?v=20260719d");
   link.dataset.portalChatWidget = "1";
   document.head.appendChild(link);
 }
@@ -390,10 +390,7 @@ class PortalChatWidget {
     el.innerHTML = msgs
       .map((m) => {
         const mine = normalizarEmailChat(m.de) === this.meuEmail;
-        return `<div class="pcw-bubble ${mine ? "mine" : "theirs"}">
-          ${escapeHtml(m.texto)}
-          <span class="pcw-time">${escapeHtml(formatarHoraMensagem(m.criadoEm))}</span>
-        </div>`;
+        return `<div class="pcw-bubble ${mine ? "mine" : "theirs"}"><span class="pcw-bubble-text">${escapeHtml(m.texto)}</span><span class="pcw-time">${escapeHtml(formatarHoraMensagem(m.criadoEm))}</span></div>`;
       })
       .join("");
     el.scrollTop = el.scrollHeight;

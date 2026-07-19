@@ -293,7 +293,7 @@ function garantirChatWidget() {
   if (/\/chat\.html$/i.test(path) || /\/chat-historico\.html$/i.test(path)) return;
   const script = document.createElement("script");
   script.type = "module";
-  script.src = portalPath("assets/js/portal-chat-widget.js?v=20260719c");
+  script.src = portalPath("assets/js/portal-chat-widget.js?v=20260719d");
   script.dataset.portalChatWidget = "1";
   document.head.appendChild(script);
 }
