@@ -98,7 +98,7 @@ body{
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260718ba">
 <link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260718ba">
 <script src="../assets/js/theme-toggle.js?v=20260718aj"></script>
-<script type="module" src="../assets/js/auth.js?v=20260719d"></script>
+<script type="module" src="../assets/js/auth.js?v=20260719e"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 </head>
 <body>
@@ -158,7 +158,7 @@ import {
   ouvirMensagens,
   formatarHoraMensagem,
   normalizarEmailChat
-} from "../assets/js/portal-chat.js?v=20260719c";
+} from "../assets/js/portal-chat.js?v=20260719e";
 
 const onlineList = document.getElementById("onlineList");
 const messagesEl = document.getElementById("messages");
@@ -201,7 +201,6 @@ function renderOnline(lista) {
       <span class="dot" aria-hidden="true"></span>
       <span class="user-meta">
         <strong>${escapeHtml(u.nome || email)}</strong>
-        <span>${escapeHtml(u.perfil || "")}${u.cargo ? " · " + escapeHtml(u.cargo) : ""}</span>
       </span>
     </button>`;
   }).join("");
@@ -229,8 +228,8 @@ function renderMensagens(msgs) {
 async function abrirConversa(email) {
   const alvo = normalizarEmailChat(email);
   if (!alvo || alvo === meuEmail) return;
-  const user = onlineCache.find((u) => normalizarEmailChat(u.email) === alvo) || { email: alvo, nome: alvo };
-  parceiro = { email: alvo, nome: user.nome || alvo };
+  const user = onlineCache.find((u) => normalizarEmailChat(u.email) === alvo) || { email: alvo, nome: "" };
+  parceiro = { email: alvo, nome: String(user.nome || "").trim() || alvo.split("@")[0] };
   threadTitle.textContent = parceiro.nome;
   composer.hidden = false;
   setStatus("Abrindo conversa...");

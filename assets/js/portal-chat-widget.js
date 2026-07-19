@@ -12,7 +12,7 @@ import {
   salaTemNaoLida,
   contarNaoLidas,
   marcarSalaLida
-} from "./portal-chat.js?v=20260719c";
+} from "./portal-chat.js?v=20260719e";
 
 const ICON_CHAT = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C7.03 3 3 6.58 3 11c0 2.39 1.19 4.53 3.08 6.01L5 21l4.2-1.4c.9.27 1.84.4 2.8.4 4.97 0 9-3.58 9-8s-4.03-8-9-8zm0 14.5c-.78 0-1.54-.12-2.25-.35l-.5-.16-2.24.75.62-2.03-.17-.5C6.55 13.85 6 12.48 6 11c0-3.31 2.69-6 6-6s6 2.69 6 6-2.69 6-6 6z"/></svg>`;
 const ICON_SEND = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;
@@ -63,7 +63,7 @@ function garantirCss() {
   if (document.querySelector("link[data-portal-chat-widget]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-chat-widget.css?v=20260719d");
+  link.href = portalPath("assets/css/portal-chat-widget.css?v=20260719e");
   link.dataset.portalChatWidget = "1";
   document.head.appendChild(link);
 }
@@ -218,7 +218,7 @@ class PortalChatWidget {
     }
 
     const user = this.online.find((u) => normalizarEmailChat(u.email) === email);
-    const nome = user?.nome || email;
+    const nome = (user?.nome && String(user.nome).trim()) || this.nomeDeEmail(email);
     const toast = this.root.querySelector("#pcwToast");
     toast.dataset.email = email;
     this.root.querySelector("#pcwToastNome").textContent = nome;
@@ -274,9 +274,13 @@ class PortalChatWidget {
   nomeDeEmail(email) {
     const key = normalizarEmailChat(email);
     const online = this.online.find((u) => normalizarEmailChat(u.email) === key);
-    if (online?.nome) return online.nome;
+    if (online?.nome) return String(online.nome).trim();
     const sala = this.salas.find((s) => outroMembroSala(s, this.meuEmail) === key);
-    return sala?.nomes?.[key] || key;
+    const nomeSala = sala?.nomes?.[key];
+    if (nomeSala) return String(nomeSala).trim();
+    // Sem cadastro de nome: usa a parte antes do @, nunca o e-mail completo na UI.
+    const local = key.split("@")[0] || key;
+    return local.replace(/[._-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   }
 
   renderLista() {
@@ -290,12 +294,10 @@ class PortalChatWidget {
       body.innerHTML = outros
         .map((u) => {
           const email = normalizarEmailChat(u.email);
+          const nome = String(u.nome || this.nomeDeEmail(email)).trim();
           return `<button type="button" class="pcw-row" data-email="${escapeHtml(email)}">
-            <span class="pcw-avatar">${escapeHtml(iniciais(u.nome, email))}<span class="pcw-dot"></span></span>
-            <span class="pcw-meta">
-              <strong>${escapeHtml(u.nome || email)}</strong>
-              <span>${escapeHtml(u.perfil || "")}${u.cargo ? " · " + escapeHtml(u.cargo) : ""}</span>
-            </span>
+            <span class="pcw-avatar">${escapeHtml(iniciais(nome, email))}<span class="pcw-dot"></span></span>
+            <span class="pcw-meta"><strong>${escapeHtml(nome)}</strong></span>
           </button>`;
         })
         .join("");
@@ -311,10 +313,7 @@ class PortalChatWidget {
           const unread = salaTemNaoLida(sala, this.meuEmail);
           return `<button type="button" class="pcw-row" data-email="${escapeHtml(email)}">
             <span class="pcw-avatar">${escapeHtml(iniciais(nome, email))}</span>
-            <span class="pcw-meta">
-              <strong>${escapeHtml(nome)}</strong>
-              <span>${escapeHtml(sala.ultimaMensagem || "Sem mensagens")}</span>
-            </span>
+            <span class="pcw-meta"><strong>${escapeHtml(nome)}</strong></span>
             ${unread ? '<span class="pcw-row-badge">1</span>' : ""}
           </button>`;
         })
