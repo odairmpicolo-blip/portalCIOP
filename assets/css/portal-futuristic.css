@@ -445,57 +445,58 @@ html.dk-dark .ciop-online-chip.is-offline {
   color: #c2410c;
 }
 
-/* Coluna central quase full-bleed; menu/WhatsApp flutuam nas laterais */
+/* Barras centralizadas com 2cm de cada lado; menu/WhatsApp nas laterais */
 body:has(.bg-wall) .toolbar-inner {
-  display: grid !important;
-  grid-template-columns: auto 1fr auto;
-  align-items: start;
-  gap: 0;
-  padding: 0 10px !important;
+  display: block !important;
+  position: relative;
+  padding: 0 !important;
   box-sizing: border-box;
   width: 100%;
-  position: relative;
 }
 
 body:has(.bg-wall) .toolbar-inner > .menu-toggle {
-  grid-column: 1;
-  grid-row: 1;
+  position: absolute;
+  left: 10px;
+  top: 0;
+  bottom: auto;
   z-index: 3;
-  align-self: center;
-  margin: 0 0 0 2px;
+  width: 40px !important;
+  height: 40px !important;
+  margin: 0;
+}
+
+body:has(.bg-wall) .toolbar-inner > .toolbar-whatsapp {
+  position: absolute;
+  right: 10px;
+  top: 0;
+  z-index: 3;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  margin: 0;
+  color: #25d366 !important;
 }
 
 body:has(.bg-wall) .toolbar-main {
-  grid-column: 1 / -1;
-  grid-row: 1;
+  position: relative;
   z-index: 1;
-  width: 100%;
+  width: calc(100% - 4cm);
+  max-width: calc(100% - 4cm);
+  margin: 0 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  /* reserva espaço simétrico dos botões laterais (40px) */
-  padding-left: 52px;
-  padding-right: 52px;
+  padding: 0;
   box-sizing: border-box;
 }
 
 body:has(.bg-wall) .toolbar-inner > .notice-board,
 body:has(.bg-wall) .toolbar-main > .notice-board {
-  justify-self: stretch;
   width: 100%;
   max-width: none;
   margin: 0;
   flex: 0 0 auto;
-}
-
-body:has(.bg-wall) .toolbar-inner > .toolbar-whatsapp {
-  grid-column: 3;
-  grid-row: 1;
-  z-index: 3;
-  align-self: center;
-  margin: 0 2px 0 0;
-  justify-self: end;
 }
 
 body:has(.bg-wall) .toolbar-main > .ciop-command-row {
@@ -1162,19 +1163,20 @@ body:has(.body-bg-wall) .dk-theme-toggle:not(.side-link) {
     padding: 0 12px !important;
   }
 
-  body:has(.bg-wall) .toolbar-main {
-    grid-column: unset;
-    grid-row: unset;
-    flex: 1 1 100%;
-    order: 3;
-    padding-left: 0;
-    padding-right: 0;
-  }
-
   body:has(.bg-wall) .toolbar-inner > .menu-toggle,
   body:has(.bg-wall) .toolbar-inner > .toolbar-whatsapp {
-    grid-column: unset;
-    grid-row: unset;
+    position: static;
+    left: auto;
+    right: auto;
+  }
+
+  body:has(.bg-wall) .toolbar-main {
+    flex: 1 1 100%;
+    order: 3;
+    width: calc(100% - 1.2cm);
+    max-width: calc(100% - 1.2cm);
+    margin: 0 auto;
+    padding: 0;
   }
 
   .header-actions .live-pill,
@@ -1190,20 +1192,21 @@ body:has(.body-bg-wall) .dk-theme-toggle:not(.side-link) {
     justify-content: space-between;
     align-items: center;
     gap: 10px;
+    padding: 0 12px !important;
+  }
+
+  body:has(.bg-wall) .toolbar-inner > .menu-toggle,
+  body:has(.bg-wall) .toolbar-inner > .toolbar-whatsapp {
+    position: static;
   }
 
   body:has(.bg-wall) .toolbar-main {
     order: 3;
     flex: 1 1 100%;
-    width: 100%;
-    padding-left: 0;
-    padding-right: 0;
-  }
-
-  body:has(.bg-wall) .toolbar-inner > .menu-toggle,
-  body:has(.bg-wall) .toolbar-inner > .toolbar-whatsapp {
-    grid-column: unset;
-    grid-row: unset;
+    width: calc(100% - 1.2cm);
+    max-width: calc(100% - 1.2cm);
+    margin: 0 auto;
+    padding: 0;
   }
 
   body:has(.bg-wall) .toolbar-inner > .notice-board {
