@@ -19,6 +19,8 @@ const LIBERACAO_URL = process.env.LIBERACAO_API_URL || process.env.FOLHA_SERVICO
 const ESCALA_SAIDA_URL = process.env.ESCALA_SAIDA_API_URL || "";
 
 const DIAS_JANELA_LANCAMENTO = Number(process.env.LIBERACAO_DIAS_JANELA || 7);
+/** Janela do sync frequente (--liberacao-hoje): 2 dias antes + hoje. */
+const DIAS_LIBERACAO_HOJE = Number(process.env.LIBERACAO_DIAS_HOJE || 2);
 const PORTAL_TZ = process.env.PORTAL_TZ || "America/Sao_Paulo";
 
 function partesDataPortal(data = new Date()) {
@@ -271,15 +273,12 @@ async function atualizarLiberacaoSomenteHoje() {
   const dir = path.join(portalRoot, "assets", "data", "liberacao");
   const hoje = isoHoje();
   const atualizadoEm = new Date().toISOString();
-  const arquivo = `acompanhamento-dia-${hoje}.json`;
+  const dias = [];
+  for (let i = DIAS_LIBERACAO_HOJE; i >= 0; i--) {
+    dias.push(isoDiasAtras(i));
+  }
 
-  console.log(`Baixando liberação hoje (${hoje})...`);
-  const payload = await buscarLiberacaoDia(hoje);
-  escreverJson(path.join(dir, arquivo), {
-    ...payload,
-    total: payload.dados.length,
-    atualizadoEm
-  });
+  console.log(`Baixando liberação (${dias[0]} a ${hoje}: ${DIAS_LIBERACAO_HOJE} dias antes + hoje)...`);
 
   const manifestPath = path.join(dir, "manifest.json");
   let manifest = {};
@@ -290,7 +289,19 @@ async function atualizarLiberacaoSomenteHoje() {
   }
   manifest.atualizadoEm = atualizadoEm;
   manifest.dias = manifest.dias || {};
-  manifest.dias[hoje] = arquivo;
+
+  for (const dia of dias) {
+    console.log(`  dia ${dia}...`);
+    const payload = await buscarLiberacaoDia(dia);
+    const arquivo = `acompanhamento-dia-${dia}.json`;
+    escreverJson(path.join(dir, arquivo), {
+      ...payload,
+      total: payload.dados.length,
+      atualizadoEm
+    });
+    manifest.dias[dia] = arquivo;
+  }
+
   escreverJson(manifestPath, manifest);
 }
 
@@ -386,7 +397,7 @@ async function main() {
     return;
   }
   if (modo === "--liberacao-hoje") {
-    console.log("Atualizando JSON de liberação (hoje)...");
+    console.log(`Atualizando JSON de liberação (${DIAS_LIBERACAO_HOJE} dias antes + hoje)...`);
     await atualizarLiberacaoSomenteHoje();
     console.log("Concluído.");
     return;

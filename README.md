@@ -80,7 +80,7 @@ Localmente, defina as mesmas variáveis em `backend/.env` (veja `backend/.env.ex
 | Workflow | Frequência | O que faz |
 |---|---|---|
 | `atualizar-terminais.yml` | a cada 5 minutos | Snapshot de terminais a partir da planilha ao vivo. |
-| `atualizar-liberacao-hoje.yml` | a cada 5 minutos | JSON de liberação do dia corrente. |
+| `atualizar-liberacao-hoje.yml` | a cada 5 minutos | JSON de liberação (2 dias antes + hoje). |
 | `atualizar-telemetria.yml` | a cada 2 horas | Telemetria de veículos (Clever + TCGL + FleetBus). |
 | `atualizar-folha-servico.yml` | a cada 30 minutos | Folha de serviço, pontualidade, autuações, liberação, ICV e import no Aurora DSQL. |
 | `atualizar-bus2.yml` | diário (06h UTC) | Rotas e horários estáticos do Bus2. |

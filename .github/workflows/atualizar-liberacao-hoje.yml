@@ -1,8 +1,8 @@
-name: Atualizar JSON liberação hoje
+name: Atualizar JSON liberação (D-2 + hoje)
 
 on:
   schedule:
-        # A cada 5 minutos — JSON + DSQL para leitura ao vivo rápida no portal
+        # A cada 5 minutos — JSON (2 dias antes + hoje) + DSQL para leitura ao vivo rápida no portal
         - cron: "*/5 * * * *" # Runs every 5 minutes
   workflow_dispatch:
   repository_dispatch:
@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+
 
 jobs:
   atualizar:
@@ -30,29 +31,31 @@ jobs:
       - name: Sincronizar com origin
         run: git pull --rebase --autostash origin main
 
-      - name: Gerar JSON de liberação (hoje)
+      - name: Gerar JSON de liberação (2 dias antes + hoje)
         env:
           PORTAL_ROOT: ${{ github.workspace }}
           PORTAL_JSON_TIMEOUT_MS: 180000
           LIBERACAO_API_URL: ${{ secrets.LIBERACAO_API_URL }}
+          LIBERACAO_DIAS_HOJE: "2"
         run: node scripts/atualizar-portais-json.mjs --liberacao-hoje
 
       - name: Sincronizar antes do commit
         run: git pull --rebase --autostash origin main
 
-      - name: Publicar JSON de liberação (hoje)
+      - name: Publicar JSON de liberação (D-2 + hoje)
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Atualiza JSON liberação hoje"
+          commit_message: "Atualiza JSON liberação (2 dias antes + hoje)"
           file_pattern: assets/data/liberacao/*.json
 
-      - name: Importar liberação hoje no DSQL (planilha → JSON → AWS)
+      - name: Importar liberação (D-2 + hoje) no DSQL (planilha → JSON → AWS)
         env:
           DSQL_CLUSTER_ID: ${{ secrets.DSQL_CLUSTER_ID }}
           DSQL_REGION: sa-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           PORTAL_ROOT: ${{ github.workspace }}
+          LIBERACAO_DIAS_HOJE: "2"
         run: |
           if [ -z "$DSQL_CLUSTER_ID" ]; then
             echo "DSQL_CLUSTER_ID não configurado — import DSQL ignorado."
