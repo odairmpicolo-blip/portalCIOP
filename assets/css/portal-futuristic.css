@@ -445,29 +445,39 @@ html.dk-dark .ciop-online-chip.is-offline {
   color: #c2410c;
 }
 
-/* Coluna central: avisos + command alinhados e fluidos */
+/* Coluna central quase full-bleed; menu/WhatsApp flutuam nas laterais */
 body:has(.bg-wall) .toolbar-inner {
-  display: flex !important;
-  flex-wrap: nowrap;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 0 20px !important;
+  display: grid !important;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 0;
+  padding: 0 10px !important;
   box-sizing: border-box;
   width: 100%;
+  position: relative;
 }
 
 body:has(.bg-wall) .toolbar-inner > .menu-toggle {
-  flex: 0 0 auto;
+  grid-column: 1;
+  grid-row: 1;
+  z-index: 3;
   align-self: center;
-  margin-top: 0;
+  margin: 0 0 0 2px;
 }
 
 body:has(.bg-wall) .toolbar-main {
-  flex: 1 1 auto;
+  grid-column: 1 / -1;
+  grid-row: 1;
+  z-index: 1;
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  /* reserva espaço dos botões laterais — avisos e command compartilham as mesmas bordas */
+  padding-left: 52px;
+  padding-right: clamp(148px, 16vw, 210px);
+  box-sizing: border-box;
 }
 
 body:has(.bg-wall) .toolbar-inner > .notice-board,
@@ -480,9 +490,11 @@ body:has(.bg-wall) .toolbar-main > .notice-board {
 }
 
 body:has(.bg-wall) .toolbar-inner > .toolbar-whatsapp {
-  flex: 0 0 auto;
+  grid-column: 3;
+  grid-row: 1;
+  z-index: 3;
   align-self: center;
-  margin-top: 0;
+  margin: 0 2px 0 0;
   justify-self: end;
 }
 
@@ -1146,12 +1158,23 @@ body:has(.body-bg-wall) .dk-theme-toggle:not(.side-link) {
   body:has(.bg-wall) .toolbar-inner {
     display: flex !important;
     flex-wrap: wrap;
-    padding: 0 16px !important;
+    gap: 10px;
+    padding: 0 12px !important;
   }
 
   body:has(.bg-wall) .toolbar-main {
+    grid-column: unset;
+    grid-row: unset;
     flex: 1 1 100%;
     order: 3;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  body:has(.bg-wall) .toolbar-inner > .menu-toggle,
+  body:has(.bg-wall) .toolbar-inner > .toolbar-whatsapp {
+    grid-column: unset;
+    grid-row: unset;
   }
 
   .header-actions .live-pill,
@@ -1166,12 +1189,21 @@ body:has(.body-bg-wall) .dk-theme-toggle:not(.side-link) {
     flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
+    gap: 10px;
   }
 
   body:has(.bg-wall) .toolbar-main {
     order: 3;
     flex: 1 1 100%;
     width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  body:has(.bg-wall) .toolbar-inner > .menu-toggle,
+  body:has(.bg-wall) .toolbar-inner > .toolbar-whatsapp {
+    grid-column: unset;
+    grid-row: unset;
   }
 
   body:has(.bg-wall) .toolbar-inner > .notice-board {
