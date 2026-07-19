@@ -60,6 +60,8 @@ export const MODULOS_PORTAL = [
   { id: "side-globus", label: "Menu: Globus", grupo: "Menu lateral" },
   { id: "side-mobilibus", label: "Menu: Mobilibus", grupo: "Menu lateral" },
   { id: "gerenciar-usuarios", label: "Menu: Gerenciar Usuários", grupo: "Menu lateral" },
+  { id: "side-chat", label: "Menu: Chat", grupo: "Menu lateral" },
+  { id: "chat-historico", label: "Menu: Histórico de Chat", grupo: "Menu lateral" },
   { id: "side-ponto", label: "Menu: Ponto Eletrônico", grupo: "Menu lateral" },
   { id: "side-reconhecimento", label: "Menu: Reconhecimento Facial", grupo: "Menu lateral" },
   { id: "side-linea", label: "Menu: Linea", grupo: "Menu lateral" },

@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>Chat - Portal CIOP</title>
+<style>
+:root{
+  --blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--bg:#f5f7fb;--border:#dfe5ef;
+  --text:#101828;--muted:#3f4757;--green:#15803d;--white:#fff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;background:var(--bg);
+  display:flex;flex-direction:column;
+}
+.header{
+  display:grid;grid-template-columns:180px 1fr minmax(260px,auto);
+  gap:14px;align-items:center;padding:10px 22px;
+  background:rgba(255,255,255,.72);border-bottom:1px solid #e8edf6;
+  backdrop-filter:blur(18px) saturate(180%);
+}
+.header h1{margin:0;text-align:center;color:var(--blue);font-size:clamp(18px,2.2vw,24px);font-weight:900}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.logo-tcgl{height:48px;object-fit:contain}
+.wrap{flex:1;display:grid;grid-template-columns:minmax(240px,320px) 1fr;gap:0;min-height:0;max-width:1400px;width:100%;margin:0 auto}
+.sidebar-chat,.thread{
+  background:rgba(255,255,255,.7);backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.55);min-height:0;
+}
+.sidebar-chat{
+  border-right:1px solid var(--border);display:flex;flex-direction:column;
+  max-height:calc(100vh - 72px);
+}
+.thread{display:flex;flex-direction:column;max-height:calc(100vh - 72px)}
+.panel-head{
+  padding:14px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.panel-head h2{margin:0;font-size:15px;color:var(--blue);font-weight:900}
+.btn-portal,.btn{
+  display:inline-flex;align-items:center;gap:8px;border:0;cursor:pointer;
+  border-radius:10px;padding:8px 12px;font:inherit;font-weight:800;font-size:13px;
+  text-decoration:none;color:#fff;background:linear-gradient(135deg,var(--blue),var(--blue2));
+}
+.btn-secondary{background:#e8edf6;color:var(--blue)}
+.btn-orange{background:linear-gradient(135deg,var(--orange),#ff8f3d)}
+.online-list{overflow:auto;flex:1;padding:8px}
+.user-row{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  border:0;background:transparent;padding:10px 12px;border-radius:12px;cursor:pointer;
+  font:inherit;color:inherit;
+}
+.user-row:hover,.user-row.is-active{background:rgba(6,36,92,.08)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--green);flex:0 0 auto;box-shadow:0 0 0 3px rgba(21,128,61,.18)}
+.user-meta{min-width:0;flex:1}
+.user-meta strong{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-meta span{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{padding:24px 16px;color:var(--muted);font-size:13px;line-height:1.45}
+.thread-empty{flex:1;display:grid;place-items:center;color:var(--muted);padding:24px;text-align:center}
+.messages{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.bubble{
+  max-width:min(72%,520px);padding:10px 12px;border-radius:14px;font-size:14px;line-height:1.4;
+  box-shadow:0 8px 20px -16px rgba(20,20,40,.35);
+}
+.bubble.mine{align-self:flex-end;background:linear-gradient(145deg,#0b3a8a,#06245c);color:#fff;border-bottom-right-radius:4px}
+.bubble.theirs{align-self:flex-start;background:#fff;border:1px solid var(--border);border-bottom-left-radius:4px}
+.bubble .meta{display:block;margin-top:6px;font-size:10px;opacity:.75;font-weight:700}
+.composer{
+  display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--border);background:rgba(255,255,255,.55);
+}
+.composer input{
+  flex:1;height:44px;border-radius:12px;border:1px solid var(--border);
+  padding:0 14px;font:inherit;background:#fff;
+}
+.composer button{min-width:96px}
+.status{min-height:18px;padding:0 16px 8px;font-size:12px;font-weight:700;color:var(--muted)}
+.status.erro{color:#dc2626}.status.ok{color:var(--green)}
+.toolbar-mini{display:flex;gap:8px;flex-wrap:wrap;padding:0 16px 10px}
+@media(max-width:860px){
+  .wrap{grid-template-columns:1fr;max-height:none}
+  .sidebar-chat,.thread{max-height:none}
+  .sidebar-chat{max-height:40vh}
+  .thread{min-height:55vh}
+  .header{grid-template-columns:1fr;text-align:center}
+  .header-actions{justify-self:center}
+}
+</style>
+<script src="../assets/js/loading.js?v=20260718d"></script>
+<link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
+<link rel="stylesheet" href="../assets/css/portal-brand.css">
+<link rel="stylesheet" href="../assets/css/portal-header.css">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260718h">
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260718ba">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260718ba">
+<script src="../assets/js/theme-toggle.js?v=20260718aj"></script>
+<script type="module" src="../assets/js/auth.js?v=20260718bb"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+</head>
+<body>
+<div class="body-bg-wall" aria-hidden="true"></div>
+<div class="body-bg-stain" aria-hidden="true"></div>
+<header class="header">
+  <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"></a>
+  <h1>Chat</h1>
+  <div class="header-actions">
+    <div class="ciop-session" aria-label="Sessão">
+      <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+      <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+      <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+      <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+    </div>
+    <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img src="../assets/img/LOGO_TCGL-removebg-preview.png" class="logo-tcgl" alt="TCGL"></a>
+  </div>
+</header>
+
+<main class="wrap">
+  <aside class="sidebar-chat">
+    <div class="panel-head">
+      <h2>Online agora</h2>
+      <a class="btn btn-secondary" href="../index.html">Portal</a>
+    </div>
+    <div class="toolbar-mini" id="toolbarDono" hidden>
+      <a class="btn btn-orange" href="chat-historico.html">Histórico (dono)</a>
+    </div>
+    <div id="onlineList" class="online-list">
+      <div class="empty">Carregando usuários online...</div>
+    </div>
+  </aside>
+
+  <section class="thread">
+    <div class="panel-head">
+      <h2 id="threadTitle">Selecione um usuário</h2>
+    </div>
+    <div id="threadStatus" class="status"></div>
+    <div id="messages" class="messages">
+      <div class="thread-empty">Escolha alguém da lista à esquerda para conversar.<br>As mensagens ficam salvas no banco.</div>
+    </div>
+    <form id="composer" class="composer" hidden>
+      <input id="msgInput" type="text" maxlength="4000" placeholder="Escreva uma mensagem..." autocomplete="off">
+      <button class="btn" type="submit">Enviar</button>
+    </form>
+  </section>
+</main>
+
+<script type="module">
+import {
+  EMAIL_DONO_CHAT,
+  isDonoChat,
+  iniciarHeartbeatPresenca,
+  ouvirPresenca,
+  garantirSalaDm,
+  enviarMensagem,
+  ouvirMensagens,
+  formatarHoraMensagem,
+  normalizarEmailChat
+} from "../assets/js/portal-chat.js?v=20260718bb";
+
+const onlineList = document.getElementById("onlineList");
+const messagesEl = document.getElementById("messages");
+const threadTitle = document.getElementById("threadTitle");
+const threadStatus = document.getElementById("threadStatus");
+const composer = document.getElementById("composer");
+const msgInput = document.getElementById("msgInput");
+const toolbarDono = document.getElementById("toolbarDono");
+
+let meuEmail = "";
+let salaAtual = "";
+let parceiro = null;
+let unsubMsgs = null;
+let onlineCache = [];
+
+function escapeHtml(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function setStatus(msg, tipo = "") {
+  threadStatus.className = "status" + (tipo ? " " + tipo : "");
+  threadStatus.textContent = msg || "";
+}
+
+function renderOnline(lista) {
+  onlineCache = lista || [];
+  const outros = onlineCache.filter((u) => normalizarEmailChat(u.email) !== meuEmail);
+  if (!outros.length) {
+    onlineList.innerHTML = '<div class="empty">Nenhum outro usuário online no momento.<br>Quem estiver logado no portal aparece aqui.</div>';
+    return;
+  }
+  onlineList.innerHTML = outros.map((u) => {
+    const email = normalizarEmailChat(u.email);
+    const ativo = parceiro && parceiro.email === email ? " is-active" : "";
+    return `<button type="button" class="user-row${ativo}" data-email="${escapeHtml(email)}">
+      <span class="dot" aria-hidden="true"></span>
+      <span class="user-meta">
+        <strong>${escapeHtml(u.nome || email)}</strong>
+        <span>${escapeHtml(u.perfil || "")}${u.cargo ? " · " + escapeHtml(u.cargo) : ""}</span>
+      </span>
+    </button>`;
+  }).join("");
+
+  onlineList.querySelectorAll(".user-row").forEach((btn) => {
+    btn.addEventListener("click", () => abrirConversa(btn.dataset.email));
+  });
+}
+
+function renderMensagens(msgs) {
+  if (!msgs.length) {
+    messagesEl.innerHTML = '<div class="thread-empty">Nenhuma mensagem ainda. Envie a primeira.</div>';
+    return;
+  }
+  messagesEl.innerHTML = msgs.map((m) => {
+    const mine = normalizarEmailChat(m.de) === meuEmail;
+    return `<div class="bubble ${mine ? "mine" : "theirs"}">
+      ${escapeHtml(m.texto)}
+      <span class="meta">${escapeHtml(formatarHoraMensagem(m.criadoEm))}</span>
+    </div>`;
+  }).join("");
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+async function abrirConversa(email) {
+  const alvo = normalizarEmailChat(email);
+  if (!alvo || alvo === meuEmail) return;
+  const user = onlineCache.find((u) => normalizarEmailChat(u.email) === alvo) || { email: alvo, nome: alvo };
+  parceiro = { email: alvo, nome: user.nome || alvo };
+  threadTitle.textContent = parceiro.nome;
+  composer.hidden = false;
+  setStatus("Abrindo conversa...");
+  renderOnline(onlineCache);
+
+  try {
+    const sala = await garantirSalaDm(meuEmail, alvo);
+    salaAtual = sala.id;
+    if (typeof unsubMsgs === "function") unsubMsgs();
+    unsubMsgs = ouvirMensagens(salaAtual, (msgs) => {
+      renderMensagens(msgs);
+      setStatus("");
+    });
+    msgInput.focus();
+  } catch (err) {
+    setStatus(err.message || "Não foi possível abrir a conversa.", "erro");
+  }
+}
+
+composer.addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const texto = msgInput.value;
+  if (!salaAtual) return;
+  try {
+    await enviarMensagem(salaAtual, texto, meuEmail);
+    msgInput.value = "";
+    msgInput.focus();
+    setStatus("");
+  } catch (err) {
+    setStatus(err.message || "Falha ao enviar.", "erro");
+  }
+});
+
+function iniciar() {
+  const user = window.portalUsuario || {};
+  meuEmail = normalizarEmailChat(user.email);
+  if (!meuEmail) {
+    setStatus("Sessão inválida.", "erro");
+    return;
+  }
+  if (toolbarDono) toolbarDono.hidden = !isDonoChat(meuEmail);
+  iniciarHeartbeatPresenca(user);
+  ouvirPresenca(renderOnline);
+}
+
+if (typeof window.portalAguardarUsuario === "function") {
+  window.portalAguardarUsuario(iniciar);
+} else if (window.portalUsuarioValidado) {
+  iniciar();
+} else {
+  window.addEventListener("portal:usuario-validado", iniciar, { once: true });
+}
+</script>
+<script src="../assets/js/portal-futuristic.js?v=20260718am" defer></script>
+</body>
+</html>

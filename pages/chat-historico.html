@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>Histórico de conversas - Portal CIOP</title>
+<style>
+:root{
+  --blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--bg:#f5f7fb;--border:#dfe5ef;
+  --text:#101828;--muted:#3f4757;--white:#fff;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);font-family:Arial,Helvetica,sans-serif;background:var(--bg);display:flex;flex-direction:column}
+.header{
+  display:grid;grid-template-columns:180px 1fr minmax(260px,auto);
+  gap:14px;align-items:center;padding:10px 22px;
+  background:rgba(255,255,255,.72);border-bottom:1px solid #e8edf6;
+  backdrop-filter:blur(18px);
+}
+.header h1{margin:0;text-align:center;color:var(--blue);font-size:clamp(16px,2vw,22px);font-weight:900}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.logo-tcgl{height:48px;object-fit:contain}
+.wrap{flex:1;display:grid;grid-template-columns:minmax(260px,360px) 1fr;min-height:0;max-width:1400px;width:100%;margin:0 auto}
+.lista,.detalhe{background:rgba(255,255,255,.72);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.5);min-height:0;max-height:calc(100vh - 72px);display:flex;flex-direction:column}
+.lista{border-right:1px solid var(--border)}
+.head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;justify-content:space-between}
+.head h2{margin:0;font-size:15px;color:var(--blue);font-weight:900}
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:800;font-size:13px;text-decoration:none;cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--blue),var(--blue2))}
+.btn-secondary{background:#e8edf6;color:var(--blue)}
+.scroll{overflow:auto;flex:1;padding:8px}
+.item{
+  width:100%;text-align:left;border:0;background:transparent;padding:12px;border-radius:12px;
+  cursor:pointer;font:inherit;color:inherit;display:block;
+}
+.item:hover,.item.is-active{background:rgba(6,36,92,.08)}
+.item strong{display:block;font-size:13px;margin-bottom:4px}
+.item span{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item em{display:block;margin-top:4px;font-size:11px;font-style:normal;color:var(--blue2);font-weight:700}
+.empty{padding:24px 16px;color:var(--muted);font-size:13px;line-height:1.45}
+.messages{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.bubble{max-width:min(78%,560px);padding:10px 12px;border-radius:14px;font-size:14px;line-height:1.4;background:#fff;border:1px solid var(--border)}
+.bubble .who{display:block;font-size:11px;font-weight:800;color:var(--blue);margin-bottom:4px}
+.bubble .meta{display:block;margin-top:6px;font-size:10px;color:var(--muted);font-weight:700}
+#adminNegado{display:none;max-width:720px;margin:40px auto;padding:20px;background:#fff;border-radius:12px;border:1px solid var(--border)}
+@media(max-width:860px){
+  .wrap{grid-template-columns:1fr}
+  .lista,.detalhe{max-height:none}
+  .lista{max-height:40vh}
+  .header{grid-template-columns:1fr;text-align:center}
+  .header-actions{justify-self:center}
+}
+</style>
+<script src="../assets/js/loading.js?v=20260718d"></script>
+<link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
+<link rel="stylesheet" href="../assets/css/portal-brand.css">
+<link rel="stylesheet" href="../assets/css/portal-header.css">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260718h">
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260718ba">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260718ba">
+<script src="../assets/js/theme-toggle.js?v=20260718aj"></script>
+<script type="module" src="../assets/js/auth.js?v=20260718bb"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+</head>
+<body data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
+<div class="body-bg-wall" aria-hidden="true"></div>
+<div class="body-bg-stain" aria-hidden="true"></div>
+<header class="header">
+  <a class="portal-brand-mark" href="../index.html"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"></a>
+  <h1>Histórico de conversas</h1>
+  <div class="header-actions">
+    <div class="ciop-session">
+      <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+      <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+      <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+      <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+    </div>
+    <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img src="../assets/img/LOGO_TCGL-removebg-preview.png" class="logo-tcgl" alt="TCGL"></a>
+  </div>
+</header>
+
+<div id="adminNegado">
+  <h2>Acesso restrito</h2>
+  <p>Somente você pode ver o histórico completo das conversas salvas.</p>
+  <p><a class="btn" href="../index.html">Voltar ao portal</a></p>
+</div>
+
+<main class="wrap" id="adminConteudo">
+  <aside class="lista">
+    <div class="head">
+      <h2>Conversas salvas</h2>
+      <div style="display:flex;gap:8px">
+        <a class="btn btn-secondary" href="chat.html">Chat</a>
+        <button class="btn" type="button" id="btnAtualizar">Atualizar</button>
+      </div>
+    </div>
+    <div id="salasList" class="scroll"><div class="empty">Carregando...</div></div>
+  </aside>
+  <section class="detalhe">
+    <div class="head"><h2 id="detalheTitulo">Selecione uma conversa</h2></div>
+    <div id="messages" class="messages"><div class="empty">As mensagens da conversa aparecem aqui.</div></div>
+  </section>
+</main>
+
+<script type="module">
+import {
+  isDonoChat,
+  listarTodasSalas,
+  ouvirMensagens,
+  formatarHoraMensagem,
+  normalizarEmailChat
+} from "../assets/js/portal-chat.js?v=20260718bb";
+import { listarUsuariosFirestore } from "../assets/js/portal-firestore.js";
+
+const salasList = document.getElementById("salasList");
+const messagesEl = document.getElementById("messages");
+const detalheTitulo = document.getElementById("detalheTitulo");
+const btnAtualizar = document.getElementById("btnAtualizar");
+
+let mapaNomes = {};
+let salas = [];
+let salaAtual = "";
+let unsubMsgs = null;
+
+function escapeHtml(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function nomeDe(email) {
+  const key = normalizarEmailChat(email);
+  return mapaNomes[key] || key;
+}
+
+function tituloSala(sala) {
+  const membros = Array.isArray(sala.membros) ? sala.membros : [];
+  return membros.map(nomeDe).join(" ↔ ");
+}
+
+function renderSalas() {
+  if (!salas.length) {
+    salasList.innerHTML = '<div class="empty">Nenhuma conversa salva ainda.</div>';
+    return;
+  }
+  salasList.innerHTML = salas.map((s) => {
+    const ativo = s.id === salaAtual ? " is-active" : "";
+    return `<button type="button" class="item${ativo}" data-id="${escapeHtml(s.id)}">
+      <strong>${escapeHtml(tituloSala(s))}</strong>
+      <span>${escapeHtml(s.ultimaMensagem || "(sem mensagens)")}</span>
+      <em>${escapeHtml(formatarHoraMensagem(s.atualizadoEm || s.ultimaMensagemEm))}</em>
+    </button>`;
+  }).join("");
+  salasList.querySelectorAll(".item").forEach((btn) => {
+    btn.addEventListener("click", () => abrirSala(btn.dataset.id));
+  });
+}
+
+function renderMsgs(msgs) {
+  if (!msgs.length) {
+    messagesEl.innerHTML = '<div class="empty">Sem mensagens nesta conversa.</div>';
+    return;
+  }
+  messagesEl.innerHTML = msgs.map((m) => `
+    <div class="bubble">
+      <span class="who">${escapeHtml(nomeDe(m.de))}</span>
+      ${escapeHtml(m.texto)}
+      <span class="meta">${escapeHtml(formatarHoraMensagem(m.criadoEm))}</span>
+    </div>
+  `).join("");
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function abrirSala(id) {
+  salaAtual = id;
+  const sala = salas.find((s) => s.id === id);
+  detalheTitulo.textContent = sala ? tituloSala(sala) : "Conversa";
+  renderSalas();
+  if (typeof unsubMsgs === "function") unsubMsgs();
+  unsubMsgs = ouvirMensagens(id, renderMsgs, 500);
+}
+
+async function carregar() {
+  salasList.innerHTML = '<div class="empty">Carregando...</div>';
+  try {
+    salas = await listarTodasSalas();
+    renderSalas();
+  } catch (err) {
+    salasList.innerHTML = `<div class="empty">Erro ao carregar: ${escapeHtml(err.message || err)}</div>`;
+  }
+}
+
+async function iniciar() {
+  if (!isDonoChat()) {
+    document.getElementById("adminConteudo").style.display = "none";
+    document.getElementById("adminNegado").style.display = "block";
+    return;
+  }
+  try {
+    const users = await listarUsuariosFirestore();
+    Object.entries(users || {}).forEach(([email, u]) => {
+      mapaNomes[normalizarEmailChat(email)] = u.nome || email;
+    });
+  } catch (_) {}
+  await carregar();
+}
+
+btnAtualizar?.addEventListener("click", carregar);
+
+if (typeof window.portalAguardarUsuario === "function") {
+  window.portalAguardarUsuario(iniciar);
+} else if (window.portalUsuarioValidado) {
+  iniciar();
+} else {
+  window.addEventListener("portal:usuario-validado", iniciar, { once: true });
+}
+</script>
+<script src="../assets/js/portal-futuristic.js?v=20260718am" defer></script>
+</body>
+</html>

@@ -13,7 +13,12 @@ import {
 import { app, buscarUsuarioFirestore, normalizarCadastro } from "./portal-firestore.js";
 import { usuarios } from "./usuarios.js";
 import { aplicarSaudacaoHero } from "./portal-saudacao.js?v=20260704a";
-import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260718az";
+import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260718bb";
+import {
+  iniciarHeartbeatPresenca,
+  pararHeartbeatPresenca,
+  marcarPresencaOffline
+} from "./portal-chat.js?v=20260718bb";
 
 const auth = getAuth(app);
 
@@ -408,8 +413,12 @@ async function atualizarCadastroCache(email, user) {
 
 window.logout = function () {
   try { sessionStorage.removeItem(CADASTRO_CACHE_KEY); } catch (_) {}
-  signOut(auth).finally(() => {
-    window.location.href = portalPath("login.html");
+  const email = window.portalUsuario?.email;
+  pararHeartbeatPresenca();
+  Promise.resolve(marcarPresencaOffline(email)).finally(() => {
+    signOut(auth).finally(() => {
+      window.location.href = portalPath("login.html");
+    });
   });
 };
 
@@ -615,6 +624,7 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
       liberarHtmlValidado();
       ocultarCarregando();
       notificarPortalPronto();
+      try { iniciarHeartbeatPresenca(window.portalUsuario); } catch (_) {}
     } else {
       liberarHtmlValidado();
       ocultarCarregando();

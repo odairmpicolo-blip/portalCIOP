@@ -41,6 +41,22 @@ service cloud.firestore {
       return lista is list && perfilBuscaAtual() != "" && perfilBuscaAtual() in lista;
     }
 
+    function donoPortal() {
+      return signedIn() && email() == 'odair.marin@icloud.com';
+    }
+
+    function eMembroSala() {
+      return signedIn()
+        && resource.data.membros is list
+        && email() in resource.data.membros;
+    }
+
+    function seraMembroSala() {
+      return signedIn()
+        && request.resource.data.membros is list
+        && email() in request.resource.data.membros;
+    }
+
     match /avisos/{avisoId} {
       allow read: if signedIn() && (
         podePostarAviso() ||
@@ -66,7 +82,37 @@ service cloud.firestore {
 
     match /config/{docId} {
       allow read: if signedIn();
-      allow write: if signedIn() && email() == 'odair.marin@icloud.com';
+      allow write: if donoPortal();
+    }
+
+    match /presenca/{userEmail} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && userEmail == email();
+      allow delete: if signedIn() && (userEmail == email() || donoPortal());
+    }
+
+    match /chatSalas/{salaId} {
+      allow read: if donoPortal() || eMembroSala();
+      allow create: if seraMembroSala()
+        && request.resource.data.tipo == 'dm'
+        && request.resource.data.membros.size() == 2;
+      allow update: if donoPortal() || eMembroSala();
+      allow delete: if donoPortal();
+
+      match /mensagens/{msgId} {
+        allow read: if donoPortal()
+          || (signedIn()
+              && get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros is list
+              && email() in get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros);
+        allow create: if signedIn()
+          && request.resource.data.de == email()
+          && request.resource.data.texto is string
+          && request.resource.data.texto.size() > 0
+          && request.resource.data.texto.size() <= 4000
+          && get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros is list
+          && email() in get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros;
+        allow update, delete: if donoPortal();
+      }
     }
   }
 }
