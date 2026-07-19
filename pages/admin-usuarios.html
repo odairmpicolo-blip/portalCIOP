@@ -164,6 +164,8 @@ th{color:var(--blue);background:#f8fafc}
 .table-actions{display:flex;gap:8px;align-items:center}
 .table-actions .btn{white-space:nowrap;padding:9px 12px}
 .btn-excluir{min-width:88px}
+.btn-modulos{background:#0b3a8a;color:#fff}
+.btn-modulos:hover{filter:brightness(1.06)}
 .status{font-size:12px;font-weight:700;margin-top:10px}
 .ok{color:var(--green)}
 .erro{color:var(--red)}
@@ -184,6 +186,75 @@ th{color:var(--blue);background:#f8fafc}
     border:1px solid var(--border);
     border-radius:8px;
     box-shadow:0 18px 48px rgba(16,24,40,.22);
+}
+.modulos-modal{
+    width:min(920px, 100%);
+    max-height:min(88vh, 900px);
+    display:flex;
+    flex-direction:column;
+}
+.modulos-modal .modal-body{
+    overflow:auto;
+    flex:1;
+}
+.modulos-meta{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+    margin:0 0 12px;
+}
+.modulos-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:5px 10px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:800;
+    background:#e8edf6;
+    color:var(--blue);
+}
+.modulos-badge.warn{
+    background:rgba(255,107,0,.14);
+    color:#c2410c;
+}
+.modulos-grupo{
+    margin:14px 0 8px;
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    font-weight:800;
+    color:var(--blue);
+}
+.modulos-checks{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:8px;
+}
+.modulos-check{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:#f8fafc;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+}
+.modulos-check:hover{border-color:rgba(255,107,0,.45)}
+.modulos-check:has(input:checked){
+    background:linear-gradient(145deg,rgba(255,107,0,.12),rgba(11,58,138,.1));
+    border-color:rgba(11,58,138,.35);
+}
+.modulos-check input{margin-top:2px;accent-color:var(--orange)}
+.modulos-toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:10px;
 }
 .modal-header{
     display:flex;
@@ -599,7 +670,7 @@ h1 {
     
 
 <script src="../assets/js/theme-toggle.js?v=20260718aj"></script>
-<script type="module" src="../assets/js/auth.js?v=20260718ac"></script>
+<script type="module" src="../assets/js/auth.js?v=20260718az"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260718al">
 <link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260718am">
@@ -707,11 +778,12 @@ h1 {
                         <th>Cargo</th>
                         <th aria-sort="none"><button class="sort-btn" type="button" data-sort-btn="status" onclick="ordenarUsuarios('status')" aria-label="Ordenar por status"><span class="sort-label">Status</span><span class="sort-arrow" id="sort_status">↕</span></button></th>
                         <th>Editar</th>
+                        <th>Módulos</th>
                         <th>Acesso</th>
                         <th id="colExcluirHeader" hidden>Excluir</th>
                     </tr>
                 </thead>
-                <tbody id="usuariosTabela"><tr><td colspan="9" class="no-data">Carregando usuários...</td></tr></tbody>
+                <tbody id="usuariosTabela"><tr><td colspan="10" class="no-data">Carregando usuários...</td></tr></tbody>
             </table>
         </section>
 
@@ -757,6 +829,35 @@ h1 {
                 </div>
             </div>
         </div>
+
+        <div id="modulosUsuarioModal" class="modal-backdrop" hidden>
+            <div class="user-modal modulos-modal" role="dialog" aria-modal="true" aria-labelledby="modulosUsuarioTitulo">
+                <div class="modal-header">
+                    <div>
+                        <h2 id="modulosUsuarioTitulo">Módulos do usuário</h2>
+                        <p id="modulosUsuarioSubtitulo">Selecione o que este usuário consegue ver no portal.</p>
+                    </div>
+                    <button class="modal-close" type="button" onclick="fecharModulosUsuario()" aria-label="Fechar">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="modulos-meta">
+                        <span class="modulos-badge" id="modulosUsuarioBadge">Personalizado</span>
+                        <span class="modulos-badge warn" id="modulosUsuarioHeranca" hidden>Herdando do perfil</span>
+                    </div>
+                    <div class="modulos-toolbar">
+                        <button class="btn btn-secondary" type="button" onclick="marcarTodosModulosUsuario(true)">Marcar todos</button>
+                        <button class="btn btn-secondary" type="button" onclick="marcarTodosModulosUsuario(false)">Limpar</button>
+                        <button class="btn btn-danger" type="button" onclick="herdarPerfilModulosUsuario()">Herdar perfil</button>
+                    </div>
+                    <div id="modulosUsuarioRoot"></div>
+                    <div id="modulosUsuarioStatus" class="status"></div>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" type="button" onclick="fecharModulosUsuario()">Cancelar</button>
+                        <button class="btn btn-primary" type="button" onclick="salvarModulosUsuario()">Salvar módulos</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </main>
 
@@ -769,6 +870,15 @@ import {
     normalizarCadastro
 } from "../assets/js/portal-firestore.js";
 import { garantirUsuarioFirebaseAuth, excluirUsuarioPortalCompleto } from "../assets/js/portal-auth-admin.js";
+import {
+    MODULOS_PORTAL,
+    normalizarEmailKey,
+    normalizarEstado,
+    defaultsAcessos,
+    listaModulosDePerfil,
+    carregarAcessosPerfis,
+    salvarAcessosPerfis
+} from "../assets/js/portal-perfis-acesso.js?v=20260718az";
 
 const perfisDisponiveis = ["Administrador", "Supervisor", "Gerência", "Analista", "SAC", "Fiscalização", "Monitoramento", "Secretária"];
 const cargosDisponiveis = [
@@ -793,6 +903,9 @@ let usuarioEmEdicao = null;
 let perfilOriginalEdicao = "";
 let filtroUsuarios = "";
 const ordenacaoUsuarios = { campo: "registro", direcao: "asc" };
+let estadoAcessos = normalizarEstado({ acessos: defaultsAcessos(), usuarios: {} });
+let emailModulosEmEdicao = "";
+let herdarPerfilPendente = false;
 
 function preencherSelectCargos(select, valor = "") {
     if (!select) return;
@@ -1028,7 +1141,7 @@ function renderUsuarios() {
         .sort(compararUsuarios);
     aplicarColunaExclusaoAdmin();
     const podeExcluir = usuarioPodeExcluirUsuarios();
-    const colspanVazio = podeExcluir ? 9 : 8;
+    const colspanVazio = podeExcluir ? 10 : 9;
     if (!ordenados.length) {
         const mensagem = filtroUsuarios
             ? "Nenhum usuário encontrado para a busca informada."
@@ -1052,6 +1165,9 @@ function renderUsuarios() {
             : (ehProprioUsuario && !proprioUsuarioPodeEditar
                 ? "<button class=\"btn btn-secondary\" type=\"button\" disabled title=\"Você não pode editar o próprio usuário.\">Editar</button>"
                 : "<button class=\"btn btn-primary\" type=\"button\" onclick=\"abrirEditorUsuario('" + emailParam + "')\">Editar</button>");
+        const botaoModulos = cadastroProtegidoDoDono
+            ? "<button class=\"btn btn-secondary\" type=\"button\" disabled title=\"Cadastro protegido. Apenas odair.marin@icloud.com pode alterar este usuário.\">Módulos</button>"
+            : "<button class=\"btn btn-modulos\" type=\"button\" onclick=\"abrirModulosUsuario('" + emailParam + "')\">Módulos</button>";
         const botaoAcesso = cadastroProtegidoDoDono
             ? "<button class=\"btn btn-secondary\" type=\"button\" disabled title=\"Cadastro protegido. Apenas odair.marin@icloud.com pode alterar este usuário.\">" + acaoLabel + "</button>"
             : "<button class=\"btn " + acaoClass + "\" type=\"button\" onclick=\"alternarAcesso('" + emailParam + "')\">" + acaoLabel + "</button>";
@@ -1075,6 +1191,7 @@ function renderUsuarios() {
             "<td>" + escapeHtml(user.cargo || "-") + "</td>" +
             "<td><span class=\"status " + statusClass + "\">" + statusLabel + "</span></td>" +
             "<td><div class=\"table-actions\">" + botaoEditar + "</div></td>" +
+            "<td><div class=\"table-actions\">" + botaoModulos + "</div></td>" +
             "<td><div class=\"table-actions\">" + botaoAcesso + "</div></td>" +
             colunaExcluir +
             "</tr>";
@@ -1171,7 +1288,9 @@ window.abrirEditorUsuario = function (emailParam) {
 window.fecharEditorUsuario = function () {
     const modal = document.getElementById("editarUsuarioModal");
     modal.hidden = true;
-    document.body.classList.remove("modal-open");
+    if (document.getElementById("modulosUsuarioModal")?.hidden !== false) {
+        document.body.classList.remove("modal-open");
+    }
     usuarioEmEdicao = null;
     perfilOriginalEdicao = "";
 
@@ -1182,6 +1301,143 @@ window.fecharEditorUsuario = function () {
         selectPerfil.title = "";
     }
     if (avisoPerfil) avisoPerfil.hidden = true;
+};
+
+function setStatusModulos(mensagem, tipo = "") {
+    const status = document.getElementById("modulosUsuarioStatus");
+    if (!status) return;
+    status.className = "status" + (tipo ? " " + tipo : "");
+    status.textContent = mensagem || "";
+}
+
+function listaAtivaModulosUsuario(email, user) {
+    const emailKey = normalizarEmailKey(email);
+    if (!herdarPerfilPendente && Object.prototype.hasOwnProperty.call(estadoAcessos.usuarios || {}, emailKey)) {
+        const lista = estadoAcessos.usuarios[emailKey];
+        if (Array.isArray(lista)) {
+            if (lista.includes("*")) return new Set(MODULOS_PORTAL.map((m) => m.id));
+            return new Set(lista);
+        }
+    }
+    const herdados = listaModulosDePerfil(user?.perfil, estadoAcessos.acessos) || MODULOS_PORTAL.map((m) => m.id);
+    return new Set(herdados);
+}
+
+function renderChecksModulosUsuario(email, user) {
+    const root = document.getElementById("modulosUsuarioRoot");
+    const ativos = listaAtivaModulosUsuario(email, user);
+    const grupos = {};
+    MODULOS_PORTAL.forEach((m) => {
+        (grupos[m.grupo] ||= []).push(m);
+    });
+    root.innerHTML = Object.entries(grupos).map(([grupo, itens]) => {
+        const checks = itens.map((m) => {
+            const checked = ativos.has(m.id) ? " checked" : "";
+            return "<label class=\"modulos-check\"><input type=\"checkbox\" data-modulo=\"" + m.id + "\"" + checked + "><span>" + escapeHtml(m.label) + "</span></label>";
+        }).join("");
+        return "<div class=\"modulos-grupo\">" + escapeHtml(grupo) + "</div><div class=\"modulos-checks\">" + checks + "</div>";
+    }).join("");
+
+    const personalizado = !herdarPerfilPendente && Object.prototype.hasOwnProperty.call(estadoAcessos.usuarios || {}, normalizarEmailKey(email));
+    const badge = document.getElementById("modulosUsuarioBadge");
+    const heranca = document.getElementById("modulosUsuarioHeranca");
+    if (badge) badge.textContent = personalizado ? (ativos.size + " módulo(s) personalizados") : (ativos.size + " módulo(s)");
+    if (heranca) heranca.hidden = personalizado;
+}
+
+window.abrirModulosUsuario = async function (emailParam) {
+    const email = normalizarEmailLocal(decodificarEmailParam(emailParam));
+    const user = usuariosEditados[email];
+    if (!user) {
+        atualizarStatus("Usuário não encontrado para editar módulos.", "erro");
+        return;
+    }
+    if (usuarioEhDonoPerfil(email) && !usuarioEhLogado(email)) {
+        atualizarStatus("Cadastro protegido. Apenas odair.marin@icloud.com pode alterar este usuário.", "erro");
+        return;
+    }
+
+    emailModulosEmEdicao = email;
+    herdarPerfilPendente = false;
+    setStatusModulos("Carregando módulos...", "load");
+
+    const subtitulo = document.getElementById("modulosUsuarioSubtitulo");
+    if (subtitulo) {
+        subtitulo.textContent = (user.nome || email) + " · " + formatarPerfil(user.perfil);
+    }
+
+    const modal = document.getElementById("modulosUsuarioModal");
+    modal.hidden = false;
+    document.body.classList.add("modal-open");
+
+    try {
+        estadoAcessos = await carregarAcessosPerfis();
+    } catch (error) {
+        console.warn("Falha ao carregar acessos:", error);
+    }
+
+    renderChecksModulosUsuario(email, user);
+    setStatusModulos("Marque os módulos que este usuário pode ver e salve.");
+};
+
+window.fecharModulosUsuario = function () {
+    const modal = document.getElementById("modulosUsuarioModal");
+    if (modal) modal.hidden = true;
+    if (document.getElementById("editarUsuarioModal")?.hidden !== false) {
+        document.body.classList.remove("modal-open");
+    }
+    emailModulosEmEdicao = "";
+    herdarPerfilPendente = false;
+    setStatusModulos("");
+};
+
+window.marcarTodosModulosUsuario = function (marcar) {
+    document.querySelectorAll("#modulosUsuarioRoot input[type='checkbox']").forEach((el) => {
+        el.checked = !!marcar;
+    });
+    herdarPerfilPendente = false;
+    const heranca = document.getElementById("modulosUsuarioHeranca");
+    if (heranca) heranca.hidden = true;
+    setStatusModulos(marcar ? "Todos os módulos marcados (não salvos)." : "Seleção limpa (não salva).");
+};
+
+window.herdarPerfilModulosUsuario = function () {
+    const email = emailModulosEmEdicao;
+    const user = usuariosEditados[email];
+    if (!email || !user) return;
+    herdarPerfilPendente = true;
+    renderChecksModulosUsuario(email, user);
+    setStatusModulos("Ao salvar, este usuário voltará a herdar os módulos do perfil.", "ok");
+};
+
+window.salvarModulosUsuario = async function () {
+    const email = normalizarEmailKey(emailModulosEmEdicao);
+    const user = usuariosEditados[email];
+    if (!email || !user) {
+        setStatusModulos("Usuário não encontrado para salvar.", "erro");
+        return;
+    }
+
+    setStatusModulos("Salvando módulos no Firestore...", "load");
+    try {
+        const atual = await carregarAcessosPerfis();
+        const proximo = normalizarEstado(atual);
+        if (herdarPerfilPendente) {
+            delete proximo.usuarios[email];
+        } else {
+            const marcados = Array.from(document.querySelectorAll("#modulosUsuarioRoot input[type='checkbox']:checked"))
+                .map((el) => el.dataset.modulo)
+                .filter(Boolean);
+            proximo.usuarios[email] = marcados;
+        }
+        estadoAcessos = await salvarAcessosPerfis(proximo);
+        herdarPerfilPendente = false;
+        renderChecksModulosUsuario(email, user);
+        setStatusModulos("Módulos salvos com sucesso.", "ok");
+        atualizarStatus("Módulos de " + (user.nome || email) + " atualizados.");
+    } catch (error) {
+        setStatusModulos("Não foi possível salvar: " + (error.message || error), "erro");
+    }
 };
 
 window.salvarEditorUsuario = async function () {
@@ -1278,8 +1534,19 @@ document.getElementById("editarUsuarioModal")?.addEventListener("click", (event)
     }
 });
 
+document.getElementById("modulosUsuarioModal")?.addEventListener("click", (event) => {
+    if (event.target.id === "modulosUsuarioModal") {
+        window.fecharModulosUsuario();
+    }
+});
+
 document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !document.getElementById("editarUsuarioModal")?.hidden) {
+    if (event.key !== "Escape") return;
+    if (!document.getElementById("modulosUsuarioModal")?.hidden) {
+        window.fecharModulosUsuario();
+        return;
+    }
+    if (!document.getElementById("editarUsuarioModal")?.hidden) {
         window.fecharEditorUsuario();
     }
 });
@@ -1472,6 +1739,9 @@ async function iniciar(limparAntes = false) {
         carregarUsuariosLocais();
         renderUsuarios();
         atualizarStatus("Usuários locais carregados. Buscando atualizações online...");
+        carregarAcessosPerfis()
+            .then((estado) => { estadoAcessos = estado; })
+            .catch(() => null);
     } catch (error) {
         console.error("Erro ao montar lista local de usuários:", error);
         atualizarStatus("Não foi possível montar a lista local: " + error.message, "erro");

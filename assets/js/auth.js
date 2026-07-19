@@ -13,7 +13,7 @@ import {
 import { app, buscarUsuarioFirestore, normalizarCadastro } from "./portal-firestore.js";
 import { usuarios } from "./usuarios.js";
 import { aplicarSaudacaoHero } from "./portal-saudacao.js?v=20260704a";
-import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260718ac";
+import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260718az";
 
 const auth = getAuth(app);
 
@@ -528,7 +528,7 @@ function aplicarPermissoes(cadastro) {
     el.style.display = admin ? "flex" : "none";
   });
 
-  document.querySelectorAll("[data-perfis], [data-usuarios]").forEach((el) => {
+  document.querySelectorAll("[data-perfis], [data-usuarios], [data-modulo]").forEach((el) => {
     const pode = usuarioPodeVer(el, cadastro);
     el.classList.toggle("portal-card-visivel", pode);
     el.hidden = !pode;
