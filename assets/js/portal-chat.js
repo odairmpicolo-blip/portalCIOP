@@ -179,6 +179,7 @@ export async function enviarMensagem(salaId, texto, de = window.portalUsuario?.e
   });
   await updateDoc(salaRef, {
     ultimaMensagem: body.slice(0, 240),
+    ultimaMensagemDe: email,
     ultimaMensagemEm: serverTimestamp(),
     atualizadoEm: serverTimestamp()
   });
@@ -241,4 +242,75 @@ export function formatarHoraMensagem(valor) {
     hour: "2-digit",
     minute: "2-digit"
   });
+}
+
+export function timestampMs(valor) {
+  if (valor?.toMillis) return valor.toMillis();
+  if (valor instanceof Timestamp) return valor.toMillis();
+  if (typeof valor === "number") return valor;
+  if (valor?.seconds) return valor.seconds * 1000;
+  return 0;
+}
+
+export function outroMembroSala(sala, meuEmail) {
+  const me = normalizarEmailChat(meuEmail);
+  return (sala?.membros || [])
+    .map(normalizarEmailChat)
+    .find((email) => email && email !== me) || "";
+}
+
+const LIDOS_KEY = "portal_chat_lidos_v1";
+
+export function lerMapaLidos() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LIDOS_KEY) || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+export function marcarSalaLida(salaId, ts = Date.now()) {
+  if (!salaId) return;
+  const mapa = lerMapaLidos();
+  mapa[salaId] = Math.max(Number(mapa[salaId] || 0), Number(ts) || Date.now());
+  try {
+    localStorage.setItem(LIDOS_KEY, JSON.stringify(mapa));
+  } catch (_) {}
+}
+
+export function salaTemNaoLida(sala, meuEmail) {
+  if (!sala?.id || !sala.ultimaMensagem) return false;
+  const de = normalizarEmailChat(sala.ultimaMensagemDe);
+  const me = normalizarEmailChat(meuEmail);
+  if (!de || de === me) return false;
+  const msgTs = timestampMs(sala.ultimaMensagemEm || sala.atualizadoEm);
+  if (!msgTs) return false;
+  return msgTs > Number(lerMapaLidos()[sala.id] || 0);
+}
+
+export function contarNaoLidas(salas, meuEmail) {
+  return (salas || []).filter((sala) => salaTemNaoLida(sala, meuEmail)).length;
+}
+
+export function ouvirMinhasSalas(email, callback) {
+  const key = normalizarEmailChat(email);
+  if (!key) {
+    callback([]);
+    return () => {};
+  }
+  const q = query(collection(db, COLECAO_SALAS), where("membros", "array-contains", key));
+  return onSnapshot(
+    q,
+    (snap) => {
+      const salas = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => timestampMs(b.atualizadoEm || b.ultimaMensagemEm) - timestampMs(a.atualizadoEm || a.ultimaMensagemEm));
+      callback(salas);
+    },
+    (err) => {
+      console.warn("Falha ao ouvir salas de chat:", err);
+      callback([]);
+    }
+  );
 }
