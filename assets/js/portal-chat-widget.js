@@ -12,7 +12,7 @@ import {
   salaTemNaoLida,
   contarNaoLidas,
   marcarSalaLida
-} from "./portal-chat.js?v=20260719e";
+} from "./portal-chat.js?v=20260719f";
 
 const ICON_CHAT = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C7.03 3 3 6.58 3 11c0 2.39 1.19 4.53 3.08 6.01L5 21l4.2-1.4c.9.27 1.84.4 2.8.4 4.97 0 9-3.58 9-8s-4.03-8-9-8zm0 14.5c-.78 0-1.54-.12-2.25-.35l-.5-.16-2.24.75.62-2.03-.17-.5C6.55 13.85 6 12.48 6 11c0-3.31 2.69-6 6-6s6 2.69 6 6-2.69 6-6 6z"/></svg>`;
 const ICON_SEND = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;
@@ -42,20 +42,67 @@ function iniciais(nome, email) {
   return base.slice(0, 2).toUpperCase();
 }
 
-function tocarSomLeve() {
+let audioCtx = null;
+let audioPronto = false;
+
+function desbloquearAudio() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+    audioPronto = true;
+  } catch (_) {}
+}
+
+function tocarSomLeve() {
+  desbloquearAudio();
+  try {
+    if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
+  } catch (_) {}
+  try {
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
     osc.type = "sine";
-    osc.frequency.value = 880;
-    gain.gain.value = 0.04;
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.setValueAtTime(1175, now + 0.08);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
     osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
-    osc.stop(ctx.currentTime + 0.2);
-    setTimeout(() => ctx.close().catch(() => {}), 300);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.3);
+  } catch (_) {}
+}
+
+function pedirPermissaoNotificacao() {
+  try {
+    if (!("Notification" in window)) return;
+    if (Notification.permission === "default") {
+      Notification.requestPermission().catch(() => {});
+    }
+  } catch (_) {}
+}
+
+function notificarSistema(titulo, corpo) {
+  try {
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+    if (!document.hidden && document.hasFocus()) return;
+    const n = new Notification(titulo || "Nova mensagem", {
+      body: corpo || "",
+      tag: "portal-chat",
+      renotify: true,
+      silent: false
+    });
+    n.onclick = () => {
+      try { window.focus(); } catch (_) {}
+      n.close();
+    };
+    setTimeout(() => n.close(), 8000);
   } catch (_) {}
 }
 
@@ -63,7 +110,7 @@ function garantirCss() {
   if (document.querySelector("link[data-portal-chat-widget]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-chat-widget.css?v=20260719e");
+  link.href = portalPath("assets/css/portal-chat-widget.css?v=20260719f");
   link.dataset.portalChatWidget = "1";
   document.head.appendChild(link);
 }
@@ -84,6 +131,8 @@ class PortalChatWidget {
     this.toastTimer = null;
     this.ultimoToastKey = "";
     this.vistoInicialSalas = false;
+    this.fingerprints = new Map();
+    this.envieiRecentemente = new Map();
     this.root = null;
   }
 
@@ -102,7 +151,7 @@ class PortalChatWidget {
     const root = document.createElement("div");
     root.id = "portalChatWidgetRoot";
     root.innerHTML = `
-      <div class="pcw-toast" id="pcwToast" hidden role="status" aria-live="polite">
+      <div class="pcw-toast" id="pcwToast" hidden role="status" aria-live="assertive">
         <button type="button" class="pcw-toast-close" id="pcwToastClose" aria-label="Fechar">×</button>
         <strong id="pcwToastNome"></strong>
         <span id="pcwToastTexto"></span>
@@ -128,10 +177,20 @@ class PortalChatWidget {
     document.body.appendChild(root);
     this.root = root;
     this.bind();
+    const unlock = () => {
+      desbloquearAudio();
+      pedirPermissaoNotificacao();
+    };
+    window.addEventListener("pointerdown", unlock, { once: true, capture: true });
+    window.addEventListener("keydown", unlock, { once: true, capture: true });
   }
 
   bind() {
-    this.root.querySelector("#pcwFab").addEventListener("click", () => this.togglePainel());
+    this.root.querySelector("#pcwFab").addEventListener("click", () => {
+      desbloquearAudio();
+      pedirPermissaoNotificacao();
+      this.togglePainel();
+    });
     this.root.querySelector("#pcwClose").addEventListener("click", () => this.fecharPainel());
     this.root.querySelector("#pcwBack").addEventListener("click", () => this.mostrarLista());
     this.root.querySelector("#pcwToastClose").addEventListener("click", (ev) => {
@@ -165,26 +224,51 @@ class PortalChatWidget {
     });
   }
 
+  fingerprintSala(sala) {
+    return [
+      timestampMs(sala?.ultimaMensagemEm || sala?.atualizadoEm),
+      String(sala?.ultimaMensagem || ""),
+      normalizarEmailChat(sala?.ultimaMensagemDe)
+    ].join("|");
+  }
+
+  marqueiEnvioLocal(salaId) {
+    if (!salaId) return;
+    this.envieiRecentemente.set(salaId, Date.now());
+  }
+
+  foiEnvioMeu(sala) {
+    const de = normalizarEmailChat(sala?.ultimaMensagemDe);
+    if (de && de === this.meuEmail) return true;
+    const t = this.envieiRecentemente.get(sala?.id) || 0;
+    return Boolean(t && Date.now() - t < 4000);
+  }
+
   onSalas(salas) {
-    const anteriores = new Map(this.salas.map((s) => [s.id, timestampMs(s.ultimaMensagemEm || s.atualizadoEm)]));
-    this.salas = salas || [];
+    const lista = salas || [];
+    this.salas = lista;
     this.atualizarBadge();
 
     if (!this.vistoInicialSalas) {
       this.vistoInicialSalas = true;
+      lista.forEach((sala) => this.fingerprints.set(sala.id, this.fingerprintSala(sala)));
       return;
     }
 
-    for (const sala of this.salas) {
-      const ts = timestampMs(sala.ultimaMensagemEm || sala.atualizadoEm);
-      const antes = anteriores.get(sala.id) || 0;
-      if (ts <= antes) continue;
-      if (!salaTemNaoLida(sala, this.meuEmail)) continue;
+    for (const sala of lista) {
+      const fp = this.fingerprintSala(sala);
+      const anterior = this.fingerprints.get(sala.id);
+      this.fingerprints.set(sala.id, fp);
+      if (!sala.ultimaMensagem) continue;
+      if (anterior === fp) continue;
+      if (this.foiEnvioMeu(sala)) continue;
+
       if (this.salaAtual === sala.id && this.painelAberto && this.view === "thread") {
-        marcarSalaLida(sala.id, ts);
+        marcarSalaLida(sala.id, timestampMs(sala.ultimaMensagemEm) || Date.now());
         this.atualizarBadge();
         continue;
       }
+
       this.mostrarToastNovaMensagem(sala);
       break;
     }
@@ -206,28 +290,33 @@ class PortalChatWidget {
 
   mostrarToastNovaMensagem(sala) {
     const email = outroMembroSala(sala, this.meuEmail);
-    const key = `${sala.id}:${timestampMs(sala.ultimaMensagemEm)}`;
+    const key = this.fingerprintSala(sala);
     if (!email || key === this.ultimoToastKey) return;
     this.ultimoToastKey = key;
 
-    if (this.painelAberto) {
-      this.atualizarBadge();
-      if (this.view === "lista") this.renderLista();
-      tocarSomLeve();
-      return;
-    }
-
     const user = this.online.find((u) => normalizarEmailChat(u.email) === email);
     const nome = (user?.nome && String(user.nome).trim()) || this.nomeDeEmail(email);
-    const toast = this.root.querySelector("#pcwToast");
-    toast.dataset.email = email;
-    this.root.querySelector("#pcwToastNome").textContent = nome;
-    this.root.querySelector("#pcwToastTexto").textContent = sala.ultimaMensagem || "Nova mensagem";
-    toast.hidden = false;
-    tocarSomLeve();
+    const texto = sala.ultimaMensagem || "Nova mensagem";
 
-    if (this.toastTimer) clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => this.esconderToast(), 6500);
+    if (!(this.painelAberto && this.view === "thread" && this.salaAtual === sala.id)) {
+      const toast = this.root.querySelector("#pcwToast");
+      if (toast) {
+        toast.dataset.email = email;
+        this.root.querySelector("#pcwToastNome").textContent = nome;
+        this.root.querySelector("#pcwToastTexto").textContent = texto;
+        toast.hidden = false;
+        toast.classList.remove("pcw-toast-pulse");
+        void toast.offsetWidth;
+        toast.classList.add("pcw-toast-pulse");
+        if (this.toastTimer) clearTimeout(this.toastTimer);
+        this.toastTimer = setTimeout(() => this.esconderToast(), 8000);
+      }
+    }
+
+    if (this.painelAberto && this.view === "lista") this.renderLista();
+    this.atualizarBadge();
+    tocarSomLeve();
+    notificarSistema(nome, texto);
   }
 
   esconderToast() {
@@ -369,6 +458,7 @@ class PortalChatWidget {
       const texto = input.value;
       if (!this.salaAtual) return;
       try {
+        this.marqueiEnvioLocal(this.salaAtual);
         await enviarMensagem(this.salaAtual, texto, this.meuEmail);
         input.value = "";
         input.focus();

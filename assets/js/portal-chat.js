@@ -283,7 +283,8 @@ export function salaTemNaoLida(sala, meuEmail) {
   if (!sala?.id || !sala.ultimaMensagem) return false;
   const de = normalizarEmailChat(sala.ultimaMensagemDe);
   const me = normalizarEmailChat(meuEmail);
-  if (!de || de === me) return false;
+  // Se soubermos que a última mensagem é minha, não conta como não lida.
+  if (de && de === me) return false;
   const msgTs = timestampMs(sala.ultimaMensagemEm || sala.atualizadoEm);
   if (!msgTs) return false;
   return msgTs > Number(lerMapaLidos()[sala.id] || 0);
