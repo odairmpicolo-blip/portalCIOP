@@ -13,7 +13,7 @@ import {
   salaTemNaoLida,
   contarNaoLidas,
   marcarSalaLida
-} from "./portal-chat.js?v=20260719a";
+} from "./portal-chat.js?v=20260719b";
 import { usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260718bb";
 
 const ICON_CHAT = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C7.03 3 3 6.58 3 11c0 2.39 1.19 4.53 3.08 6.01L5 21l4.2-1.4c.9.27 1.84.4 2.8.4 4.97 0 9-3.58 9-8s-4.03-8-9-8zm0 14.5c-.78 0-1.54-.12-2.25-.35l-.5-.16-2.24.75.62-2.03-.17-.5C6.55 13.85 6 12.48 6 11c0-3.31 2.69-6 6-6s6 2.69 6 6-2.69 6-6 6z"/></svg>`;
@@ -65,7 +65,7 @@ function garantirCss() {
   if (document.querySelector("link[data-portal-chat-widget]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-chat-widget.css?v=20260719a");
+  link.href = portalPath("assets/css/portal-chat-widget.css?v=20260719b");
   link.dataset.portalChatWidget = "1";
   document.head.appendChild(link);
 }
@@ -93,8 +93,12 @@ class PortalChatWidget {
     if (paginaChatFull()) return false;
     if (!this.meuEmail) return false;
     if (isDonoChat(this.meuEmail)) return true;
+    const user = window.portalUsuario || {};
     try {
-      return usuarioTemModulo("side-chat");
+      // Assinatura: (email, perfil, moduloId). null = sem ACL explícita → liberar.
+      const decisao = usuarioTemModulo(user.email || this.meuEmail, user.perfil, "side-chat");
+      if (decisao === false) return false;
+      return true;
     } catch (_) {
       return true;
     }
