@@ -12,7 +12,7 @@ import {
   salaTemNaoLida,
   contarNaoLidas,
   marcarSalaLida
-} from "./portal-chat.js?v=20260719f";
+} from "./portal-chat.js?v=20260719g";
 
 const ICON_CHAT = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C7.03 3 3 6.58 3 11c0 2.39 1.19 4.53 3.08 6.01L5 21l4.2-1.4c.9.27 1.84.4 2.8.4 4.97 0 9-3.58 9-8s-4.03-8-9-8zm0 14.5c-.78 0-1.54-.12-2.25-.35l-.5-.16-2.24.75.62-2.03-.17-.5C6.55 13.85 6 12.48 6 11c0-3.31 2.69-6 6-6s6 2.69 6 6-2.69 6-6 6z"/></svg>`;
 const ICON_SEND = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;
@@ -78,13 +78,40 @@ function tocarSomLeve() {
   } catch (_) {}
 }
 
+const SOM_PREF_KEY = "portal_chat_som_ok_v1";
+
+function somJaPermitido() {
+  try {
+    return localStorage.getItem(SOM_PREF_KEY) === "1";
+  } catch (_) {
+    return false;
+  }
+}
+
+function gravarSomPermitido() {
+  try {
+    localStorage.setItem(SOM_PREF_KEY, "1");
+  } catch (_) {}
+}
+
 function pedirPermissaoNotificacao() {
   try {
-    if (!("Notification" in window)) return;
-    if (Notification.permission === "default") {
-      Notification.requestPermission().catch(() => {});
-    }
-  } catch (_) {}
+    if (!("Notification" in window)) return Promise.resolve("unsupported");
+    if (Notification.permission === "granted") return Promise.resolve("granted");
+    if (Notification.permission === "denied") return Promise.resolve("denied");
+    return Notification.requestPermission();
+  } catch (_) {
+    return Promise.resolve("error");
+  }
+}
+
+async function ativarSomEAlertas() {
+  desbloquearAudio();
+  gravarSomPermitido();
+  const perm = await pedirPermissaoNotificacao();
+  // Toca bip de teste no mesmo gesto do usuário (necessário para o navegador liberar áudio).
+  tocarSomLeve();
+  return perm;
 }
 
 function notificarSistema(titulo, corpo) {
@@ -110,7 +137,7 @@ function garantirCss() {
   if (document.querySelector("link[data-portal-chat-widget]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-chat-widget.css?v=20260719f");
+  link.href = portalPath("assets/css/portal-chat-widget.css?v=20260719g");
   link.dataset.portalChatWidget = "1";
   document.head.appendChild(link);
 }
@@ -151,6 +178,14 @@ class PortalChatWidget {
     const root = document.createElement("div");
     root.id = "portalChatWidgetRoot";
     root.innerHTML = `
+      <div class="pcw-perm" id="pcwPerm" hidden role="dialog" aria-labelledby="pcwPermTitle" aria-modal="true">
+        <strong id="pcwPermTitle">Ativar sons do chat</strong>
+        <p>O navegador precisa da sua permissão para tocar o alerta sonoro e mostrar notificações de novas mensagens.</p>
+        <div class="pcw-perm-actions">
+          <button type="button" class="pcw-perm-later" id="pcwPermLater">Agora não</button>
+          <button type="button" class="pcw-perm-allow" id="pcwPermAllow">Permitir som</button>
+        </div>
+      </div>
       <div class="pcw-toast" id="pcwToast" hidden role="status" aria-live="assertive">
         <button type="button" class="pcw-toast-close" id="pcwToastClose" aria-label="Fechar">×</button>
         <strong id="pcwToastNome"></strong>
@@ -177,19 +212,55 @@ class PortalChatWidget {
     document.body.appendChild(root);
     this.root = root;
     this.bind();
-    const unlock = () => {
-      desbloquearAudio();
-      pedirPermissaoNotificacao();
-    };
-    window.addEventListener("pointerdown", unlock, { once: true, capture: true });
-    window.addEventListener("keydown", unlock, { once: true, capture: true });
+    this.agendarPedidoPermissao();
+  }
+
+  agendarPedidoPermissao() {
+    if (somJaPermitido() && audioPronto) return;
+    // Pequeno atraso para não competir com o carregamento da página.
+    setTimeout(() => this.mostrarPedidoPermissao(), 1200);
+  }
+
+  mostrarPedidoPermissao() {
+    const box = this.root?.querySelector("#pcwPerm");
+    if (!box) return;
+    if (somJaPermitido()) {
+      box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+  }
+
+  esconderPedidoPermissao() {
+    const box = this.root?.querySelector("#pcwPerm");
+    if (box) box.hidden = true;
   }
 
   bind() {
-    this.root.querySelector("#pcwFab").addEventListener("click", () => {
-      desbloquearAudio();
-      pedirPermissaoNotificacao();
+    this.root.querySelector("#pcwFab").addEventListener("click", async () => {
+      if (!somJaPermitido()) {
+        await ativarSomEAlertas();
+        this.esconderPedidoPermissao();
+      } else {
+        desbloquearAudio();
+      }
       this.togglePainel();
+    });
+    this.root.querySelector("#pcwPermAllow")?.addEventListener("click", async () => {
+      const btn = this.root.querySelector("#pcwPermAllow");
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Ativando...";
+      }
+      await ativarSomEAlertas();
+      this.esconderPedidoPermissao();
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Permitir som";
+      }
+    });
+    this.root.querySelector("#pcwPermLater")?.addEventListener("click", () => {
+      this.esconderPedidoPermissao();
     });
     this.root.querySelector("#pcwClose").addEventListener("click", () => this.fecharPainel());
     this.root.querySelector("#pcwBack").addEventListener("click", () => this.mostrarLista());
