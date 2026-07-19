@@ -137,7 +137,7 @@ function garantirCss() {
   if (document.querySelector("link[data-portal-chat-widget]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-chat-widget.css?v=20260719g");
+  link.href = portalPath("assets/css/portal-chat-widget.css?v=20260719h");
   link.dataset.portalChatWidget = "1";
   document.head.appendChild(link);
 }
