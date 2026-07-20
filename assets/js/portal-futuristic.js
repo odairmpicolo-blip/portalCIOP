@@ -217,6 +217,18 @@
     const clearBtn = document.getElementById("ciopBuscaLimpar");
     if (!input || document.body.classList.contains("oa-page")) return;
 
+    // Evita que o gerenciador de senhas/autocomplete do navegador
+    // preencha e-mail de login (ex.: usuários compartilhados) na busca.
+    input.setAttribute("autocomplete", "off");
+    input.setAttribute("autocapitalize", "off");
+    input.setAttribute("autocorrect", "off");
+    input.setAttribute("spellcheck", "false");
+    input.setAttribute("data-lpignore", "true");
+    input.setAttribute("data-1p-ignore", "true");
+    input.setAttribute("data-form-type", "other");
+    input.setAttribute("name", "ciop-filtro-modulos");
+    if (input.type === "search") input.type = "text";
+
     function norm(s) {
       return String(s || "")
         .normalize("NFD")
@@ -225,7 +237,19 @@
         .trim();
     }
 
+    function pareceEmail(s) {
+      const v = String(s || "").trim();
+      return v.includes("@") && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    }
+
+    function limparAutofillIndevido() {
+      if (!pareceEmail(input.value)) return false;
+      input.value = "";
+      return true;
+    }
+
     function aplicar() {
+      limparAutofillIndevido();
       const q = norm(input.value);
       if (clearBtn) clearBtn.hidden = !q;
 
@@ -249,6 +273,23 @@
     }
 
     input.addEventListener("input", aplicar);
+    input.addEventListener("change", aplicar);
+    // Chrome às vezes preenche sem disparar "input"
+    input.addEventListener("animationstart", function (ev) {
+      if (String(ev.animationName || "").toLowerCase().includes("autofill") ||
+          String(ev.animationName || "") === "onAutoFillStart") {
+        setTimeout(function () {
+          if (limparAutofillIndevido()) aplicar();
+        }, 0);
+      }
+    });
+    // readonly até o 1º foco real — reduz autofill automático de e-mail de login
+    input.setAttribute("readonly", "readonly");
+    input.addEventListener("focus", function onFocusBusca() {
+      input.removeAttribute("readonly");
+      if (limparAutofillIndevido()) aplicar();
+    });
+
     if (clearBtn) {
       clearBtn.addEventListener("click", function () {
         input.value = "";
@@ -256,6 +297,13 @@
         aplicar();
       });
     }
+
+    // Limpa valor já autofilled no carregamento e reaplica após ACL
+    setTimeout(aplicar, 0);
+    setTimeout(aplicar, 400);
+    window.addEventListener("portal:usuario-validado", function () {
+      setTimeout(aplicar, 50);
+    });
   }
 
   function init() {
