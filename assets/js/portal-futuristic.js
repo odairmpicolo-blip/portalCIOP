@@ -154,15 +154,15 @@
   function aplicarClima(data) {
     var root = document.getElementById("ciopKpiClima");
     var tempEl = document.getElementById("ciopClimaTemp");
-    var rangeEl = document.getElementById("ciopClimaRange");
+    var maxEl = document.getElementById("ciopClimaMax");
+    var minEl = document.getElementById("ciopClimaMin");
     var iconEl = document.getElementById("ciopClimaIcon");
     if (!root || !data) return;
 
     var meta = climaPorCodigo(data.code);
     if (tempEl) tempEl.textContent = grauLabel(data.temp);
-    if (rangeEl) {
-      rangeEl.textContent = "Máx " + grauLabel(data.max) + " Mín " + grauLabel(data.min);
-    }
+    if (maxEl) maxEl.textContent = "Máx " + grauLabel(data.max);
+    if (minEl) minEl.textContent = "Mín " + grauLabel(data.min);
     if (iconEl) iconEl.innerHTML = iconeClimaSvg(meta.kind);
     root.title =
       "Abrir previsão · Londrina · " +
@@ -216,8 +216,10 @@
       })
       .catch(function () {
         if (root.dataset.live === "1") return null;
-        var rangeEl = document.getElementById("ciopClimaRange");
-        if (rangeEl) rangeEl.textContent = "Indisponível";
+        var maxEl = document.getElementById("ciopClimaMax");
+        var minEl = document.getElementById("ciopClimaMin");
+        if (maxEl) maxEl.textContent = "Máx —°";
+        if (minEl) minEl.textContent = "Indisponível";
         return null;
       });
   }
