@@ -102,6 +102,9 @@ function dkApply(pref, silent) {
   dkSwapTcglLogos(isDark);
   dkSyncPicker(p);
   if (!silent) dkScheduleAuto();
+  try {
+    window.dispatchEvent(new CustomEvent("dk-theme-change", { detail: { dark: isDark, pref: p } }));
+  } catch (e) {}
 }
 
 function dkSetPref(pref) {

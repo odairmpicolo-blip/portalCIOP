@@ -1690,8 +1690,8 @@ th{background-color:rgba(255,255,255,.85) !important;}
   }
 }
 </style>
-<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260720p">
-<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260720u">
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260720w">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260720w">
 </head>
 <body>
 <div class="body-bg-wall" aria-hidden="true"></div>
@@ -2016,7 +2016,7 @@ th{background-color:rgba(255,255,255,.85) !important;}
             const fontSize = Math.max(8, Math.min(11, Math.floor(chart.width / 72)));
             ctx.save();
             ctx.font = "700 " + fontSize + "px Arial, Helvetica, sans-serif";
-            ctx.fillStyle = "#475467";
+            ctx.fillStyle = chartMutedInk();
             meta.data.forEach((bar, i) => {
                 const val = data.datasets[0].data[i];
                 if (val == null) return;
@@ -2265,7 +2265,7 @@ th{background-color:rgba(255,255,255,.85) !important;}
         return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
     }
 
-    const ANALISTAS_CHART_THEME = {
+    const ANALISTAS_CHART_THEME_LIGHT = {
         navy: "#071f57",
         muted: "#667085",
         cyan: "#00d4ff",
@@ -2274,6 +2274,26 @@ th{background-color:rgba(255,255,255,.85) !important;}
         tooltipBg: "rgba(7,31,87,.94)",
         tooltipBorder: "rgba(0,212,255,.35)"
     };
+    const ANALISTAS_CHART_THEME_DARK = {
+        navy: "#e8edf2",
+        muted: "#ffffff",
+        cyan: "#00d4ff",
+        blue: "#38bdf8",
+        grid: "rgba(255,255,255,.12)",
+        tooltipBg: "rgba(20,20,24,.94)",
+        tooltipBorder: "rgba(0,212,255,.35)"
+    };
+    function isDarkTheme() {
+        return document.documentElement.classList.contains("dk-dark")
+            || (window.innerWidth <= 720 && !document.documentElement.classList.contains("native-light"));
+    }
+    function chartInk() { return isDarkTheme() ? "#ffffff" : "#344054"; }
+    function chartMutedInk() { return isDarkTheme() ? "#ffffff" : "#667085"; }
+    const ANALISTAS_CHART_THEME = Object.assign({}, ANALISTAS_CHART_THEME_LIGHT);
+    function refreshAnalistasChartTheme() {
+        Object.assign(ANALISTAS_CHART_THEME, isDarkTheme() ? ANALISTAS_CHART_THEME_DARK : ANALISTAS_CHART_THEME_LIGHT);
+    }
+    refreshAnalistasChartTheme();
 
     function rgbaHexAnalistas(hex, alpha) {
         const h = String(hex || "").replace("#", "");
@@ -2453,6 +2473,7 @@ th{background-color:rgba(255,255,255,.85) !important;}
     function criarGraficoAnalytics(id, config) {
         const canvas = document.getElementById(id);
         if (!canvas) return;
+        refreshAnalistasChartTheme();
         destruirGrafico(id);
         const horizontal = config.horizontal !== false;
         const labelsCompletos = (config.labels || []).slice();
@@ -2528,9 +2549,9 @@ th{background-color:rgba(255,255,255,.85) !important;}
                 scales: horizontal ? {
                     x: {
                         beginAtZero: true,
-                        grid: { color: "#eef2f7", drawBorder: false },
+                        grid: { color: isDarkTheme() ? "rgba(255,255,255,.12)" : "#eef2f7", drawBorder: false },
                         border: { display: false },
-                        ticks: { stepSize: 1, font: { size: 9, weight: "600" }, color: "#667085" }
+                        ticks: { stepSize: 1, font: { size: 9, weight: "600" }, color: chartMutedInk() }
                     },
                     y: {
                         grid: { display: false },
@@ -2538,7 +2559,7 @@ th{background-color:rgba(255,255,255,.85) !important;}
                         ticks: {
                             font: { size: eixoY.fontSize, weight: "700" },
                             autoSkip: false,
-                            color: "#344054"
+                            color: chartInk()
                         }
                     }
                 } : {
@@ -2550,14 +2571,14 @@ th{background-color:rgba(255,255,255,.85) !important;}
                             autoSkip: false,
                             maxRotation: eixoX.maxRotation,
                             minRotation: eixoX.maxRotation,
-                            color: "#344054"
+                            color: chartInk()
                         }
                     },
                     y: {
                         beginAtZero: true,
-                        grid: { color: "#eef2f7", drawBorder: false },
+                        grid: { color: isDarkTheme() ? "rgba(255,255,255,.12)" : "#eef2f7", drawBorder: false },
                         border: { display: false },
-                        ticks: { stepSize: 1, font: { size: 9, weight: "600" }, color: "#667085" }
+                        ticks: { stepSize: 1, font: { size: 9, weight: "600" }, color: chartMutedInk() }
                     }
                 }
             }
@@ -3955,6 +3976,7 @@ th{background-color:rgba(255,255,255,.85) !important;}
     function criarGraficoAnalistasClassico(labels, values) {
         const canvas = document.getElementById("chartAnalistas");
         if (!canvas) return;
+        refreshAnalistasChartTheme();
         if (chartAnalistasInstance) chartAnalistasInstance.destroy();
 
         const total = labels.length;
@@ -4487,8 +4509,16 @@ th{background-color:rgba(255,255,255,.85) !important;}
             inicializarGraficos(dadosGraficosCache);
         }, 250);
     });
+    window.addEventListener("dk-theme-change", () => {
+        clearTimeout(graficosResizeTimer);
+        graficosResizeTimer = setTimeout(() => {
+            if (!dadosGraficosCache) return;
+            refreshAnalistasChartTheme();
+            inicializarGraficos(dadosGraficosCache);
+        }, 80);
+    });
 </script>
-<script src="../assets/js/theme-toggle.js?v=20260720u"></script>
+<script src="../assets/js/theme-toggle.js?v=20260720w"></script>
 <script src="../assets/js/portal-futuristic.js?v=20260718am" defer></script>
 </body>
 </html>

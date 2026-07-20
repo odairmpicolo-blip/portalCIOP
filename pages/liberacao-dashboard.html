@@ -420,7 +420,7 @@ body{
 <link rel="stylesheet" href="../assets/css/dashboard-kit.css">
 
 
-<script src="../assets/js/theme-toggle.js?v=20260720u"></script>
+<script src="../assets/js/theme-toggle.js?v=20260720w"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
@@ -428,8 +428,8 @@ body{
 <script src="../assets/js/loading.js?v=20260718d"></script>
 <script type="module" src="../assets/js/auth.js?v=20260720a"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
-<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260720p">
-<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260720u">
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260720w">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260720w">
 </head>
 <body>
 <div class="body-bg-wall" aria-hidden="true"></div>
@@ -621,8 +621,8 @@ return "rgba("+c.r+","+c.g+","+c.b+","+alpha+")";
 }
 
 function isDarkTheme(){
-if (window.innerWidth > 720) return false;
-return !document.documentElement.classList.contains("native-light");
+  return document.documentElement.classList.contains("dk-dark")
+    || (window.innerWidth <= 720 && !document.documentElement.classList.contains("native-light"));
 }
 
 function gradienteBarras(chart, cor){
@@ -715,7 +715,9 @@ animation: { duration: 700, easing: "easeOutQuart" },
 plugins: {
 legend: { display: false },
 tooltip: {
-backgroundColor: "#101828",
+backgroundColor: isDarkTheme() ? "rgba(20,20,24,.94)" : "#101828",
+titleColor: "#fff",
+bodyColor: "#e2e8f0",
 titleFont: { size: 11, weight: "700" },
 bodyFont: { size: 11, weight: "700" },
 padding: 10,
@@ -729,7 +731,7 @@ anchor: "end",
 align: "end",
 offset: 6,
 clamp: true,
-color: "#fff",
+color: isDarkTheme() ? "#ffffff" : "#fff",
 font: { size: 10, weight: "800" },
 formatter(v){ return formatNumber(v); }
 }
@@ -918,6 +920,9 @@ $("dataDe").addEventListener("change", agendarRecarga);
 $("dataAte").addEventListener("change", agendarRecarga);
 $("btnPdf").addEventListener("click", () => gerarPdf().catch(e => setStatus(e.message,"erro")));
 document.getElementById("dkThemeToggle")?.addEventListener("click", () => {
+if(Object.keys(state.charts).length) renderGraficos();
+});
+window.addEventListener("dk-theme-change", () => {
 if(Object.keys(state.charts).length) renderGraficos();
 });
 carregar().catch(e => setStatus(e.message,"erro"));

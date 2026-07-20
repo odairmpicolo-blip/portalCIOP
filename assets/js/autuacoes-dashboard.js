@@ -12,29 +12,61 @@ let agentChart = null;
 let sortState = { key: "data_iso", dir: "desc" };
 
 const COLORS = ["#00d4ff", "#1359c7", "#ff6b00", "#7045b8", "#28a64a", "#f6bf26", "#00a6a6", "#de1b1b", "#9b59b6", "#16a085", "#e67e22", "#4d7cff"];
-const CHART_THEME = {
-    navy: "#071f57",
-    muted: "#667085",
-    cyan: "#00d4ff",
-    blue: "#1359c7",
-    orange: "#ff6b00",
-    grid: "rgba(6,36,92,.06)",
-    tooltipBg: "rgba(7,31,87,.94)",
-    tooltipBorder: "rgba(0,212,255,.35)"
-};
 
-const TOOLTIP_FUTURO = {
-    backgroundColor: CHART_THEME.tooltipBg,
-    titleColor: "#fff",
-    bodyColor: "#e2e8f0",
-    borderColor: CHART_THEME.tooltipBorder,
-    borderWidth: 1,
-    padding: 12,
-    cornerRadius: 10,
-    displayColors: false,
-    titleFont: { weight: "700", size: 12 },
-    bodyFont: { weight: "600", size: 11 }
-};
+function isDarkTheme() {
+    return document.documentElement.classList.contains("dk-dark")
+        || (window.innerWidth <= 720 && !document.documentElement.classList.contains("native-light"));
+}
+
+function chartTheme() {
+    if (isDarkTheme()) {
+        return {
+            navy: "#e8edf2",
+            muted: "#ffffff",
+            cyan: "#00d4ff",
+            blue: "#38bdf8",
+            orange: "#ff6b00",
+            grid: "rgba(255,255,255,.12)",
+            tooltipBg: "rgba(20,20,24,.94)",
+            tooltipBorder: "rgba(0,212,255,.35)"
+        };
+    }
+    return {
+        navy: "#071f57",
+        muted: "#667085",
+        cyan: "#00d4ff",
+        blue: "#1359c7",
+        orange: "#ff6b00",
+        grid: "rgba(6,36,92,.06)",
+        tooltipBg: "rgba(7,31,87,.94)",
+        tooltipBorder: "rgba(0,212,255,.35)"
+    };
+}
+
+let CHART_THEME = chartTheme();
+
+function refreshChartTheme() {
+    CHART_THEME = chartTheme();
+    if (typeof Chart !== "undefined") {
+        Chart.defaults.color = CHART_THEME.muted;
+        Chart._autuacoesTheme = false;
+    }
+}
+
+function tooltipFuturo() {
+    return {
+        backgroundColor: CHART_THEME.tooltipBg,
+        titleColor: "#fff",
+        bodyColor: "#e2e8f0",
+        borderColor: CHART_THEME.tooltipBorder,
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 10,
+        displayColors: false,
+        titleFont: { weight: "700", size: 12 },
+        bodyFont: { weight: "600", size: 11 }
+    };
+}
 
 const ANIMACAO_FUTURO = { duration: 900, easing: "easeOutQuart" };
 
@@ -43,6 +75,7 @@ function fonteGrafico(peso, tamanho) {
 }
 
 function configurarChartDefaults() {
+    refreshChartTheme();
     if (typeof Chart === "undefined" || Chart._autuacoesTheme) return;
     Chart.defaults.font.family = "'Segoe UI', system-ui, Arial, sans-serif";
     Chart.defaults.color = CHART_THEME.muted;
@@ -585,7 +618,7 @@ function desenharGraficoPeriodo(rows) {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    ...TOOLTIP_FUTURO,
+                    ...tooltipFuturo(),
                     callbacks: {
                         title(items) { return items[0]?.label || ""; },
                         label(ctx) { return `${formatInt(ctx.raw)} autuação(ões)`; }
@@ -657,7 +690,7 @@ function desenharGraficoAgentes(rows) {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    ...TOOLTIP_FUTURO,
+                    ...tooltipFuturo(),
                     callbacks: {
                         title(items) { return agentes[items[0].dataIndex]?.[0] || ""; },
                         label(ctx) { return `${formatInt(ctx.raw)} autuação(ões)`; }
@@ -945,6 +978,7 @@ function renderTable(rows) {
 }
 
 function render() {
+    refreshChartTheme();
     const rows = getFiltered();
     const total = rows.length;
     const ag = groupSum(rows, "agente");
@@ -1060,4 +1094,7 @@ function limparFiltros() {
 }
 
 window.limparFiltros = limparFiltros;
+window.addEventListener("dk-theme-change", function () {
+    try { render(); } catch (e) {}
+});
 window.portalAguardarUsuario?.(loadData);
