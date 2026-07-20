@@ -79,6 +79,36 @@ function tocarSomLeve() {
 }
 
 const SOM_PREF_KEY = "portal_chat_som_ok_v1";
+const TOAST_VISTOS_KEY = "portal_chat_toast_vistos_v1";
+
+function lerToastVistos() {
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem(TOAST_VISTOS_KEY) || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function lembrarToastVisto(fp) {
+  if (!fp) return;
+  try {
+    const mapa = lerToastVistos();
+    mapa[fp] = Date.now();
+    const ids = Object.keys(mapa);
+    if (ids.length > 80) {
+      ids
+        .sort((a, b) => (mapa[a] || 0) - (mapa[b] || 0))
+        .slice(0, ids.length - 80)
+        .forEach((k) => { delete mapa[k]; });
+    }
+    sessionStorage.setItem(TOAST_VISTOS_KEY, JSON.stringify(mapa));
+  } catch (_) {}
+}
+
+function toastJaVisto(fp) {
+  return Boolean(fp && lerToastVistos()[fp]);
+}
 
 function somJaPermitido() {
   try {
@@ -348,9 +378,14 @@ class PortalChatWidget {
       const fp = this.fingerprintSala(sala);
       const anterior = this.fingerprints.get(sala.id);
       this.fingerprints.set(sala.id, fp);
+      // Primeira vez que a sala aparece (ex.: rediscovery ao trocar de página) — só registra, sem toast.
+      if (anterior == null) continue;
       if (!sala.ultimaMensagem) continue;
       if (anterior === fp) continue;
       if (this.foiEnvioMeu(sala)) continue;
+      // Já abriu/leu essa mensagem — não reexibe ao voltar para a home.
+      if (!salaTemNaoLida(sala, this.meuEmail)) continue;
+      if (toastJaVisto(fp)) continue;
 
       if (this.salaAtual === sala.id && this.painelAberto && this.view === "thread") {
         marcarSalaLida(sala.id, timestampMs(sala.ultimaMensagemEm) || Date.now());
@@ -380,8 +415,10 @@ class PortalChatWidget {
   mostrarToastNovaMensagem(sala) {
     const email = outroMembroSala(sala, this.meuEmail);
     const key = this.fingerprintSala(sala);
-    if (!email || key === this.ultimoToastKey) return;
+    if (!email || key === this.ultimoToastKey || toastJaVisto(key)) return;
+    if (!salaTemNaoLida(sala, this.meuEmail)) return;
     this.ultimoToastKey = key;
+    lembrarToastVisto(key);
 
     const user = this.online.find((u) => normalizarEmailChat(u.email) === email);
     const nome = (user?.nome && String(user.nome).trim()) || this.nomeDeEmail(email);
@@ -517,12 +554,16 @@ class PortalChatWidget {
     try {
       const sala = await garantirSalaDm(this.meuEmail, alvo);
       this.salaAtual = sala.id;
-      marcarSalaLida(sala.id, Date.now());
+      const tsMsg = timestampMs(sala.ultimaMensagemEm) || Date.now();
+      marcarSalaLida(sala.id, Math.max(tsMsg, Date.now()));
+      lembrarToastVisto(this.fingerprintSala(sala));
       this.atualizarBadge();
       if (typeof this.unsubMsgs === "function") this.unsubMsgs();
       this.unsubMsgs = ouvirMensagens(this.salaAtual, (msgs) => {
         this.renderMensagens(msgs);
-        marcarSalaLida(this.salaAtual, Date.now());
+        const ultimo = msgs.length ? msgs[msgs.length - 1] : null;
+        const ts = timestampMs(ultimo?.criadoEm) || Date.now();
+        marcarSalaLida(this.salaAtual, Math.max(ts, Date.now()));
         this.atualizarBadge();
       });
     } catch (err) {
