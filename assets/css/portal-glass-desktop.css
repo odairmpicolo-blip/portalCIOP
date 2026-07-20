@@ -6,12 +6,12 @@
   --lg-fill: rgba(255, 255, 255, 0.32);
   --lg-fill-strong: rgba(255, 255, 255, 0.58);
   --lg-fill-hover: rgba(255, 255, 255, 0.42);
-  /* Painéis de dados (gráficos/tabelas): bem mais foscos */
-  --lg-fill-data: rgba(255, 255, 255, 0.9);
-  --lg-fill-data-head: rgba(255, 255, 255, 0.96);
+  /* Painéis de dados (gráficos/tabelas): branco vidro fosco (leitoso + blur) */
+  --lg-fill-data: rgba(255, 255, 255, 0.58);
+  --lg-fill-data-head: rgba(255, 255, 255, 0.72);
   --lg-blur: blur(40px) saturate(190%);
   --lg-blur-soft: blur(28px) saturate(170%);
-  --lg-blur-data: blur(22px) saturate(140%);
+  --lg-blur-data: blur(32px) saturate(165%);
   --lg-border: rgba(255, 255, 255, 0.5);
   --lg-edge: 1px solid rgba(255, 255, 255, 0.5);
   --lg-shadow:
@@ -252,9 +252,12 @@ body:has(.body-bg-wall) .cards-kpi .card-highlight .card-sub {
   color: #9a3412 !important;
 }
 
-/* —— Dados: gráficos e tabelas bem mais foscos —— */
+/* —— Dados: gráficos e tabelas em branco vidro fosco —— */
 body:has(.body-bg-wall) .chart-card,
 body:has(.body-bg-wall) .chart-box,
+body:has(.body-bg-wall) .chart-panel,
+body:has(.body-bg-wall) .charts-grid > *,
+body:has(.body-bg-wall) .charts > .chart-card,
 body:has(.body-bg-wall) .table-card,
 body:has(.body-bg-wall) .table-panel,
 body:has(.body-bg-wall) .telemetria-table-panel,
@@ -284,40 +287,74 @@ body:has(.body-bg-wall) .folha-card,
 body:has(.body-bg-wall) .relatorio-card,
 body:has(.body-bg-wall) .dash-card,
 body:has(.body-bg-wall) .map-side-panel,
+body:has(.body-bg-wall) .empty-page,
+body:has(.body-bg-wall) .status-pill,
+body:has(.body-bg-wall) .pdf-sheet-top,
+body:has(.body-bg-wall) .wrap-table,
+body:has(.body-bg-wall) .tabela-wrap,
+body:has(.body-bg-wall) .grafico-card,
+body:has(.body-bg-wall) .grafico-box,
+body:has(.body-bg-wall) .charts-root,
+body:has(.body-bg-wall) #chartsRoot .chart-card,
 body:has(.body-bg-wall):not(.oa-page) .card.theme-orange,
 body:has(.body-bg-wall):not(.oa-page) .card.theme-blue {
   background: var(--lg-fill-data) !important;
   backdrop-filter: var(--lg-blur-data) !important;
   -webkit-backdrop-filter: var(--lg-blur-data) !important;
-  border: 1px solid rgba(255, 255, 255, 0.62) !important;
+  border: 1px solid rgba(255, 255, 255, 0.55) !important;
   box-shadow:
-    0 16px 40px -20px rgba(6, 36, 92, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+    0 16px 40px -20px rgba(6, 36, 92, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.18) !important;
   border-radius: 20px !important;
   color: var(--lg-text) !important;
 }
 
-/* Cabeçalhos de tabela / planilha: ainda mais foscos */
+/* Área interna do gráfico: mantém o fosco sem “placa” branca opaca */
+body:has(.body-bg-wall) .chart-body,
+body:has(.body-bg-wall) .chart-card .chart-body,
+body:has(.body-bg-wall) .chart-box .chart-body {
+  background: rgba(255, 255, 255, 0.22) !important;
+  backdrop-filter: blur(18px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(150%) !important;
+}
+
+/* Cabeçalhos de tabela / planilha: fosco um pouco mais denso */
 body:has(.body-bg-wall) .table-card-header,
 body:has(.body-bg-wall) .table-head,
+body:has(.body-bg-wall) .chart-head,
 body:has(.body-bg-wall) thead th,
 body:has(.body-bg-wall) table.planilha th,
 body:has(.body-bg-wall) table.planilha-detalhe th,
 body:has(.body-bg-wall) .data-table thead th {
   background: var(--lg-fill-data-head) !important;
   color: var(--lg-label) !important;
-  backdrop-filter: blur(14px) saturate(150%) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(150%) !important;
+  backdrop-filter: blur(18px) saturate(155%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(155%) !important;
 }
 
-/* Corpo da tabela legível sobre o fosco */
+/* Corpo da tabela: vidro fosco (não branco sólido) */
 body:has(.body-bg-wall) .table-wrap,
 body:has(.body-bg-wall) .table-wrap table,
 body:has(.body-bg-wall) table.planilha,
 body:has(.body-bg-wall) table.planilha-detalhe,
 body:has(.body-bg-wall) .data-table {
-  background: rgba(255, 255, 255, 0.72) !important;
+  background: rgba(255, 255, 255, 0.38) !important;
   color: var(--lg-text) !important;
+}
+
+body:has(.body-bg-wall) .table-wrap tbody tr,
+body:has(.body-bg-wall) table.planilha tbody tr,
+body:has(.body-bg-wall) table.planilha-detalhe tbody tr,
+body:has(.body-bg-wall) .data-table tbody tr {
+  background: rgba(255, 255, 255, 0.28) !important;
+}
+
+body:has(.body-bg-wall) .table-wrap tbody tr:nth-child(even),
+body:has(.body-bg-wall) table.planilha tbody tr:nth-child(even),
+body:has(.body-bg-wall) table.planilha-detalhe tbody tr:nth-child(even),
+body:has(.body-bg-wall) .data-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.4) !important;
 }
 
 body:has(.body-bg-wall) .table-wrap td,
@@ -411,8 +448,10 @@ body.oa-page .leaflet-container {
   :root {
     --lg-fill: rgba(255, 255, 255, 0.52);
     --lg-fill-strong: rgba(255, 255, 255, 0.7);
-    --lg-fill-data: rgba(255, 255, 255, 0.94);
+    --lg-fill-data: rgba(255, 255, 255, 0.66);
+    --lg-fill-data-head: rgba(255, 255, 255, 0.78);
     --lg-blur: blur(28px) saturate(180%);
+    --lg-blur-data: blur(26px) saturate(160%);
   }
 }
 
