@@ -154,14 +154,12 @@
   function aplicarClima(data) {
     var root = document.getElementById("ciopKpiClima");
     var tempEl = document.getElementById("ciopClimaTemp");
-    var descEl = document.getElementById("ciopClimaDesc");
     var rangeEl = document.getElementById("ciopClimaRange");
     var iconEl = document.getElementById("ciopClimaIcon");
     if (!root || !data) return;
 
     var meta = climaPorCodigo(data.code);
     if (tempEl) tempEl.textContent = grauLabel(data.temp);
-    if (descEl) descEl.textContent = meta.desc;
     if (rangeEl) {
       rangeEl.textContent = "Máx " + grauLabel(data.max) + " Mín " + grauLabel(data.min);
     }
@@ -218,8 +216,8 @@
       })
       .catch(function () {
         if (root.dataset.live === "1") return null;
-        var descEl = document.getElementById("ciopClimaDesc");
-        if (descEl) descEl.textContent = "Indisponível";
+        var rangeEl = document.getElementById("ciopClimaRange");
+        if (rangeEl) rangeEl.textContent = "Indisponível";
         return null;
       });
   }
