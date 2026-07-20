@@ -113,30 +113,46 @@ export function pararHeartbeatPresenca() {
   }
 }
 
+const presenceListeners = new Set();
+
+function emitirPresenca(lista) {
+  presenceListeners.forEach((cb) => {
+    try { cb(lista); } catch (_) {}
+  });
+  try {
+    window.dispatchEvent(new CustomEvent("portal:presenca", { detail: { usuarios: lista } }));
+  } catch (_) {}
+}
+
 export function ouvirPresenca(callback) {
-  if (typeof presenceUnsub === "function") {
-    presenceUnsub();
-    presenceUnsub = null;
+  if (typeof callback !== "function") return () => {};
+  presenceListeners.add(callback);
+
+  if (!presenceUnsub) {
+    const q = query(collection(db, COLECAO_PRESENCA));
+    presenceUnsub = onSnapshot(
+      q,
+      (snap) => {
+        const agora = agoraMs();
+        const lista = snap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .filter((u) => presencaEstaOnline(u, agora))
+          .sort((a, b) => String(a.nome || a.email).localeCompare(String(b.nome || b.email), "pt-BR"));
+        emitirPresenca(lista);
+      },
+      (err) => {
+        console.warn("Falha ao ouvir presença:", err);
+        emitirPresenca([]);
+      }
+    );
   }
-  const q = query(collection(db, COLECAO_PRESENCA));
-  presenceUnsub = onSnapshot(
-    q,
-    (snap) => {
-      const agora = agoraMs();
-      const lista = snap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
-        .filter((u) => presencaEstaOnline(u, agora))
-        .sort((a, b) => String(a.nome || a.email).localeCompare(String(b.nome || b.email), "pt-BR"));
-      callback(lista);
-    },
-    (err) => {
-      console.warn("Falha ao ouvir presença:", err);
-      callback([]);
-    }
-  );
+
   return () => {
-    if (typeof presenceUnsub === "function") presenceUnsub();
-    presenceUnsub = null;
+    presenceListeners.delete(callback);
+    if (!presenceListeners.size && typeof presenceUnsub === "function") {
+      presenceUnsub();
+      presenceUnsub = null;
+    }
   };
 }
 

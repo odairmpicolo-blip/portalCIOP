@@ -12,7 +12,7 @@ import {
   salaTemNaoLida,
   contarNaoLidas,
   marcarSalaLida
-} from "./portal-chat.js?v=20260719j";
+} from "./portal-chat.js?v=20260720b";
 
 const ICON_CHAT = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C7.03 3 3 6.58 3 11c0 2.39 1.19 4.53 3.08 6.01L5 21l4.2-1.4c.9.27 1.84.4 2.8.4 4.97 0 9-3.58 9-8s-4.03-8-9-8zm0 14.5c-.78 0-1.54-.12-2.25-.35l-.5-.16-2.24.75.62-2.03-.17-.5C6.55 13.85 6 12.48 6 11c0-3.31 2.69-6 6-6s6 2.69 6 6-2.69 6-6 6z"/></svg>`;
 const ICON_SEND = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;

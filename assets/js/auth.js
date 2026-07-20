@@ -18,7 +18,7 @@ import {
   iniciarHeartbeatPresenca,
   pararHeartbeatPresenca,
   marcarPresencaOffline
-} from "./portal-chat.js?v=20260719j";
+} from "./portal-chat.js?v=20260720b";
 
 const auth = getAuth(app);
 
@@ -292,7 +292,7 @@ function garantirChatWidget() {
   if (/\/login\.html$/i.test(path)) return;
   const script = document.createElement("script");
   script.type = "module";
-  script.src = portalPath("assets/js/portal-chat-widget.js?v=20260720a");
+  script.src = portalPath("assets/js/portal-chat-widget.js?v=20260720b");
   script.dataset.portalChatWidget = "1";
   document.head.appendChild(script);
 }
