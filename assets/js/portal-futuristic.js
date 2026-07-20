@@ -165,7 +165,7 @@
     }
     if (iconEl) iconEl.innerHTML = iconeClimaSvg(meta.kind);
     root.title =
-      "Londrina · " +
+      "Abrir previsão · Londrina · " +
       grauLabel(data.temp) +
       " · " +
       meta.desc +
