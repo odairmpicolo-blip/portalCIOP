@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>Saída de carros (escala) — Portal CIOP</title>
+<style>
+:root{--blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--bg:#f5f7fb;--border:#dfe5ef;--text:#101828;--muted:#3f4757;--red:#dc2626;--green:#15803d;--amber:#b45309}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh}
+.header{background:#fff;display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);gap:16px;align-items:center;padding:8px 20px;border-bottom:1px solid #e8edf6}
+.header > a:first-child.portal-brand-mark{justify-self:start}
+.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.container{max-width:1680px;margin:20px auto 32px;padding:0 20px}
+.toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.toolbar-left{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;flex:1;min-width:0}
+.nav-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn-portal,.btn-primary,.btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;text-decoration:none;border-radius:10px;font-size:13px;font-weight:800;padding:8px 14px;border:0;cursor:pointer;font-family:inherit}
+.btn-portal,.btn-primary{background:var(--blue);color:#fff}.btn-secondary{background:#e8edf6;color:var(--blue)}
+.btn-icon{display:inline-flex;width:16px;height:16px}.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.status-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;background:#fff;border:1px solid var(--border);border-radius:999px;font-size:12px;font-weight:700;color:var(--muted)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#94a3b8}
+.status-dot.ok{background:var(--green)}.status-dot.load{background:var(--orange);animation:pulse 1s infinite}.status-dot.erro{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.kpi-label{display:block;font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.kpi-value{display:block;margin-top:4px;font-size:22px;font-weight:900;color:var(--blue)}
+.kpi.warn .kpi-value{color:var(--amber)}.kpi.bad .kpi-value{color:var(--red)}.kpi.ok .kpi-value{color:var(--green)}
+.table-card{overflow:hidden;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 28px rgba(16,24,40,.07)}
+.table-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.card-title{margin:0;font-size:14px;font-weight:900;color:var(--blue)}
+.table-sub{margin-top:2px;font-size:11px;font-weight:700;color:var(--muted)}
+.table-wrap{overflow:auto;max-height:calc(100vh - 340px);min-height:360px}
+table.escala{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;min-width:1100px}
+table.escala thead th{position:sticky;top:0;z-index:2;background:#06245c;color:#fff;padding:10px 8px;font-size:9px;font-weight:900;text-transform:uppercase;text-align:center;letter-spacing:.03em}
+table.escala tbody td{border-bottom:1px solid #edf2f7;padding:8px 6px;text-align:center;vertical-align:middle;background:#fff}
+table.escala tbody tr:nth-child(even) td{background:#fafbfd}
+table.escala tbody tr:hover td{background:#fff7ed}
+table.escala td.col-texto{text-align:left;padding-left:10px}
+table.escala tr.row-alerta td{box-shadow:inset 3px 0 0 var(--orange)}
+table.escala tr.row-critico td{box-shadow:inset 3px 0 0 var(--red)}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-height:22px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:800}
+.badge.ok{background:#ecfdf3;color:var(--green)}.badge.warn{background:#fffbeb;color:var(--amber)}.badge.bad{background:#fef2f2;color:var(--red)}.badge.muted{background:#f1f5f9;color:var(--muted)}
+.empty{padding:40px 16px;text-align:center;color:var(--muted)}.empty-title{font-size:15px;font-weight:900;color:var(--blue);margin-bottom:6px}
+.page-footer{padding:14px 20px;text-align:center;color:var(--muted);font-size:12px;font-weight:700;border-top:1px solid var(--border);background:#fff}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.header{grid-template-columns:1fr;text-align:center}.kpis{grid-template-columns:1fr}}
+@media (min-width:721px){
+  body{background:transparent!important}
+  .body-bg-wall{position:fixed;inset:0;z-index:-3;background-image:url('../assets/img/portal-bg-onibus.jpg?v=20260718j');background-size:cover;background-position:center}
+  .body-bg-stain{position:fixed;inset:0;z-index:-2;pointer-events:none;background:linear-gradient(180deg,rgba(6,20,50,.30) 0%,rgba(6,20,50,.55) 100%)}
+  .header{background:rgba(255,255,255,.7)!important;backdrop-filter:blur(18px) saturate(200%);border-bottom:none!important}
+  .table-card,.kpi,.status-pill{background:rgba(255,255,255,.55)!important;backdrop-filter:blur(16px) saturate(180%)!important;border-color:rgba(255,255,255,.55)!important}
+}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-brand.css">
+<link rel="stylesheet" href="../assets/css/portal-titulos.css">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260718e">
+<link rel="stylesheet" href="../assets/css/portal-filtros.css">
+<link rel="stylesheet" href="../assets/css/portal-senha.css">
+<link rel="stylesheet" href="../assets/css/portal-footer.css">
+<link rel="stylesheet" href="../assets/css/loading.css?v=20260718d">
+<script src="../assets/js/loading.js?v=20260718d"></script>
+<script>
+(function(){
+  var iso=(function(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");})();
+  var base="../assets/data/escala-saida/";
+  window.__escalaPrecarga=fetch(base+"escala-"+iso+".json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
+})();
+</script>
+<script type="module" src="../assets/js/auth.js?v=20260720a"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260720b">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260718am">
+</head>
+<body data-require-perfis="Administrador,Supervisor" data-require-usuarios="pedroisrael2009@gmail.com">
+<div class="body-bg-wall" aria-hidden="true"></div>
+<div class="body-bg-stain" aria-hidden="true"></div>
+<header class="header">
+    <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
+    <div class="title-wrap">
+        <h1 class="saida-carros-title-art" aria-label="Saída de carros">
+            <img src="../assets/img/titulo-patio.png" alt="Saída de carros">
+        </h1>
+        <div class="header-subtitle">Escala × pátio · início 04:10–07:00 · substituto em pedido ou sem saída</div>
+    </div>
+    <div class="header-actions">
+        <div class="ciop-session" aria-label="Sessão do usuário">
+            <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+            <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+            <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+            <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+        </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+    </div>
+</header>
+
+<main class="container">
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <div class="nav-actions">
+                <a class="btn-portal" href="../index.html"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Portal</a>
+                <a class="btn-secondary" href="gerenciapatio.html"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16h12l-1-5H7l-1 5Z"/><circle cx="8" cy="17" r="1.5"/><circle cx="16" cy="17" r="1.5"/></svg></span>Pátio</a>
+            </div>
+            <div class="filters-inline" aria-label="Filtros">
+                <div class="filter-field"><label for="dataFiltro">Data</label><input id="dataFiltro" type="date"></div>
+                <div class="filter-field"><label for="maquinaFiltro">Máquina</label><select id="maquinaFiltro"><option value="">Todas</option></select></div>
+                <div class="filter-field"><label for="filtroStatus">Status</label>
+                    <select id="filtroStatus">
+                        <option value="">Todos</option>
+                        <option value="ok">No pátio</option>
+                        <option value="pedido">Pedido</option>
+                        <option value="sem_saida">Sem saída</option>
+                        <option value="fora_patio">Fora do pátio</option>
+                        <option value="fora_janela">Fora 04:10–07:00</option>
+                    </select>
+                </div>
+                <div class="filter-field"><label for="filtroBusca">Buscar</label><input id="filtroBusca" type="search" placeholder="Linha, carro, motorista..." autocomplete="off"></div>
+            </div>
+            <button type="button" class="btn-primary" id="btnAtualizar">Atualizar</button>
+        </div>
+        <div class="status-pill">
+            <span class="status-dot load" id="statusDot"></span>
+            <span id="statusLine">Carregando escala…</span>
+        </div>
+    </div>
+
+    <div class="kpis" aria-label="Resumo">
+        <div class="kpi"><span class="kpi-label">Na janela</span><span class="kpi-value" id="kpiJanela">—</span></div>
+        <div class="kpi ok"><span class="kpi-label">No pátio</span><span class="kpi-value" id="kpiPatio">—</span></div>
+        <div class="kpi warn"><span class="kpi-label">Pedidos</span><span class="kpi-value" id="kpiPedido">—</span></div>
+        <div class="kpi bad"><span class="kpi-label">Sem saída</span><span class="kpi-value" id="kpiSemSaida">—</span></div>
+        <div class="kpi"><span class="kpi-label">Substitutos</span><span class="kpi-value" id="kpiSub">—</span></div>
+    </div>
+
+    <section class="table-card">
+        <div class="table-head">
+            <div>
+                <h2 class="card-title">Escala de saída × pátio</h2>
+                <div class="table-sub" id="tableSub">Cruza a planilha de saída com o estado local do Gerenciar Pátio</div>
+            </div>
+            <span class="status-pill" style="padding:6px 10px"><span id="tableInfo">0 linhas</span></span>
+        </div>
+        <div class="table-wrap">
+            <table class="escala">
+                <thead>
+                    <tr>
+                        <th>Início</th>
+                        <th>Saída garagem</th>
+                        <th>Linha</th>
+                        <th>Work-ID</th>
+                        <th>Carro</th>
+                        <th>Motorista</th>
+                        <th>Local</th>
+                        <th>Máquina</th>
+                        <th>Pátio</th>
+                        <th>Saída real</th>
+                        <th>Substituto</th>
+                        <th>Obs.</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaCorpo"></tbody>
+            </table>
+            <div class="empty" id="emptyState" hidden>
+                <div class="empty-title">Nenhum registro</div>
+                <div>Altere a data/filtros ou atualize a escala.</div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer class="page-footer">Portal CIOP · Saída de carros (escala) · TCGL</footer>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
+const DATA_BASE = "../assets/data/escala-saida";
+const PATIO_KEY = "patio_tcgl_v3";
+const PATIO_KEY_LEGACY = "patio_tcgl_v2";
+const INICIO_MIN = "04:10";
+const INICIO_MAX = "07:00";
+
+const state = { bruto: [], linhas: [], origem: "", patioMap: new Map(), pedidos: new Set() };
+
+function $(id){ return document.getElementById(id); }
+function escapeHtml(v){
+  return String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function isoHoje(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function isoAmanha(){
+  const d = new Date();
+  d.setDate(d.getDate()+1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function setStatus(texto, tipo){
+  $("statusLine").textContent = texto;
+  $("statusDot").className = "status-dot" + (tipo ? ` ${tipo}` : "");
+}
+function horaNorm(v){
+  const m = String(v || "").trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return "";
+  return `${String(m[1]).padStart(2,"0")}:${m[2]}`;
+}
+function naJanelaInicio(hora){
+  const h = horaNorm(hora);
+  if (!h) return false;
+  return h >= INICIO_MIN && h <= INICIO_MAX;
+}
+function val(row, key){
+  if (row?.[key] != null && row[key] !== "") return row[key];
+  if (key === "horario_saida_da_garagem") return row?.horario_de_saida_da_garagem || row?.horario_saida || "";
+  if (key === "horario_de_inicio") return row?.horario_inicio || row?.inicio_programado || "";
+  return "";
+}
+function prefixoNorm(v){
+  return String(v || "").replace(/\D/g, "").replace(/^0+/, "") || String(v || "").trim();
+}
+
+function lerPatioLocal(){
+  const mapa = new Map();
+  const pedidos = new Set();
+  try {
+    const raw = localStorage.getItem(PATIO_KEY) || localStorage.getItem(PATIO_KEY_LEGACY);
+    if (!raw) return { mapa, pedidos };
+    const patio = JSON.parse(raw);
+    const filas = patio?.filas || {};
+    Object.keys(filas).forEach((filaKey) => {
+      (filas[filaKey] || []).forEach((p, idx) => {
+        if (p == null || p === "") return;
+        const pref = prefixoNorm(p);
+        if (!pref) return;
+        if (!mapa.has(pref)) mapa.set(pref, { fila: filaKey, slot: idx + 1, raw: String(p) });
+      });
+    });
+    (patio?.pedidos || []).forEach((p) => {
+      const pref = prefixoNorm(p);
+      if (pref) pedidos.add(pref);
+    });
+  } catch (_) {}
+  return { mapa, pedidos };
+}
+
+function sugerirSubstituto(row, usados){
+  const carro = prefixoNorm(val(row, "carro"));
+  const info = state.patioMap.get(carro);
+  if (!info) return "";
+  const candidatos = [];
+  state.patioMap.forEach((meta, pref) => {
+    if (pref === carro) return;
+    if (state.pedidos.has(pref)) return;
+    if (usados.has(pref)) return;
+    if (meta.fila !== info.fila) return;
+    candidatos.push(pref);
+  });
+  candidatos.sort((a, b) => {
+    const sa = state.patioMap.get(a)?.slot || 0;
+    const sb = state.patioMap.get(b)?.slot || 0;
+    return sa - sb;
+  });
+  return candidatos[0] || "";
+}
+
+function enriquecerLinha(row, usadosEscala){
+  const carro = prefixoNorm(val(row, "carro"));
+  const inicio = horaNorm(val(row, "horario_de_inicio"));
+  const saidaReal = String(val(row, "saida_real") || "").trim();
+  const noPatio = state.patioMap.has(carro);
+  const pedido = state.pedidos.has(carro);
+  const janela = naJanelaInicio(inicio);
+  const semSaida = !saidaReal;
+  let status = "ok";
+  if (!janela) status = "fora_janela";
+  else if (pedido) status = "pedido";
+  else if (semSaida) status = "sem_saida";
+  else if (!noPatio) status = "fora_patio";
+
+  const precisaSub = janela && (pedido || semSaida);
+  const substituto = precisaSub ? sugerirSubstituto(row, usadosEscala) : "";
+
+  return {
+    ...row,
+    _inicio: inicio,
+    _saidaGaragem: horaNorm(val(row, "horario_saida_da_garagem")),
+    _carro: carro || String(val(row, "carro") || ""),
+    _janela: janela,
+    _noPatio: noPatio,
+    _pedido: pedido,
+    _semSaida: semSaida,
+    _status: status,
+    _fila: noPatio ? (state.patioMap.get(carro)?.fila || "") : "",
+    _substituto: substituto
+  };
+}
+
+async function carregarJsonDia(data){
+  try {
+    if (window.__escalaPrecarga && data === isoHoje()) {
+      const pre = await window.__escalaPrecarga;
+      if (Array.isArray(pre?.dados)) return pre;
+    }
+    const res = await fetch(`${DATA_BASE}/escala-${data}.json?t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (_) {
+    return null;
+  }
+}
+
+async function carregarApiDia(data){
+  const url = `${API_URL}?${new URLSearchParams({
+    liberacao: "1",
+    recurso: "saida_carros",
+    data,
+    vivo: "1",
+    _: String(Date.now())
+  })}`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 45000);
+  try {
+    const res = await fetch(url, { cache: "no-store", redirect: "follow", signal: ctrl.signal });
+    const texto = await res.text();
+    const dataJson = JSON.parse(texto);
+    if (!dataJson.ok) throw new Error(dataJson.erro || "Erro na planilha");
+    return dataJson;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function carregarDados(data){
+  const patio = lerPatioLocal();
+  state.patioMap = patio.mapa;
+  state.pedidos = patio.pedidos;
+
+  let payload = await carregarJsonDia(data);
+  let origem = payload?.dados?.length ? "JSON" : "";
+  if (!payload?.dados?.length) {
+    payload = await carregarApiDia(data);
+    origem = "planilha";
+  } else {
+    // Atualiza em background pela planilha quando JSON existe
+    carregarApiDia(data).then((vivo) => {
+      if (vivo?.dados?.length && $("dataFiltro").value === data) {
+        state.bruto = vivo.dados;
+        state.origem = "planilha · ao vivo";
+        aplicarFiltros();
+        setStatus(`${state.linhas.length} registro(s) · planilha ao vivo`, "ok");
+      }
+    }).catch(() => {});
+  }
+
+  state.bruto = Array.isArray(payload?.dados) ? payload.dados : [];
+  state.origem = origem || "—";
+  return payload;
+}
+
+function popularMaquinas(dados){
+  const sel = $("maquinaFiltro");
+  const prev = sel.value;
+  const items = [...new Set((dados || []).map(r => String(r.maquina || "").trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+  sel.innerHTML = `<option value="">Todas</option>${items.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("")}`;
+  if (items.includes(prev)) sel.value = prev;
+}
+
+function aplicarFiltros(){
+  const data = $("dataFiltro").value;
+  const maq = String($("maquinaFiltro").value || "").trim().toLowerCase();
+  const status = $("filtroStatus").value;
+  const busca = String($("filtroBusca").value || "").trim().toLowerCase();
+
+  const usados = new Set(
+    state.bruto.map(r => prefixoNorm(val(r, "carro"))).filter(Boolean)
+  );
+
+  let linhas = state.bruto.map(r => enriquecerLinha(r, usados));
+
+  // Janela 04:10–07:00 é o foco operacional; "fora_janela" só aparece se filtrado explicitamente
+  if (status !== "fora_janela") {
+    linhas = linhas.filter(r => r._janela);
+  }
+
+  if (maq) linhas = linhas.filter(r => String(r.maquina || "").trim().toLowerCase() === maq);
+  if (status) linhas = linhas.filter(r => r._status === status);
+  if (busca) {
+    linhas = linhas.filter(r => {
+      const blob = [r.linha, r.work_id, r._carro, r.motorista, r.local_inicio, r.maquina, r._substituto]
+        .join(" ").toLowerCase();
+      return blob.includes(busca);
+    });
+  }
+
+  linhas.sort((a, b) => String(a._inicio).localeCompare(String(b._inicio)) || String(a.linha).localeCompare(String(b.linha), "pt-BR", { numeric: true }));
+  state.linhas = linhas;
+  renderKpis();
+  renderTabela();
+}
+
+function renderKpis(){
+  const base = state.bruto.map(r => enriquecerLinha(r, new Set())).filter(r => r._janela);
+  $("kpiJanela").textContent = String(base.length);
+  $("kpiPatio").textContent = String(base.filter(r => r._noPatio && !r._pedido).length);
+  $("kpiPedido").textContent = String(base.filter(r => r._pedido).length);
+  $("kpiSemSaida").textContent = String(base.filter(r => r._semSaida).length);
+  $("kpiSub").textContent = String(base.filter(r => r._substituto).length);
+}
+
+function badgePatio(row){
+  if (row._pedido) return `<span class="badge warn">Pedido · ${escapeHtml(row._fila || "—")}</span>`;
+  if (row._noPatio) return `<span class="badge ok">${escapeHtml(row._fila || "pátio")}</span>`;
+  return `<span class="badge bad">Fora do pátio</span>`;
+}
+
+function renderTabela(){
+  const corpo = $("tabelaCorpo");
+  const empty = $("emptyState");
+  if (!state.linhas.length) {
+    corpo.innerHTML = "";
+    empty.hidden = false;
+    $("tableInfo").textContent = "0 linhas";
+    return;
+  }
+  empty.hidden = true;
+  corpo.innerHTML = state.linhas.map(row => {
+    const cls = row._pedido || row._semSaida ? (row._pedido ? "row-alerta" : "row-critico") : "";
+    const saidaBadge = row._semSaida
+      ? `<span class="badge bad">Sem saída</span>`
+      : `<span class="badge ok">${escapeHtml(horaNorm(val(row, "saida_real")))}</span>`;
+    const sub = row._substituto
+      ? `<span class="badge warn">${escapeHtml(row._substituto)}</span>`
+      : (row._pedido || row._semSaida ? `<span class="badge muted">—</span>` : "—");
+    return `<tr class="${cls}">
+      <td>${escapeHtml(row._inicio || "—")}</td>
+      <td>${escapeHtml(row._saidaGaragem || "—")}</td>
+      <td>${escapeHtml(val(row, "linha") || "—")}</td>
+      <td>${escapeHtml(val(row, "work_id") || "—")}</td>
+      <td><strong>${escapeHtml(row._carro || "—")}</strong></td>
+      <td>${escapeHtml(val(row, "motorista") || "—")}</td>
+      <td class="col-texto">${escapeHtml(val(row, "local_inicio") || "—")}</td>
+      <td>${escapeHtml(val(row, "maquina") || "—")}</td>
+      <td>${badgePatio(row)}</td>
+      <td>${saidaBadge}</td>
+      <td>${sub}</td>
+      <td class="col-texto">${escapeHtml(val(row, "observacoes") || "")}</td>
+    </tr>`;
+  }).join("");
+  $("tableInfo").textContent = `${state.linhas.length.toLocaleString("pt-BR")} linha(s)`;
+  $("tableSub").textContent = `Portal CIOP · ${state.origem || "—"} · pátio local: ${state.patioMap.size} carro(s) · ${state.pedidos.size} pedido(s)`;
+}
+
+async function atualizar(){
+  const data = $("dataFiltro").value || isoHoje();
+  $("dataFiltro").value = data;
+  setStatus("Carregando escala…", "load");
+  window.portalMostrarCarregando?.("Carregando saída de carros");
+  try {
+    await carregarDados(data);
+    popularMaquinas(state.bruto);
+    aplicarFiltros();
+    if (!state.bruto.length) {
+      setStatus(`Nenhum registro de escala em ${data}.`, "erro");
+    } else {
+      setStatus(`${state.linhas.length} na janela 04:10–07:00 · ${state.origem}`, "ok");
+    }
+  } catch (err) {
+    state.bruto = [];
+    state.linhas = [];
+    renderKpis();
+    renderTabela();
+    setStatus(err.message || "Falha ao carregar.", "erro");
+  } finally {
+    window.portalOcultarCarregando?.();
+  }
+}
+
+function iniciar(){
+  $("dataFiltro").value = isoHoje();
+  $("dataFiltro").max = isoAmanha();
+  $("btnAtualizar").addEventListener("click", () => atualizar());
+  ["dataFiltro", "maquinaFiltro", "filtroStatus"].forEach(id => {
+    $(id).addEventListener("change", () => {
+      if (id === "dataFiltro") atualizar();
+      else aplicarFiltros();
+    });
+  });
+  $("filtroBusca").addEventListener("input", () => aplicarFiltros());
+  atualizar();
+}
+
+if (window.portalUsuarioValidado) iniciar();
+else window.addEventListener("portal:usuario-validado", () => iniciar(), { once: true });
+</script>
+<script src="../assets/js/theme-toggle.js?v=20260718aj"></script>
+<script src="../assets/js/portal-futuristic.js?v=20260720a" defer></script>
+<script src="../assets/js/portal-footer.js" defer></script>
+</body>
+</html>
