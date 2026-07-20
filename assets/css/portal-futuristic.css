@@ -126,18 +126,10 @@ html.dk-dark img.logo-right[src*="LOGO_TCGL-dark"] {
 .ciop-command-inner {
   position: relative;
   height: auto;
-  display: grid;
-  grid-template-columns:
-    minmax(70px, 0.5fr)
-    minmax(120px, 1.15fr)
-    minmax(120px, 0.85fr)
-    minmax(78px, 0.45fr)
-    minmax(52px, 0.38fr)
-    minmax(52px, 0.38fr)
-    minmax(52px, 0.38fr)
-    minmax(140px, 1.35fr);
-  gap: 0 4px;
+  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
+  gap: 0;
   padding: 6px 10px 6px 14px;
   min-height: 46px;
   border-radius: 12px;
@@ -174,6 +166,27 @@ html.dk-dark img.logo-right[src*="LOGO_TCGL-dark"] {
   opacity: 0.45;
 }
 
+.ciop-zone {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.ciop-zone-contexto {
+  flex: 0 1 auto;
+  gap: 0;
+}
+
+.ciop-zone-status {
+  flex: 0 0 auto;
+  margin-left: 4px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(15, 23, 42, 0.12);
+}
+
 .ciop-kpi {
   position: relative;
   z-index: 1;
@@ -186,8 +199,9 @@ html.dk-dark img.logo-right[src*="LOGO_TCGL-dark"] {
   gap: 0;
 }
 
-.ciop-kpi:first-child {
+.ciop-zone > .ciop-kpi:first-child {
   border-left: none;
+  padding-left: 4px;
 }
 
 .ciop-kpi-clima {
@@ -210,34 +224,22 @@ html.dk-dark img.logo-right[src*="LOGO_TCGL-dark"] {
 
 .ciop-kpi-value-clima {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: 5px;
   white-space: nowrap;
-  flex-wrap: nowrap;
 }
 
-.ciop-clima-minmax {
-  display: inline-flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1px;
-  line-height: 1;
-  min-width: 0;
-}
-
-.ciop-clima-max,
-.ciop-clima-min {
-  font-size: 0.52rem;
+.ciop-clima-range {
+  font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.01em;
-  line-height: 1.1;
-  color: #475569;
+  line-height: 1;
+  color: #64748b;
   white-space: nowrap;
 }
 
-html.dk-dark .ciop-clima-max,
-html.dk-dark .ciop-clima-min {
-  color: rgba(255, 255, 255, 0.88) !important;
+html.dk-dark .ciop-clima-range {
+  color: rgba(226, 232, 240, 0.78) !important;
 }
 
 .ciop-clima-icon {
@@ -248,6 +250,7 @@ html.dk-dark .ciop-clima-min {
   align-items: center;
   justify-content: center;
   line-height: 0;
+  align-self: center;
 }
 
 .ciop-clima-icon svg {
@@ -259,17 +262,21 @@ html.dk-dark .ciop-clima-min {
 .ciop-kpi-online {
   align-items: center;
   justify-content: center;
-  padding-left: 8px;
-  padding-right: 6px;
+  padding-left: 4px;
+  padding-right: 8px;
 }
 
 .ciop-kpi-data .ciop-kpi-value-data {
-  max-width: 100%;
+  max-width: 9.5rem;
 }
 
 html.dk-dark .ciop-kpi-clima:hover {
   background: rgba(148, 163, 184, 0.14);
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.28);
+}
+
+html.dk-dark .ciop-zone-status {
+  border-left-color: rgba(148, 163, 184, 0.28);
 }
 
 .ciop-online-chip {
@@ -408,11 +415,13 @@ html.dk-dark .ciop-online-chip.is-offline {
   align-items: center;
   gap: 7px;
   align-self: stretch;
-  width: 100%;
-  min-width: 0;
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 140px;
+  max-width: none;
   height: auto;
   min-height: 32px;
-  margin: 1px 0;
+  margin: 1px 0 1px 10px;
   padding: 0 8px 0 11px;
   border-radius: 9px;
   border: 1px solid rgba(15, 23, 42, 0.1);
@@ -1239,13 +1248,27 @@ body:has(.body-bg-wall) .dk-theme-toggle:not(.side-link) {
   }
 
   .ciop-command-inner {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    flex-wrap: wrap;
     padding: 6px 8px;
     min-height: 42px;
+    gap: 4px;
+  }
+
+  .ciop-zone-contexto,
+  .ciop-zone-status {
+    flex: 1 1 auto;
+  }
+
+  .ciop-zone-status {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
   }
 
   .ciop-search {
-    grid-column: 1 / -1;
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
     margin: 3px 0 0;
     height: 34px;
     min-height: 34px;
@@ -1317,15 +1340,22 @@ body:has(.body-bg-wall) .dk-theme-toggle:not(.side-link) {
   }
 
   .ciop-command-inner {
-    grid-template-columns: 1fr 1fr;
+    flex-wrap: wrap;
   }
 
-  .ciop-kpi-data {
-    grid-column: 1 / -1;
+  .ciop-zone-contexto,
+  .ciop-zone-status {
+    flex: 1 1 100%;
+  }
+
+  .ciop-zone-status {
+    justify-content: flex-start;
   }
 
   .ciop-search {
-    grid-column: 1 / -1;
+    flex: 1 1 100%;
+    width: 100%;
+    margin-left: 0;
   }
 }
 

@@ -19,11 +19,20 @@
     return texto.charAt(0).toUpperCase() + texto.slice(1);
   }
 
+  function dataCurtaLabel() {
+    const d = new Date();
+    const weekday = d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(/\./g, "");
+    const day = d.getDate();
+    const month = d.toLocaleDateString("pt-BR", { month: "short" }).replace(/\./g, "");
+    const wd = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+    const mo = month.charAt(0).toLowerCase() + month.slice(1);
+    return wd + ", " + day + " " + mo;
+  }
+
   function horaLabel() {
     return new Date().toLocaleTimeString("pt-BR", {
       hour: "2-digit",
       minute: "2-digit",
-      second: "2-digit",
     });
   }
 
@@ -36,7 +45,10 @@
     const onlineText = online ? online.querySelector(".ciop-online-text") : null;
     const isOnline = navigator.onLine !== false;
 
-    if (data) data.textContent = dataCompletaLabel();
+    if (data) {
+      data.textContent = dataCurtaLabel();
+      data.title = dataCompletaLabel();
+    }
     if (hora) hora.textContent = horaLabel();
     if (mods) mods.textContent = String(countVisibleCards());
 
@@ -154,18 +166,16 @@
   function aplicarClima(data) {
     var root = document.getElementById("ciopKpiClima");
     var tempEl = document.getElementById("ciopClimaTemp");
-    var maxEl = document.getElementById("ciopClimaMax");
-    var minEl = document.getElementById("ciopClimaMin");
+    var rangeEl = document.getElementById("ciopClimaRange");
     var iconEl = document.getElementById("ciopClimaIcon");
     if (!root || !data) return;
 
     var meta = climaPorCodigo(data.code);
     if (tempEl) tempEl.textContent = grauLabel(data.temp);
-    if (maxEl) maxEl.textContent = "Máx " + grauLabel(data.max);
-    if (minEl) minEl.textContent = "Mín " + grauLabel(data.min);
+    if (rangeEl) rangeEl.textContent = grauLabel(data.max) + "/" + grauLabel(data.min);
     if (iconEl) iconEl.innerHTML = iconeClimaSvg(meta.kind);
     root.title =
-      "Abrir previsão · Londrina · " +
+      "Londrina · " +
       grauLabel(data.temp) +
       " · " +
       meta.desc +
@@ -216,10 +226,8 @@
       })
       .catch(function () {
         if (root.dataset.live === "1") return null;
-        var maxEl = document.getElementById("ciopClimaMax");
-        var minEl = document.getElementById("ciopClimaMin");
-        if (maxEl) maxEl.textContent = "Máx —°";
-        if (minEl) minEl.textContent = "Indisponível";
+        var rangeEl = document.getElementById("ciopClimaRange");
+        if (rangeEl) rangeEl.textContent = "—";
         return null;
       });
   }
