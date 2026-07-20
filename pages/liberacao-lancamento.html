@@ -575,6 +575,9 @@ const CAMPOS_HORA = new Set(["horario_saida_da_garagem","horario_de_inicio","sai
 const DIAS_JANELA = 7;
 const CACHE_STORAGE_KEY = "portal_liberacao_lancamento_v2";
 const LIBERACAO_MODO_JSON_HIBRIDO = true;
+const LIBERACAO_FLUXO_AWS = true;
+const LIBERACAO_AWS_JS = "../assets/js/liberacao-aws.js?v=20260720a";
+let awsLiberacaoMod = null;
 const INTERVALO_SYNC_BACKGROUND_MS = 5000;
 const LIBERACAO_DATA_BASE = "../assets/data/liberacao";
 const LIBERACAO_MANIFEST_URL = LIBERACAO_DATA_BASE + "/manifest.json";
@@ -1021,23 +1024,57 @@ async function apiPost(payload){
     const p=Object.assign({liberacao:"1",_:String(Date.now())},payload);
     let res;
     try{
-        res=await fetchComTimeout(API_URL+"?"+new URLSearchParams(p),{cache:"no-store",redirect:"follow"},30000);
+        // GET intencional: POST direto ao Apps Script perde o body no redirect 302.
+        res=await fetchComTimeout(API_URL+"?"+new URLSearchParams(p),{cache:"no-store",redirect:"follow"},60000);
     }catch(e){
-        if(e.name==="AbortError") throw new Error("Timeout ao salvar — a planilha demorou mais de 30s. Tente novamente.");
+        if(e.name==="AbortError") throw new Error("Timeout ao salvar — a planilha demorou mais de 60s. Tente novamente.");
+        const msg=String(e.message||e||"");
+        if(/failed to fetch|networkerror|load failed/i.test(msg)){
+            throw new Error("Falha de rede ao salvar na planilha. Verifique a conexão e tente de novo.");
+        }
         throw e;
     }
     const texto=await res.text();
     let data;
-    try{ data=JSON.parse(texto); }catch(_){ throw new Error("Resposta inválida da planilha ao salvar."); }
+    try{ data=JSON.parse(texto); }catch(_){
+        const trecho=String(texto||"").replace(/\s+/g," ").slice(0,120);
+        throw new Error(trecho
+            ? `Resposta inválida da planilha ao salvar (${trecho})`
+            : "Resposta inválida da planilha ao salvar.");
+    }
     if(!data.ok) throw new Error(data.erro||"Erro ao salvar.");
+    if(String(payload.action||"").toLowerCase()==="update" && data.acao && String(data.acao).toLowerCase()!=="update"){
+        throw new Error("Planilha não confirmou a atualização. Peça para reimplantar o Web App no Google.");
+    }
     return data;
 }
 
+async function moduloLiberacaoAws(){
+    if(awsLiberacaoMod) return awsLiberacaoMod;
+    try{
+        awsLiberacaoMod=await import(LIBERACAO_AWS_JS);
+        return awsLiberacaoMod;
+    }catch(_){
+        return null;
+    }
+}
+
 async function salvarPlanilhaLinha(payload,tentativa=1){
+    // Preferência: proxy AWS (evita POST quebrado no redirect do Google). Fallback: GET na planilha.
+    try{
+        const mod=await moduloLiberacaoAws();
+        if(mod&&await mod.liberacaoAwsDisponivel()){
+            await mod.salvarLinhaPlanilhaAws(payload);
+            return;
+        }
+    }catch(err){
+        console.warn("Salvar via AWS falhou, tentando planilha direta:", err?.message||err);
+    }
+
     try{
         await apiPost(payload);
     }catch(err){
-        if(tentativa<3&&(err.message.includes("Timeout")||err.message.includes("Failed to fetch"))){
+        if(tentativa<3&&(err.message.includes("Timeout")||err.message.includes("Falha de rede")||err.message.includes("Failed to fetch"))){
             await new Promise(r=>setTimeout(r,1500*tentativa));
             return salvarPlanilhaLinha(payload,tentativa+1);
         }
@@ -1455,7 +1492,14 @@ async function salvarLinha(i){
     delete state.saveTimers[i];
     syncLinhaFromDom(i);
     const row=state.dados[i];
-    if(!row||!row._row) return;
+    if(!row){
+        setStatus("Não foi possível salvar: linha não encontrada.","erro");
+        return;
+    }
+    if(!row._row){
+        setStatus("Não foi possível salvar: linha sem identificador. Recarregue a página e tente de novo.","erro");
+        return;
+    }
     aplicarFormulasLinha(row);
     state.saving[i]=true;
     document.querySelector(".sync-"+i).innerHTML=syncBadge(row,i);

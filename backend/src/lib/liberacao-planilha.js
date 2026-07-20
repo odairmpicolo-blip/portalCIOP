@@ -89,10 +89,15 @@ export function montarPayloadUpdatePlanilha(rowId, row) {
 }
 
 export async function enviarLinhaPlanilha(payload) {
-  const body = new URLSearchParams({ liberacao: "1", ...payload });
-  const res = await fetch(config.liberacaoApiUrl, {
-    method: "POST",
-    body,
+  // GET com query string: POST do Apps Script perde o body no redirect 302 do Google.
+  const flat = { liberacao: "1", _: String(Date.now()) };
+  Object.entries(payload || {}).forEach(([chave, valor]) => {
+    if (valor == null) return;
+    flat[chave] = String(valor);
+  });
+  const url = `${config.liberacaoApiUrl}?${new URLSearchParams(flat)}`;
+  const res = await fetch(url, {
+    method: "GET",
     redirect: "follow",
     signal: AbortSignal.timeout(TIMEOUT_MS)
   });
@@ -101,9 +106,18 @@ export async function enviarLinhaPlanilha(payload) {
   try {
     data = JSON.parse(texto);
   } catch {
-    throw new Error("Resposta inválida da planilha ao salvar");
+    const trecho = String(texto || "").replace(/\s+/g, " ").slice(0, 120);
+    throw new Error(
+      trecho
+        ? `Resposta inválida da planilha ao salvar (${trecho})`
+        : "Resposta inválida da planilha ao salvar"
+    );
   }
   if (!data.ok) throw new Error(data.erro || "Erro ao salvar na planilha");
+  const acaoEsperada = String(payload?.action || "").toLowerCase();
+  if (acaoEsperada === "update" && data.acao && String(data.acao).toLowerCase() !== "update") {
+    throw new Error("Planilha não confirmou a atualização. Reimplante o Web App no Google.");
+  }
   return data;
 }
 
