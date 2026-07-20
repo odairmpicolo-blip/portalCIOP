@@ -56,31 +56,20 @@ function dkPrefLabel(pref) {
   return "Tema claro";
 }
 
-function dkNextPref(pref) {
-  if (pref === "light") return "dark";
-  if (pref === "dark") return "auto";
-  return "light";
-}
-
-function dkSyncLabels(pref, isDark) {
+function dkSyncPicker(pref) {
   var p = dkNormalize(pref);
-  var label = dkPrefLabel(p);
-  var next = dkPrefLabel(dkNextPref(p));
-  var labels = document.querySelectorAll(".dk-theme-label, #dkThemeLabel");
-  for (var i = 0; i < labels.length; i++) {
-    labels[i].textContent = label;
+  var opts = document.querySelectorAll(".dk-theme-opt");
+  for (var i = 0; i < opts.length; i++) {
+    var btn = opts[i];
+    var active = btn.getAttribute("data-dk-pref") === p;
+    btn.classList.toggle("is-active", active);
+    btn.setAttribute("aria-pressed", active ? "true" : "false");
   }
-  var toggles = document.querySelectorAll(".dk-theme-toggle");
-  for (var j = 0; j < toggles.length; j++) {
-    toggles[j].setAttribute("data-dk-pref", p);
-    toggles[j].setAttribute(
-      "aria-label",
-      "Tema atual: " + label + ". Clique para " + next.toLowerCase()
-    );
-    toggles[j].setAttribute("title", label + " · próximo: " + next);
+  var labels = document.querySelectorAll(".dk-theme-label, #dkThemeLabel");
+  for (var j = 0; j < labels.length; j++) {
+    labels[j].textContent = dkPrefLabel(p);
   }
   document.documentElement.setAttribute("data-dk-pref", p);
-  document.documentElement.setAttribute("data-dk-resolved", isDark ? "dark" : "light");
 }
 
 function dkClearAutoTimer() {
@@ -109,9 +98,16 @@ function dkApply(pref, silent) {
   var html = document.documentElement;
   html.classList.remove("dk-light", "dk-dark");
   html.classList.add(isDark ? "dk-dark" : "dk-light");
+  html.setAttribute("data-dk-resolved", isDark ? "dark" : "light");
   dkSwapTcglLogos(isDark);
-  dkSyncLabels(p, isDark);
+  dkSyncPicker(p);
   if (!silent) dkScheduleAuto();
+}
+
+function dkSetPref(pref) {
+  var p = dkNormalize(pref);
+  localStorage.setItem(DK_KEY, p);
+  dkApply(p);
 }
 
 (function dkBoot() {
@@ -121,22 +117,21 @@ function dkApply(pref, silent) {
   dkApply(mode);
 })();
 
-function dkOnToggleClick(ev) {
-  if (ev) {
-    ev.preventDefault();
-    ev.stopPropagation();
-  }
-  var next = dkNextPref(dkStoredPref());
-  localStorage.setItem(DK_KEY, next);
-  dkApply(next);
+function dkOnOptClick(ev) {
+  var btn = ev.currentTarget;
+  if (!btn) return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  dkSetPref(btn.getAttribute("data-dk-pref"));
 }
 
 function dkInit() {
-  var toggles = document.querySelectorAll(".dk-theme-toggle");
-  for (var i = 0; i < toggles.length; i++) {
-    toggles[i].removeEventListener("click", dkOnToggleClick);
-    toggles[i].addEventListener("click", dkOnToggleClick);
+  var opts = document.querySelectorAll(".dk-theme-opt");
+  for (var i = 0; i < opts.length; i++) {
+    opts[i].removeEventListener("click", dkOnOptClick);
+    opts[i].addEventListener("click", dkOnOptClick);
   }
+  // Compat: se ainda existir o botão antigo, não cicla mais — ignora
   dkApply(dkStoredPref());
   window.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "visible" && dkStoredPref() === "auto") {
@@ -146,3 +141,7 @@ function dkInit() {
 }
 
 document.addEventListener("DOMContentLoaded", dkInit);
+
+// API usada por páginas que reagem à troca de tema
+window.dkSetPref = dkSetPref;
+window.dkIsDark = dkIsDark;
