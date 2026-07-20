@@ -62,7 +62,7 @@ table.relatorio tbody tr.row-div td{box-shadow:inset 3px 0 0 var(--orange)}
 .empty{padding:48px 24px;text-align:center;color:var(--muted)}
 .empty-title{font-size:16px;font-weight:900;color:var(--blue);margin-bottom:6px}
 .page-footer{padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-top:1px solid var(--border);background:var(--white)}
-.toolbar-filtros-linha{display:flex;align-items:flex-end;overflow-x:auto;padding-bottom:1px;-webkit-overflow-scrolling:touch}
+  .toolbar-filtros-linha{display:flex;align-items:flex-end;overflow:visible;padding-bottom:1px;-webkit-overflow-scrolling:touch}
 @media(max-width:720px){.header{grid-template-columns:1fr;text-align:center}}
 </style>
 <link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
@@ -270,12 +270,20 @@ table.relatorio tbody tr.row-div td{box-shadow:inset 3px 0 0 var(--orange)}
     box-shadow: 0 8px 20px -14px rgba(20,20,40,.3) !important;
   }
   /* session container: portal-session.css?v=20260718e */
+  .toolbar{
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    overflow: visible !important;
+  }
+  .toolbar-filtros-linha{
+    overflow: visible !important;
+  }
   .toolbar-filtros-linha input:not([type="checkbox"]),
   .toolbar-filtros-linha select,
   .filter-multi-btn{
-    background: rgba(255,255,255,.6) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
+    background: rgba(255,255,255,.88) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(30,30,46,.12) !important;
   }
   table.relatorio thead th{
@@ -363,7 +371,7 @@ table.relatorio tbody tr.row-div td{box-shadow:inset 3px 0 0 var(--orange)}
 </script>
 <script type="module" src="../assets/js/auth.js?v=20260719j"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
-<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260720a">
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260720b">
 <link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260718am">
 </head>
 <body data-require-perfis="Administrador,Supervisor,Analista">
@@ -848,6 +856,14 @@ function iniciar(){
     $("btnGerar").addEventListener("click",()=>gerarRelatorio());
     ["filtroSaiu","filtroTrajeto","filtroSaidaColM"].forEach((id)=>{
         $(id).addEventListener("change",()=>reaplicarFiltrosLocais());
+    });
+    // Datas: regenera o relatório ao mudar (não só os filtros de coluna)
+    let timerDatas=null;
+    ["dataDe","dataAte"].forEach((id)=>{
+        $(id).addEventListener("change",()=>{
+            clearTimeout(timerDatas);
+            timerDatas=setTimeout(()=>gerarRelatorio(),180);
+        });
     });
     $("btnCsv").addEventListener("click",()=>exportar("csv"));
     $("btnExcel").addEventListener("click",()=>exportar("xlsx"));
