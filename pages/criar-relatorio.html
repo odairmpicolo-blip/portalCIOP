@@ -233,6 +233,98 @@ select:disabled{
 .status{min-height:18px;margin-top:10px;font-size:12px;font-weight:700;color:var(--muted)}
 .status.erro{color:var(--red)}
 .status.ok{color:var(--green)}
+
+/* Confirmação central após envio de e-mail */
+.email-enviado-overlay{
+  position:fixed;
+  inset:0;
+  z-index:100000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(6,20,40,.42);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .28s ease;
+}
+.email-enviado-overlay.is-open{
+  opacity:1;
+  pointer-events:auto;
+}
+.email-enviado-box{
+  width:min(340px,92vw);
+  background:linear-gradient(160deg,#16a34a 0%,#15803d 55%,#166534 100%);
+  color:#fff;
+  border-radius:22px;
+  padding:34px 28px 28px;
+  text-align:center;
+  box-shadow:
+    0 28px 60px -24px rgba(21,128,61,.65),
+    inset 0 1px 0 rgba(255,255,255,.28);
+  border:1px solid rgba(255,255,255,.28);
+  transform:scale(.82) translateY(18px);
+  opacity:0;
+  transition:transform .38s cubic-bezier(.2,1.1,.3,1), opacity .28s ease;
+}
+.email-enviado-overlay.is-open .email-enviado-box{
+  transform:scale(1) translateY(0);
+  opacity:1;
+}
+.email-enviado-check{
+  width:72px;
+  height:72px;
+  margin:0 auto 16px;
+  border-radius:50%;
+  background:rgba(255,255,255,.18);
+  border:2px solid rgba(255,255,255,.55);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  animation:emailEnviadoPulse 1.1s ease-out 1;
+}
+.email-enviado-check svg{
+  width:38px;
+  height:38px;
+  fill:none;
+  stroke:#fff;
+  stroke-width:3;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-dasharray:48;
+  stroke-dashoffset:48;
+}
+.email-enviado-overlay.is-open .email-enviado-check svg{
+  animation:emailEnviadoDraw .55s ease forwards .18s;
+}
+.email-enviado-titulo{
+  margin:0;
+  font-size:28px;
+  font-weight:900;
+  letter-spacing:.02em;
+  animation:emailEnviadoPop .45s ease .25s both;
+}
+.email-enviado-sub{
+  margin:8px 0 0;
+  font-size:13px;
+  font-weight:700;
+  color:rgba(255,255,255,.9);
+  line-height:1.4;
+}
+@keyframes emailEnviadoPulse{
+  0%{transform:scale(.7);opacity:.4}
+  60%{transform:scale(1.08);opacity:1}
+  100%{transform:scale(1);opacity:1}
+}
+@keyframes emailEnviadoDraw{
+  to{stroke-dashoffset:0}
+}
+@keyframes emailEnviadoPop{
+  from{opacity:0;transform:translateY(8px) scale(.94)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
 .paper-wrap{
     background:#eef2f7;
     border:1px solid var(--border);
@@ -1903,6 +1995,7 @@ async function enviarRelatorioPorEmail() {
         );
         anexosExtras = [];
         atualizarAnexosStatus();
+        mostrarConfirmacaoEmailEnviado(salvoAws?.storageKey);
     } catch (error) {
         console.error(error);
         setStatus("Falha ao enviar e-mail: " + (error.message || "tente novamente."), "erro");
@@ -1912,6 +2005,42 @@ async function enviarRelatorioPorEmail() {
         botao.disabled = false;
     }
 }
+
+function mostrarConfirmacaoEmailEnviado(salvoAws) {
+    const overlay = document.getElementById("emailEnviadoOverlay");
+    const sub = document.getElementById("emailEnviadoSub");
+    const checkSvg = overlay?.querySelector(".email-enviado-check svg");
+    if (!overlay) return;
+    if (sub) {
+        sub.textContent = salvoAws
+            ? "E-mail enviado e PDF salvo na AWS."
+            : "E-mail enviado com sucesso.";
+    }
+    overlay.classList.remove("is-open");
+    if (checkSvg) {
+        checkSvg.style.animation = "none";
+        void checkSvg.offsetWidth;
+        checkSvg.style.animation = "";
+    }
+    void overlay.offsetWidth;
+    overlay.classList.add("is-open");
+    overlay.setAttribute("aria-hidden", "false");
+    window.clearTimeout(mostrarConfirmacaoEmailEnviado._timer);
+    mostrarConfirmacaoEmailEnviado._timer = window.setTimeout(() => {
+        fecharConfirmacaoEmailEnviado();
+    }, 2800);
+}
+
+function fecharConfirmacaoEmailEnviado() {
+    const overlay = document.getElementById("emailEnviadoOverlay");
+    if (!overlay) return;
+    overlay.classList.remove("is-open");
+    overlay.setAttribute("aria-hidden", "true");
+}
+
+document.getElementById("emailEnviadoOverlay")?.addEventListener("click", (ev) => {
+    if (ev.target.id === "emailEnviadoOverlay") fecharConfirmacaoEmailEnviado();
+});
 
 document.getElementById("emailTopoBtn").addEventListener("click", enviarRelatorioPorEmail);
 window.addEventListener("beforeprint", atualizarCorpoPDF);
@@ -1936,5 +2065,14 @@ if (window.portalUsuarioValidado) {
 }
 </script>
 <script src="../assets/js/portal-futuristic.js?v=20260718am" defer></script>
+<div id="emailEnviadoOverlay" class="email-enviado-overlay" aria-hidden="true" role="status" aria-live="polite">
+  <div class="email-enviado-box" role="dialog" aria-label="E-mail enviado">
+    <div class="email-enviado-check" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+    </div>
+    <p class="email-enviado-titulo">Enviado</p>
+    <p class="email-enviado-sub" id="emailEnviadoSub">E-mail enviado com sucesso.</p>
+  </div>
+</div>
 </body>
 </html>
