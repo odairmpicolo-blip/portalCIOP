@@ -70,3 +70,14 @@ export async function enviarPdfRelatorioS3({ key, buffer, contentType = "applica
     s3Uri: `s3://${bucket}/${key}`
   };
 }
+
+export async function urlAssinadaRelatorioS3(key, expiresIn = 60 * 30) {
+  const bucket = String(config.relatoriosS3Bucket || "").trim();
+  if (!bucket) throw new Error("RELATORIOS_S3_BUCKET não configurado");
+  if (!key) throw new Error("Chave S3 inválida");
+  return getSignedUrl(
+    getClient(),
+    new GetObjectCommand({ Bucket: bucket, Key: key }),
+    { expiresIn }
+  );
+}

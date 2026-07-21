@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Relatório de Ocorrência | Portal CIOP</title>
+<style>
+:root{--blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--bg:#f5f7fb;--border:#dfe5ef;--text:#101828;--muted:#3f4757;--white:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.header{background:var(--white);display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);gap:16px;align-items:center;padding:8px 20px;border-bottom:1px solid #e8edf6}
+.header > a:first-child.portal-brand-mark{justify-self:start}
+.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.container{max-width:1100px;margin:24px auto 40px;padding:0 20px;flex:1;width:100%}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.btn-portal,.btn-secondary,.btn-primary{display:inline-flex;align-items:center;gap:8px;min-height:42px;text-decoration:none;border-radius:10px;font-size:13px;font-weight:800;padding:8px 14px;border:0;cursor:pointer}
+.btn-portal,.btn-primary{background:var(--blue);color:#fff}
+.btn-portal:hover,.btn-primary:hover{background:var(--blue2)}
+.btn-secondary{background:#e8edf6;color:var(--blue)}
+.btn-secondary:hover{background:#dbe4f3}
+.btn-icon{display:inline-flex;width:16px;height:16px}
+.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 10px 28px rgba(16,24,40,.06);margin-bottom:16px}
+.panel h2{margin:0 0 6px;color:var(--blue);font-size:17px;font-weight:900}
+.panel p{margin:0;color:var(--muted);font-size:13px;font-weight:600;line-height:1.45}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-top:14px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:140px}
+.field label{font-size:10px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.field input{min-height:40px;border:1px solid var(--border);border-radius:10px;padding:8px 10px;font:inherit;color:var(--text)}
+.status{margin:0 0 12px;font-size:12px;font-weight:700;color:var(--muted)}
+.status.erro{color:#b42318}
+.status.ok{color:#027a48}
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:14px;background:var(--white)}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}
+th,td{padding:11px 12px;border-bottom:1px solid #edf2f7;text-align:left;vertical-align:top}
+th{background:#f8fafc;color:var(--blue);font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+td{color:#1f2937;font-weight:600}
+tr:last-child td{border-bottom:0}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn-link{appearance:none;border:0;background:#eff6ff;color:var(--blue2);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer}
+.btn-link:hover{background:#dbeafe}
+.btn-link:disabled{opacity:.55;cursor:default}
+.empty{padding:28px;text-align:center;color:var(--muted);font-weight:700}
+.page-footer{padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-top:1px solid var(--border);background:var(--white)}
+@media(max-width:720px){
+  .header{grid-template-columns:1fr;text-align:center}
+  .container{padding:0 14px;margin:16px auto 28px}
+}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
+<link rel="stylesheet" href="../assets/css/portal-titulos.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/dashboard-kit.css">
+<script src="../assets/js/theme-toggle.js?v=20260720w"></script>
+<script src="../assets/js/loading.js?v=20260718d"></script>
+<script type="module" src="../assets/js/auth.js?v=20260720a"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260720y">
+</head>
+<body data-require-perfis="Administrador,Supervisor,Analista,Gerência,Gerencia">
+<div class="body-bg-wall" aria-hidden="true"></div>
+<div class="body-bg-stain" aria-hidden="true"></div>
+<header class="header">
+  <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
+  <div class="title-wrap">
+    <h1 class="relatorio-title-art" aria-label="Relatório de Ocorrência"><img src="../assets/img/titulo-relatorio.png" alt="Relatório de Ocorrência"></h1>
+    <div class="header-subtitle">PDFs salvos na AWS · por usuário e data</div>
+  </div>
+  <div class="header-actions">
+    <div class="ciop-session" aria-label="Sessão do usuário">
+      <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+      <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+      <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+      <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+    </div>
+    <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+  </div>
+</header>
+
+<main class="container">
+  <div class="toolbar">
+    <a class="btn-portal" href="relatorios.html"><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M15 18 9 12l6-6"/></svg></span>Relatórios</a>
+    <a class="btn-secondary" href="criar-relatorio.html">Criar novo</a>
+  </div>
+
+  <section class="panel">
+    <h2>Relatório de Ocorrência</h2>
+    <p>Lista os PDFs já gerados/enviados e armazenados na AWS na pasta do usuário logado, organizados por data.</p>
+    <div class="filters">
+      <div class="field">
+        <label for="filtroDe">De</label>
+        <input id="filtroDe" type="date">
+      </div>
+      <div class="field">
+        <label for="filtroAte">Até</label>
+        <input id="filtroAte" type="date">
+      </div>
+      <button type="button" class="btn-primary" id="btnBuscar">Atualizar</button>
+    </div>
+  </section>
+
+  <p class="status" id="statusLinha">Carregando relatórios...</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Protocolo</th>
+          <th>Funcionário</th>
+          <th>Arquivo</th>
+          <th>Origem</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaBody">
+        <tr><td colspan="6" class="empty">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<footer class="page-footer">Portal CIOP · Relatório de Ocorrência · TCGL</footer>
+
+<script type="module">
+import { listarRelatoriosOcorrencia, urlDownloadRelatorioOcorrencia } from "../assets/js/relatorio-storage.js?v=20260720b";
+
+const statusEl = document.getElementById("statusLinha");
+const tbody = document.getElementById("tabelaBody");
+const filtroDe = document.getElementById("filtroDe");
+const filtroAte = document.getElementById("filtroAte");
+
+function fmtDataBr(iso) {
+  const s = String(iso || "");
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : s || "—";
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function setStatus(texto, tipo) {
+  statusEl.textContent = texto;
+  statusEl.className = "status" + (tipo ? " " + tipo : "");
+}
+
+async function carregar() {
+  setStatus("Consultando AWS...", "");
+  tbody.innerHTML = '<tr><td colspan="6" class="empty">Carregando...</td></tr>';
+  try {
+    const res = await listarRelatoriosOcorrencia({
+      de: filtroDe.value || "",
+      ate: filtroAte.value || ""
+    });
+    const dados = Array.isArray(res.dados) ? res.dados : [];
+    if (!dados.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">Nenhum relatório encontrado para o período.</td></tr>';
+      setStatus("0 relatórios", "");
+      return;
+    }
+    tbody.innerHTML = dados.map((item) => {
+      const func = item.funcionarioTexto || [item.funcionarioRegistro, item.funcionarioNome].filter(Boolean).join(" - ") || "—";
+      return `<tr>
+        <td>${escapeHtml(fmtDataBr(item.dataDocumento))}</td>
+        <td>${escapeHtml(item.protocolo || "—")}</td>
+        <td>${escapeHtml(func)}</td>
+        <td>${escapeHtml(item.nomeArquivo || "—")}</td>
+        <td>${escapeHtml(item.origem || "—")}</td>
+        <td class="actions">
+          <button type="button" class="btn-link" data-download="${escapeHtml(item.id)}">Abrir PDF</button>
+        </td>
+      </tr>`;
+    }).join("");
+    setStatus(`${dados.length} relatório(s)`, "ok");
+  } catch (err) {
+    console.error(err);
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">${escapeHtml(err.message || "Falha ao carregar")}</td></tr>`;
+    setStatus(err.message || "Falha ao carregar", "erro");
+  }
+}
+
+tbody.addEventListener("click", async (ev) => {
+  const btn = ev.target.closest("[data-download]");
+  if (!btn) return;
+  const id = btn.getAttribute("data-download");
+  btn.disabled = true;
+  const label = btn.textContent;
+  btn.textContent = "Abrindo...";
+  try {
+    const res = await urlDownloadRelatorioOcorrencia(id);
+    window.open(res.url, "_blank", "noopener");
+  } catch (err) {
+    setStatus(err.message || "Falha ao abrir PDF", "erro");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+});
+
+document.getElementById("btnBuscar").addEventListener("click", () => {
+  carregar().catch(() => {});
+});
+
+function iniciar() {
+  carregar().catch(() => {});
+}
+
+if (window.portalUsuarioValidado) iniciar();
+else window.addEventListener("portal:usuario-validado", iniciar, { once: true });
+</script>
+<script src="../assets/js/portal-futuristic.js?v=20260718am" defer></script>
+</body>
+</html>

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { randomUUID } from "node:crypto";
 import { query } from "../db.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
-import { enviarPdfRelatorioS3, montarChaveRelatorio, relatoriosS3Configurado } from "../lib/relatorios-s3.js";
+import { enviarPdfRelatorioS3, montarChaveRelatorio, relatoriosS3Configurado, urlAssinadaRelatorioS3 } from "../lib/relatorios-s3.js";
 
 const router = Router();
 const MAX_PDF_BYTES = 12 * 1024 * 1024;
@@ -146,6 +146,42 @@ router.get("/", requireFirebaseUser, async (req, res) => {
         criadoPorNome: r.criado_por_nome || "",
         criadoEm: r.criado_em || null
       }))
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, erro: err.message });
+  }
+});
+
+router.get("/:id/download", requireFirebaseUser, async (req, res) => {
+  try {
+    if (!relatoriosS3Configurado()) {
+      res.status(503).json({ ok: false, erro: "Armazenamento S3 de relatórios não configurado" });
+      return;
+    }
+    const userEmail = normalizarEmail(req.user?.email);
+    const id = String(req.params.id || "").trim();
+    if (!id) {
+      res.status(400).json({ ok: false, erro: "ID inválido" });
+      return;
+    }
+    const result = await query(
+      `SELECT id, user_email, nome_arquivo, storage_key
+       FROM relatorios_ocorrencia
+       WHERE id = $1 AND user_email = $2
+       LIMIT 1`,
+      [id, userEmail]
+    );
+    const row = result.rows[0];
+    if (!row?.storage_key) {
+      res.status(404).json({ ok: false, erro: "Relatório não encontrado" });
+      return;
+    }
+    const url = await urlAssinadaRelatorioS3(row.storage_key, 60 * 30);
+    res.json({
+      ok: true,
+      id: row.id,
+      nomeArquivo: row.nome_arquivo || "relatorio.pdf",
+      url
     });
   } catch (err) {
     res.status(500).json({ ok: false, erro: err.message });
