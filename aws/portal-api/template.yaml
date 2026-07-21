@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Portal CIOP — API DSQL (liberação, snapshots, terminais)
+Description: Portal CIOP — API DSQL (liberação, snapshots, terminais, relatórios)
 
 Parameters:
   DsqlClusterId:
@@ -14,6 +14,26 @@ Parameters:
     Default: "https://www.portalciop.com.br,https://portalciop.com.br,https://odairmpicolo-blip.github.io,http://localhost:5173,http://127.0.0.1:5500"
 
 Resources:
+  RelatoriosOcorrenciaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "portal-ciop-relatorios-${AWS::AccountId}-${AWS::Region}"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: AbortIncompleteUploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+
   PortalApiRole:
     Type: AWS::IAM::Role
     Properties:
@@ -35,12 +55,25 @@ Resources:
               - Effect: Allow
                 Action: dsql:DbConnectAdmin
                 Resource: !Sub "arn:aws:dsql:${AWS::Region}:${AWS::AccountId}:cluster/${DsqlClusterId}"
+        - PolicyName: portal-api-relatorios-s3
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt RelatoriosOcorrenciaBucket.Arn
+                  - !Sub "${RelatoriosOcorrenciaBucket.Arn}/*"
 
   PortalApiFunction:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: portal-ciop-api
-      Description: Portal CIOP API — liberação, snapshots, terminais (Aurora DSQL)
+      Description: Portal CIOP API — liberação, snapshots, terminais, relatórios (Aurora DSQL + S3)
       Runtime: nodejs20.x
       Handler: index.handler
       Role: !GetAtt PortalApiRole.Arn
@@ -54,6 +87,8 @@ Resources:
           FIREBASE_PROJECT_ID: portal-ciop
           CORS_ORIGINS: !Ref CorsOrigins
           LIBERACAO_API_URL: "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec"
+          RELATORIOS_S3_BUCKET: !Ref RelatoriosOcorrenciaBucket
+          RELATORIOS_S3_REGION: !Ref AWS::Region
       Code:
         ZipFile: |
           export const handler = async () => ({
@@ -132,6 +167,20 @@ Resources:
       RouteKey: "ANY /telemetria/{proxy+}"
       Target: !Sub integrations/${PortalApiIntegration}
 
+  PortalApiRouteRelatorios:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApiId
+      RouteKey: ANY /relatorios
+      Target: !Sub integrations/${PortalApiIntegration}
+
+  PortalApiRouteRelatoriosProxy:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApiId
+      RouteKey: "ANY /relatorios/{proxy+}"
+      Target: !Sub integrations/${PortalApiIntegration}
+
   PortalApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -147,3 +196,5 @@ Outputs:
     Value: !Sub https://${Bus2ProxyApiId}.execute-api.${AWS::Region}.amazonaws.com
   DbHealthUrl:
     Value: !Sub https://${Bus2ProxyApiId}.execute-api.${AWS::Region}.amazonaws.com/db-health
+  RelatoriosBucket:
+    Value: !Ref RelatoriosOcorrenciaBucket

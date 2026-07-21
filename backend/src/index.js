@@ -6,9 +6,10 @@ import liberacaoRouter from "./routes/liberacao.js";
 import terminaisRouter from "./routes/terminais.js";
 import snapshotsRouter from "./routes/snapshots.js";
 import telemetriaRouter from "./routes/telemetria.js";
+import relatoriosRouter from "./routes/relatorios.js";
 
 const app = express();
-app.use(express.json({ limit: "15mb" }));
+app.use(express.json({ limit: "20mb" }));
 
 // Em producao (Lambda) ou com NODE_ENV=production, se CORS_ORIGINS nao estiver
 // configurada, bloqueamos por padrao (fail-closed) em vez de liberar geral.
@@ -80,6 +81,7 @@ app.use("/liberacao", liberacaoRouter);
 app.use("/terminais", terminaisRouter);
 app.use("/snapshots", snapshotsRouter);
 app.use("/telemetria", telemetriaRouter);
+app.use("/relatorios", relatoriosRouter);
 
 app.use((_req, res) => {
     res.status(404).json({ ok: false, erro: "Rota não encontrada" });

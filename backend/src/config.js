@@ -19,7 +19,9 @@ export const config = {
       .map((s) => s.trim())
       .filter(Boolean),
     firebaseCredentials: process.env.GOOGLE_APPLICATION_CREDENTIALS || "",
-    liberacaoApiUrl: process.env.LIBERACAO_API_URL || ""
+    liberacaoApiUrl: process.env.LIBERACAO_API_URL || "",
+    relatoriosS3Bucket: process.env.RELATORIOS_S3_BUCKET || "",
+    relatoriosS3Region: process.env.RELATORIOS_S3_REGION || process.env.AWS_REGION || process.env.DSQL_REGION || "sa-east-1"
 };
 
 if (!config.liberacaoApiUrl) {

@@ -54,3 +54,21 @@ CREATE TABLE IF NOT EXISTS telemetria_linhas (
   atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (data_iso, veiculo)
 );
+
+-- PDFs de relatório de ocorrência (metadados; arquivo em S3: relatorios/{user}/{data}/)
+CREATE TABLE IF NOT EXISTS relatorios_ocorrencia (
+  id TEXT NOT NULL,
+  user_email TEXT NOT NULL,
+  data_documento DATE NOT NULL,
+  protocolo TEXT,
+  funcionario_registro TEXT,
+  funcionario_nome TEXT,
+  funcionario_texto TEXT,
+  nome_arquivo TEXT NOT NULL,
+  storage_key TEXT NOT NULL,
+  storage_uri TEXT,
+  origem TEXT,
+  criado_por_nome TEXT,
+  criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (id)
+);

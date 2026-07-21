@@ -818,6 +818,8 @@ body.pdf-exporting .report-body-print{display:block}
 import { buscarUsuarioFirestore, normalizarCadastro } from "../assets/js/portal-firestore.js";
 import { usuarios as usuariosLocais } from "../assets/js/usuarios.js";
 import { TIPOS_RELATORIO, gerarTextoModelo, gerarTextoIA, corrigirTextoIA, configurarRelatorioIa, resumirErroIa } from "../assets/js/relatorio-ia.js?v=20260701b";
+import { salvarPdfRelatorioOcorrencia } from "../assets/js/relatorio-storage.js?v=20260720a";
+import { initPortalAwsRuntime } from "../assets/js/portal-aws-config.js";
 
 const SHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const GID_RO = "665320337";
@@ -1608,6 +1610,50 @@ function nomeArquivoPdf() {
     return "Relatorio-CIOP" + (numero || "00000") + "-" + data + ".pdf";
 }
 
+function metaPdfRelatorio(origem) {
+    const dados = dadosProtocolo();
+    return {
+        data: dados.dataDocumentoIso || campos.data.value || hojeISO(),
+        protocolo: dados.protocolo || campos.numero.value || "",
+        funcionarioRegistro: dados.registroFuncionario || "",
+        funcionarioNome: dados.nomeFuncionario || "",
+        funcionarioTexto: dados.funcionarioTexto || "",
+        origem: origem || "pdf",
+        criadoPorNome: usuarioCriador?.nome || window.portalUsuario?.nome || ""
+    };
+}
+
+async function tentarSalvarPdfAws(pdf, origem) {
+    try {
+        await initPortalAwsRuntime();
+        const salvo = await salvarPdfRelatorioOcorrencia({
+            pdf,
+            filename: nomeArquivoPdf(),
+            meta: metaPdfRelatorio(origem)
+        });
+        return salvo;
+    } catch (err) {
+        console.warn("Falha ao salvar PDF na AWS:", err);
+        return null;
+    }
+}
+
+function corpoEmailRelatorio() {
+    const dados = dadosProtocolo();
+    const funcionarioLabel = String(dados.funcionarioTexto || "").trim()
+        || [dados.registroFuncionario, dados.nomeFuncionario].filter(Boolean).join(" - ")
+        || "informado no relatório";
+    const nomeUsuario = String(usuarioCriador?.nome || window.portalUsuario?.nome || "").trim()
+        || "usuário do portal";
+    return [
+        "Prezados,",
+        `Em anexo o relatório de ocorrência do funcionário "${funcionarioLabel}".`,
+        "",
+        "Atenciosamente,",
+        `"${nomeUsuario}".`
+    ].join("\n");
+}
+
 async function aguardarImagensPdf(alvo) {
     const imagens = Array.from(alvo.querySelectorAll("img"));
     await Promise.all(imagens.map((img) => {
@@ -1673,7 +1719,13 @@ async function exportarPdfRelatorio(botao) {
     try {
         const pdf = await construirPdfRelatorio();
         pdf.save(nomeArquivoPdf());
-        setStatus("PDF gerado com sucesso.", "ok");
+        const salvo = await tentarSalvarPdfAws(pdf, "pdf");
+        setStatus(
+            salvo?.storageKey
+                ? "PDF gerado e salvo na AWS (" + salvo.storageKey + ")."
+                : "PDF gerado com sucesso. (AWS indisponível — arquivo só no download)",
+            salvo ? "ok" : "ia"
+        );
     } catch (error) {
         console.error(error);
         setStatus("Falha ao gerar PDF: " + (error.message || "tente novamente."), "erro");
@@ -1816,7 +1868,8 @@ async function enviarRelatorioPorEmail() {
             }
         }
 
-        const nome = String(campos.nome.value || "").trim() || "informado no relatório";
+        setStatus("Salvando PDF na AWS...", "ia");
+        const salvoAws = await tentarSalvarPdfAws(pdf, "email");
 
         setStatus("Enviando e-mail...", "ia");
         const resposta = await fetch(EMAIL_SCRIPT_URL, {
@@ -1827,7 +1880,7 @@ async function enviarRelatorioPorEmail() {
                 token: EMAIL_SCRIPT_TOKEN,
                 destinatarios: EMAIL_DESTINATARIOS,
                 assunto: "Relatório de ocorrência",
-                corpo: "Em anexo o relatório de ocorrência do mot. " + nome,
+                corpo: corpoEmailRelatorio(),
                 anexos
             })
         });
@@ -1842,7 +1895,12 @@ async function enviarRelatorioPorEmail() {
         if (!resultado.ok) {
             throw new Error(resultado.erro || "Falha ao enviar e-mail.");
         }
-        setStatus("Relatório enviado por e-mail com sucesso.", "ok");
+        setStatus(
+            salvoAws?.storageKey
+                ? "Relatório enviado por e-mail e salvo na AWS."
+                : "Relatório enviado por e-mail com sucesso.",
+            "ok"
+        );
         anexosExtras = [];
         atualizarAnexosStatus();
     } catch (error) {
