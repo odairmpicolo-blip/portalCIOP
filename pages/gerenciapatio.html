@@ -1,2705 +1,537 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<script>
-document.documentElement.classList.add("portal-auth-pending");
-</script>
-<style id="portalAuthBootStyle">
-.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;
-}
-</style>
-<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}</style>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gerenciador de Pátio e Filas - CIOP / TCGL</title>
-<script src="../assets/js/loading.js?v=20260718d"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
-<link rel="stylesheet" href="../assets/css/portal-titulos.css?v=20260720y">
-<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260720y">
-<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260720y">
-<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260720y">
-<link rel="stylesheet" href="../assets/css/dashboard-kit.css">
-    
-
-<script src="../assets/js/theme-toggle.js?v=20260720w"></script>
-<script type="module" src="../assets/js/auth.js?v=20260720a"></script>
-<script src="../assets/js/portal-senha.js" defer></script>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Gerenciador de Pátio | Portal CIOP</title>
 <style>
-:root {
-    --blue: #06245c;
-    --blue2: #0b3a8a;
-    --orange: #ff6b00;
-    --bg: #f5f7fb;
-    --border: #dfe5ef;
-    --text: #101828;
-    --muted:#3f4757;
-    --success: #12b76a;
-    --danger: #f04438;
-    --warning: #f79009;
-    --dark: #1d2939;
-    --pedidos: #0b3a8a;
-}
-* { box-sizing: border-box; }
-html {
-    min-height: 100%;
-    height: auto;
-    overflow-y: auto;
-    overflow-x: hidden;
-}
-body {
-    margin: 0;
-    background: var(--bg);
-    font-family: Arial, Helvetica, sans-serif;
-    color: var(--text);
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    height: auto;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-}
-body.patio-planilha-mode {
-    min-height: 100vh;
-    height: auto;
-    overflow-y: auto;
-    overflow-x: hidden;
-}
-body.patio-planilha-mode footer {
-    flex-shrink: 0;
-    padding: 6px 12px;
-    font-size: 11px;
-}
-.consulta-card .result-box {
-    margin-top: 8px;
-    min-height: 0;
-    display: flex;
-    align-items: center;
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.35;
-}
-.consulta-card .result-box:empty {
-    display: none;
-}
-.consulta-card .consulta-hint {
-    font-size: 11px;
-    color: var(--muted);
-    margin: 8px 0 0;
-    line-height: 1.3;
-}
-.header {
-    background: white;
-    padding: 10px 24px;
-    display: grid;
-    grid-template-columns: 190px 1fr minmax(310px, auto);
-    gap: 15px;
-    align-items: center;
-    border-bottom: 1px solid #e8edf6;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    flex-shrink: 0;
-}
-.logo-ciop {
-    height: 48px;
-    object-fit: contain;
-    justify-self: start;
-}
-.logo-tcgl {
-    height: 48px;
-    object-fit: contain;
-    justify-self: end;
-}
-h1 {
-    margin: 0;
-    text-align: center;
-    color: #071f57;
-    font-size: 24px;
-    line-height: 1.05;
-    font-weight: 800;
-}
-.header-title {
-    text-align: center;
-    min-width: 0;
-}
-.header-subtitle {
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 700;
-    margin-top: 4px;
-}
-.header-actions {
-    justify-self: end;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 10px;
-    min-width: 0;
-}
-/* session styles: portal-session.css?v=20260720y */
-.btn-logout {
-    background: #dc2626;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    padding: 5px 8px;
-    font-size: 11px;
-    font-weight: 800;
-    cursor: pointer;
-}
-.btn-logout:hover {
-    background: #b91c1c;
-}
-@media (max-width: 960px) {
-    .header {
-        grid-template-columns: 1fr;
-        text-align: center;
-    }
-    .logo-ciop,
-    .logo-tcgl,
-    .header-actions {
-        justify-self: center;
-    }
-    .header-actions {
-        flex-wrap: wrap;
-    }
-}
-.container {
-    max-width: 1680px;
-    margin: 25px auto;
-    padding: 0 20px;
-    width: 100%;
-    flex: 1;
-}
-.container.patio-container-wide {
-    max-width: 100%;
-    margin: 8px auto 18px;
-    padding: 0 8px;
-    flex: 0 0 auto;
-    min-height: auto;
-    display: flex;
-    flex-direction: column;
-}
+:root{--blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--bg:#f5f7fb;--border:#dfe5ef;--text:#101828;--muted:#667085;--red:#dc2626;--white:#fff;--green:#15803d;--amber:#b45309}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.header{background:var(--white);display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);gap:16px;align-items:center;padding:8px 20px;border-bottom:1px solid #e8edf6}
+.header > a:first-child.portal-brand-mark{justify-self:start}
+.logo-ciop{height:42px;object-fit:contain}.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.page-title{margin:0;color:var(--blue);font-size:24px;font-weight:800;letter-spacing:-.02em}
+.header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.ciop-session{display:flex;align-items:center;gap:6px;max-width:260px;padding:4px 8px;border:1px solid rgba(6,36,92,.12);border-radius:6px;background:var(--white);color:var(--blue);font-size:11px}
+.ciop-session-user{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.ciop-session-profile{color:var(--muted);font-weight:600}
+.ciop-session .btn-logout{background:var(--red);color:#fff;border:none;border-radius:5px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer}
+.container{max-width:min(1680px,96vw);margin:24px auto 40px;padding:0 20px;flex:1;width:100%}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.toolbar-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn-portal,.btn-secondary{display:inline-flex;align-items:center;gap:8px;min-height:44px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;background:var(--blue);color:#fff;border:none;cursor:pointer;font-family:inherit}
+.btn-portal:hover{background:var(--blue2)}
+.btn-secondary{background:#e8edf6;color:var(--blue)}
+.btn-secondary:hover{background:#dde6f5}
+.btn-icon{display:inline-flex;width:16px;height:16px;flex:0 0 auto}
+.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
-.portal-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
-    flex-shrink: 0;
-}
-.btn-back {
-    background: white;
-    border: 1px solid var(--border);
-    padding: 8px 16px;
-    border-radius: 6px;
-    color: var(--blue);
-    text-decoration: none;
-    font-weight: bold;
-    font-size: 14px;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.btn-back:hover {
-    background: #f8f9fa;
-    border-color: #b3c0d8;
-}
+.patio-stats{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.patio-stat{display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:999px;background:var(--white);border:1px solid var(--border);font-size:12px;font-weight:800;color:var(--muted);box-shadow:0 6px 16px rgba(16,24,40,.05)}
+.patio-stat-dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+.patio-stat-dot.st-operando{background:var(--green)}
+.patio-stat-dot.st-reserva{background:var(--amber)}
+.patio-stat-dot.st-manutencao{background:var(--red)}
+.patio-stat-dot.st-bloqueado{background:#475467}
+.patio-stat-dot.st-vazio{background:#cbd2de}
+.patio-stat b{color:var(--text)}
 
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 25px;
-}
+.patio-zone{background:var(--white);border:1px solid var(--border);border-radius:20px;padding:18px 20px 20px;margin-bottom:18px;box-shadow:0 10px 26px rgba(16,24,40,.05)}
+.patio-zone-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.patio-zone-title-wrap{display:flex;align-items:center;gap:10px;min-width:0}
+.patio-zone-dot{width:12px;height:12px;border-radius:4px;flex:0 0 auto}
+.zone-tiete .patio-zone-dot{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}
+.zone-galpao .patio-zone-dot{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
+.zone-reserva .patio-zone-dot{background:linear-gradient(135deg,var(--orange),#c2540a)}
+.patio-zone-title{margin:0;font-size:15px;font-weight:900;color:var(--blue);text-transform:uppercase;letter-spacing:.03em}
+.patio-zone-sub{margin:2px 0 0;font-size:11.5px;color:var(--muted);font-weight:600}
+.patio-zone-count{font-size:11px;font-weight:800;color:var(--muted);white-space:nowrap}
+.patio-zone-add{border:1px dashed rgba(6,36,92,.25);background:#f8fbff;color:var(--blue);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap}
+.patio-zone-add:hover{background:#eef4ff}
 
-/* Pátio: consulta + pedidos compactos; gabarito planilha ocupa o restante */
-.patio-page-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    flex: 0 0 auto;
-    min-height: auto;
-}
-.patio-acoes-linha {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    align-items: stretch;
-    flex-shrink: 0;
-}
-.patio-acoes-linha > .card {
-    margin-bottom: 0;
-    display: flex;
-    flex-direction: column;
-    min-height: 100%;
-}
-.patio-acoes-linha .card-title {
-    text-align: left;
-    justify-content: flex-start;
-}
-.patio-acoes-linha .lancamento-form-centro {
-    max-width: none;
-    width: 100%;
-    margin: 0;
-    flex: 1;
-}
-.patio-acoes-linha .lancamento-form-centro .form-group {
-    text-align: left;
-}
-.patio-acoes-linha .lancamento-form-centro .form-group label {
-    text-align: left;
-}
-.patio-acoes-linha .lancamento-form-centro .form-control {
-    text-align: left;
-}
-@media (max-width: 1180px) {
-    .patio-acoes-linha {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .patio-acoes-linha .lancamento-card {
-        grid-column: 1 / -1;
-    }
-}
-@media (max-width: 900px) {
-    .patio-acoes-linha {
-        grid-template-columns: 1fr;
-    }
-    .patio-acoes-linha .lancamento-card {
-        grid-column: auto;
-    }
-}
-.patio-acoes-linha > .card {
-    padding: 12px 16px;
-}
-.patio-acoes-linha .card-title {
-    margin-bottom: 8px;
-    padding-bottom: 6px;
-    font-size: 15px;
-}
-.patio-acoes-linha .consulta-hint,
-.patio-acoes-linha .lancamento-dica {
-    display: none;
-}
-.patio-acoes-linha .lancamento-card .lancamento-form-centro {
-    flex: 0 0 auto;
-}
-.patio-gabarito-full {
-    width: 100%;
-    margin-bottom: 0;
-    flex: 0 0 auto;
-    min-height: auto;
-    display: flex;
-    flex-direction: column;
-    overflow: visible;
-    padding: 12px 14px 14px;
-}
-.patio-gabarito-full .patio-map {
-    width: 100%;
-    flex: 0 0 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-}
-.patio-gabarito-full .patio-map.gabarito-completo {
-    flex: 0 0 auto;
-    min-height: 0;
-}
-.patio-gabarito-full .garagem-planta-inner {
-    width: 100%;
-}
+.patio-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:10px}
+.patio-vaga{position:relative;border-radius:14px;border:1.5px solid var(--border);background:#fbfcfe;padding:10px 8px 8px;min-height:88px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;cursor:pointer;transition:.15s;overflow:hidden}
+.patio-vaga:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(16,24,40,.1)}
+.patio-vaga-num{position:absolute;top:5px;left:7px;font-size:9px;font-weight:800;color:var(--muted)}
+.patio-vaga-prefixo{font-size:15px;font-weight:900;color:var(--text);word-break:break-word}
+.patio-vaga-status-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+.patio-vaga-empty{font-size:11px;color:#b7bfcc;font-weight:700}
+.patio-vaga.st-operando{background:#ecfdf3;border-color:#bbf0cf}
+.patio-vaga.st-operando .patio-vaga-status-label{color:var(--green)}
+.patio-vaga.st-reserva{background:#fffaeb;border-color:#fde3ad}
+.patio-vaga.st-reserva .patio-vaga-status-label{color:var(--amber)}
+.patio-vaga.st-manutencao{background:#fef2f2;border-color:#fecaca}
+.patio-vaga.st-manutencao .patio-vaga-status-label{color:var(--red)}
+.patio-vaga.st-bloqueado{background:repeating-linear-gradient(135deg,#eef0f3,#eef0f3 6px,#e3e6eb 6px,#e3e6eb 12px);border-color:#c7ccd6;color:#8a93a3}
+.patio-vaga.st-bloqueado .patio-vaga-prefixo,.patio-vaga.st-bloqueado .patio-vaga-status-label{color:#8a93a3}
+.patio-vaga-remove{position:absolute;top:3px;right:4px;width:16px;height:16px;border-radius:50%;border:none;background:rgba(16,24,40,.08);color:var(--muted);font-size:10px;line-height:16px;cursor:pointer;display:none;align-items:center;justify-content:center}
+.patio-vaga:hover .patio-vaga-remove{display:flex}
+.patio-vaga-remove:hover{background:var(--red);color:#fff}
 
-/* —— Gabarito espacial (planta Excel) —— */
-.gab-card-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px 20px;
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid var(--bg);
-}
-.gab-card-head .card-title { margin-bottom: 4px; border: none; padding: 0; }
-.gab-card-sub {
-    margin: 0;
-    font-size: 13px;
-    color: var(--muted);
-    max-width: 52ch;
-    line-height: 1.45;
-}
-.gab-view-toolbar {
-    display: inline-flex;
-    padding: 4px;
-    background: #eef2f6;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    gap: 4px;
-}
-.gab-view-btn {
-    border: none;
-    background: transparent;
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 700;
-    padding: 8px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-family: inherit;
-    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
-}
-.gab-view-btn:hover { color: var(--blue); background: rgba(255,255,255,0.7); }
-.gab-view-btn.is-active {
-    background: #fff;
-    color: var(--blue);
-    box-shadow: 0 1px 4px rgba(16, 24, 40, 0.12);
-}
-.gab-resumo { margin-bottom: 10px; }
-.gab-operacao-bar {
-    display: grid;
-    grid-template-columns: minmax(360px, 1fr) minmax(280px, auto);
-    gap: 10px 16px;
-    align-items: center;
-    margin-bottom: 10px;
-    padding: 10px 12px;
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-    border: 1px solid #d8e1ee;
-    border-radius: 8px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
-}
-.gab-ordem-legenda {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-}
-.gab-legenda-titulo {
-    font-size: 11px;
-    font-weight: 900;
-    color: var(--blue);
-    text-transform: uppercase;
-}
-.gab-ordem-item {
-    display: grid;
-    grid-template-columns: 14px auto;
-    grid-template-rows: auto auto;
-    column-gap: 7px;
-    align-items: center;
-    min-height: 36px;
-    padding: 5px 9px;
-    background: #fff;
-    border: 1px solid #d8e1ee;
-    border-radius: 8px;
-    color: #1f2937;
-}
-.gab-ordem-item i {
-    grid-row: 1 / span 2;
-    width: 14px;
-    height: 24px;
-    border-radius: 4px;
-    border: 1px solid rgba(15, 23, 42, 0.18);
-}
-.gab-ordem-item strong {
-    font-size: 12px;
-    font-weight: 900;
-    line-height: 1;
-}
-.gab-ordem-item small {
-    font-size: 10px;
-    font-weight: 700;
-    line-height: 1.1;
-    color: #64748b;
-}
-.gab-ordem-item--livre i { background: #f6c6ad; }
-.gab-ordem-item--ordem-2 i { background: #8bd0e8; }
-.gab-ordem-item--ordem-3 i { background: #f5f500; }
-.gab-ordem-item--ordem-4 i { background: #ffc000; }
-.gab-apoio-legenda {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 6px;
-}
-.gab-apoio-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    min-height: 26px;
-    padding: 4px 9px;
-    border-radius: 999px;
-    border: 1px solid #d8e1ee;
-    background: #fff;
-    color: #475467;
-    font-size: 11px;
-    font-weight: 800;
-    white-space: nowrap;
-}
-.gab-apoio-item i {
-    width: 9px;
-    height: 9px;
-    border-radius: 3px;
-    border: 1px solid rgba(15, 23, 42, 0.18);
-}
-.gab-apoio-item--corujao { border-color: #fbcfe8; color: #9d174d; background: #fdf2f8; }
-.gab-apoio-item--corujao i { background: #f472b6; border-color: #f472b6; }
-.gab-apoio-item--mistos i { background: #bfdbfe; }
-.gab-apoio-item--pesados i { background: #fed7aa; }
-.gab-apoio-item--leves i { background: #bbf7d0; }
-.gab-apoio-item--pedido i { background: var(--pedidos); }
-.gab-apoio-item--bloq i { background: #fef2f2; border-color: #fca5a5; }
-.gab-legenda-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 14px;
-    margin-bottom: 12px;
-    padding: 10px 12px;
-    background: #f8fafc;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #475467;
-}
-.gab-legenda-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-.gab-legenda-item i {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 3px;
-    border: 1px solid rgba(0,0,0,0.08);
-}
-.gab-legenda-item--livre i { background: #12b76a; }
-.gab-legenda-item--seq i { background: #f79009; }
-.gab-legenda-item--bloq i { background: #fef2f2; border-color: #fca5a5; position: relative; }
-.gab-legenda-item--pedido i { background: var(--pedidos); }
-.gab-legenda-item--mistos i { background: #bfdbfe; }
-.gab-legenda-item--pesados i { background: #fed7aa; }
-.gab-legenda-item--leves i { background: #bbf7d0; }
+.patio-empty-zone{padding:24px;text-align:center;color:var(--muted);font-size:12.5px;font-weight:700}
 
-.gabarito-espacial {
-    overflow-x: auto;
-    padding-bottom: 4px;
-}
-.gab-planta {
-    min-width: min(100%, 1100px);
-    border: 2px solid #0b3a8a;
-    border-radius: 14px;
-    overflow: hidden;
-    background: linear-gradient(180deg, #e8eef8 0%, #f4f7fb 100%);
-    box-shadow: 0 12px 32px rgba(6, 36, 92, 0.14);
-}
-.gab-fonte {
-    padding: 6px 14px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: #64748b;
-    background: rgba(255,255,255,0.65);
-    border-bottom: 1px solid #dbe3ef;
-}
-.gab-corpo {
-    display: grid;
-    grid-template-columns: 52px 1fr 52px;
-    align-items: stretch;
-}
-.gab-via-lateral.patio-saida {
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    transform: rotate(180deg);
-    padding: 12px 6px;
-    min-height: 200px;
-}
-.gab-area-principal {
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-width: 0;
-}
-.gab-linha-superior {
-    display: grid;
-    grid-template-columns: minmax(120px, 160px) 1fr;
-    gap: 8px;
-    align-items: stretch;
-}
-.gab-meio {
-    display: grid;
-    grid-template-columns: minmax(100px, 130px) 1fr minmax(88px, 110px);
-    gap: 8px;
-    align-items: start;
-}
-.gab-bloco-oeste {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-.gab-bloco-centro {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.gab-bloco-corredor {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-.gab-corredor-titulo {
-    font-size: 10px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #6b21a8;
-    text-align: center;
-    padding: 4px;
-}
-.gab-corredor-colunas {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-.gab-corujao-col .gab-faixa-vagas {
-    flex-direction: column;
-    flex-wrap: nowrap;
-}
-.gab-zona-lista {
-    background: #fff;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    overflow: hidden;
-    min-height: 64px;
-}
-.gab-zona-lista-corpo {
-    padding: 6px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    min-height: 44px;
-    align-content: flex-start;
-}
-.gab-lista-vazio {
-    font-size: 11px;
-    color: #94a3b8;
-    font-weight: 600;
-    padding: 8px;
-}
-.gab-faixa {
-    background: #fff;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    overflow: hidden;
-    min-width: 0;
-}
-.gab-faixa-head {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 4px 8px;
-    padding: 5px 8px;
-    border: none;
-    border-bottom: 1px solid #e2e8f0;
-    background: #f8fafc;
-    cursor: pointer;
-    font-family: inherit;
-    text-align: left;
-}
-.gab-faixa-head:hover { background: #f1f5f9; }
-.gab-faixa-head.saida-livre { box-shadow: inset 4px 0 0 #f6c6ad; }
-.gab-faixa-head.saida-ordem-2 { box-shadow: inset 4px 0 0 #8bd0e8; }
-.gab-faixa-head.saida-ordem-3 { box-shadow: inset 4px 0 0 #e6df00; }
-.gab-faixa-head.saida-ordem-4 { box-shadow: inset 4px 0 0 #ffc000; }
-.gab-faixa-nome {
-    font-size: 11px;
-    font-weight: 800;
-    color: var(--blue);
-}
-.gab-faixa-meta {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--muted);
-    margin-left: auto;
-}
-.gab-faixa-vagas {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 3px;
-    padding: 6px;
-    align-content: flex-start;
-}
-.gab-zona--muro { border-color: #94a3b8; }
-.gab-zona--muro .gab-faixa-head { background: #f1f5f9; }
-.gab-zona--bomba { border-color: #fbbf24; }
-.gab-zona--bomba .gab-faixa-head { background: #fffbeb; }
-.gab-zona--mistos { border-color: #60a5fa; }
-.gab-zona--mistos .gab-faixa-head { background: #eff6ff; }
-.gab-zona--pesados { border-color: #fb923c; }
-.gab-zona--pesados .gab-faixa-head { background: #fff7ed; }
-.gab-zona--leves { border-color: #4ade80; }
-.gab-zona--leves .gab-faixa-head { background: #f0fdf4; }
-.gab-zona--corredor { border-color: #c084fc; }
-.gab-zona--corredor .gab-faixa-head { background: #faf5ff; }
-.gab-zona--corujao { border-color: #f472b6; }
-.gab-zona--corujao .gab-faixa-head { background: #fdf2f8; }
-.gab-patio-titulo {
-    font-size: 11px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #475467;
-    padding: 4px 2px;
-}
-.gab-patio-linhas {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-.gab-patio-linha {
-    display: grid;
-    grid-template-columns: 52px 1fr;
-    gap: 6px;
-    align-items: stretch;
-}
-.gab-patio-linha-rotulo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 9px;
-    font-weight: 800;
-    color: #64748b;
-    text-transform: uppercase;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    background: rgba(255,255,255,0.8);
-    border: 1px dashed #cbd5e1;
-    border-radius: 6px;
-    padding: 4px;
-}
-.gab-patio-linha-corpo {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 6px;
-    min-width: 0;
-}
-.gab-legenda-ordem {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    background: #fff;
-    border: 1px dashed #cbd5e1;
-    border-radius: 8px;
-}
-.gab-legenda-chip {
-    font-size: 11px;
-    font-weight: 800;
-    padding: 3px 10px;
-    border-radius: 999px;
-    background: #fffaeb;
-    color: #b54708;
-    border: 1px solid #fec84b;
-}
-.gab-legenda-chip.is-livre {
-    background: #ecfdf3;
-    color: #027a48;
-    border-color: #6ce9a6;
-}
-.gab-legenda-hint {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--muted);
-}
-.gab-vaga {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    width: 48px;
-    min-width: 48px;
-    flex: 0 0 48px;
-}
-.gab-vaga .patio-vaga-numero {
-    font-size: 8px;
-    font-weight: 800;
-    color: #64748b;
-    text-align: center;
-    line-height: 1;
-    padding: 2px 0 1px;
-}
-.gab-vaga .garagem-slot,
-.gab-vaga .garagem-slot-vazio,
-.gab-vaga .garagem-slot-bloqueada {
-    flex: 1 1 auto;
-    width: 100%;
-    min-width: 0;
-    min-height: 46px;
-    padding: 2px 2px 14px;
-}
-.gab-vaga .garagem-slot-prefixo { font-size: 11px; }
-.gab-vaga .garagem-slot-tech { font-size: 6px; }
-.gab-zona-lista .garagem-slot,
-.gab-faixa-vagas > .garagem-slot {
-    flex: 0 0 auto;
-    width: 56px;
-    min-height: 52px;
-}
-@media (max-width: 900px) {
-    .gab-meio {
-        grid-template-columns: 1fr;
-    }
-    .gab-bloco-corredor .gab-corredor-colunas {
-        flex-direction: row;
-        flex-wrap: wrap;
-    }
-    .gab-corredor-item { flex: 1 1 88px; }
-    .gab-linha-superior { grid-template-columns: 1fr; }
-    .gab-corpo { grid-template-columns: 1fr; }
-    .gab-via-lateral { display: none; }
-}
+.patio-editor-backdrop{position:fixed;inset:0;background:rgba(16,24,40,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.patio-editor-backdrop[hidden]{display:none}
+.patio-editor{width:min(380px,100%);background:#fff;border-radius:18px;box-shadow:0 30px 60px rgba(16,24,40,.3);padding:20px}
+.patio-editor h3{margin:0 0 4px;color:var(--blue);font-size:16px}
+.patio-editor p{margin:0 0 16px;color:var(--muted);font-size:12px;font-weight:700}
+.patio-editor label{display:block;margin:10px 0 5px;color:var(--muted);font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em}
+.patio-editor input,.patio-editor select,.patio-editor textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 10px;font:inherit;font-size:14px;outline:none}
+.patio-editor input:focus,.patio-editor select:focus,.patio-editor textarea:focus{border-color:var(--blue)}
+.patio-editor textarea{min-height:60px;resize:vertical}
+.patio-editor-status-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:2px}
+.patio-status-opt{border:1.5px solid var(--border);border-radius:9px;padding:8px;font-size:11.5px;font-weight:800;cursor:pointer;text-align:center;background:#fff;color:var(--muted)}
+.patio-status-opt.active{border-color:var(--blue);background:#eef4ff;color:var(--blue)}
+.patio-editor-actions{display:flex;gap:8px;margin-top:18px}
+.patio-editor-actions .btn-portal,.patio-editor-actions .btn-secondary{flex:1;justify-content:center;min-height:42px}
+.patio-editor-close{position:absolute;top:14px;right:14px;width:28px;height:28px;border-radius:50%;border:none;background:#eef2f7;color:var(--blue);cursor:pointer;font-size:14px}
+.patio-editor-meta{margin-top:12px;font-size:10.5px;color:#98a2b3;font-weight:700}
 
-/* —— Gabarito completo (tabela Excel) —— */
-.gabarito-completo {
-    width: 100%;
-    flex: 0 0 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-}
-.gab-viewport-fit {
-    width: 100%;
-    flex: 0 0 auto;
-    height: auto;
-    min-height: 0;
-    max-height: none;
-    overflow-x: auto;
-    overflow-y: visible;
-    border: 1px solid #94a3b8;
-    border-radius: 8px;
-    background: #eef2f7;
-    box-shadow: inset 0 1px 4px rgba(15, 23, 42, 0.06);
-    padding: 0;
-    scrollbar-gutter: auto;
-    -webkit-overflow-scrolling: touch;
-}
-.gab-status-bar {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--muted);
-    min-height: 18px;
-    margin-top: 6px;
-    flex-shrink: 0;
-}
-.gab-status-bar:empty { display: none; }
-.gab-status-bar.gab-status--erro { color: #991b1b; }
-.gab-status-bar.gab-status--ok { color: #065f46; }
-.gab-card-head--compact {
-    margin-bottom: 8px;
-    padding-bottom: 8px;
-    flex-shrink: 0;
-}
-.gab-card-head--compact .gab-card-sub { display: none; }
-.gab-card-head-actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 12px;
-}
-.gab-legenda-bar--compact {
-    margin-bottom: 8px;
-    flex-shrink: 0;
-}
-.gab-scroll-horizontal:focus,
-.gab-viewport-fit:focus {
-    outline: 2px solid var(--blue2);
-    outline-offset: 2px;
-}
-.gab-tabela-excel {
-    border-collapse: collapse;
-    table-layout: fixed;
-    width: auto;
-    min-width: 760px;
-    height: auto;
-    margin: 0 auto;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: clamp(9px, 0.75vw, 13px);
-    line-height: 1.2;
-    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.1);
-    background: #fff;
-}
-.gab-tabela-excel--retrato {
-    font-size: 10px;
-}
-.gab-tabela-excel--retrato .gab-td--via {
-    font-size: 10px;
-    letter-spacing: 0;
-    white-space: normal;
-}
-.gab-tabela-excel--retrato .gab-td--rotulo {
-    font-size: 10px;
-}
-.gab-tabela-excel--retrato .gab-cel-input {
-    font-size: 11px;
-}
-.gab-td {
-    border: 1px solid #cbd5e1;
-    padding: 0;
-    vertical-align: middle;
-    text-align: center;
-    overflow: hidden;
-    position: relative;
-    box-sizing: border-box;
-}
-.gab-td--rotulo {
-    font-weight: 700;
-    font-size: 10px;
-    padding: 2px 4px;
-    white-space: nowrap;
-}
-.gab-td--vaga {
-    padding: 0;
-    min-width: 0;
-    vertical-align: stretch;
-}
-.gab-td--faixa {
-    border-color: #dbe4ef !important;
-    background: #edf2f7 !important;
-    padding: 0;
-    min-width: 10px;
-    width: 10px;
-}
-.gab-td--via {
-    font-weight: 800;
-    font-size: 12px;
-    letter-spacing: 0.03em;
-    padding: 6px 8px;
-    white-space: nowrap;
-    background: #1E3A5F !important;
-    color: #fff !important;
-    border-color: #1a3352 !important;
-}
-.gab-td--via-topo {
-    font-size: 14px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-.gab-td--via-base {
-    font-size: 12px;
-}
-.gab-td--via-leste {
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    font-size: 11px;
-    padding: 10px 4px;
-    letter-spacing: 0.04em;
-    max-width: 28px;
-    white-space: nowrap;
-}
-.gab-td--lista {
-    vertical-align: top;
-    padding: 3px;
-    min-width: 48px;
-}
-.gab-td-vaga-inner {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    min-height: 100%;
-}
-.gab-td-corpo {
-    flex: 1 1 auto;
-    min-height: 0;
-    height: 100%;
-    display: flex;
-    align-items: stretch;
-}
-.gab-td--vaga.gab-td--ativa {
-    outline: 2px solid var(--orange);
-    outline-offset: -2px;
-    z-index: 2;
-    box-shadow: inset 0 0 0 1px rgba(255, 107, 0, 0.35);
-}
-.gab-cel-input {
-    flex: 1 1 auto;
-    width: 100%;
-    min-height: 100%;
-    height: 100%;
-    border: none;
-    border-radius: 0;
-    margin: 0;
-    padding: 0 2px;
-    background: rgba(255, 255, 255, 0.72);
-    color: var(--blue);
-    font-family: inherit;
-    font-size: clamp(10px, 0.85vw, 15px);
-    font-weight: 800;
-    text-align: center;
-    outline: none;
-    box-sizing: border-box;
-}
-.gab-cel-input:focus {
-    background: #fff;
-}
-.gab-cel-input.is-pedido {
-    background: var(--pedidos);
-    color: #fff;
-}
-.gab-cel-input.is-pedido:focus {
-    background: #0a3270;
-}
-.gab-cel-vazio,
-.gab-cel-bloq,
-.gab-cel-carro {
-    flex: 1 1 auto;
-    width: 100%;
-    min-height: 100%;
-    border: none;
-    border-radius: 0;
-    margin: 0;
-    padding: 0;
-    font-family: inherit;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.gab-cel-vazio {
-    background: rgba(255, 255, 255, 0.35);
-    cursor: pointer;
-}
-.gab-cel-vazio:hover { background: rgba(255, 255, 255, 0.55); }
-.gab-cel-bloq {
-    background: #fef2f2;
-    cursor: pointer;
-}
-.gab-cel-bloq::before,
-.gab-cel-bloq::after {
-    content: "";
-    position: absolute;
-    width: 70%;
-    height: 2px;
-    background: #dc2626;
-    border-radius: 1px;
-}
-.gab-cel-bloq::before { transform: rotate(35deg); }
-.gab-cel-bloq::after { transform: rotate(-35deg); }
-.gab-cel-carro {
-    background: rgba(255, 255, 255, 0.92);
-    border-top: 2px solid var(--blue2);
-}
-.gab-cel-carro.is-pedido {
-    background: var(--pedidos);
-    border-top-color: #031b44;
-}
-.gab-cel-carro.is-pedido .gab-cel-carro-num { color: #fff; }
-.gab-cel-carro.is-bloq {
-    background: #1f2937;
-    border-top-color: #000;
-}
-.gab-cel-carro-num {
-    font-size: clamp(8px, 1.8vw, 11px);
-    font-weight: 900;
-    color: var(--blue);
-    line-height: 1;
-}
-.gab-cel-carro-acoes {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: center;
-    gap: 1px;
-    line-height: 1;
-}
-.gab-cel-carro-acoes .btn-pedido,
-.gab-cel-carro-acoes .remove-btn {
-    border: none;
-    background: rgba(0, 0, 0, 0.08);
-    color: inherit;
-    font-size: 7px;
-    font-weight: 800;
-    padding: 0 2px;
-    min-width: 12px;
-    line-height: 12px;
-    cursor: pointer;
-    border-radius: 2px;
-}
-.gab-cel-carro.is-pedido .gab-cel-carro-acoes .btn-pedido,
-.gab-cel-carro.is-pedido .gab-cel-carro-acoes .remove-btn {
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-}
-.gab-td-lista-inner {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    height: 100%;
-    min-height: 48px;
-}
-.gab-td-lista-titulo {
-    border: none;
-    background: rgba(0,0,0,0.06);
-    border-radius: 4px;
-    font-size: 9px;
-    font-weight: 800;
-    color: inherit;
-    cursor: pointer;
-    padding: 3px 4px;
-    font-family: inherit;
-    text-align: center;
-}
-.gab-td-lista-titulo:hover {
-    background: rgba(0,0,0,0.12);
-}
-.gab-td-lista-lancamento {
-    flex: 0 0 auto;
-}
-.gab-lista-input {
-    width: 100%;
-    min-height: 24px;
-    border: 1px solid rgba(15, 23, 42, 0.18);
-    border-radius: 5px;
-    background: rgba(255, 255, 255, 0.88);
-    color: var(--blue);
-    font-family: inherit;
-    font-size: 11px;
-    font-weight: 800;
-    text-align: center;
-    outline: none;
-    padding: 3px 5px;
-}
-.gab-lista-input:focus {
-    background: #fff;
-    border-color: var(--orange);
-    box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.14);
-}
-.gab-td-lista-carros {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 3px;
-    justify-content: center;
-    align-content: flex-start;
-    flex: 1;
-}
-.gab-td-lista-carros .garagem-slot {
-    width: 44px !important;
-    min-width: 44px !important;
-    min-height: 40px !important;
-    flex: 0 0 44px;
-    padding-bottom: 12px;
-}
-.gab-td-lista-carros .garagem-slot-tech { display: none; }
-.gab-td-lista-carros .garagem-slot-prefixo { font-size: 10px; }
+.patio-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#101828;color:#fff;padding:10px 18px;border-radius:10px;font-size:12.5px;font-weight:700;z-index:1100;box-shadow:0 12px 28px rgba(16,24,40,.3);opacity:0;pointer-events:none;transition:opacity .25s ease}
+.patio-toast.show{opacity:1}
 
-.card {
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    margin-bottom: 20px;
-}
-.card-title {
-    font-size: 18px;
-    font-weight: bold;
-    color: var(--blue);
-    margin-bottom: 15px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    border-bottom: 2px solid var(--bg);
-    padding-bottom: 10px;
-}
+.page-footer{padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-top:1px solid var(--border);background:var(--white)}
 
-/* Form controls */
-.form-group {
-    margin-bottom: 15px;
-}
-.form-group label {
-    display: block;
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 6px;
-    color: #344054;
-}
-.form-row {
-    display: flex;
-    gap: 10px;
-}
-.form-control {
-    flex: 1;
-    padding: 10px 14px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 14px;
-    background: white;
-    outline: none;
-}
-.form-control:focus {
-    border-color: var(--blue2);
-    box-shadow: 0 0 0 3px rgba(11, 58, 138, 0.1);
-}
-.btn {
-    background: var(--blue);
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.2s;
-    white-space: nowrap;
-}
-.btn:hover {
-    background: var(--blue2);
-}
-.btn-orange {
-    background: var(--orange);
-}
-.btn-orange:hover {
-    background: #e05e00;
-}
-.btn-excel {
-    background: #107c41;
-}
-.btn-excel:hover {
-    background: #0b592e;
-}
-
-/* Planta da garagem TCGL — vista aérea, saídas nas setas */
-.patio-map.garagem-planta {
-    display: block;
-}
-.garagem-planta-inner {
-    border: 2px solid var(--blue);
-    border-radius: 12px;
-    overflow: hidden;
-    background: #dce5f4;
-    box-shadow: 0 8px 24px rgba(6, 36, 92, 0.12);
-}
-.garagem-saida {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 8px 12px;
-    font-size: 11px;
-    font-weight: 800;
-    color: #92400e;
-    background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
-    border-color: #f59e0b;
-    text-align: center;
-    line-height: 1.25;
-}
-.garagem-saida small {
-    display: block;
-    font-size: 9px;
-    font-weight: 700;
-    opacity: 0.9;
-}
-.garagem-saida-icone {
-    font-size: 18px;
-    font-weight: 900;
-    line-height: 1;
-    color: #d97706;
-}
-.garagem-saida-norte {
-    border-bottom: 2px dashed #f59e0b;
-}
-.garagem-saida-sur {
-    border-top: 1px solid #cbd5e1;
-    background: #f1f5f9;
-    color: var(--muted);
-    font-size: 10px;
-}
-.garagem-corpo {
-    display: grid;
-    grid-template-columns: 56px 1fr 56px;
-    min-height: 380px;
-}
-.garagem-saida-oeste,
-.garagem-saida-leste {
-    flex-direction: column;
-    writing-mode: horizontal-tb;
-    padding: 10px 4px;
-    border-inline: 2px dashed #f59e0b;
-}
-.garagem-saida-oeste .garagem-saida-icone,
-.garagem-saida-leste .garagem-saida-icone {
-    font-size: 22px;
-}
-.garagem-patio {
-    position: relative;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-height: 340px;
-    background: #f8fafc;
-    border-inline: 1px solid #cbd5e1;
-}
-.garagem-faixa-principal,
-.garagem-meio,
-.garagem-stack-oeste,
-.garagem-centro,
-.garagem-linha-centro,
-.garagem-operacao,
-.garagem-linha-operacao,
-.garagem-stack-linha {
-    position: relative;
-    z-index: 1;
-}
-.garagem-faixa-principal {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 4px;
-    overflow-x: auto;
-    padding: 6px;
-    background: rgba(255, 255, 255, 0.75);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-}
-.garagem-meio {
-    display: grid;
-    grid-template-columns: minmax(88px, 110px) 1fr;
-    gap: 10px;
-    flex: 1;
-    align-items: start;
-}
-.garagem-stack-oeste {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-.garagem-stack-linha {
-    display: flex;
-}
-.garagem-col-larga {
-    flex: 1;
-    width: 100%;
-    max-width: none;
-}
-.garagem-centro {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-width: 0;
-}
-.garagem-linha-centro {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 4px;
-    overflow-x: auto;
-    padding: 6px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: rgba(255, 255, 255, 0.92);
-}
-.garagem-operacao {
-    margin-top: 12px;
-    padding: 10px 12px;
-    border: 1px dashed var(--border);
-    border-radius: 10px;
-    background: #fff;
-}
-.garagem-operacao-titulo {
-    margin: 0 0 8px;
-    font-size: 11px;
-    font-weight: 800;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-.garagem-linha-operacao {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 4px;
-    overflow-x: auto;
-}
-.garagem-col {
-    flex: 0 1 auto;
-    min-width: 72px;
-    width: auto;
-    max-width: none;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-}
-.garagem-col-head {
-    width: 100%;
-    font-weight: 800;
-    text-align: center;
-    font-size: 12px;
-    line-height: 1.2;
-    color: var(--blue);
-    background: #edf2f7;
-    padding: 5px 3px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px 6px 0 0;
-    margin: 0;
-    cursor: pointer;
-    font-family: inherit;
-}
-.garagem-col-head:hover { background: #e2e8f0; }
-.garagem-col-head small {
-    display: block;
-    font-weight: 600;
-    font-size: 10px;
-    color: var(--muted);
-    margin-top: 2px;
-    line-height: 1.1;
-}
-.garagem-col-head.saida-livre { border-top: 3px solid #f6c6ad; }
-.garagem-col-head.corujao-aguardando { border-top: 3px solid #f59e0b; }
-.garagem-col-head.bloqueado-lane {
-    border-top: 3px solid var(--danger);
-    background: #fee2e2;
-    color: #991b1b;
-}
-.garagem-slots {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: stretch;
-    align-content: flex-start;
-    gap: 4px;
-    flex: 1;
-    min-height: 58px;
-    padding: 4px;
-    border: 1px solid #cbd5e1;
-    border-top: none;
-    border-radius: 0 0 6px 6px;
-    background: #fff;
-}
-.garagem-slot {
-    flex: 0 0 62px;
-    width: 62px;
-    min-height: 58px;
-    border: 1px solid var(--border);
-    border-top: 3px solid var(--blue2);
-    border-radius: 4px;
-    background: #fff;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    padding: 4px 2px 16px;
-    position: relative;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-}
-.garagem-slot-vazio {
-    flex: 1 1 62px;
-    min-width: 62px;
-    border-style: dashed;
-    border-top-style: dashed;
-    border-top-color: #cbd5e1;
-    color: #94a3b8;
-    font-size: 18px;
-    font-weight: 700;
-    min-height: 58px;
-    padding-bottom: 4px;
-    cursor: pointer;
-    background: #f8fafc;
-}
-.garagem-slot-vazio:hover {
-    border-color: #64748b;
-    background: #f1f5f9;
-}
-.garagem-slot-bloqueada {
-    flex: 1 1 62px;
-    min-width: 62px;
-    border: 1px solid #fecaca;
-    background: #fef2f2;
-    cursor: pointer;
-    min-height: 58px;
-    padding: 0;
-}
-.garagem-slot-bloqueio-x {
-    display: block;
-    width: 100%;
-    height: 100%;
-    min-height: 56px;
-    position: relative;
-}
-.garagem-slot-bloqueio-x::before,
-.garagem-slot-bloqueio-x::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 8%;
-    width: 84%;
-    height: 3px;
-    background: #dc2626;
-    border-radius: 2px;
-}
-.garagem-slot-bloqueio-x::before { transform: rotate(32deg); }
-.garagem-slot-bloqueio-x::after { transform: rotate(-32deg); }
-.garagem-zona {
-    margin-bottom: 18px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
-}
-.garagem-zona:last-child { border-bottom: none; }
-.garagem-linha-bloqueados .garagem-col-head { background: #fef2f2; }
-.garagem-slot-prefixo {
-    font-size: 13px;
-    font-weight: 900;
-    color: var(--blue);
-    line-height: 1;
-}
-.garagem-slot-tech {
-    font-size: 7px;
-    font-weight: 700;
-    color: var(--muted);
-    text-align: center;
-    line-height: 1.1;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    padding: 0 2px;
-}
-.garagem-slot-actions {
-    position: absolute;
-    bottom: 2px;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: center;
-    gap: 3px;
-}
-.garagem-slot.pedidos-status {
-    border-top-color: #031b44;
-    background: var(--pedidos);
-}
-.garagem-slot.pedidos-status .garagem-slot-prefixo,
-.garagem-slot.pedidos-status .garagem-slot-tech {
-    color: #fff;
-}
-.garagem-slot.bloqueado-status {
-    border-top-color: #000;
-    background: #1f2937;
-}
-.garagem-slot.bloqueado-status .garagem-slot-prefixo,
-.garagem-slot.bloqueado-status .garagem-slot-tech {
-    color: #fff;
-}
-.garagem-slot .btn-pedido,
-.garagem-slot .remove-btn {
-    width: 18px;
-    height: 18px;
-    padding: 0;
-    font-size: 9px;
-    line-height: 1;
-    border-radius: 3px;
-}
-.garagem-slot.pedidos-status .btn-pedido {
-    background: #fff;
-    color: var(--pedidos);
-}
-@media (max-width: 900px) {
-    .garagem-corpo {
-        grid-template-columns: 1fr;
-    }
-    .garagem-saida-oeste,
-    .garagem-saida-leste {
-        flex-direction: row;
-        border-inline: none;
-        border-block: 1px dashed #f59e0b;
-    }
-    .garagem-meio {
-        grid-template-columns: 1fr;
-    }
-}
-.patio-resumo {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 18px;
-    font-size: 13px;
-    color: var(--muted);
-    margin-bottom: 16px;
-    padding: 10px 14px;
-    background: #f8fafc;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-}
-.patio-resumo b { color: var(--blue); }
-.garagem-legenda {
-    font-size: 12px;
-    color: var(--muted);
-    margin: 0 0 10px;
-}
-
-/* Planta operacional — layout por zonas (legível) */
-.patio-planta-pro {
-    background: #f1f5f9;
-}
-.patio-saida {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 10px 16px;
-    font-size: 12px;
-    background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
-    border-block: 1px solid #fcd34d;
-    color: #92400e;
-}
-.patio-saida-icone {
-    font-size: 20px;
-    font-weight: 900;
-    color: #d97706;
-    line-height: 1;
-}
-.patio-saida-texto {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    line-height: 1.2;
-}
-.patio-saida-texto strong {
-    font-size: 12px;
-    font-weight: 800;
-}
-.patio-saida-texto small {
-    font-size: 11px;
-    font-weight: 600;
-    opacity: 0.9;
-}
-.patio-saida-sul {
-    background: #e2e8f0;
-    border-color: #cbd5e1;
-    color: #475569;
-}
-.patio-planta-corpo {
-    display: grid;
-    grid-template-columns: 52px 1fr 52px;
-    min-height: 200px;
-}
-.patio-saida-oeste,
-.patio-saida-leste {
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    padding: 12px 6px;
-    border-inline: 2px dashed #f59e0b;
-}
-.patio-saida-oeste .patio-saida-texto,
-.patio-saida-leste .patio-saida-texto {
-    align-items: center;
-}
-.patio-planta-centro {
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    min-width: 0;
-    width: 100%;
-}
-.patio-secao {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-}
-.patio-secao-head {
-    padding: 10px 14px;
-    background: linear-gradient(90deg, #eff6ff 0%, #fff 100%);
-    border-bottom: 1px solid #e2e8f0;
-    border-left: 4px solid var(--blue);
-}
-.patio-secao-titulo {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 800;
-    color: var(--blue);
-}
-.patio-secao-sub {
-    margin: 4px 0 0;
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.35;
-}
-.patio-secao-corpo {
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.patio-fila-linha {
-    display: grid;
-    grid-template-columns: minmax(120px, 148px) 1fr;
-    gap: 8px;
-    align-items: stretch;
-}
-.patio-fila-head {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 4px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid #cbd5e1;
-    background: #f8fafc;
-    cursor: pointer;
-    text-align: left;
-    font-family: inherit;
-    min-height: 64px;
-}
-.patio-fila-head:hover { background: #f1f5f9; }
-.patio-fila-head.saida-livre { border-left: 4px solid #f6c6ad; }
-.patio-fila-head.saida-ordem-2 { border-left: 4px solid #8bd0e8; }
-.patio-fila-head.saida-ordem-3 { border-left: 4px solid #e6df00; }
-.patio-fila-head.saida-ordem-4 { border-left: 4px solid #ffc000; }
-.patio-fila-head.saida-ordem-seq { border-left: 4px solid var(--muted); }
-.garagem-col-head.saida-ordem-2 { border-top: 3px solid #8bd0e8; }
-.garagem-col-head.saida-ordem-3 { border-top: 3px solid #f5f500; }
-.garagem-col-head.saida-ordem-4 { border-top: 3px solid #ffc000; }
-.garagem-col-head.saida-ordem-seq { border-top: 3px solid var(--warning); }
-.patio-ordem-saida {
-    display: inline-block;
-    margin-right: 6px;
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-    vertical-align: middle;
-}
-.patio-ordem-saida--livre {
-    background: #fff2ea;
-    color: #7c2d12;
-    border: 1px solid #f6c6ad;
-}
-.patio-ordem-saida--ordem-2 {
-    background: #e6f7fd;
-    color: #075985;
-    border: 1px solid #8bd0e8;
-}
-.patio-ordem-saida--ordem-3 {
-    background: #fffde7;
-    color: #713f12;
-    border: 1px solid #e6df00;
-}
-.patio-ordem-saida--ordem-4 {
-    background: #fff7d6;
-    color: #7c2d12;
-    border: 1px solid #ffc000;
-}
-.patio-ordem-saida--seq {
-    background: #fffaeb;
-    color: #b54708;
-    border: 1px solid #fec84b;
-}
-.patio-fila-head.corujao-aguardando { border-left: 4px solid #f59e0b; }
-.patio-fila-head.bloqueado-lane {
-    border-left: 4px solid var(--danger);
-    background: #fef2f2;
-}
-.patio-fila-nome {
-    font-size: 13px;
-    font-weight: 800;
-    color: var(--blue);
-    line-height: 1.2;
-}
-.patio-fila-meta {
-    font-size: 11px;
-    color: var(--muted);
-    font-weight: 600;
-}
-.patio-fila-vagas {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 6px;
-    overflow-x: auto;
-    padding: 8px;
-    background: #fafbfc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    min-height: 78px;
-    align-items: flex-start;
-}
-.patio-fila-vazio {
-    font-size: 12px;
-    color: #94a3b8;
-    padding: 8px;
-}
-.patio-vaga-celula {
-    flex: 0 0 68px;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    align-items: stretch;
-}
-.patio-vaga-celula .garagem-slot {
-    width: 68px;
-    flex: 0 0 auto;
-}
-.patio-vaga-numero {
-    font-size: 10px;
-    font-weight: 700;
-    color: #64748b;
-    text-align: center;
-    line-height: 1;
-}
-.patio-oeste-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 8px;
-    padding: 10px;
-}
-.patio-dual {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    padding: 10px;
-    width: 100%;
-}
-.patio-dual-col {
-    min-width: 0;
-    background: #fafbfc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    overflow: hidden;
-}
-.patio-dual-titulo {
-    margin: 0;
-    padding: 8px 12px;
-    font-size: 12px;
-    font-weight: 800;
-    color: #334155;
-    background: #f1f5f9;
-    border-bottom: 1px solid #e2e8f0;
-}
-.patio-dual-col .patio-secao-corpo {
-    padding: 8px;
-}
-.patio-linhas-gabarito {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 10px;
-}
-.patio-gabarito-linha {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 8px;
-    background: #fafbfc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-}
-.patio-dual-linha {
-    padding: 0;
-    background: transparent;
-    border: none;
-    gap: 8px;
-}
-.patio-dual-linha .patio-dual-col {
-    background: #fff;
-}
-.patio-corredor-linha {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 8px;
-    overflow-x: auto;
-    padding: 10px;
-}
-.patio-corredor-linha .garagem-col {
-    min-width: 88px;
-}
-.patio-corredor-linha .garagem-slots {
-    flex-direction: column;
-    flex-wrap: nowrap;
-    align-items: stretch;
-}
-.patio-corredor-linha .patio-vaga-celula {
-    flex: 0 0 auto;
-    width: 100%;
-}
-.patio-corredor-linha .garagem-slot {
-    width: 100%;
-}
-.patio-col-lista .garagem-slots {
-    min-height: 72px;
-}
-
-@media (max-width: 900px) {
-    .patio-planta-corpo {
-        grid-template-columns: 1fr;
-    }
-    .patio-saida-oeste,
-    .patio-saida-leste {
-        writing-mode: horizontal-tb;
-        border-inline: none;
-        border-block: 2px dashed #f59e0b;
-    }
-    .patio-dual {
-        grid-template-columns: 1fr;
-    }
-    .patio-fila-linha {
-        grid-template-columns: 1fr;
-    }
-}
-
-.lancamento-rapido .form-control { font-size: 16px; font-weight: 700; }
-.lancamento-dica {
-    font-size: 11px;
-    color: var(--muted);
-    margin: 8px 0 0;
-    line-height: 1.3;
-}
-.lancamento-erro {
-    margin-top: 8px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.35;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    color: #991b1b;
-}
-.lancamento-erro:empty { display: none; }
-.lancamento-ok {
-    margin-top: 8px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 700;
-    background: #ecfdf5;
-    border: 1px solid #a7f3d0;
-    color: #065f46;
-}
-.lancamento-ok:empty { display: none; }
-.lancamento-atalhos {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 14px;
-}
-.lancamento-card .lancamento-atalhos {
-    gap: 6px;
-    margin-bottom: 8px;
-}
-.btn-atalho-fila {
-    flex: 1 1 86px;
-    min-width: 82px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: #fff;
-    color: var(--blue);
-    font-size: 12px;
-    font-weight: 800;
-    padding: 10px 8px;
-    cursor: pointer;
-    font-family: inherit;
-}
-.lancamento-card .btn-atalho-fila {
-    min-height: 30px;
-    padding: 7px 8px;
-    font-size: 11px;
-}
-.btn-atalho-fila:hover { background: #f1f5f9; }
-.btn-atalho-fila.bloqueado {
-    border-color: #fecaca;
-    background: #fef2f2;
-    color: #991b1b;
-}
-.btn-atalho-fila.bloqueado:hover { background: #fee2e2; }
-.lancamento-pedidos {
-    border-top: 3px solid var(--pedidos);
-}
-.consulta-card {
-    border-top: 3px solid var(--blue2);
-}
-
-@media (max-width: 900px) {
-    .gab-operacao-bar {
-        grid-template-columns: 1fr;
-    }
-    .gab-apoio-legenda {
-        justify-content: flex-start;
-    }
-    .gab-viewport-fit {
-        height: auto;
-        min-height: 0;
-        max-height: none;
-    }
-    .gab-tabela-excel {
-        min-width: 1280px;
-    }
-}
-@media (max-width: 560px) {
-    .patio-gabarito-full {
-        padding: 10px 8px 12px;
-    }
-    .gab-card-head-actions {
-        width: 100%;
-    }
-    .gab-operacao-bar {
-        padding: 8px;
-    }
-    .gab-ordem-legenda {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        width: 100%;
-    }
-    .gab-legenda-titulo {
-        grid-column: 1 / -1;
-    }
-    .gab-ordem-item {
-        min-width: 0;
-    }
-    .gab-viewport-fit {
-        height: auto;
-        min-height: 0;
-        max-height: none;
-    }
-}
-
-/* Car Tag Style */
-.car-tag {
-    background: white;
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--blue2);
-    padding: 5px 8px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: bold;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 6px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-}
-.car-tag-main { min-width: 0; flex: 1; }
-.car-pos {
-    font-size: 9px;
-    font-weight: 700;
-    color: var(--muted);
-    display: block;
-}
-.car-prefixo { font-size: 13px; }
-.car-tag-actions {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
-}
-
-/* Estilos de Status Solicitados */
-.car-tag.analisado {
-    border-left-color: var(--danger);
-    background-color: #fef2f2;
-}
-.car-tag.analisado span {
-    color: var(--danger);
-}
-.car-tag.pedidos-status {
-    border-left-color: #031b44;
-    background-color: var(--pedidos);
-    color: #ffffff;
-}
-.car-tag.pedidos-status .tech {
-    background-color: #1149ab;
-    color: #ffffff;
-}
-.car-tag.oficina-status {
-    border-left-color: #000;
-    background-color: #1f2937;
-    color: #fff;
-}
-.car-tag.oficina-status .tech {
-    background-color: #374151;
-    color: #d1d5db;
-}
-.car-tag.bloqueado-status {
-    border-left-color: #000;
-    background-color: #1f2937;
-    color: #fff;
-}
-.car-tag.bloqueado-status .tech {
-    background-color: #374151;
-    color: #d1d5db;
-}
-
-.car-tag .tech {
-    font-size: 9px;
-    color: var(--muted);
-    font-weight: normal;
-    background: #f1f5f9;
-    padding: 2px 5px;
-    border-radius: 4px;
-    max-width: 72px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.btn-pedido {
-    border: 1px solid #93c5fd;
-    background: #dbeafe;
-    color: #1e40af;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 800;
-    width: 22px;
-    height: 22px;
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
-}
-.car-tag.pedidos-status .btn-pedido {
-    background: #fff;
-    color: var(--pedidos);
-}
-.car-tag .remove-btn {
-    color: var(--danger);
-    cursor: pointer;
-    font-size: 14px;
-    background: none;
-    border: none;
-    padding: 0 2px;
-    line-height: 1;
-}
-.car-tag.pedidos-status .remove-btn,
-.car-tag.bloqueado-status .remove-btn,
-.car-tag.oficina-status .remove-btn {
-    color: #fca5a5;
-}
-
-/* Result Box */
-.result-box {
-    margin-top: 15px;
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 14px;
-    display: none;
-    line-height: 1.4;
-}
-.result-box.success { display: block; background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
-.result-box.warning { display: block; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
-.result-box.danger { display: block; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
-
-.clear-data {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 10px;
-}
-.clear-data-compact {
-    margin-top: 0;
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px;
-}
-.patio-lancamento-extra .patio-nao-utilizados-lista {
-    max-height: 120px;
-}
-.clear-data-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-}
-.patio-nao-utilizados {
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px;
-}
-.patio-nao-utilizados-titulo {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 13px;
-    font-weight: 800;
-    color: var(--blue);
-    margin-bottom: 10px;
-}
-.patio-nao-utilizados-qtd {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--muted);
-    background: #f1f5f9;
-    padding: 2px 8px;
-    border-radius: 999px;
-}
-.patio-nao-utilizados-lista {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    max-height: 220px;
-    overflow-y: auto;
-    align-content: flex-start;
-}
-.patio-nao-utilizados-inline {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 8px;
-    padding: 4px 8px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: #f8fafc;
-    max-width: min(420px, 100%);
-}
-.patio-nao-utilizados-inline .patio-nao-utilizados-titulo {
-    margin: 0;
-    font-size: 11px;
-    gap: 4px;
-}
-.patio-nao-utilizados-inline .patio-nao-utilizados-lista {
-    max-height: 28px;
-    overflow: auto;
-    flex: 1 1 auto;
-    min-width: 0;
-}
-.patio-nao-util-chip {
-    font-size: 12px;
-    font-weight: 800;
-    color: var(--blue);
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 4px 8px;
-    line-height: 1.2;
-}
-.patio-nao-util-vazio {
-    font-size: 12px;
-    color: var(--muted);
-    font-style: italic;
-}
-.btn-text {
-    background: none;
-    border: none;
-    color: var(--muted);
-    font-size: 12px;
-    cursor: pointer;
-    text-decoration: underline;
-}
-.btn-text:hover { color: var(--danger); }
-
-footer {
-    background: white;
-    padding: 15px;
-    text-align: center;
-    border-top: 1px solid #e8edf6;
-    color: var(--muted);
-    font-size: 13px;
-    margin-top: 18px;
-}
-     .portal-return{
-    margin:15px 0 0 0;
-    padding:0 20px;
-    display:flex;
-    justify-content:flex-start;
-}
-
-.btn-portal{
-    display:inline-flex;
-   align-items:center;
-   justify-content:center;
-   background:#06245c;
-   color:#fff;
-   text-decoration:none;
-   padding:11px 16px;
-   border-radius:7px;
-   font-weight:800;
-   font-size:13px;
-   box-shadow: 0 10px 20px rgba(6, 36, 92, 0.16);
-}
-.btn-portal:hover{
-   background:#0b3a8a;
-}
-.result-box {
-   border-radius: 10px;
-   border-width: 1px;
-   box-shadow: 0 10px 24px rgba(16, 24, 40, 0.08);
-   line-height: 1.45;
-}
-/* Título com imagem personalizada */
-.patio-title-art {
-    margin: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 0;
-    min-width: 0;
-}
-.patio-title-art img {display:block;width:min(340px,30vw);height:40px;object-fit:contain}
-.header-title {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-}
-.header-subtitle {
-    margin-top: 0;
-}
-@media (max-width: 960px) {
-    .patio-title-art img {
-        width: min(520px, 86vw);
-        max-height: 80px;
-    }
-}
-@media (max-width: 560px) {
-    .patio-title-art img {
-        width: min(360px, 92vw);
-        max-height: 60px;
-    }
-}
-
-
-
-
-
-
-
-
-
-/* Ajuste Codex: titulos do cabecalho menores e centralizados */
-@media (min-width: 1101px) {
-    .header {
-        grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr) !important;
-    }
-    .header > a:first-child {
-        justify-self: start !important;
-    }
-    .header > h1,
-    .header > .header-title,
-    .header > .pontualidade-title-wrap,
-    .header > .autuacoes-title-wrap {
-        justify-self: center !important;
-        text-align: center !important;
-    }
-    .header-actions {
-        justify-self: end !important;
-    }
-}
-
-.portal-title-art,
-.usuarios-title-art,
-.fiscais-title-art,
-.page-title-art,
-.pontualidade-title-art,
-.autuacoes-title-art,
-.patio-title-art,
-.header-title,
-.pontualidade-title-wrap,
-.autuacoes-title-wrap {
-    justify-self: center !important;
-    text-align: center !important;
-}
-
-.portal-title-art,
-.usuarios-title-art,
-.fiscais-title-art,
-.page-title-art,
-.pontualidade-title-art,
-.autuacoes-title-art,
-.patio-title-art {
-    margin: 0 !important;
-    line-height: 0 !important;
-}
-
-.portal-title-art img {
-    width: min(340px, 30vw) !important;
-    height: 40px !important;
-    max-height: 40px !important;
-    max-width: 100% !important;
-    object-fit: contain !important;
-}
-
-.usuarios-title-art img,
-.fiscais-title-art img,
-.page-title-art img,
-.pontualidade-title-art img,
-.autuacoes-title-art img,
-.patio-title-art img,
-.liberacao-title-art img,
-.incidentes-title-art img,
-.km-title-art img,
-.relatorio-title-art img {
-    width: min(340px, 30vw) !important;
-    height: 40px !important;
-    max-height: 40px !important;
-    max-width: 100% !important;
-    object-fit: contain !important;
-}
-
-.page-title-art span,
-.subtitle,
-.header-subtitle {
-    text-align: center !important;
-    font-size: 11px !important;
-    line-height: 1.15 !important;
-}
-
-h1 {
-    text-align: center !important;
-    font-size: 20px !important;
-    line-height: 1.08 !important;
-}
-
-@media (max-width: 1100px) {
-    .portal-title-art img,
-    .usuarios-title-art img,
-    .fiscais-title-art img,
-    .page-title-art img,
-    .pontualidade-title-art img,
-    .autuacoes-title-art img,
-    .patio-title-art img,
-    .liberacao-title-art img,
-    .incidentes-title-art img,
-    .km-title-art img,
-    .relatorio-title-art img {
-        width: min(340px, 84vw) !important;
-        height: 38px !important;
-        max-height: 38px !important;
-    }
-}
-
-@media (max-width: 560px) {
-    .portal-title-art img,
-    .usuarios-title-art img,
-    .fiscais-title-art img,
-    .page-title-art img,
-    .pontualidade-title-art img,
-    .autuacoes-title-art img,
-    .patio-title-art img,
-    .liberacao-title-art img,
-    .incidentes-title-art img,
-    .km-title-art img,
-    .relatorio-title-art img {
-        width: min(290px, 88vw) !important;
-        height: 34px !important;
-        max-height: 34px !important;
-    }
-}
-/* Fim ajuste Codex */
-@media (max-width:720px){body.patio-planilha-mode{background:var(--dk-bg) !important;color:var(--dk-text) !important;}.header{background:var(--dk-glass-bg) !important;backdrop-filter:blur(var(--dk-glass-blur)) !important;border-bottom:1px solid var(--dk-glass-border) !important;}.dk-theme-toggle{display:flex !important;}.card,.lancamento-card,.result-box{background:var(--dk-glass-bg) !important;border:1px solid var(--dk-glass-border) !important;box-shadow:var(--dk-glass-shadow) !important;}.card-title{color:var(--dk-text) !important;}}
-
-/* ===== Redesign iOS26 Liquid Glass (mobile/app nativo) =====
-   Os tokens --dk-* do round anterior nunca tinham sido definidos
-   (renderizava quebrado/transparente). Define os tokens aqui, remove
-   o cabeçalho fixo antigo e ajusta o vão do topo. */
-@media (max-width:720px){
-  .body-bg-wall,
-  .body-bg-stain{
-    display:none !important;
+@media(max-width:720px){.header{grid-template-columns:1fr;text-align:center}}
+@media (max-width: 720px) {
+  body { background: linear-gradient(180deg, #f5f7fb 0%, #eef2f9 100%) !important; }
+  .header {
+    position: sticky; top: 0; z-index: 20;
+    padding-top: calc(10px + env(safe-area-inset-top)) !important;
+    padding-left: calc(14px + env(safe-area-inset-left)) !important;
+    padding-right: calc(14px + env(safe-area-inset-right)) !important;
+    background: rgba(255,255,255,.92) !important;
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    box-shadow: 0 6px 18px rgba(6,36,92,.08) !important;
   }
+  .container { padding: 0 14px !important; margin: 16px auto 28px !important; }
+  .patio-grid{grid-template-columns:repeat(auto-fill,minmax(92px,1fr)) !important;gap:8px !important}
+  .btn-portal,.btn-secondary { min-height: 44px !important; border-radius: 12px !important; }
+}
+
+@media (max-width:720px){
+  .body-bg-wall,.body-bg-stain{display:none !important;}
   :root{
-    --dk-accent:#7a5cff;
-    --dk-accent-2:#c04fd6;
-    --dk-bg:#0d0e14;
-    --dk-glass-bg:rgba(255,255,255,.08);
-    --dk-glass-bg-strong:rgba(255,255,255,.13);
-    --dk-glass-border:rgba(255,255,255,.16);
-    --dk-glass-blur:blur(30px) saturate(180%);
-    --dk-glass-shadow:0 20px 40px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18);
-    --dk-text:#fff;
-    --dk-muted:rgba(255,255,255,.6);
+    --jewel-1:#7a5cff;--jewel-2:#c04fd6;--jewel-shadow:0 10px 26px -8px rgba(122,92,255,.65);
+    --glass-bg:rgba(255,255,255,.08);--glass-bg-strong:rgba(255,255,255,.13);
+    --glass-border:rgba(255,255,255,.16);--glass-blur:blur(30px) saturate(180%);
+    --glass-shadow:0 20px 40px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18);
+    --ink:#fff;--ink-soft:rgba(255,255,255,.6);--ink-faint:rgba(255,255,255,.48);
   }
   html.native-light{
-    --dk-bg:#f2effa;
-    --dk-glass-bg:rgba(255,255,255,.6);
-    --dk-glass-bg-strong:rgba(255,255,255,.8);
-    --dk-glass-border:rgba(30,20,70,.10);
-    --dk-glass-shadow:0 16px 34px -16px rgba(40,25,90,.22), inset 0 1px 0 rgba(255,255,255,.75);
-    --dk-text:#18182a;
-    --dk-muted:rgba(24,24,42,.62);
+    --glass-bg:rgba(255,255,255,.6);--glass-bg-strong:rgba(255,255,255,.8);
+    --glass-border:rgba(30,20,70,.10);--glass-shadow:0 16px 34px -16px rgba(40,25,90,.22), inset 0 1px 0 rgba(255,255,255,.75);
+    --ink:#18182a;--ink-soft:rgba(24,24,42,.62);--ink-faint:rgba(24,24,42,.5);
   }
-
-  body.patio-planilha-mode{
+  body{
     background:
       radial-gradient(circle at 15% 8%, rgba(122,92,255,.4) 0%, transparent 40%),
       radial-gradient(circle at 90% 15%, rgba(255,110,180,.3) 0%, transparent 38%),
       radial-gradient(circle at 20% 60%, rgba(60,180,255,.26) 0%, transparent 42%),
       radial-gradient(circle at 85% 78%, rgba(255,170,60,.2) 0%, transparent 40%),
       radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
-      var(--dk-bg) !important;
+      #0d0e14 !important;
+    color:var(--ink) !important;
   }
-
+  html.native-light body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(122,92,255,.3) 0%, transparent 40%),
+      radial-gradient(circle at 90% 15%, rgba(255,110,180,.24) 0%, transparent 38%),
+      radial-gradient(circle at 20% 60%, rgba(60,180,255,.2) 0%, transparent 42%),
+      radial-gradient(circle at 85% 78%, rgba(255,170,60,.18) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
+      #f2effa !important;
+  }
   .header{display:none !important;}
-
-  .container.patio-container-wide{
-    max-width:none !important;
-    margin:0 !important;
-    padding:calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-left)) 28px calc(14px + env(safe-area-inset-right)) !important;
-  }
-  html.native-embedded .container.patio-container-wide{padding-top:14px !important;}
-
-  .portal-toolbar{width:100%;}
+  .container{max-width:none !important;margin:0 !important;padding:calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-left)) 28px calc(14px + env(safe-area-inset-right)) !important;}
+  html.native-embedded .container{padding-top:14px !important;}
+  .toolbar{width:100%;}
   .btn-portal{
-    width:100% !important;
-    justify-content:center !important;
-    display:flex !important;
-    background:linear-gradient(135deg, var(--dk-accent), var(--dk-accent-2)) !important;
-    box-shadow:0 10px 26px -8px rgba(122,92,255,.65) !important;
-    min-height:46px !important;
-    border-radius:14px !important;
-    font-size:15px !important;
-    color:#fff !important;
+    width:100% !important;justify-content:center !important;
+    background:linear-gradient(135deg, var(--jewel-1), var(--jewel-2)) !important;
+    box-shadow:var(--jewel-shadow) !important;min-height:46px !important;border-radius:14px !important;font-size:15px !important;
   }
-
-  .card{
-    background:var(--dk-glass-bg) !important;
-    backdrop-filter:var(--dk-glass-blur) !important;
-    -webkit-backdrop-filter:var(--dk-glass-blur) !important;
-    border:1px solid var(--dk-glass-border) !important;
-    border-radius:20px !important;
-    box-shadow:var(--dk-glass-shadow) !important;
+  .patio-stat{background:var(--glass-bg) !important;border:1px solid var(--glass-border) !important;color:var(--ink-soft) !important;backdrop-filter:var(--glass-blur) !important;-webkit-backdrop-filter:var(--glass-blur) !important}
+  .patio-stat b{color:var(--ink) !important}
+  .patio-zone{background:var(--glass-bg) !important;border:1px solid var(--glass-border) !important;backdrop-filter:var(--glass-blur) !important;-webkit-backdrop-filter:var(--glass-blur) !important;box-shadow:var(--glass-shadow) !important}
+  .patio-zone-title{color:var(--ink) !important}
+  .patio-zone-sub,.patio-zone-count{color:var(--ink-faint) !important}
+  .patio-zone-add{background:var(--glass-bg-strong) !important;border:1px dashed var(--glass-border) !important;color:var(--ink) !important}
+  .patio-vaga{background:var(--glass-bg) !important;border:1.5px solid var(--glass-border) !important;color:var(--ink) !important}
+  .patio-vaga-num{color:var(--ink-faint) !important}
+  .patio-vaga-empty{color:var(--ink-faint) !important}
+  .patio-vaga.st-operando{background:rgba(52,211,153,.14) !important;border-color:rgba(52,211,153,.35) !important}
+  .patio-vaga.st-reserva{background:rgba(251,191,36,.14) !important;border-color:rgba(251,191,36,.35) !important}
+  .patio-vaga.st-manutencao{background:rgba(248,113,113,.14) !important;border-color:rgba(248,113,113,.35) !important}
+  .patio-vaga.st-bloqueado{background:rgba(255,255,255,.05) !important;border-color:var(--glass-border) !important}
+  footer.portal-site-footer{
+    display:block !important;background:var(--glass-bg) !important;backdrop-filter:var(--glass-blur) !important;-webkit-backdrop-filter:var(--glass-blur) !important;
+    border:1px solid var(--glass-border) !important;border-radius:16px !important;box-shadow:var(--glass-shadow) !important;
+    margin:16px calc(14px + env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left)) !important;padding:14px !important;
   }
-  .card-title{font-size:15px !important;}
-  label{color:var(--dk-muted) !important;font-size:13px !important;}
-  .form-control,input,select,textarea{
-    background:var(--dk-glass-bg-strong) !important;
-    border:1px solid var(--dk-glass-border) !important;
-    color:var(--dk-text) !important;
-    font-size:16px !important;
-    min-height:44px !important;
-  }
-  .result-box{color:var(--dk-text) !important;}
-  .consulta-hint{color:var(--dk-muted) !important;font-size:12.5px !important;}
+  footer.portal-site-footer .footer-text{color:var(--ink-faint) !important}
 }
 
-/* ===== Redesign iOS26 Liquid Glass (desktop) =====
-   Fundo com parede de traços + mancha do laço do mês, vidro no
-   header/cards/resultado, hover no botão Portal. */
 @media (min-width:721px){
-  body{
-    position:relative;
-    background:var(--bg);
-  }
-  .body-bg-wall{
-    position:fixed;
-    inset:0;
-    z-index:-2;
-    pointer-events:none;
-    background-image:url('../assets/img/portal-bg-onibus.jpg?v=20260718j');
-    background-size:cover;
-    background-position:center;
-    background-repeat:no-repeat;
-  }
-  .body-bg-stain{
-    position:fixed;
-    inset:0;
-    z-index:-1;
-    pointer-events:none;
-    background:linear-gradient(180deg, rgba(6,20,50,.30) 0%, rgba(6,20,50,.55) 100%);
-  }
-
-  .header{
-    background:rgba(255,255,255,.6);
-    backdrop-filter:blur(18px) saturate(190%);
-    -webkit-backdrop-filter:blur(18px) saturate(190%);
-    border-bottom:1px solid rgba(255,255,255,.5);
-    box-shadow:0 10px 28px -16px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.4);
-  }
-
-  .card{
-    background:rgba(255,255,255,.55);
-    backdrop-filter:blur(16px) saturate(190%);
-    -webkit-backdrop-filter:blur(16px) saturate(190%);
-    border:1px solid rgba(255,255,255,.5);
-    box-shadow:0 12px 30px -16px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.4);
-  }
-
-  .result-box{
-    background:rgba(255,255,255,.6);
-    backdrop-filter:blur(14px) saturate(190%);
-    -webkit-backdrop-filter:blur(14px) saturate(190%);
-  }
-
+  body{background: transparent !important;}
+  .body-bg-wall{position: fixed;inset: 0;z-index: -3;background-image:url('../assets/img/portal-bg-onibus.jpg?v=20260716a');background-size:cover;background-position:center;background-repeat:no-repeat;}
+  .body-bg-stain{position: fixed;inset: 0;z-index: -2;pointer-events: none;background:linear-gradient(180deg, rgba(6,20,50,.12) 0%, rgba(6,20,50,.30) 100%);}
+  .header{background: rgba(255,255,255,.7) !important;backdrop-filter: blur(18px) saturate(200%);-webkit-backdrop-filter: blur(18px) saturate(200%);border-bottom: none !important;box-shadow: 0 8px 24px -18px rgba(20,20,40,.35) !important;}
+  .patio-stat{background: rgba(255,255,255,.6) !important;backdrop-filter: blur(14px) saturate(190%) !important;-webkit-backdrop-filter: blur(14px) saturate(190%) !important;border: 1px solid rgba(255,255,255,.6) !important;}
+  .patio-zone{background: rgba(255,255,255,.55) !important;backdrop-filter: blur(20px) saturate(190%) !important;-webkit-backdrop-filter: blur(20px) saturate(190%) !important;border: 1px solid rgba(255,255,255,.55) !important;box-shadow: 0 14px 32px -20px rgba(20,20,40,.28), inset 0 1px 0 rgba(255,255,255,.5) !important;}
+  .ciop-session{background: rgba(255,255,255,.55) !important;backdrop-filter: blur(14px) saturate(190%) !important;-webkit-backdrop-filter: blur(14px) saturate(190%) !important;border: 1px solid rgba(255,255,255,.6) !important;box-shadow: 0 8px 20px -14px rgba(20,20,40,.3) !important;}
   .btn-portal{
-    min-height:44px !important;padding:8px 14px !important;border-radius:10px !important;font-size:14px !important;
-    background:linear-gradient(135deg, rgba(6,36,92,.85), rgba(11,58,138,.85));
-    transition:transform .2s ease, background .25s ease, box-shadow .25s ease, color .25s ease !important;
+    min-height:44px !important;padding:8px 14px !important;border-radius:10px !important;font-size:14px !important;gap:8px !important;font-weight:800 !important;
+    transition: transform .2s ease, background .25s ease, box-shadow .25s ease, color .25s ease !important;
+    background: linear-gradient(135deg, rgba(6,36,92,.85), rgba(11,58,138,.85)) !important;
+    backdrop-filter: blur(14px) saturate(190%) !important;-webkit-backdrop-filter: blur(14px) saturate(190%) !important;
+    border: 1px solid rgba(255,255,255,.4) !important;box-shadow: 0 10px 24px -14px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.25) !important;color: #fff !important;
   }
-  .btn-portal:hover{
-    background:linear-gradient(135deg, var(--orange), #ff8f3d);
-    transform:translateY(-2px);
-    box-shadow:0 14px 28px -12px rgba(255,107,0,.5), inset 0 1px 0 rgba(255,255,255,.35);
+  .btn-portal:hover{background: linear-gradient(135deg, var(--orange), #ff8f3d) !important;transform: translateY(-2px) !important;box-shadow: 0 14px 28px -12px rgba(255,107,0,.5), inset 0 1px 0 rgba(255,255,255,.35) !important;}
+  footer.portal-site-footer{
+    background: rgba(255,255,255,.55) !important;backdrop-filter: blur(16px) saturate(190%) !important;-webkit-backdrop-filter: blur(16px) saturate(190%) !important;
+    border-top: 1px solid rgba(255,255,255,.5) !important;box-shadow: 0 -10px 28px -16px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.4) !important;
   }
-  .ciop-session,
-  .ciop-session.ciop-session-modern{
-    background:rgba(255,255,255,.26) !important;
-    backdrop-filter: blur(24px) saturate(200%) !important;
-    -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
-    border: 1px solid rgba(255,255,255,.5) !important;
-    border-radius:16px !important;
-    box-shadow: 0 10px 28px -14px rgba(6,20,50,.4), inset 0 1px 0 rgba(255,255,255,.55) !important;
-  }
-  footer{
-    background:rgba(255,255,255,.42) !important;
-    backdrop-filter:blur(16px) saturate(190%);
-    -webkit-backdrop-filter:blur(16px) saturate(190%);
-    border-top:1px solid rgba(255,255,255,.5) !important;
-    color:#3f4757 !important;
-  }
+  footer.portal-site-footer .footer-text{color: #3f4757 !important;}
 }
 </style>
-<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260720y">
-<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-senha.css">
+<link rel="stylesheet" href="../assets/css/portal-titulos.css">
+<link rel="stylesheet" href="../assets/css/portal-brand.css">
+<link rel="stylesheet" href="../assets/css/portal-header.css">
+<link rel="stylesheet" href="../assets/css/portal-session.css">
+<script src="../assets/js/loading.js"></script>
+<script type="module" src="../assets/js/auth.js"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+<script src="../assets/js/frota-patio-data.js"></script>
 </head>
-<body class="patio-planilha-mode" data-require-perfis="Administrador,Supervisor" data-require-usuarios="pedroisrael2009@gmail.com">
+<body data-require-perfis="Administrador,Supervisor,Analista">
 <div class="body-bg-wall" aria-hidden="true"></div>
 <div class="body-bg-stain" aria-hidden="true"></div>
-
-<div class="header">
+<header class="header">
     <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
-    <div class="header-title">
-        <h1 class="patio-title-art" aria-label="Gerenciamento do Pátio">
-            <img src="../assets/img/titulo-patio.png" alt="Gerenciamento do Pátio">
-        </h1>
-        <div class="header-subtitle">Saída de carros e filas operacionais</div>
+    <div class="title-wrap">
+        <h1 class="page-title">Gerenciador de Pátio</h1>
+        <div class="header-subtitle">Garagem TCGL · R. Tietê</div>
     </div>
     <div class="header-actions">
-<div class="ciop-session" aria-label="Sessão do usuário">
-    <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
-    <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
-    <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
-    <button onclick="logout()" class="btn-logout" type="button">Sair</button>
-</div>
-        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" style="display: flex;">
-            <img src="../assets/img/LOGO_TCGL-removebg-preview.png" class="logo-tcgl" alt="TCGL">
-        </a>
+        <button class="dk-theme-toggle" type="button" id="dkThemeToggle" aria-label="Alternar tema claro/escuro"><span class="dk-icon-moon">&#9789;</span><span class="dk-icon-sun">&#9728;</span></button>
+        <div class="ciop-session">
+            <span class="ciop-session-user" id="usuarioLogado">Usuário</span>
+            <span class="ciop-session-cargo" id="perfilUsuario" hidden></span>
+            <button class="btn-logout" type="button" onclick="logout()">Sair</button>
+        </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
     </div>
-</div>
+</header>
 
-<div class="container patio-container-wide">
-    <div class="portal-toolbar">
-        <a href="../index.html" class="btn-portal">Portal CIOP</a>
+<main class="container">
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <a class="btn-portal" href="../index.html"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Portal</a>
+            <button class="btn-secondary" type="button" id="btnAtualizar"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></span>Atualizar</button>
+        </div>
+        <div class="patio-stats" id="patioStats"></div>
     </div>
 
-    <div class="patio-page-layout">
-        <div class="patio-acoes-linha">
-            <div class="card consulta-card lancamento-rapido" aria-label="Consulta de fila">
-                <div class="card-title">🔍 Consulta de fila</div>
-                <div class="lancamento-form-centro">
-                    <div class="form-group">
-                        <label for="searchBus">Prefixo do veículo</label>
-                        <input type="text" id="searchBus" class="form-control" placeholder="Ex.: 3105 + Enter" autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="6">
-                    </div>
-                </div>
-                <div id="resultOutput" class="result-box"></div>
-                <p class="consulta-hint">Somente consulta — mostra em qual fila o veículo está.</p>
-            </div>
+    <div id="patioZonas"></div>
+</main>
 
-            <div class="card lancamento-rapido lancamento-pedidos">
-                <div class="card-title">📦 Carros Pedidos</div>
-                <div class="lancamento-form-centro">
-                    <div class="form-group">
-                        <label for="pedidosBus">Prefixo do veículo</label>
-                        <input type="text" id="pedidosBus" class="form-control" placeholder="Ex.: 3105 + Enter" autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="6">
-                    </div>
-                </div>
-                <div id="pedidoErro" class="lancamento-erro" role="alert"></div>
-                <div id="pedidoOk" class="lancamento-ok" aria-live="polite"></div>
-            </div>
+<footer class="page-footer">Portal CIOP · Gerenciador de Pátio · TCGL</footer>
 
-            <div class="card lancamento-rapido lancamento-card">
-                <div class="card-title">📍 Lançamento rápido</div>
-                <div class="lancamento-atalhos" aria-label="Atalhos de fileiras do pátio">
-                    <button type="button" class="btn-atalho-fila" data-atalho-fila="mistos_f1">Mistos F1</button>
-                    <button type="button" class="btn-atalho-fila" data-atalho-fila="mistos_f2">Mistos F2</button>
-                    <button type="button" class="btn-atalho-fila" data-atalho-fila="mistos_f3">Mistos F3</button>
-                    <button type="button" class="btn-atalho-fila" data-atalho-fila="mistos_f4">Mistos F4</button>
-                    <button type="button" class="btn-atalho-fila" data-atalho-fila="pesados_f1">Pesados F1</button>
-                    <button type="button" class="btn-atalho-fila" data-atalho-fila="pesados_f2">Pesados F2</button>
-                    <button type="button" class="btn-atalho-fila" data-atalho-fila="pesados_f3">Pesados F3</button>
-                    <button type="button" class="btn-atalho-fila" data-atalho-fila="pesados_f4">Pesados F4</button>
-                    <button type="button" class="btn-atalho-fila" data-atalho-fila="leves_f1">Leves</button>
-                    <button type="button" class="btn-atalho-fila" data-atalho-fila="corujao">Corujão</button>
-                    <button type="button" class="btn-atalho-fila" data-atalho-fila="cot">COT</button>
-                    <button type="button" class="btn-atalho-fila" data-atalho-fila="latavador_f1">Lavador</button>
-                    <button type="button" class="btn-atalho-fila bloqueado" data-atalho-fila="reforma">Reforma</button>
-                    <button type="button" class="btn-atalho-fila bloqueado" data-atalho-fila="oficina">Oficina</button>
-                </div>
-                <div class="lancamento-form-centro">
-                    <div class="form-group">
-                        <label for="selectFila">Fila de destino</label>
-                        <select id="selectFila" class="form-control"></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="inputFilaBus">Prefixo do veículo</label>
-                        <input type="text" id="inputFilaBus" class="form-control" placeholder="Ex.: 3105 + Enter" autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="6">
-                    </div>
-                </div>
-                <div id="lancamentoErro" class="lancamento-erro" role="alert"></div>
-                <div id="lancamentoOk" class="lancamento-ok" aria-live="polite"></div>
-            </div>
+<div class="patio-editor-backdrop" id="patioEditorBackdrop" hidden>
+    <div class="patio-editor">
+        <button class="patio-editor-close" type="button" id="patioEditorClose" aria-label="Fechar">✕</button>
+        <h3 id="patioEditorTitle">Vaga</h3>
+        <p id="patioEditorSub">Zona · Vaga</p>
+
+        <label for="patioEditorPrefixo">Prefixo do veículo</label>
+        <input type="text" id="patioEditorPrefixo" list="frotaList" placeholder="Ex.: 3021" autocomplete="off">
+        <datalist id="frotaList"></datalist>
+
+        <label>Status</label>
+        <div class="patio-editor-status-grid" id="patioEditorStatus">
+            <button type="button" class="patio-status-opt" data-status="operando">Operando</button>
+            <button type="button" class="patio-status-opt" data-status="reserva">Reserva</button>
+            <button type="button" class="patio-status-opt" data-status="manutencao">Manutenção</button>
+            <button type="button" class="patio-status-opt" data-status="bloqueado">Bloqueada</button>
         </div>
 
-        <div class="card patio-gabarito-full">
-            <div class="gab-card-head gab-card-head--compact">
-                <div>
-                    <div class="card-title">Gabarito da Garagem</div>
-                    <p class="gab-card-sub">Digite os prefixos nas células — Enter/Tab avança, setas navegam, duplo clique em vaga vazia bloqueia.</p>
-                </div>
-                <div class="gab-card-head-actions">
-                    <div class="gab-view-toolbar" role="tablist" aria-label="Modo de visualização do mapa">
-                        <button type="button" id="btnViewGabarito" class="gab-view-btn is-active" role="tab" aria-selected="true">Planilha</button>
-                        <button type="button" id="btnViewZonas" class="gab-view-btn" role="tab" aria-selected="false">Zonas</button>
-                    </div>
-                    <button class="btn btn-excel" type="button" onclick="exportarExcel()">📊 Excel</button>
-                    <button class="btn-text" type="button" onclick="limparTudo()">Resetar</button>
-                    <div class="patio-nao-utilizados patio-nao-utilizados-inline" aria-label="Carros não utilizados">
-                        <span class="patio-nao-utilizados-titulo">Não utilizados <span id="naoUtilizadosQtd" class="patio-nao-utilizados-qtd">0</span></span>
-                        <div id="listaNaoUtilizados" class="patio-nao-utilizados-lista"></div>
-                    </div>
-                </div>
-            </div>
-            <div id="patioResumo" class="patio-resumo gab-resumo" hidden></div>
-            <div class="gab-operacao-bar" aria-label="Legenda operacional do gabarito">
-                <div class="gab-ordem-legenda" aria-label="Ordem de saída conforme gabarito">
-                    <span class="gab-legenda-titulo">Ordem de saída</span>
-                    <span class="gab-ordem-item gab-ordem-item--livre"><i></i><strong>LIVRE</strong><small>saída imediata</small></span>
-                    <span class="gab-ordem-item gab-ordem-item--ordem-2"><i></i><strong>2º</strong><small>segunda fila</small></span>
-                    <span class="gab-ordem-item gab-ordem-item--ordem-3"><i></i><strong>3º</strong><small>terceira fila</small></span>
-                    <span class="gab-ordem-item gab-ordem-item--ordem-4"><i></i><strong>4º</strong><small>quarta fila</small></span>
-                </div>
-                <div class="gab-apoio-legenda" aria-label="Áreas e estados do gabarito">
-                    <span class="gab-apoio-item gab-apoio-item--corujao"><i></i> Corujão</span>
-                    <span class="gab-apoio-item gab-apoio-item--mistos"><i></i> Mistos</span>
-                    <span class="gab-apoio-item gab-apoio-item--pesados"><i></i> Pesados</span>
-                    <span class="gab-apoio-item gab-apoio-item--leves"><i></i> Leves</span>
-                    <span class="gab-apoio-item gab-apoio-item--pedido"><i></i> Pedido</span>
-                    <span class="gab-apoio-item gab-apoio-item--bloq"><i></i> Bloqueada</span>
-                </div>
-            </div>
-            <div id="patioMap" class="patio-map" aria-live="polite"></div>
-            <div id="gabaritoStatus" class="gab-status-bar" role="status" aria-live="polite"></div>
+        <label for="patioEditorObs">Observação (opcional)</label>
+        <textarea id="patioEditorObs" placeholder="Ex.: aguardando peça, saída 06h..."></textarea>
+
+        <div class="patio-editor-actions">
+            <button class="btn-secondary" type="button" id="patioEditorLimpar">Esvaziar vaga</button>
+            <button class="btn-portal" type="button" id="patioEditorSalvar">Salvar</button>
         </div>
+        <p class="patio-editor-meta" id="patioEditorMeta"></p>
     </div>
 </div>
 
-<datalist id="frotaList"></datalist>
+<div class="patio-toast" id="patioToast"></div>
 
-<footer>
-    &copy; 2026 CIOP / TCGL - Gerenciamento de Logística e Frota Operacional
-</footer>
+<script>
+(function(){
+  var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzfS5gLXELey_NzJIWOscQqUnOlAyg4epUUXNM2EZCAEvDeTtd6h246ePExsGi4_0HmzQ/exec";
 
-<script src="../assets/js/frota-patio-data.js"></script>
-<script src="../assets/js/gabarito-garagem-data.js?v=20260630edicao1"></script>
-<script src="../assets/js/gerenciapatio-app.js?v=20260630edicao1"></script>
-<script src="../assets/js/portal-futuristic.js?v=20260718am" defer></script>
+  var ZONAS = [
+    { id: 'tiete',    nome: 'Fileira R. Tietê',            sub: 'Fila da frente, saída rápida pela rua',        classe: 'zone-tiete',    padrao: 12 },
+    { id: 'galpao',   nome: 'Fileira Galpão',               sub: 'Encostada no prédio principal',                classe: 'zone-galpao',   padrao: 10 },
+    { id: 'reserva',  nome: 'Fila Duque de Caxias · Reserva', sub: 'Fila compacta, frota reserva/manutenção',    classe: 'zone-reserva',  padrao: 20 }
+  ];
+
+  var STATUS_LABEL = { vazio:'Vazia', operando:'Operando', reserva:'Reserva', manutencao:'Manutenção', bloqueado:'Bloqueada' };
+
+  var estado = {};
+  var vagaAtual = null;
+  var frotaCarregada = false;
+
+  function toast(msg){
+    var el = document.getElementById('patioToast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function(){ el.classList.remove('show'); }, 2600);
+  }
+
+  function chaveVaga(zona, vaga){ return zona + '#' + vaga; }
+
+  function garantirEstrutura(){
+    ZONAS.forEach(function(z){
+      for (var i = 1; i <= z.padrao; i++){
+        var k = chaveVaga(z.id, i);
+        if (!estado[k]){
+          estado[k] = { zona: z.id, vaga: i, prefixo: '', status: 'vazio', obs: '', atualizadoEm: '', atualizadoPor: '' };
+        }
+      }
+    });
+  }
+
+  function carregarFrota(){
+    if (frotaCarregada || !window.FROTA_PATIO) return;
+    frotaCarregada = true;
+    var dl = document.getElementById('frotaList');
+    var html = '';
+    window.FROTA_PATIO.forEach(function(v){
+      html += '<option value="' + v.veiculo + '">' + (v.rotulo || '') + '</option>';
+    });
+    dl.innerHTML = html;
+  }
+
+  function usuarioAtual(){
+    var el = document.getElementById('usuarioLogado');
+    return (el && el.textContent && el.textContent.trim() && el.textContent.trim() !== 'Usuário') ? el.textContent.trim() : '';
+  }
+
+  function renderStats(){
+    var cont = { vazio:0, operando:0, reserva:0, manutencao:0, bloqueado:0 };
+    Object.keys(estado).forEach(function(k){ cont[estado[k].status] = (cont[estado[k].status]||0) + 1; });
+    var wrap = document.getElementById('patioStats');
+    wrap.innerHTML = ['operando','reserva','manutencao','bloqueado','vazio'].map(function(s){
+      return '<span class="patio-stat"><span class="patio-stat-dot st-' + s + '"></span><b>' + cont[s] + '</b> ' + STATUS_LABEL[s].toLowerCase() + '</span>';
+    }).join('');
+  }
+
+  function renderZonas(){
+    var wrap = document.getElementById('patioZonas');
+    var html = '';
+    ZONAS.forEach(function(z){
+      var vagas = Object.keys(estado).filter(function(k){ return estado[k].zona === z.id; })
+        .map(function(k){ return estado[k]; })
+        .sort(function(a,b){ return a.vaga - b.vaga; });
+
+      html += '<section class="patio-zone ' + z.classe + '">' +
+        '<div class="patio-zone-head">' +
+          '<div class="patio-zone-title-wrap">' +
+            '<span class="patio-zone-dot"></span>' +
+            '<div><h2 class="patio-zone-title">' + z.nome + '</h2><p class="patio-zone-sub">' + z.sub + '</p></div>' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:10px">' +
+            '<span class="patio-zone-count">' + vagas.length + ' vagas</span>' +
+            '<button type="button" class="patio-zone-add" data-zona="' + z.id + '">+ vaga</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="patio-grid">';
+
+      if (!vagas.length){
+        html += '<div class="patio-empty-zone">Nenhuma vaga cadastrada nesta fileira ainda.</div>';
+      } else {
+        vagas.forEach(function(v){
+          html += '<div class="patio-vaga st-' + v.status + '" data-zona="' + v.zona + '" data-vaga="' + v.vaga + '">' +
+            '<span class="patio-vaga-num">' + v.vaga + '</span>' +
+            (v.status === 'vazio'
+              ? '<span class="patio-vaga-empty">vazia</span>'
+              : '<span class="patio-vaga-prefixo">' + (v.prefixo || '—') + '</span><span class="patio-vaga-status-label">' + STATUS_LABEL[v.status] + '</span>') +
+            '<button type="button" class="patio-vaga-remove" data-zona="' + v.zona + '" data-vaga="' + v.vaga + '" title="Remover vaga" aria-label="Remover vaga">✕</button>' +
+          '</div>';
+        });
+      }
+
+      html += '</div></section>';
+    });
+    wrap.innerHTML = html;
+  }
+
+  function render(){
+    renderStats();
+    renderZonas();
+  }
+
+  function abrirEditor(zona, vaga){
+    var k = chaveVaga(zona, vaga);
+    var v = estado[k];
+    if (!v) return;
+    vagaAtual = v;
+    carregarFrota();
+
+    var zonaInfo = ZONAS.filter(function(z){ return z.id === zona; })[0];
+    document.getElementById('patioEditorTitle').textContent = 'Vaga ' + vaga;
+    document.getElementById('patioEditorSub').textContent = (zonaInfo ? zonaInfo.nome : zona);
+    document.getElementById('patioEditorPrefixo').value = v.prefixo || '';
+    document.querySelectorAll('.patio-status-opt').forEach(function(btn){
+      btn.classList.toggle('active', btn.dataset.status === v.status);
+    });
+    document.getElementById('patioEditorObs').value = v.obs || '';
+    document.getElementById('patioEditorMeta').textContent = v.atualizadoEm
+      ? ('Última atualização: ' + v.atualizadoEm + (v.atualizadoPor ? ' · ' + v.atualizadoPor : ''))
+      : 'Ainda sem atualização registrada.';
+
+    document.getElementById('patioEditorBackdrop').hidden = false;
+    document.getElementById('patioEditorPrefixo').focus();
+  }
+
+  function fecharEditor(){
+    document.getElementById('patioEditorBackdrop').hidden = true;
+    vagaAtual = null;
+  }
+
+  function statusSelecionado(){
+    var ativo = document.querySelector('.patio-status-opt.active');
+    return ativo ? ativo.dataset.status : 'operando';
+  }
+
+  function salvarVagaAtual(limpar){
+    if (!vagaAtual) return;
+    var prefixo = limpar ? '' : document.getElementById('patioEditorPrefixo').value.trim();
+    var status = limpar ? 'vazio' : (prefixo ? statusSelecionado() : 'vazio');
+    var obs = limpar ? '' : document.getElementById('patioEditorObs').value.trim();
+    var agora = new Date().toLocaleString('pt-BR');
+    var quem = usuarioAtual();
+
+    vagaAtual.prefixo = prefixo;
+    vagaAtual.status = status;
+    vagaAtual.obs = obs;
+    vagaAtual.atualizadoEm = agora;
+    vagaAtual.atualizadoPor = quem;
+
+    render();
+    fecharEditor();
+    enviarAtualizacao(vagaAtual);
+  }
+
+  function removerVaga(zona, vaga){
+    var k = chaveVaga(zona, vaga);
+    var v = estado[k];
+    if (!v) return;
+    if (v.status !== 'vazio' && !confirm('Esta vaga não está vazia. Remover mesmo assim?')) return;
+    delete estado[k];
+    render();
+    enviarRemocao(zona, vaga);
+  }
+
+  function adicionarVaga(zonaId){
+    var numerosExistentes = Object.keys(estado)
+      .filter(function(k){ return estado[k].zona === zonaId; })
+      .map(function(k){ return estado[k].vaga; });
+    var proximo = numerosExistentes.length ? Math.max.apply(null, numerosExistentes) + 1 : 1;
+    var k = chaveVaga(zonaId, proximo);
+    estado[k] = { zona: zonaId, vaga: proximo, prefixo: '', status: 'vazio', obs: '', atualizadoEm: '', atualizadoPor: '' };
+    render();
+    enviarAtualizacao(estado[k]);
+  }
+
+  function configurada(){
+    return APPS_SCRIPT_URL && APPS_SCRIPT_URL.indexOf('COLE_AQUI') !== 0;
+  }
+
+  function enviarAtualizacao(v){
+    if (!configurada()) return;
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ acao: 'salvar', zona: v.zona, vaga: v.vaga, prefixo: v.prefixo, status: v.status, obs: v.obs, atualizadoPor: v.atualizadoPor })
+    }).catch(function(){ toast('Falha ao sincronizar. A alteração ficou só neste navegador.'); });
+  }
+
+  function enviarRemocao(zona, vaga){
+    if (!configurada()) return;
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ acao: 'remover', zona: zona, vaga: vaga })
+    }).catch(function(){ toast('Falha ao sincronizar a remoção.'); });
+  }
+
+  function carregarEstado(){
+    garantirEstrutura();
+    render();
+    if (!configurada()){
+      toast('Assistente de pátio ainda não conectado ao servidor — alterações ficam só neste navegador.');
+      return;
+    }
+    fetch(APPS_SCRIPT_URL, { method: 'GET', cache: 'no-store' })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if (data && data.vagas && data.vagas.length){
+          data.vagas.forEach(function(v){
+            var k = chaveVaga(v.zona, Number(v.vaga));
+            estado[k] = { zona: v.zona, vaga: Number(v.vaga), prefixo: v.prefixo || '', status: v.status || 'vazio', obs: v.obs || '', atualizadoEm: v.atualizadoEm || '', atualizadoPor: v.atualizadoPor || '' };
+          });
+          render();
+        } else {
+          Object.keys(estado).forEach(function(k){ enviarAtualizacao(estado[k]); });
+        }
+      })
+      .catch(function(){ toast('Não foi possível carregar o pátio do servidor. Mostrando dados locais.'); });
+  }
+
+  document.getElementById('patioZonas').addEventListener('click', function(ev){
+    var addBtn = ev.target.closest('.patio-zone-add');
+    if (addBtn){ adicionarVaga(addBtn.dataset.zona); return; }
+
+    var removeBtn = ev.target.closest('.patio-vaga-remove');
+    if (removeBtn){ ev.stopPropagation(); removerVaga(removeBtn.dataset.zona, Number(removeBtn.dataset.vaga)); return; }
+
+    var vagaEl = ev.target.closest('.patio-vaga');
+    if (vagaEl){ abrirEditor(vagaEl.dataset.zona, Number(vagaEl.dataset.vaga)); }
+  });
+
+  document.getElementById('patioEditorStatus').addEventListener('click', function(ev){
+    var btn = ev.target.closest('.patio-status-opt');
+    if (!btn) return;
+    document.querySelectorAll('.patio-status-opt').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+  });
+
+  document.getElementById('patioEditorClose').addEventListener('click', fecharEditor);
+  document.getElementById('patioEditorBackdrop').addEventListener('click', function(ev){
+    if (ev.target === this) fecharEditor();
+  });
+  document.getElementById('patioEditorSalvar').addEventListener('click', function(){ salvarVagaAtual(false); });
+  document.getElementById('patioEditorLimpar').addEventListener('click', function(){ salvarVagaAtual(true); });
+  document.getElementById('btnAtualizar').addEventListener('click', carregarEstado);
+
+  carregarEstado();
+})();
+</script>
 </body>
 </html>
