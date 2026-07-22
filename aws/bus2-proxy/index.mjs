@@ -152,7 +152,13 @@ function parseBustimeDate(s) {
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5])).getTime();
 }
 
-const CLEVER_CODIGOS_ESPECIAIS = new Set(["U", "PI", "DH"]);
+const CLEVER_CODIGOS_ESPECIAIS = new Set(["U", "PI", "DH", "PO"]);
+
+/** "Produtivo" = linha numerada de operação real (080–999). Ocioso (PI/DH/PO) e fora de serviço (U) não têm previsão. */
+function ehRotaProdutiva(rt) {
+  const n = parseInt(String(rt || ""), 10);
+  return Number.isFinite(n) && n >= 80 && n <= 999;
+}
 
 /**
  * Endpoint composto: getvehicles + getpredictions em lote (por vid, 10 por vez)
@@ -163,7 +169,7 @@ async function proxyCleverVehiclesDelay() {
   const vehData = await cleverRequest("getvehicles");
   const veiculos = cleverList(vehData, "vehicle");
 
-  const normais = veiculos.filter((v) => v?.vid && !CLEVER_CODIGOS_ESPECIAIS.has(String(v.rt || "")));
+  const normais = veiculos.filter((v) => v?.vid && ehRotaProdutiva(v.rt));
   const vids = normais.map((v) => String(v.vid));
   const lotes = [];
   for (let i = 0; i < vids.length; i += 10) lotes.push(vids.slice(i, i + 10));
