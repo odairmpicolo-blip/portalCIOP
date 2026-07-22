@@ -1,0 +1,1039 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>Ônibus Agora · Clever | Portal CIOP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+:root{
+  --blue:#06245c;--blue-soft:#0b3a8a;--teal:#2db4bf;--orange:#ff6b00;
+  --bg:#f5f7fb;--surface:#fff;--surface-2:#f8fafc;--border:#dfe5ef;
+  --text:#101828;--muted:#3f4757;--ok:#059669;--warn:#d97706;
+  --shadow:0 1px 2px rgba(15,23,42,.06),0 16px 40px rgba(6,36,92,.10);
+  --radius:18px;
+}
+*{box-sizing:border-box}
+body.oa-page{
+  margin:0;min-height:100vh;display:flex;flex-direction:column;
+  font-family:Inter,"Segoe UI",Arial,sans-serif;color:var(--text);background:var(--bg);
+  -webkit-font-smoothing:antialiased;
+}
+.header{
+  background:rgba(255,255,255,.97);backdrop-filter:blur(12px);
+  display:grid;grid-template-columns:minmax(160px,1fr) auto minmax(240px,1fr);gap:16px;align-items:center;
+  padding:10px 20px;border-bottom:1px solid var(--border);box-shadow:0 2px 10px rgba(0,0,0,.05);
+}
+.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.page-title{margin:0;color:var(--blue);font-size:clamp(18px,2.2vw,26px);font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.ciop-session{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--blue);background:#fff}
+.ciop-session-user{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.btn-logout{background:#ef4444;color:#fff;border:0;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer}
+
+.shell{max-width:1560px;margin:0 auto;padding:18px 18px 36px;width:100%;flex:1}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 2px rgba(15,23,42,.06)}
+.topbar-left,.topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 16px;border-radius:999px;border:1px solid transparent;font:inherit;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;transition:.18s ease}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-primary{background:var(--blue);color:#fff;box-shadow:0 8px 20px rgba(6,36,92,.18)}
+.btn-primary:hover{background:var(--blue-soft);transform:translateY(-1px)}
+.btn-ghost{background:#fff;color:var(--blue);border-color:var(--border)}
+.btn-ghost:hover{background:var(--surface-2)}
+.btn-ghost.active{background:#effcfb;border-color:rgba(45,180,191,.45);color:var(--blue)}
+.topbar-left .btn-primary,.topbar-actions .btn-ghost{border-radius:10px;}
+
+.live-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:#fff;border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(5,150,105,.15)}
+.live-dot.busy{background:var(--orange);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+.layout{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:stretch}
+@media(max-width:1080px){.layout{grid-template-columns:1fr}}
+
+.sidebar{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.card-pad{padding:16px 18px}
+.card-title{margin:0 0 4px;font-size:15px;font-weight:800;color:var(--blue)}
+.card-sub{margin:0 0 12px;font-size:12px;color:var(--muted);line-height:1.45;font-weight:500}
+
+.field{display:grid;gap:6px;margin-bottom:10px}
+.field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.input,.select{
+  width:100%;height:44px;border:1px solid var(--border);border-radius:12px;padding:0 12px;
+  font:inherit;font-size:14px;font-weight:500;background:var(--surface-2);color:var(--text)
+}
+.input:focus,.select:focus{outline:none;border-color:#7dd3dc;box-shadow:0 0 0 4px rgba(45,180,191,.15);background:#fff}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
+.stat{padding:10px 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border)}
+.stat b{display:block;font-size:18px;font-weight:800;color:var(--blue);letter-spacing:-.02em}
+.stat span{font-size:11px;color:var(--muted);font-weight:600}
+
+.lines{max-height:340px;overflow:auto;display:grid;gap:4px}
+.line-btn{width:100%;display:flex;align-items:center;gap:10px;border:1px solid transparent;background:transparent;border-radius:12px;padding:8px 10px;cursor:pointer;font:inherit;text-align:left;transition:.15s ease;color:var(--text)}
+.line-btn:hover{background:var(--surface-2)}
+.line-btn.active{background:#effcfb;border-color:rgba(45,180,191,.35)}
+.line-chip{width:48px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex:0 0 auto}
+.line-meta{min-width:0;flex:1}
+.line-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.line-route{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.main{display:flex;flex-direction:column;min-height:720px}
+.panel-wrap{flex:1;padding:14px;display:flex;flex-direction:column;min-height:0}
+.panel{flex:1;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;position:relative;min-height:520px}
+.panel[hidden]{display:none!important}
+
+#mapa{width:100%;height:100%;min-height:520px;background:#dbeafe}
+.oa-map-shell{position:absolute;inset:0;}
+#mapa.leaflet-container,
+#mapa .leaflet-map-pane,#mapa .leaflet-pane,#mapa .leaflet-tile-pane,#mapa .leaflet-marker-pane{
+  touch-action:none;pointer-events:auto;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none
+}
+.map-tools{position:absolute;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:8px}
+.map-tools .btn{min-height:38px;padding:0 12px;font-size:12px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px)}
+body.oa-native-mode #mapa{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;flex:none!important}
+body.oa-native-mode #mapa,body.oa-native-mode .oa-map-shell{touch-action:none;overscroll-behavior:contain;-webkit-user-select:none;user-select:none}
+body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;order:1;width:100%;overflow:hidden}
+
+.leaflet-popup-content-wrapper{border-radius:14px;box-shadow:var(--shadow);padding:0;overflow:hidden;background:#fff}
+.leaflet-popup-content{margin:0;min-width:210px;color:var(--text)}
+.leaflet-popup-tip{background:#fff}
+.popup{padding:14px 16px}
+.popup-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.popup-chip{width:42px;height:36px;border-radius:10px;display:grid;place-items:center;font-weight:800;color:#fff;font-size:13px}
+.popup-title{font-size:15px;font-weight:800;color:var(--blue);line-height:1.2}
+.popup-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.popup-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.popup-item{padding:8px 10px;border-radius:10px;background:var(--surface-2);font-size:11px;color:var(--muted)}
+.popup-item strong{display:block;font-size:13px;color:var(--text);margin-top:2px}
+
+.bus-marker-wrap{background:transparent!important;border:0!important;overflow:visible!important}
+.bus-marker{
+  width:36px;position:relative;
+  filter:drop-shadow(0 3px 8px rgba(15,23,42,.32));
+  transition:transform .35s cubic-bezier(.4,0,.2,1),filter .25s ease;
+}
+.bus-marker.highlight{
+  z-index:900!important;
+  transform:scale(1.12);
+  filter:drop-shadow(0 5px 14px rgba(15,23,42,.38));
+}
+.bus-marker svg{display:block;width:36px;height:28px}
+.bus-labels{
+  position:absolute;left:50%;bottom:100%;
+  transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  margin-bottom:3px;pointer-events:none;
+}
+.bus-tag{
+  font-size:9px;font-weight:800;letter-spacing:.02em;
+  padding:2px 6px;border-radius:999px;white-space:nowrap;line-height:1.2;
+  border:1.5px solid #fff;
+  box-shadow:0 1px 6px rgba(15,23,42,.2);
+}
+.bus-tag-prefix{background:#fff;color:#06245c}
+.bus-tag-line{color:#fff}
+.bus-marker.highlight .bus-tag{box-shadow:0 0 0 2px rgba(45,180,191,.22),0 2px 8px rgba(15,23,42,.22)}
+
+.empty{padding:40px 20px;text-align:center;color:var(--muted)}
+.empty h3{margin:0 0 8px;color:var(--blue);font-size:18px;font-weight:800}
+@media (max-width:720px){
+  .body-bg-wall,
+  .body-bg-stain{
+    display:none !important;
+  }
+  body.oa-page{background:var(--dk-bg) !important;color:var(--dk-text) !important;}.header{background:var(--dk-glass-bg) !important;backdrop-filter:blur(var(--dk-glass-blur)) !important;border-bottom:1px solid var(--dk-glass-border) !important;}.dk-theme-toggle{display:flex !important;}.card{background:var(--dk-glass-bg) !important;border:1px solid var(--dk-glass-border) !important;box-shadow:var(--dk-glass-shadow) !important;}.card-title{color:var(--dk-text) !important;}.card-sub{color:var(--dk-muted) !important;}.input,.select{background:rgba(255,255,255,.06) !important;border:1px solid var(--dk-glass-border) !important;color:var(--dk-text) !important;}}
+
+/* ===== Redesign iOS26 Liquid Glass (desktop) ===== */
+@media (min-width:721px){
+  body.oa-page{
+    position:relative;
+    background:var(--bg);
+  }
+  .shell{
+    max-width:100% !important;
+    display:flex !important;
+    flex-direction:column !important;
+  }
+  .layout{
+    flex:1 !important;
+    min-height:0 !important;
+  }
+  .main{
+    min-height:0 !important;
+  }
+  .panel{
+    min-height:0 !important;
+  }
+  .body-bg-wall{
+    position:fixed;
+    inset:0;
+    z-index:-2;
+    pointer-events:none;
+    background-image:url('../assets/img/portal-bg-onibus.jpg?v=20260718j');
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+  }
+  .body-bg-stain{
+    position:fixed;
+    inset:0;
+    z-index:-1;
+    pointer-events:none;
+    background:linear-gradient(180deg, rgba(6,20,50,.30) 0%, rgba(6,20,50,.55) 100%);
+  }
+
+  .header{
+    background:rgba(255,255,255,.6) !important;
+    backdrop-filter:blur(18px) saturate(190%) !important;
+    -webkit-backdrop-filter:blur(18px) saturate(190%) !important;
+    border-bottom:1px solid rgba(255,255,255,.5) !important;
+    box-shadow:0 10px 28px -16px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.4) !important;
+  }
+
+  footer.portal-site-footer{
+    background:rgba(255,255,255,.42) !important;
+    backdrop-filter:blur(16px) saturate(190%) !important;
+    -webkit-backdrop-filter:blur(16px) saturate(190%) !important;
+    border-top:1px solid rgba(255,255,255,.5) !important;
+    box-shadow:0 -10px 28px -16px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.4) !important;
+  }
+  footer.portal-site-footer .footer-text{
+    color:#3f4757 !important;
+  }
+
+  .card{
+    background:rgba(255,255,255,.55);
+    backdrop-filter:blur(16px) saturate(190%);
+    -webkit-backdrop-filter:blur(16px) saturate(190%);
+    border:1px solid rgba(255,255,255,.5);
+    box-shadow:0 12px 30px -16px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.4);
+  }
+
+  .live-pill{
+    background:rgba(255,255,255,.6);
+    backdrop-filter:blur(14px) saturate(190%);
+    -webkit-backdrop-filter:blur(14px) saturate(190%);
+  }
+.topbar{
+    background:rgba(255,255,255,.55);
+    backdrop-filter:blur(18px) saturate(190%);
+    -webkit-backdrop-filter:blur(18px) saturate(190%);
+    border:1px solid rgba(255,255,255,.6);
+    border-radius:18px;
+    box-shadow:0 10px 24px -14px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.5);
+  }
+  .topbar .live-pill{
+    background:transparent;
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+    border:none;
+    box-shadow:none;
+    padding:0;
+  }
+
+  .btn-primary{
+    min-height:44px !important;font-size:14px !important;
+    background:linear-gradient(135deg, rgba(6,36,92,.85), rgba(11,58,138,.85));
+  }
+  .btn-primary:hover{
+    background:linear-gradient(135deg, var(--orange), #ff8f3d);
+    transform:translateY(-2px);
+    box-shadow:0 14px 28px -12px rgba(255,107,0,.5), inset 0 1px 0 rgba(255,255,255,.35);
+  }
+  .btn-ghost{
+    border-left:3px solid var(--orange) !important;
+  }
+  .btn-ghost:hover{
+    background:rgba(224,235,255,.85);
+    transform:translateY(-2px);
+    box-shadow:0 14px 28px -14px rgba(6,36,92,.35), inset 0 1px 0 rgba(255,255,255,.6);
+  }
+  .btn-primary,.btn-ghost{
+    transition:transform .2s ease, background .25s ease, box-shadow .25s ease, color .25s ease !important;
+  }
+
+  .topbar-left .btn-primary{
+    min-height:44px !important;padding:8px 14px !important;border-radius:10px !important;font-size:14px !important;
+    background:linear-gradient(135deg, rgba(6,36,92,.85), rgba(11,58,138,.85)) !important;
+    backdrop-filter:blur(14px) saturate(190%) !important;
+    -webkit-backdrop-filter:blur(14px) saturate(190%) !important;
+    border:1px solid rgba(255,255,255,.4) !important;
+    box-shadow:0 10px 24px -14px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.25) !important;
+    color:#fff !important;
+  }
+  .topbar-left .btn-primary:hover{
+    background:linear-gradient(135deg, var(--orange), #ff8f3d) !important;
+    transform:translateY(-2px) !important;
+    box-shadow:0 14px 28px -12px rgba(255,107,0,.5), inset 0 1px 0 rgba(255,255,255,.35) !important;
+  }
+  .topbar-actions .btn-ghost{
+    min-height:44px !important;padding:8px 14px !important;border-radius:10px !important;font-size:14px !important;
+    background:rgba(255,255,255,.42) !important;
+    backdrop-filter:blur(14px) saturate(190%) !important;
+    -webkit-backdrop-filter:blur(14px) saturate(190%) !important;
+    border:1px solid rgba(255,255,255,.6) !important;
+    border-left:3px solid var(--orange) !important;
+    box-shadow:0 10px 24px -14px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.5) !important;
+    color:var(--blue) !important;
+  }
+  .topbar-actions .btn-ghost:hover{
+    background:rgba(224,235,255,.85) !important;
+    transform:translateY(-2px) !important;
+    box-shadow:0 14px 28px -14px rgba(6,36,92,.35), inset 0 1px 0 rgba(255,255,255,.6) !important;
+    color:var(--blue) !important;
+  }
+}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/dashboard-kit.css">
+
+<script src="../assets/js/theme-toggle.js?v=20260720w"></script>
+<script>
+(function () {
+  try {
+    if (new URLSearchParams(location.search).get("embed") === "native-app") {
+      document.documentElement.classList.add("native-app", "native-embedded");
+    }
+    if (window.self !== window.top && window.parent.document.documentElement.classList.contains("native-app")) {
+      document.documentElement.classList.add("native-app", "native-embedded");
+    }
+  } catch (e) {}
+})();
+</script>
+<script src="../assets/js/loading.js?v=20260718d"></script>
+<script type="module" src="../assets/js/auth.js?v=20260720a"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260720y">
+</head>
+<body class="oa-page" data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
+<div class="body-bg-wall" aria-hidden="true"></div>
+<div class="body-bg-stain" aria-hidden="true"></div>
+<header class="header">
+    <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações">
+        <img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP">
+        <span class="portal-brand-meta">TCGL · Operações</span>
+    </a>
+    <div class="title-wrap">
+        <h1 class="page-title">Monitoramento ao vivo · Clever</h1>
+    </div>
+    <div class="header-actions">
+<div class="ciop-session" aria-label="Sessão do usuário">
+    <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+    <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+    <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+    <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+</div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+    </div>
+</header>
+
+<div class="oa-native-top" id="oaNativeTop" hidden aria-hidden="true">
+    <header class="oa-hud">
+        <div class="oa-hud-brand">
+            <span class="oa-hud-kicker">Rastreamento · Clever</span>
+            <strong>Ônibus Agora</strong>
+        </div>
+        <div class="oa-hud-live">
+            <span class="oa-hud-dot" id="oaHudDot"></span>
+            <span id="oaHudLiveText">Conectando...</span>
+        </div>
+    </header>
+    <div class="oa-hud-stats">
+        <div class="oa-hud-stat"><b id="oaStatOnline">0</b><span>Online</span></div>
+        <div class="oa-hud-stat"><b id="oaStatLinhas">0</b><span>Linhas</span></div>
+        <div class="oa-hud-stat"><b id="oaStatVisiveis">0</b><span>Visíveis</span></div>
+    </div>
+</div>
+
+<main class="shell">
+    <div class="topbar">
+        <div class="topbar-left">
+            <a class="btn btn-primary" href="../index.html">
+                <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+                Portal
+            </a>
+            <span class="live-pill" id="livePill">
+                <span class="live-dot" id="liveDot"></span>
+                <span id="liveText">Conectando...</span>
+            </span>
+        </div>
+        <div class="topbar-actions">
+            <button type="button" class="btn btn-ghost" id="btnAtualizar">Atualizar agora</button>
+        </div>
+    </div>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="card card-pad">
+                <h2 class="card-title">Buscar</h2>
+                <p class="card-sub">Filtre por linha ou número do veículo (dados Clever).</p>
+                <div class="field">
+                    <label for="buscaLinha">Linha</label>
+                    <input class="input" id="buscaLinha" type="search" placeholder="Ex.: 301, Alemanha..." autocomplete="off">
+                </div>
+                <div class="field">
+                    <label for="buscaVeiculo">Veículo</label>
+                    <input class="input" id="buscaVeiculo" type="search" placeholder="Ex.: 1150" autocomplete="off">
+                </div>
+                <div class="stats">
+                    <div class="stat"><b id="statOnline">0</b><span>Online</span></div>
+                    <div class="stat"><b id="statLinhas">0</b><span>Linhas</span></div>
+                    <div class="stat"><b id="statVisiveis">0</b><span>Visíveis</span></div>
+                </div>
+            </div>
+
+            <div class="card card-pad" style="flex:1;display:flex;flex-direction:column;min-height:0">
+                <h2 class="card-title">Linhas</h2>
+                <p class="card-sub">Clique para focar no mapa. Vazio = ver todas.</p>
+                <div class="lines" id="listaLinhas"></div>
+                <button type="button" class="btn btn-ghost" id="btnLimparFiltro" style="margin-top:10px;width:100%">Ver todas as linhas</button>
+            </div>
+        </aside>
+
+        <section class="card main">
+            <div class="panel-wrap">
+                <div class="panel" id="panelMapa">
+                    <div class="oa-map-shell" id="oaMapShell">
+                        <div id="mapa"></div>
+                        <div class="map-tools">
+                            <button type="button" class="btn btn-ghost" id="btnMapaClaro">Mapa claro</button>
+                            <button type="button" class="btn btn-ghost" id="btnMapaSat">Satélite</button>
+                            <button type="button" class="btn btn-ghost" id="btnCentralizar">Centralizar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<div class="oa-native-floats" id="oaNativeFloats" hidden aria-hidden="true">
+    <button type="button" class="oa-fab oa-fab--linhas" id="oaFabLinhas" aria-label="Linhas">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    </button>
+    <button type="button" class="oa-fab oa-fab--mapa" id="oaFabMapa" aria-label="Controles do mapa">
+        <svg viewBox="0 0 24 24"><path d="M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3z"/><path d="M9 3v15M15 6v15"/></svg>
+    </button>
+    <div class="oa-backdrop" id="oaBackdrop"></div>
+    <aside class="oa-sheet oa-sheet--mapa" id="oaSheetMapa" aria-label="Controles do mapa">
+        <div class="oa-sheet-handle"></div>
+        <div class="oa-sheet-head">
+            <h2>Mapa</h2>
+            <p>Estilo, foco e atualização</p>
+        </div>
+        <div class="oa-sheet-body">
+            <div class="oa-map-actions-mobile">
+                <button type="button" class="oa-map-action" id="oaMapaClaro">
+                    <span>Mapa claro</span>
+                    <small>Ruas e bairros</small>
+                </button>
+                <button type="button" class="oa-map-action" id="oaMapaSat">
+                    <span>Satélite</span>
+                    <small>Imagem aérea</small>
+                </button>
+                <button type="button" class="oa-map-action" id="oaMapaCentralizar">
+                    <span>Centralizar</span>
+                    <small>Londrina</small>
+                </button>
+                <button type="button" class="oa-map-action oa-map-action--wide" id="oaMapaAtualizar">
+                    <span>Atualizar agora</span>
+                    <small>Recarrega os ônibus no mapa</small>
+                </button>
+            </div>
+        </div>
+    </aside>
+    <aside class="oa-sheet oa-sheet--linhas" id="oaSheetLinhas">
+        <div class="oa-sheet-handle"></div>
+        <div class="oa-sheet-head">
+            <h2>Linhas</h2>
+            <p>Toque para rastrear no mapa</p>
+        </div>
+        <div class="oa-sheet-body" id="oaSheetLinhasBody"></div>
+    </aside>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+const CLEVER = {
+    proxyFallback: "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com",
+    proxyBase: null,
+    tiles: {
+        light: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        satellite: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+    },
+    centro: [-23.303, -51.166],
+    zoom: 13,
+    intervaloMs: 15000,
+    viaCores: ["#2db4bf","#06245c","#ff6b00","#0b3a8a","#059669","#8b5cf6","#eab308","#ec4899","#38bdf8","#64748b"]
+};
+
+const state = {
+    routes: [],
+    routeFiltro: null,
+    veiculoFiltro: "",
+    buscaLinha: "",
+    vehicles: new Map(),
+    markers: new Map(),
+    pollTimer: null,
+    lastUpdate: null,
+    liveOk: false,
+    mapa: null,
+    tileLayer: null
+};
+
+function $(id){ return document.getElementById(id); }
+
+function esc(v){
+    return String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function corCss(hex){
+    const h = String(hex || "").trim();
+    if (!h) return "#2db4bf";
+    return h.startsWith("#") ? h : ("#" + h);
+}
+
+function contraste(hex){
+    const c = corCss(hex).replace("#", "");
+    if (c.length !== 6) return "#fff";
+    const r = parseInt(c.slice(0, 2), 16), g = parseInt(c.slice(2, 4), 16), b = parseInt(c.slice(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? "#06245c" : "#fff";
+}
+
+function corPorIndice(i){
+    return CLEVER.viaCores[i % CLEVER.viaCores.length];
+}
+
+function resolverBasePortal(){
+    const path = String(window.location.pathname || "").replace(/\\/g, "/");
+    const pagesIdx = path.indexOf("/pages/");
+    if (pagesIdx >= 0) return path.slice(0, pagesIdx);
+    const last = path.lastIndexOf("/");
+    return last > 0 ? path.slice(0, last) : "";
+}
+
+function normalizarProxyBase(apiUrl){
+    let url = String(apiUrl || "").trim().replace(/\/+$/, "");
+    if (!url) return "";
+    if (url.endsWith("/clever")) return url;
+    return url + "/clever";
+}
+
+async function fetchJson(url){
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok){
+        const body = await res.text().catch(() => "");
+        let msg = "Erro " + res.status + " em " + url;
+        try {
+            const j = JSON.parse(body);
+            if (j.message) msg += ": " + j.message;
+            else if (j.erro) msg += ": " + j.erro;
+        } catch { /* ignore */ }
+        throw new Error(msg);
+    }
+    return res.json();
+}
+
+async function initCleverProxy(){
+    if (CLEVER.proxyBase) return;
+    const candidatos = [
+        resolverBasePortal() + "/assets/data/portal-runtime.json",
+        new URL("../assets/data/portal-runtime.json", window.location.href).href
+    ];
+    for (const cfgUrl of candidatos){
+        try {
+            const cfg = await fetchJson(cfgUrl);
+            const base = normalizarProxyBase(cfg?.awsApiUrl);
+            const local = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(base);
+            const onLocal = /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+            if (base && (!local || onLocal)){
+                CLEVER.proxyBase = base;
+                return;
+            }
+        } catch { /* tenta próximo */ }
+    }
+    if (CLEVER.proxyFallback) CLEVER.proxyBase = normalizarProxyBase(CLEVER.proxyFallback);
+}
+
+async function fetchCleverLive(pathAndQuery){
+    if (!CLEVER.proxyBase) throw new Error("Mapa ao vivo indisponível (API proxy não configurada).");
+    const path = String(pathAndQuery || "").replace(/^\//, "");
+    return fetchJson(CLEVER.proxyBase + "/" + path);
+}
+
+/** Normaliza o corpo padrão do BusTime v3 ("bustime-response") em array, aceitando item único ou lista. */
+function extrairListaBustime(data, chave){
+    const raiz = data?.["bustime-response"] ?? data ?? {};
+    if (Array.isArray(raiz.error) && raiz.error.length && !raiz[chave]) return [];
+    const val = raiz[chave];
+    if (!val) return [];
+    return Array.isArray(val) ? val : [val];
+}
+
+async function fetchCleverRoutes(){
+    const data = await fetchCleverLive("getroutes");
+    const lista = extrairListaBustime(data, "routes");
+    return lista.map((r, i) => ({
+        routeId: String(r.rt ?? r.rtpidatafeed ?? i),
+        shortName: String(r.rt ?? "?"),
+        longName: String(r.rtnm || ""),
+        color: r.rtclr ? corCss(r.rtclr) : corPorIndice(i)
+    }));
+}
+
+async function fetchCleverVehicles(routeId){
+    const qs = routeId ? ("?rt=" + encodeURIComponent(routeId)) : "";
+    const data = await fetchCleverLive("getvehicles" + qs);
+    const lista = extrairListaBustime(data, "vehicle");
+    const found = [];
+    lista.forEach(v => {
+        const lat = Number(v.lat);
+        const lng = Number(v.lon);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+        const rt = String(v.rt ?? "");
+        const route = state.routes.find(r => r.routeId === rt) || { routeId: rt, shortName: rt || "?", longName: "", color: "#2db4bf" };
+        found.push({
+            vehicleId: String(v.vid ?? "?"),
+            lat, lng,
+            routeId: route.routeId,
+            route,
+            heading: v.hdg != null ? Number(v.hdg) : null,
+            speed: v.spd != null ? Number(v.spd) : null,
+            tripDesc: v.des || "",
+            positionTime: formatarTmstmp(v.tmstmp),
+            key: String(v.vid ?? "?") + ":" + rt
+        });
+    });
+    return found;
+}
+
+function formatarTmstmp(tmstmp){
+    const s = String(tmstmp || "").trim();
+    if (!s) return "—";
+    // formato BusTime: "20260722 14:35"
+    const m = s.match(/^(\d{4})(\d{2})(\d{2})[ T](\d{2}):(\d{2})/);
+    if (!m) return s;
+    return m[3] + "/" + m[2] + " " + m[4] + ":" + m[5];
+}
+
+function ordenarRotas(a, b){
+    const na = parseInt(String(a.shortName).replace(/\D/g, ""), 10);
+    const nb = parseInt(String(b.shortName).replace(/\D/g, ""), 10);
+    if (!Number.isNaN(na) && !Number.isNaN(nb) && na !== nb) return na - nb;
+    return String(a.shortName).localeCompare(String(b.shortName), "pt-BR", { numeric: true });
+}
+
+function rotasVisiveis(){
+    const q = state.buscaLinha.trim().toLowerCase();
+    return state.routes.filter(r => {
+        if (!q) return true;
+        return String(r.shortName).toLowerCase().includes(q)
+            || String(r.longName || "").toLowerCase().includes(q);
+    }).sort(ordenarRotas);
+}
+
+function setLive(texto, busy){
+    $("liveText").textContent = texto;
+    $("liveDot").classList.toggle("busy", !!busy);
+    syncNativeHud();
+}
+
+function isNativeEmbedded(){
+    if (document.documentElement.classList.contains("native-embedded")) return true;
+    try {
+        if (window.self !== window.top && window.parent.document.documentElement.classList.contains("native-app")) return true;
+    } catch (e) { /* cross-origin */ }
+    try {
+        if (window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) return true;
+    } catch (e) { /* ignore */ }
+    return false;
+}
+
+function syncNativeHud(){
+    const hudText = $("liveText")?.textContent || "Conectando...";
+    const busy = $("liveDot")?.classList.contains("busy");
+    if ($("oaHudLiveText")) $("oaHudLiveText").textContent = hudText;
+    $("oaHudDot")?.classList.toggle("busy", busy);
+    if ($("oaStatOnline")) $("oaStatOnline").textContent = $("statOnline")?.textContent || "0";
+    if ($("oaStatLinhas")) $("oaStatLinhas").textContent = $("statLinhas")?.textContent || "0";
+    if ($("oaStatVisiveis")) $("oaStatVisiveis").textContent = $("statVisiveis")?.textContent || "0";
+}
+
+function setSheetAberta(id, aberta){
+    const sheet = $(id);
+    if (!sheet) return;
+    if (aberta) sheet.style.transform = "translateY(0)";
+    else sheet.style.removeProperty("transform");
+}
+
+function fecharSheetLinhas(){
+    document.body.classList.remove("oa-linhas-open");
+    setSheetAberta("oaSheetLinhas", false);
+}
+
+function abrirSheetLinhas(){
+    fecharSheetMapa();
+    document.body.classList.add("oa-linhas-open");
+    setSheetAberta("oaSheetLinhas", true);
+}
+
+function fecharSheetMapa(){
+    document.body.classList.remove("oa-mapa-open");
+    setSheetAberta("oaSheetMapa", false);
+}
+
+function abrirSheetMapa(){
+    fecharSheetLinhas();
+    document.body.classList.add("oa-mapa-open");
+    setSheetAberta("oaSheetMapa", true);
+}
+
+function acaoMapaMobile(fn){
+    if (typeof fn === "function") fn();
+    fecharSheetMapa();
+    scheduleMapResize();
+}
+
+function scheduleMapResize(){
+    if (!state.mapa) return;
+    const fix = () => { try { state.mapa?.invalidateSize({ pan: false }); } catch (_) {} };
+    requestAnimationFrame(fix);
+    [120, 350, 700, 1400, 2500].forEach(ms => setTimeout(fix, ms));
+}
+
+function ativarGestosMapa(mapa){
+    if (!mapa) return;
+    const container = mapa.getContainer?.();
+    if (container){
+        container.style.touchAction = "none";
+        container.style.webkitUserSelect = "none";
+        container.style.userSelect = "none";
+        container.style.pointerEvents = "auto";
+        container.classList.add("oa-touch-map");
+        if (!container.dataset.oaTouchBound){
+            const keepNativeZoomOut = (ev) => ev.preventDefault();
+            container.addEventListener("gesturestart", keepNativeZoomOut, { passive: false });
+            container.addEventListener("gesturechange", keepNativeZoomOut, { passive: false });
+            container.addEventListener("wheel", (ev) => {
+                if (ev.ctrlKey || ev.metaKey) ev.preventDefault();
+            }, { passive: false });
+            container.dataset.oaTouchBound = "1";
+        }
+    }
+    mapa.dragging?.enable?.();
+    mapa.touchZoom?.enable?.();
+    mapa.doubleClickZoom?.enable?.();
+    mapa.scrollWheelZoom?.enable?.();
+    if (mapa.options) {
+        mapa.options.wheelPxPerZoomLevel = 36;
+        mapa.options.wheelDebounceTime = 16;
+        mapa.options.inertiaDeceleration = 2500;
+        mapa.options.inertiaMaxSpeed = 2200;
+    }
+    mapa.boxZoom?.disable?.();
+    mapa.keyboard?.enable?.();
+    setTimeout(() => {
+        mapa.dragging?.enable?.();
+        mapa.touchZoom?.enable?.();
+        mapa.scrollWheelZoom?.enable?.();
+        mapa.invalidateSize?.();
+    }, 120);
+}
+
+function initMapa(){
+    if (state.mapa) return;
+    if (typeof L === "undefined") throw new Error("Mapa indisponível: biblioteca Leaflet não carregou.");
+    state.mapa = L.map("mapa", {
+        zoomControl: true,
+        dragging: true,
+        touchZoom: true,
+        bounceAtZoomLimits: true,
+        inertia: true,
+        inertiaDeceleration: 2500,
+        inertiaMaxSpeed: 2200,
+        scrollWheelZoom: true,
+        wheelPxPerZoomLevel: 36,
+        wheelDebounceTime: 16,
+        doubleClickZoom: true,
+        tap: true,
+        tapTolerance: 22,
+        boxZoom: false,
+        preferCanvas: false
+    }).setView(CLEVER.centro, CLEVER.zoom);
+    state.tileLayer = L.tileLayer(CLEVER.tiles.light, {
+        maxZoom: 18,
+        attribution: "© OpenStreetMap",
+        subdomains: "abc"
+    }).addTo(state.mapa);
+    ativarGestosMapa(state.mapa);
+    setTimeout(() => state.mapa.invalidateSize(), 200);
+    scheduleMapResize();
+}
+
+function trocarTile(tipo){
+    if (!state.mapa || !state.tileLayer) return;
+    state.mapa.removeLayer(state.tileLayer);
+    if (tipo === "sat"){
+        state.tileLayer = L.tileLayer(CLEVER.tiles.satellite, { maxZoom: 18, attribution: "© Esri" }).addTo(state.mapa);
+    } else {
+        state.tileLayer = L.tileLayer(CLEVER.tiles.light, { maxZoom: 18, attribution: "© OpenStreetMap", subdomains: "abc" }).addTo(state.mapa);
+    }
+}
+
+function renderListaLinhas(){
+    const lista = rotasVisiveis();
+    $("listaLinhas").innerHTML = lista.map(r => {
+        const cor = corCss(r.color);
+        const ativo = state.routeFiltro?.routeId === r.routeId;
+        return '<button type="button" class="line-btn' + (ativo ? " active" : "") + '" data-id="' + esc(r.routeId) + '">' +
+            '<span class="line-chip" style="background:' + esc(cor) + ';color:' + contraste(cor) + '">' + esc(r.shortName) + '</span>' +
+            '<span class="line-meta"><div class="line-name">Linha ' + esc(r.shortName) + '</div><div class="line-route">' + esc(r.longName || "") + '</div></span>' +
+        '</button>';
+    }).join("") || '<div class="empty"><p>Nenhuma linha encontrada.</p></div>';
+
+    $("listaLinhas").querySelectorAll(".line-btn").forEach(btn => {
+        btn.addEventListener("click", () => selecionarLinha(btn.dataset.id));
+    });
+    $("statLinhas").textContent = state.routes.length;
+    syncNativeHud();
+}
+
+function veiculoPassaFiltro(v){
+    if (state.routeFiltro && v.routeId !== state.routeFiltro.routeId) return false;
+    const q = state.veiculoFiltro.trim();
+    if (q && !String(v.vehicleId || "").includes(q)) return false;
+    return true;
+}
+
+function popupHtml(v){
+    const cor = corCss(v.route?.color);
+    return '<div class="popup">' +
+        '<div class="popup-head">' +
+            '<span class="popup-chip" style="background:' + esc(cor) + ';color:' + contraste(cor) + '">' + esc(v.route?.shortName || "?") + '</span>' +
+            '<div><div class="popup-title">Veículo ' + esc(v.vehicleId) + '</div><div class="popup-sub">' + esc(v.route?.longName || "") + '</div></div>' +
+        '</div>' +
+        '<div class="popup-grid">' +
+            '<div class="popup-item">Posição<strong>' + esc(v.positionTime || "—") + '</strong></div>' +
+            '<div class="popup-item">Velocidade<strong>' + (v.speed != null ? esc(v.speed) + " km/h" : "—") + '</strong></div>' +
+            '<div class="popup-item">Destino<strong>' + esc(v.tripDesc || "—") + '</strong></div>' +
+            '<div class="popup-item">Direção<strong>' + (v.heading != null ? esc(v.heading) + "°" : "—") + '</strong></div>' +
+        '</div></div>';
+}
+
+function iconeOnibusHtml(corLinha, prefixo, linha, extraClass){
+    const cl = esc(corCss(corLinha));
+    return '<div class="bus-marker ' + (extraClass || "") + '" style="--cor:' + cl + '">' +
+        '<div class="bus-labels">' +
+            '<span class="bus-tag bus-tag-prefix">' + esc(prefixo || "—") + '</span>' +
+            '<span class="bus-tag bus-tag-line" style="background:' + cl + ';color:' + contraste(corLinha) + '">' + esc(linha || "?") + '</span>' +
+        '</div>' +
+        '<svg viewBox="0 0 32 28" aria-hidden="true">' +
+            '<g transform="translate(16,14)">' +
+                '<path fill="' + cl + '" stroke="#fff" stroke-width="1" d="M-13.5-5.8h27a3.8 3.8 0 0 1 3.8 3.8v7.8a3.8 3.8 0 0 1-3.8 3.8h-27a3.8 3.8 0 0 1-3.8-3.8v-7.8a3.8 3.8 0 0 1 3.8-3.8z"/>' +
+                '<rect x="-10" y="-2.6" width="5.8" height="4.4" rx="1.1" fill="#fff" opacity=".82"/>' +
+                '<rect x="-2.2" y="-2.6" width="5.8" height="4.4" rx="1.1" fill="#fff" opacity=".82"/>' +
+                '<rect x="5.6" y="-2.6" width="5.8" height="4.4" rx="1.1" fill="#fff" opacity=".82"/>' +
+                '<circle cx="-8" cy="8.2" r="2.3" fill="#fff" stroke="#475569" stroke-width=".9"/>' +
+                '<circle cx="8" cy="8.2" r="2.3" fill="#fff" stroke="#475569" stroke-width=".9"/>' +
+                '<circle cx="-8" cy="8.2" r=".9" fill="#94a3b8"/>' +
+                '<circle cx="8" cy="8.2" r=".9" fill="#94a3b8"/>' +
+                '<path fill="#fff" opacity=".92" d="M11.2-1.2h2.4a1.2 1.2 0 0 1 1.2 1.2v2.6h-4.8v-2.6a1.2 1.2 0 0 1 1.2-1.2z"/>' +
+            '</g>' +
+        '</svg></div>';
+}
+
+function atualizarMarcadores(){
+    if (!state.mapa) return;
+    const visiveis = new Set();
+    let countVis = 0;
+
+    state.vehicles.forEach((v, key) => {
+        const ok = veiculoPassaFiltro(v);
+        if (!ok) return;
+        countVis += 1;
+        visiveis.add(key);
+        const extra = state.veiculoFiltro && String(v.vehicleId).includes(state.veiculoFiltro) ? "highlight" : "";
+        const icon = L.divIcon({
+            className: "bus-marker-wrap",
+            html: iconeOnibusHtml(v.route?.color, v.vehicleId, v.route?.shortName, extra),
+            iconSize: [36, 54],
+            iconAnchor: [18, 54]
+        });
+        let marker = state.markers.get(key);
+        if (!marker){
+            marker = L.marker([v.lat, v.lng], { icon }).addTo(state.mapa);
+            marker.bindPopup(() => popupHtml(v));
+            state.markers.set(key, marker);
+        } else {
+            marker.setLatLng([v.lat, v.lng]);
+            marker.setIcon(icon);
+            marker.setPopupContent(popupHtml(v));
+        }
+    });
+
+    state.markers.forEach((marker, key) => {
+        if (!visiveis.has(key)){
+            state.mapa.removeLayer(marker);
+            state.markers.delete(key);
+        }
+    });
+
+    $("statOnline").textContent = state.vehicles.size;
+    $("statVisiveis").textContent = countVis;
+    syncNativeHud();
+}
+
+async function pollLote(){
+    setLive("Atualizando posições...", true);
+    try {
+        const rt = state.routeFiltro ? state.routeFiltro.routeId : null;
+        const lista = await fetchCleverVehicles(rt);
+        if (!rt){
+            state.vehicles.clear();
+        } else {
+            Array.from(state.vehicles.keys()).forEach(k => {
+                if (k.endsWith(":" + rt)) state.vehicles.delete(k);
+            });
+        }
+        lista.forEach(v => state.vehicles.set(v.key, v));
+        state.lastUpdate = new Date();
+        state.liveOk = true;
+        atualizarMarcadores();
+        const hora = state.lastUpdate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+        setLive(state.vehicles.size + " ônibus · " + hora, false);
+    } catch (err) {
+        setLive(err.message || "Falha ao atualizar posições", false);
+    }
+}
+
+function iniciarPoll(){
+    clearInterval(state.pollTimer);
+    pollLote();
+    state.pollTimer = setInterval(pollLote, CLEVER.intervaloMs);
+}
+
+function selecionarLinha(routeId){
+    const route = state.routes.find(r => r.routeId === routeId);
+    if (!route) return;
+    state.routeFiltro = route;
+    renderListaLinhas();
+    atualizarMarcadores();
+    pollLote();
+    fecharSheetLinhas();
+}
+
+function limparFiltro(){
+    state.routeFiltro = null;
+    renderListaLinhas();
+    pollLote();
+}
+
+function initNativeAppMode(){
+    if (!isNativeEmbedded()) return;
+    if (!document.documentElement.classList.contains("native-embedded")) {
+        document.documentElement.classList.add("native-embedded");
+    }
+    document.body.classList.add("oa-native-mode");
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
+
+    ["oaNativeTop", "oaNativeFloats"].forEach(id => {
+        const el = $(id);
+        if (el){
+            el.removeAttribute("hidden");
+            el.setAttribute("aria-hidden", "false");
+        }
+    });
+
+    $("oaFabLinhas")?.addEventListener("click", abrirSheetLinhas);
+    $("oaFabMapa")?.addEventListener("click", abrirSheetMapa);
+    $("oaBackdrop")?.addEventListener("click", () => {
+        fecharSheetLinhas();
+        fecharSheetMapa();
+    });
+
+    const sheetBody = $("oaSheetLinhasBody");
+    const lines = $("listaLinhas");
+    const btnLimpar = $("btnLimparFiltro");
+    if (sheetBody && lines) sheetBody.appendChild(lines);
+    if (sheetBody && btnLimpar){
+        btnLimpar.style.marginTop = "10px";
+        btnLimpar.style.width = "100%";
+        sheetBody.appendChild(btnLimpar);
+    }
+
+    requestAnimationFrame(() => state.mapa?.invalidateSize());
+    syncNativeHud();
+    scheduleMapResize();
+}
+
+function bind(){
+    $("buscaLinha").addEventListener("input", e => { state.buscaLinha = e.target.value; renderListaLinhas(); });
+    $("buscaVeiculo").addEventListener("input", e => { state.veiculoFiltro = e.target.value.trim(); atualizarMarcadores(); });
+    $("btnLimparFiltro").addEventListener("click", limparFiltro);
+    $("btnAtualizar").addEventListener("click", () => pollLote());
+    $("btnMapaClaro").addEventListener("click", () => trocarTile("light"));
+    $("btnMapaSat").addEventListener("click", () => trocarTile("sat"));
+    $("btnCentralizar").addEventListener("click", () => state.mapa?.setView(CLEVER.centro, CLEVER.zoom));
+    $("oaMapaClaro")?.addEventListener("click", () => acaoMapaMobile(() => trocarTile("light")));
+    $("oaMapaSat")?.addEventListener("click", () => acaoMapaMobile(() => trocarTile("sat")));
+    $("oaMapaCentralizar")?.addEventListener("click", () => acaoMapaMobile(() => state.mapa?.setView(CLEVER.centro, CLEVER.zoom)));
+    $("oaMapaAtualizar")?.addEventListener("click", () => acaoMapaMobile(() => pollLote()));
+    window.addEventListener("resize", scheduleMapResize);
+    window.addEventListener("orientationchange", () => setTimeout(scheduleMapResize, 250));
+    window.visualViewport?.addEventListener("resize", scheduleMapResize);
+}
+
+async function boot(){
+    setLive("Carregando linhas...", true);
+    if (isNativeEmbedded()) initNativeAppMode();
+    if (!state.mapa) initMapa();
+    scheduleMapResize();
+
+    await initCleverProxy();
+
+    try {
+        state.routes = (await fetchCleverRoutes()).sort(ordenarRotas);
+    } catch (err) {
+        state.routes = [];
+        setLive(err.message || "Falha ao carregar linhas Clever", false);
+    }
+    renderListaLinhas();
+    setLive(state.routes.length + " linhas · Clever", false);
+
+    const linhaParam = new URLSearchParams(location.search).get("linha");
+    if (linhaParam){
+        const alvo = state.routes.find(r => String(r.shortName) === linhaParam || String(r.routeId) === linhaParam);
+        if (alvo) selecionarLinha(alvo.routeId);
+    }
+
+    iniciarPoll();
+}
+
+function iniciar(){
+    bind();
+    boot().catch(err => {
+        setLive(err.message || "Erro ao iniciar", false);
+        $("listaLinhas").innerHTML = '<div class="empty"><h3>Falha ao carregar</h3><p>' + esc(err.message || "Não foi possível carregar os dados da Clever.") + '</p></div>';
+    });
+}
+
+if (window.portalUsuarioValidado) iniciar();
+else window.addEventListener("portal:usuario-validado", iniciar, { once: true });
+</script>
+</body>
+</html>
