@@ -490,6 +490,16 @@ body.pdf-exporting .report-body-print{display:block}
     .report-fields td.report-line{display:block;width:100%;border-right:0}
     .report-fields tr{display:block}
 }
+/* O "papel" (.paper) simula documento impresso: nunca deve herdar o
+   texto branco forçado pelo modo escuro global (html.dk-dark h1/h2/h3/label). */
+html.dk-dark .paper h1,
+html.dk-dark .paper h2,
+html.dk-dark .paper h3,
+html.dk-dark .paper label{
+    color:#111827 !important;
+    text-shadow:none !important;
+    opacity:1 !important;
+}
 @page{size:A4;margin:0}
 @media print{
     html,body{width:210mm;min-height:297mm;background:#fff!important}
@@ -697,25 +707,13 @@ body.pdf-exporting .report-body-print{display:block}
     transform:translateY(-2px);
     box-shadow:0 14px 28px -12px rgba(255,107,0,.5), inset 0 1px 0 rgba(255,255,255,.35);
   }
-  #pdfTopoBtn{
+  #enviarTopoBtn{
     background:rgba(255,255,255,.42) !important;
     color:var(--blue) !important;
     border-left:3px solid var(--orange) !important;
     box-shadow:0 10px 24px -14px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.5) !important;
   }
-  #pdfTopoBtn:hover{
-    background:rgba(224,235,255,.85) !important;
-    color:var(--blue) !important;
-    transform:translateY(-2px) !important;
-    box-shadow:0 14px 28px -14px rgba(6,36,92,.35), inset 0 1px 0 rgba(255,255,255,.6) !important;
-  }
-  #emailTopoBtn{
-    background:rgba(255,255,255,.42) !important;
-    color:var(--blue) !important;
-    border-left:3px solid var(--orange) !important;
-    box-shadow:0 10px 24px -14px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.5) !important;
-  }
-  #emailTopoBtn:hover{
+  #enviarTopoBtn:hover{
     background:rgba(224,235,255,.85) !important;
     color:var(--blue) !important;
     transform:translateY(-2px) !important;
@@ -777,11 +775,10 @@ body.pdf-exporting .report-body-print{display:block}
             <span>Portal</span>
         </a>
         <div class="report-actions">
-            <button class="btn btn-primary" type="button" id="pdfTopoBtn">Gerar PDF</button>
             <button class="btn btn-secondary" type="button" id="anexosBtn">+ Anexo</button>
             <input type="file" id="anexosInput" multiple hidden>
             <span class="anexos-status" id="anexosStatus" hidden></span>
-            <button class="btn btn-secondary" type="button" id="emailTopoBtn">Enviar por E-mail</button>
+            <button class="btn btn-primary" type="button" id="enviarTopoBtn">ENVIAR</button>
         </div>
     </div>
 
@@ -1814,52 +1811,7 @@ async function construirPdfRelatorio() {
     return pdf;
 }
 
-async function exportarPdfRelatorio(botao) {
-    setStatus("Gerando PDF...", "ia");
-    window.portalMostrarCarregando?.("Gerando PDF");
-    document.body.classList.add("pdf-exporting");
-
-    try {
-        const pdf = await construirPdfRelatorio();
-        pdf.save(nomeArquivoPdf());
-        const salvo = await tentarSalvarPdfAws(pdf, "pdf");
-        setStatus(
-            salvo?.storageKey
-                ? "PDF gerado e salvo na AWS (" + salvo.storageKey + ")."
-                : "PDF gerado com sucesso. (AWS indisponível — arquivo só no download)",
-            salvo ? "ok" : "ia"
-        );
-    } catch (error) {
-        console.error(error);
-        setStatus("Falha ao gerar PDF: " + (error.message || "tente novamente."), "erro");
-        window.print();
-    } finally {
-        document.body.classList.remove("pdf-exporting");
-        window.portalOcultarCarregando?.();
-        if (botao) botao.disabled = false;
-    }
-}
-
-async function gerarPDF() {
-    const botao = document.getElementById("pdfTopoBtn");
-    let registrado = false;
-    botao.disabled = true;
-    try {
-        registrado = await registrarProtocolo();
-    } catch (error) {
-        console.error(error);
-        setStatus("Falha ao registrar protocolo: " + (error.message || "tente novamente."), "erro");
-        return;
-    } finally {
-        if (!registrado) botao.disabled = false;
-    }
-    if (!registrado && PROTOCOLO_SCRIPT_URL) return;
-    await exportarPdfRelatorio(botao);
-}
-
-document.getElementById("pdfTopoBtn").addEventListener("click", gerarPDF);
-
-// ==== Envio do relatório por e-mail (Google Apps Script + Gmail) ====
+// ==== Envio do relatório (registro na planilha + PDF + e-mail, botão único ENVIAR) ====
 // Depois de publicar o Apps Script (ver guia), cole aqui a URL do Web App
 // (termina em /exec) e, se tiver definido um TOKEN no script, repita o
 // mesmo valor abaixo.
@@ -1932,10 +1884,10 @@ document.getElementById("anexosInput").addEventListener("change", (evento) => {
     atualizarAnexosStatus();
 });
 
-async function enviarRelatorioPorEmail() {
-    const botao = document.getElementById("emailTopoBtn");
+async function enviarRelatorio() {
+    const botao = document.getElementById("enviarTopoBtn");
     if (!EMAIL_SCRIPT_URL) {
-        setStatus("Para enviar por e-mail, falta publicar o Apps Script de envio e colar a URL em EMAIL_SCRIPT_URL.", "erro");
+        setStatus("Para enviar o relatório, falta publicar o Apps Script de envio e colar a URL em EMAIL_SCRIPT_URL.", "erro");
         return;
     }
 
@@ -1946,12 +1898,30 @@ async function enviarRelatorioPorEmail() {
     }
 
     botao.disabled = true;
-    window.portalMostrarCarregando?.("Enviando relatório por e-mail");
+    window.portalMostrarCarregando?.("Enviando relatório");
     document.body.classList.add("pdf-exporting");
 
     try {
-        setStatus("Gerando PDF para envio...", "ia");
-        const pdf = await construirPdfRelatorio();
+        let registrado = false;
+        try {
+            registrado = await registrarProtocolo();
+        } catch (error) {
+            console.error(error);
+            setStatus("Falha ao registrar protocolo: " + (error.message || "tente novamente."), "erro");
+            return;
+        }
+        if (!registrado && PROTOCOLO_SCRIPT_URL) return;
+
+        setStatus("Gerando PDF...", "ia");
+        let pdf;
+        try {
+            pdf = await construirPdfRelatorio();
+            pdf.save(nomeArquivoPdf());
+        } catch (errPdf) {
+            window.print();
+            throw errPdf;
+        }
+
         const anexos = [
             {
                 filename: nomeArquivoPdf(),
@@ -1972,7 +1942,7 @@ async function enviarRelatorioPorEmail() {
         }
 
         setStatus("Salvando PDF na AWS...", "ia");
-        const salvoAws = await tentarSalvarPdfAws(pdf, "email");
+        const salvoAws = await tentarSalvarPdfAws(pdf, "envio");
 
         setStatus("Enviando e-mail...", "ia");
         const resposta = await fetch(EMAIL_SCRIPT_URL, {
@@ -2000,8 +1970,8 @@ async function enviarRelatorioPorEmail() {
         }
         setStatus(
             salvoAws?.storageKey
-                ? "Relatório enviado por e-mail e salvo na AWS."
-                : "Relatório enviado por e-mail com sucesso.",
+                ? "Relatório gerado, registrado, enviado por e-mail e salvo na AWS."
+                : "Relatório gerado, registrado e enviado por e-mail com sucesso.",
             "ok"
         );
         anexosExtras = [];
@@ -2009,7 +1979,7 @@ async function enviarRelatorioPorEmail() {
         mostrarConfirmacaoEmailEnviado(salvoAws?.storageKey);
     } catch (error) {
         console.error(error);
-        setStatus("Falha ao enviar e-mail: " + (error.message || "tente novamente."), "erro");
+        setStatus("Falha ao enviar relatório: " + (error.message || "tente novamente."), "erro");
     } finally {
         document.body.classList.remove("pdf-exporting");
         window.portalOcultarCarregando?.();
@@ -2053,7 +2023,7 @@ document.getElementById("emailEnviadoOverlay")?.addEventListener("click", (ev) =
     if (ev.target.id === "emailEnviadoOverlay") fecharConfirmacaoEmailEnviado();
 });
 
-document.getElementById("emailTopoBtn").addEventListener("click", enviarRelatorioPorEmail);
+document.getElementById("enviarTopoBtn").addEventListener("click", enviarRelatorio);
 window.addEventListener("beforeprint", atualizarCorpoPDF);
 document.getElementById("limparBtn").addEventListener("click", () => {
     if (!ehInformativo()) {
