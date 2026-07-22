@@ -145,6 +145,29 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 
 .empty{padding:40px 20px;text-align:center;color:var(--muted)}
 .empty h3{margin:0 0 8px;color:var(--blue);font-size:18px;font-weight:800}
+
+.oper-toggle{display:flex;gap:6px}
+.oper-btn{flex:1;height:36px;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--muted);font:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:.15s ease}
+.oper-btn:hover{background:var(--surface-2)}
+.oper-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+
+.veiculo-panel{
+  position:absolute;left:12px;bottom:12px;z-index:600;width:min(300px,calc(100% - 24px));
+  background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:14px 16px;border:1px solid var(--border);
+}
+.veiculo-panel[hidden]{display:none!important}
+.veiculo-panel-close{
+  position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:0;
+  background:var(--surface-2);color:var(--muted);font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center
+}
+.veiculo-panel-close:hover{background:#e2e8f0}
+.veiculo-panel-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;padding-right:22px}
+.veiculo-panel-chip{width:42px;height:36px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:13px;flex:0 0 auto}
+.veiculo-panel-title{font-size:15px;font-weight:800;color:var(--blue);line-height:1.2}
+.veiculo-panel-status{
+  display:inline-block;margin-top:4px;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:800;
+}
+.veiculo-panel-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 @media (max-width:720px){
   .body-bg-wall,
   .body-bg-stain{
@@ -389,6 +412,14 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                     <label for="buscaVeiculo">Veículo</label>
                     <input class="input" id="buscaVeiculo" type="search" placeholder="Ex.: 1150" autocomplete="off">
                 </div>
+                <div class="field">
+                    <label>Operadora</label>
+                    <div class="oper-toggle" id="operToggle">
+                        <button type="button" class="oper-btn active" data-op="">Todos</button>
+                        <button type="button" class="oper-btn" data-op="TCGL">TCGL</button>
+                        <button type="button" class="oper-btn" data-op="LondriSul">LondriSul</button>
+                    </div>
+                </div>
                 <div class="stats">
                     <div class="stat"><b id="statOnline">0</b><span>Online</span></div>
                     <div class="stat"><b id="statLinhas">0</b><span>Linhas</span></div>
@@ -413,6 +444,17 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                             <button type="button" class="btn btn-ghost" id="btnMapaClaro">Mapa claro</button>
                             <button type="button" class="btn btn-ghost" id="btnMapaSat">Satélite</button>
                             <button type="button" class="btn btn-ghost" id="btnCentralizar">Centralizar</button>
+                        </div>
+                        <div class="veiculo-panel" id="veiculoPanel" hidden>
+                            <button type="button" class="veiculo-panel-close" id="veiculoPanelClose" aria-label="Fechar">&times;</button>
+                            <div class="veiculo-panel-head">
+                                <span class="veiculo-panel-chip" id="veiculoPanelChip"></span>
+                                <div>
+                                    <div class="veiculo-panel-title" id="veiculoPanelTitle"></div>
+                                    <span class="veiculo-panel-status" id="veiculoPanelStatus"></span>
+                                </div>
+                            </div>
+                            <div class="veiculo-panel-grid" id="veiculoPanelGrid"></div>
                         </div>
                     </div>
                 </div>
@@ -477,17 +519,31 @@ const CLEVER = {
     },
     centro: [-23.303, -51.166],
     zoom: 13,
-    intervaloMs: 15000,
+    intervaloMs: 20000,
     viaCores: ["#2db4bf","#06245c","#ff6b00","#0b3a8a","#059669","#8b5cf6","#eab308","#ec4899","#38bdf8","#64748b"]
 };
+
+/** Cores/limites de pontualidade — mesmo padrão já usado na página Ônibus Agora (TCGL). */
+const PONTUALIDADE = {
+    cores: { adiantado: "#D30000", atrasado: "#FFFF00", noHorario: "#8FD400", especial: "#374151" },
+    adiantadoSeg: 120,
+    atrasadoSeg: 360
+};
+
+/** Códigos de rota especiais da Clever (garagem/fora de serviço) — tratados junto com "fora de serviço", em cinza. */
+const CODIGOS_ESPECIAIS = new Set(["U", "PI", "DH"]);
 
 const state = {
     routes: [],
     routeFiltro: null,
     veiculoFiltro: "",
+    operadorFiltro: null,
     buscaLinha: "",
     vehicles: new Map(),
     markers: new Map(),
+    veiculoSelecionado: null,
+    tracoLayer: null,
+    paradasLayer: null,
     pollTimer: null,
     lastUpdate: null,
     liveOk: false,
@@ -516,6 +572,29 @@ function contraste(hex){
 
 function corPorIndice(i){
     return CLEVER.viaCores[i % CLEVER.viaCores.length];
+}
+
+/** TCGL: vid 0–5000 (crachá branco/texto preto). LondriSul: vid 5001–9999 (crachá preto/texto branco). */
+function operadoraDoVeiculo(vid){
+    const n = parseInt(vid, 10);
+    if (!Number.isFinite(n)) return null;
+    if (n >= 0 && n <= 5000) return "TCGL";
+    if (n >= 5001 && n <= 9999) return "LondriSul";
+    return null;
+}
+
+function corBadgeOperadora(operadora){
+    return operadora === "LondriSul" ? { bg: "#000", fg: "#fff" } : { bg: "#fff", fg: "#000" };
+}
+
+/** Deriva o status de pontualidade a partir do delaySec calculado no proxy (getvehiclesdelay). */
+function statusPontualidade(v){
+    if (v.especial || v.delaySec == null){
+        return { chave: "especial", label: v.especial ? "Fora de serviço" : "Sem previsão", cor: PONTUALIDADE.cores.especial };
+    }
+    if (v.delaySec <= -PONTUALIDADE.adiantadoSeg) return { chave: "adiantado", label: "Adiantado", cor: PONTUALIDADE.cores.adiantado };
+    if (v.delaySec >= PONTUALIDADE.atrasadoSeg) return { chave: "atrasado", label: "Atrasado", cor: PONTUALIDADE.cores.atrasado };
+    return { chave: "noHorario", label: "No horário", cor: PONTUALIDADE.cores.noHorario };
 }
 
 function resolverBasePortal(){
@@ -595,9 +674,10 @@ async function fetchCleverRoutes(){
     }));
 }
 
-async function fetchCleverVehicles(routeId){
-    const qs = routeId ? ("?rt=" + encodeURIComponent(routeId)) : "";
-    const data = await fetchCleverLive("getvehicles" + qs);
+async function fetchCleverVehicles(){
+    // O endpoint composto calcula o atraso real (getpredictions em lote) e sempre retorna a frota inteira;
+    // o filtro por linha é aplicado no cliente (veiculoPassaFiltro).
+    const data = await fetchCleverLive("getvehiclesdelay");
     const lista = extrairListaBustime(data, "vehicle");
     const found = [];
     lista.forEach(v => {
@@ -605,9 +685,13 @@ async function fetchCleverVehicles(routeId){
         const lng = Number(v.lon);
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
         const rt = String(v.rt ?? "");
-        const route = state.routes.find(r => r.routeId === rt) || { routeId: rt, shortName: rt || "?", longName: "", color: "#2db4bf" };
+        const especial = CODIGOS_ESPECIAIS.has(rt);
+        const route = especial
+            ? { routeId: rt, shortName: rt || "?", longName: "Fora de serviço", color: "#374151" }
+            : (state.routes.find(r => r.routeId === rt) || { routeId: rt, shortName: rt || "?", longName: "", color: "#2db4bf" });
+        const vid = String(v.vid ?? "?");
         found.push({
-            vehicleId: String(v.vid ?? "?"),
+            vehicleId: vid,
             lat, lng,
             routeId: route.routeId,
             route,
@@ -615,7 +699,13 @@ async function fetchCleverVehicles(routeId){
             speed: v.spd != null ? Number(v.spd) : null,
             tripDesc: v.des || "",
             positionTime: formatarTmstmp(v.tmstmp),
-            key: String(v.vid ?? "?") + ":" + rt
+            delaySec: v.delaySec != null ? Number(v.delaySec) : null,
+            especial,
+            sentido: v.rtdir || null,
+            wid: v.tablockid || "",
+            pid: v.pid != null ? String(v.pid) : "",
+            operadora: operadoraDoVeiculo(vid),
+            key: vid + ":" + rt
         });
     });
     return found;
@@ -814,36 +904,94 @@ function renderListaLinhas(){
 
 function veiculoPassaFiltro(v){
     if (state.routeFiltro && v.routeId !== state.routeFiltro.routeId) return false;
+    if (state.operadorFiltro && v.operadora !== state.operadorFiltro) return false;
     const q = state.veiculoFiltro.trim();
     if (q && !String(v.vehicleId || "").includes(q)) return false;
     return true;
 }
 
-function popupHtml(v){
-    const cor = corCss(v.route?.color);
-    return '<div class="popup">' +
-        '<div class="popup-head">' +
-            '<span class="popup-chip" style="background:' + esc(cor) + ';color:' + contraste(cor) + '">' + esc(v.route?.shortName || "?") + '</span>' +
-            '<div><div class="popup-title">Veículo ' + esc(v.vehicleId) + '</div><div class="popup-sub">' + esc(v.route?.longName || "") + '</div></div>' +
-        '</div>' +
-        '<div class="popup-grid">' +
-            '<div class="popup-item">Posição<strong>' + esc(v.positionTime || "—") + '</strong></div>' +
-            '<div class="popup-item">Velocidade<strong>' + (v.speed != null ? esc(v.speed) + " km/h" : "—") + '</strong></div>' +
-            '<div class="popup-item">Destino<strong>' + esc(v.tripDesc || "—") + '</strong></div>' +
-            '<div class="popup-item">Direção<strong>' + (v.heading != null ? esc(v.heading) + "°" : "—") + '</strong></div>' +
-        '</div></div>';
+function textoStatusComQuantidade(v){
+    const st = statusPontualidade(v);
+    if (st.chave === "especial" || v.delaySec == null) return st.label;
+    const min = Math.round(Math.abs(v.delaySec) / 60);
+    return st.label + (min > 0 ? (" · " + min + " min") : "");
 }
 
-function iconeOnibusHtml(corLinha, prefixo, linha, extraClass){
-    const cl = esc(corCss(corLinha));
-    return '<div class="bus-marker ' + (extraClass || "") + '" style="--cor:' + cl + '">' +
+function abrirPainelVeiculo(v){
+    const st = statusPontualidade(v);
+    const corLinha = corCss(v.route?.color);
+    $("veiculoPanelChip").textContent = v.vehicleId;
+    $("veiculoPanelChip").style.background = corLinha;
+    $("veiculoPanelChip").style.color = contraste(corLinha);
+    $("veiculoPanelTitle").textContent = "Veículo " + v.vehicleId;
+    $("veiculoPanelStatus").textContent = textoStatusComQuantidade(v);
+    $("veiculoPanelStatus").style.background = st.cor;
+    $("veiculoPanelStatus").style.color = contraste(st.cor);
+    $("veiculoPanelGrid").innerHTML = [
+        ["Linha", v.route?.shortName || "—"],
+        ["W-id", v.wid || "—"],
+        ["Sentido", v.sentido || "—"],
+        ["Via", v.tripDesc || "—"],
+        ["Velocidade", v.speed != null ? (v.speed + " km/h") : "—"]
+    ].map(([k, val]) => '<div class="popup-item">' + esc(k) + '<strong>' + esc(val) + '</strong></div>').join("");
+    $("veiculoPanel").hidden = false;
+}
+
+function fecharPainelVeiculo(){
+    $("veiculoPanel").hidden = true;
+    state.veiculoSelecionado = null;
+    limparTraco();
+}
+
+function limparTraco(){
+    if (state.tracoLayer){ state.mapa?.removeLayer(state.tracoLayer); state.tracoLayer = null; }
+    if (state.paradasLayer){ state.mapa?.removeLayer(state.paradasLayer); state.paradasLayer = null; }
+}
+
+/** Busca o traçado (getpatterns por pid) e desenha a linha + os pontos de parada no mapa. */
+async function desenharTracoLinha(v){
+    limparTraco();
+    if (!v.pid) return;
+    const data = await fetchCleverLive("getpatterns?pid=" + encodeURIComponent(v.pid));
+    const patterns = extrairListaBustime(data, "ptr");
+    const pat = patterns.find(p => String(p.pid) === String(v.pid)) || patterns[0];
+    if (!pat || !Array.isArray(pat.pt)) return;
+    const latlngs = pat.pt
+        .map(p => [Number(p.lat), Number(p.lon)])
+        .filter(([la, lo]) => Number.isFinite(la) && Number.isFinite(lo));
+    if (!latlngs.length) return;
+    const cor = corCss(v.route?.color);
+    state.tracoLayer = L.polyline(latlngs, { color: cor, weight: 5, opacity: .85 }).addTo(state.mapa);
+    const paradas = pat.pt.filter(p => p.typ === "S" && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lon)));
+    const marcadores = paradas.map(p => L.circleMarker([Number(p.lat), Number(p.lon)], {
+        radius: 5, weight: 2, color: "#fff", fillColor: cor, fillOpacity: 1
+    }).bindTooltip(esc(p.stpnm || "Parada"), { direction: "top" }));
+    state.paradasLayer = L.layerGroup(marcadores).addTo(state.mapa);
+    state.mapa.fitBounds(L.latLngBounds(latlngs), { padding: [40, 40] });
+}
+
+async function selecionarVeiculo(v){
+    state.veiculoSelecionado = v.key;
+    abrirPainelVeiculo(v);
+    try {
+        await desenharTracoLinha(v);
+    } catch (err) {
+        console.warn("Falha ao desenhar traçado da linha:", err);
+    }
+}
+
+function iconeOnibusHtml(v, extraClass){
+    const corBody = esc(statusPontualidade(v).cor);
+    const corLinha = corCss(v.route?.color);
+    const badge = corBadgeOperadora(v.operadora);
+    return '<div class="bus-marker ' + (extraClass || "") + '" style="--cor:' + corBody + '">' +
         '<div class="bus-labels">' +
-            '<span class="bus-tag bus-tag-prefix">' + esc(prefixo || "—") + '</span>' +
-            '<span class="bus-tag bus-tag-line" style="background:' + cl + ';color:' + contraste(corLinha) + '">' + esc(linha || "?") + '</span>' +
+            '<span class="bus-tag bus-tag-prefix" style="background:' + badge.bg + ';color:' + badge.fg + '">' + esc(v.vehicleId || "—") + '</span>' +
+            '<span class="bus-tag bus-tag-line" style="background:' + esc(corLinha) + ';color:' + contraste(corLinha) + '">' + esc(v.route?.shortName || "?") + '</span>' +
         '</div>' +
         '<svg viewBox="0 0 32 28" aria-hidden="true">' +
             '<g transform="translate(16,14)">' +
-                '<path fill="' + cl + '" stroke="#fff" stroke-width="1" d="M-13.5-5.8h27a3.8 3.8 0 0 1 3.8 3.8v7.8a3.8 3.8 0 0 1-3.8 3.8h-27a3.8 3.8 0 0 1-3.8-3.8v-7.8a3.8 3.8 0 0 1 3.8-3.8z"/>' +
+                '<path fill="' + corBody + '" stroke="#fff" stroke-width="1" d="M-13.5-5.8h27a3.8 3.8 0 0 1 3.8 3.8v7.8a3.8 3.8 0 0 1-3.8 3.8h-27a3.8 3.8 0 0 1-3.8-3.8v-7.8a3.8 3.8 0 0 1 3.8-3.8z"/>' +
                 '<rect x="-10" y="-2.6" width="5.8" height="4.4" rx="1.1" fill="#fff" opacity=".82"/>' +
                 '<rect x="-2.2" y="-2.6" width="5.8" height="4.4" rx="1.1" fill="#fff" opacity=".82"/>' +
                 '<rect x="5.6" y="-2.6" width="5.8" height="4.4" rx="1.1" fill="#fff" opacity=".82"/>' +
@@ -866,22 +1014,22 @@ function atualizarMarcadores(){
         if (!ok) return;
         countVis += 1;
         visiveis.add(key);
-        const extra = state.veiculoFiltro && String(v.vehicleId).includes(state.veiculoFiltro) ? "highlight" : "";
+        const destacado = (state.veiculoFiltro && String(v.vehicleId).includes(state.veiculoFiltro)) || state.veiculoSelecionado === key;
+        const extra = destacado ? "highlight" : "";
         const icon = L.divIcon({
             className: "bus-marker-wrap",
-            html: iconeOnibusHtml(v.route?.color, v.vehicleId, v.route?.shortName, extra),
+            html: iconeOnibusHtml(v, extra),
             iconSize: [36, 54],
             iconAnchor: [18, 54]
         });
         let marker = state.markers.get(key);
         if (!marker){
             marker = L.marker([v.lat, v.lng], { icon }).addTo(state.mapa);
-            marker.bindPopup(() => popupHtml(v));
+            marker.on("click", () => selecionarVeiculo(state.vehicles.get(key) || v));
             state.markers.set(key, marker);
         } else {
             marker.setLatLng([v.lat, v.lng]);
             marker.setIcon(icon);
-            marker.setPopupContent(popupHtml(v));
         }
     });
 
@@ -892,6 +1040,12 @@ function atualizarMarcadores(){
         }
     });
 
+    if (state.veiculoSelecionado){
+        const atual = state.vehicles.get(state.veiculoSelecionado);
+        if (atual) abrirPainelVeiculo(atual);
+        else fecharPainelVeiculo();
+    }
+
     $("statOnline").textContent = state.vehicles.size;
     $("statVisiveis").textContent = countVis;
     syncNativeHud();
@@ -900,15 +1054,8 @@ function atualizarMarcadores(){
 async function pollLote(){
     setLive("Atualizando posições...", true);
     try {
-        const rt = state.routeFiltro ? state.routeFiltro.routeId : null;
-        const lista = await fetchCleverVehicles(rt);
-        if (!rt){
-            state.vehicles.clear();
-        } else {
-            Array.from(state.vehicles.keys()).forEach(k => {
-                if (k.endsWith(":" + rt)) state.vehicles.delete(k);
-            });
-        }
+        const lista = await fetchCleverVehicles();
+        state.vehicles.clear();
         lista.forEach(v => state.vehicles.set(v.key, v));
         state.lastUpdate = new Date();
         state.liveOk = true;
@@ -985,6 +1132,14 @@ function bind(){
     $("buscaLinha").addEventListener("input", e => { state.buscaLinha = e.target.value; renderListaLinhas(); });
     $("buscaVeiculo").addEventListener("input", e => { state.veiculoFiltro = e.target.value.trim(); atualizarMarcadores(); });
     $("btnLimparFiltro").addEventListener("click", limparFiltro);
+    $("veiculoPanelClose").addEventListener("click", fecharPainelVeiculo);
+    $("operToggle").querySelectorAll(".oper-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            state.operadorFiltro = btn.dataset.op || null;
+            $("operToggle").querySelectorAll(".oper-btn").forEach(b => b.classList.toggle("active", b === btn));
+            atualizarMarcadores();
+        });
+    });
     $("btnAtualizar").addEventListener("click", () => pollLote());
     $("btnMapaClaro").addEventListener("click", () => trocarTile("light"));
     $("btnMapaSat").addEventListener("click", () => trocarTile("sat"));
