@@ -64,6 +64,39 @@ rm -f "$ZIP"
 echo "==> Aguardando Lambda terminar de aplicar o código antes de mexer nas variáveis"
 "$AWS" lambda wait function-updated --function-name "$FUNC" --region "$REGION"
 
+# Garante as rotas /clever/{proxy+} no API Gateway (modo rápido não roda CloudFormation,
+# então rotas novas precisam ser criadas diretamente via apigatewayv2).
+API_ID=$(echo "$API_URL" | sed -E 's#https?://([^.]+)\..*#\1#')
+if [[ -n "$API_ID" ]]; then
+  echo "==> Verificando rotas /clever no API Gateway ($API_ID)"
+  INTEGRATION_ID=$("$AWS" apigatewayv2 get-integrations \
+    --api-id "$API_ID" \
+    --region "$REGION" \
+    --query "Items[0].IntegrationId" \
+    --output text 2>/dev/null || echo "")
+  if [[ -n "$INTEGRATION_ID" && "$INTEGRATION_ID" != "None" ]]; then
+    for ROUTE_KEY in "GET /clever/{proxy+}" "OPTIONS /clever/{proxy+}"; do
+      EXISTE=$("$AWS" apigatewayv2 get-routes \
+        --api-id "$API_ID" \
+        --region "$REGION" \
+        --query "Items[?RouteKey=='${ROUTE_KEY}'].RouteId" \
+        --output text 2>/dev/null || echo "")
+      if [[ -z "$EXISTE" ]]; then
+        echo "   Criando rota: $ROUTE_KEY"
+        "$AWS" apigatewayv2 create-route \
+          --api-id "$API_ID" \
+          --region "$REGION" \
+          --route-key "$ROUTE_KEY" \
+          --target "integrations/${INTEGRATION_ID}" >/dev/null || echo "   AVISO: falha ao criar rota $ROUTE_KEY (permissao IAM?)"
+      else
+        echo "   Rota já existe: $ROUTE_KEY"
+      fi
+    done
+  else
+    echo "   AVISO: não encontrei a integração do API Gateway — rotas /clever podem não funcionar."
+  fi
+fi
+
 if [[ -n "${BUSTIME_API_KEY:-}" || -n "${GEMINI_API_KEY:-}" || -n "${CLEVER_API_KEY:-}" ]]; then
   echo "==> Lendo variáveis atuais da Lambda (para não apagar FleetBus etc.)"
   CURRENT_ENV_JSON=$("$AWS" lambda get-function-configuration \
