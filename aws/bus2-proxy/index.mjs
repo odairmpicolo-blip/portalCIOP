@@ -1,4 +1,5 @@
 import https from "node:https";
+import http from "node:http";
 
 const MOBILIBUS = "https://mobilibus.com/api";
 /** BusTime TCGL entrega cadeia TLS incompleta; Node rejeita sem rejectUnauthorized. */
@@ -6,6 +7,10 @@ const MOV1_HTTPS_AGENT = new https.Agent({ rejectUnauthorized: false });
 const BUSTIME_BASE = (process.env.BUSTIME_BASE_URL || "https://csr.mov1.com.br/bustime/api/v3").replace(/\/+$/, "");
 const BUSTIME_KEY = process.env.BUSTIME_API_KEY || "";
 const BUSTIME_REFERER = process.env.BUSTIME_REFERER || "https://csr.mov1.com.br/map";
+
+/** BusTime v3 da Clever — servidor interno em HTTP puro (sem TLS). */
+const CLEVER_BASE = (process.env.CLEVER_BASE_URL || "http://146.235.63.7/bustime/api/v3").replace(/\/+$/, "");
+const CLEVER_KEY = process.env.CLEVER_API_KEY || "";
 
 const FLEETBUS_ORIGIN = (process.env.FLEETBUS_ORIGIN || "https://fleetbus.app").replace(/\/+$/, "");
 const FLEETBUS_TOKEN = process.env.FLEETBUS_ACCESS_TOKEN || "";
@@ -86,6 +91,45 @@ async function proxyMov1(event) {
     Accept: "application/json",
     Referer: BUSTIME_REFERER,
     Origin: new URL(BUSTIME_REFERER).origin,
+    "User-Agent": "Mozilla/5.0 (compatible; PortalCIOP/1.0)"
+  });
+  return {
+    statusCode: res.statusCode,
+    headers: corsHeaders("application/json"),
+    body: res.body
+  };
+}
+
+function resolveCleverAction(event) {
+  const rawPath = event.rawPath || event.path || "";
+  const trimmed = rawPath.replace(/^\/clever\/?/, "");
+  const action = trimmed.split("/").filter(Boolean)[0];
+  return action || "getvehicles";
+}
+
+async function httpGetText(url, headers, timeoutMs = 24000) {
+  return new Promise((resolve, reject) => {
+    const req = http.get(url, { headers }, (res) => {
+      let body = "";
+      res.setEncoding("utf8");
+      res.on("data", (chunk) => { body += chunk; });
+      res.on("end", () => resolve({ statusCode: res.statusCode || 502, body }));
+    });
+    req.on("error", reject);
+    req.setTimeout(timeoutMs, () => req.destroy(new Error("timeout")));
+  });
+}
+
+async function proxyClever(event) {
+  const action = resolveCleverAction(event);
+  const params = new URLSearchParams(event.rawQueryString || "");
+  params.set("requestType", action);
+  if (CLEVER_KEY) params.set("key", CLEVER_KEY);
+  params.set("format", "json");
+
+  const url = `${CLEVER_BASE}/${action}?${params.toString()}`;
+  const res = await httpGetText(url, {
+    Accept: "application/json",
     "User-Agent": "Mozilla/5.0 (compatible; PortalCIOP/1.0)"
   });
   return {
@@ -505,6 +549,7 @@ export async function handler(event) {
         service: "portal-ciop-live-proxy",
         usage: {
           mov1: "GET /mov1/getvehicles?rt=203 — BusTime csr.mov1.com.br",
+          clever: "GET /clever/getvehicles · GET /clever/getroutes — BusTime Clever (146.235.63.7)",
           bus2: "GET /bus2/vehicles?... — Mobilibus (legado)",
           fleetbus: "GET /fleetbus/vehicles · GET /fleetbus/live?vehicleId=",
           relatorioIa: "POST /relatorio-ia — Gemini para relatórios"
@@ -517,7 +562,7 @@ export async function handler(event) {
     return {
       statusCode: 200,
       headers: corsHeaders(),
-      body: JSON.stringify({ ok: true, service: "portal-ciop-live-proxy", bustime: !!BUSTIME_KEY, fleetbus: !!(fleetTokenCache.access || FLEETBUS_TOKEN) })
+      body: JSON.stringify({ ok: true, service: "portal-ciop-live-proxy", bustime: !!BUSTIME_KEY, clever: !!CLEVER_KEY, fleetbus: !!(fleetTokenCache.access || FLEETBUS_TOKEN) })
     };
   }
 
@@ -525,11 +570,12 @@ export async function handler(event) {
     if (method === "POST" && rawPath === "/relatorio-ia") return await proxyRelatorioIa(event);
     if (rawPath.startsWith("/fleetbus")) return await proxyFleetbus(event);
     if (rawPath.startsWith("/mov1")) return await proxyMov1(event);
+    if (rawPath.startsWith("/clever")) return await proxyClever(event);
     if (rawPath.startsWith("/bus2")) return await proxyBus2(event);
     return {
       statusCode: 404,
       headers: corsHeaders(),
-      body: JSON.stringify({ ok: false, erro: "Use /mov1/..., /bus2/... ou /fleetbus/..." })
+      body: JSON.stringify({ ok: false, erro: "Use /mov1/..., /clever/..., /bus2/... ou /fleetbus/..." })
     };
   } catch (err) {
     return {
@@ -542,3 +588,4 @@ export async function handler(event) {
     };
   }
 }
+
