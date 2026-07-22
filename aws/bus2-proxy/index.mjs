@@ -120,8 +120,98 @@ async function httpGetText(url, headers, timeoutMs = 24000) {
   });
 }
 
+async function cleverRequest(action, extraParams) {
+  const params = new URLSearchParams(extraParams || "");
+  params.set("requestType", action);
+  if (CLEVER_KEY) params.set("key", CLEVER_KEY);
+  params.set("format", "json");
+  const url = `${CLEVER_BASE}/${action}?${params.toString()}`;
+  const res = await httpGetText(url, {
+    Accept: "application/json",
+    "User-Agent": "Mozilla/5.0 (compatible; PortalCIOP/1.0)"
+  }, 15000);
+  try {
+    return JSON.parse(res.body);
+  } catch {
+    return null;
+  }
+}
+
+function cleverList(data, chave) {
+  const raiz = data?.["bustime-response"] ?? {};
+  if (Array.isArray(raiz.error) && raiz.error.length && !raiz[chave]) return [];
+  const val = raiz[chave];
+  if (!val) return [];
+  return Array.isArray(val) ? val : [val];
+}
+
+/** "20260722 20:03" -> epoch ms (assume horário local do servidor Clever, sem fuso explícito). */
+function parseBustimeDate(s) {
+  const m = String(s || "").match(/^(\d{4})(\d{2})(\d{2})[ T](\d{2}):(\d{2})/);
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5])).getTime();
+}
+
+const CLEVER_CODIGOS_ESPECIAIS = new Set(["U", "PI", "DH"]);
+
+/**
+ * Endpoint composto: getvehicles + getpredictions em lote (por vid, 10 por vez)
+ * para calcular o atraso real (delaySec) de cada veículo, comparando o horário
+ * previsto (prdtm) com o horário programado (schdtm) da próxima parada.
+ */
+async function proxyCleverVehiclesDelay() {
+  const vehData = await cleverRequest("getvehicles");
+  const veiculos = cleverList(vehData, "vehicle");
+
+  const normais = veiculos.filter((v) => v?.vid && !CLEVER_CODIGOS_ESPECIAIS.has(String(v.rt || "")));
+  const vids = normais.map((v) => String(v.vid));
+  const lotes = [];
+  for (let i = 0; i < vids.length; i += 10) lotes.push(vids.slice(i, i + 10));
+
+  const resultados = await Promise.allSettled(
+    lotes.map((lote) => cleverRequest("getpredictions", `vid=${lote.join(",")}`))
+  );
+
+  const todasPrevisoes = [];
+  for (const r of resultados) {
+    if (r.status !== "fulfilled") continue;
+    todasPrevisoes.push(...cleverList(r.value, "prd"));
+  }
+  todasPrevisoes.sort((a, b) => (parseBustimeDate(a.prdtm) || 0) - (parseBustimeDate(b.prdtm) || 0));
+
+  const previsaoMaisProximaPorVid = {};
+  for (const p of todasPrevisoes) {
+    const vid = String(p.vid || "");
+    if (vid && !previsaoMaisProximaPorVid[vid]) previsaoMaisProximaPorVid[vid] = p;
+  }
+
+  const veiculosComAtraso = veiculos.map((v) => {
+    const p = previsaoMaisProximaPorVid[String(v?.vid || "")];
+    let delaySec = null;
+    let rtdir = null;
+    let des = v?.des || "";
+    if (p) {
+      const prd = parseBustimeDate(p.prdtm);
+      const sch = parseBustimeDate(p.schdtm);
+      if (prd != null && sch != null) delaySec = Math.round((prd - sch) / 1000);
+      rtdir = p.rtdir || null;
+      if (p.des) des = p.des;
+    }
+    return { ...v, delaySec, rtdir, des };
+  });
+
+  return {
+    statusCode: 200,
+    headers: corsHeaders(),
+    body: JSON.stringify({ "bustime-response": { vehicle: veiculosComAtraso } })
+  };
+}
+
 async function proxyClever(event) {
   const action = resolveCleverAction(event);
+  if (action === "getvehiclesdelay") {
+    return proxyCleverVehiclesDelay();
+  }
   const params = new URLSearchParams(event.rawQueryString || "");
   params.set("requestType", action);
   if (CLEVER_KEY) params.set("key", CLEVER_KEY);
