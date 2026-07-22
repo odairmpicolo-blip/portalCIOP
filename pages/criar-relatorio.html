@@ -391,18 +391,22 @@ select:disabled{
     white-space:nowrap;
 }
 .report-fields{
-    display:grid;
-    grid-template-columns:1fr 1fr;
+    width:100%;
+    border-collapse:collapse;
+    table-layout:fixed;
     border-top:1px solid #6b7280;
     border-left:1px solid #6b7280;
     margin-top:10px;
 }
 .report-line{
-    min-height:34px;
+    height:34px;
+    width:50%;
     border-right:1px solid #6b7280;
     border-bottom:1px solid #6b7280;
     padding:7px 9px;
     font-size:13.5px;
+    vertical-align:middle;
+    text-align:left;
 }
 .report-line.full{grid-column:1/-1}
 .report-label{font-weight:800}
@@ -483,7 +487,8 @@ body.pdf-exporting .report-body-print{display:block}
     .report-head{grid-template-columns:78px 1fr 78px}
     .report-title{display:grid;grid-template-columns:1fr;gap:8px}
     .report-number{position:static;transform:none;justify-self:center}
-    .report-fields{grid-template-columns:1fr}
+    .report-fields td.report-line{display:block;width:100%;border-right:0}
+    .report-fields tr{display:block}
 }
 @page{size:A4;margin:0}
 @media print{
@@ -868,14 +873,20 @@ body.pdf-exporting .report-body-print{display:block}
                     <div class="report-number" id="previewNumero">N° CIOP00000</div>
                 </div>
 
-                <div class="report-fields">
-                    <div class="report-line preview-funcionario" id="previewLinhaRegistro"><span class="report-label">Funcionário:</span> <span id="previewRegistro"></span></div>
-                    <div class="report-line preview-funcionario" id="previewLinhaNome"><span class="report-label">Nome:</span> <span id="previewNome"></span></div>
-                    <div class="report-line preview-funcionario" id="previewLinhaFuncao"><span class="report-label">Função:</span> <span id="previewFuncao"></span></div>
-                    <div class="report-line"><span class="report-label">Carro:</span> <span id="previewCarro"></span></div>
-                    <div class="report-line"><span class="report-label">Data:</span> <span id="previewData"></span></div>
-                    <div class="report-line"><span class="report-label">Linha/Rota:</span> <span id="previewLinha"></span></div>
-                </div>
+                <table class="report-fields">
+                    <tr>
+                        <td class="report-line preview-funcionario" id="previewLinhaRegistro"><span class="report-label">Funcionário:</span> <span id="previewRegistro"></span></td>
+                        <td class="report-line preview-funcionario" id="previewLinhaNome"><span class="report-label">Nome:</span> <span id="previewNome"></span></td>
+                    </tr>
+                    <tr>
+                        <td class="report-line preview-funcionario" id="previewLinhaFuncao"><span class="report-label">Função:</span> <span id="previewFuncao"></span></td>
+                        <td class="report-line"><span class="report-label">Carro:</span> <span id="previewCarro"></span></td>
+                    </tr>
+                    <tr>
+                        <td class="report-line"><span class="report-label">Data:</span> <span id="previewData"></span></td>
+                        <td class="report-line"><span class="report-label">Linha/Rota:</span> <span id="previewLinha"></span></td>
+                    </tr>
+                </table>
 
                 <div class="report-body-label">Descrição</div>
                 <textarea id="corpoRelatorio" class="report-body" spellcheck="true"></textarea>
