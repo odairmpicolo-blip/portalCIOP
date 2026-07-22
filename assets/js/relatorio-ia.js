@@ -51,25 +51,21 @@ export function gerarTextoModelo(tipoId, ctx) {
             return (
                 "No dia " + data + ", o(a) " + funcao + " " + nome + ", registro " + registro +
                 ", apresentou saída adiantada de " + quantidade + " minutos em relação ao horário previsto, comprometendo a regularidade do serviço.\n\n" +
-                "Conforme monitoramento e registros operacionais, o veículo iniciou a viagem antes do horário programado, sem autorização prévia do CIOP.\n\n" +
-                "Providências: orientação formal ao funcionário, reforço das normas de pontualidade e registro da ocorrência para acompanhamento."
+                "Conforme monitoramento e registros operacionais, o veículo iniciou a viagem antes do horário programado, sem autorização prévia do CIOP."
             );
         })(),
 
         atraso_frequente:
             "No dia " + data + ", " + f + ", foi identificado histórico de atrasos frequentes no cumprimento dos horários da linha.\n\n" +
-            "A recorrência de atrasos impacta a confiabilidade do serviço e a experiência do usuário, exigindo acompanhamento e medidas corretivas.\n\n" +
-            "Providências: ciência ao funcionário, reforço das orientações operacionais e monitoramento das próximas saídas.",
+            "A recorrência de atrasos impacta a confiabilidade do serviço e a experiência do usuário, exigindo acompanhamento e medidas corretivas.",
 
         nao_login_tdm:
             "No dia " + data + ", " + f + ", não realizou login no sistema TDM conforme exigido para início da operação.\n\n" +
-            "A ausência de login impede o registro adequado da jornada e dificulta o controle operacional e de fiscalização.\n\n" +
-            "Providências: orientação imediata sobre a obrigatoriedade do login no TDM e registro da ocorrência para ciência da supervisão.",
+            "A ausência de login impede o registro adequado da jornada e dificulta o controle operacional e de fiscalização.",
 
         nao_acatou_ciop:
             "No dia " + data + ", " + f + ", deixou de acatar ordens emitidas pelo CIOP durante a operação.\n\n" +
-            "O não cumprimento das determinações do centro de controle compromete a segurança, a regularidade e a padronização do serviço.\n\n" +
-            "Providências: registro formal da ocorrência, ciência ao funcionário e encaminhamento à supervisão para as medidas cabíveis.",
+            "O não cumprimento das determinações do centro de controle compromete a segurança, a regularidade e a padronização do serviço.",
 
         nao_acatou_cmtu: (() => {
             const agente = String(ctx.agenteOrgaoGestor || ctx.agenteCmtu || "").trim() || "nome do agente do órgão gestor";
@@ -77,23 +73,20 @@ export function gerarTextoModelo(tipoId, ctx) {
                 "No dia " + data + ", " + f + ", deixou de acatar ordens transmitidas pela CMTU (órgão gestor), em desacordo com as determinações recebidas durante a operação.\n\n" +
                 "Conforme registros e monitoramento, a ordem foi repassada pelo(a) agente do órgão gestor " + agente +
                 ", não sendo cumprida pelo funcionário.\n\n" +
-                "Ressalta-se que ordens vindas do órgão gestor não cumpridas configuram infração passível de autuação, nos termos da regulamentação aplicável.\n\n" +
-                "Providências: ciência ao funcionário, registro formal da ocorrência e encaminhamento à supervisão para as providências cabíveis, inclusive comunicação ao órgão gestor quando aplicável."
+                "Ressalta-se que ordens vindas do órgão gestor não cumpridas configuram infração passível de autuação, nos termos da regulamentação aplicável."
             );
         })(),
 
         supressao_viagem:
             "No dia " + data + ", " + f + ", houve supressão de viagem prevista no horário de operação.\n\n" +
-            "A viagem não foi realizada conforme programação, gerando impacto na oferta de serviço aos usuários.\n\n" +
-            "Providências: apuração dos motivos, registro operacional e comunicação à supervisão para acompanhamento.",
+            "A viagem não foi realizada conforme programação, gerando impacto na oferta de serviço aos usuários.",
 
         desvio_itinerario:
             "No dia " + data + ", " + f + ", realizou desvio de itinerário sem justificativa operacional.\n\n" +
-            "O desvio não autorizado altera o trajeto previsto e pode afetar a regularidade e a segurança da operação.\n\n" +
-            "Providências: orientação ao funcionário, reforço das normas de trajeto e registro para acompanhamento.",
+            "O desvio não autorizado altera o trajeto previsto e pode afetar a regularidade e a segurança da operação.",
 
         informativo:
-            "No dia " + data + ", o CIOP registra as informações abaixo para conhecimento e providências internas.\n\n" +
+            "No dia " + data + ", o CIOP registra as informações abaixo para conhecimento.\n\n" +
             (ctx.carro || ctx.linha ? "Referência operacional" + ctxCarro(ctx) + ctxLinha(ctx) + ".\n\n" : "") +
             "Descreva os fatos observados, contexto, impactos e encaminhamentos necessários."
     };
