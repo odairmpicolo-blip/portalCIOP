@@ -1,0 +1,45 @@
+name: Diagnostico S3 + logs do Lambda (relatorios)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnosticar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: sa-east-1
+    steps:
+      - name: Listar buckets de relatorios
+        run: |
+          echo "=== Buckets portal-ciop-relatorios-* ==="
+          aws s3api list-buckets --query "Buckets[?starts_with(Name, 'portal-ciop-relatorios')].Name" --output text || true
+
+      - name: Listar objetos no bucket de relatorios (hoje)
+        run: |
+          BUCKET=$(aws s3api list-buckets --query "Buckets[?starts_with(Name, 'portal-ciop-relatorios')].Name" --output text | head -n1)
+          echo "Bucket: $BUCKET"
+          if [ -z "$BUCKET" ]; then
+            echo "Nenhum bucket encontrado."
+            exit 0
+          fi
+          echo "=== Todos os objetos em relatorios/ ==="
+          aws s3api list-objects-v2 --bucket "$BUCKET" --prefix "relatorios/" --query "Contents[].{Key:Key,Size:Size,Modified:LastModified}" --output table || echo "Bucket vazio ou erro ao listar."
+
+      - name: Logs do Lambda portal-ciop-api (hoje, filtrando relatorios/erro)
+        run: |
+          LOG_GROUP="/aws/lambda/portal-ciop-api"
+          START_TIME=$(date -d "today 00:00:00" +%s000 2>/dev/null || date -v0H -v0M -v0S +%s000)
+          echo "Log group: $LOG_GROUP"
+          echo "Desde (epoch ms): $START_TIME"
+          aws logs filter-log-events \
+            --log-group-name "$LOG_GROUP" \
+            --start-time "$START_TIME" \
+            --filter-pattern "relatorios" \
+            --query "events[].{time:timestamp,message:message}" \
+            --output text || echo "Sem eventos ou log group nao encontrado."
