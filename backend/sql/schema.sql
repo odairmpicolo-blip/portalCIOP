@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS telemetria_linhas (
   PRIMARY KEY (data_iso, veiculo)
 );
 
--- PDFs de relatório de ocorrência (metadados; arquivo em S3: relatorios/{user}/{data}/)
+-- PDFs de relatório de ocorrência (metadados - arquivo em S3: relatorios/{user}/{data}/)
 CREATE TABLE IF NOT EXISTS relatorios_ocorrencia (
   id TEXT NOT NULL,
   user_email TEXT NOT NULL,
