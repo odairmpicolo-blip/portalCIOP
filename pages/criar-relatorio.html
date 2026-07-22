@@ -1734,7 +1734,7 @@ async function tentarSalvarPdfAws(pdf, origem) {
         return salvo;
     } catch (err) {
         console.warn("Falha ao salvar PDF na AWS:", err);
-        return null;
+        return { ok: false, erro: String(err?.message || err || "erro desconhecido ao salvar na AWS") };
     }
 }
 
@@ -1971,8 +1971,8 @@ async function enviarRelatorio() {
         setStatus(
             salvoAws?.storageKey
                 ? "Relatório gerado, registrado, enviado por e-mail e salvo na AWS."
-                : "Relatório gerado, registrado e enviado por e-mail com sucesso.",
-            "ok"
+                : "Relatório gerado, registrado e enviado por e-mail, mas FALHOU ao salvar na AWS" + (salvoAws?.erro ? (": " + salvoAws.erro) : "") + " — ele não vai aparecer na listagem de Relatório de Ocorrência.",
+            salvoAws?.storageKey ? "ok" : "erro"
         );
         anexosExtras = [];
         atualizarAnexosStatus();
