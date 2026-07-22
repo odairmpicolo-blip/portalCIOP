@@ -7,9 +7,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sqlDir = path.join(__dirname, "..", "sql");
 
 function splitSqlStatements(sql) {
-  return sql
+  const semComentarios = sql.replace(/--[^\n]*/g, "");
+  return semComentarios
     .split(";")
-    .map((part) => part.replace(/--[^\n]*/g, "").trim())
+    .map((part) => part.trim())
     .filter(Boolean);
 }
 
