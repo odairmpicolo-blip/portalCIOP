@@ -61,24 +61,37 @@ echo "==> Atualizando Lambda $FUNC"
   --zip-file "fileb://$ZIP" >/dev/null
 rm -f "$ZIP"
 
-if [[ -n "${BUSTIME_API_KEY:-}" ]]; then
-  echo "==> Configurando variáveis na Lambda"
-  ENV_VARS="BUSTIME_BASE_URL=https://csr.mov1.com.br/bustime/api/v3,BUSTIME_REFERER=https://csr.mov1.com.br/map,BUSTIME_API_KEY=${BUSTIME_API_KEY}"
-  if [[ -n "${GEMINI_API_KEY:-}" ]]; then
-    ENV_VARS="${ENV_VARS},GEMINI_API_KEY=${GEMINI_API_KEY}"
-  fi
+if [[ -n "${BUSTIME_API_KEY:-}" || -n "${GEMINI_API_KEY:-}" || -n "${CLEVER_API_KEY:-}" ]]; then
+  echo "==> Lendo variáveis atuais da Lambda (para não apagar FleetBus etc.)"
+  CURRENT_ENV_JSON=$("$AWS" lambda get-function-configuration \
+    --function-name "$FUNC" \
+    --region "$REGION" \
+    --query "Environment.Variables" \
+    --output json 2>/dev/null || echo "{}")
+
+  echo "==> Configurando variáveis na Lambda (mesclando com as já existentes)"
+  ENV_VARS=$(python3 - "$CURRENT_ENV_JSON" "${BUSTIME_API_KEY:-}" "${GEMINI_API_KEY:-}" "${CLEVER_API_KEY:-}" <<'PYEOF'
+import json, sys
+current = json.loads(sys.argv[1] or "{}")
+bustime_key, gemini_key, clever_key = sys.argv[2], sys.argv[3], sys.argv[4]
+if bustime_key:
+    current["BUSTIME_BASE_URL"] = "https://csr.mov1.com.br/bustime/api/v3"
+    current["BUSTIME_REFERER"] = "https://csr.mov1.com.br/map"
+    current["BUSTIME_API_KEY"] = bustime_key
+if gemini_key:
+    current["GEMINI_API_KEY"] = gemini_key
+if clever_key:
+    current["CLEVER_BASE_URL"] = "http://146.235.63.7/bustime/api/v3"
+    current["CLEVER_API_KEY"] = clever_key
+print(",".join(f"{k}={v}" for k, v in current.items()))
+PYEOF
+  )
   "$AWS" lambda update-function-configuration \
     --function-name "$FUNC" \
     --region "$REGION" \
     --environment "Variables={${ENV_VARS}}" >/dev/null
-elif [[ -n "${GEMINI_API_KEY:-}" ]]; then
-  echo "==> Configurando GEMINI_API_KEY na Lambda"
-  "$AWS" lambda update-function-configuration \
-    --function-name "$FUNC" \
-    --region "$REGION" \
-    --environment "Variables={GEMINI_API_KEY=${GEMINI_API_KEY}}" >/dev/null
 else
-  echo "AVISO: defina BUSTIME_API_KEY e/ou GEMINI_API_KEY antes do deploy (export ...)"
+  echo "AVISO: defina BUSTIME_API_KEY, GEMINI_API_KEY e/ou CLEVER_API_KEY antes do deploy (export ...)"
 fi
 
 echo "==> Teste /health"
@@ -90,6 +103,7 @@ echo "$HEALTH"
 echo ""
 echo "API URL (PORTAL_AWS_API_URL): $API_URL"
 echo "Proxy MOV1: ${API_URL}/mov1/getvehicles?rt=203"
+echo "Proxy Clever: ${API_URL}/clever/getvehicles"
 echo "Proxy Bus2 (legado): ${API_URL}/bus2/vehicles?..."
 echo "Relatório IA: POST ${API_URL}/relatorio-ia (requer GEMINI_API_KEY na Lambda)"
 
@@ -103,3 +117,4 @@ if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1 && [[ "${SKIP
 else
   echo "Configure: gh secret set PORTAL_AWS_API_URL --body \"$API_URL\""
 fi
+
