@@ -1,0 +1,38 @@
+name: Rodar migração do banco (Aurora DSQL)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migrar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Baixar portal
+        uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Instalar dependências do backend
+        working-directory: backend
+        run: npm ci --omit=dev 2>/dev/null || npm ci
+
+      - name: Rodar migração (cria tabelas/índices que ainda não existem)
+        working-directory: backend
+        env:
+          DSQL_CLUSTER_ID: ${{ secrets.DSQL_CLUSTER_ID }}
+          DSQL_REGION: sa-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          if [ -z "$DSQL_CLUSTER_ID" ]; then
+            echo "DSQL_CLUSTER_ID não configurado nos Secrets — migração não pode rodar."
+            exit 1
+          fi
+          npm run db:migrate
