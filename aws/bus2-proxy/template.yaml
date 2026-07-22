@@ -30,6 +30,7 @@ Resources:
         Variables:
           BUSTIME_BASE_URL: https://csr.mov1.com.br/bustime/api/v3
           BUSTIME_REFERER: https://csr.mov1.com.br/map
+          CLEVER_BASE_URL: http://146.235.63.7/bustime/api/v3
           BUSTIME_API_KEY: ""
       Code:
         ZipFile: |
@@ -82,6 +83,20 @@ Resources:
     Properties:
       ApiId: !Ref Bus2ProxyApi
       RouteKey: "GET /bus2/{proxy+}"
+      Target: !Sub integrations/${Bus2ProxyIntegration}
+
+  Bus2ProxyRouteClever:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApi
+      RouteKey: "GET /clever/{proxy+}"
+      Target: !Sub integrations/${Bus2ProxyIntegration}
+
+  Bus2ProxyRouteCleverOptions:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApi
+      RouteKey: "OPTIONS /clever/{proxy+}"
       Target: !Sub integrations/${Bus2ProxyIntegration}
 
   Bus2ProxyRouteMov1:
@@ -168,3 +183,4 @@ Outputs:
     Value: !Sub https://${Bus2ProxyApi}.execute-api.${AWS::Region}.amazonaws.com
   FunctionName:
     Value: !Ref Bus2ProxyFunction
+
