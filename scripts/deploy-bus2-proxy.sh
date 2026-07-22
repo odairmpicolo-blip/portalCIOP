@@ -61,6 +61,9 @@ echo "==> Atualizando Lambda $FUNC"
   --zip-file "fileb://$ZIP" >/dev/null
 rm -f "$ZIP"
 
+echo "==> Aguardando Lambda terminar de aplicar o código antes de mexer nas variáveis"
+"$AWS" lambda wait function-updated --function-name "$FUNC" --region "$REGION"
+
 if [[ -n "${BUSTIME_API_KEY:-}" || -n "${GEMINI_API_KEY:-}" || -n "${CLEVER_API_KEY:-}" ]]; then
   echo "==> Lendo variáveis atuais da Lambda (para não apagar FleetBus etc.)"
   CURRENT_ENV_JSON=$("$AWS" lambda get-function-configuration \
