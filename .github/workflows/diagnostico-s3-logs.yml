@@ -31,15 +31,59 @@ jobs:
           echo "=== Todos os objetos em relatorios/ ==="
           aws s3api list-objects-v2 --bucket "$BUCKET" --prefix "relatorios/" --query "Contents[].{Key:Key,Size:Size,Modified:LastModified}" --output table || echo "Bucket vazio ou erro ao listar."
 
-      - name: Logs do Lambda portal-ciop-api (hoje, filtrando relatorios/erro)
+      - name: Confirmar existencia da funcao Lambda portal-ciop-api
+        run: |
+          echo "=== aws lambda get-function ==="
+          aws lambda get-function --function-name portal-ciop-api --query "Configuration.{Nome:FunctionName,Modificado:LastModified,Runtime:Runtime,Handler:Handler}" --output table || echo "Funcao nao encontrada com esse nome."
+          echo ""
+          echo "=== Todas as funcoes Lambda com 'portal' ou 'ciop' no nome ==="
+          aws lambda list-functions --query "Functions[?contains(FunctionName, 'portal') || contains(FunctionName, 'ciop')].{Nome:FunctionName,Modificado:LastModified}" --output table || true
+
+      - name: Listar log streams mais recentes (qualquer conteudo, sem filtro)
+        run: |
+          LOG_GROUP="/aws/lambda/portal-ciop-api"
+          echo "Log group: $LOG_GROUP"
+          echo "=== Log groups existentes com 'portal' ou 'ciop' no nome ==="
+          aws logs describe-log-groups --query "logGroups[?contains(logGroupName, 'portal') || contains(logGroupName, 'ciop')].logGroupName" --output text || true
+          echo ""
+          echo "=== 5 streams mais recentes (por ultimo evento) ==="
+          aws logs describe-log-streams \
+            --log-group-name "$LOG_GROUP" \
+            --order-by LastEventTime \
+            --descending \
+            --limit 5 \
+            --query "logStreams[].{stream:logStreamName,ultimoEvento:lastEventTimestamp}" \
+            --output table || echo "Sem streams ou log group nao encontrado."
+
+      - name: Logs do Lambda - hoje, TODOS os eventos (sem filtro de texto)
         run: |
           LOG_GROUP="/aws/lambda/portal-ciop-api"
           START_TIME=$(date -d "today 00:00:00" +%s000 2>/dev/null || date -v0H -v0M -v0S +%s000)
           echo "Log group: $LOG_GROUP"
-          echo "Desde (epoch ms): $START_TIME"
+          echo "Desde (epoch ms): $START_TIME ($(date -d @$((START_TIME/1000)) -u 2>/dev/null || date -r $((START_TIME/1000)) -u))"
+          echo "=== Contagem de eventos hoje (sem filtro) ==="
           aws logs filter-log-events \
             --log-group-name "$LOG_GROUP" \
             --start-time "$START_TIME" \
-            --filter-pattern "relatorios" \
-            --query "events[].{time:timestamp,message:message}" \
+            --query "length(events)" \
+            --output text || echo "Erro ao contar eventos."
+          echo ""
+          echo "=== Ultimos 40 eventos de hoje (sem filtro de texto) ==="
+          aws logs filter-log-events \
+            --log-group-name "$LOG_GROUP" \
+            --start-time "$START_TIME" \
+            --query "events[-40:].{time:timestamp,message:message}" \
             --output text || echo "Sem eventos ou log group nao encontrado."
+
+      - name: Logs do Lambda - hoje, filtrando relatorios OU erro OU upload
+        run: |
+          LOG_GROUP="/aws/lambda/portal-ciop-api"
+          START_TIME=$(date -d "today 00:00:00" +%s000 2>/dev/null || date -v0H -v0M -v0S +%s000)
+          echo "=== Eventos contendo 'relatorios' ==="
+          aws logs filter-log-events --log-group-name "$LOG_GROUP" --start-time "$START_TIME" --filter-pattern "relatorios" --query "events[].{time:timestamp,message:message}" --output text || echo "Nenhum."
+          echo ""
+          echo "=== Eventos contendo 'ERROR' ==="
+          aws logs filter-log-events --log-group-name "$LOG_GROUP" --start-time "$START_TIME" --filter-pattern "ERROR" --query "events[].{time:timestamp,message:message}" --output text || echo "Nenhum."
+          echo ""
+          echo "=== Eventos contendo 'upload' ==="
+          aws logs filter-log-events --log-group-name "$LOG_GROUP" --start-time "$START_TIME" --filter-pattern "upload" --query "events[].{time:timestamp,message:message}" --output text || echo "Nenhum."
