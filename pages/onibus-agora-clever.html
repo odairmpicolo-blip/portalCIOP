@@ -65,6 +65,8 @@ body.oa-page{
 .card-sub{margin:0 0 12px;font-size:12px;color:var(--muted);line-height:1.45;font-weight:500}
 
 .field{display:grid;gap:6px;margin-bottom:10px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-row .field{margin-bottom:10px}
 .field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .input,.select{
   width:100%;height:44px;border:1px solid var(--border);border-radius:12px;padding:0 12px;
@@ -146,8 +148,8 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 .empty{padding:40px 20px;text-align:center;color:var(--muted)}
 .empty h3{margin:0 0 8px;color:var(--blue);font-size:18px;font-weight:800}
 
-.oper-toggle{display:flex;gap:6px}
-.oper-btn{flex:1;height:36px;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--muted);font:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:.15s ease}
+.oper-toggle{display:flex;flex-wrap:wrap;gap:6px}
+.oper-btn{flex:1;min-width:64px;height:34px;padding:0 6px;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--muted);font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;transition:.15s ease}
 .oper-btn:hover{background:var(--surface-2)}
 .oper-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
 
@@ -404,13 +406,15 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
             <div class="card card-pad">
                 <h2 class="card-title">Buscar</h2>
                 <p class="card-sub">Filtre por linha ou número do veículo (dados Clever).</p>
-                <div class="field">
-                    <label for="buscaLinha">Linha</label>
-                    <input class="input" id="buscaLinha" type="search" placeholder="Ex.: 301, Alemanha..." autocomplete="off">
-                </div>
-                <div class="field">
-                    <label for="buscaVeiculo">Veículo</label>
-                    <input class="input" id="buscaVeiculo" type="search" placeholder="Ex.: 1150" autocomplete="off">
+                <div class="field-row">
+                    <div class="field">
+                        <label for="buscaLinha">Linha</label>
+                        <input class="input" id="buscaLinha" type="search" placeholder="Ex.: 301, Alemanha..." autocomplete="off">
+                    </div>
+                    <div class="field">
+                        <label for="buscaVeiculo">Veículo</label>
+                        <input class="input" id="buscaVeiculo" type="search" placeholder="Ex.: 1150" autocomplete="off">
+                    </div>
                 </div>
                 <div class="field">
                     <label>Operadora</label>
@@ -418,6 +422,15 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                         <button type="button" class="oper-btn active" data-op="">Todos</button>
                         <button type="button" class="oper-btn" data-op="TCGL">TCGL</button>
                         <button type="button" class="oper-btn" data-op="LondriSul">LondriSul</button>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Operação</label>
+                    <div class="oper-toggle" id="categoriaToggle">
+                        <button type="button" class="oper-btn active" data-cat="">Todos</button>
+                        <button type="button" class="oper-btn" data-cat="produtivo">Produtivo</button>
+                        <button type="button" class="oper-btn" data-cat="ocioso">Ocioso</button>
+                        <button type="button" class="oper-btn" data-cat="foraServico">Fora de serviço</button>
                     </div>
                 </div>
                 <div class="stats">
@@ -525,19 +538,36 @@ const CLEVER = {
 
 /** Cores/limites de pontualidade — mesmo padrão já usado na página Ônibus Agora (TCGL). */
 const PONTUALIDADE = {
-    cores: { adiantado: "#D30000", atrasado: "#FFFF00", noHorario: "#8FD400", especial: "#374151" },
+    cores: {
+        adiantado: "#D30000", atrasado: "#FFFF00", noHorario: "#8FD400",
+        semPrevisao: "#374151",
+        ocioso: "#7DD3FC",
+        foraServico: "#D1D5DB"
+    },
     adiantadoSeg: 120,
     atrasadoSeg: 360
 };
 
-/** Códigos de rota especiais da Clever (garagem/fora de serviço) — tratados junto com "fora de serviço", em cinza. */
-const CODIGOS_ESPECIAIS = new Set(["U", "PI", "DH"]);
+/** Ocioso (PI/DH/PO) = azul claro. Fora de serviço (U) = cinza claro. Produtivo = linha numerada 080–999. */
+const CODIGOS_OCIOSO = new Set(["PI", "DH", "PO"]);
+const CODIGOS_FORA_SERVICO = new Set(["U"]);
+
+function categoriaOperacional(rt){
+    const n = parseInt(String(rt || ""), 10);
+    if (Number.isFinite(n) && n >= 80 && n <= 999) return "produtivo";
+    if (CODIGOS_OCIOSO.has(rt)) return "ocioso";
+    if (CODIGOS_FORA_SERVICO.has(rt)) return "foraServico";
+    return "foraServico"; // fallback conservador p/ código desconhecido
+}
+
+const CATEGORIA_LABEL = { produtivo: "Produtivo", ocioso: "Ocioso", foraServico: "Fora de serviço" };
 
 const state = {
     routes: [],
     routeFiltro: null,
     veiculoFiltro: "",
     operadorFiltro: null,
+    categoriaFiltro: null,
     buscaLinha: "",
     vehicles: new Map(),
     markers: new Map(),
@@ -587,10 +617,12 @@ function corBadgeOperadora(operadora){
     return operadora === "LondriSul" ? { bg: "#000", fg: "#fff" } : { bg: "#fff", fg: "#000" };
 }
 
-/** Deriva o status de pontualidade a partir do delaySec calculado no proxy (getvehiclesdelay). */
+/** Deriva o status a partir da categoria operacional (produtivo/ocioso/fora de serviço) e do delaySec calculado no proxy. */
 function statusPontualidade(v){
-    if (v.especial || v.delaySec == null){
-        return { chave: "especial", label: v.especial ? "Fora de serviço" : "Sem previsão", cor: PONTUALIDADE.cores.especial };
+    if (v.categoria === "ocioso") return { chave: "ocioso", label: "Ocioso", cor: PONTUALIDADE.cores.ocioso };
+    if (v.categoria === "foraServico") return { chave: "foraServico", label: "Fora de serviço", cor: PONTUALIDADE.cores.foraServico };
+    if (v.delaySec == null){
+        return { chave: "semPrevisao", label: "Sem previsão", cor: PONTUALIDADE.cores.semPrevisao };
     }
     if (v.delaySec <= -PONTUALIDADE.adiantadoSeg) return { chave: "adiantado", label: "Adiantado", cor: PONTUALIDADE.cores.adiantado };
     if (v.delaySec >= PONTUALIDADE.atrasadoSeg) return { chave: "atrasado", label: "Atrasado", cor: PONTUALIDADE.cores.atrasado };
@@ -685,22 +717,22 @@ async function fetchCleverVehicles(){
         const lng = Number(v.lon);
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
         const rt = String(v.rt ?? "");
-        const especial = CODIGOS_ESPECIAIS.has(rt);
-        const route = especial
-            ? { routeId: rt, shortName: rt || "?", longName: "Fora de serviço", color: "#374151" }
-            : (state.routes.find(r => r.routeId === rt) || { routeId: rt, shortName: rt || "?", longName: "", color: "#2db4bf" });
+        const categoria = categoriaOperacional(rt);
+        const route = categoria === "produtivo"
+            ? (state.routes.find(r => r.routeId === rt) || { routeId: rt, shortName: rt || "?", longName: "", color: "#2db4bf" })
+            : { routeId: rt, shortName: rt || "?", longName: CATEGORIA_LABEL[categoria], color: categoria === "ocioso" ? PONTUALIDADE.cores.ocioso : PONTUALIDADE.cores.foraServico };
         const vid = String(v.vid ?? "?");
         found.push({
             vehicleId: vid,
             lat, lng,
             routeId: route.routeId,
             route,
+            categoria,
             heading: v.hdg != null ? Number(v.hdg) : null,
             speed: v.spd != null ? Number(v.spd) : null,
             tripDesc: v.des || "",
             positionTime: formatarTmstmp(v.tmstmp),
             delaySec: v.delaySec != null ? Number(v.delaySec) : null,
-            especial,
             sentido: v.rtdir || null,
             wid: v.tablockid || "",
             pid: v.pid != null ? String(v.pid) : "",
@@ -905,6 +937,7 @@ function renderListaLinhas(){
 function veiculoPassaFiltro(v){
     if (state.routeFiltro && v.routeId !== state.routeFiltro.routeId) return false;
     if (state.operadorFiltro && v.operadora !== state.operadorFiltro) return false;
+    if (state.categoriaFiltro && v.categoria !== state.categoriaFiltro) return false;
     const q = state.veiculoFiltro.trim();
     if (q && !String(v.vehicleId || "").includes(q)) return false;
     return true;
@@ -968,6 +1001,41 @@ async function desenharTracoLinha(v){
     }).bindTooltip(esc(p.stpnm || "Parada"), { direction: "top" }));
     state.paradasLayer = L.layerGroup(marcadores).addTo(state.mapa);
     state.mapa.fitBounds(L.latLngBounds(latlngs), { padding: [40, 40] });
+}
+
+/** Ao selecionar uma linha na lista lateral: desenha todas as variantes/sentidos do traçado + paradas. */
+async function desenharTracoRota(routeId){
+    limparTraco();
+    if (!routeId) return;
+    try {
+        const data = await fetchCleverLive("getpatterns?rt=" + encodeURIComponent(routeId));
+        const patterns = extrairListaBustime(data, "ptr");
+        if (!patterns.length) return;
+        const cor = corCss(state.routes.find(r => r.routeId === routeId)?.color || "#2db4bf");
+        const linhas = [];
+        const paradas = [];
+        let todosPontos = [];
+        patterns.forEach(pat => {
+            if (!Array.isArray(pat.pt)) return;
+            const latlngs = pat.pt
+                .map(p => [Number(p.lat), Number(p.lon)])
+                .filter(([la, lo]) => Number.isFinite(la) && Number.isFinite(lo));
+            if (latlngs.length){
+                linhas.push(L.polyline(latlngs, { color: cor, weight: 4, opacity: .75 }));
+                todosPontos = todosPontos.concat(latlngs);
+            }
+            pat.pt.filter(p => p.typ === "S" && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lon)))
+                .forEach(p => paradas.push(L.circleMarker([Number(p.lat), Number(p.lon)], {
+                    radius: 4, weight: 2, color: "#fff", fillColor: cor, fillOpacity: 1
+                }).bindTooltip(esc(p.stpnm || "Parada"), { direction: "top" })));
+        });
+        if (!linhas.length) return;
+        state.tracoLayer = L.layerGroup(linhas).addTo(state.mapa);
+        state.paradasLayer = L.layerGroup(paradas).addTo(state.mapa);
+        if (todosPontos.length) state.mapa.fitBounds(L.latLngBounds(todosPontos), { padding: [40, 40] });
+    } catch (err) {
+        console.warn("Falha ao desenhar traçado da rota:", err);
+    }
 }
 
 async function selecionarVeiculo(v){
@@ -1082,15 +1150,18 @@ function iniciarPoll(){
 function selecionarLinha(routeId){
     const route = state.routes.find(r => r.routeId === routeId);
     if (!route) return;
+    fecharPainelVeiculo();
     state.routeFiltro = route;
     renderListaLinhas();
     atualizarMarcadores();
     pollLote();
+    desenharTracoRota(routeId);
     fecharSheetLinhas();
 }
 
 function limparFiltro(){
     state.routeFiltro = null;
+    limparTraco();
     renderListaLinhas();
     pollLote();
 }
@@ -1143,6 +1214,13 @@ function bind(){
         btn.addEventListener("click", () => {
             state.operadorFiltro = btn.dataset.op || null;
             $("operToggle").querySelectorAll(".oper-btn").forEach(b => b.classList.toggle("active", b === btn));
+            atualizarMarcadores();
+        });
+    });
+    $("categoriaToggle").querySelectorAll(".oper-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            state.categoriaFiltro = btn.dataset.cat || null;
+            $("categoriaToggle").querySelectorAll(".oper-btn").forEach(b => b.classList.toggle("active", b === btn));
             atualizarMarcadores();
         });
     });
