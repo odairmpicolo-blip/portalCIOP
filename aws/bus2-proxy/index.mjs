@@ -161,56 +161,85 @@ function ehRotaProdutiva(rt) {
 }
 
 /**
+ * Cache compartilhado (em memória, entre invocações warm da Lambda) do resultado de
+ * getvehiclesdelay. Sem isso, cada aba/usuário com a página de monitoramento aberta
+ * dispara sozinho ~15 chamadas à Clever (1 getvehicles + até 14 lotes de getpredictions)
+ * a cada ciclo de polling do front-end — com N pessoas olhando ao mesmo tempo, o consumo
+ * vira N vezes maior mesmo a frota sendo a mesma. Com o cache, requisições que chegam
+ * dentro do TTL reaproveitam o mesmo resultado, então N usuários custam ~1x em vez de Nx
+ * (enquanto o container Lambda permanecer "quente" — reseta em cold start e não é
+ * compartilhado entre containers concorrentes, mas cobre o caso comum).
+ */
+const CLEVER_DELAY_CACHE_TTL_MS = 15000;
+let cleverDelayCache = { body: null, expiresAt: 0 };
+let cleverDelayInflight = null;
+
+/**
  * Endpoint composto: getvehicles + getpredictions em lote (por vid, 10 por vez)
  * para calcular o atraso real (delaySec) de cada veículo, comparando o horário
  * previsto (prdtm) com o horário programado (schdtm) da próxima parada.
  */
 async function proxyCleverVehiclesDelay() {
-  const vehData = await cleverRequest("getvehicles");
-  const veiculos = cleverList(vehData, "vehicle");
-
-  const normais = veiculos.filter((v) => v?.vid && ehRotaProdutiva(v.rt));
-  const vids = normais.map((v) => String(v.vid));
-  const lotes = [];
-  for (let i = 0; i < vids.length; i += 10) lotes.push(vids.slice(i, i + 10));
-
-  const resultados = await Promise.allSettled(
-    lotes.map((lote) => cleverRequest("getpredictions", `vid=${lote.join(",")}`))
-  );
-
-  const todasPrevisoes = [];
-  for (const r of resultados) {
-    if (r.status !== "fulfilled") continue;
-    todasPrevisoes.push(...cleverList(r.value, "prd"));
-  }
-  todasPrevisoes.sort((a, b) => (parseBustimeDate(a.prdtm) || 0) - (parseBustimeDate(b.prdtm) || 0));
-
-  const previsaoMaisProximaPorVid = {};
-  for (const p of todasPrevisoes) {
-    const vid = String(p.vid || "");
-    if (vid && !previsaoMaisProximaPorVid[vid]) previsaoMaisProximaPorVid[vid] = p;
+  const agora = Date.now();
+  if (cleverDelayCache.body && cleverDelayCache.expiresAt > agora) {
+    return { statusCode: 200, headers: corsHeaders(), body: cleverDelayCache.body };
   }
 
-  const veiculosComAtraso = veiculos.map((v) => {
-    const p = previsaoMaisProximaPorVid[String(v?.vid || "")];
-    let delaySec = null;
-    let rtdir = null;
-    let des = v?.des || "";
-    if (p) {
-      const prd = parseBustimeDate(p.prdtm);
-      const sch = parseBustimeDate(p.schdtm);
-      if (prd != null && sch != null) delaySec = Math.round((prd - sch) / 1000);
-      rtdir = p.rtdir || null;
-      if (p.des) des = p.des;
+  // Se duas requisições chegarem quase juntas com o cache vazio/expirado, a segunda
+  // aguarda a mesma busca em andamento em vez de disparar outra rodada de chamadas.
+  if (cleverDelayInflight) return cleverDelayInflight;
+
+  cleverDelayInflight = (async () => {
+    const vehData = await cleverRequest("getvehicles");
+    const veiculos = cleverList(vehData, "vehicle");
+
+    const normais = veiculos.filter((v) => v?.vid && ehRotaProdutiva(v.rt));
+    const vids = normais.map((v) => String(v.vid));
+    const lotes = [];
+    for (let i = 0; i < vids.length; i += 10) lotes.push(vids.slice(i, i + 10));
+
+    const resultados = await Promise.allSettled(
+      lotes.map((lote) => cleverRequest("getpredictions", `vid=${lote.join(",")}`))
+    );
+
+    const todasPrevisoes = [];
+    for (const r of resultados) {
+      if (r.status !== "fulfilled") continue;
+      todasPrevisoes.push(...cleverList(r.value, "prd"));
     }
-    return { ...v, delaySec, rtdir, des };
-  });
+    todasPrevisoes.sort((a, b) => (parseBustimeDate(a.prdtm) || 0) - (parseBustimeDate(b.prdtm) || 0));
 
-  return {
-    statusCode: 200,
-    headers: corsHeaders(),
-    body: JSON.stringify({ "bustime-response": { vehicle: veiculosComAtraso } })
-  };
+    const previsaoMaisProximaPorVid = {};
+    for (const p of todasPrevisoes) {
+      const vid = String(p.vid || "");
+      if (vid && !previsaoMaisProximaPorVid[vid]) previsaoMaisProximaPorVid[vid] = p;
+    }
+
+    const veiculosComAtraso = veiculos.map((v) => {
+      const p = previsaoMaisProximaPorVid[String(v?.vid || "")];
+      let delaySec = null;
+      let rtdir = null;
+      let des = v?.des || "";
+      if (p) {
+        const prd = parseBustimeDate(p.prdtm);
+        const sch = parseBustimeDate(p.schdtm);
+        if (prd != null && sch != null) delaySec = Math.round((prd - sch) / 1000);
+        rtdir = p.rtdir || null;
+        if (p.des) des = p.des;
+      }
+      return { ...v, delaySec, rtdir, des };
+    });
+
+    const body = JSON.stringify({ "bustime-response": { vehicle: veiculosComAtraso } });
+    cleverDelayCache = { body, expiresAt: Date.now() + CLEVER_DELAY_CACHE_TTL_MS };
+    return { statusCode: 200, headers: corsHeaders(), body };
+  })();
+
+  try {
+    return await cleverDelayInflight;
+  } finally {
+    cleverDelayInflight = null;
+  }
 }
 
 async function proxyClever(event) {
