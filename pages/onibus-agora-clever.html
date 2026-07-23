@@ -263,6 +263,8 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 .veiculo-panel-grid .popup-item strong{font-size:11px;margin-top:1px}
 .veiculo-panel-grid-3{grid-template-columns:1fr 1fr 1fr;margin-bottom:5px}
 .veiculo-panel-grid-3 .popup-item{padding:5px 6px}
+/* Linha/Via na mesma linha, mas Via com o dobro do espaço de Linha (texto costuma ser mais longo). */
+.veiculo-panel-grid-via{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
 .veiculo-panel-telemetria-titulo{
   margin:8px 0 5px;padding-top:7px;border-top:1px solid rgba(15,23,42,.12);
   font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
@@ -1396,7 +1398,7 @@ function popupVeiculoHtml(v, telemetria){
     const corLinha = corCss(v.route?.color);
     const linha1 = [
         ["Motorista", v.motorista || "—"],
-        ["Velocidade · Clever", v.speed != null ? (v.speed + " km/h") : "—"],
+        ["Velocidade", v.speed != null ? (v.speed + " km/h") : "—"],
         ["Tecnologia", tecnologiaVeiculo(v.vehicleId)]
     ].map(([k, val]) => '<div class="popup-item">' + esc(k) + '<strong>' + esc(val) + '</strong></div>').join("");
     const linha2 = [
@@ -1418,7 +1420,7 @@ function popupVeiculoHtml(v, telemetria){
             '</div>' +
         '</div>' +
         '<div class="veiculo-panel-grid veiculo-panel-grid-3">' + linha1 + '</div>' +
-        '<div class="veiculo-panel-grid">' + linha2 + '</div>' +
+        '<div class="veiculo-panel-grid veiculo-panel-grid-via">' + linha2 + '</div>' +
         '<div class="veiculo-panel-grid veiculo-panel-grid-3">' + linha3 + '</div>' +
         telemetriaFleetBusHtml(telemetria) +
     '</div>';
