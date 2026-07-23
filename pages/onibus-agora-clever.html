@@ -202,24 +202,19 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 .veh-pin.highlight{ transform:scale(1.15); z-index:900!important; }
 .veh-pin svg{display:block;width:96px;height:96px}
 
-/* Posição estimada ("fantasma"): onde o veículo deveria estar agora, segundo o horário
+/* Posição estimada ("fantasminha"): onde o veículo deveria estar agora, segundo o horário
    programado — calculada a partir da distância já percorrida no trajeto, do atraso atual
-   e da velocidade recente. É uma estimativa, não um dado oficial da API. */
-.ghost-marker-wrap{background:transparent!important;border:0!important;overflow:visible!important}
-.ghost-pin{
-  width:26px;height:26px;border-radius:50%;
-  background:rgba(255,255,255,.22);
-  border:2.5px dashed #fff;
-  display:grid;place-items:center;
-  box-shadow:0 2px 8px rgba(15,23,42,.45);
+   e da velocidade recente. É uma estimativa, não um dado oficial da API. Reaproveita o
+   desenho do ônibus (iconeFantasmaHtml), só que em branco bem translúcido, com o número
+   do veículo que deveria estar ali. */
+.veh-pin.ghost-pin-veh{
+  cursor:default;
+  filter:drop-shadow(0 4px 8px rgba(15,23,42,.4));
   animation:ghostPulse 1.8s ease-in-out infinite;
 }
-.ghost-pin i{
-  width:8px;height:8px;border-radius:50%;background:#fff;display:block;
-}
 @keyframes ghostPulse{
-  0%,100%{ opacity:.55; transform:scale(1); }
-  50%{ opacity:1; transform:scale(1.12); }
+  0%,100%{ opacity:.55; }
+  50%{ opacity:.95; }
 }
 .leaflet-tooltip.ghost-tooltip{
   background:var(--blue);color:#fff;border:0;font-weight:800;font-size:11px;
@@ -1494,8 +1489,9 @@ const PES_POR_METRO = 3.28084;
  *  selecionado, para não poluir o mapa com a frota inteira. */
 async function atualizarPosicoesEstimadas(){
     if (!state.mapa) return;
-    const ativo = Boolean(state.routeFiltro || state.veiculoSelecionado);
-    if (!ativo){
+    // Só mostra o(s) fantasminha(s) quando uma linha específica está selecionada
+    // (foco só nela) — não aparece com clique avulso em veículo nem na frota inteira.
+    if (!state.routeFiltro){
         limparFantasmas();
         return;
     }
@@ -1504,7 +1500,6 @@ async function atualizarPosicoesEstimadas(){
     const alvos = [];
     state.vehicles.forEach((v) => {
         if (!veiculoPassaFiltro(v)) return;
-        if (state.veiculoSelecionado && !state.routeFiltro && v.key !== state.veiculoSelecionado) return;
         if (!v.pid || v.pdist == null || v.delaySec == null || v.speed == null) return;
         if (statusPontualidade(v).chave === "noHorario") return;
         alvos.push(v);
@@ -1522,15 +1517,15 @@ async function atualizarPosicoesEstimadas(){
         vistos.add(v.key);
         const rotulo = "Posição prevista · " + esc(v.vehicleId) + " · " + esc(textoStatusComQuantidade(v));
         const icon = L.divIcon({
-            className: "ghost-marker-wrap",
-            html: '<div class="ghost-pin" style="border-color:' + esc(corCss(v.route?.color)) + '"><i></i></div>',
-            iconSize: [26, 26],
-            iconAnchor: [13, 13]
+            className: "bus-marker-wrap",
+            html: iconeFantasmaHtml(v),
+            iconSize: [96, 96],
+            iconAnchor: [48, 42]
         });
         let marker = state.ghostMarkers.get(v.key);
         if (!marker){
             marker = L.marker([pos.lat, pos.lon], { icon, zIndexOffset: -200, interactive: false })
-                .bindTooltip(rotulo, { direction: "top", offset: [0, -10], className: "ghost-tooltip", permanent: false })
+                .bindTooltip(rotulo, { direction: "top", offset: [0, -50], className: "ghost-tooltip", permanent: false })
                 .addTo(state.ghostLayer);
             state.ghostMarkers.set(v.key, marker);
         } else {
@@ -1606,6 +1601,8 @@ async function desenharTracoRota(routeId){
 }
 
 async function selecionarVeiculo(v){
+    // O fantasminha (posição estimada) só aparece com uma linha selecionada — clique avulso
+    // em um veículo não mexe nele (ver atualizarPosicoesEstimadas).
     state.veiculoSelecionado = v.key;
     atualizarMarcadores();
     try {
@@ -1613,6 +1610,8 @@ async function selecionarVeiculo(v){
     } catch (err) {
         console.warn("Falha ao desenhar traçado da linha:", err);
     }
+    // desenharTracoLinha chama limparTraco() (que também limpa o fantasminha); se ainda
+    // houver uma linha selecionada, repõe os fantasminhas dela em seguida.
     atualizarPosicoesEstimadas();
 }
 
@@ -1668,6 +1667,28 @@ function iconeOnibusHtml(v, extraClass){
             '<circle cx="37.5" cy="33" r="2.1" fill="' + cz + '"/>' +
             '<rect x="20.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
             '<rect x="35.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
+        '</svg>' +
+    '</div>';
+}
+
+/** "Fantasminha": mesmo desenho do ônibus (iconeOnibusHtml), mas em branco bem translúcido
+ *  e sem a cor de status — usado só para marcar, dentro de uma linha selecionada, onde o
+ *  veículo deveria estar agora segundo o horário (ver atualizarPosicoesEstimadas). */
+function iconeFantasmaHtml(v){
+    const rot = v.heading != null ? Number(v.heading) : 0;
+    const numero = esc(v.vehicleId || "—");
+    const corpo = "rgba(255,255,255,.24)";
+    const borda = "rgba(255,255,255,.8)";
+    return '<div class="veh-pin ghost-pin-veh">' +
+        '<svg viewBox="0 0 60 60" aria-hidden="true">' +
+            '<g transform="rotate(' + rot + ' 30 26)">' +
+                '<path d="M30 1 L46 30 L14 30 Z" fill="' + corpo + '" stroke="' + borda + '" stroke-width="2" stroke-linejoin="round"/>' +
+            '</g>' +
+            '<rect x="13" y="9" width="34" height="34" rx="10" fill="' + corpo + '" stroke="' + borda + '" stroke-width="1.6" stroke-dasharray="3 2.5"/>' +
+            '<rect x="17" y="15" width="26" height="21" rx="6" fill="rgba(255,255,255,.16)"/>' +
+            '<text x="30" y="25.9" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="7.2" font-weight="800" letter-spacing=".2" fill="rgba(255,255,255,.95)">' + numero + '</text>' +
+            '<circle cx="22.5" cy="33" r="2.1" fill="' + borda + '"/>' +
+            '<circle cx="37.5" cy="33" r="2.1" fill="' + borda + '"/>' +
         '</svg>' +
     '</div>';
 }
