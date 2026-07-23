@@ -88,11 +88,13 @@ body.oa-page footer.portal-site-footer{display:none!important}
 .oa-modal-body{overflow:auto;padding:8px 18px 16px}
 .oa-semcom-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .oa-semcom-item{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
   padding:8px 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2);
 }
+.oa-semcom-main{display:flex;align-items:baseline;gap:8px}
 .oa-semcom-vid{font-family:"JetBrains Mono",monospace;font-weight:800;color:var(--text);font-size:13px}
 .oa-semcom-tag{font-size:11px;color:var(--muted)}
+.oa-semcom-contato{font-size:11px;color:#b91c1c;font-weight:700;white-space:nowrap}
 .oa-semcom-empty{padding:24px 8px;text-align:center;color:var(--muted);font-size:13px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:32px;padding:0 14px;border-radius:999px;border:1px solid transparent;font:inherit;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;transition:.18s ease}
 .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -633,6 +635,38 @@ function categoriaOperacional(rt){
 
 const CATEGORIA_LABEL = { produtivo: "Produtivo", ocioso: "Ocioso", foraServico: "Fora de serviço" };
 
+/** Guarda em localStorage o horário da última vez que cada veículo (número) se comunicou
+ *  com o Clever, para exibir no KPI "Sem comunicação" mesmo após recarregar a página. */
+const ULTIMO_CONTATO_KEY = "oaCleverUltimoContato";
+
+function carregarUltimoContato(){
+    try {
+        const raw = localStorage.getItem(ULTIMO_CONTATO_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+}
+
+function salvarUltimoContato(){
+    try { localStorage.setItem(ULTIMO_CONTATO_KEY, JSON.stringify(state.ultimoContato)); } catch { /* ignore */ }
+}
+
+function registrarContato(lista){
+    const agora = new Date().toISOString();
+    lista.forEach(v => {
+        const vid = String(v.vehicleId || "").trim();
+        if (vid) state.ultimoContato[vid] = agora;
+    });
+    salvarUltimoContato();
+}
+
+function formatarUltimoContato(iso){
+    if (!iso) return "Sem registro";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "Sem registro";
+    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " " +
+        d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
 const state = {
     routes: [],
     routeFiltro: null,
@@ -649,7 +683,8 @@ const state = {
     lastUpdate: null,
     liveOk: false,
     mapa: null,
-    tileLayer: null
+    tileLayer: null,
+    ultimoContato: carregarUltimoContato()
 };
 
 function $(id){ return document.getElementById(id); }
@@ -1198,6 +1233,7 @@ function veiculosSemComunicacao(){
     state.vehicles.forEach(v => online.add(String(v.vehicleId || "").trim()));
     return FROTA_TOTAL
         .filter(f => !online.has(String(f.veiculo || "").trim()))
+        .map(f => ({ ...f, ultimoContato: state.ultimoContato[String(f.veiculo || "").trim()] || null }))
         .sort((a, b) => String(a.veiculo).localeCompare(String(b.veiculo), "pt-BR", { numeric: true }));
 }
 
@@ -1221,8 +1257,11 @@ function renderSemComunicacaoLista(faltando){
     }
     lista.innerHTML = faltando.map(f =>
         '<li class="oa-semcom-item">' +
-            '<span class="oa-semcom-vid">' + esc(f.veiculo) + '</span>' +
-            '<span class="oa-semcom-tag">' + esc(f.rotulo || f.tecnologia || "") + '</span>' +
+            '<div class="oa-semcom-main">' +
+                '<span class="oa-semcom-vid">' + esc(f.veiculo) + '</span>' +
+                '<span class="oa-semcom-tag">' + esc(f.rotulo || f.tecnologia || "") + '</span>' +
+            '</div>' +
+            '<span class="oa-semcom-contato">Último contato: ' + esc(formatarUltimoContato(f.ultimoContato)) + '</span>' +
         '</li>'
     ).join("");
 }
@@ -1310,6 +1349,7 @@ async function pollLote(){
         const lista = await fetchCleverVehicles();
         state.vehicles.clear();
         lista.forEach(v => state.vehicles.set(v.key, v));
+        registrarContato(lista);
         state.lastUpdate = new Date();
         state.liveOk = true;
         atualizarMarcadores();
