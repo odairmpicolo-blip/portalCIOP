@@ -835,6 +835,8 @@ function extrairListaBustime(data, chave){
 const FLEETBUS = {
     proxyFallback: "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com",
     proxyBase: null,
+    waitMs: 6000,
+    pollGapMs: 700,
     signals: {
         speed: ["6054", "20", "100", "99", "168"],
         rpm: ["4670", "11", "50", "140"],
@@ -844,9 +846,13 @@ const FLEETBUS = {
 };
 
 let fleetbusIndicePromise = null;
-/** Última telemetria conhecida por veículo (chave = mesma "key" dos marcadores no mapa),
- *  usada para não deixar o popup em branco entre uma reabertura e outra. */
+/** Última telemetria conhecida (já acumulada) por veículo, chave = mesma "key" dos marcadores
+ *  no mapa. Fica guardada mesmo depois do popup fechar, para reabrir instantâneo em vez de
+ *  esperar de novo — só é atualizada, nunca apagada, exceto quando o marcador é recriado. */
 const telemetriaCache = new Map();
+/** Chaves com um loop de atualização contínua de telemetria em andamento (enquanto o popup
+ *  daquele veículo estiver aberto). */
+const telemetriaPollAtivo = new Set();
 
 function normalizarProxyBaseFleetBus(apiUrl){
     let url = String(apiUrl || "").trim().replace(/\/+$/, "");
@@ -922,7 +928,7 @@ async function buscarTelemetriaFleetBus(vehicleIdClever){
     const indice = await carregarIndiceFleetBus();
     const vehicleIdFleetBus = indice.get(prefixoNumeroVeiculo(vehicleIdClever));
     if (vehicleIdFleetBus == null) return "sem-match";
-    const data = await fbGet("live?vehicleId=" + encodeURIComponent(vehicleIdFleetBus) + "&waitMs=9000");
+    const data = await fbGet("live?vehicleId=" + encodeURIComponent(vehicleIdFleetBus) + "&waitMs=" + FLEETBUS.waitMs);
     const src = { ...(data.signals || {}), ...(data.normalized || {}) };
     return {
         speed: pickSignal(src, FLEETBUS.signals.speed),
@@ -933,24 +939,57 @@ async function buscarTelemetriaFleetBus(vehicleIdClever){
     };
 }
 
-/** Dispara (ou reaproveita) a busca de telemetria FleetBus quando o popup de um veículo é
- *  aberto no mapa, e atualiza o conteúdo do popup assim que a resposta chega — sem travar a
- *  abertura do popup, que já mostra os dados do Clever imediatamente com "Carregando...". */
+/** Mescla uma nova leitura de telemetria com a última acumulada: um sinal que não veio nesta
+ *  consulta (nulo) não apaga o valor anterior conhecido — é assim que o popup deixa de mostrar
+ *  "—" para campos que só chegam em consultas seguintes ao FleetBus. */
+function mesclarTelemetria(anterior, nova){
+    const base = (anterior && typeof anterior === "object") ? anterior : { speed: null, rpm: null, odometer: null, fuel: null, faults: [] };
+    return {
+        speed: nova.speed != null ? nova.speed : base.speed,
+        rpm: nova.rpm != null ? nova.rpm : base.rpm,
+        odometer: nova.odometer != null ? nova.odometer : base.odometer,
+        fuel: nova.fuel != null ? nova.fuel : base.fuel,
+        faults: (Array.isArray(nova.faults) && nova.faults.length) ? nova.faults : base.faults
+    };
+}
+
+/** Mantém a telemetria FleetBus se atualizando continuamente enquanto o popup de um veículo
+ *  estiver aberto: cada consulta é mesclada (nunca substitui um sinal já conhecido por "—") e o
+ *  popup é redesenhado a cada resposta, até o popup fechar. Se já houver telemetria em cache de
+ *  uma abertura anterior, ela aparece imediatamente — sem esperar a próxima consulta. */
 async function carregarTelemetriaParaPopup(key, marker){
-    if (telemetriaCache.get(key) === "carregando") return;
-    telemetriaCache.set(key, "carregando");
-    const v = state.vehicles.get(key);
-    if (marker.isPopupOpen() && v) marker.setPopupContent(popupVeiculoHtml(v, "carregando"));
-    try {
-        const telemetria = await buscarTelemetriaFleetBus(v?.vehicleId);
-        telemetriaCache.set(key, telemetria);
-    } catch {
-        telemetriaCache.set(key, "erro");
+    if (telemetriaPollAtivo.has(key)) return;
+    telemetriaPollAtivo.add(key);
+    const cacheAtual = telemetriaCache.get(key);
+    if (cacheAtual == null) telemetriaCache.set(key, "carregando");
+    while (telemetriaPollAtivo.has(key) && marker.isPopupOpen()){
+        const v = state.vehicles.get(key);
+        try {
+            const resultado = await buscarTelemetriaFleetBus(v?.vehicleId);
+            if (!telemetriaPollAtivo.has(key)) break;
+            if (resultado === "sem-match"){
+                telemetriaCache.set(key, "sem-match");
+            } else {
+                telemetriaCache.set(key, mesclarTelemetria(telemetriaCache.get(key), resultado));
+            }
+        } catch {
+            if (!telemetriaPollAtivo.has(key)) break;
+            if (typeof telemetriaCache.get(key) !== "object") telemetriaCache.set(key, "erro");
+        }
+        const vAtual = state.vehicles.get(key);
+        if (marker.isPopupOpen() && vAtual){
+            marker.setPopupContent(popupVeiculoHtml(vAtual, telemetriaCache.get(key)));
+        }
+        if (!telemetriaPollAtivo.has(key) || !marker.isPopupOpen()) break;
+        await new Promise(resolve => setTimeout(resolve, FLEETBUS.pollGapMs));
     }
-    const vAtual = state.vehicles.get(key);
-    if (marker.isPopupOpen() && vAtual){
-        marker.setPopupContent(popupVeiculoHtml(vAtual, telemetriaCache.get(key)));
-    }
+    telemetriaPollAtivo.delete(key);
+}
+
+/** Interrompe o loop de atualização contínua de telemetria de um veículo (chamado ao fechar o
+ *  popup). A última telemetria conhecida permanece em telemetriaCache para a próxima abertura. */
+function pararTelemetriaPopup(key){
+    telemetriaPollAtivo.delete(key);
 }
 
 async function fetchCleverRoutes(){
@@ -1556,7 +1595,7 @@ function atualizarMarcadores(){
             marker.on("click", () => selecionarVeiculo(state.vehicles.get(key) || v));
             marker.on("popupopen", () => carregarTelemetriaParaPopup(key, marker));
             marker.on("popupclose", () => {
-                telemetriaCache.delete(key);
+                pararTelemetriaPopup(key);
                 if (state.veiculoSelecionado === key){
                     state.veiculoSelecionado = null;
                     limparTraco();
@@ -1579,6 +1618,8 @@ function atualizarMarcadores(){
             }
             state.mapa.removeLayer(marker);
             state.markers.delete(key);
+            pararTelemetriaPopup(key);
+            telemetriaCache.delete(key);
         }
     });
 
