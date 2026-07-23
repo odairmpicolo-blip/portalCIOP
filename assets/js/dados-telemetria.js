@@ -1742,15 +1742,17 @@ function renderGraficoKm(rows, totais) {
 
   const nLabels = Math.min(datas.length, 8);
   const passo = Math.max(1, Math.round(datas.length / nLabels));
+  // Cor via classe CSS (var(--tel-muted)/var(--tel-panel-border)) em vez de fill/stroke fixos:
+  // no tema escuro o texto ficava cinza-escuro sobre fundo escuro e sumia (baixo contraste).
   const labelsX = datas.map((d, i) => (i % passo === 0 || i === datas.length - 1)
-    ? `<text x="${escalaX(i).toFixed(1)}" y="${H - 8}" font-size="9" fill="#64748b" text-anchor="middle">${formatarDataBr(d).slice(0, 5)}</text>`
+    ? `<text x="${escalaX(i).toFixed(1)}" y="${H - 8}" font-size="9" class="km-axis-label" text-anchor="middle">${formatarDataBr(d).slice(0, 5)}</text>`
     : "").join("");
 
   const gridY = [0, 0.25, 0.5, 0.75, 1].map((f) => {
     const y = H - PAD_B - f * areaH;
     const val = Math.round(maxVal * f);
-    return `<line x1="${PAD_L}" y1="${y.toFixed(1)}" x2="${W - PAD_R}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1" />
-      <text x="${PAD_L - 6}" y="${(y + 3).toFixed(1)}" font-size="9" fill="#94a3b8" text-anchor="end">${val.toLocaleString("pt-BR")}</text>`;
+    return `<line x1="${PAD_L}" y1="${y.toFixed(1)}" x2="${W - PAD_R}" y2="${y.toFixed(1)}" class="km-grid-line" stroke-width="1" />
+      <text x="${PAD_L - 6}" y="${(y + 3).toFixed(1)}" font-size="9" class="km-axis-label" text-anchor="end">${val.toLocaleString("pt-BR")}</text>`;
   }).join("");
 
   const legenda = linhas.map((l) => `<span class="km-legenda-item"><i style="background:${l.cor}"></i>${escapeHtml(l.fonte)}</span>`).join("");
