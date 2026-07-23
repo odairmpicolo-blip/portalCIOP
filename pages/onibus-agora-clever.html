@@ -214,7 +214,7 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
   color:var(--muted)!important;font-size:18px!important;top:6px!important;right:8px!important;
 }
 .veiculo-panel-inner{
-  position:relative;width:min(280px,78vw);border-radius:16px;padding:14px 16px;
+  position:relative;width:min(300px,82vw);border-radius:16px;padding:14px 16px;
   background:rgba(255,255,255,.68);
   backdrop-filter:blur(20px) saturate(190%);
   -webkit-backdrop-filter:blur(20px) saturate(190%);
@@ -228,6 +228,21 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
   display:inline-block;margin-top:4px;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:800;
 }
 .veiculo-panel-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.veiculo-panel-telemetria-titulo{
+  margin:12px 0 8px;padding-top:10px;border-top:1px solid rgba(15,23,42,.12);
+  font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+}
+.veiculo-panel-telemetria-msg{font-size:11.5px;color:var(--muted);padding:2px 0 2px}
+.veiculo-panel-falhas{margin-top:8px;display:grid;gap:5px}
+.veiculo-panel-falhas-titulo{font-size:11px;font-weight:800;color:#b91c1c}
+.veiculo-panel-falha{
+  font-size:11.5px;color:var(--text);background:#fef2f2;border:1px solid #fecaca;
+  border-radius:8px;padding:5px 9px;
+}
+.veiculo-panel-falhas.ok{
+  font-size:11.5px;color:#166534;background:#f0fdf4;border:1px solid #bbf7d0;
+  border-radius:8px;padding:5px 9px;
+}
 @media (max-width:720px){
   .body-bg-wall,
   .body-bg-stain{
@@ -811,6 +826,131 @@ function extrairListaBustime(data, chave){
     return Array.isArray(val) ? val : [val];
 }
 
+/** ===== Telemetria FleetBus (velocidade, RPM, odômetro, combustível, falhas) =====
+ *  Reaproveita o mesmo proxy AWS usado pelo Clever, só que apontando para o caminho
+ *  "/fleetbus" (igual à página fleetbus-agora.html). A localização do FleetBus não é
+ *  usada aqui — só os sinais de telemetria e a lista de falhas do veículo selecionado. */
+const FLEETBUS = {
+    proxyFallback: "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com",
+    proxyBase: null,
+    signals: {
+        speed: ["6054", "20", "100", "99", "168"],
+        rpm: ["4670", "11", "50", "140"],
+        odometer: ["4669", "4563", "19", "66", "67", "122", "244", "68"],
+        fuel: ["4660", "25", "63", "64", "9", "10", "33", "81"]
+    }
+};
+
+let fleetbusIndicePromise = null;
+/** Última telemetria conhecida por veículo (chave = mesma "key" dos marcadores no mapa),
+ *  usada para não deixar o popup em branco entre uma reabertura e outra. */
+const telemetriaCache = new Map();
+
+function normalizarProxyBaseFleetBus(apiUrl){
+    let url = String(apiUrl || "").trim().replace(/\/+$/, "");
+    if (!url) return "";
+    if (url.endsWith("/fleetbus")) return url;
+    return url + "/fleetbus";
+}
+
+async function initFleetBusProxy(){
+    if (FLEETBUS.proxyBase) return;
+    const candidatos = [
+        resolverBasePortal() + "/assets/data/portal-runtime.json",
+        new URL("../assets/data/portal-runtime.json", window.location.href).href
+    ];
+    for (const cfgUrl of candidatos){
+        try {
+            const cfg = await fetchJson(cfgUrl);
+            const base = normalizarProxyBaseFleetBus(cfg?.awsApiUrl);
+            if (base){ FLEETBUS.proxyBase = base; return; }
+        } catch { /* tenta próximo */ }
+    }
+    if (FLEETBUS.proxyFallback) FLEETBUS.proxyBase = normalizarProxyBaseFleetBus(FLEETBUS.proxyFallback);
+}
+
+async function fbGet(pathAndQuery){
+    if (!FLEETBUS.proxyBase) throw new Error("Proxy FleetBus não configurado.");
+    return fetchJson(FLEETBUS.proxyBase + "/" + String(pathAndQuery || "").replace(/^\//, ""));
+}
+
+/** Extrai o número do veículo (prefixo numérico) para casar o cadastro FleetBus com o vid do Clever. */
+function prefixoNumeroVeiculo(num){
+    const s = String(num || "");
+    const m = s.match(/^(\d+)/);
+    return m ? m[1] : s.split(" - ")[0] || s;
+}
+
+function pickSignal(signals, ids){
+    if (!signals) return null;
+    for (const id of ids){
+        if (signals[id] != null && Number.isFinite(Number(signals[id]))) return Number(signals[id]);
+    }
+    return null;
+}
+
+function fmtNumBR(v, digits){
+    if (v == null || !Number.isFinite(Number(v))) return "—";
+    return Number(v).toLocaleString("pt-BR", { maximumFractionDigits: digits ?? 0, minimumFractionDigits: digits ?? 0 });
+}
+
+/** Carrega (uma única vez) a lista de veículos cadastrados no FleetBus e monta um índice
+ *  "número do veículo" → "vehicleId interno do FleetBus", necessário para consultar telemetria. */
+async function carregarIndiceFleetBus(){
+    if (!fleetbusIndicePromise){
+        fleetbusIndicePromise = (async () => {
+            await initFleetBusProxy();
+            const data = await fbGet("vehicles");
+            const lista = Array.isArray(data) ? data : (data.vehicles || data.items || data.data || []);
+            const indice = new Map();
+            lista.forEach(v => {
+                const num = prefixoNumeroVeiculo(v.vehicleNumber);
+                if (num) indice.set(num, v.vehicleId);
+            });
+            return indice;
+        })().catch(err => { fleetbusIndicePromise = null; throw err; });
+    }
+    return fleetbusIndicePromise;
+}
+
+/** Busca a telemetria ao vivo (velocidade, RPM, odômetro, combustível e falhas) de um veículo
+ *  do Clever no FleetBus, casando pelo número do veículo. Retorna "sem-match" se o veículo do
+ *  Clever não tiver cadastro correspondente no FleetBus. */
+async function buscarTelemetriaFleetBus(vehicleIdClever){
+    const indice = await carregarIndiceFleetBus();
+    const vehicleIdFleetBus = indice.get(prefixoNumeroVeiculo(vehicleIdClever));
+    if (vehicleIdFleetBus == null) return "sem-match";
+    const data = await fbGet("live?vehicleId=" + encodeURIComponent(vehicleIdFleetBus) + "&waitMs=9000");
+    const src = { ...(data.signals || {}), ...(data.normalized || {}) };
+    return {
+        speed: pickSignal(src, FLEETBUS.signals.speed),
+        rpm: pickSignal(src, FLEETBUS.signals.rpm),
+        odometer: pickSignal(src, FLEETBUS.signals.odometer),
+        fuel: pickSignal(src, FLEETBUS.signals.fuel),
+        faults: Array.isArray(data.faults) ? data.faults : []
+    };
+}
+
+/** Dispara (ou reaproveita) a busca de telemetria FleetBus quando o popup de um veículo é
+ *  aberto no mapa, e atualiza o conteúdo do popup assim que a resposta chega — sem travar a
+ *  abertura do popup, que já mostra os dados do Clever imediatamente com "Carregando...". */
+async function carregarTelemetriaParaPopup(key, marker){
+    if (telemetriaCache.get(key) === "carregando") return;
+    telemetriaCache.set(key, "carregando");
+    const v = state.vehicles.get(key);
+    if (marker.isPopupOpen() && v) marker.setPopupContent(popupVeiculoHtml(v, "carregando"));
+    try {
+        const telemetria = await buscarTelemetriaFleetBus(v?.vehicleId);
+        telemetriaCache.set(key, telemetria);
+    } catch {
+        telemetriaCache.set(key, "erro");
+    }
+    const vAtual = state.vehicles.get(key);
+    if (marker.isPopupOpen() && vAtual){
+        marker.setPopupContent(popupVeiculoHtml(vAtual, telemetriaCache.get(key)));
+    }
+}
+
 async function fetchCleverRoutes(){
     const data = await fetchCleverLive("getroutes");
     const lista = extrairListaBustime(data, "routes");
@@ -1117,8 +1257,53 @@ function textoStatusComQuantidade(v){
     return st.label + (min > 0 ? (" · " + min + " min") : "");
 }
 
-/** Conteúdo do popup Leaflet (caixa em vidro) que abre ancorada no ícone do veículo clicado. */
-function popupVeiculoHtml(v){
+/** Valor de "Velocidade" exibido no popup: prioriza o sinal do FleetBus (telemetria do motor)
+ *  quando já carregado; enquanto isso, ou se não houver correspondência, cai no valor do Clever. */
+function velocidadePopup(v, telemetria){
+    if (telemetria && typeof telemetria === "object" && telemetria.speed != null){
+        return fmtNumBR(telemetria.speed) + " km/h";
+    }
+    return v.speed != null ? (v.speed + " km/h") : "—";
+}
+
+/** Bloco de telemetria FleetBus (RPM, odômetro, combustível e falhas) anexado ao popup do
+ *  veículo. "telemetria" pode ser: undefined/"carregando" (ainda buscando), "sem-match" (o
+ *  veículo do Clever não tem cadastro no FleetBus), "erro" (falha na consulta), ou o objeto
+ *  { speed, rpm, odometer, fuel, faults } já resolvido. */
+function telemetriaFleetBusHtml(telemetria){
+    if (telemetria == null || telemetria === "carregando"){
+        return '<div class="veiculo-panel-telemetria-titulo">Telemetria · FleetBus</div>' +
+            '<div class="veiculo-panel-telemetria-msg">Carregando telemetria...</div>';
+    }
+    if (telemetria === "sem-match"){
+        return '<div class="veiculo-panel-telemetria-titulo">Telemetria · FleetBus</div>' +
+            '<div class="veiculo-panel-telemetria-msg">Veículo sem cadastro no FleetBus.</div>';
+    }
+    if (telemetria === "erro"){
+        return '<div class="veiculo-panel-telemetria-titulo">Telemetria · FleetBus</div>' +
+            '<div class="veiculo-panel-telemetria-msg">Falha ao carregar telemetria.</div>';
+    }
+    const grid = [
+        ["RPM", telemetria.rpm != null ? fmtNumBR(telemetria.rpm) : "—"],
+        ["Odômetro", telemetria.odometer != null ? (fmtNumBR(telemetria.odometer, 1) + " km") : "—"],
+        ["Combustível", telemetria.fuel != null ? (fmtNumBR(telemetria.fuel) + " %") : "—"]
+    ].map(([k, val]) => '<div class="popup-item">' + esc(k) + '<strong>' + esc(val) + '</strong></div>').join("");
+    const faults = Array.isArray(telemetria.faults) ? telemetria.faults : [];
+    const falhasHtml = faults.length
+        ? '<div class="veiculo-panel-falhas">' +
+              '<div class="veiculo-panel-falhas-titulo">Falhas (' + faults.length + ')</div>' +
+              faults.slice(0, 4).map(f => '<div class="veiculo-panel-falha">' + esc(f.description || "Falha") + '</div>').join("") +
+          '</div>'
+        : '<div class="veiculo-panel-falhas ok">Sem falhas registradas</div>';
+    return '<div class="veiculo-panel-telemetria-titulo">Telemetria · FleetBus</div>' +
+        '<div class="veiculo-panel-grid">' + grid + '</div>' +
+        falhasHtml;
+}
+
+/** Conteúdo do popup Leaflet (caixa em vidro) que abre ancorada no ícone do veículo clicado.
+ *  "telemetria" é opcional: quando presente, mostra o bloco de telemetria FleetBus abaixo dos
+ *  dados de linha/operação já existentes (ver telemetriaFleetBusHtml). */
+function popupVeiculoHtml(v, telemetria){
     const st = statusPontualidade(v);
     const corLinha = corCss(v.route?.color);
     const grid = [
@@ -1126,7 +1311,7 @@ function popupVeiculoHtml(v){
         ["Bloco", v.wid || "—"],
         ["Sentido", v.sentido || "—"],
         ["Via", v.tripDesc || "—"],
-        ["Velocidade", v.speed != null ? (v.speed + " km/h") : "—"],
+        ["Velocidade", velocidadePopup(v, telemetria)],
         ["Op", v.operadora || "—"]
     ].map(([k, val]) => '<div class="popup-item">' + esc(k) + '<strong>' + esc(val) + '</strong></div>').join("");
     return '<div class="veiculo-panel-inner" style="--cor:' + esc(st.cor) + '">' +
@@ -1138,6 +1323,7 @@ function popupVeiculoHtml(v){
             '</div>' +
         '</div>' +
         '<div class="veiculo-panel-grid">' + grid + '</div>' +
+        telemetriaFleetBusHtml(telemetria) +
     '</div>';
 }
 
@@ -1357,11 +1543,13 @@ function atualizarMarcadores(){
         let marker = state.markers.get(key);
         if (!marker){
             marker = L.marker([v.lat, v.lng], { icon }).addTo(state.mapa);
-            marker.bindPopup(() => popupVeiculoHtml(state.vehicles.get(key) || v), {
+            marker.bindPopup(() => popupVeiculoHtml(state.vehicles.get(key) || v, telemetriaCache.get(key)), {
                 className: "veiculo-popup", offset: [0, -6], autoPanPadding: [30, 30]
             });
             marker.on("click", () => selecionarVeiculo(state.vehicles.get(key) || v));
+            marker.on("popupopen", () => carregarTelemetriaParaPopup(key, marker));
             marker.on("popupclose", () => {
+                telemetriaCache.delete(key);
                 if (state.veiculoSelecionado === key){
                     state.veiculoSelecionado = null;
                     limparTraco();
@@ -1372,7 +1560,7 @@ function atualizarMarcadores(){
         } else {
             marker.setLatLng([v.lat, v.lng]);
             marker.setIcon(icon);
-            if (marker.isPopupOpen()) marker.setPopupContent(popupVeiculoHtml(v));
+            if (marker.isPopupOpen()) marker.setPopupContent(popupVeiculoHtml(v, telemetriaCache.get(key)));
         }
     });
 
@@ -1523,6 +1711,7 @@ async function boot(){
     scheduleMapResize();
 
     await initCleverProxy();
+    carregarIndiceFleetBus().catch(() => { /* telemetria fica indisponível até o próximo popup */ });
 
     try {
         state.routes = (await fetchCleverRoutes()).sort(ordenarRotas);
