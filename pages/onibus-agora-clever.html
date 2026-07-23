@@ -135,20 +135,15 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 
 .bus-marker-wrap{background:transparent!important;border:0!important;overflow:visible!important}
 
-/* Ícone em formato de ônibus: preenchimento colorido por status (amarelo/vermelho/verde/azul/cinza), número dentro. */
+/* Ícone de ônibus (silhueta em círculo) com o pára-brisa preenchido pela cor de status, número dentro
+   e uma seta que sai do círculo indicando a direção do veículo. */
 .veh-bus{
-  position:relative;width:40px;height:26px;cursor:pointer;
+  position:relative;width:46px;height:46px;cursor:pointer;
   filter:drop-shadow(0 2px 6px rgba(15,23,42,.35));
   transition:transform .2s ease;
 }
-.veh-bus.highlight{ transform:scale(1.28); z-index:900!important; }
-.veh-bus svg{display:block;width:40px;height:26px}
-.veh-bus-num{
-  position:absolute;left:0;right:0;top:0;bottom:5px;
-  display:flex;align-items:center;justify-content:center;
-  font-family:"JetBrains Mono",monospace;font-weight:800;font-size:9.5px;
-  pointer-events:none;
-}
+.veh-bus.highlight{ transform:scale(1.22); z-index:900!important; }
+.veh-bus svg{display:block;width:46px;height:46px}
 
 .empty{padding:40px 20px;text-align:center;color:var(--muted)}
 .empty h3{margin:0 0 8px;color:var(--blue);font-size:18px;font-weight:800}
@@ -1073,17 +1068,28 @@ async function selecionarVeiculo(v){
     }
 }
 
-/** Ícone em formato de ônibus, preenchido pela cor de status (amarelo/vermelho/verde/azul/cinza), com o número dentro. */
+/** Ícone de ônibus (silhueta em círculo, estilo placa) com o pára-brisa preenchido pela cor de status
+ *  (amarelo/vermelho/verde/azul/cinza), o número do veículo dentro e uma seta saindo do círculo
+ *  apontando a direção do veículo (quando há dado de heading). */
 function iconeOnibusHtml(v, extraClass){
     const cor = corCss(statusPontualidade(v).cor);
     const corTexto = contraste(cor);
+    const hdg = v.heading;
+    const seta = (hdg != null)
+        ? '<path transform="rotate(' + Number(hdg) + ' 23 20)" d="M23 8 L28.4 15.8 L17.6 15.8 Z" fill="' + esc(cor) + '" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/>'
+        : '';
     return '<div class="veh-bus ' + (extraClass || "") + '">' +
-        '<svg viewBox="0 0 40 26" aria-hidden="true">' +
-            '<path fill="' + esc(cor) + '" stroke="#fff" stroke-width="1.4" d="M4 5.5A3.5 3.5 0 0 1 7.5 2h25A3.5 3.5 0 0 1 36 5.5v13A3.5 3.5 0 0 1 32.5 22h-25A3.5 3.5 0 0 1 4 18.5z"/>' +
-            '<circle cx="11" cy="21.5" r="2.6" fill="#1f2937" stroke="#fff" stroke-width="1"/>' +
-            '<circle cx="29" cy="21.5" r="2.6" fill="#1f2937" stroke="#fff" stroke-width="1"/>' +
+        '<svg viewBox="0 0 46 46" aria-hidden="true">' +
+            '<circle cx="23" cy="26" r="18" fill="#fff" stroke="#0f172a" stroke-width="2"/>' +
+            '<rect x="10" y="12" width="26" height="27" rx="8" fill="#0f172a"/>' +
+            '<rect x="6.6" y="19.5" width="3.6" height="7" rx="1.3" fill="#0f172a"/>' +
+            '<rect x="35.8" y="19.5" width="3.6" height="7" rx="1.3" fill="#0f172a"/>' +
+            '<circle cx="17.5" cy="39.5" r="3.7" fill="#0f172a" stroke="#fff" stroke-width="1.1"/>' +
+            '<circle cx="28.5" cy="39.5" r="3.7" fill="#0f172a" stroke="#fff" stroke-width="1.1"/>' +
+            seta +
+            '<circle cx="23" cy="20" r="8.6" fill="' + esc(cor) + '" stroke="#fff" stroke-width="2"/>' +
+            '<text x="23" y="23" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="800" font-size="8.2" fill="' + esc(corTexto) + '">' + esc(v.vehicleId || "—") + '</text>' +
         '</svg>' +
-        '<span class="veh-bus-num" style="color:' + esc(corTexto) + '">' + esc(v.vehicleId || "—") + '</span>' +
     '</div>';
 }
 
@@ -1109,8 +1115,9 @@ function atualizarMarcadores(){
         const icon = L.divIcon({
             className: "bus-marker-wrap",
             html: iconeOnibusHtml(v, extra),
-            iconSize: [40, 26],
-            iconAnchor: [20, 13]
+            iconSize: [46, 46],
+            iconAnchor: [23, 23],
+            popupAnchor: [0, -23]
         });
         let marker = state.markers.get(key);
         if (!marker){
