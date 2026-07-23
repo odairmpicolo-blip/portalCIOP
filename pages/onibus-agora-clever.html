@@ -833,17 +833,21 @@ function extrairListaBustime(data, chave){
 /** ===== Telemetria FleetBus (velocidade, RPM, odômetro, combustível, falhas) =====
  *  Reaproveita o mesmo proxy AWS usado pelo Clever, só que apontando para o caminho
  *  "/fleetbus" (igual à página fleetbus-agora.html). A localização do FleetBus não é
- *  usada aqui — só os sinais de telemetria e a lista de falhas do veículo selecionado. */
+ *  usada aqui — só os sinais de telemetria e a lista de falhas do veículo selecionado.
+ *  As listas de IDs por métrica foram reordenadas/ampliadas em 2026-07-23 depois de
+ *  amostrar ao vivo ~30 veículos da frota: os IDs confirmados (que realmente aparecem
+ *  com valores plausíveis) vêm primeiro; os antigos (nunca observados na amostra, mas
+ *  que podem existir em outra variante de equipamento) ficam como último fallback. */
 const FLEETBUS = {
     proxyFallback: "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com",
     proxyBase: null,
     waitMs: 6000,
     pollGapMs: 700,
     signals: {
-        speed: ["6054", "20", "100", "99", "168"],
-        rpm: ["4670", "11", "50", "140"],
-        odometer: ["4669", "4563", "19", "66", "67", "122", "244", "68"],
-        fuel: ["4660", "25", "63", "64", "9", "10", "33", "81"]
+        speed: ["20", "6054", "100", "99", "168"],
+        rpm: ["11", "4670", "50", "140"],
+        odometer: ["4563", "4669", "19", "66", "67", "122", "244", "68", "18"],
+        fuel: ["33", "81", "25", "72", "4660", "63", "64", "9", "10"]
     }
 };
 
