@@ -137,17 +137,16 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 
 .bus-marker-wrap{background:transparent!important;border:0!important;overflow:visible!important}
 
-/* Ícone de ônibus em pino clássico de mapa (formato gota): corpo pintado pela cor de status,
-   círculo branco no topo com a silhueta do ônibus em cinza escuro, número do veículo em
-   etiqueta fora do ícone (acima dele). */
+/* Ícone de ônibus em pino quadrado (squircle, igual à imagem de referência): fundo pintado
+   pela cor de status, silhueta do ônibus em cinza escuro, número do veículo em etiqueta fora
+   do ícone (acima dele) e o bico do pino rotacionado para apontar a direção do veículo. */
 .veh-pin{
   position:relative;width:96px;cursor:pointer;
   filter:drop-shadow(0 3px 7px rgba(15,23,42,.35));
   transition:transform .2s ease;
-  transform-origin:50% 100%;
 }
 .veh-pin.highlight{ transform:scale(1.15); z-index:900!important; }
-.veh-pin svg{display:block;width:96px;height:144px}
+.veh-pin svg{display:block;width:96px;height:96px}
 .veh-pin-num{
   position:absolute;left:50%;bottom:100%;transform:translateX(-50%);
   margin-bottom:4px;background:#fff;color:var(--blue);
@@ -1083,23 +1082,25 @@ async function selecionarVeiculo(v){
     }
 }
 
-/** Ícone de ônibus em pino clássico de mapa (formato gota): corpo pintado pela cor de status,
- *  círculo branco no topo com a silhueta do ônibus em cinza escuro, número do veículo em
- *  etiqueta fora do ícone (acima dele). */
+/** Ícone de ônibus em pino quadrado (squircle, igual à imagem de referência): fundo pintado
+ *  pela cor de status, silhueta do ônibus em cinza escuro, número do veículo em etiqueta fora
+ *  do ícone (acima dele) e o bico do pino rotacionado para apontar a direção do veículo. */
 function iconeOnibusHtml(v, extraClass){
     const cor = corCss(statusPontualidade(v).cor);
     const cz = "#4b5563";
+    const rot = v.heading != null ? Number(v.heading) : 0;
     return '<div class="veh-pin ' + (extraClass || "") + '">' +
         '<span class="veh-pin-num">' + esc(v.vehicleId || "—") + '</span>' +
-        '<svg viewBox="0 0 24 36" aria-hidden="true">' +
-            '<path d="M12 0C5.383 0 0 5.383 0 12c0 9 12 24 12 24s12-15 12-24c0-6.617-5.383-12-12-12z" fill="' + esc(cor) + '" stroke="rgba(15,23,42,.25)" stroke-width="0.6"/>' +
-            '<circle cx="12" cy="12" r="8" fill="#fff"/>' +
-            '<rect x="10.4" y="5.2" width="3.2" height="1.4" rx="0.5" fill="' + cz + '"/>' +
-            '<rect x="7.5" y="6.8" width="9" height="7" rx="2" fill="' + cz + '"/>' +
-            '<circle cx="9" cy="13" r="0.85" fill="' + cz + '"/>' +
-            '<circle cx="15" cy="13" r="0.85" fill="' + cz + '"/>' +
-            '<rect x="8" y="14" width="1.6" height="1.2" rx="0.4" fill="' + cz + '"/>' +
-            '<rect x="14.4" y="14" width="1.6" height="1.2" rx="0.4" fill="' + cz + '"/>' +
+        '<svg viewBox="0 0 60 60" aria-hidden="true">' +
+            '<g transform="rotate(' + rot + ' 30 26)"><path d="M30 52 L34 26 L26 26 Z" fill="' + esc(cor) + '"/></g>' +
+            '<rect x="13" y="9" width="34" height="34" rx="9" fill="' + esc(cor) + '" stroke="rgba(15,23,42,.28)" stroke-width="1"/>' +
+            '<rect x="25" y="10.5" width="10" height="3.5" rx="1.2" fill="' + cz + '"/>' +
+            '<rect x="17" y="15" width="26" height="21" rx="6" fill="' + cz + '"/>' +
+            '<rect x="20.5" y="18" width="19" height="10" rx="2.5" fill="' + esc(cor) + '" opacity=".42"/>' +
+            '<circle cx="22.5" cy="33" r="2.1" fill="' + cz + '"/>' +
+            '<circle cx="37.5" cy="33" r="2.1" fill="' + cz + '"/>' +
+            '<rect x="20.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
+            '<rect x="35.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
         '</svg>' +
     '</div>';
 }
@@ -1126,9 +1127,9 @@ function atualizarMarcadores(){
         const icon = L.divIcon({
             className: "bus-marker-wrap",
             html: iconeOnibusHtml(v, extra),
-            iconSize: [96, 144],
-            iconAnchor: [48, 144],
-            popupAnchor: [0, -166]
+            iconSize: [96, 96],
+            iconAnchor: [48, 42],
+            popupAnchor: [0, -100]
         });
         let marker = state.markers.get(key);
         if (!marker){
