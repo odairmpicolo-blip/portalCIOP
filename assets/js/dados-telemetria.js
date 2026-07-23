@@ -881,14 +881,23 @@ function payloadParaRow(reg, colVeiculo, colData) {
   return row;
 }
 
-function calcPct(numerador, divisor) {
+/** Retorna o número da "proximidade" Km A/B (0–100, simétrico) ou null se não der para comparar. */
+function calcPctValor(numerador, divisor) {
   const n = parseNumero(numerador);
   const d = parseNumero(divisor);
-  if (!Number.isFinite(n) || !Number.isFinite(d) || d <= 0 || n > 1000 || d > 1000) return "";
+  if (!Number.isFinite(n) || !Number.isFinite(d) || d <= 0 || n > 1000 || d > 1000) return null;
   let pct = (n / d) * 100;
   if (pct > 100) pct = 200 - pct;
-  return `${formatarDecimal(pct, 1)}%`;
+  return pct;
 }
+
+function calcPct(numerador, divisor) {
+  const pct = calcPctValor(numerador, divisor);
+  return pct == null ? "" : `${formatarDecimal(pct, 1)}%`;
+}
+
+/** Abaixo disso (%) o Km de duas fontes é considerado divergente para a mesma linha/dia. */
+const DIVERGENCIA_KM_LIMIAR = 80;
 
 function montarLinhasComparacao() {
   const cleverRegs = filtrarRegistrosPorPeriodo(registrosDaFonte("clever"));
@@ -922,6 +931,14 @@ function montarLinhasComparacao() {
     const kmTcgl = t?.["Km Percorrido"] ?? "";
     const kmFleetbus = f?.["Km Percorrido"] ?? "";
 
+    const pctCleverTcgl = calcPctValor(kmClever, kmTcgl);
+    const pctFleetbusTcgl = calcPctValor(kmFleetbus, kmTcgl);
+    const pctFleetbusClever = calcPctValor(kmFleetbus, kmClever);
+    // Só é "divergente" quando as duas fontes do par têm dado (sem-dados já cai em row-sem-dados).
+    const divergente = (Boolean(c) && Boolean(t) && pctCleverTcgl != null && pctCleverTcgl < DIVERGENCIA_KM_LIMIAR)
+      || (Boolean(f) && Boolean(t) && pctFleetbusTcgl != null && pctFleetbusTcgl < DIVERGENCIA_KM_LIMIAR)
+      || (Boolean(f) && Boolean(c) && pctFleetbusClever != null && pctFleetbusClever < DIVERGENCIA_KM_LIMIAR);
+
     const row = {
       [colVeiculo]: item.veiculo,
       [colData]: item.data_iso,
@@ -931,12 +948,13 @@ function montarLinhasComparacao() {
       __semDadosClever: !c,
       __semDadosTcgl: !t,
       __semDadosFleetBus: !f,
+      __divergente: divergente,
       "Km Percorrido (TCGL)": kmTcgl,
       "Km Percorrido (Clever)": kmClever,
       "Km Percorrido (FleetBus)": kmFleetbus,
-      "Clever / TCGL %": calcPct(kmClever, kmTcgl),
-      "FleetBus / TCGL %": calcPct(kmFleetbus, kmTcgl),
-      "FleetBus / Clever %": calcPct(kmFleetbus, kmClever)
+      "Clever / TCGL %": pctCleverTcgl == null ? "" : `${formatarDecimal(pctCleverTcgl, 1)}%`,
+      "FleetBus / TCGL %": pctFleetbusTcgl == null ? "" : `${formatarDecimal(pctFleetbusTcgl, 1)}%`,
+      "FleetBus / Clever %": pctFleetbusClever == null ? "" : `${formatarDecimal(pctFleetbusClever, 1)}%`
     };
 
     rows.push(row);
@@ -1363,6 +1381,8 @@ function renderResumoVazio() {
   });
   const card = $("cardAtencao");
   if (card) card.classList.remove("alerta");
+  const kmPanel = $("kmPanel");
+  if (kmPanel) kmPanel.hidden = true;
 }
 
 function renderTabelaVazia(msg) {
@@ -1584,6 +1604,166 @@ function hintFiltrosAtivos() {
   hint.textContent = `Filtros ativos: ${partes.join(" · ")}`;
 }
 
+/* ===== Km percorrido — cards, gráfico e destaques (foco do painel) ===== */
+
+const KM_DIARIO_MAX = 1000;
+const CORES_FONTE_KM = { TCGL: "#0b3a8a", Clever: "#0891b2", FleetBus: "#ff6b00" };
+
+function ehColunaKm(col) {
+  return /^Km Percorrido(\s+\((Clever|TCGL|FleetBus)\))?$/.test(String(col || "").trim());
+}
+
+function rotuloFonteDeColuna(col) {
+  const m = String(col || "").match(/\((Clever|TCGL|FleetBus)\)$/);
+  if (m) return m[1];
+  if (fonteAtiva === "tcgl") return "TCGL";
+  if (fonteAtiva === "clever") return "Clever";
+  if (fonteAtiva === "fleetbus") return "FleetBus";
+  return "Total";
+}
+
+function calcularKmPorColuna(rows, cols) {
+  const kmCols = (cols || []).filter(ehColunaKm);
+  return kmCols.map((col) => {
+    let soma = 0;
+    let dias = 0;
+    (rows || []).forEach((row) => {
+      if (row.__semDados) return;
+      const km = parseNumero(row[col]);
+      if (!Number.isFinite(km) || km <= 0 || km > KM_DIARIO_MAX) return;
+      soma += km;
+      dias++;
+    });
+    return { col, fonte: rotuloFonteDeColuna(col), soma, dias };
+  });
+}
+
+function calcularExtremosKm(rows, cols) {
+  const kmCols = (cols || []).filter(ehColunaKm);
+  const extremos = {};
+  kmCols.forEach((col) => {
+    let max = -Infinity;
+    let min = Infinity;
+    let n = 0;
+    (rows || []).forEach((row) => {
+      if (row.__semDados) return;
+      const v = parseNumero(row[col]);
+      if (!Number.isFinite(v) || v <= 0 || v > KM_DIARIO_MAX) return;
+      n++;
+      if (v > max) max = v;
+      if (v < min) min = v;
+    });
+    if (n >= 2 && max > min) extremos[col] = { max, min };
+  });
+  return extremos;
+}
+
+function renderKmStats(rows, cols) {
+  const painel = $("kmPanel");
+  const grid = $("kmStatsGrid");
+  const sub = $("kmPanelSub");
+  if (!painel || !grid) return [];
+  const totais = calcularKmPorColuna(rows, cols).filter((t) => t.dias > 0 || t.soma > 0);
+  if (!totais.length) {
+    painel.hidden = true;
+    grid.innerHTML = "";
+    return [];
+  }
+  painel.hidden = false;
+  if (sub) {
+    const de = $("filtroDataDe")?.value || "";
+    const ate = $("filtroDataAte")?.value || "";
+    const veic = $("filtroVeiculo")?.value || "";
+    const partes = [];
+    if (de || ate) partes.push(`${de ? formatarDataBr(de) : "…"} a ${ate ? formatarDataBr(ate) : "…"}`);
+    partes.push(veic ? `veículo ${veic}` : "frota filtrada");
+    sub.textContent = partes.join(" · ");
+  }
+  grid.innerHTML = totais.map((t) => `
+    <div class="stat-card km-stat-card">
+      <div class="lbl">Km ${escapeHtml(t.fonte)}</div>
+      <div class="val">${formatarInteiro(t.soma)}<span class="km-unidade">km</span></div>
+      <div class="km-stat-meta">${t.dias} registro${t.dias === 1 ? "" : "s"}${t.dias ? ` · média ${formatarInteiro(t.soma / t.dias)} km/dia` : ""}</div>
+    </div>
+  `).join("");
+  return totais;
+}
+
+function agruparKmPorData(rows, kmCols) {
+  const porData = new Map();
+  (rows || []).forEach((row) => {
+    if (row.__semDados) return;
+    const dataIso = row.data_iso || (dadosBrutos?.colData ? parseDataCsv(row[dadosBrutos.colData]) : "");
+    if (!dataIso) return;
+    if (!porData.has(dataIso)) porData.set(dataIso, {});
+    const bucket = porData.get(dataIso);
+    kmCols.forEach((col) => {
+      const km = parseNumero(row[col]);
+      if (!Number.isFinite(km) || km <= 0 || km > KM_DIARIO_MAX) return;
+      bucket[col] = (bucket[col] || 0) + km;
+    });
+  });
+  return porData;
+}
+
+function renderGraficoKm(rows, totais) {
+  const wrap = $("kmChartWrap");
+  if (!wrap) return;
+  const kmCols = (totais || []).map((t) => t.col);
+  if (!kmCols.length) { wrap.innerHTML = ""; return; }
+
+  const porData = agruparKmPorData(rows, kmCols);
+  const datas = [...porData.keys()].sort();
+  if (datas.length < 2) {
+    wrap.innerHTML = `<p class="km-chart-vazio">Selecione um período com mais de um dia para ver a evolução do km.</p>`;
+    return;
+  }
+
+  const W = 900, H = 220, PAD_L = 46, PAD_R = 14, PAD_T = 14, PAD_B = 26;
+  const maxVal = Math.max(1, ...datas.flatMap((d) => kmCols.map((c) => porData.get(d)[c] || 0)));
+  const areaW = W - PAD_L - PAD_R;
+  const areaH = H - PAD_T - PAD_B;
+  const stepX = datas.length > 1 ? areaW / (datas.length - 1) : 0;
+  const escalaY = (v) => H - PAD_B - (v / maxVal) * areaH;
+  const escalaX = (i) => PAD_L + i * stepX;
+
+  const linhas = kmCols.map((col, idx) => {
+    const fonte = totais[idx]?.fonte || col;
+    const cor = CORES_FONTE_KM[fonte] || "#0891b2";
+    const pontos = datas.map((d, i) => `${escalaX(i).toFixed(1)},${escalaY(porData.get(d)[col] || 0).toFixed(1)}`).join(" ");
+    const circles = datas.map((d, i) => {
+      const v = porData.get(d)[col] || 0;
+      const x = escalaX(i).toFixed(1);
+      const y = escalaY(v).toFixed(1);
+      return `<circle cx="${x}" cy="${y}" r="2.6" fill="${cor}"><title>${escapeHtml(fonte)} · ${formatarDataBr(d)} · ${formatarInteiro(v)} km</title></circle>`;
+    }).join("");
+    return { fonte, cor, svg: `<polyline points="${pontos}" fill="none" stroke="${cor}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" />${circles}` };
+  });
+
+  const nLabels = Math.min(datas.length, 8);
+  const passo = Math.max(1, Math.round(datas.length / nLabels));
+  const labelsX = datas.map((d, i) => (i % passo === 0 || i === datas.length - 1)
+    ? `<text x="${escalaX(i).toFixed(1)}" y="${H - 8}" font-size="9" fill="#64748b" text-anchor="middle">${formatarDataBr(d).slice(0, 5)}</text>`
+    : "").join("");
+
+  const gridY = [0, 0.25, 0.5, 0.75, 1].map((f) => {
+    const y = H - PAD_B - f * areaH;
+    const val = Math.round(maxVal * f);
+    return `<line x1="${PAD_L}" y1="${y.toFixed(1)}" x2="${W - PAD_R}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1" />
+      <text x="${PAD_L - 6}" y="${(y + 3).toFixed(1)}" font-size="9" fill="#94a3b8" text-anchor="end">${val.toLocaleString("pt-BR")}</text>`;
+  }).join("");
+
+  const legenda = linhas.map((l) => `<span class="km-legenda-item"><i style="background:${l.cor}"></i>${escapeHtml(l.fonte)}</span>`).join("");
+
+  wrap.innerHTML = `
+    <div class="km-legenda">${legenda}</div>
+    <svg viewBox="0 0 ${W} ${H}" class="km-chart-svg" preserveAspectRatio="none" role="img" aria-label="Km percorrido por dia">
+      ${gridY}
+      ${linhas.map((l) => l.svg).join("")}
+      ${labelsX}
+    </svg>`;
+}
+
 function renderResumo(stats) {
   $("statFrota").textContent = stats.frota;
   $("statNoArquivo").textContent = stats.noArquivo;
@@ -1625,12 +1805,22 @@ function renderTabelaDados(rows, cols) {
   }
 
   const sorted = ordenarRows(rows, sortCol, sortDir);
+  const extremosKm = calcularExtremosKm(rows, colsVisiveis);
 
   corpo.innerHTML = sorted.map((row) => {
     const rowCls = classeLinhaDado(row, colunasKpi);
     const cells = colsVisiveis.map((col) => {
       const val = formatarCelula(col, row[col] ?? "", row);
-      return `<td>${escapeHtml(val) || "<span class=\"cell-vazio\">—</span>"}</td>`;
+      let cls = "";
+      const ext = extremosKm[col];
+      if (ext && !row.__semDados) {
+        const v = parseNumero(row[col]);
+        if (Number.isFinite(v)) {
+          if (Math.abs(v - ext.max) < 0.01) cls = " class=\"cell-km-max\" title=\"Maior km percorrido no período/filtro\"";
+          else if (Math.abs(v - ext.min) < 0.01) cls = " class=\"cell-km-min\" title=\"Menor km percorrido no período/filtro\"";
+        }
+      }
+      return `<td${cls}>${escapeHtml(val) || "<span class=\"cell-vazio\">—</span>"}</td>`;
     }).join("");
     return `<tr${rowCls ? ` class="${rowCls}"` : ""}>
       <td class="col-fix veiculo">${escapeHtml(row[colVeiculo])}</td>
@@ -1667,6 +1857,8 @@ function renderizar() {
   renderAbasFonte();
   hintFiltrosAtivos();
   renderResumo(stats);
+  const totaisKm = renderKmStats(rows, cols);
+  renderGraficoKm(rows, totaisKm);
   renderTabelaDados(rows, cols);
   $("painelVazio").hidden = true;
   const btnPdf = $("btnExportPdfAtencao");
