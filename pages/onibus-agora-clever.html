@@ -142,7 +142,7 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
    do ícone (acima dele) e o bico do pino rotacionado para apontar a direção do veículo. */
 .veh-pin{
   position:relative;width:96px;cursor:pointer;
-  filter:drop-shadow(0 3px 7px rgba(15,23,42,.35));
+  filter:drop-shadow(0 4px 8px rgba(15,23,42,.45)) drop-shadow(0 1px 2px rgba(15,23,42,.3));
   transition:transform .2s ease;
 }
 .veh-pin.highlight{ transform:scale(1.15); z-index:900!important; }
@@ -1082,10 +1082,10 @@ async function selecionarVeiculo(v){
     }
 }
 
-/** Ícone de ônibus em pino quadrado (squircle): fundo pintado pela cor de status com borda
- *  leve em preto, silhueta do ônibus em branco, número do veículo colado no topo do ícone e
- *  o bico do pino — grosso, para ficar bem visível — rotacionado para apontar a direção do
- *  veículo. */
+/** Ícone de ônibus em pino quadrado (squircle) com efeito 3D (gradiente de luz/sombra e
+ *  sombra projetada): fundo pintado pela cor de status com borda leve em preto, silhueta do
+ *  ônibus em branco, número do veículo colado no topo do ícone e o bico do pino — curto e
+ *  bem gordo/arredondado — rotacionado para apontar a direção do veículo. */
 function iconeOnibusHtml(v, extraClass){
     const cor = corCss(statusPontualidade(v).cor);
     const cz = "#fff";
@@ -1093,8 +1093,28 @@ function iconeOnibusHtml(v, extraClass){
     return '<div class="veh-pin ' + (extraClass || "") + '">' +
         '<span class="veh-pin-num">' + esc(v.vehicleId || "—") + '</span>' +
         '<svg viewBox="0 0 60 60" aria-hidden="true">' +
-            '<g transform="rotate(' + rot + ' 30 26)"><path d="M30 58 L39 24 L21 24 Z" fill="' + esc(cor) + '" stroke="rgba(0,0,0,.45)" stroke-width="2" stroke-linejoin="round"/></g>' +
+            '<defs>' +
+                '<linearGradient id="busBevel" x1="0" y1="0" x2="0" y2="1">' +
+                    '<stop offset="0" stop-color="#fff" stop-opacity=".55"/>' +
+                    '<stop offset=".45" stop-color="#fff" stop-opacity="0"/>' +
+                    '<stop offset="1" stop-color="#000" stop-opacity=".3"/>' +
+                '</linearGradient>' +
+                '<radialGradient id="busGloss" cx=".32" cy=".22" r=".55">' +
+                    '<stop offset="0" stop-color="#fff" stop-opacity=".65"/>' +
+                    '<stop offset="1" stop-color="#fff" stop-opacity="0"/>' +
+                '</radialGradient>' +
+                '<linearGradient id="beakBevel" x1="0" y1="0" x2="0" y2="1">' +
+                    '<stop offset="0" stop-color="#fff" stop-opacity=".4"/>' +
+                    '<stop offset="1" stop-color="#000" stop-opacity=".28"/>' +
+                '</linearGradient>' +
+            '</defs>' +
+            '<g transform="rotate(' + rot + ' 30 26)">' +
+                '<path d="M30 51 L41 26 L19 26 Z" fill="' + esc(cor) + '" stroke="rgba(0,0,0,.45)" stroke-width="2" stroke-linejoin="round"/>' +
+                '<path d="M30 51 L41 26 L19 26 Z" fill="url(#beakBevel)" stroke="none"/>' +
+            '</g>' +
             '<rect x="13" y="9" width="34" height="34" rx="9" fill="' + esc(cor) + '" stroke="rgba(0,0,0,.4)" stroke-width="1.4"/>' +
+            '<rect x="13" y="9" width="34" height="34" rx="9" fill="url(#busBevel)"/>' +
+            '<rect x="13" y="9" width="34" height="34" rx="9" fill="url(#busGloss)"/>' +
             '<rect x="25" y="10.5" width="10" height="3.5" rx="1.2" fill="' + cz + '"/>' +
             '<rect x="17" y="15" width="26" height="21" rx="6" fill="' + cz + '"/>' +
             '<rect x="20.5" y="18" width="19" height="10" rx="2.5" fill="' + esc(cor) + '" opacity=".42"/>' +
