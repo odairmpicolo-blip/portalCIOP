@@ -209,12 +209,12 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
    do veículo que deveria estar ali. */
 .veh-pin.ghost-pin-veh{
   cursor:default;
-  filter:drop-shadow(0 4px 8px rgba(15,23,42,.4));
+  filter:drop-shadow(0 5px 10px rgba(15,23,42,.5)) drop-shadow(0 0 6px rgba(255,255,255,.5));
   animation:ghostPulse 1.8s ease-in-out infinite;
 }
 @keyframes ghostPulse{
-  0%,100%{ opacity:.55; }
-  50%{ opacity:.95; }
+  0%,100%{ opacity:.82; }
+  50%{ opacity:1; }
 }
 .leaflet-tooltip.ghost-tooltip{
   background:var(--blue);color:#fff;border:0;font-weight:800;font-size:11px;
@@ -1481,6 +1481,11 @@ function interpolarNoTrajeto(pontos, alvoPdist){
 }
 
 const PES_POR_METRO = 3.28084;
+/** Velocidade mínima (km/h) usada para estimar a posição prevista quando o veículo está
+ *  parado ou bem lento (spd baixo). Sem esse piso, um ônibus atrasado mas parado num
+ *  semáforo/trânsito calcularia deslocamento zero e o fantasminha ficaria "colado" no
+ *  ícone real — invisível na prática. */
+const VEL_MINIMA_FANTASMA_KMH = 15;
 
 /** Estima, para cada veículo visível com atraso relevante, a posição em que ele deveria
  *  estar agora segundo o horário programado: parte da distância já percorrida no trajeto
@@ -1505,14 +1510,22 @@ async function atualizarPosicoesEstimadas(){
         alvos.push(v);
     });
 
-    const vistos = new Set();
-    for (const v of alvos){
+    // Busca os trajetos em paralelo (cada pid só é buscado uma vez, o resto vem do cache).
+    const resultados = await Promise.all(alvos.map(async (v) => {
         const pontos = await obterPontosPadrao(v.pid);
-        if (!pontos.length) continue;
-        const velFtSeg = (Number(v.speed) * 1000 / 3600) * PES_POR_METRO;
+        return { v, pontos };
+    }));
+
+    const vistos = new Set();
+    resultados.forEach(({ v, pontos }) => {
+        if (!pontos.length) return;
+        // Com o veículo parado/muito lento (trânsito, semáforo), usar a velocidade instantânea
+        // (perto de zero) faria o fantasminha cair em cima do ícone real — usa um piso mínimo.
+        const velKmh = Number(v.speed) > 3 ? Number(v.speed) : VEL_MINIMA_FANTASMA_KMH;
+        const velFtSeg = (velKmh * 1000 / 3600) * PES_POR_METRO;
         const alvoPdist = v.pdist + v.delaySec * velFtSeg;
         const pos = interpolarNoTrajeto(pontos, alvoPdist);
-        if (!pos) continue;
+        if (!pos) return;
 
         vistos.add(v.key);
         const rotulo = "Posição prevista · " + esc(v.vehicleId) + " · " + esc(textoStatusComQuantidade(v));
@@ -1533,7 +1546,7 @@ async function atualizarPosicoesEstimadas(){
             marker.setIcon(icon);
             marker.setTooltipContent(rotulo);
         }
-    }
+    });
 
     state.ghostMarkers.forEach((marker, key) => {
         if (!vistos.has(key)){
@@ -1677,18 +1690,31 @@ function iconeOnibusHtml(v, extraClass){
 function iconeFantasmaHtml(v){
     const rot = v.heading != null ? Number(v.heading) : 0;
     const numero = esc(v.vehicleId || "—");
-    const corpo = "rgba(255,255,255,.24)";
-    const borda = "rgba(255,255,255,.8)";
+    // "Vidro" branco: corpo bem mais opaco que a primeira versão + brilho/bisel para dar
+    // profundidade, número em azul-marinho (contraste melhor que branco sobre branco).
     return '<div class="veh-pin ghost-pin-veh">' +
         '<svg viewBox="0 0 60 60" aria-hidden="true">' +
+            '<defs>' +
+                '<linearGradient id="ghostBevel" x1="0" y1="0" x2="0" y2="1">' +
+                    '<stop offset="0" stop-color="#fff" stop-opacity=".95"/>' +
+                    '<stop offset=".55" stop-color="#fff" stop-opacity=".25"/>' +
+                    '<stop offset="1" stop-color="#fff" stop-opacity=".05"/>' +
+                '</linearGradient>' +
+                '<radialGradient id="ghostGloss" cx=".32" cy=".18" r=".65">' +
+                    '<stop offset="0" stop-color="#fff" stop-opacity=".95"/>' +
+                    '<stop offset="1" stop-color="#fff" stop-opacity="0"/>' +
+                '</radialGradient>' +
+            '</defs>' +
             '<g transform="rotate(' + rot + ' 30 26)">' +
-                '<path d="M30 1 L46 30 L14 30 Z" fill="' + corpo + '" stroke="' + borda + '" stroke-width="2" stroke-linejoin="round"/>' +
+                '<path d="M30 1 L46 30 L14 30 Z" fill="rgba(255,255,255,.62)" stroke="rgba(255,255,255,.98)" stroke-width="2.4" stroke-linejoin="round"/>' +
             '</g>' +
-            '<rect x="13" y="9" width="34" height="34" rx="10" fill="' + corpo + '" stroke="' + borda + '" stroke-width="1.6" stroke-dasharray="3 2.5"/>' +
-            '<rect x="17" y="15" width="26" height="21" rx="6" fill="rgba(255,255,255,.16)"/>' +
-            '<text x="30" y="25.9" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="7.2" font-weight="800" letter-spacing=".2" fill="rgba(255,255,255,.95)">' + numero + '</text>' +
-            '<circle cx="22.5" cy="33" r="2.1" fill="' + borda + '"/>' +
-            '<circle cx="37.5" cy="33" r="2.1" fill="' + borda + '"/>' +
+            '<rect x="13" y="9" width="34" height="34" rx="10" fill="rgba(255,255,255,.5)" stroke="rgba(255,255,255,.98)" stroke-width="2"/>' +
+            '<rect x="13" y="9" width="34" height="34" rx="10" fill="url(#ghostBevel)"/>' +
+            '<rect x="13" y="9" width="34" height="34" rx="10" fill="url(#ghostGloss)"/>' +
+            '<rect x="17" y="15" width="26" height="21" rx="6" fill="rgba(255,255,255,.55)"/>' +
+            '<text x="30" y="25.9" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="7.2" font-weight="800" letter-spacing=".2" fill="#0b3a8a">' + numero + '</text>' +
+            '<circle cx="22.5" cy="33" r="2.1" fill="rgba(255,255,255,.95)"/>' +
+            '<circle cx="37.5" cy="33" r="2.1" fill="rgba(255,255,255,.95)"/>' +
         '</svg>' +
     '</div>';
 }
