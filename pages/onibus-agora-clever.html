@@ -39,8 +39,19 @@ body.oa-page{
 .btn-logout{background:#ef4444;color:#fff;border:0;border-radius:999px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer}
 
 .shell{max-width:1560px;margin:0 auto;padding:10px 18px 16px;width:100%;flex:1}
-.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;padding:6px 14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 2px rgba(15,23,42,.06)}
+.topbar{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;padding:6px 14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 2px rgba(15,23,42,.06)}
 .topbar-left,.topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.topbar-kpis{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  display:flex;align-items:center;gap:6px;z-index:1;
+}
+.kpi-chip{
+  display:flex;align-items:baseline;gap:4px;padding:4px 9px;border-radius:999px;
+  background:var(--surface-2);border:1px solid var(--border);
+  font-size:10.5px;color:var(--muted);font-weight:600;white-space:nowrap;
+}
+.kpi-chip b{font-size:13px;font-weight:800;color:var(--blue)}
+@media(max-width:980px){.topbar-kpis{display:none}}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid transparent;font:inherit;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;transition:.18s ease}
 .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .btn-primary{background:var(--blue);color:#fff;box-shadow:0 8px 20px rgba(6,36,92,.18)}
@@ -61,6 +72,11 @@ body.oa-page{
 .sidebar{display:flex;flex-direction:column;gap:14px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
 .card-pad{padding:16px 18px}
+.card-pad-compact{padding:12px 14px}
+.card-pad-compact .card-title{margin-bottom:8px}
+.card-pad-compact .field{margin-bottom:8px}
+.card-pad-compact .field-row:last-child .field{margin-bottom:0}
+.card-pad-compact .input,.card-pad-compact .select{height:38px;font-size:13px}
 .card-title{margin:0 0 4px;font-size:15px;font-weight:800;color:var(--blue)}
 .card-sub{margin:0 0 12px;font-size:12px;color:var(--muted);line-height:1.45;font-weight:500}
 
@@ -88,12 +104,12 @@ body.oa-page{
 .line-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .line-route{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.main{display:flex;flex-direction:column;min-height:720px}
+.main{display:flex;flex-direction:column;min-height:660px}
 .panel-wrap{flex:1;padding:14px;display:flex;flex-direction:column;min-height:0}
-.panel{flex:1;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;position:relative;min-height:520px}
+.panel{flex:1;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;position:relative;min-height:470px}
 .panel[hidden]{display:none!important}
 
-#mapa{width:100%;height:100%;min-height:520px;background:#dbeafe}
+#mapa{width:100%;height:100%;min-height:470px;background:#dbeafe}
 .oa-map-shell{position:absolute;inset:0;}
 #mapa.leaflet-container,
 #mapa .leaflet-map-pane,#mapa .leaflet-pane,#mapa .leaflet-tile-pane,#mapa .leaflet-marker-pane{
@@ -119,20 +135,19 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 
 .bus-marker-wrap{background:transparent!important;border:0!important;overflow:visible!important}
 
-/* Marcador compacto: faixa preta com o número do veículo, dentro de um preenchimento colorido por status (verde/amarelo/vermelho). */
-.veh-badge{
-  display:inline-flex;align-items:center;justify-content:center;
-  padding:3px;border-radius:9px;
-  background:var(--cor);
-  box-shadow:0 2px 8px rgba(15,23,42,.32);
-  cursor:pointer;
-  transition:transform .2s ease,box-shadow .2s ease;
+/* Ícone em formato de ônibus: preenchimento colorido por status (amarelo/vermelho/verde/azul/cinza), número dentro. */
+.veh-bus{
+  position:relative;width:40px;height:26px;cursor:pointer;
+  filter:drop-shadow(0 2px 6px rgba(15,23,42,.35));
+  transition:transform .2s ease;
 }
-.veh-badge.highlight{ transform:scale(1.2); z-index:900!important; box-shadow:0 4px 12px rgba(15,23,42,.4); }
-.veh-badge-num{
-  background:#0f172a;color:#fff;
-  font-family:"JetBrains Mono",monospace;font-weight:800;font-size:11px;white-space:nowrap;
-  padding:3px 8px;border-radius:6px;
+.veh-bus.highlight{ transform:scale(1.28); z-index:900!important; }
+.veh-bus svg{display:block;width:40px;height:26px}
+.veh-bus-num{
+  position:absolute;left:0;right:0;top:0;bottom:5px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:"JetBrains Mono",monospace;font-weight:800;font-size:9.5px;
+  pointer-events:none;
 }
 
 .empty{padding:40px 20px;text-align:center;color:var(--muted)}
@@ -143,22 +158,24 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 .oper-btn:hover{background:var(--surface-2)}
 .oper-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
 
-.veiculo-panel{
-  position:absolute;left:12px;bottom:12px;z-index:600;width:min(300px,calc(100% - 24px));
-  border-radius:16px;padding:14px 16px;
-  background:rgba(255,255,255,.62);
+/* Caixa de informações do veículo: popup Leaflet ancorado no ícone (abre "saindo" dele), em vidro. */
+.veiculo-popup .leaflet-popup-content-wrapper{
+  background:transparent;box-shadow:none;padding:0;border-radius:16px;
+}
+.veiculo-popup .leaflet-popup-content{margin:0;width:auto!important}
+.veiculo-popup .leaflet-popup-tip-container{display:none}
+.veiculo-popup .leaflet-popup-close-button{
+  color:var(--muted)!important;font-size:18px!important;top:6px!important;right:8px!important;
+}
+.veiculo-panel-inner{
+  position:relative;width:min(280px,78vw);border-radius:16px;padding:14px 16px;
+  background:rgba(255,255,255,.68);
   backdrop-filter:blur(20px) saturate(190%);
   -webkit-backdrop-filter:blur(20px) saturate(190%);
-  border:1px solid rgba(255,255,255,.55);
+  border:2px solid var(--cor);
   box-shadow:0 14px 34px -16px rgba(20,20,40,.4), inset 0 1px 0 rgba(255,255,255,.5);
 }
-.veiculo-panel[hidden]{display:none!important}
-.veiculo-panel-close{
-  position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:0;
-  background:var(--surface-2);color:var(--muted);font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center
-}
-.veiculo-panel-close:hover{background:#e2e8f0}
-.veiculo-panel-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;padding-right:22px}
+.veiculo-panel-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;padding-right:14px}
 .veiculo-panel-chip{width:42px;height:36px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:13px;flex:0 0 auto}
 .veiculo-panel-title{font-size:15px;font-weight:800;color:var(--blue);line-height:1.2}
 .veiculo-panel-status{
@@ -391,6 +408,13 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                 <span id="liveText">Conectando...</span>
             </span>
         </div>
+        <div class="topbar-kpis" id="topbarKpis">
+            <div class="kpi-chip"><b id="statOnline">0</b><span>Online</span></div>
+            <div class="kpi-chip"><b id="statVisiveis">0</b><span>Visíveis</span></div>
+            <div class="kpi-chip"><b id="statAtrasados">0</b><span>Atrasados</span></div>
+            <div class="kpi-chip"><b id="statAdiantados">0</b><span>Adiantados</span></div>
+            <div class="kpi-chip"><b id="statNoHorario">0</b><span>No horário</span></div>
+        </div>
         <div class="topbar-actions">
             <button type="button" class="btn btn-ghost" id="btnAtualizar">Atualizar agora</button>
         </div>
@@ -398,9 +422,8 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 
     <div class="layout">
         <aside class="sidebar">
-            <div class="card card-pad">
+            <div class="card card-pad card-pad-compact">
                 <h2 class="card-title">Buscar</h2>
-                <p class="card-sub">Filtre por linha ou número do veículo (dados Clever).</p>
                 <div class="field-row">
                     <div class="field">
                         <label for="buscaLinha">Linha</label>
@@ -411,30 +434,25 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                         <input class="input" id="buscaVeiculo" type="search" placeholder="Ex.: 1150" autocomplete="off">
                     </div>
                 </div>
-                <div class="field">
-                    <label>Operadora</label>
-                    <div class="oper-toggle" id="operToggle">
-                        <button type="button" class="oper-btn active" data-op="">Todos</button>
-                        <button type="button" class="oper-btn" data-op="TCGL">TCGL</button>
-                        <button type="button" class="oper-btn" data-op="LondriSul">LondriSul</button>
+                <div class="field-row">
+                    <div class="field">
+                        <label for="selectOperadora">Operadora</label>
+                        <select class="select" id="selectOperadora">
+                            <option value="">Todos</option>
+                            <option value="TCGL">TCGL</option>
+                            <option value="LondriSul">LondriSul</option>
+                        </select>
                     </div>
-                </div>
-                <div class="field">
-                    <label>Status</label>
-                    <div class="oper-toggle" id="statusToggle">
-                        <button type="button" class="oper-btn active" data-status="">Todos</button>
-                        <button type="button" class="oper-btn" data-status="atrasado">Atrasado</button>
-                        <button type="button" class="oper-btn" data-status="adiantado">Adiantado</button>
-                        <button type="button" class="oper-btn" data-status="noHorario">No horário</button>
-                        <button type="button" class="oper-btn" data-status="naoProdutivo">Não produtivo</button>
+                    <div class="field">
+                        <label for="selectStatus">Status</label>
+                        <select class="select" id="selectStatus">
+                            <option value="">Todos</option>
+                            <option value="atrasado">Atrasado</option>
+                            <option value="adiantado">Adiantado</option>
+                            <option value="noHorario">No horário</option>
+                            <option value="naoProdutivo">Não produtivo</option>
+                        </select>
                     </div>
-                </div>
-                <div class="stats">
-                    <div class="stat"><b id="statOnline">0</b><span>Online</span></div>
-                    <div class="stat"><b id="statVisiveis">0</b><span>Visíveis</span></div>
-                    <div class="stat"><b id="statAtrasados">0</b><span>Atrasados</span></div>
-                    <div class="stat"><b id="statAdiantados">0</b><span>Adiantados</span></div>
-                    <div class="stat"><b id="statNoHorario">0</b><span>No horário</span></div>
                 </div>
             </div>
 
@@ -456,17 +474,6 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                             <button type="button" class="btn btn-ghost" id="btnMapaBus2">Estilo Bus2</button>
                             <button type="button" class="btn btn-ghost" id="btnMapaSat">Satélite</button>
                             <button type="button" class="btn btn-ghost" id="btnCentralizar">Centralizar</button>
-                        </div>
-                        <div class="veiculo-panel" id="veiculoPanel" hidden>
-                            <button type="button" class="veiculo-panel-close" id="veiculoPanelClose" aria-label="Fechar">&times;</button>
-                            <div class="veiculo-panel-head">
-                                <span class="veiculo-panel-chip" id="veiculoPanelChip"></span>
-                                <div>
-                                    <div class="veiculo-panel-title" id="veiculoPanelTitle"></div>
-                                    <span class="veiculo-panel-status" id="veiculoPanelStatus"></span>
-                                </div>
-                            </div>
-                            <div class="veiculo-panel-grid" id="veiculoPanelGrid"></div>
                         </div>
                     </div>
                 </div>
@@ -962,17 +969,11 @@ function textoStatusComQuantidade(v){
     return st.label + (min > 0 ? (" · " + min + " min") : "");
 }
 
-function abrirPainelVeiculo(v){
+/** Conteúdo do popup Leaflet (caixa em vidro) que abre ancorada no ícone do veículo clicado. */
+function popupVeiculoHtml(v){
     const st = statusPontualidade(v);
     const corLinha = corCss(v.route?.color);
-    $("veiculoPanelChip").textContent = v.vehicleId;
-    $("veiculoPanelChip").style.background = corLinha;
-    $("veiculoPanelChip").style.color = contraste(corLinha);
-    $("veiculoPanelTitle").textContent = "Veículo " + v.vehicleId;
-    $("veiculoPanelStatus").textContent = textoStatusComQuantidade(v);
-    $("veiculoPanelStatus").style.background = st.cor;
-    $("veiculoPanelStatus").style.color = contraste(st.cor);
-    $("veiculoPanelGrid").innerHTML = [
+    const grid = [
         ["Linha", v.route?.shortName || "—"],
         ["Bloco", v.wid || "—"],
         ["Sentido", v.sentido || "—"],
@@ -980,11 +981,22 @@ function abrirPainelVeiculo(v){
         ["Velocidade", v.speed != null ? (v.speed + " km/h") : "—"],
         ["Op", v.operadora || "—"]
     ].map(([k, val]) => '<div class="popup-item">' + esc(k) + '<strong>' + esc(val) + '</strong></div>').join("");
-    $("veiculoPanel").hidden = false;
+    return '<div class="veiculo-panel-inner" style="--cor:' + esc(st.cor) + '">' +
+        '<div class="veiculo-panel-head">' +
+            '<span class="veiculo-panel-chip" style="background:' + esc(corLinha) + ';color:' + contraste(corLinha) + '">' + esc(v.vehicleId) + '</span>' +
+            '<div>' +
+                '<div class="veiculo-panel-title">Veículo ' + esc(v.vehicleId) + '</div>' +
+                '<span class="veiculo-panel-status" style="background:' + esc(st.cor) + ';color:' + contraste(st.cor) + '">' + esc(textoStatusComQuantidade(v)) + '</span>' +
+            '</div>' +
+        '</div>' +
+        '<div class="veiculo-panel-grid">' + grid + '</div>' +
+    '</div>';
 }
 
-function fecharPainelVeiculo(){
-    $("veiculoPanel").hidden = true;
+function desselecionarVeiculo(){
+    if (state.veiculoSelecionado){
+        state.markers.get(state.veiculoSelecionado)?.closePopup();
+    }
     state.veiculoSelecionado = null;
     limparTraco();
 }
@@ -1053,7 +1065,7 @@ async function desenharTracoRota(routeId){
 
 async function selecionarVeiculo(v){
     state.veiculoSelecionado = v.key;
-    abrirPainelVeiculo(v);
+    atualizarMarcadores();
     try {
         await desenharTracoLinha(v);
     } catch (err) {
@@ -1061,11 +1073,17 @@ async function selecionarVeiculo(v){
     }
 }
 
-/** Marcador compacto: faixa preta com o número do veículo, dentro de um preenchimento colorido por status. Clique abre o painel de detalhes. */
+/** Ícone em formato de ônibus, preenchido pela cor de status (amarelo/vermelho/verde/azul/cinza), com o número dentro. */
 function iconeOnibusHtml(v, extraClass){
-    const cor = esc(statusPontualidade(v).cor);
-    return '<div class="veh-badge ' + (extraClass || "") + '" style="--cor:' + cor + '">' +
-        '<span class="veh-badge-num">' + esc(v.vehicleId || "—") + '</span>' +
+    const cor = corCss(statusPontualidade(v).cor);
+    const corTexto = contraste(cor);
+    return '<div class="veh-bus ' + (extraClass || "") + '">' +
+        '<svg viewBox="0 0 40 26" aria-hidden="true">' +
+            '<path fill="' + esc(cor) + '" stroke="#fff" stroke-width="1.4" d="M4 5.5A3.5 3.5 0 0 1 7.5 2h25A3.5 3.5 0 0 1 36 5.5v13A3.5 3.5 0 0 1 32.5 22h-25A3.5 3.5 0 0 1 4 18.5z"/>' +
+            '<circle cx="11" cy="21.5" r="2.6" fill="#1f2937" stroke="#fff" stroke-width="1"/>' +
+            '<circle cx="29" cy="21.5" r="2.6" fill="#1f2937" stroke="#fff" stroke-width="1"/>' +
+        '</svg>' +
+        '<span class="veh-bus-num" style="color:' + esc(corTexto) + '">' + esc(v.vehicleId || "—") + '</span>' +
     '</div>';
 }
 
@@ -1091,32 +1109,41 @@ function atualizarMarcadores(){
         const icon = L.divIcon({
             className: "bus-marker-wrap",
             html: iconeOnibusHtml(v, extra),
-            iconSize: [48, 30],
-            iconAnchor: [24, 15]
+            iconSize: [40, 26],
+            iconAnchor: [20, 13]
         });
         let marker = state.markers.get(key);
         if (!marker){
             marker = L.marker([v.lat, v.lng], { icon }).addTo(state.mapa);
+            marker.bindPopup(() => popupVeiculoHtml(state.vehicles.get(key) || v), {
+                className: "veiculo-popup", offset: [0, -6], autoPanPadding: [30, 30]
+            });
             marker.on("click", () => selecionarVeiculo(state.vehicles.get(key) || v));
+            marker.on("popupclose", () => {
+                if (state.veiculoSelecionado === key){
+                    state.veiculoSelecionado = null;
+                    limparTraco();
+                    atualizarMarcadores();
+                }
+            });
             state.markers.set(key, marker);
         } else {
             marker.setLatLng([v.lat, v.lng]);
             marker.setIcon(icon);
+            if (marker.isPopupOpen()) marker.setPopupContent(popupVeiculoHtml(v));
         }
     });
 
     state.markers.forEach((marker, key) => {
         if (!visiveis.has(key)){
+            if (state.veiculoSelecionado === key){
+                state.veiculoSelecionado = null;
+                limparTraco();
+            }
             state.mapa.removeLayer(marker);
             state.markers.delete(key);
         }
     });
-
-    if (state.veiculoSelecionado){
-        const atual = state.vehicles.get(state.veiculoSelecionado);
-        if (atual) abrirPainelVeiculo(atual);
-        else fecharPainelVeiculo();
-    }
 
     $("statOnline").textContent = state.vehicles.size;
     $("statVisiveis").textContent = countVis;
@@ -1151,7 +1178,7 @@ function iniciarPoll(){
 function selecionarLinha(routeId){
     const route = state.routes.find(r => r.routeId === routeId);
     if (!route) return;
-    fecharPainelVeiculo();
+    desselecionarVeiculo();
     state.routeFiltro = route;
     renderListaLinhas();
     atualizarMarcadores();
@@ -1162,7 +1189,7 @@ function selecionarLinha(routeId){
 
 function limparFiltro(){
     state.routeFiltro = null;
-    limparTraco();
+    desselecionarVeiculo();
     renderListaLinhas();
     pollLote();
 }
@@ -1210,20 +1237,13 @@ function bind(){
     $("buscaLinha").addEventListener("input", e => { state.buscaLinha = e.target.value; renderListaLinhas(); });
     $("buscaVeiculo").addEventListener("input", e => { state.veiculoFiltro = e.target.value.trim(); atualizarMarcadores(); });
     $("btnLimparFiltro").addEventListener("click", limparFiltro);
-    $("veiculoPanelClose").addEventListener("click", fecharPainelVeiculo);
-    $("operToggle").querySelectorAll(".oper-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            state.operadorFiltro = btn.dataset.op || null;
-            $("operToggle").querySelectorAll(".oper-btn").forEach(b => b.classList.toggle("active", b === btn));
-            atualizarMarcadores();
-        });
+    $("selectOperadora").addEventListener("change", e => {
+        state.operadorFiltro = e.target.value || null;
+        atualizarMarcadores();
     });
-    $("statusToggle").querySelectorAll(".oper-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            state.statusFiltro = btn.dataset.status || null;
-            $("statusToggle").querySelectorAll(".oper-btn").forEach(b => b.classList.toggle("active", b === btn));
-            atualizarMarcadores();
-        });
+    $("selectStatus").addEventListener("change", e => {
+        state.statusFiltro = e.target.value || null;
+        atualizarMarcadores();
     });
     $("btnAtualizar").addEventListener("click", () => pollLote());
     $("btnMapaClaro").addEventListener("click", () => trocarTile("light"));
