@@ -107,8 +107,8 @@ body.oa-page footer.portal-site-footer{display:none!important}
 .line-route{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15;margin-top:1px}
 
 .main{display:flex;flex-direction:column;min-height:600px}
-.panel-wrap{flex:1;padding:10px;display:flex;flex-direction:column;align-items:center;min-height:0}
-.panel{flex:1;aspect-ratio:1/1;width:auto;max-width:100%;align-self:center;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;position:relative;min-height:520px}
+.panel-wrap{flex:1;padding:10px;display:flex;flex-direction:column;min-height:0}
+.panel{flex:1;width:100%;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;position:relative;min-height:520px}
 .panel[hidden]{display:none!important}
 
 #mapa{width:100%;height:100%;min-height:520px;background:#dbeafe}
@@ -850,28 +850,9 @@ function acaoMapaMobile(fn){
     scheduleMapResize();
 }
 
-/** Ajusta o painel do mapa (#panelMapa) para ser um quadrado que preenche totalmente o espaço
- *  disponível (usa o menor entre largura e altura do wrapper), sem sobrar área em branco. */
-function ajustarMapaQuadrado(){
-    if (document.body.classList.contains("oa-native-mode")) return;
-    const panel = $("panelMapa");
-    const wrap = panel?.parentElement;
-    if (!panel || !wrap) return;
-    const padX = 20, padY = 20; // .panel-wrap tem padding:10px
-    const cw = wrap.clientWidth - padX;
-    const ch = wrap.clientHeight - padY;
-    if (cw <= 0 || ch <= 0) return;
-    const size = Math.floor(Math.min(cw, ch));
-    panel.style.width = size + "px";
-    panel.style.height = size + "px";
-}
-
 function scheduleMapResize(){
     if (!state.mapa) return;
-    const fix = () => {
-        ajustarMapaQuadrado();
-        try { state.mapa?.invalidateSize({ pan: false }); } catch (_) {}
-    };
+    const fix = () => { try { state.mapa?.invalidateSize({ pan: false }); } catch (_) {} };
     requestAnimationFrame(fix);
     [120, 350, 700, 1400, 2500].forEach(ms => setTimeout(fix, ms));
 }
@@ -1106,7 +1087,7 @@ async function selecionarVeiculo(v){
  *  apontar a direção do veículo (quando há dado de heading). */
 function iconeOnibusHtml(v, extraClass){
     const cor = corCss(statusPontualidade(v).cor);
-    const cz = "#d1d5db";
+    const cz = "#4b5563";
     const rot = v.heading != null ? Number(v.heading) : 0;
     return '<div class="veh-pin ' + (extraClass || "") + '">' +
         '<span class="veh-pin-num">' + esc(v.vehicleId || "—") + '</span>' +
