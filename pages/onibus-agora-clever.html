@@ -149,7 +149,7 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 .veh-pin svg{display:block;width:96px;height:96px}
 .veh-pin-num{
   position:absolute;left:50%;bottom:100%;transform:translateX(-50%);
-  margin-bottom:4px;background:#fff;color:var(--blue);
+  margin-bottom:0;background:#fff;color:var(--blue);
   font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:800;
   padding:3px 9px;border-radius:999px;white-space:nowrap;line-height:1.2;
   box-shadow:0 1px 6px rgba(15,23,42,.22);
@@ -1082,26 +1082,26 @@ async function selecionarVeiculo(v){
     }
 }
 
-/** Ícone de ônibus em pino quadrado (squircle): fundo em cinza chumbo com borda leve em preto,
- *  silhueta do ônibus pintada pela cor de status, número do veículo em etiqueta fora do ícone
- *  (acima dele) e o bico do pino — mais grosso, para ficar bem visível — rotacionado para
- *  apontar a direção do veículo. */
+/** Ícone de ônibus em pino quadrado (squircle): fundo pintado pela cor de status com borda
+ *  leve em preto, silhueta do ônibus em branco, número do veículo colado no topo do ícone e
+ *  o bico do pino — grosso, para ficar bem visível — rotacionado para apontar a direção do
+ *  veículo. */
 function iconeOnibusHtml(v, extraClass){
     const cor = corCss(statusPontualidade(v).cor);
-    const chumbo = "#3f4757";
+    const cz = "#fff";
     const rot = v.heading != null ? Number(v.heading) : 0;
     return '<div class="veh-pin ' + (extraClass || "") + '">' +
         '<span class="veh-pin-num">' + esc(v.vehicleId || "—") + '</span>' +
         '<svg viewBox="0 0 60 60" aria-hidden="true">' +
-            '<g transform="rotate(' + rot + ' 30 26)"><path d="M30 58 L36 26 L24 26 Z" fill="' + chumbo + '" stroke="rgba(0,0,0,.4)" stroke-width="1.6" stroke-linejoin="round"/></g>' +
-            '<rect x="13" y="9" width="34" height="34" rx="9" fill="' + chumbo + '" stroke="rgba(0,0,0,.4)" stroke-width="1.4"/>' +
-            '<rect x="25" y="10.5" width="10" height="3.5" rx="1.2" fill="' + esc(cor) + '"/>' +
-            '<rect x="17" y="15" width="26" height="21" rx="6" fill="' + esc(cor) + '"/>' +
-            '<rect x="20.5" y="18" width="19" height="10" rx="2.5" fill="#fff" opacity=".35"/>' +
-            '<circle cx="22.5" cy="33" r="2.1" fill="' + esc(cor) + '"/>' +
-            '<circle cx="37.5" cy="33" r="2.1" fill="' + esc(cor) + '"/>' +
-            '<rect x="20.3" y="35" width="4.4" height="3.4" rx="1" fill="' + esc(cor) + '"/>' +
-            '<rect x="35.3" y="35" width="4.4" height="3.4" rx="1" fill="' + esc(cor) + '"/>' +
+            '<g transform="rotate(' + rot + ' 30 26)"><path d="M30 58 L36 26 L24 26 Z" fill="' + esc(cor) + '" stroke="rgba(0,0,0,.4)" stroke-width="1.6" stroke-linejoin="round"/></g>' +
+            '<rect x="13" y="9" width="34" height="34" rx="9" fill="' + esc(cor) + '" stroke="rgba(0,0,0,.4)" stroke-width="1.4"/>' +
+            '<rect x="25" y="10.5" width="10" height="3.5" rx="1.2" fill="' + cz + '"/>' +
+            '<rect x="17" y="15" width="26" height="21" rx="6" fill="' + cz + '"/>' +
+            '<rect x="20.5" y="18" width="19" height="10" rx="2.5" fill="' + esc(cor) + '" opacity=".42"/>' +
+            '<circle cx="22.5" cy="33" r="2.1" fill="' + cz + '"/>' +
+            '<circle cx="37.5" cy="33" r="2.1" fill="' + cz + '"/>' +
+            '<rect x="20.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
+            '<rect x="35.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
         '</svg>' +
     '</div>';
 }
