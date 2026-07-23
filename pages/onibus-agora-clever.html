@@ -214,34 +214,36 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
   color:var(--muted)!important;font-size:18px!important;top:6px!important;right:8px!important;
 }
 .veiculo-panel-inner{
-  position:relative;width:min(300px,82vw);border-radius:16px;padding:14px 16px;
+  position:relative;width:min(268px,80vw);border-radius:14px;padding:10px 11px;
   background:rgba(255,255,255,.68);
   backdrop-filter:blur(20px) saturate(190%);
   -webkit-backdrop-filter:blur(20px) saturate(190%);
   border:2px solid var(--cor);
   box-shadow:0 14px 34px -16px rgba(20,20,40,.4), inset 0 1px 0 rgba(255,255,255,.5);
 }
-.veiculo-panel-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;padding-right:14px}
-.veiculo-panel-chip{width:42px;height:36px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:13px;flex:0 0 auto}
-.veiculo-panel-title{font-size:15px;font-weight:800;color:var(--blue);line-height:1.2}
+.veiculo-panel-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-right:12px}
+.veiculo-panel-chip{width:34px;height:28px;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:11px;flex:0 0 auto}
+.veiculo-panel-title{font-size:13px;font-weight:800;color:var(--blue);line-height:1.2}
 .veiculo-panel-status{
-  display:inline-block;margin-top:4px;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:800;
+  display:inline-block;margin-top:3px;padding:1.5px 8px;border-radius:999px;font-size:9.5px;font-weight:800;
 }
-.veiculo-panel-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.veiculo-panel-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.veiculo-panel-grid .popup-item{padding:5px 7px;font-size:9.5px}
+.veiculo-panel-grid .popup-item strong{font-size:11px;margin-top:1px}
 .veiculo-panel-telemetria-titulo{
-  margin:12px 0 8px;padding-top:10px;border-top:1px solid rgba(15,23,42,.12);
-  font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+  margin:8px 0 5px;padding-top:7px;border-top:1px solid rgba(15,23,42,.12);
+  font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
 }
-.veiculo-panel-telemetria-msg{font-size:11.5px;color:var(--muted);padding:2px 0 2px}
-.veiculo-panel-falhas{margin-top:8px;display:grid;gap:5px}
-.veiculo-panel-falhas-titulo{font-size:11px;font-weight:800;color:#b91c1c}
+.veiculo-panel-telemetria-msg{font-size:10px;color:var(--muted);padding:2px 0 2px}
+.veiculo-panel-falhas{margin-top:5px;display:grid;gap:4px}
+.veiculo-panel-falhas-titulo{font-size:9.5px;font-weight:800;color:#b91c1c}
 .veiculo-panel-falha{
-  font-size:11.5px;color:var(--text);background:#fef2f2;border:1px solid #fecaca;
-  border-radius:8px;padding:5px 9px;
+  font-size:10px;color:var(--text);background:#fef2f2;border:1px solid #fecaca;
+  border-radius:7px;padding:4px 7px;
 }
 .veiculo-panel-falhas.ok{
-  font-size:11.5px;color:#166534;background:#f0fdf4;border:1px solid #bbf7d0;
-  border-radius:8px;padding:5px 9px;
+  font-size:10px;color:#166534;background:#f0fdf4;border:1px solid #bbf7d0;
+  border-radius:7px;padding:4px 7px;
 }
 @media (max-width:720px){
   .body-bg-wall,
@@ -1307,7 +1309,8 @@ function popupVeiculoHtml(v, telemetria){
         ["Sentido", v.sentido || "—"],
         ["Via", v.tripDesc || "—"],
         ["Velocidade · Clever", v.speed != null ? (v.speed + " km/h") : "—"],
-        ["Op", v.operadora || "—"]
+        ["Op", v.operadora || "—"],
+        ["Tecnologia", tecnologiaVeiculo(v.vehicleId)]
     ].map(([k, val]) => '<div class="popup-item">' + esc(k) + '<strong>' + esc(val) + '</strong></div>').join("");
     return '<div class="veiculo-panel-inner" style="--cor:' + esc(st.cor) + '">' +
         '<div class="veiculo-panel-head">' +
@@ -1461,6 +1464,15 @@ function iconeOnibusHtml(v, extraClass){
 /** Frota cadastrada (250 veículos da TCGL, carregada de assets/js/frota-patio-data.js) usada
  *  para calcular quais veículos não estão se comunicando com o Clever agora. */
 const FROTA_TOTAL = Array.isArray(window.FROTA_PATIO) ? window.FROTA_PATIO : [];
+
+/** Busca a tecnologia cadastrada do veículo (ex.: "Pesado", "Leve") no roster FROTA_TOTAL,
+ *  casando pelo número do veículo (mesmo campo usado em "Sem comunicação"). */
+function tecnologiaVeiculo(vehicleId){
+    const alvo = String(vehicleId || "").trim();
+    if (!alvo) return "—";
+    const f = FROTA_TOTAL.find(item => String(item.veiculo || "").trim() === alvo);
+    return f?.tecnologia || "—";
+}
 
 function veiculosSemComunicacao(){
     const online = new Set();
