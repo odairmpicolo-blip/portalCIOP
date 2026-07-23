@@ -152,6 +152,12 @@ body.oa-page footer.portal-site-footer{display:none!important}
 .panel-wrap{flex:1;padding:10px;display:flex;flex-direction:column;min-height:0}
 .panel{flex:1;width:100%;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;position:relative;min-height:520px}
 .panel[hidden]{display:none!important}
+.panel.oa-fullscreen{
+  position:fixed;inset:0;z-index:1500;border-radius:0;border:0;min-height:100vh;
+  width:100vw;height:100vh;
+}
+body.oa-mapa-fullscreen-ativo{overflow:hidden}
+.btn-tela-cheia svg{transition:transform .15s ease}
 
 #mapa{width:100%;height:100%;min-height:520px;background:#dbeafe}
 .oa-map-shell{position:absolute;inset:0;}
@@ -520,6 +526,10 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                             <button type="button" class="btn btn-ghost" id="btnMapaBus2">Estilo Bus2</button>
                             <button type="button" class="btn btn-ghost" id="btnMapaSat">Satélite</button>
                             <button type="button" class="btn btn-ghost" id="btnCentralizar">Centralizar</button>
+                            <button type="button" class="btn btn-ghost btn-tela-cheia" id="btnTelaCheia">
+                                <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+                                <span id="btnTelaCheiaTexto">Tela cheia</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -941,6 +951,24 @@ function scheduleMapResize(){
     const fix = () => { try { state.mapa?.invalidateSize({ pan: false }); } catch (_) {} };
     requestAnimationFrame(fix);
     [120, 350, 700, 1400, 2500].forEach(ms => setTimeout(fix, ms));
+}
+
+/** Alterna o mapa entre o layout normal e tela cheia (ocupando toda a viewport,
+ *  por cima do restante da página), sem depender da API de Fullscreen do navegador
+ *  para funcionar de forma consistente também dentro do app nativo. */
+function mapaEmTelaCheia(){
+    return $("panelMapa")?.classList.contains("oa-fullscreen") ?? false;
+}
+
+function alternarTelaCheiaMapa(forcar){
+    const panel = $("panelMapa");
+    if (!panel) return;
+    const ativar = typeof forcar === "boolean" ? forcar : !panel.classList.contains("oa-fullscreen");
+    panel.classList.toggle("oa-fullscreen", ativar);
+    document.body.classList.toggle("oa-mapa-fullscreen-ativo", ativar);
+    const texto = $("btnTelaCheiaTexto");
+    if (texto) texto.textContent = ativar ? "Sair da tela cheia" : "Tela cheia";
+    scheduleMapResize();
 }
 
 function ativarGestosMapa(mapa){
@@ -1454,8 +1482,12 @@ function bind(){
     $("oaSemComOverlay")?.addEventListener("click", e => {
         if (e.target.id === "oaSemComOverlay") fecharSemComunicacao();
     });
+    $("btnTelaCheia")?.addEventListener("click", () => alternarTelaCheiaMapa());
     document.addEventListener("keydown", e => {
-        if (e.key === "Escape") fecharSemComunicacao();
+        if (e.key === "Escape"){
+            fecharSemComunicacao();
+            if (mapaEmTelaCheia()) alternarTelaCheiaMapa(false);
+        }
     });
 }
 
