@@ -1050,6 +1050,8 @@ async function fetchCleverVehicles(){
             operadora: operadoraDoVeiculo(vid),
             // "oid" no retorno do Clever/BusTime é o registro (matrícula) do motorista escalado no veículo.
             motorista: v.oid != null && String(v.oid).trim() ? String(v.oid).trim() : "",
+            // "rid" = run id (identificador do trabalho/turno de escala) do BusTime.
+            trabalho: v.rid != null && String(v.rid).trim() && String(v.rid).trim() !== "N/A" ? String(v.rid).trim() : "",
             key: vid + ":" + rt
         });
     });
@@ -1368,7 +1370,8 @@ function popupVeiculoHtml(v, telemetria){
         ["Velocidade · Clever", v.speed != null ? (v.speed + " km/h") : "—"],
         ["Op", v.operadora || "—"],
         ["Tecnologia", tecnologiaVeiculo(v.vehicleId)],
-        ["Motorista", v.motorista || "—"]
+        ["Motorista", v.motorista || "—"],
+        ["Trabalho", v.trabalho || "—"]
     ].map(([k, val]) => '<div class="popup-item">' + esc(k) + '<strong>' + esc(val) + '</strong></div>').join("");
     return '<div class="veiculo-panel-inner" style="--cor:' + esc(st.cor) + '">' +
         '<div class="veiculo-panel-head">' +
