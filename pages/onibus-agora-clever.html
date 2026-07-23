@@ -1357,32 +1357,38 @@ function telemetriaFleetBusHtml(telemetria){
  *  para as duas fontes ficarem visíveis lado a lado sem uma sobrescrever a outra.
  *  "telemetria" é opcional: quando presente, mostra o bloco de telemetria FleetBus abaixo dos
  *  dados de linha/operação já existentes. */
+/** Popup organizado em 3 linhas fixas, pedido pelo usuário em 2026-07-23:
+ *  cabeçalho = nº do veículo + empresa (Op); status = pontualidade + atraso em min;
+ *  linha 1 = Motorista/Velocidade·Clever/Tecnologia; linha 2 = Linha/Via; linha 3 = Bloco/Trabalho/Sentido. */
 function popupVeiculoHtml(v, telemetria){
     const st = statusPontualidade(v);
     const corLinha = corCss(v.route?.color);
-    const linhaViaBloco = [
-        ["Linha", v.route?.shortName || "—"],
-        ["Via", v.tripDesc || "—"],
-        ["Bloco", v.wid || "—"]
-    ].map(([k, val]) => '<div class="popup-item">' + esc(k) + '<strong>' + esc(val) + '</strong></div>').join("");
-    const grid = [
-        ["Sentido", v.sentido || "—"],
-        ["Velocidade · Clever", v.speed != null ? (v.speed + " km/h") : "—"],
-        ["Op", v.operadora || "—"],
-        ["Tecnologia", tecnologiaVeiculo(v.vehicleId)],
+    const linha1 = [
         ["Motorista", v.motorista || "—"],
-        ["Trabalho", v.trabalho || "—"]
+        ["Velocidade · Clever", v.speed != null ? (v.speed + " km/h") : "—"],
+        ["Tecnologia", tecnologiaVeiculo(v.vehicleId)]
     ].map(([k, val]) => '<div class="popup-item">' + esc(k) + '<strong>' + esc(val) + '</strong></div>').join("");
+    const linha2 = [
+        ["Linha", v.route?.shortName || "—"],
+        ["Via", v.tripDesc || "—"]
+    ].map(([k, val]) => '<div class="popup-item">' + esc(k) + '<strong>' + esc(val) + '</strong></div>').join("");
+    const linha3 = [
+        ["Bloco", v.wid || "—"],
+        ["Trabalho", v.trabalho || "—"],
+        ["Sentido", v.sentido || "—"]
+    ].map(([k, val]) => '<div class="popup-item">' + esc(k) + '<strong>' + esc(val) + '</strong></div>').join("");
+    const titulo = 'Veículo ' + esc(v.vehicleId) + (v.operadora ? ' · ' + esc(v.operadora) : '');
     return '<div class="veiculo-panel-inner" style="--cor:' + esc(st.cor) + '">' +
         '<div class="veiculo-panel-head">' +
             '<span class="veiculo-panel-chip" style="background:' + esc(corLinha) + ';color:' + contraste(corLinha) + '">' + esc(v.vehicleId) + '</span>' +
             '<div>' +
-                '<div class="veiculo-panel-title">Veículo ' + esc(v.vehicleId) + '</div>' +
+                '<div class="veiculo-panel-title">' + titulo + '</div>' +
                 '<span class="veiculo-panel-status" style="background:' + esc(st.cor) + ';color:' + contraste(st.cor) + '">' + esc(textoStatusComQuantidade(v)) + '</span>' +
             '</div>' +
         '</div>' +
-        '<div class="veiculo-panel-grid veiculo-panel-grid-3">' + linhaViaBloco + '</div>' +
-        '<div class="veiculo-panel-grid">' + grid + '</div>' +
+        '<div class="veiculo-panel-grid veiculo-panel-grid-3">' + linha1 + '</div>' +
+        '<div class="veiculo-panel-grid">' + linha2 + '</div>' +
+        '<div class="veiculo-panel-grid veiculo-panel-grid-3">' + linha3 + '</div>' +
         telemetriaFleetBusHtml(telemetria) +
     '</div>';
 }
