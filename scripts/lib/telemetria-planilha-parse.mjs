@@ -38,7 +38,7 @@ function valorPreenchido(v) {
 }
 
 export function encontrarLinhaCabecalho(linhas) {
-  const chavesVeiculo = ["veiculo", "vehicle id", "vehicle"];
+  const chavesVeiculo = ["veiculo", "vehicle id", "vehicle", "carro", "prefixo"];
   for (let i = 0; i < Math.min(linhas.length, 12); i++) {
     const row = linhas[i] || [];
     const textos = row.map((c) => normChave(String(c ?? "").trim())).filter(Boolean);
@@ -65,7 +65,7 @@ export function converterPlanilha(linhas) {
   return { headers: [...new Set(pares.map((p) => p.col))], rows };
 }
 
-const CHAVES_VEICULO = ["veiculo", "vehicle id", "vehicle"];
+const CHAVES_VEICULO = ["veiculo", "vehicle id", "vehicle", "carro", "prefixo"];
 const CHAVES_DATA = ["data", "date", "dia"];
 
 function detectarColuna(headers, chaves) {
