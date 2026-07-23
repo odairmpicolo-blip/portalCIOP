@@ -53,7 +53,47 @@ body.oa-page footer.portal-site-footer{display:none!important}
   font-size:10.5px;color:var(--muted);font-weight:600;white-space:nowrap;
 }
 .kpi-chip b{font-size:13px;font-weight:800;color:var(--blue)}
+.kpi-chip-btn{
+  font:inherit;cursor:pointer;transition:.15s ease;margin:0;appearance:none;-webkit-appearance:none;
+}
+.kpi-chip-btn b{color:#b91c1c}
+.kpi-chip-btn:hover{background:#fee2e2;border-color:#fecaca}
 @media(max-width:980px){.topbar-kpis{display:none}}
+
+/* Modal: veículos sem comunicação */
+.oa-modal-overlay{
+  position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:2000;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .15s ease;
+}
+.oa-modal-overlay.open{opacity:1;pointer-events:auto}
+.oa-modal{
+  background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);
+  width:100%;max-width:520px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;
+  transform:translateY(8px);transition:transform .15s ease;
+}
+.oa-modal-overlay.open .oa-modal{transform:translateY(0)}
+.oa-modal-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:14px 18px;border-bottom:1px solid var(--border);
+}
+.oa-modal-head h3{margin:0;font-size:15px;color:var(--blue)}
+.oa-modal-head p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+.oa-modal-close{
+  background:var(--surface-2);border:1px solid var(--border);border-radius:999px;
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--muted);font-size:16px;line-height:1;flex:0 0 auto;
+}
+.oa-modal-close:hover{background:var(--border)}
+.oa-modal-body{overflow:auto;padding:8px 18px 16px}
+.oa-semcom-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.oa-semcom-item{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:8px 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2);
+}
+.oa-semcom-vid{font-family:"JetBrains Mono",monospace;font-weight:800;color:var(--text);font-size:13px}
+.oa-semcom-tag{font-size:11px;color:var(--muted)}
+.oa-semcom-empty{padding:24px 8px;text-align:center;color:var(--muted);font-size:13px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:32px;padding:0 14px;border-radius:999px;border:1px solid transparent;font:inherit;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;transition:.18s ease}
 .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .btn-primary{background:var(--blue);color:#fff;box-shadow:0 8px 20px rgba(6,36,92,.18)}
@@ -415,6 +455,9 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
             <div class="kpi-chip"><b id="statAtrasados">0</b><span>Atrasados</span></div>
             <div class="kpi-chip"><b id="statAdiantados">0</b><span>Adiantados</span></div>
             <div class="kpi-chip"><b id="statNoHorario">0</b><span>No horário</span></div>
+            <button type="button" class="kpi-chip kpi-chip-btn" id="kpiSemComunicacao">
+                <b id="statSemComunicacao">0</b><span>Sem comunicação</span>
+            </button>
         </div>
         <div class="topbar-actions">
             <button type="button" class="btn btn-ghost" id="btnAtualizar">Atualizar agora</button>
@@ -532,7 +575,23 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
     </aside>
 </div>
 
+<div class="oa-modal-overlay" id="oaSemComOverlay">
+    <div class="oa-modal" role="dialog" aria-modal="true" aria-labelledby="oaSemComTitulo">
+        <div class="oa-modal-head">
+            <div>
+                <h3 id="oaSemComTitulo">Veículos sem comunicação</h3>
+                <p id="oaSemComSubtitulo">0 de 0 veículos da frota</p>
+            </div>
+            <button type="button" class="oa-modal-close" id="oaSemComFechar" aria-label="Fechar">×</button>
+        </div>
+        <div class="oa-modal-body">
+            <ul class="oa-semcom-list" id="oaSemComLista"></ul>
+        </div>
+    </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="../assets/js/frota-patio-data.js"></script>
 <script>
 const CLEVER = {
     proxyFallback: "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com",
@@ -1120,6 +1179,53 @@ function iconeOnibusHtml(v, extraClass){
     '</div>';
 }
 
+/** Frota cadastrada (250 veículos da TCGL, carregada de assets/js/frota-patio-data.js) usada
+ *  para calcular quais veículos não estão se comunicando com o Clever agora. */
+const FROTA_TOTAL = Array.isArray(window.FROTA_PATIO) ? window.FROTA_PATIO : [];
+
+function veiculosSemComunicacao(){
+    const online = new Set();
+    state.vehicles.forEach(v => online.add(String(v.vehicleId || "").trim()));
+    return FROTA_TOTAL
+        .filter(f => !online.has(String(f.veiculo || "").trim()))
+        .sort((a, b) => String(a.veiculo).localeCompare(String(b.veiculo), "pt-BR", { numeric: true }));
+}
+
+function atualizarSemComunicacao(){
+    const faltando = veiculosSemComunicacao();
+    if ($("statSemComunicacao")) $("statSemComunicacao").textContent = faltando.length;
+    if ($("oaSemComOverlay") && $("oaSemComOverlay").classList.contains("open")){
+        renderSemComunicacaoLista(faltando);
+    }
+    return faltando;
+}
+
+function renderSemComunicacaoLista(faltando){
+    const sub = $("oaSemComSubtitulo");
+    if (sub) sub.textContent = faltando.length + " de " + FROTA_TOTAL.length + " veículos da frota";
+    const lista = $("oaSemComLista");
+    if (!lista) return;
+    if (!faltando.length){
+        lista.innerHTML = '<li class="oa-semcom-empty">Toda a frota cadastrada está se comunicando.</li>';
+        return;
+    }
+    lista.innerHTML = faltando.map(f =>
+        '<li class="oa-semcom-item">' +
+            '<span class="oa-semcom-vid">' + esc(f.veiculo) + '</span>' +
+            '<span class="oa-semcom-tag">' + esc(f.rotulo || f.tecnologia || "") + '</span>' +
+        '</li>'
+    ).join("");
+}
+
+function abrirSemComunicacao(){
+    renderSemComunicacaoLista(veiculosSemComunicacao());
+    $("oaSemComOverlay")?.classList.add("open");
+}
+
+function fecharSemComunicacao(){
+    $("oaSemComOverlay")?.classList.remove("open");
+}
+
 function atualizarMarcadores(){
     if (!state.mapa) return;
     const visiveis = new Set();
@@ -1184,6 +1290,7 @@ function atualizarMarcadores(){
     $("statAtrasados").textContent = countAtrasado;
     $("statAdiantados").textContent = countAdiantado;
     $("statNoHorario").textContent = countNoHorario;
+    atualizarSemComunicacao();
     syncNativeHud();
 }
 
@@ -1292,6 +1399,14 @@ function bind(){
     window.addEventListener("resize", scheduleMapResize);
     window.addEventListener("orientationchange", () => setTimeout(scheduleMapResize, 250));
     window.visualViewport?.addEventListener("resize", scheduleMapResize);
+    $("kpiSemComunicacao")?.addEventListener("click", abrirSemComunicacao);
+    $("oaSemComFechar")?.addEventListener("click", fecharSemComunicacao);
+    $("oaSemComOverlay")?.addEventListener("click", e => {
+        if (e.target.id === "oaSemComOverlay") fecharSemComunicacao();
+    });
+    document.addEventListener("keydown", e => {
+        if (e.key === "Escape") fecharSemComunicacao();
+    });
 }
 
 async function boot(){
