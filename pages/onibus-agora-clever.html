@@ -954,8 +954,13 @@ function scheduleMapResize(){
 }
 
 /** Alterna o mapa entre o layout normal e tela cheia (ocupando toda a viewport,
- *  por cima do restante da página), sem depender da API de Fullscreen do navegador
- *  para funcionar de forma consistente também dentro do app nativo. */
+ *  por cima do restante da página). O painel do mapa é movido para ser filho direto
+ *  do <body> enquanto está em tela cheia: o card que normalmente o envolve usa
+ *  backdrop-filter no layout desktop, e isso cria um "containing block" próprio que
+ *  prende o position:fixed dentro do card em vez de preencher a viewport — por isso
+ *  a reparentagem é necessária para o "tela cheia" realmente cobrir a tela toda.
+ *  Também tenta acionar a Fullscreen API nativa do navegador como reforço (opcional,
+ *  ignorada silenciosamente se não for permitida, por exemplo dentro do app nativo). */
 function mapaEmTelaCheia(){
     return $("panelMapa")?.classList.contains("oa-fullscreen") ?? false;
 }
@@ -964,8 +969,28 @@ function alternarTelaCheiaMapa(forcar){
     const panel = $("panelMapa");
     if (!panel) return;
     const ativar = typeof forcar === "boolean" ? forcar : !panel.classList.contains("oa-fullscreen");
-    panel.classList.toggle("oa-fullscreen", ativar);
-    document.body.classList.toggle("oa-mapa-fullscreen-ativo", ativar);
+
+    if (ativar){
+        if (!state.panelMapaPlaceholder){
+            const marcador = document.createComment("panelMapa-lugar-original");
+            panel.parentNode.insertBefore(marcador, panel);
+            state.panelMapaPlaceholder = marcador;
+        }
+        document.body.appendChild(panel);
+        panel.classList.add("oa-fullscreen");
+        document.body.classList.add("oa-mapa-fullscreen-ativo");
+        document.documentElement.requestFullscreen?.().catch(() => {});
+    } else {
+        panel.classList.remove("oa-fullscreen");
+        document.body.classList.remove("oa-mapa-fullscreen-ativo");
+        if (state.panelMapaPlaceholder?.parentNode){
+            state.panelMapaPlaceholder.parentNode.insertBefore(panel, state.panelMapaPlaceholder);
+            state.panelMapaPlaceholder.remove();
+            state.panelMapaPlaceholder = null;
+        }
+        if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    }
+
     const texto = $("btnTelaCheiaTexto");
     if (texto) texto.textContent = ativar ? "Sair da tela cheia" : "Tela cheia";
     scheduleMapResize();
