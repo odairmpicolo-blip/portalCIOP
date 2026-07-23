@@ -138,16 +138,15 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 .bus-marker-wrap{background:transparent!important;border:0!important;overflow:visible!important}
 
 /* Ícone de ônibus em pino quadrado (squircle, igual à imagem de referência): fundo pintado
-   pela cor de status, silhueta do ônibus em branco, número do veículo integrado numa etiqueta
-   que nasce colada no topo do ícone (desenhada junto no mesmo SVG) e o bico do pino rotacionado
-   para apontar a direção do veículo. */
+   pela cor de status, silhueta do ônibus em branco e o bico do pino rotacionado (bússola,
+   0°=N/cima) para apontar a direção real de deslocamento do veículo. */
 .veh-pin{
   position:relative;width:96px;cursor:pointer;
   filter:drop-shadow(0 6px 10px rgba(15,23,42,.5)) drop-shadow(0 2px 3px rgba(15,23,42,.35));
   transition:transform .2s ease;
 }
 .veh-pin.highlight{ transform:scale(1.15); z-index:900!important; }
-.veh-pin svg{display:block;width:96px;height:99.2px}
+.veh-pin svg{display:block;width:96px;height:96px}
 
 .empty{padding:40px 20px;text-align:center;color:var(--muted)}
 .empty h3{margin:0 0 8px;color:var(--blue);font-size:18px;font-weight:800}
@@ -1077,15 +1076,15 @@ async function selecionarVeiculo(v){
 
 /** Ícone de ônibus em pino quadrado (squircle) com efeito 3D (gradiente de luz/sombra e
  *  sombra projetada): fundo pintado pela cor de status com borda leve em preto, silhueta do
- *  ônibus em branco, número do veículo colado no topo do ícone e o bico do pino — curto e
- *  bem gordo/arredondado — rotacionado para apontar a direção do veículo. */
+ *  ônibus em branco e o bico do pino — curto e bem gordo/arredondado — apontando "para cima"
+ *  (Norte) quando não rotacionado; a rotação usa o heading (bússola: 0°=N, 90°=E, sentido
+ *  horário) para apontar corretamente a direção real de deslocamento do veículo. */
 function iconeOnibusHtml(v, extraClass){
     const cor = corCss(statusPontualidade(v).cor);
     const cz = "#fff";
     const rot = v.heading != null ? Number(v.heading) : 0;
-    const numero = esc(v.vehicleId || "—");
     return '<div class="veh-pin ' + (extraClass || "") + '">' +
-        '<svg viewBox="0 0 60 62" aria-hidden="true">' +
+        '<svg viewBox="0 0 60 60" aria-hidden="true">' +
             '<defs>' +
                 '<linearGradient id="busBevel" x1="0" y1="0" x2="0" y2="1">' +
                     '<stop offset="0" stop-color="#fff" stop-opacity=".6"/>' +
@@ -1100,35 +1099,21 @@ function iconeOnibusHtml(v, extraClass){
                     '<stop offset="0" stop-color="#fff" stop-opacity=".45"/>' +
                     '<stop offset="1" stop-color="#000" stop-opacity=".32"/>' +
                 '</linearGradient>' +
-                '<linearGradient id="ledBg" x1="0" y1="0" x2="0" y2="1">' +
-                    '<stop offset="0" stop-color="#333b47"/>' +
-                    '<stop offset=".5" stop-color="#171c24"/>' +
-                    '<stop offset="1" stop-color="#04060a"/>' +
-                '</linearGradient>' +
-                '<filter id="ledGlow" x="-60%" y="-60%" width="220%" height="220%">' +
-                    '<feGaussianBlur stdDeviation=".7" result="b"/>' +
-                    '<feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>' +
-                '</filter>' +
             '</defs>' +
-            '<g transform="translate(0 2)">' +
-                '<g transform="rotate(' + rot + ' 30 26)">' +
-                    '<path d="M30 52 L44 25 L16 25 Z" fill="' + esc(cor) + '" stroke="rgba(0,0,0,.5)" stroke-width="2.4" stroke-linejoin="round"/>' +
-                    '<path d="M30 52 L44 25 L16 25 Z" fill="url(#beakBevel)" stroke="none"/>' +
-                '</g>' +
-                '<rect x="13" y="9" width="34" height="34" rx="10" fill="' + esc(cor) + '" stroke="rgba(0,0,0,.45)" stroke-width="1.4"/>' +
-                '<rect x="13" y="9" width="34" height="34" rx="10" fill="url(#busBevel)"/>' +
-                '<rect x="13" y="9" width="34" height="34" rx="10" fill="url(#busGloss)"/>' +
-                '<rect x="25" y="10.5" width="10" height="3.5" rx="1.2" fill="' + cz + '"/>' +
-                '<rect x="17" y="15" width="26" height="21" rx="6" fill="' + cz + '"/>' +
-                '<rect x="20.5" y="18" width="19" height="10" rx="2.5" fill="' + esc(cor) + '" opacity=".42"/>' +
-                '<circle cx="22.5" cy="33" r="2.1" fill="' + cz + '"/>' +
-                '<circle cx="37.5" cy="33" r="2.1" fill="' + cz + '"/>' +
-                '<rect x="20.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
-                '<rect x="35.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
-                '<rect x="13" y="0" width="34" height="13" rx="4" fill="url(#ledBg)" stroke="rgba(0,0,0,.55)" stroke-width="1.3"/>' +
-                '<rect x="14.5" y="1.2" width="31" height="4" rx="2" fill="#fff" opacity=".14"/>' +
-                '<text x="30" y="9.8" text-anchor="middle" font-family="\'JetBrains Mono\',monospace" font-size="8.6" font-weight="800" letter-spacing=".3" fill="#ffb020" filter="url(#ledGlow)">' + numero + '</text>' +
+            '<g transform="rotate(' + rot + ' 30 26)">' +
+                '<path d="M30 2 L44 29 L16 29 Z" fill="' + esc(cor) + '" stroke="rgba(0,0,0,.5)" stroke-width="2.4" stroke-linejoin="round"/>' +
+                '<path d="M30 2 L44 29 L16 29 Z" fill="url(#beakBevel)" stroke="none"/>' +
             '</g>' +
+            '<rect x="13" y="9" width="34" height="34" rx="10" fill="' + esc(cor) + '" stroke="rgba(0,0,0,.45)" stroke-width="1.4"/>' +
+            '<rect x="13" y="9" width="34" height="34" rx="10" fill="url(#busBevel)"/>' +
+            '<rect x="13" y="9" width="34" height="34" rx="10" fill="url(#busGloss)"/>' +
+            '<rect x="25" y="10.5" width="10" height="3.5" rx="1.2" fill="' + cz + '"/>' +
+            '<rect x="17" y="15" width="26" height="21" rx="6" fill="' + cz + '"/>' +
+            '<rect x="20.5" y="18" width="19" height="10" rx="2.5" fill="' + esc(cor) + '" opacity=".42"/>' +
+            '<circle cx="22.5" cy="33" r="2.1" fill="' + cz + '"/>' +
+            '<circle cx="37.5" cy="33" r="2.1" fill="' + cz + '"/>' +
+            '<rect x="20.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
+            '<rect x="35.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
         '</svg>' +
     '</div>';
 }
@@ -1155,9 +1140,9 @@ function atualizarMarcadores(){
         const icon = L.divIcon({
             className: "bus-marker-wrap",
             html: iconeOnibusHtml(v, extra),
-            iconSize: [96, 99],
-            iconAnchor: [48, 45],
-            popupAnchor: [0, -103]
+            iconSize: [96, 96],
+            iconAnchor: [48, 42],
+            popupAnchor: [0, -100]
         });
         let marker = state.markers.get(key);
         if (!marker){
