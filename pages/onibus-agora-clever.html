@@ -230,6 +230,8 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 .veiculo-panel-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
 .veiculo-panel-grid .popup-item{padding:5px 7px;font-size:9.5px}
 .veiculo-panel-grid .popup-item strong{font-size:11px;margin-top:1px}
+.veiculo-panel-grid-3{grid-template-columns:1fr 1fr 1fr;margin-bottom:5px}
+.veiculo-panel-grid-3 .popup-item{padding:5px 6px}
 .veiculo-panel-telemetria-titulo{
   margin:8px 0 5px;padding-top:7px;border-top:1px solid rgba(15,23,42,.12);
   font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
@@ -1342,11 +1344,13 @@ function telemetriaFleetBusHtml(telemetria){
 function popupVeiculoHtml(v, telemetria){
     const st = statusPontualidade(v);
     const corLinha = corCss(v.route?.color);
-    const grid = [
+    const linhaViaBloco = [
         ["Linha", v.route?.shortName || "—"],
-        ["Bloco", v.wid || "—"],
-        ["Sentido", v.sentido || "—"],
         ["Via", v.tripDesc || "—"],
+        ["Bloco", v.wid || "—"]
+    ].map(([k, val]) => '<div class="popup-item">' + esc(k) + '<strong>' + esc(val) + '</strong></div>').join("");
+    const grid = [
+        ["Sentido", v.sentido || "—"],
         ["Velocidade · Clever", v.speed != null ? (v.speed + " km/h") : "—"],
         ["Op", v.operadora || "—"],
         ["Tecnologia", tecnologiaVeiculo(v.vehicleId)]
@@ -1359,6 +1363,7 @@ function popupVeiculoHtml(v, telemetria){
                 '<span class="veiculo-panel-status" style="background:' + esc(st.cor) + ';color:' + contraste(st.cor) + '">' + esc(textoStatusComQuantidade(v)) + '</span>' +
             '</div>' +
         '</div>' +
+        '<div class="veiculo-panel-grid veiculo-panel-grid-3">' + linhaViaBloco + '</div>' +
         '<div class="veiculo-panel-grid">' + grid + '</div>' +
         telemetriaFleetBusHtml(telemetria) +
     '</div>';
