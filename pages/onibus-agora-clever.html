@@ -1530,11 +1530,11 @@ async function atualizarPosicoesEstimadas(){
 
         vistos.add(v.key);
         const rotulo = "Posição prevista · " + esc(v.vehicleId) + " · " + esc(textoStatusComQuantidade(v));
-        // Mesmo ícone do ônibus real (iconeOnibusHtml) — só fica "fantasma" pela
-        // transparência aplicada via CSS na classe ghost-pin-veh, sem reinventar o desenho.
+        // Mesmo ícone do ônibus real (iconeOnibusHtml) — corpo em branco (em vez da cor de
+        // status vermelho/amarelo) + transparência via CSS (ghost-pin-veh) para o efeito fantasma.
         const icon = L.divIcon({
             className: "bus-marker-wrap",
-            html: iconeOnibusHtml(v, "ghost-pin-veh"),
+            html: iconeOnibusHtml(v, "ghost-pin-veh", "#ffffff"),
             iconSize: [96, 96],
             iconAnchor: [48, 42]
         });
@@ -1643,8 +1643,10 @@ async function selecionarVeiculo(v){
  *  ônibus em branco e o bico do pino — curto e bem gordo/arredondado — apontando "para cima"
  *  (Norte) quando não rotacionado; a rotação usa o heading (bússola: 0°=N, 90°=E, sentido
  *  horário) para apontar corretamente a direção real de deslocamento do veículo. */
-function iconeOnibusHtml(v, extraClass){
-    const cor = corCss(statusPontualidade(v).cor);
+function iconeOnibusHtml(v, extraClass, corOverride){
+    // corOverride: usado pelo fantasminha para pintar o corpo de branco em vez da cor de
+    // status (vermelho/amarelo/verde) — mesmo desenho, só a cor do corpo muda.
+    const cor = corOverride || corCss(statusPontualidade(v).cor);
     const cz = "#fff";
     const rot = v.heading != null ? Number(v.heading) : 0;
     const numero = esc(v.vehicleId || "—");
