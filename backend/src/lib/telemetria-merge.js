@@ -136,7 +136,10 @@ export const MAP_COLUNAS_EN_PT = {
   "max engine temp": "Temperatura Motor Maxima",
   "avg ambient temp": "Temperatura Ambiente Media",
   "avg air pressure": "Pressao Ar Media",
-  "max air pressure": "Pressao Ar Maxima"
+  "max air pressure": "Pressao Ar Maxima",
+  // Planilha TCGL usa a coluna "Km" para o km percorrido no dia — sem este alias,
+  // o valor nunca era reconhecido como "Km Percorrido" e a comparação TCGL ficava vazia.
+  "km": "Km Percorrido"
 };
 
 export function colunaCleverExcluida(nome) {
