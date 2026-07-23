@@ -97,14 +97,14 @@ body.oa-page footer.portal-site-footer{display:none!important}
 .stat b{display:block;font-size:14px;font-weight:800;color:var(--blue);letter-spacing:-.02em}
 .stat span{font-size:8.5px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 
-.lines{flex:1;min-height:0;overflow:auto;display:grid;gap:4px;align-content:start}
-.line-btn{width:100%;display:flex;align-items:center;gap:10px;border:1px solid transparent;background:transparent;border-radius:12px;padding:8px 10px;cursor:pointer;font:inherit;text-align:left;transition:.15s ease;color:var(--text)}
+.lines{flex:1;min-height:0;overflow:auto;display:grid;gap:2px;align-content:start}
+.line-btn{width:100%;display:flex;align-items:center;gap:8px;border:1px solid transparent;background:transparent;border-radius:10px;padding:5px 8px;cursor:pointer;font:inherit;text-align:left;transition:.15s ease;color:var(--text)}
 .line-btn:hover{background:var(--surface-2)}
 .line-btn.active{background:#effcfb;border-color:rgba(45,180,191,.35)}
-.line-chip{width:48px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex:0 0 auto}
-.line-meta{min-width:0;flex:1}
-.line-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.line-route{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.line-chip{width:36px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex:0 0 auto}
+.line-meta{min-width:0;flex:1;line-height:1.2}
+.line-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+.line-route{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15;margin-top:1px}
 
 .main{display:flex;flex-direction:column;min-height:600px}
 .panel-wrap{flex:1;padding:10px;display:flex;flex-direction:column;align-items:center;min-height:0}
@@ -141,12 +141,12 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
    status, silhueta do ônibus em branco, número do veículo fora do ícone (em cima) e o bico
    do pino girando para apontar a direção do veículo. */
 .veh-pin{
-  position:relative;width:40px;cursor:pointer;
+  position:relative;width:48px;cursor:pointer;
   filter:drop-shadow(0 3px 7px rgba(15,23,42,.35));
   transition:transform .2s ease;
 }
 .veh-pin.highlight{ transform:scale(1.18); z-index:900!important; }
-.veh-pin svg{display:block;width:40px;height:40px}
+.veh-pin svg{display:block;width:48px;height:48px}
 .veh-pin-num{
   position:absolute;left:50%;bottom:100%;transform:translateX(-50%);
   margin-bottom:3px;background:#fff;color:var(--blue);
@@ -850,9 +850,28 @@ function acaoMapaMobile(fn){
     scheduleMapResize();
 }
 
+/** Ajusta o painel do mapa (#panelMapa) para ser um quadrado que preenche totalmente o espaço
+ *  disponível (usa o menor entre largura e altura do wrapper), sem sobrar área em branco. */
+function ajustarMapaQuadrado(){
+    if (document.body.classList.contains("oa-native-mode")) return;
+    const panel = $("panelMapa");
+    const wrap = panel?.parentElement;
+    if (!panel || !wrap) return;
+    const padX = 20, padY = 20; // .panel-wrap tem padding:10px
+    const cw = wrap.clientWidth - padX;
+    const ch = wrap.clientHeight - padY;
+    if (cw <= 0 || ch <= 0) return;
+    const size = Math.floor(Math.min(cw, ch));
+    panel.style.width = size + "px";
+    panel.style.height = size + "px";
+}
+
 function scheduleMapResize(){
     if (!state.mapa) return;
-    const fix = () => { try { state.mapa?.invalidateSize({ pan: false }); } catch (_) {} };
+    const fix = () => {
+        ajustarMapaQuadrado();
+        try { state.mapa?.invalidateSize({ pan: false }); } catch (_) {}
+    };
     requestAnimationFrame(fix);
     [120, 350, 700, 1400, 2500].forEach(ms => setTimeout(fix, ms));
 }
@@ -1083,23 +1102,24 @@ async function selecionarVeiculo(v){
 }
 
 /** Ícone de ônibus em pino quadrado: fundo pintado pela cor de status, silhueta do ônibus em
- *  branco, número do veículo fora do ícone (etiqueta acima) e o bico do pino rotacionado para
+ *  cinza, número do veículo fora do ícone (etiqueta acima) e o bico do pino rotacionado para
  *  apontar a direção do veículo (quando há dado de heading). */
 function iconeOnibusHtml(v, extraClass){
     const cor = corCss(statusPontualidade(v).cor);
+    const cz = "#d1d5db";
     const rot = v.heading != null ? Number(v.heading) : 0;
     return '<div class="veh-pin ' + (extraClass || "") + '">' +
         '<span class="veh-pin-num">' + esc(v.vehicleId || "—") + '</span>' +
         '<svg viewBox="0 0 60 60" aria-hidden="true">' +
             '<g transform="rotate(' + rot + ' 30 26)"><path d="M30 52 L34 26 L26 26 Z" fill="' + esc(cor) + '"/></g>' +
             '<rect x="13" y="9" width="34" height="34" rx="9" fill="' + esc(cor) + '" stroke="rgba(15,23,42,.28)" stroke-width="1"/>' +
-            '<rect x="25" y="10.5" width="10" height="3.5" rx="1.2" fill="#fff"/>' +
-            '<rect x="17" y="15" width="26" height="21" rx="6" fill="#fff"/>' +
+            '<rect x="25" y="10.5" width="10" height="3.5" rx="1.2" fill="' + cz + '"/>' +
+            '<rect x="17" y="15" width="26" height="21" rx="6" fill="' + cz + '"/>' +
             '<rect x="20.5" y="18" width="19" height="10" rx="2.5" fill="' + esc(cor) + '" opacity=".42"/>' +
-            '<circle cx="22.5" cy="33" r="2.1" fill="#fff"/>' +
-            '<circle cx="37.5" cy="33" r="2.1" fill="#fff"/>' +
-            '<rect x="20.3" y="35" width="4.4" height="3.4" rx="1" fill="#fff"/>' +
-            '<rect x="35.3" y="35" width="4.4" height="3.4" rx="1" fill="#fff"/>' +
+            '<circle cx="22.5" cy="33" r="2.1" fill="' + cz + '"/>' +
+            '<circle cx="37.5" cy="33" r="2.1" fill="' + cz + '"/>' +
+            '<rect x="20.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
+            '<rect x="35.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
         '</svg>' +
     '</div>';
 }
@@ -1126,9 +1146,9 @@ function atualizarMarcadores(){
         const icon = L.divIcon({
             className: "bus-marker-wrap",
             html: iconeOnibusHtml(v, extra),
-            iconSize: [40, 40],
-            iconAnchor: [20, 17],
-            popupAnchor: [0, -42]
+            iconSize: [48, 48],
+            iconAnchor: [24, 21],
+            popupAnchor: [0, -50]
         });
         let marker = state.markers.get(key);
         if (!marker){
