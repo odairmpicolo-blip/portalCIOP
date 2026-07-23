@@ -138,23 +138,16 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 .bus-marker-wrap{background:transparent!important;border:0!important;overflow:visible!important}
 
 /* Ícone de ônibus em pino quadrado (squircle, igual à imagem de referência): fundo pintado
-   pela cor de status, silhueta do ônibus em cinza escuro, número do veículo em etiqueta fora
-   do ícone (acima dele) e o bico do pino rotacionado para apontar a direção do veículo. */
+   pela cor de status, silhueta do ônibus em branco, número do veículo integrado numa etiqueta
+   que nasce colada no topo do ícone (desenhada junto no mesmo SVG) e o bico do pino rotacionado
+   para apontar a direção do veículo. */
 .veh-pin{
   position:relative;width:96px;cursor:pointer;
   filter:drop-shadow(0 4px 8px rgba(15,23,42,.45)) drop-shadow(0 1px 2px rgba(15,23,42,.3));
   transition:transform .2s ease;
 }
 .veh-pin.highlight{ transform:scale(1.15); z-index:900!important; }
-.veh-pin svg{display:block;width:96px;height:96px}
-.veh-pin-num{
-  position:absolute;left:50%;bottom:100%;transform:translateX(-50%);
-  margin-bottom:0;background:#fff;color:var(--blue);
-  font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:800;
-  padding:3px 9px;border-radius:999px;white-space:nowrap;line-height:1.2;
-  box-shadow:0 1px 6px rgba(15,23,42,.22);
-  pointer-events:none;
-}
+.veh-pin svg{display:block;width:96px;height:99.2px}
 
 .empty{padding:40px 20px;text-align:center;color:var(--muted)}
 .empty h3{margin:0 0 8px;color:var(--blue);font-size:18px;font-weight:800}
@@ -1090,9 +1083,9 @@ function iconeOnibusHtml(v, extraClass){
     const cor = corCss(statusPontualidade(v).cor);
     const cz = "#fff";
     const rot = v.heading != null ? Number(v.heading) : 0;
+    const numero = esc(v.vehicleId || "—");
     return '<div class="veh-pin ' + (extraClass || "") + '">' +
-        '<span class="veh-pin-num">' + esc(v.vehicleId || "—") + '</span>' +
-        '<svg viewBox="0 0 60 60" aria-hidden="true">' +
+        '<svg viewBox="0 0 60 62" aria-hidden="true">' +
             '<defs>' +
                 '<linearGradient id="busBevel" x1="0" y1="0" x2="0" y2="1">' +
                     '<stop offset="0" stop-color="#fff" stop-opacity=".55"/>' +
@@ -1108,20 +1101,25 @@ function iconeOnibusHtml(v, extraClass){
                     '<stop offset="1" stop-color="#000" stop-opacity=".28"/>' +
                 '</linearGradient>' +
             '</defs>' +
-            '<g transform="rotate(' + rot + ' 30 26)">' +
-                '<path d="M30 51 L41 26 L19 26 Z" fill="' + esc(cor) + '" stroke="rgba(0,0,0,.45)" stroke-width="2" stroke-linejoin="round"/>' +
-                '<path d="M30 51 L41 26 L19 26 Z" fill="url(#beakBevel)" stroke="none"/>' +
+            '<g transform="translate(0 2)">' +
+                '<g transform="rotate(' + rot + ' 30 26)">' +
+                    '<path d="M30 51 L41 26 L19 26 Z" fill="' + esc(cor) + '" stroke="rgba(0,0,0,.45)" stroke-width="2" stroke-linejoin="round"/>' +
+                    '<path d="M30 51 L41 26 L19 26 Z" fill="url(#beakBevel)" stroke="none"/>' +
+                '</g>' +
+                '<rect x="13" y="9" width="34" height="34" rx="9" fill="' + esc(cor) + '" stroke="rgba(0,0,0,.4)" stroke-width="1.4"/>' +
+                '<rect x="13" y="9" width="34" height="34" rx="9" fill="url(#busBevel)"/>' +
+                '<rect x="13" y="9" width="34" height="34" rx="9" fill="url(#busGloss)"/>' +
+                '<rect x="25" y="10.5" width="10" height="3.5" rx="1.2" fill="' + cz + '"/>' +
+                '<rect x="17" y="15" width="26" height="21" rx="6" fill="' + cz + '"/>' +
+                '<rect x="20.5" y="18" width="19" height="10" rx="2.5" fill="' + esc(cor) + '" opacity=".42"/>' +
+                '<circle cx="22.5" cy="33" r="2.1" fill="' + cz + '"/>' +
+                '<circle cx="37.5" cy="33" r="2.1" fill="' + cz + '"/>' +
+                '<rect x="20.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
+                '<rect x="35.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
+                '<rect x="15" y="0" width="30" height="12" rx="4" fill="#fff" stroke="rgba(0,0,0,.4)" stroke-width="1.4"/>' +
+                '<rect x="15" y="0" width="30" height="12" rx="4" fill="url(#busBevel)" opacity=".5"/>' +
+                '<text x="30" y="9" text-anchor="middle" font-family="\'JetBrains Mono\',monospace" font-size="8.4" font-weight="800" fill="#06245c">' + numero + '</text>' +
             '</g>' +
-            '<rect x="13" y="9" width="34" height="34" rx="9" fill="' + esc(cor) + '" stroke="rgba(0,0,0,.4)" stroke-width="1.4"/>' +
-            '<rect x="13" y="9" width="34" height="34" rx="9" fill="url(#busBevel)"/>' +
-            '<rect x="13" y="9" width="34" height="34" rx="9" fill="url(#busGloss)"/>' +
-            '<rect x="25" y="10.5" width="10" height="3.5" rx="1.2" fill="' + cz + '"/>' +
-            '<rect x="17" y="15" width="26" height="21" rx="6" fill="' + cz + '"/>' +
-            '<rect x="20.5" y="18" width="19" height="10" rx="2.5" fill="' + esc(cor) + '" opacity=".42"/>' +
-            '<circle cx="22.5" cy="33" r="2.1" fill="' + cz + '"/>' +
-            '<circle cx="37.5" cy="33" r="2.1" fill="' + cz + '"/>' +
-            '<rect x="20.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
-            '<rect x="35.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
         '</svg>' +
     '</div>';
 }
@@ -1148,9 +1146,9 @@ function atualizarMarcadores(){
         const icon = L.divIcon({
             className: "bus-marker-wrap",
             html: iconeOnibusHtml(v, extra),
-            iconSize: [96, 96],
-            iconAnchor: [48, 42],
-            popupAnchor: [0, -100]
+            iconSize: [96, 99],
+            iconAnchor: [48, 45],
+            popupAnchor: [0, -103]
         });
         let marker = state.markers.get(key);
         if (!marker){
