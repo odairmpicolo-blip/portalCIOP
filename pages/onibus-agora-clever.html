@@ -1569,7 +1569,10 @@ async function desenharTracoLinha(v){
         .filter(([la, lo]) => Number.isFinite(la) && Number.isFinite(lo));
     if (!latlngs.length) return;
     const cor = corCss(v.route?.color);
-    state.tracoLayer = L.polyline(latlngs, { color: cor, weight: 5, opacity: .85 }).addTo(state.mapa);
+    state.tracoLayer = L.layerGroup([
+        L.polyline(latlngs, { color: "#fff", weight: 9, opacity: .65, lineCap: "round", lineJoin: "round" }),
+        L.polyline(latlngs, { color: cor, weight: 5, opacity: 1, lineCap: "round", lineJoin: "round" })
+    ]).addTo(state.mapa);
     const paradas = pat.pt.filter(p => p.typ === "S" && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lon)));
     const marcadores = paradas.map(p => L.circleMarker([Number(p.lat), Number(p.lon)], {
         radius: 5, weight: 2, color: "#fff", fillColor: cor, fillOpacity: 1
@@ -1596,18 +1599,22 @@ async function desenharTracoRota(routeId){
                 .map(p => [Number(p.lat), Number(p.lon)])
                 .filter(([la, lo]) => Number.isFinite(la) && Number.isFinite(lo));
             if (latlngs.length){
-                linhas.push(L.polyline(latlngs, { color: cor, weight: 4, opacity: .75 }));
+                // Halo branco embaixo + linha colorida em cima: a linha completa fica bem
+                // visível em qualquer camada de mapa (clara, satélite, etc.).
+                linhas.push(L.polyline(latlngs, { color: "#fff", weight: 10, opacity: .65, lineCap: "round", lineJoin: "round" }));
+                linhas.push(L.polyline(latlngs, { color: cor, weight: 5.5, opacity: 1, lineCap: "round", lineJoin: "round" }));
                 todosPontos = todosPontos.concat(latlngs);
             }
             pat.pt.filter(p => p.typ === "S" && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lon)))
                 .forEach(p => paradas.push(L.circleMarker([Number(p.lat), Number(p.lon)], {
-                    radius: 4, weight: 2, color: "#fff", fillColor: cor, fillOpacity: 1
+                    radius: 5, weight: 2.5, color: "#fff", fillColor: cor, fillOpacity: 1
                 }).bindTooltip(esc(p.stpnm || "Parada"), { direction: "top" })));
         });
         if (!linhas.length) return;
         state.tracoLayer = L.layerGroup(linhas).addTo(state.mapa);
         state.paradasLayer = L.layerGroup(paradas).addTo(state.mapa);
-        if (todosPontos.length) state.mapa.fitBounds(L.latLngBounds(todosPontos), { padding: [40, 40] });
+        // Garante que a linha inteira (todas as variantes/sentidos) caiba na tela.
+        if (todosPontos.length) state.mapa.fitBounds(L.latLngBounds(todosPontos), { padding: [50, 50], maxZoom: 16 });
     } catch (err) {
         console.warn("Falha ao desenhar traçado da rota:", err);
     }
