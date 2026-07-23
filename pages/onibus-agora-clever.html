@@ -202,6 +202,31 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 .veh-pin.highlight{ transform:scale(1.15); z-index:900!important; }
 .veh-pin svg{display:block;width:96px;height:96px}
 
+/* Posição estimada ("fantasma"): onde o veículo deveria estar agora, segundo o horário
+   programado — calculada a partir da distância já percorrida no trajeto, do atraso atual
+   e da velocidade recente. É uma estimativa, não um dado oficial da API. */
+.ghost-marker-wrap{background:transparent!important;border:0!important;overflow:visible!important}
+.ghost-pin{
+  width:26px;height:26px;border-radius:50%;
+  background:rgba(255,255,255,.22);
+  border:2.5px dashed #fff;
+  display:grid;place-items:center;
+  box-shadow:0 2px 8px rgba(15,23,42,.45);
+  animation:ghostPulse 1.8s ease-in-out infinite;
+}
+.ghost-pin i{
+  width:8px;height:8px;border-radius:50%;background:#fff;display:block;
+}
+@keyframes ghostPulse{
+  0%,100%{ opacity:.55; transform:scale(1); }
+  50%{ opacity:1; transform:scale(1.12); }
+}
+.leaflet-tooltip.ghost-tooltip{
+  background:var(--blue);color:#fff;border:0;font-weight:800;font-size:11px;
+  padding:4px 8px;border-radius:8px;box-shadow:var(--shadow);
+}
+.leaflet-tooltip.ghost-tooltip::before{ border-top-color:var(--blue); }
+
 .empty{padding:40px 20px;text-align:center;color:var(--muted)}
 .empty h3{margin:0 0 8px;color:var(--blue);font-size:18px;font-weight:800}
 
@@ -716,6 +741,9 @@ const state = {
     veiculoSelecionado: null,
     tracoLayer: null,
     paradasLayer: null,
+    ghostLayer: null,
+    ghostMarkers: new Map(),
+    patternsCache: new Map(),
     pollTimer: null,
     lastUpdate: null,
     liveOk: false,
@@ -1047,6 +1075,9 @@ async function fetchCleverVehicles(){
             sentido: v.rtdir || null,
             wid: v.tablockid || "",
             pid: v.pid != null ? String(v.pid) : "",
+            // Distância percorrida (em pés, padrão BusTime) dentro do trajeto atual — usada para estimar
+            // a posição "no horário" (ghost) quando a linha/veículo está selecionado.
+            pdist: v.pdist != null && Number.isFinite(Number(v.pdist)) ? Number(v.pdist) : null,
             operadora: operadoraDoVeiculo(vid),
             // "oid" no retorno do Clever/BusTime é o registro (matrícula) do motorista escalado no veículo.
             motorista: v.oid != null && String(v.oid).trim() ? String(v.oid).trim() : "",
@@ -1404,6 +1435,115 @@ function desselecionarVeiculo(){
 function limparTraco(){
     if (state.tracoLayer){ state.mapa?.removeLayer(state.tracoLayer); state.tracoLayer = null; }
     if (state.paradasLayer){ state.mapa?.removeLayer(state.paradasLayer); state.paradasLayer = null; }
+    limparFantasmas();
+}
+
+function limparFantasmas(){
+    if (state.ghostLayer){ state.mapa?.removeLayer(state.ghostLayer); state.ghostLayer = null; }
+    state.ghostMarkers.forEach(m => m.remove());
+    state.ghostMarkers.clear();
+}
+
+/** Busca (com cache) os pontos do trajeto (pid) com a distância acumulada de cada um
+ *  (pdist, em pés — mesma unidade usada pelo pdist do veículo no getvehicles). */
+async function obterPontosPadrao(pid){
+    if (!pid) return [];
+    if (state.patternsCache.has(pid)) return state.patternsCache.get(pid);
+    try {
+        const data = await fetchCleverLive("getpatterns?pid=" + encodeURIComponent(pid));
+        const patterns = extrairListaBustime(data, "ptr");
+        const pat = patterns.find(p => String(p.pid) === String(pid)) || patterns[0];
+        const pontos = (pat?.pt || [])
+            .map(p => ({ lat: Number(p.lat), lon: Number(p.lon), pdist: Number(p.pdist) }))
+            .filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lon) && Number.isFinite(p.pdist));
+        state.patternsCache.set(pid, pontos);
+        return pontos;
+    } catch (err) {
+        console.warn("Falha ao buscar trajeto para posição estimada (pid " + pid + "):", err);
+        state.patternsCache.set(pid, []);
+        return [];
+    }
+}
+
+/** Interpola um ponto lat/lon no trajeto para uma distância-alvo (pdist), andando pelos
+ *  segmentos do polyline até achar o par de pontos que contém o alvo. */
+function interpolarNoTrajeto(pontos, alvoPdist){
+    if (!pontos.length) return null;
+    const min = pontos[0].pdist, max = pontos[pontos.length - 1].pdist;
+    const alvo = Math.max(min, Math.min(alvoPdist, max));
+    for (let i = 1; i < pontos.length; i++){
+        const a = pontos[i - 1], b = pontos[i];
+        if (alvo <= b.pdist){
+            const span = b.pdist - a.pdist;
+            const f = span > 0 ? (alvo - a.pdist) / span : 0;
+            return { lat: a.lat + (b.lat - a.lat) * f, lon: a.lon + (b.lon - a.lon) * f };
+        }
+    }
+    const last = pontos[pontos.length - 1];
+    return { lat: last.lat, lon: last.lon };
+}
+
+const PES_POR_METRO = 3.28084;
+
+/** Estima, para cada veículo visível com atraso relevante, a posição em que ele deveria
+ *  estar agora segundo o horário programado: parte da distância já percorrida no trajeto
+ *  (pdist) e desloca essa distância pelo atraso atual × velocidade recente. É uma
+ *  aproximação (assume velocidade constante) — só aparece com uma linha ou um veículo
+ *  selecionado, para não poluir o mapa com a frota inteira. */
+async function atualizarPosicoesEstimadas(){
+    if (!state.mapa) return;
+    const ativo = Boolean(state.routeFiltro || state.veiculoSelecionado);
+    if (!ativo){
+        limparFantasmas();
+        return;
+    }
+    if (!state.ghostLayer) state.ghostLayer = L.layerGroup().addTo(state.mapa);
+
+    const alvos = [];
+    state.vehicles.forEach((v) => {
+        if (!veiculoPassaFiltro(v)) return;
+        if (state.veiculoSelecionado && !state.routeFiltro && v.key !== state.veiculoSelecionado) return;
+        if (!v.pid || v.pdist == null || v.delaySec == null || v.speed == null) return;
+        if (statusPontualidade(v).chave === "noHorario") return;
+        alvos.push(v);
+    });
+
+    const vistos = new Set();
+    for (const v of alvos){
+        const pontos = await obterPontosPadrao(v.pid);
+        if (!pontos.length) continue;
+        const velFtSeg = (Number(v.speed) * 1000 / 3600) * PES_POR_METRO;
+        const alvoPdist = v.pdist + v.delaySec * velFtSeg;
+        const pos = interpolarNoTrajeto(pontos, alvoPdist);
+        if (!pos) continue;
+
+        vistos.add(v.key);
+        const rotulo = "Posição prevista · " + esc(v.vehicleId) + " · " + esc(textoStatusComQuantidade(v));
+        const icon = L.divIcon({
+            className: "ghost-marker-wrap",
+            html: '<div class="ghost-pin" style="border-color:' + esc(corCss(v.route?.color)) + '"><i></i></div>',
+            iconSize: [26, 26],
+            iconAnchor: [13, 13]
+        });
+        let marker = state.ghostMarkers.get(v.key);
+        if (!marker){
+            marker = L.marker([pos.lat, pos.lon], { icon, zIndexOffset: -200, interactive: false })
+                .bindTooltip(rotulo, { direction: "top", offset: [0, -10], className: "ghost-tooltip", permanent: false })
+                .addTo(state.ghostLayer);
+            state.ghostMarkers.set(v.key, marker);
+        } else {
+            marker.setLatLng([pos.lat, pos.lon]);
+            marker.setIcon(icon);
+            marker.setTooltipContent(rotulo);
+        }
+    }
+
+    state.ghostMarkers.forEach((marker, key) => {
+        if (!vistos.has(key)){
+            state.ghostLayer?.removeLayer(marker);
+            state.ghostMarkers.delete(key);
+        }
+    });
 }
 
 /** Busca o traçado (getpatterns por pid) e desenha a linha + os pontos de parada no mapa. */
@@ -1471,6 +1611,7 @@ async function selecionarVeiculo(v){
     } catch (err) {
         console.warn("Falha ao desenhar traçado da linha:", err);
     }
+    atualizarPosicoesEstimadas();
 }
 
 /** Ícone de ônibus em pino quadrado (squircle) com efeito 3D (gradiente de luz/sombra e
@@ -1671,6 +1812,7 @@ async function pollLote(){
         state.lastUpdate = new Date();
         state.liveOk = true;
         atualizarMarcadores();
+        atualizarPosicoesEstimadas();
         const hora = state.lastUpdate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
         setLive(state.vehicles.size + " ônibus · " + hora, false);
     } catch (err) {
