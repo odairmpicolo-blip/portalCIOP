@@ -204,17 +204,18 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 
 /* Posição estimada ("fantasminha"): onde o veículo deveria estar agora, segundo o horário
    programado — calculada a partir da distância já percorrida no trajeto, do atraso atual
-   e da velocidade recente. É uma estimativa, não um dado oficial da API. Reaproveita o
-   desenho do ônibus (iconeFantasmaHtml), só que em branco bem translúcido, com o número
-   do veículo que deveria estar ali. */
+   e da velocidade recente. É uma estimativa, não um dado oficial da API. Usa o MESMO ícone
+   do ônibus real (iconeOnibusHtml, mesmas cores/bisel/brilho conforme o status), só que
+   translúcido — a transparência via CSS é o que dá o efeito "fantasma", sem outro desenho. */
 .veh-pin.ghost-pin-veh{
   cursor:default;
-  filter:drop-shadow(0 5px 10px rgba(15,23,42,.5)) drop-shadow(0 0 6px rgba(255,255,255,.5));
+  opacity:.55;
+  filter:drop-shadow(0 5px 10px rgba(15,23,42,.4));
   animation:ghostPulse 1.8s ease-in-out infinite;
 }
 @keyframes ghostPulse{
-  0%,100%{ opacity:.82; }
-  50%{ opacity:1; }
+  0%,100%{ opacity:.4; }
+  50%{ opacity:.75; }
 }
 .leaflet-tooltip.ghost-tooltip{
   background:var(--blue);color:#fff;border:0;font-weight:800;font-size:11px;
@@ -1529,9 +1530,11 @@ async function atualizarPosicoesEstimadas(){
 
         vistos.add(v.key);
         const rotulo = "Posição prevista · " + esc(v.vehicleId) + " · " + esc(textoStatusComQuantidade(v));
+        // Mesmo ícone do ônibus real (iconeOnibusHtml) — só fica "fantasma" pela
+        // transparência aplicada via CSS na classe ghost-pin-veh, sem reinventar o desenho.
         const icon = L.divIcon({
             className: "bus-marker-wrap",
-            html: iconeFantasmaHtml(v),
+            html: iconeOnibusHtml(v, "ghost-pin-veh"),
             iconSize: [96, 96],
             iconAnchor: [48, 42]
         });
@@ -1687,41 +1690,6 @@ function iconeOnibusHtml(v, extraClass){
             '<circle cx="37.5" cy="33" r="2.1" fill="' + cz + '"/>' +
             '<rect x="20.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
             '<rect x="35.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
-        '</svg>' +
-    '</div>';
-}
-
-/** "Fantasminha": mesmo desenho do ônibus (iconeOnibusHtml), mas em branco bem translúcido
- *  e sem a cor de status — usado só para marcar, dentro de uma linha selecionada, onde o
- *  veículo deveria estar agora segundo o horário (ver atualizarPosicoesEstimadas). */
-function iconeFantasmaHtml(v){
-    const rot = v.heading != null ? Number(v.heading) : 0;
-    const numero = esc(v.vehicleId || "—");
-    // "Vidro" branco: corpo bem mais opaco que a primeira versão + brilho/bisel para dar
-    // profundidade, número em azul-marinho (contraste melhor que branco sobre branco).
-    return '<div class="veh-pin ghost-pin-veh">' +
-        '<svg viewBox="0 0 60 60" aria-hidden="true">' +
-            '<defs>' +
-                '<linearGradient id="ghostBevel" x1="0" y1="0" x2="0" y2="1">' +
-                    '<stop offset="0" stop-color="#fff" stop-opacity=".95"/>' +
-                    '<stop offset=".55" stop-color="#fff" stop-opacity=".25"/>' +
-                    '<stop offset="1" stop-color="#fff" stop-opacity=".05"/>' +
-                '</linearGradient>' +
-                '<radialGradient id="ghostGloss" cx=".32" cy=".18" r=".65">' +
-                    '<stop offset="0" stop-color="#fff" stop-opacity=".95"/>' +
-                    '<stop offset="1" stop-color="#fff" stop-opacity="0"/>' +
-                '</radialGradient>' +
-            '</defs>' +
-            '<g transform="rotate(' + rot + ' 30 26)">' +
-                '<path d="M30 1 L46 30 L14 30 Z" fill="rgba(255,255,255,.62)" stroke="rgba(255,255,255,.98)" stroke-width="2.4" stroke-linejoin="round"/>' +
-            '</g>' +
-            '<rect x="13" y="9" width="34" height="34" rx="10" fill="rgba(255,255,255,.5)" stroke="rgba(255,255,255,.98)" stroke-width="2"/>' +
-            '<rect x="13" y="9" width="34" height="34" rx="10" fill="url(#ghostBevel)"/>' +
-            '<rect x="13" y="9" width="34" height="34" rx="10" fill="url(#ghostGloss)"/>' +
-            '<rect x="17" y="15" width="26" height="21" rx="6" fill="rgba(255,255,255,.55)"/>' +
-            '<text x="30" y="25.9" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="7.2" font-weight="800" letter-spacing=".2" fill="#0b3a8a">' + numero + '</text>' +
-            '<circle cx="22.5" cy="33" r="2.1" fill="rgba(255,255,255,.95)"/>' +
-            '<circle cx="37.5" cy="33" r="2.1" fill="rgba(255,255,255,.95)"/>' +
         '</svg>' +
     '</div>';
 }
