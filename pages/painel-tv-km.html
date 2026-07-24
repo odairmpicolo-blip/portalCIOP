@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Indicadores IPV / ICV · Portal CIOP TCGL</title>
+<title>Quilometragem TCGL · Portal CIOP TCGL</title>
 <meta http-equiv="refresh" content="1800">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
@@ -15,14 +15,16 @@
     --ink:#f4f8ff;
     --muted:rgba(226,234,250,.62);
     --muted-2:rgba(226,234,250,.4);
-    --ipv:#38bdf8;
-    --ipv-glow:rgba(56,189,248,.35);
-    --icv:#2dd4bf;
-    --icv-glow:rgba(45,212,191,.35);
+    --km:#f59e0b;
+    --km-glow:rgba(245,158,11,.35);
+    --fontes:#a78bfa;
+    --fontes-glow:rgba(167,139,250,.35);
+    --tcgl:#f59e0b;
+    --clever:#a78bfa;
+    --fleetbus:#38bdf8;
     --green:#34d399;
     --amber:#fbbf24;
     --red:#fb7185;
-    --orange:#ff8a3d;
     --meta:#3b82f6;
     --meta-glow:rgba(59,130,246,.45);
   }
@@ -30,8 +32,8 @@
   html,body{
     margin:0; padding:0; width:100%; height:100%;
     background:
-      radial-gradient(1200px 800px at 12% -10%, rgba(56,189,248,.16), transparent 60%),
-      radial-gradient(1000px 700px at 100% 10%, rgba(45,212,191,.14), transparent 55%),
+      radial-gradient(1200px 800px at 12% -10%, rgba(245,158,11,.14), transparent 60%),
+      radial-gradient(1000px 700px at 100% 10%, rgba(167,139,250,.14), transparent 55%),
       linear-gradient(180deg, var(--bg-1), var(--bg-2) 60%, #060c1a);
     color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
@@ -65,7 +67,7 @@
   .tv-brand{ display:flex; align-items:center; gap:16px; }
   .tv-logo{
     height:clamp(64px,7.2vh,104px); width:auto; object-fit:contain;
-    filter:drop-shadow(0 0 16px rgba(56,189,248,.5)) drop-shadow(0 0 32px rgba(45,212,191,.25));
+    filter:drop-shadow(0 0 16px rgba(245,158,11,.5)) drop-shadow(0 0 32px rgba(167,139,250,.25));
   }
   .tv-brand-text{
     display:flex; flex-direction:column; gap:3px;
@@ -106,7 +108,7 @@
   }
   .tv-card::before{
     content:""; position:absolute; inset:0; pointer-events:none; opacity:.55;
-    background:radial-gradient(520px 260px at 100% 0%, var(--accent-glow,var(--ipv-glow)), transparent 70%);
+    background:radial-gradient(520px 260px at 100% 0%, var(--accent-glow,var(--km-glow)), transparent 70%);
   }
   .tv-card::after{
     content:""; position:absolute; top:0; left:0; right:0; height:3px; pointer-events:none;
@@ -116,8 +118,8 @@
     opacity:.85;
   }
   @keyframes tvShimmer{ 0%{ background-position:220% 0; } 100%{ background-position:-220% 0; } }
-  .tv-card-ipv{ --accent:var(--ipv); --accent-glow:var(--ipv-glow); }
-  .tv-card-icv{ --accent:var(--icv); --accent-glow:var(--icv-glow); }
+  .tv-card-km{ --accent:var(--km); --accent-glow:var(--km-glow); }
+  .tv-card-fontes{ --accent:var(--fontes); --accent-glow:var(--fontes-glow); }
 
   .tv-card-head{
     display:flex; align-items:center; gap:12px; flex:0 0 auto; flex-wrap:wrap; position:relative; z-index:1;
@@ -142,32 +144,23 @@
     padding:4px 12px; white-space:nowrap;
   }
   .tv-badge b{ font-weight:900; color:var(--ink); }
-  .tv-badge-meta{
-    border-color:rgba(59,130,246,.5); background:rgba(59,130,246,.14); color:#bcd4fb;
-  }
-  .tv-badge-meta b{ color:#93c5fd; text-shadow:0 0 12px var(--meta-glow); }
 
   .tv-hero-row{
     display:flex; align-items:flex-end; gap:clamp(14px,1.6vw,26px);
     flex:0 0 auto; margin-top:clamp(6px,1vh,14px); position:relative; z-index:1;
   }
   .tv-hero{
-    font-size:clamp(64px,7.6vw,140px); font-weight:900; line-height:.9;
+    font-size:clamp(48px,5.6vw,100px); font-weight:900; line-height:.9;
     letter-spacing:-.02em; font-variant-numeric:tabular-nums;
     color:var(--accent); text-shadow:0 0 40px var(--accent-glow);
     animation:tvHeroGlow 3.2s ease-in-out infinite;
   }
   @keyframes tvHeroGlow{ 0%,100%{ filter:brightness(1); } 50%{ filter:brightness(1.1); } }
-  .tv-hero-ok{ color:var(--green); text-shadow:0 0 40px rgba(52,211,153,.4); }
-  .tv-hero-alert{ color:var(--red); text-shadow:0 0 40px rgba(251,113,133,.4); }
   .tv-hero-side{ display:flex; flex-direction:column; gap:6px; padding-bottom:clamp(6px,1vh,14px); }
   .tv-hero-label{
     font-size:clamp(13px,1.05vw,17px); color:var(--muted); font-weight:600;
   }
-  .tv-trend{ font-size:clamp(12px,1vw,16px); font-weight:800; display:inline-flex; align-items:center; gap:6px; }
-  .tv-trend-up{ color:var(--green); }
-  .tv-trend-down{ color:var(--red); }
-  .tv-trend-flat{ color:var(--muted); }
+  .tv-trend{ font-size:clamp(12px,1vw,16px); font-weight:800; display:inline-flex; align-items:center; gap:6px; color:var(--muted); }
 
   .tv-mes-row{
     display:flex; align-items:center; gap:clamp(12px,1.6vw,22px);
@@ -185,8 +178,8 @@
     text-transform:capitalize;
   }
   .tv-mes-value{
-    font-size:clamp(30px,3.4vw,52px); font-weight:900; color:var(--accent);
-    font-variant-numeric:tabular-nums; letter-spacing:-.01em; flex:0 0 auto;
+    font-size:clamp(24px,2.6vw,40px); font-weight:900; color:var(--accent);
+    font-variant-numeric:tabular-nums; letter-spacing:-.01em; flex:0 0 auto; white-space:nowrap;
   }
   .tv-mes-progress{
     position:absolute; left:0; right:0; bottom:0; height:3px;
@@ -212,11 +205,12 @@
     letter-spacing:.06em; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   .tv-chip-value{
-    font-size:clamp(18px,1.9vw,30px); font-weight:800; font-variant-numeric:tabular-nums;
+    font-size:clamp(16px,1.7vw,26px); font-weight:800; font-variant-numeric:tabular-nums;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
-  .tv-chip-green .tv-chip-value{ color:var(--green); }
-  .tv-chip-amber .tv-chip-value{ color:var(--amber); }
-  .tv-chip-red .tv-chip-value{ color:var(--red); }
+  .tv-chip-tcgl .tv-chip-value{ color:var(--tcgl); }
+  .tv-chip-clever .tv-chip-value{ color:var(--clever); }
+  .tv-chip-fleetbus .tv-chip-value{ color:var(--fleetbus); }
 
   .tv-chart-wrap{
     flex:0 1 auto; min-height:0; height:clamp(90px,15vh,180px);
@@ -296,7 +290,7 @@
   .tv-erro{ color:var(--red); }
   .tv-loading-spin{
     width:44px; height:44px; border-radius:50%; border:4px solid var(--panel-border);
-    border-top-color:var(--ipv); animation:tvSpin 1s linear infinite;
+    border-top-color:var(--km); animation:tvSpin 1s linear infinite;
   }
   @keyframes tvSpin{ to{ transform:rotate(360deg); } }
 </style>
@@ -305,7 +299,7 @@
 
 <div class="tv-loading" id="tvLoading">
   <div class="tv-loading-spin"></div>
-  <div>Carregando indicadores…</div>
+  <div>Carregando quilometragem…</div>
 </div>
 
 <div class="tv-wrap">
@@ -313,7 +307,7 @@
     <div class="tv-brand">
       <img class="tv-logo" src="../assets/img/LOGO_TCGL-dark.png" alt="TCGL">
       <div class="tv-brand-text">
-        <div class="tv-brand-title">Indicadores Operacionais</div>
+        <div class="tv-brand-title">Quilometragem da Frota</div>
         <div class="tv-brand-sub">Transportes Coletivos Grande Londrina</div>
       </div>
     </div>
@@ -321,98 +315,98 @@
   </header>
 
   <main class="tv-grid">
-    <section class="tv-card tv-card-ipv">
+    <section class="tv-card tv-card-km">
       <div class="tv-card-head">
-        <span class="tv-tag">IPV</span>
-        <h2>Pontualidade</h2>
+        <span class="tv-tag">KM</span>
+        <h2>Quilometragem TCGL</h2>
         <div class="tv-badges">
-          <span class="tv-badge tv-badge-meta">Meta <b>93%</b></span>
+          <span class="tv-badge">Frota ativa <b id="kmFrotaAtiva">--</b></span>
         </div>
       </div>
       <div class="tv-hero-row">
-        <div class="tv-hero tv-hero-ok" id="ipvHeroValor">--%</div>
+        <div class="tv-hero" id="kmHeroValor">--</div>
         <div class="tv-hero-side">
-          <div class="tv-hero-label" id="ipvHeroLabel">No horário · Média 2026</div>
-          <div class="tv-trend" id="ipvTrend"></div>
+          <div class="tv-hero-label" id="kmHeroLabel">Km percorridos · TCGL 2026</div>
+          <div class="tv-trend" id="kmTrend"></div>
         </div>
       </div>
       <div class="tv-mes-row">
         <div class="tv-mes-info">
           <span class="tv-mes-tag">Mês a mês</span>
-          <span class="tv-mes-label" id="ipvMesLabel">--</span>
+          <span class="tv-mes-label" id="kmMesLabel">--</span>
         </div>
-        <div class="tv-mes-value" id="ipvMesValor">--%</div>
-        <div class="tv-mes-progress"><div class="tv-mes-progress-bar" id="ipvMesBarra"></div></div>
+        <div class="tv-mes-value" id="kmMesValor">--</div>
+        <div class="tv-mes-progress"><div class="tv-mes-progress-bar" id="kmMesBarra"></div></div>
       </div>
       <div class="tv-chips">
-        <div class="tv-chip tv-chip-green">
-          <span class="tv-chip-label">No horário</span>
-          <span class="tv-chip-value" id="ipvChipNoHorario">--%</span>
+        <div class="tv-chip tv-chip-tcgl">
+          <span class="tv-chip-label">Km/dia médio</span>
+          <span class="tv-chip-value" id="kmChipMedia">--</span>
         </div>
-        <div class="tv-chip tv-chip-amber">
-          <span class="tv-chip-label">Atrasado</span>
-          <span class="tv-chip-value" id="ipvChipAtrasado">--%</span>
+        <div class="tv-chip tv-chip-tcgl">
+          <span class="tv-chip-label">Veículos ativos</span>
+          <span class="tv-chip-value" id="kmChipVeiculos">--</span>
         </div>
-        <div class="tv-chip tv-chip-red">
-          <span class="tv-chip-label">Adiantado</span>
-          <span class="tv-chip-value" id="ipvChipAdiantado">--%</span>
+        <div class="tv-chip tv-chip-tcgl">
+          <span class="tv-chip-label">Dias com dados</span>
+          <span class="tv-chip-value" id="kmChipDias">--</span>
         </div>
       </div>
       <div class="tv-chart-wrap">
         <div class="tv-chart-head">
           <div class="tv-chart-title">Últimos 12 meses</div>
           <div class="tv-legend">
-            <span class="tv-legend-item"><span class="tv-legend-dot" style="background:var(--meta)"></span>Meta</span>
             <span class="tv-legend-item"><span class="tv-legend-dot-dash"></span>Média móvel 3m</span>
           </div>
         </div>
-        <canvas id="ipvChart"></canvas>
+        <canvas id="kmChart"></canvas>
       </div>
     </section>
 
-    <section class="tv-card tv-card-icv">
+    <section class="tv-card tv-card-fontes">
       <div class="tv-card-head">
-        <span class="tv-tag">ICV</span>
-        <h2>Cumprimento de Viagens</h2>
+        <span class="tv-tag">FONTES</span>
+        <h2>Comparação de Fontes</h2>
       </div>
       <div class="tv-hero-row">
-        <div class="tv-hero" id="icvHeroValor">--%</div>
+        <div class="tv-hero" id="fontesHeroValor">--</div>
         <div class="tv-hero-side">
-          <div class="tv-hero-label" id="icvHeroLabel">ICV · Média 2026</div>
-          <div class="tv-trend" id="icvTrend"></div>
+          <div class="tv-hero-label">Registros de telemetria · 2026</div>
+          <div class="tv-trend" id="fontesTrend">TCGL + Clever + FleetBus</div>
         </div>
       </div>
       <div class="tv-mes-row">
         <div class="tv-mes-info">
           <span class="tv-mes-tag">Mês a mês</span>
-          <span class="tv-mes-label" id="icvMesLabel">--</span>
+          <span class="tv-mes-label" id="fontesMesLabel">--</span>
         </div>
-        <div class="tv-mes-value" id="icvMesValor">--%</div>
-        <div class="tv-mes-progress"><div class="tv-mes-progress-bar" id="icvMesBarra"></div></div>
+        <div class="tv-mes-value" id="fontesMesValor">--</div>
+        <div class="tv-mes-progress"><div class="tv-mes-progress-bar" id="fontesMesBarra"></div></div>
       </div>
       <div class="tv-chips">
-        <div class="tv-chip">
-          <span class="tv-chip-label">Programadas</span>
-          <span class="tv-chip-value" id="icvChipProg">--</span>
+        <div class="tv-chip tv-chip-tcgl">
+          <span class="tv-chip-label">TCGL</span>
+          <span class="tv-chip-value" id="fontesChipTcgl">--</span>
         </div>
-        <div class="tv-chip tv-chip-green">
-          <span class="tv-chip-label">Realizadas</span>
-          <span class="tv-chip-value" id="icvChipReal">--</span>
+        <div class="tv-chip tv-chip-clever">
+          <span class="tv-chip-label">Clever</span>
+          <span class="tv-chip-value" id="fontesChipClever">--</span>
         </div>
-        <div class="tv-chip tv-chip-red">
-          <span class="tv-chip-label">Suprimidas</span>
-          <span class="tv-chip-value" id="icvChipSupr">--</span>
+        <div class="tv-chip tv-chip-fleetbus">
+          <span class="tv-chip-label">FleetBus</span>
+          <span class="tv-chip-value" id="fontesChipFleetbus">--</span>
         </div>
       </div>
       <div class="tv-chart-wrap">
         <div class="tv-chart-head">
-          <div class="tv-chart-title">Últimos 12 meses</div>
+          <div class="tv-chart-title">Registros por mês</div>
           <div class="tv-legend">
-            <span class="tv-legend-item"><span class="tv-legend-dot" style="background:var(--icv)"></span>ICV mensal</span>
-            <span class="tv-legend-item"><span class="tv-legend-dot-dash"></span>Média móvel 3m</span>
+            <span class="tv-legend-item"><span class="tv-legend-dot" style="background:var(--tcgl)"></span>TCGL</span>
+            <span class="tv-legend-item"><span class="tv-legend-dot" style="background:var(--clever)"></span>Clever</span>
+            <span class="tv-legend-item"><span class="tv-legend-dot" style="background:var(--fleetbus)"></span>FleetBus</span>
           </div>
         </div>
-        <canvas id="icvChart"></canvas>
+        <canvas id="fontesChart"></canvas>
       </div>
     </section>
   </main>
@@ -437,11 +431,11 @@
 </div>
 
 <script>
-const IPV_URL = "../assets/data/pontualidade/padrao.json";
-const ICV_URL = "../assets/data/icv/dados.json";
-const IPV_META = 93;
-const REFRESH_MS = 5 * 60 * 1000;   // recarrega os dados a cada 5 min (sem piscar a tela)
-const CLIMA_REFRESH_MS = 15 * 60 * 1000; // previsão do tempo muda devagar, 15 min basta
+const TELEMETRIA_URL = "../assets/data/telemetria/dados.json";
+const KM_DIARIO_MAX = 1000; // mesmo limite de sanidade usado em Dados de Telemetria
+const REFRESH_MS = 15 * 60 * 1000;   // arquivo é grande (~2MB comprimido); recarrega a cada 15 min
+const CLIMA_REFRESH_MS = 15 * 60 * 1000;
+const ANO_FIXO = "2026";
 
 // Londrina/PR (sede TCGL)
 const CLIMA_LAT = -23.3045, CLIMA_LON = -51.1696;
@@ -468,18 +462,16 @@ const CLIMA_LABEL = {
 
 const MESES_ABREV = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 const MESES_COMPLETOS = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
-const ANO_FIXO = "2026"; // média anual fixa exibida no topo dos cards
 
-let ipvChartRef = null;
-let icvChartRef = null;
-let ipvMesesData = [];   // [{ chave, ag }] últimos 12 meses do IPV, para o widget "mês a mês"
-let icvMesesData = [];   // idem para o ICV
+let kmChartRef = null;
+let fontesChartRef = null;
+let kmMesesData = [];
 let mesRotacaoIndex = -1;
 let mesRotacaoTimer = null;
-const MES_ROTACAO_MS = 30 * 1000; // troca de mês a cada 30s
+const MES_ROTACAO_MS = 30 * 1000;
 
-function formatPct(v, dec = 1) {
-  return Number(v).toLocaleString("pt-BR", { minimumFractionDigits: dec, maximumFractionDigits: dec }) + "%";
+function formatKm(v) {
+  return Math.round(Number(v) || 0).toLocaleString("pt-BR") + " km";
 }
 function formatInt(v) {
   return Math.round(Number(v) || 0).toLocaleString("pt-BR");
@@ -494,6 +486,28 @@ function labelMesCompleto(chaveAnoMes) {
   return nome.charAt(0).toUpperCase() + nome.slice(1) + "/" + y;
 }
 
+function parseNumero(val) {
+  const s = String(val ?? "").trim();
+  if (!s) return NaN;
+  const hasComma = s.includes(",");
+  const hasDot = s.includes(".");
+  let normalized = s;
+  if (hasComma && hasDot) {
+    if (s.lastIndexOf(",") > s.lastIndexOf(".")) {
+      normalized = s.replace(/\./g, "").replace(",", ".");
+    } else {
+      normalized = s.replace(/,/g, "");
+    }
+  } else if (hasComma) {
+    normalized = s.replace(/\./g, "").replace(",", ".");
+  } else if (hasDot) {
+    const parts = s.split(".");
+    normalized = parts.length > 2 ? parts.join("") : s;
+  }
+  const n = Number(normalized);
+  return Number.isNaN(n) ? NaN : n;
+}
+
 async function carregarJson(url) {
   const sep = url.includes("?") ? "&" : "?";
   const res = await fetch(`${url}${sep}t=${Date.now()}`, { cache: "no-store" });
@@ -501,49 +515,7 @@ async function carregarJson(url) {
   return res.json();
 }
 
-/** Agrupa os registros diários por mês (chave "AAAA-MM"), em ordem cronológica. */
-function agruparPorMes(rows, campoData) {
-  const grupos = new Map();
-  (rows || []).forEach((r) => {
-    const iso = String(r?.[campoData] || "").slice(0, 10);
-    if (!iso) return;
-    const chave = iso.slice(0, 7);
-    if (!grupos.has(chave)) grupos.set(chave, []);
-    grupos.get(chave).push(r);
-  });
-  return [...grupos.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-}
-
-/** Mesmo critério do painel de Pontualidade: média simples dos valores diários do mês. */
-function agregarIpvMes(linhas) {
-  const n = linhas.length || 1;
-  const soma = linhas.reduce((acc, r) => {
-    acc.no_horario += Number(r.no_horario) || 0;
-    acc.adiantado += Number(r.adiantado) || 0;
-    acc.atrasado += Number(r.atrasado) || 0;
-    return acc;
-  }, { no_horario: 0, adiantado: 0, atrasado: 0 });
-  return { no_horario: soma.no_horario / n, adiantado: soma.adiantado / n, atrasado: soma.atrasado / n };
-}
-
-/** Mesmo critério do painel de ICV: soma viagens/programadas do mês, icv = realizadas/programadas. */
-function agregarIcvMes(linhas) {
-  const soma = linhas.reduce((acc, r) => {
-    acc.viag_prog += Number(r.viag_prog) || 0;
-    acc.viagens += Number(r.viagens) || 0;
-    acc.supressao += Number(r.supressao) || 0;
-    return acc;
-  }, { viag_prog: 0, viagens: 0, supressao: 0 });
-  soma.icv = soma.viag_prog > 0 ? soma.viagens / soma.viag_prog : 0;
-  return soma;
-}
-
-/** Filtra os registros diários pelo ano (string "AAAA"). */
-function filtrarPorAno(rows, campoData, ano) {
-  return (rows || []).filter((r) => String(r?.[campoData] || "").slice(0, 4) === String(ano));
-}
-
-/** Média móvel de N meses (janela retroativa; usa menos pontos no início da série). */
+/** Média móvel de N meses (janela retroativa). */
 function mediaMovel(valores, janela) {
   return (valores || []).map((v, i, arr) => {
     const inicio = Math.max(0, i - janela + 1);
@@ -553,32 +525,77 @@ function mediaMovel(valores, janela) {
   });
 }
 
-function renderTendencia(elId, atual, anterior, sufixo) {
-  const el = document.getElementById(elId);
-  if (!el) return;
-  if (anterior == null || Number.isNaN(anterior)) { el.innerHTML = ""; return; }
-  const diff = atual - anterior;
-  if (Math.abs(diff) < 0.05) {
-    el.innerHTML = `<span class="tv-trend-flat">▬ estável vs mês anterior</span>`;
-    return;
+const FONTES = ["tcgl", "clever", "fleetbus"];
+
+/** Agrupa os registros de telemetria por mês e por fonte (tcgl/clever/fleetbus). */
+function processarTelemetria(dados) {
+  const porMes = new Map();
+  function bucket(chave, fonte) {
+    if (!porMes.has(chave)) {
+      const obj = {};
+      FONTES.forEach((f) => { obj[f] = { km: 0, registros: 0, veiculos: new Set(), dias: new Set() }; });
+      porMes.set(chave, obj);
+    }
+    return porMes.get(chave)[fonte];
   }
-  const cls = diff > 0 ? "tv-trend-up" : "tv-trend-down";
-  const seta = diff > 0 ? "▲" : "▼";
-  el.innerHTML = `<span class="${cls}">${seta} ${Math.abs(diff).toFixed(1)}${sufixo} vs mês anterior</span>`;
+  (dados || []).forEach((r) => {
+    const fonte = String(r?.fonte || "").toLowerCase();
+    if (!FONTES.includes(fonte)) return;
+    const iso = String(r?.data_iso || "").slice(0, 10);
+    if (!iso) return;
+    const chave = iso.slice(0, 7);
+    const b = bucket(chave, fonte);
+    b.registros++;
+    const veic = String(r?.veiculo || r?.payload?.veiculo_norm || "").trim();
+    if (veic) b.veiculos.add(veic);
+    b.dias.add(iso);
+    const km = parseNumero(r?.payload?.["Km Percorrido"]);
+    if (Number.isFinite(km) && km > 0 && km <= KM_DIARIO_MAX) b.km += km;
+  });
+  return [...porMes.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 }
 
-/** Variante para comparar a média fixa do ano contra a meta (em vez do mês anterior). */
-function renderTendenciaMeta(elId, atual, meta) {
+function reiniciarBarraProgresso(elId) {
   const el = document.getElementById(elId);
   if (!el) return;
-  const diff = atual - meta;
-  if (Math.abs(diff) < 0.05) {
-    el.innerHTML = `<span class="tv-trend-flat">▬ na meta</span>`;
-    return;
+  el.classList.remove("tv-mes-anim");
+  void el.offsetWidth;
+  el.classList.add("tv-mes-anim");
+}
+
+function atualizarMesAtual() {
+  if (!kmMesesData.length) return;
+  if (mesRotacaoIndex < 0 || mesRotacaoIndex >= kmMesesData.length) {
+    mesRotacaoIndex = kmMesesData.length - 1;
   }
-  const cls = diff > 0 ? "tv-trend-up" : "tv-trend-down";
-  const seta = diff > 0 ? "▲" : "▼";
-  el.innerHTML = `<span class="${cls}">${seta} ${Math.abs(diff).toFixed(1)} p.p. vs meta ${meta}%</span>`;
+  const { chave, tcgl, clever, fleetbus } = kmMesesData[mesRotacaoIndex % kmMesesData.length];
+
+  document.getElementById("kmMesLabel").textContent = labelMesCompleto(chave);
+  document.getElementById("kmMesValor").textContent = formatKm(tcgl.km);
+  document.getElementById("kmChipMedia").textContent = formatKm(tcgl.km / (tcgl.dias.size || 1));
+  document.getElementById("kmChipVeiculos").textContent = formatInt(tcgl.veiculos.size);
+  document.getElementById("kmChipDias").textContent = formatInt(tcgl.dias.size);
+
+  const totalMes = tcgl.registros + clever.registros + fleetbus.registros;
+  document.getElementById("fontesMesLabel").textContent = labelMesCompleto(chave);
+  document.getElementById("fontesMesValor").textContent = formatInt(totalMes) + " registros";
+  document.getElementById("fontesChipTcgl").textContent = formatInt(tcgl.registros);
+  document.getElementById("fontesChipClever").textContent = formatInt(clever.registros);
+  document.getElementById("fontesChipFleetbus").textContent = formatInt(fleetbus.registros);
+
+  reiniciarBarraProgresso("kmMesBarra");
+  reiniciarBarraProgresso("fontesMesBarra");
+}
+
+function avancarMes() {
+  if (!kmMesesData.length) return;
+  mesRotacaoIndex = (mesRotacaoIndex + 1) % kmMesesData.length;
+  atualizarMesAtual();
+}
+
+function iniciarRotacaoMeses() {
+  if (mesRotacaoTimer) return;
+  mesRotacaoTimer = setInterval(avancarMes, MES_ROTACAO_MS);
 }
 
 function chartOptionsTv(extra) {
@@ -593,8 +610,8 @@ function chartOptionsTv(extra) {
         grid: { display: false }
       },
       y: {
-        min: 0, max: 100,
-        ticks: { color: "rgba(226,234,250,.55)", font: { size: 12 }, callback: (v) => v + "%", stepSize: 25 },
+        beginAtZero: true,
+        ticks: { color: "rgba(226,234,250,.55)", font: { size: 11 } },
         grid: { color: "rgba(255,255,255,.08)" }
       }
     }
@@ -602,151 +619,70 @@ function chartOptionsTv(extra) {
   return Object.assign(base, extra || {});
 }
 
-function renderIpv(rows) {
-  const meses = agruparPorMes(rows, "data");
-  if (!meses.length) return;
-  const ultimos12 = meses.slice(-12);
+function renderPainelKm(porMes) {
+  if (!porMes.length) return;
+  const ultimos12 = porMes.slice(-12);
 
-  // Hero fixo = média do ano (todas as linhas de 2026, mesmo critério de agregação mensal)
-  const rowsAno = filtrarPorAno(rows, "data", ANO_FIXO);
-  const agAno = rowsAno.length ? agregarIpvMes(rowsAno) : null;
-  const noHorarioAno = agAno ? agAno.no_horario * 100 : null;
+  // Hero fixo = total percorrido em 2026 (fonte oficial: TCGL)
+  const mesesAno = porMes.filter(([chave]) => chave.startsWith(ANO_FIXO));
+  const totalAnoKm = mesesAno.reduce((acc, [, dados]) => acc + dados.tcgl.km, 0);
+  const veiculosAno = new Set();
+  mesesAno.forEach(([, dados]) => dados.tcgl.veiculos.forEach((v) => veiculosAno.add(v)));
+  document.getElementById("kmHeroValor").textContent = formatKm(totalAnoKm);
+  document.getElementById("kmFrotaAtiva").textContent = formatInt(veiculosAno.size);
 
-  const heroEl = document.getElementById("ipvHeroValor");
-  heroEl.textContent = noHorarioAno != null ? formatPct(noHorarioAno) : "—";
-  heroEl.className = "tv-hero tv-hero-ok"; // No horário é sempre verde, conforme padrão de cores do painel
-  document.getElementById("ipvHeroLabel").textContent = "No horário · Média " + ANO_FIXO;
-  if (noHorarioAno != null) renderTendenciaMeta("ipvTrend", noHorarioAno, IPV_META);
+  const registrosAno2026 = mesesAno.reduce(
+    (acc, [, d]) => acc + d.tcgl.registros + d.clever.registros + d.fleetbus.registros, 0
+  );
+  document.getElementById("fontesHeroValor").textContent = formatInt(registrosAno2026);
 
-  // Guarda os 12 meses exibidos para o widget "mês a mês" (troca automática a cada 30s)
-  ipvMesesData = ultimos12.map(([chave, linhas]) => ({ chave, ag: agregarIpvMes(linhas) }));
+  kmMesesData = ultimos12.map(([chave, dados]) => ({ chave, tcgl: dados.tcgl, clever: dados.clever, fleetbus: dados.fleetbus }));
 
   const labels = ultimos12.map(([chave]) => labelMes(chave));
 
-  // Série completa (todo o histórico) para calcular a média móvel com contexto anterior à janela exibida
-  const todosNoHorario = meses.map(([, linhas]) => +(agregarIpvMes(linhas).no_horario * 100).toFixed(2));
-  const todosAtrasado = meses.map(([, linhas]) => +(agregarIpvMes(linhas).atrasado * 100).toFixed(2));
-  const todosAdiantado = meses.map(([, linhas]) => +(agregarIpvMes(linhas).adiantado * 100).toFixed(2));
-  const todasMediaMovel = mediaMovel(todosNoHorario, 3);
-  const offset = meses.length - ultimos12.length;
+  // ----- Gráfico 1: Km TCGL mês a mês + média móvel -----
+  const todosKmTcgl = porMes.map(([, d]) => Math.round(d.tcgl.km));
+  const todaMediaMovel = mediaMovel(todosKmTcgl, 3);
+  const offset = porMes.length - ultimos12.length;
+  const serieKm = todosKmTcgl.slice(offset);
+  const serieMediaMovel = todaMediaMovel.slice(offset);
 
-  const serieNoHorario = todosNoHorario.slice(offset);
-  const serieAtrasado = todosAtrasado.slice(offset);
-  const serieAdiantado = todosAdiantado.slice(offset);
-  const serieMediaMovel = todasMediaMovel.slice(offset);
-  const serieMeta = ultimos12.map(() => IPV_META);
-
-  if (ipvChartRef) ipvChartRef.destroy();
-  const ctx = document.getElementById("ipvChart").getContext("2d");
-  const gradiente = ctx.createLinearGradient(0, 0, 0, 260);
-  gradiente.addColorStop(0, "rgba(52,211,153,.36)");
-  gradiente.addColorStop(1, "rgba(52,211,153,0)");
-  ipvChartRef = new Chart(ctx, {
+  if (kmChartRef) kmChartRef.destroy();
+  const ctxKm = document.getElementById("kmChart").getContext("2d");
+  const gradienteKm = ctxKm.createLinearGradient(0, 0, 0, 260);
+  gradienteKm.addColorStop(0, "rgba(245,158,11,.36)");
+  gradienteKm.addColorStop(1, "rgba(245,158,11,0)");
+  kmChartRef = new Chart(ctxKm, {
     type: "line",
     data: {
       labels,
       datasets: [
-        { label: "No horário", data: serieNoHorario, borderColor: "#34d399", backgroundColor: gradiente, fill: true, tension: 0.35, borderWidth: 3, pointRadius: 0 },
-        { label: "Atrasado", data: serieAtrasado, borderColor: "#fbbf24", backgroundColor: "transparent", fill: false, tension: 0.35, borderWidth: 2, pointRadius: 0 },
-        { label: "Adiantado", data: serieAdiantado, borderColor: "#fb7185", backgroundColor: "transparent", fill: false, tension: 0.35, borderWidth: 2, pointRadius: 0 },
-        { label: "Média móvel 3m", data: serieMediaMovel, borderColor: "rgba(226,234,250,.6)", backgroundColor: "transparent", borderDash: [3, 4], fill: false, tension: 0.35, borderWidth: 2, pointRadius: 0 },
-        { label: "Meta", data: serieMeta, borderColor: "#3b82f6", backgroundColor: "transparent", borderDash: [6, 6], borderWidth: 2, pointRadius: 0, fill: false }
-      ]
-    },
-    options: chartOptionsTv()
-  });
-}
-
-function renderIcv(rows) {
-  const meses = agruparPorMes(rows, "date");
-  if (!meses.length) return;
-  const ultimos12 = meses.slice(-12);
-
-  // Hero fixo = média do ano (todas as linhas de 2026)
-  const rowsAno = filtrarPorAno(rows, "date", ANO_FIXO);
-  const agAno = rowsAno.length ? agregarIcvMes(rowsAno) : null;
-  const pctAno = agAno ? agAno.icv * 100 : null;
-
-  document.getElementById("icvHeroValor").textContent = pctAno != null ? formatPct(pctAno) : "—";
-  document.getElementById("icvHeroLabel").textContent =
-    (agAno ? formatInt(agAno.viagens) + " de " + formatInt(agAno.viag_prog) + " viagens · " : "") + "Média " + ANO_FIXO;
-
-  // Guarda os 12 meses exibidos para o widget "mês a mês" (troca automática a cada 30s)
-  icvMesesData = ultimos12.map(([chave, linhas]) => ({ chave, ag: agregarIcvMes(linhas) }));
-
-  const labels = ultimos12.map(([chave]) => labelMes(chave));
-
-  const todosIcv = meses.map(([, linhas]) => +(agregarIcvMes(linhas).icv * 100).toFixed(2));
-  const todasMediaMovel = mediaMovel(todosIcv, 3);
-  const offset = meses.length - ultimos12.length;
-
-  const serieIcv = todosIcv.slice(offset);
-  const serieMediaMovel = todasMediaMovel.slice(offset);
-
-  if (icvChartRef) icvChartRef.destroy();
-  const ctx = document.getElementById("icvChart").getContext("2d");
-  const gradient = ctx.createLinearGradient(0, 0, 0, 260);
-  gradient.addColorStop(0, "rgba(45,212,191,.38)");
-  gradient.addColorStop(1, "rgba(45,212,191,0)");
-  icvChartRef = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels,
-      datasets: [
-        { label: "ICV", data: serieIcv, borderColor: "#2dd4bf", backgroundColor: gradient, fill: true, tension: 0.35, borderWidth: 3, pointRadius: 0 },
+        { label: "Km TCGL", data: serieKm, borderColor: "#f59e0b", backgroundColor: gradienteKm, fill: true, tension: 0.35, borderWidth: 3, pointRadius: 0 },
         { label: "Média móvel 3m", data: serieMediaMovel, borderColor: "rgba(226,234,250,.6)", backgroundColor: "transparent", borderDash: [3, 4], fill: false, tension: 0.35, borderWidth: 2, pointRadius: 0 }
       ]
     },
     options: chartOptionsTv()
   });
-}
 
-/** Reinicia a barrinha de progresso de 30s (retrigger da animação CSS). */
-function reiniciarBarraProgresso(elId) {
-  const el = document.getElementById(elId);
-  if (!el) return;
-  el.classList.remove("tv-mes-anim");
-  void el.offsetWidth; // força reflow para reiniciar a animação
-  el.classList.add("tv-mes-anim");
-}
+  // ----- Gráfico 2: registros por fonte, mês a mês -----
+  const serieTcgl = ultimos12.map(([, d]) => d.tcgl.registros);
+  const serieClever = ultimos12.map(([, d]) => d.clever.registros);
+  const serieFleetbus = ultimos12.map(([, d]) => d.fleetbus.registros);
 
-/** Atualiza o widget "mês a mês" (label + valor + chips) dos dois cards para o mês selecionado. */
-function atualizarMesAtual() {
-  if (ipvMesesData.length) {
-    if (mesRotacaoIndex < 0 || mesRotacaoIndex >= ipvMesesData.length) {
-      mesRotacaoIndex = ipvMesesData.length - 1; // começa pelo mês mais recente
-    }
-    const { chave, ag } = ipvMesesData[mesRotacaoIndex % ipvMesesData.length];
-    const noHorario = ag.no_horario * 100;
-    document.getElementById("ipvMesLabel").textContent = labelMesCompleto(chave);
-    document.getElementById("ipvMesValor").textContent = formatPct(noHorario);
-    document.getElementById("ipvChipNoHorario").textContent = formatPct(noHorario);
-    document.getElementById("ipvChipAtrasado").textContent = formatPct(ag.atrasado * 100);
-    document.getElementById("ipvChipAdiantado").textContent = formatPct(ag.adiantado * 100);
-  }
-  if (icvMesesData.length) {
-    const idx = (mesRotacaoIndex >= 0 ? mesRotacaoIndex : icvMesesData.length - 1) % icvMesesData.length;
-    const { chave, ag } = icvMesesData[idx];
-    document.getElementById("icvMesLabel").textContent = labelMesCompleto(chave);
-    document.getElementById("icvMesValor").textContent = formatPct(ag.icv * 100);
-    document.getElementById("icvChipProg").textContent = formatInt(ag.viag_prog);
-    document.getElementById("icvChipReal").textContent = formatInt(ag.viagens);
-    document.getElementById("icvChipSupr").textContent = formatInt(ag.supressao);
-  }
-  reiniciarBarraProgresso("ipvMesBarra");
-  reiniciarBarraProgresso("icvMesBarra");
-}
-
-/** Avança para o próximo mês do carrossel (chamado a cada 30s). */
-function avancarMes() {
-  const total = Math.max(ipvMesesData.length, icvMesesData.length) || 1;
-  mesRotacaoIndex = (mesRotacaoIndex + 1) % total;
-  atualizarMesAtual();
-}
-
-function iniciarRotacaoMeses() {
-  if (mesRotacaoTimer) return;
-  mesRotacaoTimer = setInterval(avancarMes, MES_ROTACAO_MS);
+  if (fontesChartRef) fontesChartRef.destroy();
+  const ctxFontes = document.getElementById("fontesChart").getContext("2d");
+  fontesChartRef = new Chart(ctxFontes, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        { label: "TCGL", data: serieTcgl, borderColor: "#f59e0b", backgroundColor: "transparent", fill: false, tension: 0.35, borderWidth: 3, pointRadius: 0 },
+        { label: "Clever", data: serieClever, borderColor: "#a78bfa", backgroundColor: "transparent", fill: false, tension: 0.35, borderWidth: 2, pointRadius: 0 },
+        { label: "FleetBus", data: serieFleetbus, borderColor: "#38bdf8", backgroundColor: "transparent", fill: false, tension: 0.35, borderWidth: 2, pointRadius: 0 }
+      ]
+    },
+    options: chartOptionsTv()
+  });
 }
 
 function atualizarRelogio() {
@@ -782,21 +718,20 @@ async function carregarClima() {
 
 async function carregarPainel() {
   try {
-    const [ipvPayload, icvPayload] = await Promise.all([carregarJson(IPV_URL), carregarJson(ICV_URL)]);
-    renderIpv(ipvPayload.dados || []);
-    renderIcv(icvPayload.dados || []);
+    const payload = await carregarJson(TELEMETRIA_URL);
+    const porMes = processarTelemetria(payload.dados || []);
+    renderPainelKm(porMes);
     atualizarMesAtual();
     iniciarRotacaoMeses();
-    const maisRecente = [ipvPayload.atualizadoEm, icvPayload.atualizadoEm].filter(Boolean).sort().pop();
-    document.getElementById("tvAtualizado").textContent = maisRecente
-      ? "Dados atualizados em " + new Date(maisRecente).toLocaleString("pt-BR")
+    document.getElementById("tvAtualizado").textContent = payload.atualizadoEm
+      ? "Dados atualizados em " + new Date(payload.atualizadoEm).toLocaleString("pt-BR")
       : "Dados carregados";
     document.getElementById("tvLoading").style.display = "none";
   } catch (err) {
     document.getElementById("tvAtualizado").textContent = "Falha ao carregar dados: " + (err.message || err);
     document.getElementById("tvLoading").innerHTML =
-      '<div style="color:var(--red);font-size:20px;font-weight:800;">Falha ao carregar indicadores</div>' +
-      '<div style="color:var(--muted);font-size:14px;">' + (err.message || err) + ' · tentando de novo em 5 min</div>';
+      '<div style="color:var(--red);font-size:20px;font-weight:800;">Falha ao carregar quilometragem</div>' +
+      '<div style="color:var(--muted);font-size:14px;">' + (err.message || err) + ' · tentando de novo em 15 min</div>';
   }
 }
 
@@ -810,7 +745,7 @@ carregarClima();
 setInterval(carregarClima, CLIMA_REFRESH_MS);
 
 // Apresentação: alterna para o próximo painel a cada 2 minutos (loop entre as páginas do TV)
-const PROXIMA_PAGINA = "painel-tv-km.html";
+const PROXIMA_PAGINA = "painel-tv-indicadores.html";
 const ROTACAO_PAGINA_MS = 2 * 60 * 1000;
 setTimeout(() => { window.location.href = PROXIMA_PAGINA; }, ROTACAO_PAGINA_MS);
 </script>
