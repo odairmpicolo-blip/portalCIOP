@@ -1622,6 +1622,24 @@ function rotuloFonteDeColuna(col) {
   return "Total";
 }
 
+/** Km válido: número finito, maior que zero (0 e "-"/vazio não contam) e dentro do limite diário plausível. */
+function kmValido(v) {
+  const km = parseNumero(v);
+  return Number.isFinite(km) && km > 0 && km <= KM_DIARIO_MAX;
+}
+
+/**
+ * Quando há mais de uma fonte de Km na tela ao mesmo tempo (modo comparação: TCGL, Clever,
+ * FleetBus), os cards de KPI só devem comparar o mesmo veículo/dia nas fontes exibidas —
+ * senão uma fonte com mais registros "vence" só porque tem mais dias preenchidos, mesmo que
+ * não sejam os mesmos dias da outra. Com 1 única coluna de Km em tela, não há o que comparar
+ * e a linha é sempre considerada.
+ */
+function linhaValidaParaComparacaoKm(row, kmCols) {
+  if (!kmCols || kmCols.length < 2) return true;
+  return kmCols.every((col) => kmValido(row[col]));
+}
+
 function calcularKmPorColuna(rows, cols) {
   const kmCols = (cols || []).filter(ehColunaKm);
   return kmCols.map((col) => {
@@ -1629,8 +1647,9 @@ function calcularKmPorColuna(rows, cols) {
     let dias = 0;
     (rows || []).forEach((row) => {
       if (row.__semDados) return;
+      if (!linhaValidaParaComparacaoKm(row, kmCols)) return;
       const km = parseNumero(row[col]);
-      if (!Number.isFinite(km) || km <= 0 || km > KM_DIARIO_MAX) return;
+      if (!kmValido(km)) return;
       soma += km;
       dias++;
     });
@@ -1693,13 +1712,14 @@ function agruparKmPorData(rows, kmCols) {
   const porData = new Map();
   (rows || []).forEach((row) => {
     if (row.__semDados) return;
+    if (!linhaValidaParaComparacaoKm(row, kmCols)) return;
     const dataIso = row.data_iso || (dadosBrutos?.colData ? parseDataCsv(row[dadosBrutos.colData]) : "");
     if (!dataIso) return;
     if (!porData.has(dataIso)) porData.set(dataIso, {});
     const bucket = porData.get(dataIso);
     kmCols.forEach((col) => {
       const km = parseNumero(row[col]);
-      if (!Number.isFinite(km) || km <= 0 || km > KM_DIARIO_MAX) return;
+      if (!kmValido(km)) return;
       bucket[col] = (bucket[col] || 0) + km;
     });
   });
