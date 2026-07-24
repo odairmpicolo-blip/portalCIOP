@@ -968,7 +968,10 @@ function showEmpty(canvasId){
     msg.textContent = "Sem dados para o filtro selecionado";
     wrap.appendChild(msg);
   }
-  msg.hidden = false;
+  // style.display (inline) em vez do atributo hidden: .chart-empty tem "display:flex" no
+  // CSS, que tem prioridade sobre o [hidden] do navegador — com hidden=true a mensagem
+  // continuava visível por cima do gráfico mesmo depois de voltar a ter dados.
+  msg.style.display = "flex";
 }
 
 /** Restaura o canvas (e esconde a mensagem "sem dados") antes de desenhar um gráfico. */
@@ -977,7 +980,7 @@ function hideEmpty(canvasId){
   if (!canvas) return;
   canvas.style.display = "";
   const msg = canvas.closest(".chart-wrap")?.querySelector(".chart-empty");
-  if (msg) msg.hidden = true;
+  if (msg) msg.style.display = "none";
 }
 
 function renderBarRanking(key, rows, getLabel, limit, horizontal){
