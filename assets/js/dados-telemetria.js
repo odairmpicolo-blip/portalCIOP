@@ -504,6 +504,15 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
   });
 
   const KM_DIARIO_MAX = 1000;
+  // "Atenção" (veículos com problema) deve refletir o período/veículo filtrados na tela.
+  // Antes, essa lista era sempre calculada em cima de snapshotRaw.dados sem filtro nenhum
+  // (todo o histórico) — mudar a data ou o veículo no filtro não alterava quem aparecia
+  // como "com problema". Aplicamos aqui o mesmo filtro de data usado no resto da página
+  // (e o de veículo, se houver um selecionado) antes de calcular tudo.
+  const veicFiltroAtencao = $("filtroVeiculo")?.value || "";
+  let registrosBase = filtrarRegistrosPorPeriodo(snapshotRaw?.dados || []);
+  if (veicFiltroAtencao) registrosBase = registrosBase.filter((d) => normVeiculo(d.veiculo) === veicFiltroAtencao);
+
   const kmPorFonte = (regs) => {
     const mapa = new Map();
     regs.forEach((reg) => {
@@ -518,9 +527,9 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
     return mapa;
   };
 
-  const cleverMap = kmPorFonte((snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "clever"));
-  const tcglMap = kmPorFonte((snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "tcgl"));
-  const fleetbusMap = kmPorFonte((snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "fleetbus"));
+  const cleverMap = kmPorFonte(registrosBase.filter((d) => inferirFonteRegistro(d) === "clever"));
+  const tcglMap = kmPorFonte(registrosBase.filter((d) => inferirFonteRegistro(d) === "tcgl"));
+  const fleetbusMap = kmPorFonte(registrosBase.filter((d) => inferirFonteRegistro(d) === "fleetbus"));
 
   const somaPar = (mapA, mapB) => {
     let somaA = 0, somaB = 0;
@@ -551,7 +560,7 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
     return atencaoMap.get(v);
   };
 
-  const cleverRaw = (snapshotRaw?.dados || []).filter((d) => inferirFonteRegistro(d) === "clever");
+  const cleverRaw = registrosBase.filter((d) => inferirFonteRegistro(d) === "clever");
 
   const todasDatasClever = new Set();
   const datasTcglPorVeiculo = new Map();
