@@ -238,7 +238,7 @@ select option{color:#101828}
 .card-note{margin:0;color:var(--muted);font-size:10.5px;font-weight:700}
 .chart-wrap{position:relative;height:260px}
 .chart-wrap.tall{height:320px}
-.chart-empty{padding:40px 10px;text-align:center;color:var(--muted);font-weight:700;font-size:12px}
+.chart-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:40px 10px;text-align:center;color:var(--muted);font-weight:700;font-size:12px}
 
 @media (max-width:1180px){
   .kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -871,6 +871,7 @@ function renderTendenciaMensal(rows){
     : "sem dados no período";
 
   if (!meses.length) { showEmpty("chartTendenciaMensal"); return; }
+  hideEmpty("chartTendenciaMensal");
 
   charts.tendenciaMensal = new Chart(canvas, {
     type: "bar",
@@ -897,8 +898,10 @@ function renderTendenciaMensal(rows){
 function renderDoughnut(id, rows, getLabel, limit, colorMap){
   destroyChart(id);
   const data = countBy(rows, getLabel, limit || 8);
-  const target = document.getElementById(canvasIdFor(id));
-  if (!data.length){ showEmpty(canvasIdFor(id)); return; }
+  const canvasId = canvasIdFor(id);
+  if (!data.length){ showEmpty(canvasId); return; }
+  hideEmpty(canvasId);
+  const target = document.getElementById(canvasId);
   const colors = colorMap
     ? data.map((d) => colorMap[d.label] || "#8e8e93")
     : PALETTE;
@@ -944,19 +947,46 @@ function canvasIdFor(key){
   return "chart" + key.charAt(0).toUpperCase() + key.slice(1);
 }
 
+/**
+ * Sem dados para o filtro atual: escondemos o <canvas> (display:none) e mostramos uma
+ * mensagem por cima. Importante: NÃO removemos o canvas do DOM (o código antigo fazia
+ * wrap.innerHTML = "...", que apagava o elemento <canvas>). Quando o filtro mudava de
+ * novo e aquele gráfico voltava a ter dados, document.getElementById(canvasId) retornava
+ * null (canvas já tinha sido destruído) e "new Chart(null, ...)" quebrava o dashboard
+ * inteiro com "null is not an object (evaluating 'o.canvas.id')".
+ */
 function showEmpty(canvasId){
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
+  canvas.style.display = "none";
   const wrap = canvas.closest(".chart-wrap");
-  if (wrap) wrap.innerHTML = '<div class="chart-empty">Sem dados para o filtro selecionado</div>';
+  if (!wrap) return;
+  let msg = wrap.querySelector(".chart-empty");
+  if (!msg) {
+    msg = document.createElement("div");
+    msg.className = "chart-empty";
+    msg.textContent = "Sem dados para o filtro selecionado";
+    wrap.appendChild(msg);
+  }
+  msg.hidden = false;
+}
+
+/** Restaura o canvas (e esconde a mensagem "sem dados") antes de desenhar um gráfico. */
+function hideEmpty(canvasId){
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  canvas.style.display = "";
+  const msg = canvas.closest(".chart-wrap")?.querySelector(".chart-empty");
+  if (msg) msg.hidden = true;
 }
 
 function renderBarRanking(key, rows, getLabel, limit, horizontal){
   destroyChart(key);
   const canvasId = canvasIdFor(key);
   const data = countBy(rows, getLabel, limit || 10).reverse();
-  const target = document.getElementById(canvasId);
   if (!data.length){ showEmpty(canvasId); return; }
+  hideEmpty(canvasId);
+  const target = document.getElementById(canvasId);
   charts[key] = new Chart(target, {
     type: "bar",
     data: {
