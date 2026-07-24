@@ -700,6 +700,20 @@ function dateToIso(value){
   return parts[2] + "-" + parts[1].padStart(2, "0") + "-" + parts[0].padStart(2, "0");
 }
 
+/**
+ * Data de "hoje" no fuso local (Brasil), não em UTC. new Date().toISOString() usa UTC —
+ * à noite (a partir de ~21h em horário de Brasília, UTC-3) já é o dia seguinte em UTC, então
+ * o KPI "Incidentes hoje" comparava com a data de amanhã e sempre batia 0 nesse horário,
+ * mesmo com incidentes reais criados hoje.
+ */
+function hojeIsoLocal(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + day;
+}
+
 function isRegistroVazio(row){
   if (row?.registroVazio === true) return true;
   return !String(row?.natureOfProblem || "").trim() && !String(row?.instructions || "").trim();
@@ -1018,8 +1032,12 @@ function renderBarRanking(key, rows, getLabel, limit, horizontal){
 
 function renderKpis(rows){
   const statsRows = rows.filter((row) => !isRegistroVazio(row));
-  const hojeIso = new Date().toISOString().slice(0, 10);
-  const hojeCount = statsRows.filter((row) => dateToIso(row.data) === hojeIso).length;
+  const hojeIso = hojeIsoLocal();
+  // Conta em "rows" (todos os registros do dia), não em "statsRows": um incidente recém
+  // criado hoje normalmente ainda está "vazio" (sem natureOfProblem/instructions
+  // preenchidos pelo analista) e seria descartado do statsRows, fazendo "Incidentes hoje"
+  // ficar bem menor que a realidade — mesmo critério usado pelo KPI "Total no período".
+  const hojeCount = rows.filter((row) => dateToIso(row.data) === hojeIso).length;
   const linhaTop = countBy(statsRows, (r) => r.linha, 1)[0] || { label: "-", total: 0 };
   const analistaTop = countBy(statsRows, (r) => r.criadoPor, 1)[0] || { label: "-", total: 0 };
   const agenteTop = countBy(statsRows, (r) => r.proprietario, 1)[0] || { label: "-", total: 0 };
