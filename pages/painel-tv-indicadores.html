@@ -23,6 +23,8 @@
     --amber:#fbbf24;
     --red:#fb7185;
     --orange:#ff8a3d;
+    --meta:#3b82f6;
+    --meta-glow:rgba(59,130,246,.45);
   }
   *{box-sizing:border-box;}
   html,body{
@@ -34,8 +36,21 @@
     color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
     overflow:hidden;
+    position:relative;
   }
+  body::before{
+    content:""; position:fixed; inset:-2px; pointer-events:none; z-index:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+    background-size:46px 46px;
+    -webkit-mask-image:radial-gradient(circle at 50% 0%, black, transparent 78%);
+    mask-image:radial-gradient(circle at 50% 0%, black, transparent 78%);
+    animation:tvGridDrift 70s linear infinite;
+  }
+  @keyframes tvGridDrift{ from{ background-position:0 0,0 0; } to{ background-position:460px 460px,460px 460px; } }
   .tv-wrap{
+    position:relative; z-index:1;
     width:100vw; height:100vh;
     display:flex; flex-direction:column;
     padding:clamp(14px,1.6vh,28px) clamp(20px,2.4vw,48px);
@@ -47,20 +62,31 @@
     display:flex; align-items:center; justify-content:space-between;
     flex:0 0 auto;
   }
-  .tv-brand{ display:flex; align-items:center; gap:14px; }
-  .tv-brand-mark{
-    font-weight:900; font-size:clamp(18px,1.6vw,26px); letter-spacing:.01em;
-    display:flex; align-items:baseline; gap:2px;
+  .tv-brand{ display:flex; align-items:center; gap:16px; }
+  .tv-logo{
+    height:clamp(40px,4.4vh,64px); width:auto; object-fit:contain;
+    filter:drop-shadow(0 0 16px rgba(56,189,248,.5)) drop-shadow(0 0 32px rgba(45,212,191,.25));
   }
-  .tv-brand-mark b{ color:var(--ipv); }
+  .tv-brand-text{
+    display:flex; flex-direction:column; gap:3px;
+    border-left:1px solid var(--panel-border); padding-left:16px;
+  }
+  .tv-brand-title{
+    font-weight:900; font-size:clamp(16px,1.5vw,24px); letter-spacing:.01em; color:var(--ink);
+  }
   .tv-brand-sub{
-    color:var(--muted); font-size:clamp(11px,.85vw,14px); font-weight:700;
-    text-transform:uppercase; letter-spacing:.14em; border-left:1px solid var(--panel-border);
-    padding-left:14px;
+    color:var(--muted); font-size:clamp(10px,.82vw,13px); font-weight:700;
+    text-transform:uppercase; letter-spacing:.13em;
   }
   .tv-header-right{
+    display:flex; align-items:center; gap:9px;
     font-size:clamp(11px,.9vw,14px); color:var(--muted-2); font-weight:700;
     text-transform:uppercase; letter-spacing:.1em;
+  }
+  .tv-live-dot{
+    width:8px; height:8px; border-radius:50%; flex:0 0 auto;
+    background:var(--green); box-shadow:0 0 10px var(--green);
+    animation:tvPulse 2.4s ease-in-out infinite;
   }
 
   /* ===== Grid principal ===== */
@@ -82,11 +108,19 @@
     content:""; position:absolute; inset:0; pointer-events:none; opacity:.55;
     background:radial-gradient(520px 260px at 100% 0%, var(--accent-glow,var(--ipv-glow)), transparent 70%);
   }
+  .tv-card::after{
+    content:""; position:absolute; top:0; left:0; right:0; height:3px; pointer-events:none;
+    background:linear-gradient(90deg, transparent, var(--accent), transparent);
+    background-size:200% 100%;
+    animation:tvShimmer 5s ease-in-out infinite;
+    opacity:.85;
+  }
+  @keyframes tvShimmer{ 0%{ background-position:220% 0; } 100%{ background-position:-220% 0; } }
   .tv-card-ipv{ --accent:var(--ipv); --accent-glow:var(--ipv-glow); }
   .tv-card-icv{ --accent:var(--icv); --accent-glow:var(--icv-glow); }
 
   .tv-card-head{
-    display:flex; align-items:center; gap:12px; flex:0 0 auto; position:relative; z-index:1;
+    display:flex; align-items:center; gap:12px; flex:0 0 auto; flex-wrap:wrap; position:relative; z-index:1;
   }
   .tv-tag{
     font-size:clamp(12px,1vw,16px); font-weight:900; letter-spacing:.08em;
@@ -97,11 +131,21 @@
     margin:0; font-size:clamp(15px,1.3vw,20px); font-weight:800; color:var(--ink);
     text-transform:uppercase; letter-spacing:.04em;
   }
-  .tv-meta-badge{
-    margin-left:auto; font-size:clamp(11px,.9vw,14px); font-weight:700;
+  .tv-badges{
+    margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;
+  }
+  .tv-badge{
+    display:flex; align-items:center; gap:5px;
+    font-size:clamp(10px,.85vw,13px); font-weight:700;
     color:var(--muted); border:1px solid var(--panel-border); border-radius:999px;
+    background:rgba(255,255,255,.03);
     padding:4px 12px; white-space:nowrap;
   }
+  .tv-badge b{ font-weight:900; color:var(--ink); }
+  .tv-badge-meta{
+    border-color:rgba(59,130,246,.5); background:rgba(59,130,246,.14); color:#bcd4fb;
+  }
+  .tv-badge-meta b{ color:#93c5fd; text-shadow:0 0 12px var(--meta-glow); }
 
   .tv-hero-row{
     display:flex; align-items:flex-end; gap:clamp(14px,1.6vw,26px);
@@ -111,7 +155,9 @@
     font-size:clamp(64px,7.6vw,140px); font-weight:900; line-height:.9;
     letter-spacing:-.02em; font-variant-numeric:tabular-nums;
     color:var(--accent); text-shadow:0 0 40px var(--accent-glow);
+    animation:tvHeroGlow 3.2s ease-in-out infinite;
   }
+  @keyframes tvHeroGlow{ 0%,100%{ filter:brightness(1); } 50%{ filter:brightness(1.1); } }
   .tv-hero-ok{ color:var(--green); text-shadow:0 0 40px rgba(52,211,153,.4); }
   .tv-hero-alert{ color:var(--red); text-shadow:0 0 40px rgba(251,113,133,.4); }
   .tv-hero-side{ display:flex; flex-direction:column; gap:6px; padding-bottom:clamp(6px,1vh,14px); }
@@ -145,11 +191,27 @@
 
   .tv-chart-wrap{
     flex:1 1 auto; min-height:0; margin-top:clamp(10px,1.6vh,18px); position:relative; z-index:1;
+    display:flex; flex-direction:column;
+  }
+  .tv-chart-head{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    flex-wrap:wrap; margin-bottom:6px; flex:0 0 auto;
   }
   .tv-chart-title{
     font-size:clamp(10px,.8vw,13px); color:var(--muted-2); font-weight:700;
-    text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px;
+    text-transform:uppercase; letter-spacing:.08em;
   }
+  .tv-legend{ display:flex; gap:14px; flex-wrap:wrap; }
+  .tv-legend-item{
+    display:flex; align-items:center; gap:6px;
+    font-size:clamp(9px,.72vw,12px); color:var(--muted-2); font-weight:700;
+    text-transform:uppercase; letter-spacing:.05em; white-space:nowrap;
+  }
+  .tv-legend-dot{ width:11px; height:3px; border-radius:2px; display:inline-block; flex:0 0 auto; }
+  .tv-legend-dot-dash{
+    width:14px; height:0; border-top:2px dashed rgba(226,234,250,.6);
+  }
+  .tv-chart-wrap canvas{ flex:1 1 auto; min-height:0; }
 
   /* ===== Footer ===== */
   .tv-footer{
@@ -219,10 +281,13 @@
 <div class="tv-wrap">
   <header class="tv-header">
     <div class="tv-brand">
-      <div class="tv-brand-mark">Portal<b>CIOP</b></div>
-      <div class="tv-brand-sub">TCGL · Indicadores Operacionais</div>
+      <img class="tv-logo" src="../assets/img/LOGO_TCGL-dark.png" alt="TCGL">
+      <div class="tv-brand-text">
+        <div class="tv-brand-title">Indicadores Operacionais</div>
+        <div class="tv-brand-sub">Transportes Coletivos Grande Londrina</div>
+      </div>
     </div>
-    <div class="tv-header-right">Indicadores mês a mês</div>
+    <div class="tv-header-right"><span class="tv-live-dot"></span>Painel ao vivo · mês a mês</div>
   </header>
 
   <main class="tv-grid">
@@ -230,7 +295,10 @@
       <div class="tv-card-head">
         <span class="tv-tag">IPV</span>
         <h2>Pontualidade</h2>
-        <span class="tv-meta-badge">Meta 93%</span>
+        <div class="tv-badges">
+          <span class="tv-badge">Média 2026 <b id="ipvMedia2026">--%</b></span>
+          <span class="tv-badge tv-badge-meta">Meta <b>93%</b></span>
+        </div>
       </div>
       <div class="tv-hero-row">
         <div class="tv-hero" id="ipvHeroValor">--%</div>
@@ -254,7 +322,13 @@
         </div>
       </div>
       <div class="tv-chart-wrap">
-        <div class="tv-chart-title">Mês a mês · últimos 12 meses</div>
+        <div class="tv-chart-head">
+          <div class="tv-chart-title">Mês a mês · últimos 12 meses</div>
+          <div class="tv-legend">
+            <span class="tv-legend-item"><span class="tv-legend-dot" style="background:var(--meta)"></span>Meta</span>
+            <span class="tv-legend-item"><span class="tv-legend-dot-dash"></span>Média móvel 3m</span>
+          </div>
+        </div>
         <canvas id="ipvChart"></canvas>
       </div>
     </section>
@@ -263,6 +337,9 @@
       <div class="tv-card-head">
         <span class="tv-tag">ICV</span>
         <h2>Cumprimento de Viagens</h2>
+        <div class="tv-badges">
+          <span class="tv-badge">Média 2026 <b id="icvMedia2026">--%</b></span>
+        </div>
       </div>
       <div class="tv-hero-row">
         <div class="tv-hero" id="icvHeroValor">--%</div>
@@ -286,7 +363,13 @@
         </div>
       </div>
       <div class="tv-chart-wrap">
-        <div class="tv-chart-title">Mês a mês · últimos 12 meses</div>
+        <div class="tv-chart-head">
+          <div class="tv-chart-title">Mês a mês · últimos 12 meses</div>
+          <div class="tv-legend">
+            <span class="tv-legend-item"><span class="tv-legend-dot" style="background:var(--icv)"></span>ICV mensal</span>
+            <span class="tv-legend-item"><span class="tv-legend-dot-dash"></span>Média móvel 3m</span>
+          </div>
+        </div>
         <canvas id="icvChart"></canvas>
       </div>
     </section>
@@ -343,6 +426,7 @@ const CLIMA_LABEL = {
 
 const MESES_ABREV = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 const MESES_COMPLETOS = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+const ANO_FIXO = "2026"; // média anual fixa exibida no topo dos cards
 
 let ipvChartRef = null;
 let icvChartRef = null;
@@ -407,6 +491,21 @@ function agregarIcvMes(linhas) {
   return soma;
 }
 
+/** Filtra os registros diários pelo ano (string "AAAA"). */
+function filtrarPorAno(rows, campoData, ano) {
+  return (rows || []).filter((r) => String(r?.[campoData] || "").slice(0, 4) === String(ano));
+}
+
+/** Média móvel de N meses (janela retroativa; usa menos pontos no início da série). */
+function mediaMovel(valores, janela) {
+  return (valores || []).map((v, i, arr) => {
+    const inicio = Math.max(0, i - janela + 1);
+    const fatia = arr.slice(inicio, i + 1);
+    const soma = fatia.reduce((a, b) => a + (Number(b) || 0), 0);
+    return +(soma / fatia.length).toFixed(2);
+  });
+}
+
 function renderTendencia(elId, atual, anterior, sufixo) {
   const el = document.getElementById(elId);
   if (!el) return;
@@ -464,22 +563,43 @@ function renderIpv(rows) {
   document.getElementById("ipvChipAdiantado").textContent = formatPct(adiantado);
   renderTendencia("ipvTrend", noHorario, agAnterior ? agAnterior.no_horario * 100 : null, " p.p.");
 
+  // Média fixa do ano (todas as linhas de 2026, mesmo critério de agregação mensal)
+  const rowsAno = filtrarPorAno(rows, "data", ANO_FIXO);
+  const badgeMedia = document.getElementById("ipvMedia2026");
+  if (badgeMedia) {
+    badgeMedia.textContent = rowsAno.length ? formatPct(agregarIpvMes(rowsAno).no_horario * 100) : "—";
+  }
+
   const labels = ultimos12.map(([chave]) => labelMes(chave));
-  const serieNoHorario = ultimos12.map(([, linhas]) => +(agregarIpvMes(linhas).no_horario * 100).toFixed(2));
+
+  // Série completa (todo o histórico) para calcular a média móvel com contexto anterior à janela exibida
+  const todosNoHorario = meses.map(([, linhas]) => +(agregarIpvMes(linhas).no_horario * 100).toFixed(2));
+  const todosAtrasado = meses.map(([, linhas]) => +(agregarIpvMes(linhas).atrasado * 100).toFixed(2));
+  const todosAdiantado = meses.map(([, linhas]) => +(agregarIpvMes(linhas).adiantado * 100).toFixed(2));
+  const todasMediaMovel = mediaMovel(todosNoHorario, 3);
+  const offset = meses.length - ultimos12.length;
+
+  const serieNoHorario = todosNoHorario.slice(offset);
+  const serieAtrasado = todosAtrasado.slice(offset);
+  const serieAdiantado = todosAdiantado.slice(offset);
+  const serieMediaMovel = todasMediaMovel.slice(offset);
   const serieMeta = ultimos12.map(() => IPV_META);
 
   if (ipvChartRef) ipvChartRef.destroy();
   const ctx = document.getElementById("ipvChart").getContext("2d");
-  const gradient = ctx.createLinearGradient(0, 0, 0, 260);
-  gradient.addColorStop(0, "rgba(56,189,248,.38)");
-  gradient.addColorStop(1, "rgba(56,189,248,0)");
+  const gradiente = ctx.createLinearGradient(0, 0, 0, 260);
+  gradiente.addColorStop(0, "rgba(52,211,153,.36)");
+  gradiente.addColorStop(1, "rgba(52,211,153,0)");
   ipvChartRef = new Chart(ctx, {
     type: "line",
     data: {
       labels,
       datasets: [
-        { label: "No horário", data: serieNoHorario, borderColor: "#38bdf8", backgroundColor: gradient, fill: true, tension: 0.35, borderWidth: 3, pointRadius: 0 },
-        { label: "Meta", data: serieMeta, borderColor: "rgba(255,255,255,.4)", borderDash: [6, 6], borderWidth: 2, pointRadius: 0, fill: false }
+        { label: "No horário", data: serieNoHorario, borderColor: "#34d399", backgroundColor: gradiente, fill: true, tension: 0.35, borderWidth: 3, pointRadius: 0 },
+        { label: "Atrasado", data: serieAtrasado, borderColor: "#fbbf24", backgroundColor: "transparent", fill: false, tension: 0.35, borderWidth: 2, pointRadius: 0 },
+        { label: "Adiantado", data: serieAdiantado, borderColor: "#fb7185", backgroundColor: "transparent", fill: false, tension: 0.35, borderWidth: 2, pointRadius: 0 },
+        { label: "Média móvel 3m", data: serieMediaMovel, borderColor: "rgba(226,234,250,.6)", backgroundColor: "transparent", borderDash: [3, 4], fill: false, tension: 0.35, borderWidth: 2, pointRadius: 0 },
+        { label: "Meta", data: serieMeta, borderColor: "#3b82f6", backgroundColor: "transparent", borderDash: [6, 6], borderWidth: 2, pointRadius: 0, fill: false }
       ]
     },
     options: chartOptionsTv()
@@ -504,8 +624,21 @@ function renderIcv(rows) {
   document.getElementById("icvChipSupr").textContent = formatInt(agAtual.supressao);
   renderTendencia("icvTrend", pct, agAnterior ? agAnterior.icv * 100 : null, " p.p.");
 
+  // Média fixa do ano (todas as linhas de 2026)
+  const rowsAno = filtrarPorAno(rows, "date", ANO_FIXO);
+  const badgeMedia = document.getElementById("icvMedia2026");
+  if (badgeMedia) {
+    badgeMedia.textContent = rowsAno.length ? formatPct(agregarIcvMes(rowsAno).icv * 100) : "—";
+  }
+
   const labels = ultimos12.map(([chave]) => labelMes(chave));
-  const serieIcv = ultimos12.map(([, linhas]) => +(agregarIcvMes(linhas).icv * 100).toFixed(2));
+
+  const todosIcv = meses.map(([, linhas]) => +(agregarIcvMes(linhas).icv * 100).toFixed(2));
+  const todasMediaMovel = mediaMovel(todosIcv, 3);
+  const offset = meses.length - ultimos12.length;
+
+  const serieIcv = todosIcv.slice(offset);
+  const serieMediaMovel = todasMediaMovel.slice(offset);
 
   if (icvChartRef) icvChartRef.destroy();
   const ctx = document.getElementById("icvChart").getContext("2d");
@@ -517,7 +650,8 @@ function renderIcv(rows) {
     data: {
       labels,
       datasets: [
-        { label: "ICV", data: serieIcv, borderColor: "#2dd4bf", backgroundColor: gradient, fill: true, tension: 0.35, borderWidth: 3, pointRadius: 0 }
+        { label: "ICV", data: serieIcv, borderColor: "#2dd4bf", backgroundColor: gradient, fill: true, tension: 0.35, borderWidth: 3, pointRadius: 0 },
+        { label: "Média móvel 3m", data: serieMediaMovel, borderColor: "rgba(226,234,250,.6)", backgroundColor: "transparent", borderDash: [3, 4], fill: false, tension: 0.35, borderWidth: 2, pointRadius: 0 }
       ]
     },
     options: chartOptionsTv()
