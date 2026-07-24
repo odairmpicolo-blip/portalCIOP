@@ -1966,6 +1966,15 @@ async function recarregarComFiltroDatas() {
       atualizarStatusJson();
     }
     aplicarFonteAtiva();
+    // aplicarFonteAtiva() chama montarFiltroDatas(true) internamente, que força os campos
+    // de data de volta para o intervalo padrão (min do histórico ... hoje) — isso
+    // sobrescrevia exatamente a data que o usuário acabou de escolher (selecionar "Data
+    // Inicial" fazia o campo "voltar" sozinho). Restauramos aqui a escolha do usuário.
+    const deEl = $("filtroDataDe");
+    const ateEl = $("filtroDataAte");
+    if (deEl && de) deEl.value = de;
+    if (ateEl && ate) ateEl.value = ate;
+    if (de || ate) renderizar();
   }, 350);
 }
 
