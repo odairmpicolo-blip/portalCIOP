@@ -18,9 +18,9 @@
     --icv:#2dd4bf; --icv-glow:rgba(45,212,191,.35);
     --km:#f59e0b; --km-glow:rgba(245,158,11,.35);
     --live:#34d399; --live-glow:rgba(52,211,153,.35);
-    --green:#34d399;
+    --green:#22c55e;
     --amber:#fbbf24;
-    --red:#fb7185;
+    --red:#ef4444;
     --meta:#3b82f6; --meta-glow:rgba(59,130,246,.45);
     --cyan:#38bdf8;
     --teal:#2dd4bf;
@@ -171,7 +171,7 @@
     color:var(--accent); text-shadow:0 0 40px var(--accent-glow);
     animation:tvHeroGlow 3.2s ease-in-out infinite;
   }
-  .tv-hero-ok{ color:var(--green); text-shadow:0 0 40px rgba(52,211,153,.4); }
+  .tv-hero-ok{ color:var(--green); text-shadow:0 0 40px rgba(34,197,94,.45); }
   .tv-hero-side{ display:flex; flex-direction:column; gap:8px; padding-bottom:clamp(10px,1.4vh,20px); }
   .tv-hero-label{ font-size:clamp(15px,1.3vw,20px); color:var(--muted); font-weight:600; }
   .tv-trend{ font-size:clamp(14px,1.2vw,19px); font-weight:800; display:inline-flex; align-items:center; gap:6px; color:var(--muted); }
@@ -343,10 +343,25 @@
     border:1.5px dashed rgba(56,189,248,.42); opacity:0;
   }
   .scene.tocar .logo-ring.ring-dash{ animation:hudFadeIn .8s ease-out 2.6s forwards, tvSpin 22s linear 2.6s infinite; }
+  .logo-tech-lines{
+    position:absolute; z-index:0; width:clamp(260px,30vw,440px); height:clamp(260px,30vw,440px);
+    border-radius:50%; opacity:0; pointer-events:none;
+    background:repeating-conic-gradient(from 0deg, rgba(56,189,248,.6) 0deg 1.1deg, transparent 1.1deg 14deg);
+    -webkit-mask-image:radial-gradient(circle, transparent 52%, black 55%, black 60%, transparent 62%, transparent 76%, black 79%, black 83%, transparent 85%);
+    mask-image:radial-gradient(circle, transparent 52%, black 55%, black 60%, transparent 62%, transparent 76%, black 79%, black 83%, transparent 85%);
+  }
+  .scene.tocar .logo-tech-lines{ animation:hudFadeIn 1s ease-out 1.8s forwards, tvSpin 46s linear 1.8s infinite reverse; }
+  .logo-tech-lines.tech-lines-2{
+    width:clamp(210px,24vw,360px); height:clamp(210px,24vw,360px);
+    background:repeating-conic-gradient(from 12deg, rgba(45,212,191,.5) 0deg 1.6deg, transparent 1.6deg 18deg);
+    -webkit-mask-image:radial-gradient(circle, transparent 60%, black 63%, black 68%, transparent 70%);
+    mask-image:radial-gradient(circle, transparent 60%, black 63%, black 68%, transparent 70%);
+  }
+  .scene.tocar .logo-tech-lines.tech-lines-2{ animation:hudFadeIn 1s ease-out 2s forwards, tvSpin 30s linear 2s infinite; }
   .logo-big{
-    position:relative; height:clamp(120px,17vh,240px); width:auto; object-fit:contain; opacity:0;
+    position:relative; z-index:1; height:clamp(150px,20vh,300px); width:auto; object-fit:contain; opacity:0;
     transform:scale(.55) translateY(10px);
-    filter:drop-shadow(0 0 30px rgba(56,189,248,.65)) drop-shadow(0 0 64px rgba(45,212,191,.4)) drop-shadow(0 0 100px rgba(56,189,248,.22));
+    filter:drop-shadow(0 0 34px rgba(56,189,248,.7)) drop-shadow(0 0 72px rgba(45,212,191,.45)) drop-shadow(0 0 120px rgba(56,189,248,.25));
   }
   .scene.tocar .logo-big{ animation:logoReveal 1.1s cubic-bezier(.2,.9,.2,1) 2.2s forwards; }
   @keyframes logoReveal{
@@ -377,13 +392,21 @@
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(18px,3vh,34px);
     padding:clamp(20px,4vh,48px) clamp(16px,4vw,60px);
     border-radius:clamp(16px,1.6vw,26px);
+    background:#071224;
+  }
+  .julho-bg-video{
+    position:absolute; inset:0; z-index:0; width:100%; height:100%; object-fit:cover;
+    opacity:.5; filter:saturate(1.15) brightness(.75) hue-rotate(-4deg);
+  }
+  .julho-tint{
+    position:absolute; inset:0; z-index:1; pointer-events:none;
     background:
-      radial-gradient(1100px 760px at 14% 12%, rgba(250,204,21,.28), transparent 62%),
-      radial-gradient(1100px 760px at 86% 88%, rgba(34,197,94,.28), transparent 62%),
-      linear-gradient(135deg, #071224 0%, #0c1f38 55%, #071224 100%);
+      radial-gradient(1100px 760px at 14% 12%, rgba(250,204,21,.3), transparent 62%),
+      radial-gradient(1100px 760px at 86% 88%, rgba(34,197,94,.3), transparent 62%),
+      linear-gradient(135deg, rgba(7,18,36,.86) 0%, rgba(12,31,56,.68) 55%, rgba(7,18,36,.92) 100%);
   }
   .julho-scene::before{
-    content:""; position:absolute; inset:0; z-index:0; opacity:.28; pointer-events:none;
+    content:""; position:absolute; inset:0; z-index:2; opacity:.28; pointer-events:none;
     background-image:
       linear-gradient(rgba(250,204,21,.14) 1px, transparent 1px),
       linear-gradient(90deg, rgba(34,197,94,.14) 1px, transparent 1px);
@@ -393,7 +416,7 @@
     animation:tvGridDrift 22s linear infinite;
   }
   .julho-scene::after{
-    content:""; position:absolute; left:0; right:0; top:-30%; height:60%; z-index:1; pointer-events:none;
+    content:""; position:absolute; left:0; right:0; top:-30%; height:60%; z-index:3; pointer-events:none;
     background:linear-gradient(180deg, transparent, rgba(250,204,21,.1) 40%, rgba(34,197,94,.16) 60%, transparent);
     animation:julhoSweep 6s ease-in-out infinite;
   }
@@ -404,37 +427,28 @@
     85%{ opacity:0; }
     100%{ top:130%; opacity:0; }
   }
-  .julho-scene .hud-corner{ opacity:.8; animation:none; }
+  .julho-scene .hud-corner{ opacity:.8; animation:none; z-index:4; }
   .julho-scene .hud-tl,.julho-scene .hud-bl{ border-color:rgba(250,204,21,.7); }
   .julho-scene .hud-tr,.julho-scene .hud-br{ border-color:rgba(74,222,128,.7); }
 
   .julho-ribbon-wrap{
-    position:relative; z-index:3; width:clamp(90px,10vw,150px); height:clamp(110px,12vh,180px);
+    position:relative; z-index:4; width:clamp(110px,12vw,170px); height:clamp(140px,15vh,210px);
     animation:julhoFloat 4.5s ease-in-out infinite;
+    filter:drop-shadow(0 0 22px rgba(250,204,21,.35)) drop-shadow(0 0 22px rgba(34,197,94,.35));
   }
-  .julho-ribbon{
-    position:absolute; top:0; left:50%; width:34%; height:100%; border-radius:6px 6px 40% 40%;
-    transform-origin:top center;
-  }
-  .julho-ribbon-yellow{ background:linear-gradient(180deg,#fde68a,#f59e0b); transform:translateX(-92%) rotate(-24deg); box-shadow:0 0 30px rgba(245,158,11,.55); }
-  .julho-ribbon-green{ background:linear-gradient(180deg,#86efac,#16a34a); transform:translateX(-8%) rotate(24deg); box-shadow:0 0 30px rgba(22,163,74,.55); }
-  .julho-ribbon-knot{
-    position:absolute; top:-6%; left:50%; transform:translateX(-50%); width:22%; height:22%;
-    border-radius:50%; background:radial-gradient(circle at 35% 30%, #fff, #fef3c7 40%, #16a34a 100%);
-    box-shadow:0 0 24px rgba(255,255,255,.6);
-  }
+  .julho-ribbon-svg{ width:100%; height:100%; overflow:visible; }
   @keyframes julhoFloat{
     0%,100%{ transform:translateY(0) rotate(0deg); }
     50%{ transform:translateY(-10px) rotate(2deg); }
   }
 
-  .julho-heading{ position:relative; z-index:3; text-align:center; display:flex; flex-direction:column; gap:6px; }
+  .julho-heading{ position:relative; z-index:4; text-align:center; display:flex; flex-direction:column; gap:6px; }
   .julho-heading h2{ margin:0; font-size:clamp(26px,3.6vw,50px); font-weight:900; letter-spacing:.01em; color:var(--ink); }
   .julho-word-amarelo{ color:#fbbf24; text-shadow:0 0 26px rgba(251,191,36,.6); }
   .julho-word-verde{ color:#4ade80; text-shadow:0 0 26px rgba(74,222,128,.6); }
   .julho-heading p{ margin:0; font-size:clamp(11px,1vw,16px); font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
 
-  .julho-cards{ position:relative; z-index:3; display:grid; grid-template-columns:1fr 1fr; gap:clamp(14px,2vw,28px); width:min(100%,1100px); }
+  .julho-cards{ position:relative; z-index:4; display:grid; grid-template-columns:1fr 1fr; gap:clamp(14px,2vw,28px); width:min(100%,1100px); }
   .julho-card{
     background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); border-radius:20px;
     padding:clamp(16px,2.2vh,28px) clamp(14px,1.8vw,24px); text-align:center;
@@ -493,10 +507,12 @@
     .kiosk-footer-brand{ text-align:left; white-space:normal; }
     .scene-bg{ background-position:center 68%; }
     .brand-reveal{ margin-bottom:120px; gap:8px; }
-    .logo-big{ height:74px; }
+    .logo-big{ height:88px; }
     .logo-ring{ width:120px; height:120px; }
     .logo-ring.ring-dash{ width:140px; height:140px; }
     .logo-burst{ width:120px; height:120px; }
+    .logo-tech-lines{ width:170px; height:170px; }
+    .logo-tech-lines.tech-lines-2{ width:140px; height:140px; }
     .tagline{ font-size:16px; }
     .tagline-sub{ font-size:9px; letter-spacing:.12em; }
     .next-progress{ width:180px; }
@@ -717,6 +733,8 @@
         </div>
         <div class="brand-reveal">
           <div class="logo-ring-wrap">
+            <div class="logo-tech-lines"></div>
+            <div class="logo-tech-lines tech-lines-2"></div>
             <div class="logo-burst"></div>
             <div class="logo-ring ring-1"></div>
             <div class="logo-ring ring-2"></div>
@@ -736,14 +754,34 @@
     <!-- ===== Slide Julho Amarelo & Verde (campanha de conscientização) ===== -->
     <section class="kiosk-slide" id="slide-julho">
       <div class="julho-scene">
+        <video class="julho-bg-video" autoplay muted loop playsinline preload="auto">
+          <source src="../assets/img/painel-tv-julho-dna.mp4" type="video/mp4">
+        </video>
+        <div class="julho-tint"></div>
         <span class="hud-corner hud-tl"></span>
         <span class="hud-corner hud-tr"></span>
         <span class="hud-corner hud-bl"></span>
         <span class="hud-corner hud-br"></span>
         <div class="julho-ribbon-wrap">
-          <span class="julho-ribbon julho-ribbon-yellow"></span>
-          <span class="julho-ribbon julho-ribbon-green"></span>
-          <span class="julho-ribbon-knot"></span>
+          <svg class="julho-ribbon-svg" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="julhoYellow" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#fde68a"/>
+                <stop offset="100%" stop-color="#f59e0b"/>
+              </linearGradient>
+              <linearGradient id="julhoGreen" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#86efac"/>
+                <stop offset="100%" stop-color="#16a34a"/>
+              </linearGradient>
+              <linearGradient id="julhoLoop" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#f59e0b"/>
+                <stop offset="100%" stop-color="#16a34a"/>
+              </linearGradient>
+            </defs>
+            <polygon points="40,38 20,42 8,122 22,105 34,122 46,44" fill="url(#julhoYellow)"/>
+            <polygon points="60,38 80,42 92,122 78,105 66,122 54,44" fill="url(#julhoGreen)"/>
+            <circle cx="50" cy="30" r="17" fill="none" stroke="url(#julhoLoop)" stroke-width="11"/>
+          </svg>
         </div>
         <div class="julho-heading">
           <h2>Julho <span class="julho-word-amarelo">Amarelo</span> &amp; <span class="julho-word-verde">Verde</span></h2>
@@ -979,16 +1017,16 @@ const IPV = (function () {
     if (chartRef) chartRef.destroy();
     const ctx = document.getElementById("ipvChart").getContext("2d");
     const gradiente = ctx.createLinearGradient(0, 0, 0, 400);
-    gradiente.addColorStop(0, "rgba(52,211,153,.36)");
-    gradiente.addColorStop(1, "rgba(52,211,153,0)");
+    gradiente.addColorStop(0, "rgba(34,197,94,.36)");
+    gradiente.addColorStop(1, "rgba(34,197,94,0)");
     chartRef = new Chart(ctx, {
       type: "line",
       data: {
         labels,
         datasets: [
-          { label: "No horário", data: serieNoHorario, borderColor: "#34d399", backgroundColor: gradiente, fill: true, tension: 0.35, borderWidth: 4, pointRadius: 0 },
+          { label: "No horário", data: serieNoHorario, borderColor: "#22c55e", backgroundColor: gradiente, fill: true, tension: 0.35, borderWidth: 4, pointRadius: 0 },
           { label: "Atrasado", data: serieAtrasado, borderColor: "#fbbf24", backgroundColor: "transparent", fill: false, tension: 0.35, borderWidth: 2.5, pointRadius: 0 },
-          { label: "Adiantado", data: serieAdiantado, borderColor: "#fb7185", backgroundColor: "transparent", fill: false, tension: 0.35, borderWidth: 2.5, pointRadius: 0 },
+          { label: "Adiantado", data: serieAdiantado, borderColor: "#ef4444", backgroundColor: "transparent", fill: false, tension: 0.35, borderWidth: 2.5, pointRadius: 0 },
           { label: "Média móvel 3m", data: serieMediaMovel, borderColor: "rgba(226,234,250,.6)", backgroundColor: "transparent", borderDash: [3, 4], fill: false, tension: 0.35, borderWidth: 2, pointRadius: 0 },
           { label: "Meta", data: serieMeta, borderColor: "#3b82f6", backgroundColor: "transparent", borderDash: [6, 6], borderWidth: 2, pointRadius: 0, fill: false }
         ]
@@ -1348,7 +1386,7 @@ const LIVE = (function () {
         type: "doughnut",
         data: {
           labels: ["No horário", "Atrasado", "Adiantado"],
-          datasets: [{ data: [noHorario, atrasado, adiantado], backgroundColor: ["#34d399", "#fbbf24", "#fb7185"], borderColor: "#0a1730", borderWidth: 3, hoverOffset: 6 }]
+          datasets: [{ data: [noHorario, atrasado, adiantado], backgroundColor: ["#22c55e", "#fbbf24", "#ef4444"], borderColor: "#0a1730", borderWidth: 3, hoverOffset: 6 }]
         },
         options: { responsive: true, maintainAspectRatio: false, cutout: "68%", animation: { duration: 400 }, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
       });
