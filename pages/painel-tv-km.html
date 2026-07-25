@@ -94,7 +94,7 @@
   /* ===== Grid principal ===== */
   .tv-grid{
     flex:1 1 auto; min-height:0;
-    display:grid; grid-template-columns:1fr 1fr; gap:clamp(14px,1.6vw,26px);
+    display:grid; grid-template-columns:1fr; gap:clamp(14px,1.6vw,26px);
   }
 
   .tv-card{
@@ -119,7 +119,6 @@
   }
   @keyframes tvShimmer{ 0%{ background-position:220% 0; } 100%{ background-position:-220% 0; } }
   .tv-card-km{ --accent:var(--km); --accent-glow:var(--km-glow); }
-  .tv-card-fontes{ --accent:var(--fontes); --accent-glow:var(--fontes-glow); }
 
   .tv-card-head{
     display:flex; align-items:center; gap:12px; flex:0 0 auto; flex-wrap:wrap; position:relative; z-index:1;
@@ -150,7 +149,7 @@
     flex:0 0 auto; margin-top:clamp(6px,1vh,14px); position:relative; z-index:1;
   }
   .tv-hero{
-    font-size:clamp(48px,5.6vw,100px); font-weight:900; line-height:.9;
+    font-size:clamp(72px,9vw,168px); font-weight:900; line-height:.9;
     letter-spacing:-.02em; font-variant-numeric:tabular-nums;
     color:var(--accent); text-shadow:0 0 40px var(--accent-glow);
     animation:tvHeroGlow 3.2s ease-in-out infinite;
@@ -178,7 +177,7 @@
     text-transform:capitalize;
   }
   .tv-mes-value{
-    font-size:clamp(24px,2.6vw,40px); font-weight:900; color:var(--accent);
+    font-size:clamp(32px,3.6vw,56px); font-weight:900; color:var(--accent);
     font-variant-numeric:tabular-nums; letter-spacing:-.01em; flex:0 0 auto; white-space:nowrap;
   }
   .tv-mes-progress{
@@ -205,7 +204,7 @@
     letter-spacing:.06em; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   .tv-chip-value{
-    font-size:clamp(16px,1.7vw,26px); font-weight:800; font-variant-numeric:tabular-nums;
+    font-size:clamp(20px,2.2vw,34px); font-weight:800; font-variant-numeric:tabular-nums;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   .tv-chip-tcgl .tv-chip-value{ color:var(--tcgl); }
@@ -213,7 +212,7 @@
   .tv-chip-fleetbus .tv-chip-value{ color:var(--fleetbus); }
 
   .tv-chart-wrap{
-    flex:0 1 auto; min-height:0; height:clamp(90px,15vh,180px);
+    flex:1 1 auto; min-height:0;
     margin-top:clamp(10px,1.6vh,18px); position:relative; z-index:1;
     display:flex; flex-direction:column;
   }
@@ -354,59 +353,12 @@
       </div>
       <div class="tv-chart-wrap">
         <div class="tv-chart-head">
-          <div class="tv-chart-title">Últimos 12 meses</div>
+          <div class="tv-chart-title">Mês a mês · 2026</div>
           <div class="tv-legend">
             <span class="tv-legend-item"><span class="tv-legend-dot-dash"></span>Média móvel 3m</span>
           </div>
         </div>
         <canvas id="kmChart"></canvas>
-      </div>
-    </section>
-
-    <section class="tv-card tv-card-fontes">
-      <div class="tv-card-head">
-        <span class="tv-tag">FONTES</span>
-        <h2>Comparação de Fontes</h2>
-      </div>
-      <div class="tv-hero-row">
-        <div class="tv-hero" id="fontesHeroValor">--</div>
-        <div class="tv-hero-side">
-          <div class="tv-hero-label">Registros de telemetria · 2026</div>
-          <div class="tv-trend" id="fontesTrend">TCGL + Clever + FleetBus</div>
-        </div>
-      </div>
-      <div class="tv-mes-row">
-        <div class="tv-mes-info">
-          <span class="tv-mes-tag">Mês a mês</span>
-          <span class="tv-mes-label" id="fontesMesLabel">--</span>
-        </div>
-        <div class="tv-mes-value" id="fontesMesValor">--</div>
-        <div class="tv-mes-progress"><div class="tv-mes-progress-bar" id="fontesMesBarra"></div></div>
-      </div>
-      <div class="tv-chips">
-        <div class="tv-chip tv-chip-tcgl">
-          <span class="tv-chip-label">TCGL</span>
-          <span class="tv-chip-value" id="fontesChipTcgl">--</span>
-        </div>
-        <div class="tv-chip tv-chip-clever">
-          <span class="tv-chip-label">Clever</span>
-          <span class="tv-chip-value" id="fontesChipClever">--</span>
-        </div>
-        <div class="tv-chip tv-chip-fleetbus">
-          <span class="tv-chip-label">FleetBus</span>
-          <span class="tv-chip-value" id="fontesChipFleetbus">--</span>
-        </div>
-      </div>
-      <div class="tv-chart-wrap">
-        <div class="tv-chart-head">
-          <div class="tv-chart-title">Registros por mês</div>
-          <div class="tv-legend">
-            <span class="tv-legend-item"><span class="tv-legend-dot" style="background:var(--tcgl)"></span>TCGL</span>
-            <span class="tv-legend-item"><span class="tv-legend-dot" style="background:var(--clever)"></span>Clever</span>
-            <span class="tv-legend-item"><span class="tv-legend-dot" style="background:var(--fleetbus)"></span>FleetBus</span>
-          </div>
-        </div>
-        <canvas id="fontesChart"></canvas>
       </div>
     </section>
   </main>
@@ -464,7 +416,6 @@ const MESES_ABREV = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out"
 const MESES_COMPLETOS = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
 
 let kmChartRef = null;
-let fontesChartRef = null;
 let kmMesesData = [];
 let mesRotacaoIndex = -1;
 let mesRotacaoTimer = null;
@@ -568,7 +519,7 @@ function atualizarMesAtual() {
   if (mesRotacaoIndex < 0 || mesRotacaoIndex >= kmMesesData.length) {
     mesRotacaoIndex = kmMesesData.length - 1;
   }
-  const { chave, tcgl, clever, fleetbus } = kmMesesData[mesRotacaoIndex % kmMesesData.length];
+  const { chave, tcgl } = kmMesesData[mesRotacaoIndex % kmMesesData.length];
 
   document.getElementById("kmMesLabel").textContent = labelMesCompleto(chave);
   document.getElementById("kmMesValor").textContent = formatKm(tcgl.km);
@@ -576,15 +527,7 @@ function atualizarMesAtual() {
   document.getElementById("kmChipVeiculos").textContent = formatInt(tcgl.veiculos.size);
   document.getElementById("kmChipDias").textContent = formatInt(tcgl.dias.size);
 
-  const totalMes = tcgl.registros + clever.registros + fleetbus.registros;
-  document.getElementById("fontesMesLabel").textContent = labelMesCompleto(chave);
-  document.getElementById("fontesMesValor").textContent = formatInt(totalMes) + " registros";
-  document.getElementById("fontesChipTcgl").textContent = formatInt(tcgl.registros);
-  document.getElementById("fontesChipClever").textContent = formatInt(clever.registros);
-  document.getElementById("fontesChipFleetbus").textContent = formatInt(fleetbus.registros);
-
   reiniciarBarraProgresso("kmMesBarra");
-  reiniciarBarraProgresso("fontesMesBarra");
 }
 
 function avancarMes() {
@@ -621,29 +564,26 @@ function chartOptionsTv(extra) {
 
 function renderPainelKm(porMes) {
   if (!porMes.length) return;
-  const ultimos12 = porMes.slice(-12);
+
+  // Mês a mês (widget + gráfico) mostra somente os meses de 2026
+  const mesesAno = porMes.filter(([chave]) => chave.startsWith(ANO_FIXO));
 
   // Hero fixo = total percorrido em 2026 (fonte oficial: TCGL)
-  const mesesAno = porMes.filter(([chave]) => chave.startsWith(ANO_FIXO));
   const totalAnoKm = mesesAno.reduce((acc, [, dados]) => acc + dados.tcgl.km, 0);
   const veiculosAno = new Set();
   mesesAno.forEach(([, dados]) => dados.tcgl.veiculos.forEach((v) => veiculosAno.add(v)));
   document.getElementById("kmHeroValor").textContent = formatKm(totalAnoKm);
   document.getElementById("kmFrotaAtiva").textContent = formatInt(veiculosAno.size);
 
-  const registrosAno2026 = mesesAno.reduce(
-    (acc, [, d]) => acc + d.tcgl.registros + d.clever.registros + d.fleetbus.registros, 0
-  );
-  document.getElementById("fontesHeroValor").textContent = formatInt(registrosAno2026);
+  kmMesesData = mesesAno.map(([chave, dados]) => ({ chave, tcgl: dados.tcgl }));
 
-  kmMesesData = ultimos12.map(([chave, dados]) => ({ chave, tcgl: dados.tcgl, clever: dados.clever, fleetbus: dados.fleetbus }));
+  const labels = mesesAno.map(([chave]) => labelMes(chave));
 
-  const labels = ultimos12.map(([chave]) => labelMes(chave));
-
-  // ----- Gráfico 1: Km TCGL mês a mês + média móvel -----
+  // Média móvel calculada com o histórico completo (inclusive antes de 2026, para precisão
+  // no início do ano), mas só os pontos de 2026 são exibidos no gráfico.
   const todosKmTcgl = porMes.map(([, d]) => Math.round(d.tcgl.km));
   const todaMediaMovel = mediaMovel(todosKmTcgl, 3);
-  const offset = porMes.length - ultimos12.length;
+  const offset = porMes.length - mesesAno.length;
   const serieKm = todosKmTcgl.slice(offset);
   const serieMediaMovel = todaMediaMovel.slice(offset);
 
@@ -659,26 +599,6 @@ function renderPainelKm(porMes) {
       datasets: [
         { label: "Km TCGL", data: serieKm, borderColor: "#f59e0b", backgroundColor: gradienteKm, fill: true, tension: 0.35, borderWidth: 3, pointRadius: 0 },
         { label: "Média móvel 3m", data: serieMediaMovel, borderColor: "rgba(226,234,250,.6)", backgroundColor: "transparent", borderDash: [3, 4], fill: false, tension: 0.35, borderWidth: 2, pointRadius: 0 }
-      ]
-    },
-    options: chartOptionsTv()
-  });
-
-  // ----- Gráfico 2: registros por fonte, mês a mês -----
-  const serieTcgl = ultimos12.map(([, d]) => d.tcgl.registros);
-  const serieClever = ultimos12.map(([, d]) => d.clever.registros);
-  const serieFleetbus = ultimos12.map(([, d]) => d.fleetbus.registros);
-
-  if (fontesChartRef) fontesChartRef.destroy();
-  const ctxFontes = document.getElementById("fontesChart").getContext("2d");
-  fontesChartRef = new Chart(ctxFontes, {
-    type: "line",
-    data: {
-      labels,
-      datasets: [
-        { label: "TCGL", data: serieTcgl, borderColor: "#f59e0b", backgroundColor: "transparent", fill: false, tension: 0.35, borderWidth: 3, pointRadius: 0 },
-        { label: "Clever", data: serieClever, borderColor: "#a78bfa", backgroundColor: "transparent", fill: false, tension: 0.35, borderWidth: 2, pointRadius: 0 },
-        { label: "FleetBus", data: serieFleetbus, borderColor: "#38bdf8", backgroundColor: "transparent", fill: false, tension: 0.35, borderWidth: 2, pointRadius: 0 }
       ]
     },
     options: chartOptionsTv()
