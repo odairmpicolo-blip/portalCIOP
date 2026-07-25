@@ -18,6 +18,7 @@
     --icv:#2dd4bf; --icv-glow:rgba(45,212,191,.35);
     --km:#f59e0b; --km-glow:rgba(245,158,11,.35);
     --live:#34d399; --live-glow:rgba(52,211,153,.35);
+    --weather:#0ea5e9; --weather-glow:rgba(14,165,233,.35);
     --green:#22c55e;
     --amber:#fbbf24;
     --red:#ef4444;
@@ -140,6 +141,7 @@
   .tv-card-icv{ --accent:var(--icv); --accent-glow:var(--icv-glow); }
   .tv-card-km{ --accent:var(--km); --accent-glow:var(--km-glow); }
   .tv-card-live{ --accent:var(--live); --accent-glow:var(--live-glow); }
+  .tv-card-weather{ --accent:var(--weather); --accent-glow:var(--weather-glow); }
 
   .tv-card-head{ display:flex; align-items:center; gap:12px; flex:0 0 auto; flex-wrap:wrap; position:relative; z-index:1; }
   .tv-tag{
@@ -242,6 +244,19 @@
   }
   .tv-live-context-label{ font-size:clamp(10px,.8vw,13px); color:var(--muted-2); text-transform:uppercase; letter-spacing:.06em; font-weight:700; }
   .tv-live-context-value{ font-size:clamp(22px,2.4vw,36px); font-weight:900; color:var(--ink); font-variant-numeric:tabular-nums; }
+
+  /* ===== Previsão do Tempo ===== */
+  .tv-weather-today-icon{ font-size:clamp(52px,6vw,84px); line-height:1; filter:drop-shadow(0 0 22px rgba(14,165,233,.45)); }
+  .tv-forecast-days{ display:grid; grid-template-columns:repeat(5,1fr); gap:clamp(8px,1.2vw,16px); margin-top:clamp(16px,2.4vh,26px); }
+  .tv-forecast-day{
+    background:rgba(255,255,255,.04); border:1px solid var(--panel-border); border-radius:16px;
+    padding:clamp(10px,1.6vh,18px) 8px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  .tv-forecast-day-name{ font-size:clamp(10px,.85vw,13px); text-transform:uppercase; color:var(--muted-2); font-weight:800; letter-spacing:.07em; }
+  .tv-forecast-day-icon{ font-size:clamp(24px,2.6vw,36px); }
+  .tv-forecast-day-max{ font-size:clamp(16px,1.6vw,22px); font-weight:900; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .tv-forecast-day-min{ font-size:clamp(11px,1vw,14px); font-weight:700; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .tv-forecast-day-rain{ font-size:clamp(10px,.85vw,12px); font-weight:700; color:var(--weather); }
 
   /* ===== Tela de transição (foto real da frota + logo TCGL) ===== */
   .scene{
@@ -502,6 +517,8 @@
     .tv-chart-wrap canvas{ min-height:220px !important; }
     .tv-live-lower{ grid-template-columns:1fr; }
     .tv-live-donut{ min-height:200px; }
+    .tv-forecast-days{ grid-template-columns:repeat(3,1fr); }
+    .tv-weather-today-icon{ font-size:44px; }
     .kiosk-footer{ flex-direction:column; align-items:flex-start; gap:10px; }
     .kiosk-footer-mid{ flex-wrap:wrap; row-gap:6px; }
     .kiosk-footer-brand{ text-align:left; white-space:normal; }
@@ -711,6 +728,37 @@
               <div class="tv-live-context-chip"><span class="tv-live-context-label">Fora de serviço</span><span class="tv-live-context-value" id="liveCtxForaServico">--</span></div>
             </div>
           </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ===== Slide Previsão do Tempo ===== -->
+    <section class="kiosk-slide" id="slide-tempo">
+      <div class="tv-grid">
+        <section class="tv-card tv-card-weather">
+          <div class="tv-card-head">
+            <span class="tv-tag">CLIMA</span>
+            <h2>Previsão do Tempo</h2>
+            <div class="tv-badges"><span class="tv-badge">Londrina · PR</span></div>
+          </div>
+          <div class="tv-hero-row">
+            <span class="tv-weather-today-icon" id="tempoHojeIcone">🌤️</span>
+            <div class="tv-hero" id="tempoHojeTemp">--°</div>
+            <div class="tv-hero-side">
+              <div class="tv-hero-label" id="tempoHojeLabel">Hoje · --</div>
+              <div class="tv-trend" id="tempoHojeMinMax">Máx --° · Mín --°</div>
+            </div>
+          </div>
+          <div class="tv-chips">
+            <div class="tv-chip tv-chip-tcgl"><span class="tv-chip-label">Sensação</span><span class="tv-chip-value" id="tempoSensacao">--°</span></div>
+            <div class="tv-chip tv-chip-tcgl"><span class="tv-chip-label">Umidade</span><span class="tv-chip-value" id="tempoUmidade">--%</span></div>
+            <div class="tv-chip tv-chip-tcgl"><span class="tv-chip-label">Vento</span><span class="tv-chip-value" id="tempoVento">-- km/h</span></div>
+            <div class="tv-chip tv-chip-tcgl"><span class="tv-chip-label">Chance de chuva</span><span class="tv-chip-value" id="tempoChuva">--%</span></div>
+          </div>
+          <div class="tv-chart-head">
+            <div class="tv-chart-title">Próximos dias</div>
+          </div>
+          <div class="tv-forecast-days" id="tempoDias"></div>
         </section>
       </div>
     </section>
@@ -1402,6 +1450,67 @@ const LIVE = (function () {
 })();
 
 /* ============================================================
+   Módulo Previsão do Tempo
+============================================================ */
+const WEATHER = (function () {
+  const URL = `https://api.open-meteo.com/v1/forecast?latitude=${CLIMA_LAT}&longitude=${CLIMA_LON}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=America%2FSao_Paulo&forecast_days=6`;
+  const REFRESH_MS = 15 * 60 * 1000;
+  const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+  async function carregar() {
+    try {
+      const data = await carregarJson(URL);
+      const cur = data?.current || {};
+      const daily = data?.daily || {};
+      if (cur.temperature_2m == null || !daily.time) throw new Error("sem dados de previsão");
+
+      const cod = cur.weather_code;
+      const icone = CLIMA_ICONES[cod] || "🌡️";
+      const label = CLIMA_LABEL[cod] || "";
+      document.getElementById("tempoHojeIcone").textContent = icone;
+      document.getElementById("tempoHojeTemp").textContent = Math.round(cur.temperature_2m) + "°";
+      document.getElementById("tempoHojeLabel").textContent = "Hoje · " + (label || "--");
+      const maxHoje = daily.temperature_2m_max?.[0];
+      const minHoje = daily.temperature_2m_min?.[0];
+      document.getElementById("tempoHojeMinMax").textContent =
+        (maxHoje != null && minHoje != null) ? `Máx ${Math.round(maxHoje)}° · Mín ${Math.round(minHoje)}°` : "--";
+      document.getElementById("tempoSensacao").textContent = cur.apparent_temperature != null ? Math.round(cur.apparent_temperature) + "°" : "--";
+      document.getElementById("tempoUmidade").textContent = cur.relative_humidity_2m != null ? Math.round(cur.relative_humidity_2m) + "%" : "--";
+      document.getElementById("tempoVento").textContent = cur.wind_speed_10m != null ? Math.round(cur.wind_speed_10m) + " km/h" : "--";
+      document.getElementById("tempoChuva").textContent = (daily.precipitation_probability_max?.[0] ?? 0) + "%";
+
+      const dias = daily.time || [];
+      const cont = document.getElementById("tempoDias");
+      let html = "";
+      for (let i = 1; i < Math.min(dias.length, 6); i++) {
+        const d = new Date(dias[i] + "T12:00:00");
+        const nomeDia = DIAS_SEMANA[d.getDay()];
+        const codD = daily.weather_code?.[i];
+        const iconeD = CLIMA_ICONES[codD] || "🌡️";
+        const maxD = daily.temperature_2m_max?.[i];
+        const minD = daily.temperature_2m_min?.[i];
+        const chuvaD = daily.precipitation_probability_max?.[i] ?? 0;
+        html += `
+          <div class="tv-forecast-day">
+            <span class="tv-forecast-day-name">${nomeDia}</span>
+            <span class="tv-forecast-day-icon">${iconeD}</span>
+            <span class="tv-forecast-day-max">${maxD != null ? Math.round(maxD) + "°" : "--"}</span>
+            <span class="tv-forecast-day-min">${minD != null ? Math.round(minD) + "°" : "--"}</span>
+            <span class="tv-forecast-day-rain">💧 ${chuvaD}%</span>
+          </div>`;
+      }
+      cont.innerHTML = html;
+
+      statusPainel.tempo = "Previsão atualizada às " + new Date().toLocaleTimeString("pt-BR");
+    } catch (err) {
+      statusPainel.tempo = "Falha ao carregar previsão do tempo: " + (err.message || err);
+    }
+  }
+  function iniciarAutoRefresh() { setInterval(carregar, REFRESH_MS); }
+  return { carregar, iniciarAutoRefresh };
+})();
+
+/* ============================================================
    Transição (logo TCGL + ônibus chegando)
 ============================================================ */
 const NOMES_PAINEL = {
@@ -1409,7 +1518,8 @@ const NOMES_PAINEL = {
   icv: "Cumprimento de Viagens",
   km: "Quilometragem TCGL",
   live: "Pontualidade em Tempo Real",
-  julho: "Julho Amarelo & Verde"
+  julho: "Julho Amarelo & Verde",
+  tempo: "Previsão do Tempo"
 };
 function tocarTransicao(proximoId) {
   document.getElementById("nextLabel").textContent = "A seguir: " + (NOMES_PAINEL[proximoId] || "Painel");
@@ -1431,9 +1541,10 @@ const INFO_SLIDE = {
   icv: { titulo: "Cumprimento de Viagens", tag: "ICV · mês a mês" },
   km: { titulo: "Quilometragem da Frota", tag: "KM · mês a mês" },
   live: { titulo: "Pontualidade em Tempo Real", tag: "Ao vivo · somente TCGL" },
-  julho: { titulo: "Julho Amarelo & Verde", tag: "Campanha de conscientização · TCGL" }
+  julho: { titulo: "Julho Amarelo & Verde", tag: "Campanha de conscientização · TCGL" },
+  tempo: { titulo: "Previsão do Tempo", tag: "Clima · Londrina/PR" }
 };
-const ORDEM_SLIDES = ["ipv", "icv", "km", "live", "julho"];
+const ORDEM_SLIDES = ["ipv", "icv", "tempo", "km", "live", "julho"];
 const DURACAO_SLIDE_MS = 60 * 1000;
 const DURACAO_TRANSICAO_MS = 8000;
 let idxAtual = 0;
@@ -1471,11 +1582,12 @@ carregarClima();
 setInterval(carregarClima, CLIMA_REFRESH_MS);
 
 (async function iniciar() {
-  await Promise.allSettled([IPV.carregar(), ICV.carregar(), KM.carregar(), LIVE.carregar()]);
+  await Promise.allSettled([IPV.carregar(), ICV.carregar(), KM.carregar(), LIVE.carregar(), WEATHER.carregar()]);
   IPV.iniciarAutoRefresh();
   ICV.iniciarAutoRefresh();
   KM.iniciarAutoRefresh();
   LIVE.iniciarAutoRefresh();
+  WEATHER.iniciarAutoRefresh();
   atualizarStatusRodape("ipv");
   document.getElementById("bootLoading").style.display = "none";
   cicloApresentacao();
