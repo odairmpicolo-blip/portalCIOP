@@ -6,6 +6,7 @@
 <title>Painel TV · Portal CIOP TCGL</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Yellowtail&display=swap');
   :root{
     --bg-1:#050b18;
     --bg-2:#0a1730;
@@ -404,91 +405,76 @@
   /* ===== Slide Julho Amarelo & Verde (campanha de conscientização) ===== */
   .julho-scene{
     position:relative; z-index:1; width:100%; height:100%; overflow:hidden;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(18px,3vh,34px);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(20px,3.4vh,38px);
     padding:clamp(20px,4vh,48px) clamp(16px,4vw,60px);
     border-radius:clamp(16px,1.6vw,26px);
-    background:#071224;
-  }
-  .julho-bg-video{
-    position:absolute; inset:0; z-index:0; width:100%; height:100%; object-fit:cover;
-    opacity:.5; filter:saturate(1.15) brightness(.75) hue-rotate(-4deg);
-  }
-  .julho-tint{
-    position:absolute; inset:0; z-index:1; pointer-events:none;
     background:
-      radial-gradient(1100px 760px at 14% 12%, rgba(250,204,21,.3), transparent 62%),
-      radial-gradient(1100px 760px at 86% 88%, rgba(34,197,94,.3), transparent 62%),
-      linear-gradient(135deg, rgba(7,18,36,.86) 0%, rgba(12,31,56,.68) 55%, rgba(7,18,36,.92) 100%);
+      linear-gradient(135deg, #0d5c34 0%, #1e8a45 22%, #4c9a1f 42%, #86a616 58%, #d4b514 76%, #f6c928 100%);
   }
   .julho-scene::before{
-    content:""; position:absolute; inset:0; z-index:2; opacity:.28; pointer-events:none;
-    background-image:
-      linear-gradient(rgba(250,204,21,.14) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(34,197,94,.14) 1px, transparent 1px);
-    background-size:56px 56px;
-    -webkit-mask-image:radial-gradient(closest-side, rgba(0,0,0,.9), transparent 92%);
-    mask-image:radial-gradient(closest-side, rgba(0,0,0,.9), transparent 92%);
-    animation:tvGridDrift 22s linear infinite;
+    content:""; position:absolute; inset:0; z-index:1; pointer-events:none; opacity:.5;
+    background-image:repeating-linear-gradient(135deg, rgba(255,255,255,.07) 0px, rgba(255,255,255,.07) 2px, transparent 2px, transparent 46px);
   }
   .julho-scene::after{
-    content:""; position:absolute; left:0; right:0; top:-30%; height:60%; z-index:3; pointer-events:none;
-    background:linear-gradient(180deg, transparent, rgba(250,204,21,.1) 40%, rgba(34,197,94,.16) 60%, transparent);
-    animation:julhoSweep 6s ease-in-out infinite;
+    content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
+    background:
+      radial-gradient(900px 620px at 10% 8%, rgba(255,255,255,.16), transparent 60%),
+      radial-gradient(900px 620px at 92% 95%, rgba(0,0,0,.18), transparent 60%);
   }
-  @keyframes julhoSweep{
-    0%{ top:-30%; opacity:0; }
-    15%{ opacity:1; }
-    50%{ top:70%; opacity:.7; }
-    85%{ opacity:0; }
-    100%{ top:130%; opacity:0; }
-  }
-  .julho-scene .hud-corner{ opacity:.8; animation:none; z-index:4; }
-  .julho-scene .hud-tl,.julho-scene .hud-bl{ border-color:rgba(250,204,21,.7); }
-  .julho-scene .hud-tr,.julho-scene .hud-br{ border-color:rgba(74,222,128,.7); }
+  .julho-scene .hud-corner{ opacity:.55; animation:none; z-index:4; }
+  .julho-scene .hud-tl,.julho-scene .hud-bl{ border-color:rgba(255,255,255,.65); }
+  .julho-scene .hud-tr,.julho-scene .hud-br{ border-color:rgba(20,30,15,.45); }
 
-  .julho-ribbon-wrap{
-    position:relative; z-index:4; display:flex; align-items:flex-end; justify-content:center;
-    gap:clamp(10px,2vw,28px); height:clamp(150px,18vh,240px);
+  .julho-band{
+    position:relative; z-index:4; display:flex; align-items:center; justify-content:center;
+    gap:clamp(6px,1.6vw,18px); width:100%;
   }
   .julho-ribbon-img{
-    height:100%; width:auto; object-fit:contain;
+    height:clamp(120px,15vh,190px); width:auto; object-fit:contain;
+    filter:drop-shadow(0 10px 16px rgba(10,20,10,.35));
     animation:julhoFloat 4.5s ease-in-out infinite;
   }
-  .julho-ribbon-img:first-child{
-    filter:drop-shadow(0 0 22px rgba(250,204,21,.55));
-  }
-  .julho-ribbon-img:last-child{
-    filter:drop-shadow(0 0 22px rgba(34,197,94,.55));
-    animation-delay:.4s;
-  }
+  .julho-ribbon-img:last-child{ animation-delay:.4s; }
   @keyframes julhoFloat{
     0%,100%{ transform:translateY(0) rotate(0deg); }
-    50%{ transform:translateY(-10px) rotate(2deg); }
+    50%{ transform:translateY(-8px) rotate(1.5deg); }
   }
-
-  .julho-heading{ position:relative; z-index:4; text-align:center; display:flex; flex-direction:column; gap:6px; }
-  .julho-heading h2{ margin:0; font-size:clamp(26px,3.6vw,50px); font-weight:900; letter-spacing:.01em; color:var(--ink); }
-  .julho-word-amarelo{ color:#fbbf24; text-shadow:0 0 26px rgba(251,191,36,.6); }
-  .julho-word-verde{ color:#4ade80; text-shadow:0 0 26px rgba(74,222,128,.6); }
-  .julho-heading p{ margin:0; font-size:clamp(11px,1vw,16px); font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
-
-  .julho-cards{ position:relative; z-index:4; display:grid; grid-template-columns:1fr 1fr; gap:clamp(14px,2vw,28px); width:min(100%,1100px); }
-  .julho-card{
-    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); border-radius:20px;
-    padding:clamp(16px,2.2vh,28px) clamp(14px,1.8vw,24px); text-align:center;
-    display:flex; flex-direction:column; align-items:center; gap:8px;
-    animation:julhoCardFloat 5s ease-in-out infinite;
+  .julho-script-wrap{
+    display:flex; align-items:center; justify-content:center; gap:clamp(4px,1vw,10px);
+    margin:0 clamp(2px,.6vw,10px);
   }
-  .julho-card-yellow{ border-color:rgba(251,191,36,.35); box-shadow:0 0 40px rgba(251,191,36,.12); }
-  .julho-card-green{ border-color:rgba(74,222,128,.35); box-shadow:0 0 40px rgba(74,222,128,.12); animation-delay:.6s; }
-  .julho-card-icon{ font-size:clamp(28px,3.2vw,44px); filter:drop-shadow(0 0 14px rgba(255,255,255,.35)); }
-  .julho-card h3{ margin:0; font-size:clamp(15px,1.5vw,22px); font-weight:900; color:var(--ink); }
-  .julho-card p{ margin:0; font-size:clamp(11px,1vw,14px); font-weight:600; color:var(--muted); line-height:1.5; }
-  @keyframes julhoCardFloat{
-    0%,100%{ transform:translateY(0); }
-    50%{ transform:translateY(-6px); }
+  .julho-script{
+    margin:0; font-family:'Yellowtail', cursive; font-weight:400;
+    font-size:clamp(46px,7vw,108px); line-height:1; color:#111a10;
+    text-shadow:0 2px 0 rgba(255,255,255,.25);
   }
+  .julho-swash{ width:clamp(34px,4.4vw,80px); height:auto; flex-shrink:0; opacity:.85; }
+  .julho-swash path{ fill:none; stroke:#111a10; stroke-width:4; stroke-linecap:round; }
 
+  .julho-pills-row{
+    position:relative; z-index:4; display:flex; align-items:center; justify-content:center;
+    gap:clamp(10px,1.8vw,22px);
+  }
+  .julho-pill{
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:clamp(8px,1.1vh,14px) clamp(22px,2.6vw,42px);
+    border-radius:999px; font-weight:900; letter-spacing:.03em; text-transform:uppercase;
+    font-size:clamp(14px,1.6vw,24px); color:#fff;
+    box-shadow:0 8px 18px rgba(10,20,10,.25);
+  }
+  .julho-pill-yellow{ background:linear-gradient(135deg, #fcd34d, #f59e0b); }
+  .julho-pill-green{ background:linear-gradient(135deg, #4ade80, #16a34a); }
+  .julho-amp{ font-family:'Yellowtail', cursive; font-size:clamp(24px,3vw,42px); color:#111a10; }
+
+  .julho-desc-row{
+    position:relative; z-index:4; display:grid; grid-template-columns:1fr 1fr;
+    gap:clamp(14px,2vw,28px); width:min(100%,1000px);
+  }
+  .julho-desc{
+    margin:0; text-align:center; font-weight:700; color:#12210f;
+    font-size:clamp(12px,1.15vw,17px); line-height:1.5;
+    text-shadow:0 1px 0 rgba(255,255,255,.2);
+  }
   /* ===== Carregamento inicial ===== */
   .boot-loading{
     position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
@@ -548,9 +534,11 @@
     .scene-hud-sub{ font-size:8px; gap:6px; }
     .hud-corner{ width:18px; height:18px; }
     .julho-scene{ gap:14px; padding:18px 14px; }
-    .julho-cards{ grid-template-columns:1fr; }
-    .julho-ribbon-wrap{ height:96px; gap:10px; }
-    .julho-heading h2{ font-size:22px; }
+    .julho-desc-row{ grid-template-columns:1fr; gap:10px; }
+    .julho-ribbon-img{ height:70px; }
+    .julho-script{ font-size:34px; }
+    .julho-swash{ width:24px; }
+    .julho-pill{ padding:6px 16px; font-size:12px; }
   }
 </style>
 </head>
@@ -811,33 +799,34 @@
     <!-- ===== Slide Julho Amarelo & Verde (campanha de conscientização) ===== -->
     <section class="kiosk-slide" id="slide-julho">
       <div class="julho-scene">
-        <video class="julho-bg-video" autoplay muted loop playsinline preload="auto">
-          <source src="../assets/img/painel-tv-julho-dna.mp4" type="video/mp4">
-        </video>
-        <div class="julho-tint"></div>
         <span class="hud-corner hud-tl"></span>
         <span class="hud-corner hud-tr"></span>
         <span class="hud-corner hud-bl"></span>
         <span class="hud-corner hud-br"></span>
-        <div class="julho-ribbon-wrap">
+
+        <div class="julho-band">
           <img class="julho-ribbon-img" src="../assets/img/painel-tv-julho-laco-amarelo.png" alt="Laço amarelo">
+          <div class="julho-script-wrap">
+            <svg class="julho-swash" viewBox="0 0 120 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M4,12 C22,4 28,28 46,22 C64,16 62,34 116,26"/>
+            </svg>
+            <h2 class="julho-script">julho</h2>
+            <svg class="julho-swash" viewBox="0 0 120 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M4,26 C58,34 56,16 74,22 C92,28 98,4 116,12"/>
+            </svg>
+          </div>
           <img class="julho-ribbon-img" src="../assets/img/painel-tv-julho-laco-verde.png" alt="Laço verde">
         </div>
-        <div class="julho-heading">
-          <h2>Julho <span class="julho-word-amarelo">Amarelo</span> &amp; <span class="julho-word-verde">Verde</span></h2>
-          <p>Mês de conscientização e prevenção · TCGL cuida de quem cuida da mobilidade</p>
+
+        <div class="julho-pills-row">
+          <span class="julho-pill julho-pill-yellow">Amarelo</span>
+          <span class="julho-amp">&amp;</span>
+          <span class="julho-pill julho-pill-green">Verde</span>
         </div>
-        <div class="julho-cards">
-          <div class="julho-card julho-card-yellow">
-            <div class="julho-card-icon">💛</div>
-            <h3>Hepatites Virais</h3>
-            <p>Previna-se, vacine-se e faça o teste. O diagnóstico precoce salva vidas.</p>
-          </div>
-          <div class="julho-card julho-card-green">
-            <div class="julho-card-icon">💚</div>
-            <h3>Câncer de Cabeça e Pescoço</h3>
-            <p>Fique atento aos sinais. Procure orientação médica e faça o check-up.</p>
-          </div>
+
+        <div class="julho-desc-row">
+          <p class="julho-desc">Mês de luta contra as hepatites virais. Previna-se, vacine-se e faça o teste — o diagnóstico precoce salva vidas.</p>
+          <p class="julho-desc">Mês de conscientização mundial sobre o câncer de cabeça e pescoço. Fique atento aos sinais e procure orientação médica.</p>
         </div>
       </div>
     </section>
