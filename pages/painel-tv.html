@@ -1597,8 +1597,17 @@ setInterval(carregarClima, CLIMA_REFRESH_MS);
   KM.iniciarAutoRefresh();
   LIVE.iniciarAutoRefresh();
   WEATHER.iniciarAutoRefresh();
-  atualizarStatusRodape("ipv");
   document.getElementById("bootLoading").style.display = "none";
+
+  // Abrir uma tela específica e fixa via ?tela=ipv|icv|tempo|km|live|julho
+  // (dados e relógio/clima continuam atualizando; não entra no rodízio)
+  const telaFixa = new URLSearchParams(location.search).get("tela");
+  if (telaFixa && ORDEM_SLIDES.includes(telaFixa)) {
+    mostrarSlide(telaFixa);
+    return;
+  }
+
+  atualizarStatusRodape("ipv");
   cicloApresentacao();
 })();
 </script>
