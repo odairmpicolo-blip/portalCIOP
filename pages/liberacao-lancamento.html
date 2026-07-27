@@ -1487,6 +1487,20 @@ function onCellBlur(e){
     else flushSalvarLinha(i);
 }
 
+function sincronizarLinhaAws_(row){
+    // Mantém o cache AWS (DSQL) em dia na hora do salvamento — não bloqueia nem falha o salvamento.
+    (async()=>{
+        try{
+            const mod=await moduloLiberacaoAws();
+            if(!mod||!await mod.liberacaoAwsDisponivel()) return;
+            const dataIso=normalizarDataIsoRow(row)||isoHoje();
+            if(!row?._row) return;
+            await mod.salvarLinhaLiberacaoAws(dataIso,String(row._row),row);
+        }catch(err){
+            console.warn("Sync AWS (DSQL) pós-salvar falhou (não bloqueia o salvamento):",err?.message||err);
+        }
+    })();
+}
 async function salvarLinha(i){
     clearTimeout(state.saveTimers[i]);
     delete state.saveTimers[i];
@@ -1518,6 +1532,7 @@ async function salvarLinha(i){
         if(idxSem>=0) state.semana[idxSem]=row;
         if(state.semana.length) salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte});
         atualizarLinhaPosSalvar(i);
+        sincronizarLinhaAws_(row);
         if(ehDiaAtual($("dataFiltro").value)) setTimeout(()=>sincronizarJsonHoje(),1500);
     }catch(err){
         row._syncErro=true;
@@ -1833,7 +1848,21 @@ async function sincronizarJsonHoje(){
     }
 }
 
+async function carregarLiberacaoAws_(dataIso){
+    // Leitura rápida via AWS (DSQL) — a planilha alimenta o DSQL a cada poucos minutos (GitHub Actions).
+    try{
+        const mod=await moduloLiberacaoAws();
+        if(!mod||!await mod.liberacaoAwsDisponivel()) return null;
+        const res=await mod.carregarJanelaLiberacaoAws(dataIso,dataIso);
+        return Array.isArray(res?.dados)?res.dados:null;
+    }catch(err){
+        console.warn("Leitura AWS (DSQL) falhou, usando planilha direta:",err?.message||err);
+        return null;
+    }
+}
 async function carregarDiaRemoto(data,vivo){
+    const viaAws=await carregarLiberacaoAws_(data);
+    if(viaAws&&viaAws.length) return viaAws;
     const res=await apiGet({
         recurso:"acompanhamento",
         data,
