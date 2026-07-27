@@ -67,12 +67,40 @@ body.oa-page footer.portal-site-footer{display:none!important}
 .kpi-chip-performance{background:#eefcf3;border-color:#bbf1cf}
 .kpi-chip-performance b{color:#059669}
 .kpi-chip-performance:hover{background:#dcfce7;border-color:#86efac}
-.oa-perf-big{font-size:56px;font-weight:800;text-align:center;margin:6px 0 2px;color:var(--blue);line-height:1}
-.oa-perf-legenda{margin:0 0 14px;font-size:12px;color:var(--muted);text-align:center}
-.oa-perf-breakdown{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-.oa-perf-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 16px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);min-width:96px}
-.oa-perf-item b{font-size:20px}
-.oa-perf-item span{font-size:11px;color:var(--muted)}
+.oa-modal-performance{max-width:620px}
+.oa-perf-legenda{margin:0;font-size:11px;color:var(--muted);text-align:center}
+.oa-perf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.oa-perf-card{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:12px 10px;text-align:center}
+.oa-perf-card h4{margin:0 0 2px;font-size:13px;color:var(--blue);font-weight:700}
+.oa-perf-card-sub{margin:0 0 8px;font-size:10px;color:var(--muted);line-height:1.3}
+.oa-perf-bars{display:flex;align-items:flex-end;justify-content:center;gap:14px;height:118px;border-bottom:1px solid var(--border);padding-bottom:2px}
+.oa-perf-bar-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;width:42px}
+.oa-perf-bar{width:100%;border-radius:3px 3px 0 0;min-height:3px;position:relative}
+.oa-perf-bar-val{font-size:11px;font-weight:800;padding:1px 4px;border-radius:4px;margin-bottom:2px;color:#101828}
+.oa-perf-bar-lab{font-size:10px;color:var(--muted);margin-top:5px;text-align:center;line-height:1.15}
+.oa-perf-donut{width:104px;height:104px;display:block;margin:0 auto}
+.oa-perf-donut-num{font-size:22px;font-weight:800;fill:var(--teal)}
+.oa-perf-frac{margin:4px 0 0;font-size:12px;color:var(--blue);font-weight:700}
+.oa-perf-sub{margin:2px 0 0;font-size:11px;color:var(--muted)}
+.oa-perf-sub b{color:var(--text)}
+.oa-perf-gar{margin-top:14px}
+.oa-perf-gar h4{margin:0 0 8px;font-size:13px;color:var(--blue)}
+.oa-perf-gar-row{display:grid;grid-template-columns:132px 1fr 42px;align-items:center;gap:8px;padding:4px 0}
+.oa-perf-gar-nome{font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.oa-perf-gar-nome span{color:var(--muted)}
+.oa-perf-gar-trilho{background:var(--surface-2);border:1px solid var(--border);border-radius:99px;height:9px;overflow:hidden}
+.oa-perf-gar-fill{height:100%;border-radius:99px}
+.oa-perf-gar-pct{font-size:11px;font-weight:800;text-align:right}
+.oa-perf-op{border:1px solid var(--border);border-radius:10px;padding:9px 11px;margin-bottom:8px;background:var(--surface-2)}
+.oa-perf-op-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:7px}
+.oa-perf-op-head b{font-size:13px;color:var(--blue)}
+.oa-perf-op-head span{font-size:10px;color:var(--muted)}
+.oa-perf-op-kpis{display:flex;gap:8px}
+.oa-perf-mini{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 4px;text-align:center}
+.oa-perf-mini b{display:block;font-size:15px;font-weight:800}
+.oa-perf-mini span{font-size:10px;color:var(--muted)}
+.oa-perf-gar-op{margin:10px 0 3px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+@media (max-width:560px){.oa-perf-grid{grid-template-columns:1fr}.oa-perf-gar-row{grid-template-columns:104px 1fr 40px}}
 @media(max-width:980px){.topbar-kpis{display:none}}
 
 /* Modal: veículos sem comunicação */
@@ -674,9 +702,8 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
             <button type="button" class="oa-modal-close" id="oaIndicePerfFechar" aria-label="Fechar">×</button>
         </div>
         <div class="oa-modal-body">
-            <div class="oa-perf-big" id="oaIndicePerfNumero">—%</div>
-            <p class="oa-perf-legenda">% de veículos produtivos "No horário" sobre o total com previsão (No horário + Atrasado + Adiantado)</p>
-            <div class="oa-perf-breakdown" id="oaIndicePerfBreakdown"></div>
+            <div id="oaIndicePerfNumero" hidden></div>
+            <div id="oaIndicePerfBreakdown"></div>
         </div>
     </div>
 </div>
@@ -1787,44 +1814,229 @@ function fecharSemComunicacao(){
     $("oaSemComOverlay")?.classList.remove("open");
 }
 
-/** Índice de performance = % de veículos produtivos "No horário" sobre o total com
- *  previsão (No horário + Atrasado + Adiantado). Reaproveita os contadores já calculados
- *  em atualizarMarcadores() a cada ciclo de poll (30s) — não faz nenhuma chamada extra. */
+/** Dados oficiais de performance (OTP/CAD), publicados por scripts/sync-performance.mjs
+ *  em assets/data/performance.json. Enquanto não carregam (ou se o arquivo não existir),
+ *  cai no cálculo local derivado do Clever — assim a página nunca fica sem indicador. */
+const PERFORMANCE = { url: "../assets/data/performance.json", dados: null, erro: null, recarregarMs: 300000 };
+
+async function carregarPerformanceOficial(){
+    try {
+        const res = await fetch(PERFORMANCE.url + "?t=" + Date.now(), { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        PERFORMANCE.dados = await res.json();
+        PERFORMANCE.erro = null;
+    } catch (err) {
+        PERFORMANCE.dados = null;
+        PERFORMANCE.erro = err.message || "indisponível";
+    }
+    atualizarIndicePerformance();
+}
+
+/** Índice de performance. Fonte preferida: indicador oficial "No horário" do OTP/CAD.
+ *  Fallback: % de veículos produtivos no horário segundo o delaySec do Clever.
+ *  Os dois medem coisas diferentes (o oficial é acumulado do dia; o local é o estado
+ *  agora), por isso a origem fica sempre explícita na tela. */
 function calcularIndicePerformance(){
+    const of = PERFORMANCE.dados;
+    if (of && of.indices && typeof of.indices.noHorario === "number"){
+        return {
+            oficial: true,
+            pct: of.indices.noHorario,
+            atrasadoPct: of.indices.atrasado,
+            adiantadoPct: of.indices.adiantado,
+            kpis: of.kpis || null,
+            garagens: Array.isArray(of.garagens) ? of.garagens : [],
+            operadoras: Array.isArray(of.operadoras) ? of.operadoras : [],
+            statusVeiculos: of.statusVeiculos || null,
+            geradoEm: of.geradoEm || of.atualizadoEm || null,
+            modo: of.modo
+        };
+    }
     const { noHorario = 0, atrasado = 0, adiantado = 0 } = state.performance || {};
     const total = noHorario + atrasado + adiantado;
-    const pct = total ? Math.round((noHorario / total) * 100) : null;
-    return { pct, noHorario, atrasado, adiantado, total };
+    return {
+        oficial: false,
+        pct: total ? Math.round((noHorario / total) * 100) : null,
+        noHorario, atrasado, adiantado, total
+    };
 }
 
 function renderIndicePerformance(dados){
-    const { pct, noHorario, atrasado, adiantado, total } = dados;
     const numero = $("oaIndicePerfNumero");
-    if (numero) numero.textContent = pct == null ? "—" : pct + "%";
+    if (numero) numero.textContent = dados.pct == null ? "—" : dados.pct + "%";
 
     const sub = $("oaIndicePerfSubtitulo");
     if (sub){
-        const hora = state.lastUpdate
-            ? state.lastUpdate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
-            : "agora";
-        sub.textContent = total
-            ? total + " veículos produtivos com previsão · atualizado " + hora
-            : "Sem veículos produtivos com previsão no momento.";
+        if (dados.oficial){
+            const modo = dados.modo === 1 ? "intervalo" : "aderência ao horário";
+            sub.textContent = "Indicador oficial OTP/CAD (" + modo + ") · apurado " + formatarMomentoPerf(dados.geradoEm);
+        } else {
+            sub.textContent = PERFORMANCE.erro
+                ? "Estimativa local pelo Clever (indicador oficial " + PERFORMANCE.erro + ")"
+                : "Estimativa local pelo Clever · carregando indicador oficial…";
+        }
     }
 
-    const breakdown = $("oaIndicePerfBreakdown");
-    if (breakdown){
-        breakdown.innerHTML = [
-            { label: "No horário", valor: noHorario, cor: PONTUALIDADE.cores.noHorario },
-            { label: "Atrasado", valor: atrasado, cor: PONTUALIDADE.cores.atrasado },
-            { label: "Adiantado", valor: adiantado, cor: PONTUALIDADE.cores.adiantado }
-        ].map(item =>
-            '<div class="oa-perf-item" style="border-color:' + corCss(item.cor) + '66">' +
-                '<b style="color:' + corCss(item.cor) + '">' + item.valor + '</b>' +
-                '<span>' + item.label + '</span>' +
-            '</div>'
-        ).join("");
+    const alvo = $("oaIndicePerfBreakdown");
+    if (!alvo) return;
+
+    if (!dados.oficial){
+        const t = dados.total || 0;
+        const p = v => t ? Math.round((v / t) * 100) : 0;
+        alvo.innerHTML =
+            '<div class="oa-perf-card">' +
+                otpBarrasHtml(p(dados.adiantado), p(dados.noHorario), p(dados.atrasado),
+                    "Estado atual dos " + t + " veículos produtivos com previsão") +
+            '</div>';
+        return;
     }
+
+    const k = dados.kpis || {};
+    let html = '<div class="oa-perf-grid">' +
+        '<div class="oa-perf-card" style="grid-column:1/-1">' +
+            otpBarrasHtml(dados.adiantadoPct, dados.pct, dados.atrasadoPct,
+                "Aderência ao horário: adiantado, no horário e atrasado") +
+        '</div>' +
+        donutHtml("Chegadas", k.chegadas) +
+        donutHtml("Partidas", k.partidas) +
+        donutHtml("Viagens perdidas", k.viagensPerdidas, true) +
+    '</div>';
+
+    if (dados.operadoras.length){
+        html += '<div class="oa-perf-gar"><h4>Por operadora</h4>' +
+            dados.operadoras.map(o =>
+                '<div class="oa-perf-op">' +
+                    '<div class="oa-perf-op-head">' +
+                        '<b>' + esc(o.operadora) + '</b>' +
+                        '<span>' + o.veiculos + ' veículos · ' + o.garagens.length + (o.garagens.length === 1 ? ' garagem' : ' garagens') + '</span>' +
+                    '</div>' +
+                    '<div class="oa-perf-op-kpis">' +
+                        miniKpiHtml("Chegadas", o.kpis?.chegadas?.percent) +
+                        miniKpiHtml("Partidas", o.kpis?.partidas?.percent) +
+                        miniKpiHtml("V. perdidas", o.kpis?.viagensPerdidas?.percent, true) +
+                    '</div>' +
+                '</div>'
+            ).join("") +
+        '</div>';
+    }
+
+    if (dados.garagens.length){
+        const ordem = ["TCGL", "LondriSul"];
+        const grupos = new Map();
+        dados.garagens.forEach(g => {
+            const op = g.operadora || "—";
+            if (!grupos.has(op)) grupos.set(op, []);
+            grupos.get(op).push(g);
+        });
+        const chaves = [...grupos.keys()].sort((a, b) => {
+            const ia = ordem.indexOf(a), ib = ordem.indexOf(b);
+            return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+        });
+
+        html += '<div class="oa-perf-gar"><h4>Por garagem</h4>' +
+            chaves.map(op =>
+                '<p class="oa-perf-gar-op">' + esc(op) + '</p>' +
+                grupos.get(op).map(g => {
+                    const pct = g.percentuais ? g.percentuais.noHorario : null;
+                    const largura = (pct == null ? 0 : Math.max(0, Math.min(100, Number(pct))));
+                    return '<div class="oa-perf-gar-row">' +
+                        '<span class="oa-perf-gar-nome">' + esc(g.garagem) + ' <span>(' + g.veiculos + ')</span></span>' +
+                        '<span class="oa-perf-gar-trilho"><span class="oa-perf-gar-fill" style="width:' + largura + '%;background:' + corPerf(pct) + '"></span></span>' +
+                        '<span class="oa-perf-gar-pct" style="color:' + corPerf(pct) + '">' + pctTexto(pct) + '</span>' +
+                    '</div>';
+                }).join("")
+            ).join("") +
+            '<p class="oa-perf-legenda" style="text-align:left;margin-top:6px">% no horário · (n) = veículos em operação</p>' +
+        '</div>';
+    }
+
+    alvo.innerHTML = html;
+}
+
+/** Trio de barras no estilo do painel OTP: adiantado (vermelho), no horário (verde), atrasado (amarelo).
+ *  Mesmas cores já usadas nos ônibus do mapa, para o operador não precisar reaprender legenda. */
+function otpBarrasHtml(adiantado, noHorario, atrasado, descricao){
+    const barras = [
+        { lab: "Adiantado", val: adiantado, cor: PONTUALIDADE.cores.adiantado },
+        { lab: "No horário", val: noHorario, cor: PONTUALIDADE.cores.noHorario },
+        { lab: "Atrasado", val: atrasado, cor: PONTUALIDADE.cores.atrasado }
+    ];
+    return '<h4>OTP</h4>' +
+        '<p class="oa-perf-card-sub">' + esc(descricao) + '</p>' +
+        '<div class="oa-perf-bars">' +
+            barras.map(b => {
+                const n = Number(b.val);
+                const v = Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 0;
+                return '<div class="oa-perf-bar-col">' +
+                    '<span class="oa-perf-bar-val" style="background:' + corCss(b.cor) + ';color:' + contraste(b.cor) + '">' + pctTexto(b.val) + '</span>' +
+                    '<span class="oa-perf-bar" style="height:' + v + '%;background:' + corCss(b.cor) + '"></span>' +
+                '</div>';
+            }).join("") +
+        '</div>' +
+        '<div class="oa-perf-bars" style="height:auto;border:0;padding:0">' +
+            barras.map(b => '<span class="oa-perf-bar-lab" style="width:42px">' + b.lab + '</span>').join("") +
+        '</div>';
+}
+
+/** KPI compacto usado no resumo por operadora. */
+function miniKpiHtml(rotulo, pct, menorMelhor){
+    const cor = menorMelhor ? "#b91c1c" : corPerf(pct);
+    return '<div class="oa-perf-mini">' +
+        '<b style="color:' + cor + '">' + pctTexto(pct) + '</b>' +
+        '<span>' + rotulo + '</span>' +
+    '</div>';
+}
+
+/** Anel de progresso (SVG puro, sem biblioteca) no estilo dos medidores de Arrivals/Departures. */
+function donutHtml(titulo, kpi, menorMelhor){
+    const pct = kpi ? kpi.percent : null;
+    const n = Number(pct);
+    const v = Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 0;
+    const raio = 34, circ = 2 * Math.PI * raio;
+    const preenchido = (v / 100) * circ;
+    const cor = menorMelhor ? "#b91c1c" : corCss(CLEVER_TEAL);
+
+    let linhas = "";
+    if (kpi && kpi.total != null){
+        const feitas = menorMelhor ? kpi.missed : kpi.onTime;
+        linhas += '<p class="oa-perf-frac">' + feitas + " / " + kpi.total + '</p>';
+        if (!menorMelhor && (kpi.early != null || kpi.late != null)){
+            linhas += '<p class="oa-perf-sub">Adiantado <b>' + (kpi.early ?? "—") + '</b> · Atrasado <b>' + (kpi.late ?? "—") + '</b></p>';
+        }
+        if (menorMelhor) linhas += '<p class="oa-perf-sub">viagens perdidas</p>';
+    }
+
+    return '<div class="oa-perf-card">' +
+        '<h4>' + esc(titulo) + '</h4>' +
+        '<svg class="oa-perf-donut" viewBox="0 0 90 90" role="img" aria-label="' + esc(titulo) + ' ' + pctTexto(pct) + '">' +
+            '<circle cx="45" cy="45" r="' + raio + '" fill="none" stroke="var(--surface-2)" stroke-width="10"/>' +
+            '<circle cx="45" cy="45" r="' + raio + '" fill="none" stroke="' + cor + '" stroke-width="10" stroke-linecap="round" ' +
+                'stroke-dasharray="' + preenchido.toFixed(1) + ' ' + (circ - preenchido).toFixed(1) + '" transform="rotate(-90 45 45)"/>' +
+            '<text x="45" y="52" text-anchor="middle" class="oa-perf-donut-num" style="fill:' + cor + '">' + pctTexto(pct) + '</text>' +
+        '</svg>' +
+        linhas +
+    '</div>';
+}
+
+const CLEVER_TEAL = "#2db4bf";
+
+function pctTexto(v){
+    return (v == null || !Number.isFinite(Number(v))) ? "—" : Number(v) + "%";
+}
+
+function corPerf(pct){
+    const n = Number(pct);
+    if (!Number.isFinite(n)) return "#3f4757";
+    if (n >= 80) return "#059669";
+    if (n >= 60) return "#d97706";
+    return "#b91c1c";
+}
+
+function formatarMomentoPerf(iso){
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
 /** Atualiza o badge do topbar sempre (barato); só re-renderiza o conteúdo do modal
@@ -2056,6 +2268,11 @@ async function boot(){
 
     await initCleverProxy();
     carregarIndiceFleetBus().catch(() => { /* telemetria fica indisponível até o próximo popup */ });
+    // Indicador oficial de performance: não bloqueia o boot e se recarrega sozinho.
+    // O JSON é publicado por um job na rede interna, então muda bem mais devagar (~5 min)
+    // que as posições do mapa (30s).
+    carregarPerformanceOficial();
+    setInterval(carregarPerformanceOficial, PERFORMANCE.recarregarMs);
 
     try {
         state.routes = (await fetchCleverRoutes()).sort(ordenarRotas);
