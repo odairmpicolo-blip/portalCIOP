@@ -15,10 +15,15 @@
  * POST ?liberacao=1  action=create|update|upsert  (+ campos da aba acompanhamento)
  */
 
-const LIBERACAO_VERSAO = "2026-06-22-liberacao-perf";
+const LIBERACAO_VERSAO = "2026-07-27-liberacao-scan-cap";
 const LIBERACAO_DIAS_JANELA = 7;
 const LIBERACAO_CHUNK_LINHAS = 800;
 const LIBERACAO_CACHE_TTL = 600;
+// Trava de segurança: nunca varrer mais que isto (chunks) numa única execução, mesmo que
+// existam linhas com data em branco/ilegível que impeçam o corte natural pela janela de datas.
+// 60 chunks x 800 linhas = até 48.000 linhas — suficiente para o uso real, e limita o tempo
+// de resposta do Apps Script (evita travar o endpoint compartilhado por Folha/Protocolo/etc.).
+const LIBERACAO_MAX_CHUNKS = 60;
 const LIBERACAO_SPREADSHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const LIBERACAO_OPERACIONAIS_GID = 751419807;
 const LIBERACAO_ACOMPANHAMENTO_GID = 753262285;
@@ -443,8 +448,10 @@ function lerAcompanhamentoDiaCompleto_(dataIso, limit, maquinaFiltro) {
   const cabecalho = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(normalizarChaveLiberacao_);
   const dados = [];
   var endRow = lastRow;
+  var chunksLidos = 0;
 
-  while (endRow >= 2) {
+  while (endRow >= 2 && chunksLidos < LIBERACAO_MAX_CHUNKS) {
+    chunksLidos++;
     const startRow = Math.max(2, endRow - LIBERACAO_CHUNK_LINHAS + 1);
     const numRows = endRow - startRow + 1;
     const valores = sheet.getRange(startRow, 1, numRows, lastCol).getValues();
@@ -499,8 +506,10 @@ function lerAcompanhamentoLiberacao_(dataFiltro, limit, maquinaFiltro, janelaOpt
   const cabecalho = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(normalizarChaveLiberacao_);
   const dados = [];
   var endRow = lastRow;
+  var chunksLidos = 0;
 
-  while (endRow >= 2) {
+  while (endRow >= 2 && chunksLidos < LIBERACAO_MAX_CHUNKS) {
+    chunksLidos++;
     const startRow = Math.max(2, endRow - LIBERACAO_CHUNK_LINHAS + 1);
     const numRows = endRow - startRow + 1;
     const valores = sheet.getRange(startRow, 1, numRows, lastCol).getValues();
@@ -695,9 +704,12 @@ function calcularResumoDiaLiberacao_(dados, dataIso) {
   };
 }
 
-function calcularHistoricoResumoLiberacao_() {
-  const janela = montarJanelaLeituraLiberacao_("", "", "", true);
-  const todos = lerAcompanhamentoLiberacao_("", 0, "", janela);
+function calcularHistoricoResumoLiberacao_(todosPreCarregados) {
+  var todos = todosPreCarregados;
+  if (!todos) {
+    const janela = montarJanelaLeituraLiberacao_("", "", "", true);
+    todos = lerAcompanhamentoLiberacao_("", 0, "", janela);
+  }
   const porData = {};
   todos.forEach(function (row) {
     const iso = normalizarDataIsoLiberacao_(row.data);
@@ -753,7 +765,7 @@ function montarResumoDashboardLiberacao_(dataFiltro, incluirColunas) {
   const payload = {
     ok: true,
     resumo: calcularResumoDiaLiberacao_(dadosDia, dataFiltro),
-    historico: calcularHistoricoResumoLiberacao_(),
+    historico: calcularHistoricoResumoLiberacao_(todos),
     base_dados: calcularBaseDadosLiberacao_(dadosDia),
     dados: dadosDia,
     meta: {
