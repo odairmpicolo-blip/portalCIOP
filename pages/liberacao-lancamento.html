@@ -1893,7 +1893,21 @@ function aplicarPlanilhaHoje(dadosPlanilha,origemBase){
     return true;
 }
 
+async function carregarJanelaLiberacaoAwsFallback_(dataDe,dataAte){
+    // Leitura rápida via AWS (DSQL) para qualquer data do filtro (não só hoje) — planilha alimenta o DSQL a cada poucos minutos.
+    try{
+        const mod=await moduloLiberacaoAws();
+        if(!mod||!await mod.liberacaoAwsDisponivel()) return null;
+        const res=await mod.carregarJanelaLiberacaoAws(dataDe,dataAte);
+        return Array.isArray(res?.dados)?res.dados:null;
+    }catch(err){
+        console.warn("Leitura AWS (DSQL) da janela falhou, usando planilha direta:",err?.message||err);
+        return null;
+    }
+}
 async function carregarSemanaRemotoFallback(dataDe,dataAte){
+    const viaAws=await carregarJanelaLiberacaoAwsFallback_(dataDe,dataAte);
+    if(viaAws&&viaAws.length) return viaAws;
     const res=await apiGet({recurso:"acompanhamento",data_de:dataDe,data_ate:dataAte,ultima_semana:"0"});
     return res.dados||[];
 }
