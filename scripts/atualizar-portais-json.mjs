@@ -20,7 +20,7 @@ const ESCALA_SAIDA_URL = process.env.ESCALA_SAIDA_API_URL || "";
 
 const DIAS_JANELA_LANCAMENTO = Number(process.env.LIBERACAO_DIAS_JANELA || 7);
 /** Janela do sync frequente (--liberacao-hoje): 2 dias antes + hoje. */
-const DIAS_LIBERACAO_HOJE = Number(process.env.LIBERACAO_DIAS_HOJE || 2);
+const DIAS_LIBERACAO_HOJE = Number(process.env.LIBERACAO_DIAS_HOJE || 3);
 const PORTAL_TZ = process.env.PORTAL_TZ || "America/Sao_Paulo";
 
 // Timeout mínimo para TODAS as chamadas de liberação (dia, gráficos, semana/lançamento):
@@ -286,13 +286,15 @@ async function atualizarLiberacaoSomenteHoje() {
   }
   const dir = path.join(portalRoot, "assets", "data", "liberacao");
   const hoje = isoHoje();
+  const amanha = isoAmanha();
   const atualizadoEm = new Date().toISOString();
   const dias = [];
   for (let i = DIAS_LIBERACAO_HOJE; i >= 0; i--) {
     dias.push(isoDiasAtras(i));
   }
+  dias.push(amanha);
 
-  console.log(`Baixando liberação (${dias[0]} a ${hoje}: ${DIAS_LIBERACAO_HOJE} dias antes + hoje, em paralelo)...`);
+  console.log(`Baixando liberação (${dias[0]} a ${amanha}: ${DIAS_LIBERACAO_HOJE} dias antes + hoje + amanhã, em paralelo)...`);
 
   const manifestPath = path.join(dir, "manifest.json");
   let manifest = {};
