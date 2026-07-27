@@ -631,10 +631,10 @@ function intervaloJanela(){
     return {dataDe:isoDiasAtras(DIAS_JANELA),hoje:isoHoje(),amanha:isoAmanha()};
 }
 function configurarLimitesFiltroData(){
-    const {dataDe,amanha}=intervaloJanela();
+    // Sem limite de data: qualquer dia (passado ou futuro) pode ser consultado.
     const input=$("dataFiltro");
-    input.min=dataDe;
-    input.max=amanha;
+    input.removeAttribute("min");
+    input.removeAttribute("max");
 }
 function definirDataFiltroHoje(){
     $("dataFiltro").value=isoHoje();
@@ -2029,9 +2029,14 @@ async function iniciarCarregamento(forceRefresh=false){
         }
         atualizarOverlayOperacao("Buscando planilha...");
         setStatus("Buscando planilha...","load");
-        const dados=await carregarSemanaRemotoFallback(dataDe,amanha);
+        // Se a data escolhida estiver fora da janela padrão (mais antiga ou mais futura), consulta
+        // exatamente essa data — senão a janela fixa nunca vai trazer o dia pedido.
+        const foraDaJanela=data<dataDe||data>amanha;
+        const dataDeConsulta=foraDaJanela?data:dataDe;
+        const dataAteConsulta=foraDaJanela?data:amanha;
+        const dados=await carregarSemanaRemotoFallback(dataDeConsulta,dataAteConsulta);
         if(dados.length){
-            complementarSemanaCarregada({dados,dataDe:dataDe,dataAte:amanha,rotulo:"planilha · semana"},data);
+            complementarSemanaCarregada({dados,dataDe:dataDeConsulta,dataAte:dataAteConsulta,rotulo:"planilha · semana"},data);
             finalizarCarregamentoInicial(true);
         }else{
             setStatus("Sem dados para "+rotuloData(data)+".","erro");
