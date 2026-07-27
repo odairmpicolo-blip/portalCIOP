@@ -34,7 +34,12 @@ const PORTAL_TZ = process.env.PORTAL_TZ || "America/Sao_Paulo";
 // de novo ANTES do Apps Script terminar — o dado real nunca chega a ser salvo, mesmo quando a
 // varredura no backend teria funcionado. Por isso usamos um teto próprio, maior que os 4 minutos
 // do backend, com folga para latência de rede.
-const LIBERACAO_TIMEOUT_MS = Number(process.env.LIBERACAO_TIMEOUT_MS || 0) || 300000; // 5 minutos
+const LIBERACAO_TIMEOUT_MS = Number(process.env.LIBERACAO_TIMEOUT_MS || 0) || 270000; // 4,5 minutos
+// As chamadas de liberação usam só 1 tentativa (sem retry): o timeout acima já é maior que o
+// teto do backend, então se mesmo assim estourar, tentar de novo custaria outros ~4,5 minutos
+// para o mesmo resultado — e o workflow "hoje" roda a cada 1 minuto com limite de 10 minutos de
+// job, então múltiplas tentativas longas poderiam estourar esse limite sem necessidade.
+const LIBERACAO_RETRIES = 1;
 
 function partesDataPortal(data = new Date()) {
   const partes = new Intl.DateTimeFormat("en-US", {
@@ -72,9 +77,9 @@ function isoDiasAtras(dias) {
   return isoDataLocal(-dias);
 }
 
-async function fetchJson(url, timeoutMs = TIMEOUT_MS) {
+async function fetchJson(url, timeoutMs = TIMEOUT_MS, retries = FETCH_RETRIES) {
   let lastError;
-  for (let tentativa = 1; tentativa <= FETCH_RETRIES; tentativa++) {
+  for (let tentativa = 1; tentativa <= retries; tentativa++) {
     try {
       const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
       if (!response.ok) {
@@ -87,8 +92,8 @@ async function fetchJson(url, timeoutMs = TIMEOUT_MS) {
       return JSON.parse(text);
     } catch (error) {
       lastError = error;
-      if (tentativa < FETCH_RETRIES) {
-        console.warn(`  tentativa ${tentativa}/${FETCH_RETRIES} falhou: ${error.message || error}`);
+      if (tentativa < retries) {
+        console.warn(`  tentativa ${tentativa}/${retries} falhou: ${error.message || error}`);
         await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
       }
     }
@@ -164,7 +169,7 @@ async function buscarLiberacaoGraficos(dataDe, dataAte, timeoutMs = LIBERACAO_TI
     data_de: dataDe,
     data_ate: dataAte
   })}`;
-  const res = await fetchJson(url, timeoutMs);
+  const res = await fetchJson(url, timeoutMs, LIBERACAO_RETRIES);
   if (!res.ok) throw new Error(res.erro || "Falha nos gráficos de liberação");
   return {
     ok: true,
@@ -184,7 +189,7 @@ async function buscarLiberacaoAcompanhamento(dataDe, dataAte, timeoutMs = LIBERA
     data_ate: dataAte,
     ultima_semana: "0"
   })}`;
-  const res = await fetchJson(url, timeoutMs);
+  const res = await fetchJson(url, timeoutMs, LIBERACAO_RETRIES);
   if (!res.ok) throw new Error(res.erro || "Falha no acompanhamento de liberação");
   return {
     ok: true,
@@ -204,7 +209,7 @@ async function buscarLiberacaoDia(data, timeoutMs = LIBERACAO_TIMEOUT_MS) {
     vivo: "1",
     _: String(Date.now())
   })}`;
-  const res = await fetchJson(url, timeoutMs);
+  const res = await fetchJson(url, timeoutMs, LIBERACAO_RETRIES);
   if (!res.ok) throw new Error(res.erro || "Falha no acompanhamento do dia");
   return {
     ok: true,
