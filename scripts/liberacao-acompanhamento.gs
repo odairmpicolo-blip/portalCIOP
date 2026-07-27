@@ -15,15 +15,19 @@
  * POST ?liberacao=1  action=create|update|upsert  (+ campos da aba acompanhamento)
  */
 
-const LIBERACAO_VERSAO = "2026-07-27-liberacao-scan-cap";
+const LIBERACAO_VERSAO = "2026-07-27-liberacao-scan-cap2";
 const LIBERACAO_DIAS_JANELA = 7;
 const LIBERACAO_CHUNK_LINHAS = 800;
 const LIBERACAO_CACHE_TTL = 600;
-// Trava de segurança: nunca varrer mais que isto (chunks) numa única execução, mesmo que
-// existam linhas com data em branco/ilegível que impeçam o corte natural pela janela de datas.
-// 60 chunks x 800 linhas = até 48.000 linhas — suficiente para o uso real, e limita o tempo
-// de resposta do Apps Script (evita travar o endpoint compartilhado por Folha/Protocolo/etc.).
-const LIBERACAO_MAX_CHUNKS = 60;
+// Trava de segurança por TEMPO (não por número de chunks): a aba pode ter um bloco enorme de
+// linhas em branco/formatadas no fim (getLastRow() conta essas linhas), então um limite fixo de
+// chunks pode desistir antes de alcançar os dados reais e devolver "0 resultados". Cortamos por
+// tempo decorrido, o que deixa a varredura ir o quanto for preciso para achar dado de verdade,
+// mas nunca deixa a execução do Apps Script (e o endpoint compartilhado com Folha/Protocolo/etc.)
+// travar por tempo indefinido.
+const LIBERACAO_MAX_MS_VARREDURA = 4 * 60 * 1000; // 4 minutos
+// Trava adicional (bem alta) só para garantir que o loop sempre termina mesmo se o relógio falhar.
+const LIBERACAO_MAX_CHUNKS = 400; // 400 x 800 = até 320.000 linhas
 const LIBERACAO_SPREADSHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const LIBERACAO_OPERACIONAIS_GID = 751419807;
 const LIBERACAO_ACOMPANHAMENTO_GID = 753262285;
@@ -449,8 +453,9 @@ function lerAcompanhamentoDiaCompleto_(dataIso, limit, maquinaFiltro) {
   const dados = [];
   var endRow = lastRow;
   var chunksLidos = 0;
+  var inicioVarredura = Date.now();
 
-  while (endRow >= 2 && chunksLidos < LIBERACAO_MAX_CHUNKS) {
+  while (endRow >= 2 && chunksLidos < LIBERACAO_MAX_CHUNKS && (Date.now() - inicioVarredura) < LIBERACAO_MAX_MS_VARREDURA) {
     chunksLidos++;
     const startRow = Math.max(2, endRow - LIBERACAO_CHUNK_LINHAS + 1);
     const numRows = endRow - startRow + 1;
@@ -507,8 +512,9 @@ function lerAcompanhamentoLiberacao_(dataFiltro, limit, maquinaFiltro, janelaOpt
   const dados = [];
   var endRow = lastRow;
   var chunksLidos = 0;
+  var inicioVarredura = Date.now();
 
-  while (endRow >= 2 && chunksLidos < LIBERACAO_MAX_CHUNKS) {
+  while (endRow >= 2 && chunksLidos < LIBERACAO_MAX_CHUNKS && (Date.now() - inicioVarredura) < LIBERACAO_MAX_MS_VARREDURA) {
     chunksLidos++;
     const startRow = Math.max(2, endRow - LIBERACAO_CHUNK_LINHAS + 1);
     const numRows = endRow - startRow + 1;
