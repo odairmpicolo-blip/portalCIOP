@@ -28,7 +28,7 @@ const LIBERACAO_URL = process.env.LIBERACAO_API_URL
   || "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
 const DIAS_JANELA = Number(process.env.LIBERACAO_DIAS_JANELA || 7);
 /** Sync frequente liberacao-hoje: 2 dias antes + hoje. */
-const DIAS_LIBERACAO_HOJE = Number(process.env.LIBERACAO_DIAS_HOJE || 2);
+const DIAS_LIBERACAO_HOJE = Number(process.env.LIBERACAO_DIAS_HOJE || 3);
 const TIMEOUT_MS = Number(process.env.PORTAL_JSON_TIMEOUT_MS || 180000);
 
 const JOBS = [
@@ -201,6 +201,7 @@ async function importLiberacaoHoje(pool) {
   for (let i = DIAS_LIBERACAO_HOJE; i >= 0; i--) {
     dias.push(isoDataLocal(-i));
   }
+  dias.push(isoDataLocal(1)); // amanhã
   const dir = path.join(portalRoot, "assets", "data", "liberacao");
   const entradas = [];
   for (const dataIso of dias) {
