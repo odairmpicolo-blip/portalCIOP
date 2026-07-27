@@ -64,6 +64,15 @@ body.oa-page footer.portal-site-footer{display:none!important}
 }
 .kpi-chip-btn b{color:#b91c1c}
 .kpi-chip-btn:hover{background:#fee2e2;border-color:#fecaca}
+.kpi-chip-performance{background:#eefcf3;border-color:#bbf1cf}
+.kpi-chip-performance b{color:#059669}
+.kpi-chip-performance:hover{background:#dcfce7;border-color:#86efac}
+.oa-perf-big{font-size:56px;font-weight:800;text-align:center;margin:6px 0 2px;color:var(--blue);line-height:1}
+.oa-perf-legenda{margin:0 0 14px;font-size:12px;color:var(--muted);text-align:center}
+.oa-perf-breakdown{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.oa-perf-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 16px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);min-width:96px}
+.oa-perf-item b{font-size:20px}
+.oa-perf-item span{font-size:11px;color:var(--muted)}
 @media(max-width:980px){.topbar-kpis{display:none}}
 
 /* Modal: veículos sem comunicação */
@@ -513,6 +522,9 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
             <div class="kpi-chip"><b id="statAtrasados">0</b><span>Atrasados</span></div>
             <div class="kpi-chip"><b id="statAdiantados">0</b><span>Adiantados</span></div>
             <div class="kpi-chip"><b id="statNoHorario">0</b><span>No horário</span></div>
+            <button type="button" class="kpi-chip kpi-chip-btn kpi-chip-performance" id="kpiIndicePerformance" title="Ver índice de performance em tempo real">
+                <b id="statIndicePerformance">—</b><span>Performance</span>
+            </button>
             <button type="button" class="kpi-chip kpi-chip-btn" id="kpiSemComunicacao">
                 <b id="statSemComunicacao">0</b><span>Sem comunicação</span>
             </button>
@@ -648,6 +660,23 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
         </div>
         <div class="oa-modal-body">
             <ul class="oa-semcom-list" id="oaSemComLista"></ul>
+        </div>
+    </div>
+</div>
+
+<div class="oa-modal-overlay" id="oaIndicePerfOverlay">
+    <div class="oa-modal oa-modal-performance" role="dialog" aria-modal="true" aria-labelledby="oaIndicePerfTitulo">
+        <div class="oa-modal-head">
+            <div>
+                <h3 id="oaIndicePerfTitulo">Índice de performance</h3>
+                <p id="oaIndicePerfSubtitulo">Calculando…</p>
+            </div>
+            <button type="button" class="oa-modal-close" id="oaIndicePerfFechar" aria-label="Fechar">×</button>
+        </div>
+        <div class="oa-modal-body">
+            <div class="oa-perf-big" id="oaIndicePerfNumero">—%</div>
+            <p class="oa-perf-legenda">% de veículos produtivos "No horário" sobre o total com previsão (No horário + Atrasado + Adiantado)</p>
+            <div class="oa-perf-breakdown" id="oaIndicePerfBreakdown"></div>
         </div>
     </div>
 </div>
@@ -1758,6 +1787,66 @@ function fecharSemComunicacao(){
     $("oaSemComOverlay")?.classList.remove("open");
 }
 
+/** Índice de performance = % de veículos produtivos "No horário" sobre o total com
+ *  previsão (No horário + Atrasado + Adiantado). Reaproveita os contadores já calculados
+ *  em atualizarMarcadores() a cada ciclo de poll (30s) — não faz nenhuma chamada extra. */
+function calcularIndicePerformance(){
+    const { noHorario = 0, atrasado = 0, adiantado = 0 } = state.performance || {};
+    const total = noHorario + atrasado + adiantado;
+    const pct = total ? Math.round((noHorario / total) * 100) : null;
+    return { pct, noHorario, atrasado, adiantado, total };
+}
+
+function renderIndicePerformance(dados){
+    const { pct, noHorario, atrasado, adiantado, total } = dados;
+    const numero = $("oaIndicePerfNumero");
+    if (numero) numero.textContent = pct == null ? "—" : pct + "%";
+
+    const sub = $("oaIndicePerfSubtitulo");
+    if (sub){
+        const hora = state.lastUpdate
+            ? state.lastUpdate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+            : "agora";
+        sub.textContent = total
+            ? total + " veículos produtivos com previsão · atualizado " + hora
+            : "Sem veículos produtivos com previsão no momento.";
+    }
+
+    const breakdown = $("oaIndicePerfBreakdown");
+    if (breakdown){
+        breakdown.innerHTML = [
+            { label: "No horário", valor: noHorario, cor: PONTUALIDADE.cores.noHorario },
+            { label: "Atrasado", valor: atrasado, cor: PONTUALIDADE.cores.atrasado },
+            { label: "Adiantado", valor: adiantado, cor: PONTUALIDADE.cores.adiantado }
+        ].map(item =>
+            '<div class="oa-perf-item" style="border-color:' + corCss(item.cor) + '66">' +
+                '<b style="color:' + corCss(item.cor) + '">' + item.valor + '</b>' +
+                '<span>' + item.label + '</span>' +
+            '</div>'
+        ).join("");
+    }
+}
+
+/** Atualiza o badge do topbar sempre (barato); só re-renderiza o conteúdo do modal
+ *  quando ele está aberto, para não desenhar algo que ninguém está vendo. */
+function atualizarIndicePerformance(){
+    const dados = calcularIndicePerformance();
+    const badge = $("statIndicePerformance");
+    if (badge) badge.textContent = dados.pct == null ? "—" : dados.pct + "%";
+    if ($("oaIndicePerfOverlay")?.classList.contains("open")){
+        renderIndicePerformance(dados);
+    }
+}
+
+function abrirIndicePerformance(){
+    renderIndicePerformance(calcularIndicePerformance());
+    $("oaIndicePerfOverlay")?.classList.add("open");
+}
+
+function fecharIndicePerformance(){
+    $("oaIndicePerfOverlay")?.classList.remove("open");
+}
+
 function atualizarMarcadores(){
     if (!state.mapa) return;
     const visiveis = new Set();
@@ -1826,6 +1915,8 @@ function atualizarMarcadores(){
     $("statAtrasados").textContent = countAtrasado;
     $("statAdiantados").textContent = countAdiantado;
     $("statNoHorario").textContent = countNoHorario;
+    state.performance = { noHorario: countNoHorario, atrasado: countAtrasado, adiantado: countAdiantado };
+    atualizarIndicePerformance();
     atualizarSemComunicacao();
     syncNativeHud();
 }
@@ -1942,10 +2033,16 @@ function bind(){
     $("oaSemComOverlay")?.addEventListener("click", e => {
         if (e.target.id === "oaSemComOverlay") fecharSemComunicacao();
     });
+    $("kpiIndicePerformance")?.addEventListener("click", abrirIndicePerformance);
+    $("oaIndicePerfFechar")?.addEventListener("click", fecharIndicePerformance);
+    $("oaIndicePerfOverlay")?.addEventListener("click", e => {
+        if (e.target.id === "oaIndicePerfOverlay") fecharIndicePerformance();
+    });
     $("btnTelaCheia")?.addEventListener("click", () => alternarTelaCheiaMapa());
     document.addEventListener("keydown", e => {
         if (e.key === "Escape"){
             fecharSemComunicacao();
+            fecharIndicePerformance();
             if (mapaEmTelaCheia()) alternarTelaCheiaMapa(false);
         }
     });
