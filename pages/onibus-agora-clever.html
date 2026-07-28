@@ -1820,18 +1820,57 @@ function fecharSemComunicacao(){
 /** Dados oficiais de performance (OTP/CAD), publicados por scripts/sync-performance.mjs
  *  em assets/data/performance.json. Enquanto não carregam (ou se o arquivo não existir),
  *  cai no cálculo local derivado do Clever — assim a página nunca fica sem indicador. */
-const PERFORMANCE = { url: "../assets/data/performance.json", dados: null, erro: null, recarregarMs: 300000 };
+const PERFORMANCE = {
+    // Origem oficial: S3 via Lambda portal-api (o agente que coleta roda dentro da rede
+    // do CIOP, porque a API OTP fica num IP privado). O JSON estático no repositório
+    // fica como segunda opção enquanto o caminho AWS não está configurado em todo lugar.
+    rotaAws: "/performance",
+    urlEstatica: "../assets/data/performance.json",
+    dados: null,
+    erro: null,
+    fonte: null,
+    recarregarMs: 300000
+};
+
+async function buscarPerformanceAws(){
+    const mod = await import("../assets/js/portal-aws-config.js");
+    const snap = await mod.carregarSnapshotAws(PERFORMANCE.rotaAws, { timeoutMs: 12000 });
+    return snap?.payload || null;
+}
+
+async function buscarPerformanceEstatica(){
+    const res = await fetch(PERFORMANCE.urlEstatica + "?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return res.json();
+}
 
 async function carregarPerformanceOficial(){
-    try {
-        const res = await fetch(PERFORMANCE.url + "?t=" + Date.now(), { cache: "no-store" });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        PERFORMANCE.dados = await res.json();
-        PERFORMANCE.erro = null;
-    } catch (err) {
-        PERFORMANCE.dados = null;
-        PERFORMANCE.erro = err.message || "indisponível";
+    const tentativas = [
+        { fonte: "aws", fn: buscarPerformanceAws },
+        { fonte: "estatico", fn: buscarPerformanceEstatica }
+    ];
+    const falhas = [];
+
+    for (const t of tentativas){
+        try {
+            const dados = await t.fn();
+            if (dados && dados.indices){
+                PERFORMANCE.dados = dados;
+                PERFORMANCE.fonte = t.fonte;
+                PERFORMANCE.erro = null;
+                atualizarIndicePerformance();
+                return;
+            }
+            falhas.push(t.fonte + ": vazio");
+        } catch (err) {
+            falhas.push(t.fonte + ": " + (err.message || "erro"));
+        }
     }
+
+    PERFORMANCE.dados = null;
+    PERFORMANCE.fonte = null;
+    PERFORMANCE.erro = "indisponível";
+    console.warn("[performance] nenhuma origem respondeu —", falhas.join(" | "));
     atualizarIndicePerformance();
 }
 
@@ -1872,7 +1911,8 @@ function renderIndicePerformance(dados){
     if (sub){
         if (dados.oficial){
             const modo = dados.modo === 1 ? "intervalo" : "aderência ao horário";
-            sub.textContent = "Indicador oficial OTP/CAD (" + modo + ") · apurado " + formatarMomentoPerf(dados.geradoEm);
+            const via = PERFORMANCE.fonte === "aws" ? " · via AWS" : (PERFORMANCE.fonte === "estatico" ? " · via arquivo" : "");
+            sub.textContent = "Indicador oficial OTP/CAD (" + modo + ") · apurado " + formatarMomentoPerf(dados.geradoEm) + via;
         } else {
             sub.textContent = PERFORMANCE.erro
                 ? "Estimativa local pelo Clever (indicador oficial " + PERFORMANCE.erro + ")"
