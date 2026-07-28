@@ -21,6 +21,9 @@ export const config = {
     firebaseCredentials: process.env.GOOGLE_APPLICATION_CREDENTIALS || "",
     liberacaoApiUrl: process.env.LIBERACAO_API_URL || "",
     relatoriosS3Bucket: process.env.RELATORIOS_S3_BUCKET || "",
+    performanceS3Bucket: process.env.PERFORMANCE_S3_BUCKET || "",
+    performanceS3Key: process.env.PERFORMANCE_S3_KEY || "performance.json",
+    performanceS3Region: process.env.PERFORMANCE_S3_REGION || process.env.AWS_REGION || process.env.DSQL_REGION || "sa-east-1",
     relatoriosS3Region: process.env.RELATORIOS_S3_REGION || process.env.AWS_REGION || process.env.DSQL_REGION || "sa-east-1"
 };
 

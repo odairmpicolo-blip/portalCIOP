@@ -7,6 +7,7 @@ import terminaisRouter from "./routes/terminais.js";
 import snapshotsRouter from "./routes/snapshots.js";
 import telemetriaRouter from "./routes/telemetria.js";
 import relatoriosRouter from "./routes/relatorios.js";
+import performanceRouter from "./routes/performance.js";
 
 const app = express();
 app.use(express.json({ limit: "20mb" }));
@@ -82,6 +83,7 @@ app.use("/terminais", terminaisRouter);
 app.use("/snapshots", snapshotsRouter);
 app.use("/telemetria", telemetriaRouter);
 app.use("/relatorios", relatoriosRouter);
+app.use("/performance", performanceRouter);
 
 app.use((_req, res) => {
     res.status(404).json({ ok: false, erro: "Rota não encontrada" });
