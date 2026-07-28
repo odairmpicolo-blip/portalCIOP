@@ -1,0 +1,1936 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relatório — Consumo Diário | Portal CIOP</title>
+<style>
+:root{--blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--bg:#f5f7fb;--border:#dfe5ef;--text:#101828;--muted:#3f4757;--red:#dc2626;--green:#15803d;--white:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.header{background:var(--white);display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);gap:16px;align-items:center;padding:8px 20px;border-bottom:1px solid #e8edf6}
+.header > a:first-child.portal-brand-mark{justify-self:start}
+.logo-ciop{height:42px;object-fit:contain}.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.header-title{margin:0;color:var(--blue);font-size:18px;font-weight:900}
+.header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.container{max-width:100%;margin:20px auto 32px;padding:0 20px;flex:1;width:100%}
+.toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.btn-portal{display:inline-flex;align-items:center;gap:8px;min-height:44px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;background:var(--blue);color:#fff}
+.btn-portal:hover{background:var(--blue2)}
+.btn-icon{display:inline-flex;width:16px;height:16px;flex:0 0 auto}
+.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.summary-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:0 8px 20px rgba(16,24,40,.06)}
+.summary-card .label{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--muted);letter-spacing:.03em}
+.summary-card .value{font-size:20px;font-weight:900;color:var(--blue);margin-top:4px}
+.table-card{overflow:hidden;background:var(--white);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 28px rgba(16,24,40,.07)}
+.table-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.card-title{margin:0;color:var(--blue);font-size:15px;font-weight:900}
+.table-sub{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px}
+.table-wrap{overflow:auto;max-height:calc(100vh - 420px);min-height:420px}
+table.relatorio{width:100%;border-collapse:separate;border-spacing:0;font-size:11px;min-width:1900px}
+table.relatorio thead th{position:sticky;top:0;z-index:2;background:#06245c;color:#fff;padding:10px 6px;font-size:8.5px;font-weight:900;text-transform:uppercase;text-align:center}
+table.relatorio tbody td{border-bottom:1px solid #edf2f7;padding:7px 5px;text-align:center;vertical-align:middle;background:var(--white);word-break:break-word}
+table.relatorio tbody tr:nth-child(even) td{background:#fafbfd}
+table.relatorio td.col-texto,table.relatorio th.col-texto{text-align:left}
+table.relatorio tfoot td{font-weight:900;background:#eef2fb;border-top:2px solid var(--blue);padding:8px 5px}
+.page-footer{padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-top:1px solid var(--border);background:var(--white)}
+@media(max-width:720px){.header{grid-template-columns:1fr;text-align:center}}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
+<link rel="stylesheet" href="../assets/css/portal-titulos.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260720y">
+<script src="../assets/js/loading.js?v=20260718d"></script>
+<script type="module" src="../assets/js/auth.js?v=20260720a"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+</head>
+<body data-require-perfis="Administrador,Supervisor,Analista">
+<header class="header">
+    <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
+    <div class="title-wrap">
+        <h1 class="header-title">Consumo Diário por Veículo</h1>
+        <div class="header-subtitle">Telemetria de frota · 12/05/2026</div>
+    </div>
+    <div class="header-actions">
+        <div class="ciop-session" aria-label="Sessão do usuário">
+    <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+    <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+    <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+    <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+</div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+    </div>
+</header>
+
+<main class="container">
+    <div class="toolbar">
+        <a class="btn-portal" href="relatorios.html"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Relatórios</a>
+    </div>
+
+    <section class="summary">
+        <div class="summary-card"><div class="label">Veículos</div><div class="value">71</div></div>
+        <div class="summary-card"><div class="label">Viagens</div><div class="value">860</div></div>
+        <div class="summary-card"><div class="label">Distância total</div><div class="value">16.519,72 km</div></div>
+        <div class="summary-card"><div class="label">Combustível total</div><div class="value">7.318,78 L</div></div>
+        <div class="summary-card"><div class="label">Consumo médio</div><div class="value">2,26 km/l</div></div>
+        <div class="summary-card"><div class="label">Tempo ocioso total</div><div class="value">237:53:53</div></div>
+        <div class="summary-card"><div class="label">Eventos negativos</div><div class="value">14164</div></div>
+    </section>
+
+    <div class="table-card">
+        <div class="table-head">
+            <div>
+                <h2 class="card-title">Consumo e eventos por veículo</h2>
+                <div class="table-sub">71 veículos · 860 viagens registradas em 12/05/2026</div>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="relatorio">
+                <thead>
+                    <tr>
+                        <th class="col-texto">Veículo</th>
+                        <th class="col-texto">Linha</th>
+                        <th>Viagens</th>
+                        <th>Em serviço</th>
+                        <th>Fora de serviço</th>
+                        <th>Distância (km)</th>
+                        <th>Combustível (L)</th>
+                        <th>Consumo (km/l)</th>
+                        <th>Duração total</th>
+                        <th>Tempo ocioso</th>
+                        <th>Combustível ocioso (L)</th>
+                        <th>Vel. máxima (km/h)</th>
+                        <th>Vel. média (km/h)</th>
+                        <th>Eventos negativos</th>
+                        <th>ABS</th>
+                        <th>Frenagem brusca</th>
+                        <th>Aceleração brusca</th>
+                        <th>Curva em alta vel.</th>
+                        <th>RPM excessivo</th>
+                        <th>Violação de velocidade</th>
+                        <th>Estado da porta</th>
+                        <th>Inércia</th>
+                        <th>Piloto automático</th>
+                        <th>Embreagem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+<td class="col-texto">1158</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>9</td>
+<td>7</td>
+<td>2</td>
+<td>188,02</td>
+<td>75,69</td>
+<td>2,48</td>
+<td>10:11:27</td>
+<td>01:58:38</td>
+<td>3,65</td>
+<td>91,7</td>
+<td>23,9</td>
+<td>179</td>
+<td>1</td>
+<td>15</td>
+<td>0</td>
+<td>160</td>
+<td>3</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">1159</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>16</td>
+<td>8</td>
+<td>8</td>
+<td>157,59</td>
+<td>67,17</td>
+<td>2,35</td>
+<td>13:08:43</td>
+<td>02:02:17</td>
+<td>3,69</td>
+<td>76,9</td>
+<td>22,8</td>
+<td>120</td>
+<td>2</td>
+<td>16</td>
+<td>0</td>
+<td>102</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">1160</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>17</td>
+<td>8</td>
+<td>9</td>
+<td>126,52</td>
+<td>41,95</td>
+<td>3,02</td>
+<td>05:35:08</td>
+<td>00:46:50</td>
+<td>1,25</td>
+<td>103,5</td>
+<td>27,4</td>
+<td>73</td>
+<td>2</td>
+<td>20</td>
+<td>0</td>
+<td>45</td>
+<td>6</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">1161</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>8</td>
+<td>5</td>
+<td>3</td>
+<td>295,48</td>
+<td>128,22</td>
+<td>2,30</td>
+<td>16:08:25</td>
+<td>03:33:18</td>
+<td>6,73</td>
+<td>73,5</td>
+<td>24,1</td>
+<td>293</td>
+<td>46</td>
+<td>87</td>
+<td>0</td>
+<td>156</td>
+<td>4</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">1162</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>9</td>
+<td>6</td>
+<td>3</td>
+<td>284,54</td>
+<td>113,85</td>
+<td>2,50</td>
+<td>15:47:48</td>
+<td>02:52:48</td>
+<td>5,01</td>
+<td>69,6</td>
+<td>22,9</td>
+<td>221</td>
+<td>1</td>
+<td>18</td>
+<td>0</td>
+<td>202</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">1163</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>21</td>
+<td>12</td>
+<td>9</td>
+<td>141,75</td>
+<td>70,39</td>
+<td>2,01</td>
+<td>09:30:36</td>
+<td>02:19:16</td>
+<td>4,31</td>
+<td>79,9</td>
+<td>21,5</td>
+<td>158</td>
+<td>0</td>
+<td>10</td>
+<td>0</td>
+<td>146</td>
+<td>2</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">1164</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>15</td>
+<td>7</td>
+<td>8</td>
+<td>187,84</td>
+<td>73,18</td>
+<td>2,57</td>
+<td>11:23:13</td>
+<td>02:35:45</td>
+<td>4,12</td>
+<td>83,6</td>
+<td>22,0</td>
+<td>147</td>
+<td>0</td>
+<td>39</td>
+<td>0</td>
+<td>108</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">1165</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>3</td>
+<td>2</td>
+<td>1</td>
+<td>320,84</td>
+<td>136,67</td>
+<td>2,35</td>
+<td>17:07:34</td>
+<td>04:33:57</td>
+<td>7,66</td>
+<td>97,2</td>
+<td>25,7</td>
+<td>219</td>
+<td>2</td>
+<td>33</td>
+<td>0</td>
+<td>171</td>
+<td>13</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">1166</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>16</td>
+<td>9</td>
+<td>7</td>
+<td>227,55</td>
+<td>90,44</td>
+<td>2,52</td>
+<td>13:44:03</td>
+<td>03:17:34</td>
+<td>4,85</td>
+<td>70,6</td>
+<td>23,1</td>
+<td>115</td>
+<td>0</td>
+<td>11</td>
+<td>1</td>
+<td>103</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">1167</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>16</td>
+<td>7</td>
+<td>9</td>
+<td>158,66</td>
+<td>62,68</td>
+<td>2,53</td>
+<td>09:14:49</td>
+<td>01:54:00</td>
+<td>3,00</td>
+<td>78,4</td>
+<td>23,6</td>
+<td>69</td>
+<td>2</td>
+<td>2</td>
+<td>0</td>
+<td>65</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3120</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>11</td>
+<td>8</td>
+<td>3</td>
+<td>309,00</td>
+<td>141,56</td>
+<td>2,18</td>
+<td>17:22:38</td>
+<td>03:58:41</td>
+<td>7,83</td>
+<td>74,5</td>
+<td>24,0</td>
+<td>289</td>
+<td>2</td>
+<td>45</td>
+<td>0</td>
+<td>239</td>
+<td>3</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3121</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>23</td>
+<td>21</td>
+<td>2</td>
+<td>267,89</td>
+<td>118,98</td>
+<td>2,25</td>
+<td>18:19:06</td>
+<td>04:14:33</td>
+<td>9,76</td>
+<td>62,2</td>
+<td>21,8</td>
+<td>215</td>
+<td>0</td>
+<td>23</td>
+<td>0</td>
+<td>183</td>
+<td>9</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3122</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>17</td>
+<td>13</td>
+<td>4</td>
+<td>399,58</td>
+<td>151,55</td>
+<td>2,64</td>
+<td>17:41:17</td>
+<td>02:28:56</td>
+<td>4,96</td>
+<td>82,5</td>
+<td>27,0</td>
+<td>350</td>
+<td>8</td>
+<td>81</td>
+<td>0</td>
+<td>261</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3123</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>11</td>
+<td>11</td>
+<td>0</td>
+<td>307,66</td>
+<td>120,54</td>
+<td>2,55</td>
+<td>18:23:59</td>
+<td>03:55:00</td>
+<td>7,46</td>
+<td>80,3</td>
+<td>22,5</td>
+<td>263</td>
+<td>7</td>
+<td>49</td>
+<td>0</td>
+<td>205</td>
+<td>2</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3124</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>15</td>
+<td>12</td>
+<td>3</td>
+<td>159,87</td>
+<td>79,12</td>
+<td>2,02</td>
+<td>10:31:44</td>
+<td>02:10:06</td>
+<td>4,62</td>
+<td>69,7</td>
+<td>21,1</td>
+<td>260</td>
+<td>3</td>
+<td>49</td>
+<td>0</td>
+<td>207</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3125</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>12</td>
+<td>7</td>
+<td>5</td>
+<td>218,55</td>
+<td>104,97</td>
+<td>2,08</td>
+<td>15:33:12</td>
+<td>03:51:38</td>
+<td>8,27</td>
+<td>55,1</td>
+<td>19,8</td>
+<td>141</td>
+<td>0</td>
+<td>3</td>
+<td>0</td>
+<td>138</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3126</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>17</td>
+<td>16</td>
+<td>1</td>
+<td>357,72</td>
+<td>170,05</td>
+<td>2,10</td>
+<td>18:02:32</td>
+<td>03:21:57</td>
+<td>7,89</td>
+<td>75,4</td>
+<td>25,3</td>
+<td>344</td>
+<td>3</td>
+<td>107</td>
+<td>0</td>
+<td>227</td>
+<td>7</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3127</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>10</td>
+<td>10</td>
+<td>0</td>
+<td>296,32</td>
+<td>152,98</td>
+<td>1,94</td>
+<td>19:34:16</td>
+<td>05:25:04</td>
+<td>10,96</td>
+<td>73,0</td>
+<td>21,4</td>
+<td>320</td>
+<td>17</td>
+<td>106</td>
+<td>0</td>
+<td>196</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3128</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>9</td>
+<td>6</td>
+<td>3</td>
+<td>190,95</td>
+<td>96,77</td>
+<td>1,97</td>
+<td>14:59:29</td>
+<td>04:52:07</td>
+<td>9,52</td>
+<td>63,0</td>
+<td>20,0</td>
+<td>173</td>
+<td>0</td>
+<td>65</td>
+<td>0</td>
+<td>108</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3129</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>14</td>
+<td>13</td>
+<td>1</td>
+<td>236,12</td>
+<td>114,77</td>
+<td>2,06</td>
+<td>17:02:33</td>
+<td>03:43:55</td>
+<td>7,90</td>
+<td>75,2</td>
+<td>19,3</td>
+<td>278</td>
+<td>2</td>
+<td>21</td>
+<td>0</td>
+<td>255</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3130</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>9</td>
+<td>7</td>
+<td>2</td>
+<td>241,73</td>
+<td>99,47</td>
+<td>2,43</td>
+<td>16:16:13</td>
+<td>04:23:58</td>
+<td>7,19</td>
+<td>62,4</td>
+<td>21,8</td>
+<td>107</td>
+<td>1</td>
+<td>6</td>
+<td>0</td>
+<td>100</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3131</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>15</td>
+<td>8</td>
+<td>7</td>
+<td>178,71</td>
+<td>84,21</td>
+<td>2,12</td>
+<td>11:08:13</td>
+<td>02:46:35</td>
+<td>5,48</td>
+<td>78,2</td>
+<td>22,4</td>
+<td>220</td>
+<td>45</td>
+<td>29</td>
+<td>0</td>
+<td>146</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3132</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>13</td>
+<td>6</td>
+<td>7</td>
+<td>132,42</td>
+<td>69,05</td>
+<td>1,92</td>
+<td>10:02:35</td>
+<td>01:49:31</td>
+<td>4,07</td>
+<td>66,8</td>
+<td>19,4</td>
+<td>145</td>
+<td>3</td>
+<td>59</td>
+<td>1</td>
+<td>78</td>
+<td>4</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3133</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>15</td>
+<td>10</td>
+<td>5</td>
+<td>246,36</td>
+<td>90,11</td>
+<td>2,73</td>
+<td>13:05:46</td>
+<td>02:53:12</td>
+<td>5,94</td>
+<td>91,9</td>
+<td>25,8</td>
+<td>162</td>
+<td>3</td>
+<td>17</td>
+<td>0</td>
+<td>142</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3134</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>11</td>
+<td>7</td>
+<td>4</td>
+<td>154,97</td>
+<td>80,64</td>
+<td>1,92</td>
+<td>12:08:50</td>
+<td>03:51:16</td>
+<td>7,65</td>
+<td>63,5</td>
+<td>19,8</td>
+<td>204</td>
+<td>2</td>
+<td>81</td>
+<td>0</td>
+<td>120</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3135</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>14</td>
+<td>11</td>
+<td>3</td>
+<td>217,35</td>
+<td>92,67</td>
+<td>2,35</td>
+<td>17:30:56</td>
+<td>06:30:52</td>
+<td>5,17</td>
+<td>67,6</td>
+<td>22,4</td>
+<td>157</td>
+<td>1</td>
+<td>10</td>
+<td>0</td>
+<td>144</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3136</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>6</td>
+<td>5</td>
+<td>1</td>
+<td>208,39</td>
+<td>90,05</td>
+<td>2,31</td>
+<td>15:03:01</td>
+<td>04:33:28</td>
+<td>8,30</td>
+<td>70,1</td>
+<td>20,9</td>
+<td>190</td>
+<td>2</td>
+<td>27</td>
+<td>0</td>
+<td>161</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3137</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>8</td>
+<td>7</td>
+<td>1</td>
+<td>265,34</td>
+<td>109,53</td>
+<td>2,42</td>
+<td>16:45:10</td>
+<td>03:54:29</td>
+<td>7,44</td>
+<td>73,4</td>
+<td>21,7</td>
+<td>112</td>
+<td>1</td>
+<td>16</td>
+<td>0</td>
+<td>95</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3138</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>11</td>
+<td>3</td>
+<td>8</td>
+<td>76,49</td>
+<td>37,04</td>
+<td>2,07</td>
+<td>06:18:52</td>
+<td>01:41:21</td>
+<td>3,44</td>
+<td>59,6</td>
+<td>17,9</td>
+<td>48</td>
+<td>1</td>
+<td>9</td>
+<td>0</td>
+<td>38</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3139</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>9</td>
+<td>7</td>
+<td>2</td>
+<td>163,01</td>
+<td>77,07</td>
+<td>2,12</td>
+<td>09:37:27</td>
+<td>01:56:49</td>
+<td>3,83</td>
+<td>75,1</td>
+<td>22,5</td>
+<td>102</td>
+<td>4</td>
+<td>13</td>
+<td>0</td>
+<td>80</td>
+<td>5</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3140</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>17</td>
+<td>17</td>
+<td>0</td>
+<td>377,43</td>
+<td>156,73</td>
+<td>2,41</td>
+<td>18:56:33</td>
+<td>02:58:45</td>
+<td>6,72</td>
+<td>74,6</td>
+<td>25,9</td>
+<td>350</td>
+<td>1</td>
+<td>43</td>
+<td>0</td>
+<td>289</td>
+<td>17</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3141</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>17</td>
+<td>14</td>
+<td>3</td>
+<td>322,98</td>
+<td>131,32</td>
+<td>2,46</td>
+<td>18:40:49</td>
+<td>03:46:09</td>
+<td>7,89</td>
+<td>66,6</td>
+<td>23,4</td>
+<td>306</td>
+<td>2</td>
+<td>31</td>
+<td>0</td>
+<td>273</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3142</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>13</td>
+<td>10</td>
+<td>3</td>
+<td>191,56</td>
+<td>93,07</td>
+<td>2,06</td>
+<td>11:21:36</td>
+<td>02:30:42</td>
+<td>5,23</td>
+<td>73,5</td>
+<td>23,5</td>
+<td>234</td>
+<td>2</td>
+<td>84</td>
+<td>0</td>
+<td>145</td>
+<td>3</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3143</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>12</td>
+<td>2</td>
+<td>10</td>
+<td>67,08</td>
+<td>33,65</td>
+<td>1,99</td>
+<td>08:10:58</td>
+<td>01:02:45</td>
+<td>2,06</td>
+<td>54,0</td>
+<td>15,6</td>
+<td>123</td>
+<td>0</td>
+<td>19</td>
+<td>0</td>
+<td>104</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3144</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>14</td>
+<td>14</td>
+<td>0</td>
+<td>298,18</td>
+<td>142,10</td>
+<td>2,10</td>
+<td>16:09:05</td>
+<td>03:01:31</td>
+<td>6,73</td>
+<td>73,2</td>
+<td>23,8</td>
+<td>449</td>
+<td>7</td>
+<td>54</td>
+<td>0</td>
+<td>387</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3145</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>13</td>
+<td>12</td>
+<td>1</td>
+<td>337,66</td>
+<td>138,46</td>
+<td>2,44</td>
+<td>17:52:57</td>
+<td>03:35:55</td>
+<td>7,04</td>
+<td>67,2</td>
+<td>24,8</td>
+<td>211</td>
+<td>3</td>
+<td>17</td>
+<td>2</td>
+<td>188</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3146</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>16</td>
+<td>8</td>
+<td>8</td>
+<td>92,95</td>
+<td>42,83</td>
+<td>2,17</td>
+<td>06:13:48</td>
+<td>01:23:57</td>
+<td>2,50</td>
+<td>71,9</td>
+<td>21,8</td>
+<td>131</td>
+<td>1</td>
+<td>69</td>
+<td>0</td>
+<td>61</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3147</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>10</td>
+<td>8</td>
+<td>2</td>
+<td>269,59</td>
+<td>130,55</td>
+<td>2,07</td>
+<td>16:11:37</td>
+<td>03:37:16</td>
+<td>7,40</td>
+<td>82,8</td>
+<td>23,2</td>
+<td>262</td>
+<td>1</td>
+<td>70</td>
+<td>0</td>
+<td>183</td>
+<td>8</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3148</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>12</td>
+<td>3</td>
+<td>9</td>
+<td>128,15</td>
+<td>61,58</td>
+<td>2,08</td>
+<td>08:48:00</td>
+<td>02:21:13</td>
+<td>4,76</td>
+<td>63,8</td>
+<td>20,1</td>
+<td>118</td>
+<td>0</td>
+<td>34</td>
+<td>0</td>
+<td>84</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3149</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>4</td>
+<td>3</td>
+<td>1</td>
+<td>308,78</td>
+<td>122,88</td>
+<td>2,51</td>
+<td>16:32:26</td>
+<td>03:44:57</td>
+<td>6,50</td>
+<td>72,0</td>
+<td>24,4</td>
+<td>196</td>
+<td>1</td>
+<td>33</td>
+<td>0</td>
+<td>162</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3150</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>14</td>
+<td>11</td>
+<td>3</td>
+<td>278,58</td>
+<td>125,67</td>
+<td>2,22</td>
+<td>16:52:10</td>
+<td>03:17:41</td>
+<td>6,50</td>
+<td>70,0</td>
+<td>21,9</td>
+<td>302</td>
+<td>1</td>
+<td>32</td>
+<td>1</td>
+<td>268</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3151</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>4</td>
+<td>4</td>
+<td>0</td>
+<td>269,55</td>
+<td>124,00</td>
+<td>2,17</td>
+<td>16:09:25</td>
+<td>03:44:42</td>
+<td>7,19</td>
+<td>68,4</td>
+<td>22,2</td>
+<td>234</td>
+<td>5</td>
+<td>33</td>
+<td>0</td>
+<td>194</td>
+<td>2</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3152</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>11</td>
+<td>8</td>
+<td>3</td>
+<td>229,89</td>
+<td>98,13</td>
+<td>2,34</td>
+<td>12:15:44</td>
+<td>02:17:29</td>
+<td>3,89</td>
+<td>72,7</td>
+<td>24,3</td>
+<td>178</td>
+<td>2</td>
+<td>30</td>
+<td>0</td>
+<td>146</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3153</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>10</td>
+<td>10</td>
+<td>0</td>
+<td>344,31</td>
+<td>144,84</td>
+<td>2,38</td>
+<td>19:04:47</td>
+<td>04:18:41</td>
+<td>8,32</td>
+<td>68,2</td>
+<td>24,0</td>
+<td>244</td>
+<td>4</td>
+<td>85</td>
+<td>1</td>
+<td>154</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3154</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>13</td>
+<td>13</td>
+<td>0</td>
+<td>308,31</td>
+<td>131,20</td>
+<td>2,35</td>
+<td>18:44:22</td>
+<td>03:32:41</td>
+<td>6,95</td>
+<td>68,1</td>
+<td>21,6</td>
+<td>22</td>
+<td>0</td>
+<td>22</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3155</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>7</td>
+<td>7</td>
+<td>0</td>
+<td>364,11</td>
+<td>178,15</td>
+<td>2,04</td>
+<td>19:46:01</td>
+<td>04:25:30</td>
+<td>9,24</td>
+<td>73,7</td>
+<td>24,5</td>
+<td>414</td>
+<td>19</td>
+<td>144</td>
+<td>2</td>
+<td>230</td>
+<td>19</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3156</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>7</td>
+<td>5</td>
+<td>2</td>
+<td>240,06</td>
+<td>129,28</td>
+<td>1,86</td>
+<td>13:35:14</td>
+<td>03:04:59</td>
+<td>7,06</td>
+<td>66,7</td>
+<td>23,1</td>
+<td>414</td>
+<td>6</td>
+<td>138</td>
+<td>3</td>
+<td>264</td>
+<td>3</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3157</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>12</td>
+<td>8</td>
+<td>4</td>
+<td>238,32</td>
+<td>107,57</td>
+<td>2,22</td>
+<td>15:53:58</td>
+<td>04:08:12</td>
+<td>8,04</td>
+<td>84,2</td>
+<td>20,8</td>
+<td>123</td>
+<td>1</td>
+<td>43</td>
+<td>0</td>
+<td>79</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3158</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>4</td>
+<td>2</td>
+<td>2</td>
+<td>272,00</td>
+<td>101,05</td>
+<td>2,69</td>
+<td>13:40:57</td>
+<td>03:35:02</td>
+<td>6,08</td>
+<td>67,5</td>
+<td>27,5</td>
+<td>258</td>
+<td>0</td>
+<td>54</td>
+<td>0</td>
+<td>202</td>
+<td>2</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3159</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>10</td>
+<td>5</td>
+<td>5</td>
+<td>155,00</td>
+<td>60,82</td>
+<td>2,55</td>
+<td>09:13:05</td>
+<td>01:56:42</td>
+<td>3,14</td>
+<td>69,0</td>
+<td>21,8</td>
+<td>80</td>
+<td>0</td>
+<td>11</td>
+<td>0</td>
+<td>69</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3160</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>12</td>
+<td>10</td>
+<td>2</td>
+<td>211,66</td>
+<td>87,11</td>
+<td>2,43</td>
+<td>15:58:34</td>
+<td>04:35:57</td>
+<td>8,15</td>
+<td>75,4</td>
+<td>20,1</td>
+<td>93</td>
+<td>0</td>
+<td>17</td>
+<td>0</td>
+<td>76</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3161</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>10</td>
+<td>8</td>
+<td>2</td>
+<td>160,63</td>
+<td>77,60</td>
+<td>2,07</td>
+<td>11:32:50</td>
+<td>02:45:26</td>
+<td>5,08</td>
+<td>75,7</td>
+<td>19,9</td>
+<td>190</td>
+<td>2</td>
+<td>29</td>
+<td>0</td>
+<td>150</td>
+<td>9</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3162</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>17</td>
+<td>11</td>
+<td>6</td>
+<td>247,06</td>
+<td>125,48</td>
+<td>1,97</td>
+<td>14:50:32</td>
+<td>03:20:56</td>
+<td>7,10</td>
+<td>75,5</td>
+<td>24,0</td>
+<td>400</td>
+<td>24</td>
+<td>146</td>
+<td>1</td>
+<td>219</td>
+<td>10</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3163</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>16</td>
+<td>12</td>
+<td>4</td>
+<td>218,21</td>
+<td>103,17</td>
+<td>2,12</td>
+<td>14:30:10</td>
+<td>03:45:57</td>
+<td>7,07</td>
+<td>92,4</td>
+<td>21,3</td>
+<td>202</td>
+<td>4</td>
+<td>63</td>
+<td>2</td>
+<td>133</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3164</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>10</td>
+<td>5</td>
+<td>5</td>
+<td>51,01</td>
+<td>22,61</td>
+<td>2,26</td>
+<td>03:31:37</td>
+<td>00:54:59</td>
+<td>1,16</td>
+<td>68,6</td>
+<td>21,3</td>
+<td>78</td>
+<td>0</td>
+<td>11</td>
+<td>0</td>
+<td>56</td>
+<td>11</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3165</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>15</td>
+<td>10</td>
+<td>5</td>
+<td>180,10</td>
+<td>84,00</td>
+<td>2,14</td>
+<td>16:32:35</td>
+<td>03:26:19</td>
+<td>7,22</td>
+<td>69,8</td>
+<td>17,7</td>
+<td>83</td>
+<td>2</td>
+<td>7</td>
+<td>0</td>
+<td>73</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3166</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>12</td>
+<td>10</td>
+<td>2</td>
+<td>289,39</td>
+<td>122,55</td>
+<td>2,36</td>
+<td>17:51:09</td>
+<td>04:11:21</td>
+<td>8,64</td>
+<td>89,5</td>
+<td>23,1</td>
+<td>179</td>
+<td>6</td>
+<td>47</td>
+<td>0</td>
+<td>126</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3167</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>19</td>
+<td>6</td>
+<td>13</td>
+<td>140,92</td>
+<td>76,40</td>
+<td>1,84</td>
+<td>10:51:54</td>
+<td>02:31:47</td>
+<td>4,99</td>
+<td>72,7</td>
+<td>18,6</td>
+<td>90</td>
+<td>1</td>
+<td>29</td>
+<td>0</td>
+<td>56</td>
+<td>4</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3168</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>13</td>
+<td>7</td>
+<td>6</td>
+<td>255,10</td>
+<td>123,27</td>
+<td>2,07</td>
+<td>17:02:22</td>
+<td>04:25:03</td>
+<td>9,20</td>
+<td>71,9</td>
+<td>21,7</td>
+<td>227</td>
+<td>2</td>
+<td>31</td>
+<td>0</td>
+<td>194</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3169</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>15</td>
+<td>12</td>
+<td>3</td>
+<td>166,77</td>
+<td>71,27</td>
+<td>2,34</td>
+<td>08:22:57</td>
+<td>01:42:37</td>
+<td>3,00</td>
+<td>76,9</td>
+<td>26,1</td>
+<td>177</td>
+<td>3</td>
+<td>34</td>
+<td>0</td>
+<td>132</td>
+<td>8</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3170</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>11</td>
+<td>5</td>
+<td>6</td>
+<td>116,98</td>
+<td>55,01</td>
+<td>2,13</td>
+<td>08:01:48</td>
+<td>02:13:43</td>
+<td>4,17</td>
+<td>65,7</td>
+<td>21,6</td>
+<td>108</td>
+<td>2</td>
+<td>23</td>
+<td>0</td>
+<td>81</td>
+<td>2</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3171</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>7</td>
+<td>6</td>
+<td>1</td>
+<td>231,35</td>
+<td>91,76</td>
+<td>2,52</td>
+<td>12:21:47</td>
+<td>02:33:42</td>
+<td>4,60</td>
+<td>77,0</td>
+<td>24,6</td>
+<td>176</td>
+<td>0</td>
+<td>21</td>
+<td>0</td>
+<td>155</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3172</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>15</td>
+<td>15</td>
+<td>0</td>
+<td>312,70</td>
+<td>135,51</td>
+<td>2,31</td>
+<td>19:09:47</td>
+<td>04:01:19</td>
+<td>8,28</td>
+<td>67,9</td>
+<td>22,0</td>
+<td>388</td>
+<td>2</td>
+<td>71</td>
+<td>0</td>
+<td>315</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3173</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>9</td>
+<td>5</td>
+<td>4</td>
+<td>265,47</td>
+<td>117,78</td>
+<td>2,25</td>
+<td>14:53:47</td>
+<td>03:28:10</td>
+<td>6,51</td>
+<td>81,4</td>
+<td>23,9</td>
+<td>209</td>
+<td>1</td>
+<td>33</td>
+<td>0</td>
+<td>171</td>
+<td>4</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3174</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>11</td>
+<td>9</td>
+<td>2</td>
+<td>235,33</td>
+<td>110,75</td>
+<td>2,12</td>
+<td>15:02:59</td>
+<td>03:31:27</td>
+<td>7,29</td>
+<td>87,5</td>
+<td>23,4</td>
+<td>229</td>
+<td>2</td>
+<td>49</td>
+<td>0</td>
+<td>172</td>
+<td>6</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3175</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>11</td>
+<td>10</td>
+<td>1</td>
+<td>232,16</td>
+<td>103,92</td>
+<td>2,23</td>
+<td>14:17:11</td>
+<td>03:25:47</td>
+<td>6,72</td>
+<td>61,1</td>
+<td>22,2</td>
+<td>149</td>
+<td>0</td>
+<td>22</td>
+<td>0</td>
+<td>127</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3176</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>13</td>
+<td>13</td>
+<td>0</td>
+<td>264,05</td>
+<td>117,14</td>
+<td>2,25</td>
+<td>18:34:11</td>
+<td>06:01:14</td>
+<td>12,01</td>
+<td>65,4</td>
+<td>22,8</td>
+<td>148</td>
+<td>4</td>
+<td>35</td>
+<td>0</td>
+<td>108</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3177</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>16</td>
+<td>13</td>
+<td>3</td>
+<td>267,44</td>
+<td>128,14</td>
+<td>2,09</td>
+<td>19:04:59</td>
+<td>06:14:12</td>
+<td>12,54</td>
+<td>74,2</td>
+<td>22,6</td>
+<td>128</td>
+<td>1</td>
+<td>49</td>
+<td>2</td>
+<td>72</td>
+<td>4</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3178</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>10</td>
+<td>8</td>
+<td>2</td>
+<td>322,88</td>
+<td>130,71</td>
+<td>2,47</td>
+<td>19:22:28</td>
+<td>04:34:46</td>
+<td>8,86</td>
+<td>65,5</td>
+<td>22,9</td>
+<td>205</td>
+<td>3</td>
+<td>81</td>
+<td>2</td>
+<td>119</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3179</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>6</td>
+<td>3</td>
+<td>3</td>
+<td>260,15</td>
+<td>112,58</td>
+<td>2,31</td>
+<td>18:48:17</td>
+<td>05:32:46</td>
+<td>10,17</td>
+<td>67,7</td>
+<td>20,0</td>
+<td>156</td>
+<td>1</td>
+<td>9</td>
+<td>0</td>
+<td>146</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr><tr>
+<td class="col-texto">3180</td>
+<td class="col-texto">OF-1726 L/59 E6</td>
+<td>12</td>
+<td>4</td>
+<td>8</td>
+<td>278,65</td>
+<td>126,77</td>
+<td>2,20</td>
+<td>15:51:57</td>
+<td>03:53:45</td>
+<td>7,31</td>
+<td>84,7</td>
+<td>23,7</td>
+<td>226</td>
+<td>0</td>
+<td>46</td>
+<td>0</td>
+<td>165</td>
+<td>15</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td class="col-texto">Total</td>
+                        <td class="col-texto">—</td>
+                        <td>860</td>
+                        <td>605</td>
+                        <td>255</td>
+                        <td>16.519,72</td>
+                        <td>7.318,78</td>
+                        <td>2,26</td>
+                        <td>—</td>
+                        <td>237:53:53</td>
+                        <td>455,26</td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td>14164</td>
+                        <td>277</td>
+                        <td>2966</td>
+                        <td>18</td>
+                        <td>10709</td>
+                        <td>192</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>0</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</main>
+
+<footer class="page-footer">Portal CIOP · Relatório de Consumo Diário · TCGL</footer>
+</body>
+</html>
