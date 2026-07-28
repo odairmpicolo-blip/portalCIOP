@@ -546,15 +546,16 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
         </div>
         <div class="topbar-kpis" id="topbarKpis">
             <div class="kpi-chip"><b id="statOnline">0</b><span>Online</span></div>
-            <div class="kpi-chip"><b id="statVisiveis">0</b><span>Visíveis</span></div>
-            <div class="kpi-chip"><b id="statAtrasados">0</b><span>Atrasados</span></div>
-            <div class="kpi-chip"><b id="statAdiantados">0</b><span>Adiantados</span></div>
             <div class="kpi-chip"><b id="statNoHorario">0</b><span>No horário</span></div>
-            <button type="button" class="kpi-chip kpi-chip-btn kpi-chip-performance" id="kpiIndicePerformance" title="Ver índice de performance em tempo real">
-                <b id="statIndicePerformance">—</b><span>Performance</span>
-            </button>
+            <div class="kpi-chip"><b id="statAtrasados">0</b><span>Atrasado</span></div>
+            <div class="kpi-chip"><b id="statAdiantados">0</b><span>Adiantado</span></div>
+            <div class="kpi-chip"><b id="statOcioso">0</b><span>Ocioso</span></div>
+            <div class="kpi-chip"><b id="statForaServico">0</b><span>Fora de serviço</span></div>
             <button type="button" class="kpi-chip kpi-chip-btn" id="kpiSemComunicacao">
                 <b id="statSemComunicacao">0</b><span>Sem comunicação</span>
+            </button>
+            <button type="button" class="kpi-chip kpi-chip-btn kpi-chip-performance" id="kpiIndicePerformance" title="Ver índice de performance em tempo real">
+                <b id="statIndicePerformance">—</b><span>Performance</span>
             </button>
         </div>
         <div class="topbar-actions">
@@ -851,8 +852,10 @@ function statusPontualidade(v){
     if (v.delaySec == null){
         return { chave: "semPrevisao", label: "Sem previsão", cor: PONTUALIDADE.cores.semPrevisao };
     }
-    if (v.delaySec <= -PONTUALIDADE.adiantadoSeg) return { chave: "adiantado", label: "Adiantado", cor: PONTUALIDADE.cores.adiantado };
-    if (v.delaySec >= PONTUALIDADE.atrasadoSeg) return { chave: "atrasado", label: "Atrasado", cor: PONTUALIDADE.cores.atrasado };
+    // Limites INCLUSIVOS: exatamente 2 min adiantado e exatamente 6 min atrasado ainda
+    // contam como "No horário"; só sai da faixa quem ultrapassa a marca.
+    if (v.delaySec < -PONTUALIDADE.adiantadoSeg) return { chave: "adiantado", label: "Adiantado", cor: PONTUALIDADE.cores.adiantado };
+    if (v.delaySec > PONTUALIDADE.atrasadoSeg) return { chave: "atrasado", label: "Atrasado", cor: PONTUALIDADE.cores.atrasado };
     return { chave: "noHorario", label: "No horário", cor: PONTUALIDADE.cores.noHorario };
 }
 
@@ -1194,7 +1197,7 @@ function syncNativeHud(){
     $("oaHudDot")?.classList.toggle("busy", busy);
     if ($("oaStatOnline")) $("oaStatOnline").textContent = $("statOnline")?.textContent || "0";
     if ($("oaStatLinhas")) $("oaStatLinhas").textContent = $("statLinhas")?.textContent || "0";
-    if ($("oaStatVisiveis")) $("oaStatVisiveis").textContent = $("statVisiveis")?.textContent || "0";
+    if ($("oaStatVisiveis")) $("oaStatVisiveis").textContent = String(state.countVisiveis ?? 0);
 }
 
 function setSheetAberta(id, aberta){
@@ -2064,17 +2067,20 @@ function atualizarMarcadores(){
     const visiveis = new Set();
     let countVis = 0;
     let countAtrasado = 0, countAdiantado = 0, countNoHorario = 0;
+    let countOcioso = 0, countForaServico = 0;
 
     state.vehicles.forEach((v, key) => {
         const ok = veiculoPassaFiltro(v);
         if (!ok) return;
         countVis += 1;
         visiveis.add(key);
-        if (v.categoria === "produtivo"){
-            const chave = statusPontualidade(v).chave;
-            if (chave === "atrasado") countAtrasado += 1;
-            else if (chave === "adiantado") countAdiantado += 1;
-            else if (chave === "noHorario") countNoHorario += 1;
+        const chaveStatus = statusPontualidade(v).chave;
+        if (chaveStatus === "ocioso") countOcioso += 1;
+        else if (chaveStatus === "foraServico") countForaServico += 1;
+        else if (v.categoria === "produtivo"){
+            if (chaveStatus === "atrasado") countAtrasado += 1;
+            else if (chaveStatus === "adiantado") countAdiantado += 1;
+            else if (chaveStatus === "noHorario") countNoHorario += 1;
         }
         const destacado = (state.veiculoFiltro && String(v.vehicleId).includes(state.veiculoFiltro)) || state.veiculoSelecionado === key;
         const extra = destacado ? "highlight" : "";
@@ -2122,11 +2128,13 @@ function atualizarMarcadores(){
         }
     });
 
+    state.countVisiveis = countVis;
     $("statOnline").textContent = state.vehicles.size;
-    $("statVisiveis").textContent = countVis;
+    $("statNoHorario").textContent = countNoHorario;
     $("statAtrasados").textContent = countAtrasado;
     $("statAdiantados").textContent = countAdiantado;
-    $("statNoHorario").textContent = countNoHorario;
+    if ($("statOcioso")) $("statOcioso").textContent = countOcioso;
+    if ($("statForaServico")) $("statForaServico").textContent = countForaServico;
     state.performance = { noHorario: countNoHorario, atrasado: countAtrasado, adiantado: countAdiantado };
     atualizarIndicePerformance();
     atualizarSemComunicacao();
