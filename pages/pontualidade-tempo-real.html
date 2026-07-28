@@ -51,6 +51,34 @@
     gap:clamp(14px,2vh,26px);
   }
 
+  /* O .panel padrao tem min-height:280px, pensado para o donut. Aqui e so uma faixa
+     de numeros: sem estes overrides a pagina passa de 950px e a TV precisaria rolar. */
+  #oficialPanel{ min-height:0; padding:clamp(10px,1.2vh,16px) clamp(14px,1.6vw,24px); gap:clamp(6px,.8vh,10px); }
+  #oficialPanel .panel-title{ margin:0; }
+  .oficial-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:clamp(6px,.8vw,12px); }
+  @media (max-width:1100px){ .oficial-grid{ grid-template-columns:repeat(3,1fr); } }
+  .oficial-card{
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:clamp(5px,.8vh,10px); border-radius:12px;
+    background:rgba(255,255,255,.04); border:1px solid var(--panel-border);
+  }
+  .oficial-label{ color:var(--muted); font-size:clamp(9px,.72vw,12px); font-weight:700; text-transform:uppercase; letter-spacing:.1em; text-align:center; }
+  .oficial-value{ font-weight:900; font-size:clamp(18px,1.7vw,30px); color:var(--blue); line-height:1.05; }
+  .oficial-ruim{ color:var(--red); }
+  /* Telas de 768px de altura (ex.: 1366x768) nao tem folga: sem isto a nova faixa
+     empurra o rodape para fora e a TV precisaria rolar. */
+  @media (max-height:820px){
+    #oficialPanel{ padding:5px clamp(12px,1.4vw,20px); }
+    #oficialPanel .panel-title{ font-size:11px; }
+    .oficial-card{ padding:3px; gap:0; }
+    .oficial-value{ font-size:clamp(15px,1.4vw,22px); }
+    .oficial-label{ font-size:8.5px; letter-spacing:.05em; }
+    .oficial-grid{ gap:6px; }
+    /* Compensa a faixa extra apertando os espacos gerais da pagina. */
+    .wrap{ gap:10px; padding-top:10px; padding-bottom:10px; }
+    .panel{ min-height:0; }
+  }
+
   .header{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; }
   .brand{ display:flex; align-items:center; gap:16px; }
   .logo{ height:clamp(52px,6vh,80px); width:auto; object-fit:contain; filter:drop-shadow(0 0 16px rgba(52,211,153,.4)); }
@@ -229,13 +257,46 @@
       <div class="stat-label">Atrasado</div>
       <div class="stat-value" id="qtdAtrasado">--</div>
       <div class="stat-pct" id="pctAtrasado">--%</div>
-      <div class="stat-sub">6 min ou mais atrás do previsto</div>
+      <div class="stat-sub">mais de 6 min atrás do previsto</div>
     </div>
     <div class="stat-card stat-adiantado">
       <div class="stat-label">Adiantado</div>
       <div class="stat-value" id="qtdAdiantado">--</div>
       <div class="stat-pct" id="pctAdiantado">--%</div>
-      <div class="stat-sub">2 min ou mais à frente do previsto</div>
+      <div class="stat-sub">mais de 2 min à frente do previsto</div>
+    </div>
+  </section>
+
+  <section class="panel" id="oficialPanel" hidden>
+    <div class="panel-title">
+      Indicadores oficiais TCGL (OTP/CAD) —
+      <span id="oficialApurado" style="font-weight:600;color:var(--muted)">apurando…</span>
+    </div>
+    <div class="oficial-grid">
+      <div class="oficial-card">
+        <span class="oficial-label">No horário</span>
+        <span class="oficial-value" id="ofNoHorario">--</span>
+      </div>
+      <div class="oficial-card">
+        <span class="oficial-label">Atrasado</span>
+        <span class="oficial-value" id="ofAtrasado">--</span>
+      </div>
+      <div class="oficial-card">
+        <span class="oficial-label">Adiantado</span>
+        <span class="oficial-value" id="ofAdiantado">--</span>
+      </div>
+      <div class="oficial-card">
+        <span class="oficial-label">Chegadas</span>
+        <span class="oficial-value" id="ofChegadas">--</span>
+      </div>
+      <div class="oficial-card">
+        <span class="oficial-label">Partidas</span>
+        <span class="oficial-value" id="ofPartidas">--</span>
+      </div>
+      <div class="oficial-card">
+        <span class="oficial-label">Viagens perdidas</span>
+        <span class="oficial-value oficial-ruim" id="ofPerdidas">--</span>
+      </div>
     </div>
   </section>
 
@@ -375,8 +436,10 @@ async function carregarPainel() {
         produtivo++;
         const delaySec = v.delaySec != null ? Number(v.delaySec) : null;
         if (delaySec == null) return; // sem previsão ainda, não entra na contagem de pontualidade
-        if (delaySec <= -ADIANTADO_SEG) adiantado++;
-        else if (delaySec >= ATRASADO_SEG) atrasado++;
+        // Limites INCLUSIVOS (mesma regra de onibus-agora-clever.html): exatamente
+        // 2 min adiantado e exatamente 6 min atrasado ainda contam como No horário.
+        if (delaySec < -ADIANTADO_SEG) adiantado++;
+        else if (delaySec > ATRASADO_SEG) atrasado++;
         else noHorario++;
       } else if (categoria === "ocioso") {
         ocioso++;
@@ -435,10 +498,94 @@ async function carregarPainel() {
   }
 }
 
-document.getElementById("btnRefresh").addEventListener("click", carregarPainel);
+/* ===== Indicadores oficiais TCGL (OTP/CAD) =====
+ * Mesma fonte do "Índice de performance" do monitoramento ao vivo: o agente que roda
+ * dentro da rede publica no S3 e a Lambda portal-api serve. Cascata AWS → arquivo.
+ *
+ * Estes números NÃO substituem os cartões de cima: os de cima são o estado AGORA
+ * (Clever); estes são o acumulado do dia apurado pelo CAD. Misturar os dois no mesmo
+ * cartão faria o painel mostrar dois significados como se fossem um só.
+ */
+const OFICIAL = {
+  rotaAws: "/performance",
+  urlEstatica: "../assets/data/performance.json",
+  recarregarMs: 5 * 60 * 1000
+};
+
+async function buscarOficialAws() {
+  const mod = await import("../assets/js/portal-aws-config.js");
+  const snap = await mod.carregarSnapshotAws(OFICIAL.rotaAws, { timeoutMs: 12000 });
+  return snap?.payload || null;
+}
+
+async function buscarOficialEstatico() {
+  return fetchJson(OFICIAL.urlEstatica + "?t=" + Date.now());
+}
+
+function pctTxt(v) {
+  return (v == null || !Number.isFinite(Number(v))) ? "--" : Number(v) + "%";
+}
+
+/** Extrai a fatia TCGL do payload. TCGL corresponde a uma única garagem (TCGLL),
+ *  então os percentuais dessa garagem SÃO os da operadora — não é média de nada. */
+function fatiaTcgl(dados) {
+  const garagem = (dados?.garagens || []).find((g) => g.operadora === "TCGL");
+  const operadora = (dados?.operadoras || []).find((o) => o.operadora === "TCGL");
+  if (!garagem && !operadora) return null;
+  return {
+    percentuais: garagem?.percentuais || null,
+    kpis: operadora?.kpis || null,
+    geradoEm: dados?.geradoEm || dados?.atualizadoEm || null
+  };
+}
+
+async function carregarOficial() {
+  const painel = document.getElementById("oficialPanel");
+  let dados = null;
+  for (const fn of [buscarOficialAws, buscarOficialEstatico]) {
+    try {
+      const r = await fn();
+      if (r && r.indices) { dados = r; break; }
+    } catch (_) { /* tenta a próxima origem */ }
+  }
+
+  const tcgl = dados ? fatiaTcgl(dados) : null;
+  if (!tcgl) {
+    // Sem dado oficial o painel some por completo, em vez de exibir "--" que na TV
+    // seria lido como "zero" ou como falha do sistema.
+    painel.hidden = true;
+    return;
+  }
+
+  const p = tcgl.percentuais || {};
+  const k = tcgl.kpis || {};
+  document.getElementById("ofNoHorario").textContent = pctTxt(p.noHorario);
+  document.getElementById("ofAtrasado").textContent = pctTxt(p.atrasado);
+  document.getElementById("ofAdiantado").textContent = pctTxt(p.adiantado);
+  document.getElementById("ofChegadas").textContent = pctTxt(k.chegadas?.percent);
+  document.getElementById("ofPartidas").textContent = pctTxt(k.partidas?.percent);
+  document.getElementById("ofPerdidas").textContent = pctTxt(k.viagensPerdidas?.percent);
+
+  const d = tcgl.geradoEm ? new Date(tcgl.geradoEm) : null;
+  document.getElementById("oficialApurado").textContent =
+    (d && !isNaN(d.getTime()))
+      ? "apurado " + d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+      : "acumulado do dia";
+
+  painel.hidden = false;
+}
+
+document.getElementById("btnRefresh").addEventListener("click", () => {
+  carregarPainel();
+  carregarOficial();
+});
 
 carregarPainel();
 setInterval(carregarPainel, REFRESH_MS);
+
+// Muda a cada ~5 min (ritmo do agente), não a cada 30s como as posições.
+carregarOficial();
+setInterval(carregarOficial, OFICIAL.recarregarMs);
 </script>
 </body>
 </html>
