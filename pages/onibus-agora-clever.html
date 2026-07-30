@@ -80,9 +80,41 @@ body.oa-page footer.portal-site-footer{display:none!important}
 .kpi-chip-btn b{color:#b91c1c}
 .kpi-chip-btn:hover{background:#fee2e2;border-color:#fecaca}
 .kpi-chip-btn.kpi-status:hover{filter:brightness(.97)}
-.kpi-chip-performance{background:#eefcf3;border-color:#bbf1cf}
-.kpi-chip-performance b{color:#059669}
-.kpi-chip-performance:hover{background:#dcfce7;border-color:#86efac}
+/* KPI de Performance em relevo (3D): gradiente + brilho interno no topo + sombra
+   projetada, e ao clicar ele "afunda". É o número mais olhado da tela, então ganha
+   destaque físico em relação aos demais chips, que são planos. */
+.kpi-chip-performance{
+  background:linear-gradient(180deg,#ffffff 0%,#e7fbef 45%,#c7f2da 100%);
+  border-color:#8fe0b4;
+  padding:5px 13px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.95),
+    inset 0 -2px 4px rgba(5,150,105,.18),
+    0 2px 3px rgba(6,36,92,.16),
+    0 5px 10px -3px rgba(5,150,105,.35);
+  transform:translateY(-1px);
+}
+.kpi-chip-performance b{
+  color:#046c4e;font-size:15px;letter-spacing:.1px;
+  text-shadow:0 1px 0 rgba(255,255,255,.9);
+}
+.kpi-chip-performance span{color:#0b7a55}
+.kpi-chip-performance:hover{
+  background:linear-gradient(180deg,#ffffff 0%,#dcfce7 45%,#b3ecca 100%);
+  border-color:#6dd6a0;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.95),
+    inset 0 -2px 4px rgba(5,150,105,.22),
+    0 3px 5px rgba(6,36,92,.18),
+    0 8px 14px -4px rgba(5,150,105,.42);
+  transform:translateY(-2px);
+}
+.kpi-chip-performance:active{
+  transform:translateY(0);
+  box-shadow:
+    inset 0 2px 5px rgba(5,150,105,.35),
+    0 1px 1px rgba(6,36,92,.12);
+}
 .oa-modal-performance{max-width:620px}
 .oa-perf-legenda{margin:0;font-size:11px;color:var(--muted);text-align:center}
 .oa-perf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -1914,14 +1946,21 @@ function calcularIndicePerformance(){
     const total = noHorario + atrasado + adiantado;
     return {
         oficial: false,
-        pct: total ? Math.round((noHorario / total) * 100) : null,
+        pct: total ? (noHorario / total) * 100 : null,
         noHorario, atrasado, adiantado, total
     };
 }
 
+/** Percentual do índice de performance com 2 casas e vírgula decimal (ex.: 79,91%).
+ *  Duas casas porque o indicador é acompanhado de perto e variação de décimo importa. */
+function formatarPctPerformance(valor){
+    if (valor == null || !Number.isFinite(Number(valor))) return "—";
+    return Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%";
+}
+
 function renderIndicePerformance(dados){
     const numero = $("oaIndicePerfNumero");
-    if (numero) numero.textContent = dados.pct == null ? "—" : dados.pct + "%";
+    if (numero) numero.textContent = formatarPctPerformance(dados.pct);
 
     const sub = $("oaIndicePerfSubtitulo");
     if (sub){
@@ -2103,7 +2142,7 @@ function formatarMomentoPerf(iso){
 function atualizarIndicePerformance(){
     const dados = calcularIndicePerformance();
     const badge = $("statIndicePerformance");
-    if (badge) badge.textContent = dados.pct == null ? "—" : dados.pct + "%";
+    if (badge) badge.textContent = formatarPctPerformance(dados.pct);
     if ($("oaIndicePerfOverlay")?.classList.contains("open")){
         renderIndicePerformance(dados);
     }
