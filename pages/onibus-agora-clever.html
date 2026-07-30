@@ -122,6 +122,7 @@ body.oa-page footer.portal-site-footer{display:none!important}
 }
 .oa-modal-performance{max-width:620px}
 .oa-perf-legenda{margin:0;font-size:11px;color:var(--muted);text-align:center}
+.veiculo-panel-aviso{margin:6px 0 0;padding:6px 8px;border-radius:8px;border-left:3px solid #0b1f4d;background:rgba(11,31,77,.08);color:#0b1f4d;font-size:11px;font-weight:600;line-height:1.35}
 .oa-perf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .oa-perf-card{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:12px 10px;text-align:center}
 .oa-perf-card h4{margin:0 0 2px;font-size:13px;color:var(--blue);font-weight:700}
@@ -647,6 +648,7 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                             <option value="noHorario">No horário</option>
                             <option value="ocioso">Ocioso</option>
                             <option value="foraServico">Fora de serviço</option>
+                            <option value="gpsInvalido">GPS inválido</option>
                         </select>
                     </div>
                 </div>
@@ -786,12 +788,29 @@ const PONTUALIDADE = {
     cores: {
         adiantado: "#D30000", atrasado: "#FFFF00", noHorario: "#8FD400",
         semPrevisao: "#374151",
+        gpsInvalido: "#0b1f4d",
         ocioso: "#7DD3FC",
         foraServico: "#3f4757"
     },
     adiantadoSeg: 120,
     atrasadoSeg: 360
 };
+
+/** Garagem da TCGL (R. Messias Wilmar de Souza, 756 — Vila Recreio, Londrina/PR).
+ *  É onde os veículos com GPS inválido são ancorados no mapa, para não sumirem da tela
+ *  nem irem parar no meio do oceano quando o rastreador manda coordenada zerada/errada. */
+const GARAGEM_TCGL = { lat: -23.29298, lng: -51.16151 };
+
+/** Caixa envolvente do Brasil. Qualquer coordenada fora daqui é rastreador com defeito —
+ *  os casos clássicos são (0,0) no golfo da Guiné e latitude/longitude trocadas. */
+const LIMITES_BRASIL = { latMin: -33.8, latMax: 5.3, lngMin: -74.1, lngMax: -34.7 };
+
+function coordenadaNoBrasil(lat, lng){
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+    if (lat === 0 && lng === 0) return false;
+    return lat >= LIMITES_BRASIL.latMin && lat <= LIMITES_BRASIL.latMax
+        && lng >= LIMITES_BRASIL.lngMin && lng <= LIMITES_BRASIL.lngMax;
+}
 
 /** Ocioso (PI/DH/PO) = azul claro. Fora de serviço (U) = cinza chumbo. Produtivo = linha numerada 080–999. */
 const CODIGOS_OCIOSO = new Set(["PI", "DH", "PO"]);
@@ -900,6 +919,8 @@ function corBadgeOperadora(operadora){
 
 /** Deriva o status a partir da categoria operacional (produtivo/ocioso/fora de serviço) e do delaySec calculado no proxy. */
 function statusPontualidade(v){
+    // GPS inválido vem antes de tudo: sem posição confiável, nenhum outro status é confiável.
+    if (v.gpsInvalido) return { chave: "gpsInvalido", label: "GPS inválido", cor: PONTUALIDADE.cores.gpsInvalido };
     if (v.categoria === "ocioso") return { chave: "ocioso", label: "Ocioso", cor: PONTUALIDADE.cores.ocioso };
     if (v.categoria === "foraServico") return { chave: "foraServico", label: "Fora de serviço", cor: PONTUALIDADE.cores.foraServico };
     if (v.delaySec == null){
@@ -1163,10 +1184,24 @@ async function fetchCleverVehicles(){
     const data = await fetchCleverLive("getvehiclesdelay");
     const lista = extrairListaBustime(data, "vehicle");
     const found = [];
+    let nGpsInvalido = 0;
     lista.forEach(v => {
-        const lat = Number(v.lat);
-        const lng = Number(v.lon);
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+        const latBruta = Number(v.lat);
+        const lngBruta = Number(v.lon);
+        // Coordenada fora do Brasil (ou ausente/zerada) = rastreador com defeito. Em vez de
+        // sumir com o carro do mapa, ele é ancorado na garagem da TCGL com status "GPS inválido",
+        // para o operador enxergar que aquele veículo existe mas está sem posição confiável.
+        const gpsInvalido = !coordenadaNoBrasil(latBruta, lngBruta);
+        // Espalha em espiral (ângulo áureo) ao redor da garagem para os ícones não empilharem
+        // exatamente no mesmo pixel quando vários rastreadores falham ao mesmo tempo.
+        let lat = latBruta, lng = lngBruta;
+        if (gpsInvalido){
+            const ang = nGpsInvalido * 2.39996;
+            const raio = 0.00030 + nGpsInvalido * 0.00010;
+            lat = GARAGEM_TCGL.lat + raio * Math.cos(ang);
+            lng = GARAGEM_TCGL.lng + raio * Math.sin(ang);
+            nGpsInvalido += 1;
+        }
         const rt = String(v.rt ?? "");
         const categoria = categoriaOperacional(rt);
         const route = categoria === "produtivo"
@@ -1176,6 +1211,9 @@ async function fetchCleverVehicles(){
         found.push({
             vehicleId: vid,
             lat, lng,
+            gpsInvalido,
+            latOriginal: Number.isFinite(latBruta) ? latBruta : null,
+            lngOriginal: Number.isFinite(lngBruta) ? lngBruta : null,
             routeId: route.routeId,
             route,
             categoria,
@@ -1442,8 +1480,10 @@ function veiculoPassaFiltro(v){
     if (state.statusFiltro){
         // "ocioso" e "foraServico" são categorias operacionais (PI/DH/PO e U), não pontualidade;
         // os demais (atrasado/adiantado/noHorário) só fazem sentido para veículos produtivos.
-        if (state.statusFiltro === "ocioso" || state.statusFiltro === "foraServico"){
-            if (v.categoria !== state.statusFiltro) return false;
+        if (state.statusFiltro === "gpsInvalido"){
+            if (!v.gpsInvalido) return false;
+        } else if (state.statusFiltro === "ocioso" || state.statusFiltro === "foraServico"){
+            if (v.gpsInvalido || v.categoria !== state.statusFiltro) return false;
         } else {
             if (v.categoria !== "produtivo") return false;
             if (statusPontualidade(v).chave !== state.statusFiltro) return false;
@@ -1461,7 +1501,7 @@ function descricaoFiltroAtivo(){
     if (state.routeFiltro) partes.push("linha " + state.routeFiltro.shortName);
     if (state.operadorFiltro) partes.push(state.operadorFiltro);
     if (state.statusFiltro){
-        const rotulos = { ocioso: "ocioso", foraServico: "fora de serviço", noHorario: "no horário", atrasado: "atrasado", adiantado: "adiantado" };
+        const rotulos = { ocioso: "ocioso", foraServico: "fora de serviço", noHorario: "no horário", atrasado: "atrasado", adiantado: "adiantado", gpsInvalido: "GPS inválido" };
         partes.push(rotulos[state.statusFiltro] || state.statusFiltro);
     }
     const q = state.veiculoFiltro.trim();
@@ -1471,7 +1511,7 @@ function descricaoFiltroAtivo(){
 
 function textoStatusComQuantidade(v){
     const st = statusPontualidade(v);
-    if (st.chave === "especial" || v.delaySec == null) return st.label;
+    if (st.chave === "especial" || st.chave === "gpsInvalido" || v.delaySec == null) return st.label;
     const min = Math.round(Math.abs(v.delaySec) / 60);
     return st.label + (min > 0 ? (" · " + min + " min") : "");
 }
@@ -1546,6 +1586,11 @@ function popupVeiculoHtml(v, telemetria){
                 '<span class="veiculo-panel-status" style="background:' + esc(st.cor) + ';color:' + contraste(st.cor) + '">' + esc(textoStatusComQuantidade(v)) + '</span>' +
             '</div>' +
         '</div>' +
+        (v.gpsInvalido
+            ? '<p class="veiculo-panel-aviso">Posição fora do Brasil'
+                + (v.latOriginal != null ? ' (' + v.latOriginal.toFixed(5) + ', ' + v.lngOriginal.toFixed(5) + ')' : ' (sem coordenada)')
+                + ' — ícone ancorado na garagem da TCGL.</p>'
+            : '') +
         '<div class="veiculo-panel-grid veiculo-panel-grid-3">' + linha1 + '</div>' +
         '<div class="veiculo-panel-grid veiculo-panel-grid-via">' + linha2 + '</div>' +
         '<div class="veiculo-panel-grid veiculo-panel-grid-3">' + linha3 + '</div>' +
