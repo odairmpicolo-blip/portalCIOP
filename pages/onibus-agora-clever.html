@@ -1451,6 +1451,18 @@ function veiculoPassaFiltro(v){
     return true;
 }
 
+/** Descreve o filtro ativo do mapa (ou null se está mostrando tudo). Usado para deixar
+ *  explícito no índice de performance que o número está restrito ao recorte da tela. */
+function descricaoFiltroAtivo(){
+    const partes = [];
+    if (state.routeFiltro) partes.push("linha " + state.routeFiltro.shortName);
+    if (state.operadorFiltro) partes.push(state.operadorFiltro);
+    if (state.statusFiltro) partes.push(state.statusFiltro === "naoProdutivo" ? "não produtivos" : state.statusFiltro);
+    const q = state.veiculoFiltro.trim();
+    if (q) partes.push("carro " + q);
+    return partes.length ? partes.join(" · ") : null;
+}
+
 function textoStatusComQuantidade(v){
     const st = statusPontualidade(v);
     if (st.chave === "especial" || v.delaySec == null) return st.label;
@@ -1932,7 +1944,10 @@ async function carregarPerformanceOficial(){
  *  agora), por isso a origem fica sempre explícita na tela. */
 function calcularIndicePerformance(){
     const of = PERFORMANCE.dados;
-    if (of && of.indices && typeof of.indices.noHorario === "number"){
+    // Com filtro ativo o indicador oficial não serve: ele é sempre da frota inteira e não
+    // sabe recortar por linha/carro. Nesse caso cai no cálculo local, que acompanha a tela.
+    const filtro = descricaoFiltroAtivo();
+    if (!filtro && of && of.indices && typeof of.indices.noHorario === "number"){
         return {
             oficial: true,
             pct: of.indices.noHorario,
@@ -1950,6 +1965,7 @@ function calcularIndicePerformance(){
     const total = noHorario + atrasado + adiantado;
     return {
         oficial: false,
+        filtro,
         pct: total ? (noHorario / total) * 100 : null,
         noHorario, atrasado, adiantado, total
     };
@@ -1972,6 +1988,8 @@ function renderIndicePerformance(dados){
             const modo = dados.modo === 1 ? "intervalo" : "aderência ao horário";
             const via = PERFORMANCE.fonte === "aws" ? " · via AWS" : (PERFORMANCE.fonte === "estatico" ? " · via arquivo" : "");
             sub.textContent = "Indicador oficial OTP/CAD (" + modo + ") · apurado " + formatarMomentoPerf(dados.geradoEm) + via;
+        } else if (dados.filtro){
+            sub.textContent = "Recorte atual do mapa: " + dados.filtro + " · cálculo local pelo Clever";
         } else {
             sub.textContent = PERFORMANCE.erro
                 ? "Estimativa local pelo Clever (indicador oficial " + PERFORMANCE.erro + ")"
@@ -1988,7 +2006,8 @@ function renderIndicePerformance(dados){
         alvo.innerHTML =
             '<div class="oa-perf-card">' +
                 otpBarrasHtml(p(dados.adiantado), p(dados.noHorario), p(dados.atrasado),
-                    "Estado atual dos " + t + " veículos produtivos com previsão") +
+                    "Estado atual dos " + t + " veículos produtivos com previsão"
+                    + (dados.filtro ? " (" + dados.filtro + ")" : "")) +
             '</div>';
         return;
     }
@@ -2169,20 +2188,12 @@ function atualizarMarcadores(){
     let countVis = 0;
     let countAtrasado = 0, countAdiantado = 0, countNoHorario = 0;
     let countOcioso = 0, countForaServico = 0;
-    // Índice de performance TCGL: sempre soma a frota TCGL inteira, independente do filtro
-    // do mapa (operadora/rota/status), pra bater com o mesmo indicador do Painel TV
-    // ("Pontualidade em Tempo Real · Somente TCGL"). Os contadores acima (countNoHorario etc.)
-    // continuam refletindo só o que está filtrado/visível no mapa.
-    let perfAtrasado = 0, perfAdiantado = 0, perfNoHorario = 0;
-
+    // Índice de performance desta tela ACOMPANHA os filtros do mapa (operadora/linha/status):
+    // ele responde "como está o que eu estou olhando agora". O Painel TV é que fica fixo na
+    // frota TCGL inteira, porque lá ninguém filtra nada — então os dois só coincidem quando
+    // esta tela está sem filtro e restrita à TCGL.
     state.vehicles.forEach((v, key) => {
         const chaveStatus = statusPontualidade(v).chave;
-
-        if (v.operadora === "TCGL" && v.categoria === "produtivo"){
-            if (chaveStatus === "atrasado") perfAtrasado += 1;
-            else if (chaveStatus === "adiantado") perfAdiantado += 1;
-            else if (chaveStatus === "noHorario") perfNoHorario += 1;
-        }
 
         const ok = veiculoPassaFiltro(v);
         if (!ok) return;
@@ -2249,7 +2260,7 @@ function atualizarMarcadores(){
     $("statAdiantados").textContent = countAdiantado;
     if ($("statOcioso")) $("statOcioso").textContent = countOcioso;
     if ($("statForaServico")) $("statForaServico").textContent = countForaServico;
-    state.performance = { noHorario: perfNoHorario, atrasado: perfAtrasado, adiantado: perfAdiantado };
+    state.performance = { noHorario: countNoHorario, atrasado: countAtrasado, adiantado: countAdiantado };
     atualizarIndicePerformance();
     atualizarSemComunicacao();
     syncNativeHud();
