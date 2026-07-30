@@ -645,7 +645,8 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                             <option value="atrasado">Atrasado</option>
                             <option value="adiantado">Adiantado</option>
                             <option value="noHorario">No horário</option>
-                            <option value="naoProdutivo">Não produtivo</option>
+                            <option value="ocioso">Ocioso</option>
+                            <option value="foraServico">Fora de serviço</option>
                         </select>
                     </div>
                 </div>
@@ -1439,8 +1440,10 @@ function veiculoPassaFiltro(v){
     if (state.routeFiltro && v.routeId !== state.routeFiltro.routeId) return false;
     if (state.operadorFiltro && v.operadora !== state.operadorFiltro) return false;
     if (state.statusFiltro){
-        if (state.statusFiltro === "naoProdutivo"){
-            if (v.categoria === "produtivo") return false;
+        // "ocioso" e "foraServico" são categorias operacionais (PI/DH/PO e U), não pontualidade;
+        // os demais (atrasado/adiantado/noHorário) só fazem sentido para veículos produtivos.
+        if (state.statusFiltro === "ocioso" || state.statusFiltro === "foraServico"){
+            if (v.categoria !== state.statusFiltro) return false;
         } else {
             if (v.categoria !== "produtivo") return false;
             if (statusPontualidade(v).chave !== state.statusFiltro) return false;
@@ -1457,7 +1460,10 @@ function descricaoFiltroAtivo(){
     const partes = [];
     if (state.routeFiltro) partes.push("linha " + state.routeFiltro.shortName);
     if (state.operadorFiltro) partes.push(state.operadorFiltro);
-    if (state.statusFiltro) partes.push(state.statusFiltro === "naoProdutivo" ? "não produtivos" : state.statusFiltro);
+    if (state.statusFiltro){
+        const rotulos = { ocioso: "ocioso", foraServico: "fora de serviço", noHorario: "no horário", atrasado: "atrasado", adiantado: "adiantado" };
+        partes.push(rotulos[state.statusFiltro] || state.statusFiltro);
+    }
     const q = state.veiculoFiltro.trim();
     if (q) partes.push("carro " + q);
     return partes.length ? partes.join(" · ") : null;
