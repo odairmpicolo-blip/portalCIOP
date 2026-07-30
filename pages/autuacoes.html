@@ -198,7 +198,7 @@ h1{margin:0;text-align:center;color:#071f57;font-size:28px;line-height:1.05;font
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 36px;
+    min-height: 44px;
     border-radius: 8px;
     padding: 8px 14px;
     background: linear-gradient(135deg, var(--blue), var(--blue2));
@@ -209,6 +209,41 @@ h1{margin:0;text-align:center;color:#071f57;font-size:28px;line-height:1.05;font
     box-shadow: 0 8px 16px rgba(6, 36, 92, 0.16);
     transition: transform 0.2s, box-shadow 0.2s;
     white-space: nowrap;
+}
+
+/* Filtros + botão Portal na mesma linha (pedido do usuário) */
+.filters-panel .filters.filters-oneline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 12px 16px;
+}
+.filters-oneline .filter-portal {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: flex-end;
+}
+.filters-oneline .filter-date {
+    flex: 1 1 240px;
+    min-width: 220px;
+    max-width: 360px;
+}
+.filters-oneline .filter-field:not(.filter-action):not(.filter-date):not(.filter-portal) {
+    flex: 1 1 150px;
+    min-width: 140px;
+    max-width: 220px;
+}
+.filters-oneline .filter-action {
+    flex: 0 0 auto;
+}
+@media (max-width: 900px) {
+    .filters-panel .filters.filters-oneline {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .filters-oneline .filter-field {
+        max-width: 100% !important;
+    }
 }
 
 .btn-portal:hover {
@@ -907,20 +942,17 @@ h1 {
 </header>
           <main class="wrap">
 <section class="panel filters-panel">
-<div class="filters-head">
-    <a href="../index.html" class="btn-portal" aria-label="Voltar ao portal">
+<div class="filters filters-oneline">
+<div class="filter-field filter-portal"><a href="../index.html" class="btn-portal" aria-label="Voltar ao portal">
         <span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>
         <span>Portal</span>
-    </a>
-    <div class="filters-head-title"><span class="section-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16"/><path d="M7 12h10"/><path d="M10 19h4"/></svg></span><span>Filtros de consulta</span></div>
-    <button class="filter-clear filters-head-action" type="button" id="btnAtualizar"><span class="button-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></span><span>Atualizar</span></button>
-</div>
-<div class="filters">
+    </a></div>
 <div class="filter-field filter-date"><label><span class="field-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/></svg></span><span>Data</span></label><div class="date-row"><input type="date" id="dataInicio"><span class="date-separator">até</span><input type="date" id="dataFim"></div></div>
 <div class="filter-field"><label><span class="field-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 13 11 22l-9-9V4h9l9 9Z"/><path d="M7.5 7.5h.01"/></svg></span><span>Motivo</span></label><select id="motivoFilter"><option value="">Todos os motivos</option></select></div>
 <div class="filter-field"><label><span class="field-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="9" r="3"/><path d="M8 17c.8-2 2.1-3 4-3s3.2 1 4 3"/></svg></span><span>Agente</span></label><select id="agenteFilter"><option value="">Todos os agentes</option></select></div>
 <div class="filter-field"><label><span class="field-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg></span><span>Busca</span></label><input id="busca" placeholder="Auto, notificação, motivo..."></div>
 <div class="filter-field filter-action"><button onclick="limparFiltros()" class="filter-clear" type="button"><span class="button-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5"/><path d="M14 11v5"/><path d="M9 7V4h6v3"/></svg></span><span>Limpar</span></button></div>
+<div class="filter-field filter-action"><button class="filter-clear" type="button" id="btnAtualizar"><span class="button-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></span><span>Atualizar</span></button></div>
 </div>
 </section>
 <section class="cards cards-kpi">
