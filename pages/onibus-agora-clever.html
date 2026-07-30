@@ -59,11 +59,27 @@ body.oa-page footer.portal-site-footer{display:none!important}
   font-size:10.5px;color:var(--muted);font-weight:600;white-space:nowrap;
 }
 .kpi-chip b{font-size:13px;font-weight:800;color:var(--blue)}
+/* Código de cor por status, igual ao da legenda do mapa. O ponto colorido carrega a cor
+   "pura" do status; o número usa um tom mais escuro da mesma cor só pra ficar legível
+   sobre fundo claro (amarelo puro em texto some). */
+.kpi-chip.kpi-status::before{
+  content:"";width:8px;height:8px;border-radius:50%;flex:0 0 auto;align-self:center;
+  background:var(--kpi-cor,#94a3b8);box-shadow:0 0 0 1px rgba(15,23,42,.12) inset;
+}
+.kpi-chip.kpi-status b{color:var(--kpi-cor-texto,var(--blue))}
+.kpi-chip.kpi-status{background:var(--kpi-cor-fundo,var(--surface-2));border-color:var(--kpi-cor-borda,var(--border))}
+.kpi-nohorario{--kpi-cor:#22c55e;--kpi-cor-texto:#15803d;--kpi-cor-fundo:#f0fdf4;--kpi-cor-borda:#bbf7d0}
+.kpi-atrasado{--kpi-cor:#facc15;--kpi-cor-texto:#a16207;--kpi-cor-fundo:#fefce8;--kpi-cor-borda:#fde68a}
+.kpi-adiantado{--kpi-cor:#dc2626;--kpi-cor-texto:#b91c1c;--kpi-cor-fundo:#fef2f2;--kpi-cor-borda:#fecaca}
+.kpi-ocioso{--kpi-cor:#cbd5e1;--kpi-cor-texto:#64748b;--kpi-cor-fundo:#f8fafc;--kpi-cor-borda:#e2e8f0}
+.kpi-foraservico{--kpi-cor:#64748b;--kpi-cor-texto:#475569;--kpi-cor-fundo:#f1f5f9;--kpi-cor-borda:#cbd5e1}
+.kpi-semcomunicacao{--kpi-cor:#0f172a;--kpi-cor-texto:#0f172a;--kpi-cor-fundo:#f1f5f9;--kpi-cor-borda:#cbd5e1}
 .kpi-chip-btn{
   font:inherit;cursor:pointer;transition:.15s ease;margin:0;appearance:none;-webkit-appearance:none;
 }
 .kpi-chip-btn b{color:#b91c1c}
 .kpi-chip-btn:hover{background:#fee2e2;border-color:#fecaca}
+.kpi-chip-btn.kpi-status:hover{filter:brightness(.97)}
 .kpi-chip-performance{background:#eefcf3;border-color:#bbf1cf}
 .kpi-chip-performance b{color:#059669}
 .kpi-chip-performance:hover{background:#dcfce7;border-color:#86efac}
@@ -546,12 +562,12 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
         </div>
         <div class="topbar-kpis" id="topbarKpis">
             <div class="kpi-chip"><b id="statOnline">0</b><span>Online</span></div>
-            <div class="kpi-chip"><b id="statNoHorario">0</b><span>No horário</span></div>
-            <div class="kpi-chip"><b id="statAtrasados">0</b><span>Atrasado</span></div>
-            <div class="kpi-chip"><b id="statAdiantados">0</b><span>Adiantado</span></div>
-            <div class="kpi-chip"><b id="statOcioso">0</b><span>Ocioso</span></div>
-            <div class="kpi-chip"><b id="statForaServico">0</b><span>Fora de serviço</span></div>
-            <button type="button" class="kpi-chip kpi-chip-btn" id="kpiSemComunicacao">
+            <div class="kpi-chip kpi-status kpi-nohorario"><b id="statNoHorario">0</b><span>No horário</span></div>
+            <div class="kpi-chip kpi-status kpi-atrasado"><b id="statAtrasados">0</b><span>Atrasado</span></div>
+            <div class="kpi-chip kpi-status kpi-adiantado"><b id="statAdiantados">0</b><span>Adiantado</span></div>
+            <div class="kpi-chip kpi-status kpi-ocioso"><b id="statOcioso">0</b><span>Ocioso</span></div>
+            <div class="kpi-chip kpi-status kpi-foraservico"><b id="statForaServico">0</b><span>Fora de serviço</span></div>
+            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-semcomunicacao" id="kpiSemComunicacao">
                 <b id="statSemComunicacao">0</b><span>Sem comunicação</span>
             </button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-chip-performance" id="kpiIndicePerformance" title="Ver índice de performance em tempo real">
