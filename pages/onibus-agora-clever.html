@@ -598,7 +598,6 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
             </span>
         </div>
         <div class="topbar-kpis" id="topbarKpis">
-            <div class="kpi-chip"><b id="statOnline">0</b><span>Online</span></div>
             <div class="kpi-chip kpi-status kpi-nohorario"><b id="statNoHorario">0</b><span>No horário</span></div>
             <div class="kpi-chip kpi-status kpi-atrasado"><b id="statAtrasados">0</b><span>Atrasado</span></div>
             <div class="kpi-chip kpi-status kpi-adiantado"><b id="statAdiantados">0</b><span>Adiantado</span></div>
@@ -1248,7 +1247,7 @@ function syncNativeHud(){
     const busy = $("liveDot")?.classList.contains("busy");
     if ($("oaHudLiveText")) $("oaHudLiveText").textContent = hudText;
     $("oaHudDot")?.classList.toggle("busy", busy);
-    if ($("oaStatOnline")) $("oaStatOnline").textContent = $("statOnline")?.textContent || "0";
+    if ($("oaStatOnline")) $("oaStatOnline").textContent = String(state.vehicles.size);
     if ($("oaStatLinhas")) $("oaStatLinhas").textContent = $("statLinhas")?.textContent || "0";
     if ($("oaStatVisiveis")) $("oaStatVisiveis").textContent = String(state.countVisiveis ?? 0);
 }
@@ -2243,7 +2242,8 @@ function atualizarMarcadores(){
     });
 
     state.countVisiveis = countVis;
-    $("statOnline").textContent = state.vehicles.size;
+    // O chip "Online" foi retirado da barra de KPIs; o total da frota continua no HUD
+    // nativo (oaStatOnline) e no texto do liveText ("N ônibus · hora").
     $("statNoHorario").textContent = countNoHorario;
     $("statAtrasados").textContent = countAtrasado;
     $("statAdiantados").textContent = countAdiantado;
