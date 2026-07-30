@@ -124,10 +124,10 @@ body.oa-page footer.portal-site-footer{display:none!important}
 .oa-perf-bars{display:flex;align-items:flex-end;justify-content:center;gap:14px;height:118px;border-bottom:1px solid var(--border);padding-bottom:2px}
 .oa-perf-bar-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;width:42px}
 .oa-perf-bar{width:100%;border-radius:3px 3px 0 0;min-height:3px;position:relative}
-.oa-perf-bar-val{font-size:11px;font-weight:800;padding:1px 4px;border-radius:4px;margin-bottom:2px;color:#101828}
+.oa-perf-bar-val{font-size:9.5px;font-weight:800;padding:1px 3px;border-radius:4px;margin-bottom:2px;color:#101828;white-space:nowrap;letter-spacing:-.2px}
 .oa-perf-bar-lab{font-size:10px;color:var(--muted);margin-top:5px;text-align:center;line-height:1.15}
 .oa-perf-donut{width:104px;height:104px;display:block;margin:0 auto}
-.oa-perf-donut-num{font-size:22px;font-weight:800;fill:var(--teal)}
+.oa-perf-donut-num{font-size:15px;font-weight:800;fill:var(--teal);letter-spacing:-.3px}
 .oa-perf-frac{margin:4px 0 0;font-size:12px;color:var(--blue);font-weight:700}
 .oa-perf-sub{margin:2px 0 0;font-size:11px;color:var(--muted)}
 .oa-perf-sub b{color:var(--text)}
@@ -138,14 +138,14 @@ body.oa-page footer.portal-site-footer{display:none!important}
 .oa-perf-gar-nome span{color:var(--muted)}
 .oa-perf-gar-trilho{background:var(--surface-2);border:1px solid var(--border);border-radius:99px;height:9px;overflow:hidden}
 .oa-perf-gar-fill{height:100%;border-radius:99px}
-.oa-perf-gar-pct{font-size:11px;font-weight:800;text-align:right}
+.oa-perf-gar-pct{font-size:11px;font-weight:800;text-align:right;min-width:54px;white-space:nowrap}
 .oa-perf-op{border:1px solid var(--border);border-radius:10px;padding:9px 11px;margin-bottom:8px;background:var(--surface-2)}
 .oa-perf-op-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:7px}
 .oa-perf-op-head b{font-size:13px;color:var(--blue)}
 .oa-perf-op-head span{font-size:10px;color:var(--muted)}
 .oa-perf-op-kpis{display:flex;gap:8px}
 .oa-perf-mini{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 4px;text-align:center}
-.oa-perf-mini b{display:block;font-size:15px;font-weight:800}
+.oa-perf-mini b{display:block;font-size:13px;font-weight:800;white-space:nowrap;letter-spacing:-.2px}
 .oa-perf-mini span{font-size:10px;color:var(--muted)}
 .oa-perf-gar-op{margin:10px 0 3px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 @media (max-width:560px){.oa-perf-grid{grid-template-columns:1fr}.oa-perf-gar-row{grid-template-columns:104px 1fr 40px}}
@@ -1980,7 +1980,7 @@ function renderIndicePerformance(dados){
 
     if (!dados.oficial){
         const t = dados.total || 0;
-        const p = v => t ? Math.round((v / t) * 100) : 0;
+        const p = v => t ? (v / t) * 100 : 0;
         alvo.innerHTML =
             '<div class="oa-perf-card">' +
                 otpBarrasHtml(p(dados.adiantado), p(dados.noHorario), p(dados.atrasado),
@@ -2118,8 +2118,10 @@ function donutHtml(titulo, kpi, menorMelhor){
 
 const CLEVER_TEAL = "#2db4bf";
 
+/** Todos os percentuais do índice de performance (barras OTP, donuts, operadora, garagem)
+ *  usam o mesmo formato do KPI: 2 casas decimais com vírgula (ex.: 79,91%). */
 function pctTexto(v){
-    return (v == null || !Number.isFinite(Number(v))) ? "—" : Number(v) + "%";
+    return formatarPctPerformance(v);
 }
 
 function corPerf(pct){
