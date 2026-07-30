@@ -1529,6 +1529,9 @@ const ORDEM_SLIDES = ["ipv", "icv", "tempo", "km", "live", "julho"];
 const DURACAO_SLIDE_MS = 60 * 1000;
 const DURACAO_TRANSICAO_MS = 8000;
 let idxAtual = 0;
+let modoFixo = false;
+let rotacaoTimeoutId = null;
+let trocaEmAndamento = false;
 
 function mostrarSlide(id) {
   document.querySelectorAll(".kiosk-slide").forEach((el) => el.classList.remove("ativo"));
@@ -1541,18 +1544,85 @@ function mostrarSlide(id) {
   }
 }
 
-async function cicloApresentacao() {
-  while (true) {
-    const atualId = ORDEM_SLIDES[idxAtual];
-    mostrarSlide(atualId);
-    await sleep(DURACAO_SLIDE_MS);
-    const proximoId = ORDEM_SLIDES[(idxAtual + 1) % ORDEM_SLIDES.length];
-    tocarTransicao(proximoId);
-    mostrarSlide("transicao");
-    await sleep(DURACAO_TRANSICAO_MS);
-    idxAtual = (idxAtual + 1) % ORDEM_SLIDES.length;
-  }
+function agendarProximo() {
+  clearTimeout(rotacaoTimeoutId);
+  if (modoFixo) return;
+  rotacaoTimeoutId = setTimeout(avancarAutomatico, DURACAO_SLIDE_MS);
 }
+
+async function avancarAutomatico() {
+  trocaEmAndamento = true;
+  const proximoId = ORDEM_SLIDES[(idxAtual + 1) % ORDEM_SLIDES.length];
+  tocarTransicao(proximoId);
+  mostrarSlide("transicao");
+  await sleep(DURACAO_TRANSICAO_MS);
+  idxAtual = (idxAtual + 1) % ORDEM_SLIDES.length;
+  mostrarSlide(ORDEM_SLIDES[idxAtual]);
+  trocaEmAndamento = false;
+  agendarProximo();
+}
+
+// Navegação manual (swipe/arraste ou setas do teclado): troca na hora,
+// sem esperar a transição automática, e reinicia a contagem dos 60s.
+function irParaSlide(delta) {
+  clearTimeout(rotacaoTimeoutId);
+  trocaEmAndamento = false;
+  idxAtual = (idxAtual + delta + ORDEM_SLIDES.length) % ORDEM_SLIDES.length;
+  mostrarSlide(ORDEM_SLIDES[idxAtual]);
+  agendarProximo();
+}
+
+function iniciarApresentacao() {
+  mostrarSlide(ORDEM_SLIDES[idxAtual]);
+  agendarProximo();
+}
+
+/* ============================================================
+   Gesto de arrastar/deslizar (swipe) para trocar de tela
+============================================================ */
+(function configurarGestoSwipe() {
+  const alvo = document.getElementById("kiosk");
+  const LIMIAR_PX = 60;
+  const LIMIAR_MS = 1200;
+  let inicioX = null;
+  let inicioY = null;
+  let inicioT = 0;
+
+  function onInicio(x, y) {
+    inicioX = x;
+    inicioY = y;
+    inicioT = Date.now();
+  }
+
+  function onFim(x, y) {
+    if (inicioX == null) return;
+    const dx = x - inicioX;
+    const dy = y - inicioY;
+    const dt = Date.now() - inicioT;
+    inicioX = null;
+    if (dt > LIMIAR_MS) return;
+    if (Math.abs(dx) < LIMIAR_PX || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+    irParaSlide(dx < 0 ? 1 : -1);
+  }
+
+  alvo.addEventListener("pointerdown", (e) => onInicio(e.clientX, e.clientY), { passive: true });
+  alvo.addEventListener("pointerup", (e) => onFim(e.clientX, e.clientY), { passive: true });
+  alvo.addEventListener("pointercancel", () => { inicioX = null; }, { passive: true });
+
+  alvo.addEventListener("touchstart", (e) => {
+    const t = e.changedTouches[0];
+    onInicio(t.clientX, t.clientY);
+  }, { passive: true });
+  alvo.addEventListener("touchend", (e) => {
+    const t = e.changedTouches[0];
+    onFim(t.clientX, t.clientY);
+  }, { passive: true });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight") irParaSlide(1);
+    else if (e.key === "ArrowLeft") irParaSlide(-1);
+  });
+})();
 
 /* ============================================================
    Inicialização
@@ -1572,15 +1642,18 @@ setInterval(carregarClima, CLIMA_REFRESH_MS);
   document.getElementById("bootLoading").style.display = "none";
 
   // Abrir uma tela específica e fixa via ?tela=ipv|icv|tempo|km|live|julho
-  // (dados e relógio/clima continuam atualizando; não entra no rodízio)
+  // (dados e relógio/clima continuam atualizando; não entra no rodízio automático,
+  // mas ainda dá pra arrastar/deslizar pra trocar de tela manualmente)
   const telaFixa = new URLSearchParams(location.search).get("tela");
   if (telaFixa && ORDEM_SLIDES.includes(telaFixa)) {
+    modoFixo = true;
+    idxAtual = ORDEM_SLIDES.indexOf(telaFixa);
     mostrarSlide(telaFixa);
     return;
   }
 
   atualizarStatusRodape("ipv");
-  cicloApresentacao();
+  iniciarApresentacao();
 })();
 </script>
 </body>
