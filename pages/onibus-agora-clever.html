@@ -53,12 +53,20 @@ body.oa-page footer.portal-site-footer{display:none!important}
   position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
   display:flex;align-items:center;gap:6px;z-index:1;
 }
+/* Todos os KPIs com a MESMA caixa: mesma largura e mesma altura, independente do tamanho
+   do rótulo ("Ocioso" x "Fora de serviço") ou do valor ("7" x "79,91%"). O conteúdo é
+   centralizado dentro da caixa fixa, então a régua da barra fica alinhada. */
 .kpi-chip{
-  display:flex;align-items:baseline;gap:4px;padding:4px 9px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;gap:4px;
+  width:128px;height:30px;box-sizing:border-box;padding:0 8px;border-radius:10px;
   background:var(--surface-2);border:1px solid var(--border);
-  font-size:10.5px;color:var(--muted);font-weight:600;white-space:nowrap;
+  font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap;letter-spacing:-.1px;
 }
-.kpi-chip b{font-size:13px;font-weight:800;color:var(--blue)}
+.kpi-chip b{font-size:13px;font-weight:800;color:var(--blue);letter-spacing:-.2px}
+@media (max-width:1400px){
+  .kpi-chip{width:110px;font-size:9.5px}
+  .kpi-chip b{font-size:12px}
+}
 /* Código de cor por status, igual ao da legenda do mapa. O ponto colorido carrega a cor
    "pura" do status; o número usa um tom mais escuro da mesma cor só pra ficar legível
    sobre fundo claro (amarelo puro em texto some). */
@@ -70,7 +78,6 @@ body.oa-page footer.portal-site-footer{display:none!important}
   border-color:var(--kpi-cor-borda,var(--border));
   border-radius:10px;
   border-left:3px solid var(--kpi-cor,#94a3b8);
-  padding-left:9px;
 }
 .kpi-nohorario{--kpi-cor:#22c55e;--kpi-cor-texto:#15803d;--kpi-cor-fundo:#f0fdf4;--kpi-cor-borda:#bbf7d0}
 .kpi-atrasado{--kpi-cor:#facc15;--kpi-cor-texto:#a16207;--kpi-cor-fundo:#fefce8;--kpi-cor-borda:#fde68a}
@@ -79,7 +86,10 @@ body.oa-page footer.portal-site-footer{display:none!important}
 .kpi-foraservico{--kpi-cor:#64748b;--kpi-cor-texto:#475569;--kpi-cor-fundo:#f1f5f9;--kpi-cor-borda:#cbd5e1}
 .kpi-semcomunicacao{--kpi-cor:#0f172a;--kpi-cor-texto:#0f172a;--kpi-cor-fundo:#f1f5f9;--kpi-cor-borda:#cbd5e1}
 .kpi-chip-btn{
-  font:inherit;cursor:pointer;transition:.15s ease;margin:0;appearance:none;-webkit-appearance:none;
+  /* font-family (não o shorthand "font"), senão o tamanho definido em .kpi-chip é
+     sobrescrito pelo herdado e os chips-botão saem maiores que os chips-div. */
+  font-family:inherit;font-weight:600;cursor:pointer;transition:.15s ease;margin:0;
+  appearance:none;-webkit-appearance:none;
 }
 .kpi-chip-btn b{color:#b91c1c}
 .kpi-chip-btn:hover{background:#fee2e2;border-color:#fecaca}
@@ -91,7 +101,6 @@ body.oa-page footer.portal-site-footer{display:none!important}
   background:linear-gradient(180deg,#ffffff 0%,#e7fbef 45%,#c7f2da 100%);
   border-color:#8fe0b4;
   border-left:3px solid #059669;
-  padding:5px 13px;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.95),
     inset 0 -2px 4px rgba(5,150,105,.18),
@@ -100,8 +109,7 @@ body.oa-page footer.portal-site-footer{display:none!important}
   transform:translateY(-1px);
 }
 .kpi-chip-performance b{
-  color:#046c4e;font-size:15px;letter-spacing:.1px;
-  text-shadow:0 1px 0 rgba(255,255,255,.9);
+  color:#046c4e;text-shadow:0 1px 0 rgba(255,255,255,.9);
 }
 .kpi-chip-performance span{color:#0b7a55}
 .kpi-chip-performance:hover{
