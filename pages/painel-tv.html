@@ -178,6 +178,7 @@
   .tv-hero-side{ display:flex; flex-direction:column; gap:8px; padding-bottom:clamp(10px,1.4vh,20px); }
   .tv-hero-label{ font-size:clamp(15px,1.3vw,20px); color:var(--muted); font-weight:600; }
   .tv-trend{ font-size:clamp(14px,1.2vw,19px); font-weight:800; display:inline-flex; align-items:center; gap:6px; color:var(--muted); }
+  .tv-live-fonte{ font-size:clamp(11px,.9vw,14px); font-weight:600; color:var(--muted-2); }
   .tv-trend-up{ color:var(--green); }
   .tv-trend-down{ color:var(--red); }
   .tv-trend-flat{ color:var(--muted); }
@@ -701,8 +702,9 @@
           <div class="tv-hero-row">
             <div class="tv-hero tv-hero-ok" id="liveHeroValor">--%</div>
             <div class="tv-hero-side">
-              <div class="tv-hero-label">No horário agora</div>
+              <div class="tv-hero-label" id="liveHeroLabel">No horário agora</div>
               <div class="tv-trend" id="liveContagem">-- de -- veículos em rota</div>
+              <div class="tv-live-fonte" id="liveFonte">Carregando indicador oficial…</div>
             </div>
           </div>
           <div class="tv-chips">
@@ -1319,6 +1321,52 @@ const LIVE = (function () {
   const CODIGOS_FORA_SERVICO = new Set(["U"]);
   let proxyBase = null, donutChartRef = null;
 
+  /* Mesmo indicador oficial de performance (OTP/CAD) usado no Monitoramento Ao Vivo
+     (pages/onibus-agora-clever.html): assets/data/performance.json, publicado por
+     scripts/sync-performance.mjs, com a rota /performance da Lambda portal-api como
+     origem preferida. Cascata: AWS -> arquivo estático -> estimativa local (Clever). */
+  const PERFORMANCE = {
+    rotaAws: "/performance",
+    urlEstatica: "../assets/data/performance.json",
+    dados: null,
+    fonte: null
+  };
+
+  async function buscarPerformanceAws() {
+    const mod = await import("../assets/js/portal-aws-config.js");
+    const snap = await mod.carregarSnapshotAws(PERFORMANCE.rotaAws, { timeoutMs: 12000 });
+    return snap?.payload || null;
+  }
+  async function buscarPerformanceEstatica() {
+    const res = await fetch(PERFORMANCE.urlEstatica + "?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return res.json();
+  }
+  async function carregarPerformanceOficial() {
+    const tentativas = [
+      { fonte: "aws", fn: buscarPerformanceAws },
+      { fonte: "estatico", fn: buscarPerformanceEstatica }
+    ];
+    for (const t of tentativas) {
+      try {
+        const dados = await t.fn();
+        if (dados && dados.indices && typeof dados.indices.noHorario === "number") {
+          PERFORMANCE.dados = dados;
+          PERFORMANCE.fonte = t.fonte;
+          return;
+        }
+      } catch (_) { /* tenta próxima origem */ }
+    }
+    PERFORMANCE.dados = null;
+    PERFORMANCE.fonte = null;
+  }
+  function formatarMomentoPerf(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  }
+
   function normalizarProxyBase(apiUrl) {
     let url = String(apiUrl || "").trim().replace(/\/+$/, "");
     if (!url) return "";
@@ -1368,14 +1416,17 @@ const LIVE = (function () {
   }
 
   async function carregar() {
+    // Contexto da frota (produtivo/ocioso/fora de serviço) continua vindo do Clever
+    // ao vivo — o indicador de performance oficial não tem essa granularidade por veículo.
+    let tcglTotal = 0, produtivo = 0, ocioso = 0, foraServico = 0;
+    let noHorarioLocal = 0, atrasadoLocal = 0, adiantadoLocal = 0;
+    let contextoOk = false;
     try {
       const base = await resolverProxyBase();
       const data = await carregarJson(base + "/getvehiclesdelay");
       const lista = extrairListaBustime(data, "vehicle");
       const tcgl = lista.filter((v) => operadoraDoVeiculo(v.vid) === "TCGL");
-
-      let produtivo = 0, ocioso = 0, foraServico = 0;
-      let noHorario = 0, atrasado = 0, adiantado = 0;
+      tcglTotal = tcgl.length;
 
       tcgl.forEach((v) => {
         const categoria = categoriaOperacional(String(v.rt ?? ""));
@@ -1383,18 +1434,58 @@ const LIVE = (function () {
           produtivo++;
           const delaySec = v.delaySec != null ? Number(v.delaySec) : null;
           if (delaySec == null) return;
-          if (delaySec <= -ADIANTADO_SEG) adiantado++;
-          else if (delaySec >= ATRASADO_SEG) atrasado++;
-          else noHorario++;
+          if (delaySec <= -ADIANTADO_SEG) adiantadoLocal++;
+          else if (delaySec >= ATRASADO_SEG) atrasadoLocal++;
+          else noHorarioLocal++;
         } else if (categoria === "ocioso") ocioso++;
         else foraServico++;
       });
+      contextoOk = true;
+    } catch (err) {
+      statusPainel.live = "Falha ao carregar dados ao vivo: " + (err.message || err);
+    }
 
-      const comPontualidade = noHorario + atrasado + adiantado;
+    document.getElementById("liveCtxTotal").textContent = contextoOk ? formatInt(tcglTotal) : "—";
+    document.getElementById("liveCtxProdutivo").textContent = contextoOk ? formatInt(produtivo) : "—";
+    document.getElementById("liveCtxOcioso").textContent = contextoOk ? formatInt(ocioso) : "—";
+    document.getElementById("liveCtxForaServico").textContent = contextoOk ? formatInt(foraServico) : "—";
+
+    // Indicador de pontualidade: prioriza o índice oficial de performance TCGL
+    // (mesmo dado do botão "Performance" no Monitoramento Ao Vivo — OTP/CAD, com
+    // cascata AWS -> arquivo estático). Cai na estimativa local pelo Clever só se
+    // nenhuma das duas origens oficiais responder.
+    await carregarPerformanceOficial();
+    const oficial = PERFORMANCE.dados;
+    let noHorario, atrasado, adiantado, comPontualidade;
+
+    if (oficial) {
+      noHorario = oficial.indices.noHorario;
+      atrasado = oficial.indices.atrasado ?? 0;
+      adiantado = oficial.indices.adiantado ?? 0;
+      comPontualidade = null; // percentuais oficiais, não contagem de veículos
+
+      document.getElementById("liveHeroValor").textContent = formatPct(noHorario);
+      document.getElementById("liveHeroLabel").textContent = "No horário (oficial TCGL)";
+      document.getElementById("liveContagem").textContent = "Índice de performance OTP/CAD";
+      const via = PERFORMANCE.fonte === "aws" ? "via AWS" : "via arquivo";
+      document.getElementById("liveFonte").textContent = "Apurado " + formatarMomentoPerf(oficial.geradoEm || oficial.atualizadoEm) + " · " + via;
+
+      document.getElementById("liveChipNoHorario").textContent = formatPct(noHorario);
+      document.getElementById("liveChipAtrasado").textContent = formatPct(atrasado);
+      document.getElementById("liveChipAdiantado").textContent = formatPct(adiantado);
+      document.getElementById("liveChipNoHorarioPct").textContent = "OTP/CAD";
+      document.getElementById("liveChipAtrasadoPct").textContent = "OTP/CAD";
+      document.getElementById("liveChipAdiantadoPct").textContent = "OTP/CAD";
+      document.getElementById("liveDonutTotal").textContent = formatPct(noHorario);
+    } else {
+      comPontualidade = noHorarioLocal + atrasadoLocal + adiantadoLocal;
+      noHorario = noHorarioLocal; atrasado = atrasadoLocal; adiantado = adiantadoLocal;
       const pctNoHorario = comPontualidade ? 100 * noHorario / comPontualidade : null;
 
       document.getElementById("liveHeroValor").textContent = pctNoHorario != null ? formatPct(pctNoHorario) : "—";
+      document.getElementById("liveHeroLabel").textContent = "No horário agora";
       document.getElementById("liveContagem").textContent = comPontualidade ? formatInt(noHorario) + " de " + formatInt(comPontualidade) + " veículos em rota" : "sem dados no momento";
+      document.getElementById("liveFonte").textContent = "Estimativa local (Clever) · indicador oficial indisponível";
 
       document.getElementById("liveChipNoHorario").textContent = formatInt(noHorario);
       document.getElementById("liveChipAtrasado").textContent = formatInt(atrasado);
@@ -1402,28 +1493,23 @@ const LIVE = (function () {
       document.getElementById("liveChipNoHorarioPct").textContent = comPontualidade ? formatPct(100 * noHorario / comPontualidade) : "—";
       document.getElementById("liveChipAtrasadoPct").textContent = comPontualidade ? formatPct(100 * atrasado / comPontualidade) : "—";
       document.getElementById("liveChipAdiantadoPct").textContent = comPontualidade ? formatPct(100 * adiantado / comPontualidade) : "—";
-
-      document.getElementById("liveCtxTotal").textContent = formatInt(tcgl.length);
-      document.getElementById("liveCtxProdutivo").textContent = formatInt(produtivo);
-      document.getElementById("liveCtxOcioso").textContent = formatInt(ocioso);
-      document.getElementById("liveCtxForaServico").textContent = formatInt(foraServico);
       document.getElementById("liveDonutTotal").textContent = formatInt(comPontualidade);
+    }
 
-      if (donutChartRef) donutChartRef.destroy();
-      const ctx = document.getElementById("liveDonutChart").getContext("2d");
-      donutChartRef = new Chart(ctx, {
-        type: "doughnut",
-        data: {
-          labels: ["No horário", "Atrasado", "Adiantado"],
-          datasets: [{ data: [noHorario, atrasado, adiantado], backgroundColor: ["#22c55e", "#fbbf24", "#ef4444"], borderColor: "#0a1730", borderWidth: 3, hoverOffset: 6 }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, cutout: "68%", animation: { duration: 400 }, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
-      });
+    if (donutChartRef) donutChartRef.destroy();
+    const ctx = document.getElementById("liveDonutChart").getContext("2d");
+    donutChartRef = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: ["No horário", "Atrasado", "Adiantado"],
+        datasets: [{ data: [noHorario, atrasado, adiantado], backgroundColor: ["#22c55e", "#fbbf24", "#ef4444"], borderColor: "#0a1730", borderWidth: 3, hoverOffset: 6 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", animation: { duration: 400 }, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+    });
 
+    if (oficial || contextoOk) {
       const agora = new Date();
       statusPainel.live = "Ao vivo atualizado às " + agora.toLocaleTimeString("pt-BR");
-    } catch (err) {
-      statusPainel.live = "Falha ao carregar dados ao vivo: " + (err.message || err);
     }
   }
   function iniciarAutoRefresh() { setInterval(carregar, REFRESH_MS); }
