@@ -1434,8 +1434,14 @@ const LIVE = (function () {
           produtivo++;
           const delaySec = v.delaySec != null ? Number(v.delaySec) : null;
           if (delaySec == null) return;
-          if (delaySec <= -ADIANTADO_SEG) adiantadoLocal++;
-          else if (delaySec >= ATRASADO_SEG) atrasadoLocal++;
+          // Limites INCLUSIVOS, iguais aos do Monitoramento Ao Vivo: exatamente 2 min
+          // adiantado e exatamente 6 min atrasado ainda contam como "No horário".
+          // Isso importa muito porque o Clever devolve o atraso arredondado em minutos
+          // inteiros, entao ha muitos veiculos exatamente em -120s e +360s. Usar <= / >=
+          // aqui jogava essa massa toda pra fora do "no horário" e derrubava o indice
+          // uns 10 pontos em relacao ao mapa.
+          if (delaySec < -ADIANTADO_SEG) adiantadoLocal++;
+          else if (delaySec > ATRASADO_SEG) atrasadoLocal++;
           else noHorarioLocal++;
         } else if (categoria === "ocioso") ocioso++;
         else foraServico++;
