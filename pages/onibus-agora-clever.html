@@ -49,9 +49,12 @@ body.oa-page{
 body.oa-page footer.portal-site-footer{display:none!important}
 .topbar{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:4px 12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 2px rgba(15,23,42,.06)}
 .topbar-left,.topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* Com 8 KPIs de largura fixa a régua não cabe mais numa faixa absoluta centralizada — ela
+   passava por cima do botão Portal e do "Atualizar agora". Agora ocupa o espaço que sobra
+   entre os dois lados e quebra linha quando a janela é estreita, em vez de sobrepor. */
 .topbar-kpis{
-  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  display:flex;align-items:center;gap:6px;z-index:1;
+  flex:1 1 auto;min-width:0;
+  display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;z-index:1;
 }
 /* Todos os KPIs com a MESMA caixa: mesma largura e mesma altura, independente do tamanho
    do rótulo ("Ocioso" x "Fora de serviço") ou do valor ("7" x "79,91%"). O conteúdo é
@@ -84,6 +87,7 @@ body.oa-page footer.portal-site-footer{display:none!important}
 .kpi-adiantado{--kpi-cor:#dc2626;--kpi-cor-texto:#b91c1c;--kpi-cor-fundo:#fef2f2;--kpi-cor-borda:#fecaca}
 .kpi-ocioso{--kpi-cor:#cbd5e1;--kpi-cor-texto:#64748b;--kpi-cor-fundo:#f8fafc;--kpi-cor-borda:#e2e8f0}
 .kpi-foraservico{--kpi-cor:#64748b;--kpi-cor-texto:#475569;--kpi-cor-fundo:#f1f5f9;--kpi-cor-borda:#cbd5e1}
+.kpi-gpsinvalido{--kpi-cor:#0b1f4d;--kpi-cor-texto:#0b1f4d;--kpi-cor-fundo:#eef2fa;--kpi-cor-borda:#c2cde6}
 .kpi-semcomunicacao{--kpi-cor:#0f172a;--kpi-cor-texto:#0f172a;--kpi-cor-fundo:#f1f5f9;--kpi-cor-borda:#cbd5e1}
 .kpi-chip-btn{
   /* font-family (não o shorthand "font"), senão o tamanho definido em .kpi-chip é
@@ -612,6 +616,7 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
             <div class="kpi-chip kpi-status kpi-adiantado"><b id="statAdiantados">0</b><span>Adiantado</span></div>
             <div class="kpi-chip kpi-status kpi-ocioso"><b id="statOcioso">0</b><span>Ocioso</span></div>
             <div class="kpi-chip kpi-status kpi-foraservico"><b id="statForaServico">0</b><span>Fora de serviço</span></div>
+            <div class="kpi-chip kpi-status kpi-gpsinvalido"><b id="statGpsInvalido">0</b><span>GPS inválido</span></div>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-semcomunicacao" id="kpiSemComunicacao">
                 <b id="statSemComunicacao">0</b><span>Sem comunicação</span>
             </button>
@@ -808,6 +813,10 @@ const PONTUALIDADE = {
  *  É onde os veículos com GPS inválido são ancorados no mapa, para não sumirem da tela
  *  nem irem parar no meio do oceano quando o rastreador manda coordenada zerada/errada. */
 const GARAGEM_TCGL = { lat: -23.29298, lng: -51.16151 };
+
+/** Carro usado como âncora dos veículos sem posição confiável: ele fica na garagem, então
+ *  serve de referência viva. Só cai na coordenada fixa acima se ele também estiver sem GPS. */
+const ANCORA_GPS_INVALIDO_VID = "411";
 
 /** Caixa envolvente do Brasil. Qualquer coordenada fora daqui é rastreador com defeito —
  *  os casos clássicos são (0,0) no golfo da Guiné e latitude/longitude trocadas. */
@@ -1193,21 +1202,33 @@ async function fetchCleverVehicles(){
     const lista = extrairListaBustime(data, "vehicle");
     const found = [];
     let nGpsInvalido = 0;
+    // Âncora dos veículos com GPS inválido: a posição ao vivo do carro 411, que fica na
+    // garagem. Usar um carro real em vez de uma coordenada fixa mantém o agrupamento certo
+    // mesmo se a garagem mudar de lugar. Se o 411 também estiver sem posição confiável,
+    // cai na coordenada fixa da garagem.
+    const ancora = (function(){
+        const ref = lista.find(x => String(x.vid ?? "") === ANCORA_GPS_INVALIDO_VID);
+        if (ref){
+            const rlat = Number(ref.lat), rlng = Number(ref.lon);
+            if (coordenadaNoBrasil(rlat, rlng)) return { lat: rlat, lng: rlng };
+        }
+        return GARAGEM_TCGL;
+    })();
     lista.forEach(v => {
         const latBruta = Number(v.lat);
         const lngBruta = Number(v.lon);
         // Coordenada fora do Brasil (ou ausente/zerada) = rastreador com defeito. Em vez de
-        // sumir com o carro do mapa, ele é ancorado na garagem da TCGL com status "GPS inválido",
-        // para o operador enxergar que aquele veículo existe mas está sem posição confiável.
+        // sumir com o carro do mapa, ele é agrupado junto ao carro 411 (na garagem) com status
+        // "GPS inválido", para o operador enxergar que o veículo existe mas está sem posição.
         const gpsInvalido = !coordenadaNoBrasil(latBruta, lngBruta);
-        // Espalha em espiral (ângulo áureo) ao redor da garagem para os ícones não empilharem
+        // Espalha em espiral (ângulo áureo) ao redor da âncora para os ícones não empilharem
         // exatamente no mesmo pixel quando vários rastreadores falham ao mesmo tempo.
         let lat = latBruta, lng = lngBruta;
         if (gpsInvalido){
             const ang = nGpsInvalido * 2.39996;
             const raio = 0.00030 + nGpsInvalido * 0.00010;
-            lat = GARAGEM_TCGL.lat + raio * Math.cos(ang);
-            lng = GARAGEM_TCGL.lng + raio * Math.sin(ang);
+            lat = ancora.lat + raio * Math.cos(ang);
+            lng = ancora.lng + raio * Math.sin(ang);
             nGpsInvalido += 1;
         }
         const rt = String(v.rt ?? "");
@@ -2246,7 +2267,7 @@ function atualizarMarcadores(){
     const visiveis = new Set();
     let countVis = 0;
     let countAtrasado = 0, countAdiantado = 0, countNoHorario = 0;
-    let countOcioso = 0, countForaServico = 0;
+    let countOcioso = 0, countForaServico = 0, countGpsInvalido = 0;
     // Índice de performance desta tela ACOMPANHA os filtros do mapa (operadora/linha/status):
     // ele responde "como está o que eu estou olhando agora". O Painel TV é que fica fixo na
     // frota TCGL inteira, porque lá ninguém filtra nada — então os dois só coincidem quando
@@ -2258,7 +2279,8 @@ function atualizarMarcadores(){
         if (!ok) return;
         countVis += 1;
         visiveis.add(key);
-        if (chaveStatus === "ocioso") countOcioso += 1;
+        if (chaveStatus === "gpsInvalido") countGpsInvalido += 1;
+        else if (chaveStatus === "ocioso") countOcioso += 1;
         else if (chaveStatus === "foraServico") countForaServico += 1;
         else if (v.categoria === "produtivo"){
             if (chaveStatus === "atrasado") countAtrasado += 1;
@@ -2319,6 +2341,7 @@ function atualizarMarcadores(){
     $("statAdiantados").textContent = countAdiantado;
     if ($("statOcioso")) $("statOcioso").textContent = countOcioso;
     if ($("statForaServico")) $("statForaServico").textContent = countForaServico;
+    if ($("statGpsInvalido")) $("statGpsInvalido").textContent = countGpsInvalido;
     state.performance = { noHorario: countNoHorario, atrasado: countAtrasado, adiantado: countAdiantado };
     atualizarIndicePerformance();
     atualizarSemComunicacao();
