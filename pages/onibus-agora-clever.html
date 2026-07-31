@@ -45,9 +45,9 @@ body.oa-page{
 .ciop-session-user{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
 .btn-logout{background:#ef4444;color:#fff;border:0;border-radius:999px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer}
 
-.shell{max-width:none;margin:0;padding:8px 10px 10px;width:100%;flex:1;display:flex;flex-direction:column;min-height:0}
+.shell{max-width:none;margin:0;padding:6px 8px 8px;width:100%;flex:1;display:flex;flex-direction:column;min-height:0}
 body.oa-page footer.portal-site-footer{display:none!important}
-.topbar{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:4px 12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 2px rgba(15,23,42,.06)}
+.topbar{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:0;padding:4px 12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 2px rgba(15,23,42,.06)}
 .topbar-left,.topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 /* Com 8 KPIs de largura fixa a régua não cabe mais numa faixa absoluta centralizada — ela
    passava por cima do botão Portal e do "Atualizar agora". Agora ocupa o espaço que sobra
@@ -339,7 +339,7 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
 }
 .sidebar.aberto{transform:translateX(0);opacity:1;visibility:visible;pointer-events:auto}
 /* Buscar: altura só do conteúdo. Linhas: ocupa até o rodapé do mapa, com a lista rolando. */
-.sidebar--linhas{top:10px;bottom:46px}
+.sidebar--linhas{top:10px;bottom:10px}
 /* Os cards internos perdem o fundo sólido para o vidro do painel aparecer atrás. */
 .sidebar .card{
   background:rgba(255,255,255,.5);
@@ -375,8 +375,8 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
   .oa-veiculo-info{max-height:46vh}
 }
 
-/* Menus do mapa no rodapé, do mesmo lado da lupa (esquerda), em linha. */
-.map-tools{position:absolute;left:10px;bottom:10px;right:auto;top:auto;z-index:500;display:flex;flex-direction:row;flex-wrap:wrap;gap:5px;max-width:calc(100% - 20px)}
+/* Menus do mapa em pé, na lateral direita. */
+.map-tools{position:absolute;top:12px;right:12px;left:auto;bottom:auto;z-index:500;display:flex;flex-direction:column;gap:5px}
 .map-tools .btn{min-height:26px;padding:0 10px;font-size:10.5px;font-weight:700;background:rgba(255,255,255,.95);backdrop-filter:blur(8px)}
 .map-tools .btn svg{width:12px;height:12px}
 body.oa-native-mode #mapa{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;flex:none!important}
@@ -754,10 +754,6 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                     <input class="input" id="buscaVeiculo" type="search" placeholder="Ex.: 1150" autocomplete="off">
                 </div>
                 <div class="field">
-                    <label for="buscaLinha">Linha</label>
-                    <input class="input" id="buscaLinha" type="search" placeholder="Ex.: 301, Alemanha..." autocomplete="off">
-                </div>
-                <div class="field">
                     <label for="buscaMotorista">Motorista</label>
                     <input class="input" id="buscaMotorista" type="search" placeholder="Matrícula do motorista" autocomplete="off">
                 </div>
@@ -767,6 +763,9 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
         <aside class="sidebar sidebar--linhas" id="oaLinhasPainel" aria-hidden="true">
             <div class="card card-pad" style="flex:1;display:flex;flex-direction:column;min-height:0">
                 <h2 class="card-title">Linhas</h2>
+                <div class="field" style="margin-bottom:8px">
+                    <input class="input" id="buscaLinha" type="search" placeholder="Filtrar linha: 301, Alemanha..." autocomplete="off">
+                </div>
                 <p class="card-sub">Clique para focar no mapa. Vazio = ver todas.</p>
                 <div class="lines" id="listaLinhas"></div>
                 <button type="button" class="btn btn-ghost" id="btnLimparFiltro" style="margin-top:10px;width:100%">Ver todas as linhas</button>
@@ -2764,12 +2763,18 @@ async function iniciarTelemetriaJanela(key){
     VEICULO_JANELA.pollAtivo = false;
 }
 
-/** Se a busca por veículo isolar exatamente um carro, abre a janela dele. */
+/** Se a busca (veículo ou motorista) isolar exatamente um carro, abre a janela dele.
+ *  Exige 3 caracteres para não disparar a cada tecla no começo da digitação. */
 function tentarAbrirJanelaPelaBusca(){
-    const q = state.veiculoFiltro.trim();
-    if (q.length < 3) return;
+    const veic = state.veiculoFiltro.trim();
+    const mot = state.motoristaFiltro.trim();
+    if (veic.length < 3 && mot.length < 3) return;
     const achados = [];
-    state.vehicles.forEach((v, key) => { if (String(v.vehicleId || "").includes(q)) achados.push(key); });
+    state.vehicles.forEach((v, key) => {
+        if (veic && !String(v.vehicleId || "").includes(veic)) return;
+        if (mot && !String(v.motorista || "").toLowerCase().includes(mot.toLowerCase())) return;
+        achados.push(key);
+    });
     if (achados.length === 1 && achados[0] !== VEICULO_JANELA.key) abrirJanelaVeiculo(achados[0]);
 }
 
@@ -2865,7 +2870,9 @@ function bind(){
     $("buscaMotorista")?.addEventListener("input", e => {
         state.motoristaFiltro = e.target.value.trim();
         atualizarMarcadores();
+        tentarAbrirJanelaPelaBusca();
     });
+    $("buscaMotorista")?.addEventListener("keydown", e => { if (e.key === "Enter") tentarAbrirJanelaPelaBusca(); });
     $("oaVeiculoFechar")?.addEventListener("click", fecharJanelaVeiculo);
     $("oaVeiculoOverlay")?.addEventListener("click", e => {
         if (e.target.id === "oaVeiculoOverlay") fecharJanelaVeiculo();
@@ -2925,6 +2932,18 @@ function bind(){
     }
     $("btnTelaCheia")?.addEventListener("click", () => alternarTelaCheiaMapa());
     document.addEventListener("keydown", e => {
+        // Atalho para abrir o Buscar. Ctrl/Cmd+T é o pedido original, mas o Chrome reserva
+        // essa combinação para "nova aba" e não entrega o evento para a página — por isso
+        // Ctrl/Cmd+K e a barra "/" ficam como alternativas que funcionam de fato.
+        const mod = e.ctrlKey || e.metaKey;
+        const digitando = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName || "");
+        if ((mod && (e.key === "t" || e.key === "T" || e.key === "k" || e.key === "K"))
+            || (e.key === "/" && !digitando && !mod)){
+            e.preventDefault();
+            alternarPainelMapa("busca", true);
+            setTimeout(() => $("buscaVeiculo")?.focus(), 120);
+            return;
+        }
         if (e.key === "Escape"){
             fecharSemComunicacao();
             fecharGpsInvalido();
