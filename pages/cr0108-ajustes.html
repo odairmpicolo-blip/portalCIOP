@@ -27,6 +27,12 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
 .header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
 .container{max-width:1680px;margin:16px auto 32px;padding:0 20px;flex:1;width:100%}
 .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+/* Barra única com navegação + filtros: alinhada pela base, senão os botões
+   desencontram a altura dos campos, que têm rótulo em cima. */
+.toolbar-filtros{align-items:flex-end;gap:10px 12px;padding:10px 12px;border-radius:12px;
+  background:var(--surface);border:1px solid var(--border);box-shadow:0 8px 20px rgba(16,24,40,.06)}
+.toolbar-filtros .btn-portal{min-height:38px}
+.toolbar-filtros .campo-busca input{min-width:200px}
 .btn-portal{display:inline-flex;align-items:center;gap:8px;min-height:40px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;background:var(--blue);color:#fff;border:0;cursor:pointer}
 .btn-portal:hover{background:var(--blue2)}
 .btn-ghost{background:var(--surface-2);color:var(--blue);border:1px solid var(--border)}
@@ -76,6 +82,9 @@ table.rel td.txt{text-align:left}
 .ajuste.atrasar{background:var(--c-atrasado-bg);color:var(--c-atrasado-txt)}
 .ajuste.zero{background:var(--surface-2);color:var(--muted)}
 .seta{font-weight:900;color:var(--muted)}
+.hora-hoje{font-size:13.5px;color:var(--text)}
+.hora-nova{font-size:14px;color:var(--c-nohorario-txt);background:var(--c-nohorario-bg);padding:2px 7px;border-radius:7px;display:inline-block}
+tr.grupo-linha td{background:#eef2fb !important;color:var(--blue);font-weight:900;font-size:11.5px;text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);position:sticky;top:28px;z-index:1}
 .pct-atual{font-weight:800;color:var(--c-adiantado-txt)}
 .pct-depois{font-weight:900;color:var(--c-nohorario-txt)}
 .ganho{font-weight:900;color:var(--c-nohorario-txt)}
@@ -165,39 +174,46 @@ table.mini td{padding:4px 9px;border:1px solid var(--border);text-align:center;b
 </header>
 
 <main class="container">
-    <div class="toolbar">
+    <!-- Barra única: navegação e filtros na mesma linha. -->
+    <div class="toolbar toolbar-filtros">
         <a class="btn-portal" href="relatorios.html"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Relatórios</a>
-        <a class="btn-portal btn-ghost" href="cr0108.html">Ver o relatório CR-0108</a>
-    </div>
+        <a class="btn-portal btn-ghost" href="cr0108.html">CR-0108</a>
 
-    <section class="explica">
-        <h2>Como esta lista foi montada</h2>
-        <p>Para cada combinação de <b>linha + sentido + ponto de controle</b>, olhamos a distribuição real dos desvios do ano inteiro. Se um ponto passa quase sempre com o mesmo desvio — por exemplo, sempre 3 minutos adiantado — o problema não é o motorista: é o <b>tempo de percurso programado</b> até ali. Testamos deslocar o horário daquele ponto de −20 a +20 minutos e escolhemos o deslocamento que joga o máximo de passagens para dentro da faixa <b>No horário (−2 a +6 min)</b>.</p>
-        <p>A coluna <b>amplitude</b> é a distância entre o 10º e o 90º percentil dos desvios, ou seja, o quanto as passagens se espalham. Amplitude pequena significa comportamento previsível — aí mexer na tabela resolve. <b>Amplitude grande significa que nenhum horário resolve</b>: a variação vem de trânsito, embarque ou demanda, e o caso está separado na segunda tabela.</p>
-        <p>Só entram grupos com pelo menos <b>60 passagens</b> no ano, para a conclusão não vir de um punhado de viagens.</p>
-    </section>
-
-    <section class="kpis" id="kpis"></section>
-
-    <section class="filtros">
         <div class="campo campo-busca"><label for="fBusca">Buscar ponto ou linha</label><input type="search" id="fBusca" placeholder="Ex.: 109, Terminal Ouro Verde…" autocomplete="off"></div>
         <div class="campo"><label for="fLinha">Linha</label><select id="fLinha"><option value="">Todas</option></select></div>
         <div class="campo"><label for="fSentido">Sentido</label><select id="fSentido"><option value="">Ambos</option><option value="IDA">IDA</option><option value="VOLTA">VOLTA</option></select></div>
         <div class="campo"><label for="fMin">Ganho mínimo</label><select id="fMin">
-            <option value="0">Qualquer ganho</option>
-            <option value="2">A partir de 2 p.p.</option>
-            <option value="5" selected>A partir de 5 p.p.</option>
-            <option value="10">A partir de 10 p.p.</option>
+            <option value="0">Qualquer</option>
+            <option value="2">2 p.p.</option>
+            <option value="5" selected>5 p.p.</option>
+            <option value="10">10 p.p.</option>
+        </select></div>
+        <div class="campo"><label for="fOrdem">Ordenar</label><select id="fOrdem">
+            <option value="linha" selected>Linha e horário</option>
+            <option value="impacto">Maior impacto</option>
         </select></div>
         <button type="button" class="btn-portal btn-ghost" id="btnLimpar">Limpar</button>
-        <button type="button" class="btn-portal" id="btnCsv">Baixar CSV</button>
+        <button type="button" class="btn-portal btn-ghost" id="btnCsvHorarios">CSV horários</button>
+        <button type="button" class="btn-portal btn-ghost" id="btnCsv">CSV pontos</button>
+    </div>
+
+    <section class="kpis" id="kpis"></section>
+
+    <section class="card">
+        <div class="card-head">
+            <div>
+                <h2 class="card-title">Horários a ajustar</h2>
+                <div class="card-sub" id="subHorarios">—</div>
+            </div>
+        </div>
+        <div class="tabela-wrap"><table class="rel" id="tabelaHorarios"></table></div>
     </section>
 
     <section class="card">
         <div class="card-head">
             <div>
-                <h2 class="card-title">1. Ajustar o horário programado</h2>
-                <div class="card-sub">Pontos com desvio sistemático e comportamento previsível. Clique na linha para ver em quais faixas horárias o ajuste rende mais.</div>
+                <h2 class="card-title">Resumo por ponto de controle</h2>
+                <div class="card-sub" id="subRanking">—</div>
             </div>
         </div>
         <div class="tabela-wrap"><table class="rel" id="tabelaAjuste"></table></div>
@@ -206,18 +222,7 @@ table.mini td{padding:4px 9px;border:1px solid var(--border);text-align:center;b
     <section class="card">
         <div class="card-head">
             <div>
-                <h2 class="card-title">2. Horários sugeridos para a tabela</h2>
-                <div class="card-sub">Cada horário programado que aparece na tabela horária daquele ponto, com o horário corrigido ao lado. Só entram horários cumpridos ao menos 20 vezes no ano e cuja correção recupera 5 passagens ou mais. Use o botão de CSV para levar a lista para a programação.</div>
-            </div>
-            <button type="button" class="btn-portal" id="btnCsvHorarios">Baixar CSV dos horários</button>
-        </div>
-        <div class="tabela-wrap"><table class="rel" id="tabelaHorarios"></table></div>
-    </section>
-
-    <section class="card">
-        <div class="card-head">
-            <div>
-                <h2 class="card-title">3. Não adianta mexer no horário</h2>
+                <h2 class="card-title">Não adianta mexer no horário</h2>
                 <div class="card-sub">Mesmo com o melhor deslocamento possível, estes pontos continuam abaixo de 85% no horário. A variação é grande demais — o caminho aqui é tempo de percurso por faixa, ponto de parada, embarque ou reforço de frota.</div>
             </div>
         </div>
@@ -364,7 +369,17 @@ function horariosFiltrados(){
         const nome = DADOS.linhas[i.linha] || "";
         if (q && !(`${i.linha} ${nome} ${i.ponto}`.toLowerCase().includes(q))) return false;
         return min === 0 || i.ganhoPct >= min;
-    }).sort((a, b) => b.recuperadas - a.recuperadas);
+    }).sort(ordenarHorarios);
+}
+
+/** Padrão: agrupado por linha, sentido, ponto e horário — é a ordem em que a programação
+ *  edita a tabela. Alternativa: maior impacto primeiro, para priorizar. */
+function ordenarHorarios(a, b){
+    if ($("fOrdem").value === "impacto") return b.recuperadas - a.recuperadas;
+    return String(a.linha).localeCompare(String(b.linha), "pt-BR", { numeric: true })
+        || String(a.sentido).localeCompare(String(b.sentido), "pt-BR")
+        || String(a.ponto).localeCompare(String(b.ponto), "pt-BR")
+        || String(a.programado).localeCompare(String(b.programado));
 }
 
 function renderHorarios(){
@@ -375,30 +390,35 @@ function renderHorarios(){
         return;
     }
     const cab = `<thead><tr>
-        <th style="width:40px">#</th>
+        <th style="width:74px">Linha</th>
+        <th style="width:62px">Sentido</th>
         <th class="txt">Ponto de controle</th>
-        <th style="width:78px">Hoje</th>
+        <th style="width:82px">Horário<br>hoje</th>
         <th style="width:26px"></th>
-        <th style="width:78px">Sugerido</th>
+        <th style="width:88px">Horário<br>sugerido</th>
         <th style="width:82px">Ajuste</th>
-        <th style="width:70px">Ocorr.</th>
-        <th style="width:96px">No horário hoje</th>
-        <th style="width:96px">Ficaria</th>
-        <th style="width:82px">Ganho</th>
-        <th style="width:90px">Recuperadas</th>
+        <th style="width:66px">Ocorr.</th>
+        <th style="width:92px">No horário hoje</th>
+        <th style="width:92px">Ficaria</th>
+        <th style="width:80px">Ganho</th>
+        <th style="width:86px">Recuperadas</th>
     </tr></thead>`;
     const corpo = lista.slice(0, 1500).map((i, idx) => {
         const aj = textoAjuste(i.shift);
         const nome = DADOS.linhas[i.linha] || "";
-        return `<tr>
-            <td>${idx + 1}</td>
-            <td class="txt">
-                <div class="ponto-nome">${esc(i.ponto)}</div>
-                <div class="ponto-meta">Linha ${esc(i.linha)}${nome ? " · " + esc(nome) : ""} · ${esc(i.sentido)}</div>
-            </td>
-            <td><b style="font-size:13px">${esc(i.programado)}</b></td>
+        // Cabeçalho de grupo quando a linha muda, para a leitura ficar por linha.
+        const anterior = idx > 0 ? lista[idx - 1] : null;
+        const abreGrupo = $("fOrdem").value === "linha" && (!anterior || anterior.linha !== i.linha);
+        const grupo = abreGrupo
+            ? `<tr class="grupo-linha"><td colspan="12">Linha ${esc(i.linha)}${nome ? " — " + esc(nome) : ""}</td></tr>`
+            : "";
+        return grupo + `<tr>
+            <td><b>${esc(i.linha)}</b></td>
+            <td>${esc(i.sentido)}</td>
+            <td class="txt"><div class="ponto-nome">${esc(i.ponto)}</div></td>
+            <td><b class="hora-hoje">${esc(i.programado)}</b></td>
             <td class="seta">→</td>
-            <td><b style="font-size:13px;color:var(--c-nohorario-txt)">${esc(i.sugerido)}</b></td>
+            <td><b class="hora-nova">${esc(i.sugerido)}</b></td>
             <td><span class="ajuste ${aj.classe}" title="${esc(aj.desc)}">${aj.txt}</span></td>
             <td>${nInt(i.n)}</td>
             <td><span class="pct-atual">${nPct(i.pctAtual)}</span></td>
@@ -408,9 +428,14 @@ function renderHorarios(){
         </tr>`;
     }).join("");
     const aviso = lista.length > 1500
-        ? `<tr><td colspan="11" class="aviso">Mostrando os 1.500 horários de maior impacto, de ${nInt(lista.length)}. Refine os filtros ou baixe o CSV para ver todos.</td></tr>`
+        ? `<tr><td colspan="12" class="aviso">Mostrando os primeiros 1.500 horários, de ${nInt(lista.length)}. Refine os filtros ou baixe o CSV para ver todos.</td></tr>`
         : "";
     el.innerHTML = cab + "<tbody>" + corpo + aviso + "</tbody>";
+    const rec = lista.reduce((t, i) => t + i.recuperadas, 0);
+    $("subHorarios").textContent =
+        `${nInt(lista.length)} horários com ajuste recomendado · ${nInt(rec)} passagens iriam para "No horário" · `
+        + ($("fOrdem").value === "linha" ? "agrupado por linha e horário" : "ordenado por impacto")
+        + " · só entram horários cumpridos ao menos 20 vezes no ano";
 }
 
 function baixarCsvHorarios(){
@@ -522,11 +547,11 @@ async function iniciar(){
                 sel.appendChild(o);
             });
 
-        ["fBusca", "fLinha", "fSentido", "fMin"].forEach(id => {
+        ["fBusca", "fLinha", "fSentido", "fMin", "fOrdem"].forEach(id => {
             $(id).addEventListener(id === "fBusca" ? "input" : "change", render);
         });
         $("btnLimpar").addEventListener("click", () => {
-            $("fBusca").value = ""; $("fLinha").value = ""; $("fSentido").value = ""; $("fMin").value = "5";
+            $("fBusca").value = ""; $("fLinha").value = ""; $("fSentido").value = ""; $("fMin").value = "5"; $("fOrdem").value = "linha";
             render();
         });
         $("btnCsv").addEventListener("click", baixarCsv);
