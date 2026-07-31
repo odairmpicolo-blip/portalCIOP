@@ -59,7 +59,13 @@ body.oa-page footer.portal-site-footer{display:none!important}
 /* Com 8 KPIs de largura fixa a régua não cabe mais numa faixa absoluta centralizada — ela
    passava por cima do botão Portal e do "Atualizar agora". Agora ocupa o espaço que sobra
    entre os dois lados e quebra linha quando a janela é estreita, em vez de sobrepor. */
-.topbar-kpis{flex:1 1 auto;min-width:0;display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap}
+/* KPIs de pontualidade/estado: botões soltos empilhados na lateral direita, sem barra. */
+.kpi-lateral{
+  position:absolute;top:62px;right:10px;z-index:605;
+  display:flex;flex-direction:column;align-items:flex-end;gap:5px;
+}
+.topbar-mid{display:flex;align-items:center;justify-content:center;flex:1 1 auto;min-width:0}
+.topbar-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 /* Todos os KPIs com a MESMA caixa: mesma largura e mesma altura, independente do tamanho
    do rótulo ("Ocioso" x "Fora de serviço") ou do valor ("7" x "79,91%"). O conteúdo é
    centralizado dentro da caixa fixa, então a régua da barra fica alinhada. */
@@ -198,7 +204,7 @@ body.oa-page footer.portal-site-footer{display:none!important}
 .oa-perf-mini span{font-size:10px;color:var(--muted)}
 .oa-perf-gar-op{margin:10px 0 3px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 @media (max-width:560px){.oa-perf-grid{grid-template-columns:1fr}.oa-perf-gar-row{grid-template-columns:104px 1fr 40px}}
-@media(max-width:980px){.topbar-kpis{display:none}}
+@media(max-width:980px){.kpi-lateral{display:none}}
 
 /* Modal: veículos sem comunicação */
 .oa-modal-overlay{
@@ -301,7 +307,7 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
 
 #mapa{width:100%;height:100%;min-height:520px;background:#dbeafe}
 .oa-map-shell{position:absolute;inset:0;}
-.oa-map-shell .leaflet-top.leaflet-left{margin-top:56px}
+.oa-map-shell .leaflet-top.leaflet-left{margin-top:104px}
 #mapa.leaflet-container,
 #mapa .leaflet-map-pane,#mapa .leaflet-pane,#mapa .leaflet-tile-pane,#mapa .leaflet-marker-pane{
   touch-action:none;pointer-events:auto;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none
@@ -311,7 +317,7 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
    que abre pela lupa logo abaixo do controle de zoom do Leaflet (que fica em top:10px e tem
    ~64px de altura, daí o top:84px aqui). */
 .oa-lupa{
-  position:absolute;top:140px;left:10px;z-index:620;
+  position:absolute;top:188px;left:10px;z-index:620;
   width:34px;height:34px;padding:0;margin:0;border-radius:11px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   background:rgba(255,255,255,.78);
@@ -326,11 +332,11 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
 .oa-lupa.aberto{background:rgba(6,36,92,.92);border-color:rgba(255,255,255,.5)}
 .oa-lupa.aberto svg{stroke:#fff}
 /* Botão de 3 riscos (lista de linhas), logo abaixo da lupa. */
-.oa-lupa--linhas{top:182px}
+.oa-lupa--linhas{top:230px}
 
 /* Painel de vidro: fica preso à lateral esquerda do mapa e desliza para fora quando fechado. */
 .sidebar{
-  position:absolute;top:62px;left:52px;width:258px;z-index:600;
+  position:absolute;top:110px;left:52px;width:258px;z-index:600;
   display:flex;flex-direction:column;gap:8px;min-height:0;
   padding:10px;border-radius:20px;
   background:linear-gradient(160deg, rgba(255,255,255,.62), rgba(240,246,255,.5));
@@ -345,7 +351,7 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
 }
 .sidebar.aberto{transform:translateX(0);opacity:1;visibility:visible;pointer-events:auto}
 /* Buscar: altura só do conteúdo. Linhas: ocupa até o rodapé do mapa, com a lista rolando. */
-.sidebar--linhas{top:62px;bottom:10px}
+.sidebar--linhas{top:110px;bottom:10px}
 /* Os cards internos perdem o fundo sólido para o vidro do painel aparecer atrás. */
 .sidebar .card{
   background:rgba(255,255,255,.5);
@@ -761,35 +767,40 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                         <div id="mapa"></div>
 
         <div class="topbar">
-        <div class="topbar-left">
-            <a class="btn btn-primary" href="../index.html">
-                <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg>
-                Portal
-            </a>
+            <div class="topbar-left">
+                <a class="btn btn-primary" href="../index.html">
+                    <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+                    Portal
+                </a>
+                <button type="button" class="kpi-chip kpi-chip-btn kpi-op kpi-op-tcgl" id="kpiOpTCGL" title="Filtrar somente TCGL">
+                    <span>TCGL</span><b id="statOpTCGL">0</b>
+                </button>
+                <button type="button" class="kpi-chip kpi-chip-btn kpi-op kpi-op-lsul" id="kpiOpLondriSul" title="Filtrar somente LondriSul">
+                    <span>LSUL</span><b id="statOpLondriSul">0</b>
+                </button>
+            </div>
+            <div class="topbar-mid">
+                <button type="button" class="kpi-chip kpi-chip-btn kpi-chip-performance" id="kpiIndicePerformance" title="Ver índice de performance em tempo real">
+                    <b id="statIndicePerformance">—</b><span>Performance</span>
+                </button>
+            </div>
+            <div class="topbar-right">
+                <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-gpsinvalido" id="kpiGpsInvalido" data-filtro-status="gpsInvalido" title="Somente TCGL · filtra o mapa e abre a lista">
+                    <b id="statGpsInvalido">0</b><span>GPS inválido</span>
+                </button>
+                <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-semcomunicacao" id="kpiSemComunicacao">
+                    <b id="statSemComunicacao">0</b><span>Sem comunicação</span>
+                </button>
+            </div>
         </div>
-        <div class="topbar-kpis" id="topbarKpis">
-            <button type="button" class="kpi-chip kpi-chip-btn kpi-op kpi-op-tcgl" id="kpiOpTCGL" title="Filtrar somente TCGL">
-                <span>TCGL</span><b id="statOpTCGL">0</b>
-            </button>
-            <button type="button" class="kpi-chip kpi-chip-btn kpi-op kpi-op-lsul" id="kpiOpLondriSul" title="Filtrar somente LondriSul">
-                <span>LSUL</span><b id="statOpLondriSul">0</b>
-            </button>
+
+        <div class="kpi-lateral" id="kpiLateral">
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-adiantado" data-filtro-status="adiantado"><b id="statAdiantados">0</b><span>Adiantado</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-atrasado" data-filtro-status="atrasado"><b id="statAtrasados">0</b><span>Atrasado</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-nohorario" data-filtro-status="noHorario"><b id="statNoHorario">0</b><span>No horário</span></button>
-            <button type="button" class="kpi-chip kpi-chip-btn kpi-chip-performance" id="kpiIndicePerformance" title="Ver índice de performance em tempo real">
-                <b id="statIndicePerformance">—</b><span>Performance</span>
-            </button>
-            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-ocioso" data-filtro-status="ocioso"><b id="statOcioso">0</b><span>Ocioso</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-reserva" data-filtro-status="reserva" title="Fora de serviço dentro da área de um terminal"><b id="statReserva">0</b><span>Reserva</span></button>
+            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-ocioso" data-filtro-status="ocioso"><b id="statOcioso">0</b><span>Ocioso</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-foraservico" data-filtro-status="foraServico"><b id="statForaServico">0</b><span>Fora de serviço</span></button>
-            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-gpsinvalido" id="kpiGpsInvalido" data-filtro-status="gpsInvalido" title="Somente TCGL · filtra o mapa e abre a lista">
-                <b id="statGpsInvalido">0</b><span>GPS inválido</span>
-            </button>
-            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-semcomunicacao" id="kpiSemComunicacao">
-                <b id="statSemComunicacao">0</b><span>Sem comunicação</span>
-            </button>
-        </div>
         </div>
 
         <aside class="sidebar" id="oaBuscaPainel" aria-hidden="true">
