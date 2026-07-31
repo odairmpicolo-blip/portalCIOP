@@ -33,6 +33,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
   background:var(--surface);border:1px solid var(--border);box-shadow:0 8px 20px rgba(16,24,40,.06)}
 .toolbar-filtros .btn-portal{min-height:38px}
 .toolbar-filtros .campo-busca input{min-width:200px}
+.toolbar-filtros .campo-data input{width:140px}
 .btn-portal{display:inline-flex;align-items:center;gap:8px;min-height:40px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;background:var(--blue);color:#fff;border:0;cursor:pointer}
 .btn-portal:hover{background:var(--blue2)}
 .btn-ghost{background:var(--surface-2);color:var(--blue);border:1px solid var(--border)}
@@ -164,6 +165,11 @@ table.mini td{padding:4px 9px;border:1px solid var(--border);text-align:center;b
 .selo-atualizacao.selo-velho{color:#5a2a00;background:rgba(255,236,206,.95);border-color:rgba(200,110,0,.55)}
 .selo-atualizacao.selo-velho::before{background:#e07b00;box-shadow:0 0 0 3px rgba(224,123,0,.22)}
 .selo-atualizacao:empty{display:none}
+.selo-periodo{margin-left:auto;align-self:center;font-size:12.5px;font-weight:600;color:#7a4a00}
+.selo-periodo:empty{display:none}
+.ajuste.aj-conducao{background:rgba(120,120,140,.16);color:#39415c;border:1px solid rgba(90,95,120,.35);
+    font-size:11px;font-weight:700;white-space:nowrap}
+.selo-periodo:not(:empty)+.selo-atualizacao{margin-left:10px}
 /* Seta de ordenacao nos cabecalhos de tabela. */
 .th-ord{cursor:pointer;user-select:none;position:relative;padding-right:17px!important}
 .th-ord::after{content:"";position:absolute;right:5px;top:50%;margin-top:-2px;
@@ -205,6 +211,8 @@ table.mini td{padding:4px 9px;border:1px solid var(--border);text-align:center;b
         <div class="campo campo-busca"><label for="fBusca">Buscar ponto ou linha</label><input type="search" id="fBusca" placeholder="Ex.: 109, Terminal Ouro Verde…" autocomplete="off"></div>
         <div class="campo"><label for="fLinha">Linha</label><select id="fLinha"><option value="">Todas</option></select></div>
         <div class="campo"><label for="fSentido">Sentido</label><select id="fSentido"><option value="">Ambos</option><option value="IDA">IDA</option><option value="VOLTA">VOLTA</option></select></div>
+        <div class="campo campo-data"><label for="fDe">De</label><input type="date" id="fDe"></div>
+        <div class="campo campo-data"><label for="fAte">Até</label><input type="date" id="fAte"></div>
         <div class="campo"><label for="fMin">Ganho mínimo</label><select id="fMin">
             <option value="0">Qualquer</option>
             <option value="2">2 p.p.</option>
@@ -216,6 +224,7 @@ table.mini td{padding:4px 9px;border:1px solid var(--border);text-align:center;b
             <option value="impacto">Maior impacto</option>
         </select></div>
         <button type="button" class="btn-portal btn-ghost" id="btnLimpar">Limpar</button>
+        <span class="selo-periodo" id="seloPeriodo"></span>
         <span class="selo-atualizacao" id="seloAtual"></span>
         <button type="button" class="btn-portal btn-ghost" id="btnCsvHorarios">CSV horários</button>
         <button type="button" class="btn-portal btn-ghost" id="btnCsv">CSV pontos</button>
@@ -382,6 +391,13 @@ function montarTabela(el, lista, comAjuste){
    Aqui a unidade não é o ponto, é cada HORÁRIO da tabela naquele ponto — que é o que a
    programação de fato edita. O deslocamento é recalculado por horário, porque um mesmo
    ponto pode precisar de correções diferentes de manhã e à noite. */
+/* Ajuste de 1 ou 2 minutos está dentro do que o próprio motorista controla — mexer na
+   tabela horária por causa disso não se justifica. Esses casos saem da lista de
+   alteração e viram orientação de condução. São 57% das sugestões, mas só 37% do ganho:
+   o que sobra para a programação é menor e mais relevante. */
+const AJUSTE_CONDUCAO = 2;
+const ehConducao = i => Math.abs(i.shift) <= AJUSTE_CONDUCAO;
+
 function horariosFiltrados(){
     const q = $("fBusca").value.trim().toLowerCase();
     const linha = $("fLinha").value;
@@ -428,6 +444,7 @@ function renderHorarios(){
         <th style="width:86px">Recuperadas</th>
     </tr></thead>`;
     const corpo = lista.slice(0, 1500).map((i, idx) => {
+        const cond = ehConducao(i);
         const aj = textoAjuste(i.shift);
         const nome = DADOS.linhas[i.linha] || "";
         // Cabeçalho de grupo quando a linha muda, para a leitura ficar por linha.
@@ -443,7 +460,9 @@ function renderHorarios(){
             <td><b class="hora-hoje">${esc(i.programado)}</b></td>
             <td class="seta">→</td>
             <td><b class="hora-nova">${esc(i.sugerido)}</b></td>
-            <td><span class="ajuste ${aj.classe}" title="${esc(aj.desc)}">${aj.txt}</span></td>
+            <td><span class="ajuste ${cond ? "aj-conducao" : aj.classe}" title="${esc(cond
+                ? "Ajuste de " + Math.abs(i.shift) + " min: está dentro do que o motorista controla. Oriente a condução em vez de mexer na tabela."
+                : aj.desc)}">${cond ? "orientar motorista" : aj.txt}</span></td>
             <td>${nInt(i.n)}</td>
             <td><span class="pct-atual">${nPct(i.pctAtual)}</span></td>
             <td><span class="pct-depois">${nPct(i.pctPotencial)}</span></td>
@@ -455,11 +474,13 @@ function renderHorarios(){
         ? `<tr><td colspan="12" class="aviso">Mostrando os primeiros 1.500 horários, de ${nInt(lista.length)}. Refine os filtros ou baixe o CSV para ver todos.</td></tr>`
         : "";
     el.innerHTML = cab + "<tbody>" + corpo + aviso + "</tbody>";
-    const rec = lista.reduce((t, i) => t + i.recuperadas, 0);
+    const daTabela = lista.filter(i => !ehConducao(i));
+    const daConducao = lista.length - daTabela.length;
+    const rec = daTabela.reduce((t, i) => t + i.recuperadas, 0);
     $("subHorarios").textContent =
-        `${nInt(lista.length)} horários com ajuste recomendado · ${nInt(rec)} passagens iriam para "No horário" · `
-        + ($("fOrdem").value === "linha" ? "agrupado por linha e horário" : "ordenado por impacto")
-        + " · só entram horários cumpridos ao menos 20 vezes no ano";
+        `${nInt(daTabela.length)} horários para alterar na tabela · ${nInt(rec)} passagens iriam para "No horário"`
+        + (daConducao ? ` · ${nInt(daConducao)} de ±1 a ±2 min viram orientação ao motorista` : "")
+        + " · " + ($("fOrdem").value === "linha" ? "agrupado por linha e horário" : "ordenado por impacto");
 }
 
 function baixarCsvHorarios(){
@@ -570,6 +591,62 @@ function selarAtualizacao(geradoISO, meta){
 
 const dataBR = iso => { const [a, m, d] = String(iso).split("-"); return `${d}/${m}/${a}`; };
 
+/* ---- Recorte por data --------------------------------------------------------
+   sugestao-horarios.json traz o período inteiro. Para De/Até livre a página baixa a
+   série diária (1 byte por dia por viagem, ~1,5 MB em gzip) e refaz a conta no
+   navegador — 243 ms para o ano todo. O download só acontece quando o usuário mexe
+   nas datas pela primeira vez; até lá vale o arquivo pronto. */
+let serieCtx = null;
+let baixandoSerie = null;
+
+function prepararPeriodo(){
+    if (!DADOS.meta) return;
+    $("fDe").min = $("fAte").min = DADOS.meta.primeiroDia;
+    $("fDe").max = $("fAte").max = DADOS.meta.ultimoDia;
+    $("fDe").value = DADOS.meta.primeiroDia;
+    $("fAte").value = DADOS.meta.ultimoDia;
+}
+
+function periodoInteiro(){
+    return !DADOS.meta || ($("fDe").value === DADOS.meta.primeiroDia
+        && $("fAte").value === DADOS.meta.ultimoDia);
+}
+
+async function carregarSerie(){
+    if (serieCtx) return serieCtx;
+    if (!baixandoSerie){
+        baixandoSerie = (async () => {
+            const res = await fetch("../assets/data/cr0108/serie-diaria.json", { cache: "force-cache" });
+            if (!res.ok) throw new Error("serie-diaria: HTTP " + res.status);
+            serieCtx = window.CR0108Serie.preparar(await res.json());
+            return serieCtx;
+        })();
+    }
+    return baixandoSerie;
+}
+
+async function aplicarPeriodo(){
+    let de = $("fDe").value, ate = $("fAte").value;
+    if (de && ate && de > ate){ const t = de; de = ate; ate = t; $("fDe").value = de; $("fAte").value = ate; }
+    if (periodoInteiro()){
+        DADOS.horarios = DADOS.horariosCompletos;
+        render();
+        return;
+    }
+    const selo = $("seloPeriodo");
+    if (selo) selo.textContent = "recalculando…";
+    try {
+        const ctx = await carregarSerie();
+        DADOS.horarios = window.CR0108Serie.sugerir(ctx, de, ate);
+    } catch (err){
+        console.error(err);
+        if (selo) selo.textContent = "falha ao recortar por data";
+        return;
+    }
+    if (selo) selo.textContent = "";
+    render();
+}
+
 async function iniciar(){
     try {
         const [res, resH, resM] = await Promise.all([
@@ -583,12 +660,15 @@ async function iniciar(){
         const jsonH = await resH.json();
         DADOS.itens = json.itens || [];
         DADOS.horarios = jsonH.itens || [];
+        DADOS.horariosCompletos = DADOS.horarios;
         DADOS.linhas = jsonH.linhas || {};
 
         const passagens = DADOS.itens.reduce((s, i) => s + i.n, 0);
         $("subCabecalho").textContent =
             `${nInt(DADOS.itens.length)} pontos de controle · ${nInt(passagens)} passagens analisadas · faixa No horário −2 a +6 min`;
-        selarAtualizacao(json.gerado || jsonH.gerado, resM.ok ? await resM.json() : null);
+        DADOS.meta = resM.ok ? await resM.json() : null;
+        selarAtualizacao(json.gerado || jsonH.gerado, DADOS.meta);
+        prepararPeriodo();
 
         const sel = $("fLinha");
         [...new Set(DADOS.itens.map(i => i.linha))]
@@ -603,9 +683,11 @@ async function iniciar(){
         ["fBusca", "fLinha", "fSentido", "fMin", "fOrdem"].forEach(id => {
             $(id).addEventListener(id === "fBusca" ? "input" : "change", render);
         });
+        ["fDe", "fAte"].forEach(id => $(id).addEventListener("change", aplicarPeriodo));
         $("btnLimpar").addEventListener("click", () => {
             $("fBusca").value = ""; $("fLinha").value = ""; $("fSentido").value = ""; $("fMin").value = "5"; $("fOrdem").value = "linha";
-            render();
+            if (DADOS.meta){ $("fDe").value = DADOS.meta.primeiroDia; $("fAte").value = DADOS.meta.ultimoDia; }
+            aplicarPeriodo();
         });
         $("btnCsv").addEventListener("click", baixarCsv);
         $("btnCsvHorarios").addEventListener("click", baixarCsvHorarios);
@@ -621,6 +703,7 @@ async function iniciar(){
 
 iniciar();
 </script>
+<script src="../assets/js/cr0108-serie.js?v=20260731"></script>
 <script src="../assets/js/ordenar-tabela.js?v=20260731"></script>
 </body>
 </html>
