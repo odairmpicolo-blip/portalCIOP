@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CR-0108 — Pontualidade por Ponto de Controle | Portal CIOP</title>
+<style>
+:root{
+  --blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--bg:#f5f7fb;--border:#dfe5ef;
+  --text:#101828;--muted:#3f4757;--surface:#fff;--surface-2:#f1f5f9;
+  /* Régua de pontualidade do CIOP — mesmas cores dos KPIs do Monitoramento Ao Vivo. */
+  --c-nohorario:#22c55e;--c-nohorario-txt:#15803d;--c-nohorario-bg:#f0fdf4;--c-nohorario-bd:#bbf7d0;
+  --c-adiantado:#dc2626;--c-adiantado-txt:#b91c1c;--c-adiantado-bg:#fef2f2;--c-adiantado-bd:#fecaca;
+  --c-atrasado:#facc15;--c-atrasado-txt:#a16207;--c-atrasado-bg:#fefce8;--c-atrasado-bd:#fde68a;
+  --c-divergente:#7c3aed;--c-divergente-txt:#6d28d9;--c-divergente-bg:#f5f3ff;--c-divergente-bd:#ddd6fe;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.header{background:var(--surface);display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);gap:16px;align-items:center;padding:8px 20px;border-bottom:1px solid #e8edf6}
+.header > a:first-child.portal-brand-mark{justify-self:start}
+.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.header-title{margin:0;color:var(--blue);font-size:18px;font-weight:900}
+.header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.container{max-width:1680px;margin:16px auto 32px;padding:0 20px;flex:1;width:100%}
+.toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+.btn-portal{display:inline-flex;align-items:center;gap:8px;min-height:40px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;background:var(--blue);color:#fff;border:0;cursor:pointer}
+.btn-portal:hover{background:var(--blue2)}
+.btn-icon{display:inline-flex;width:16px;height:16px;flex:0 0 auto}
+.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---- Filtros ---------------------------------------------------------------- */
+.filtros{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 20px rgba(16,24,40,.06);padding:12px 14px;margin-bottom:14px;
+  display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 14px}
+.campo{display:flex;flex-direction:column;gap:4px;min-width:0}
+.campo label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+.campo select,.campo input{height:38px;border:1px solid var(--border);border-radius:10px;padding:0 10px;font:inherit;font-size:13px;font-weight:600;background:var(--surface-2);color:var(--text)}
+.campo select:focus,.campo input:focus{outline:none;border-color:#7dd3dc;box-shadow:0 0 0 4px rgba(45,180,191,.15);background:#fff}
+.campo-data input{width:150px}.campo-linha select{min-width:230px}.campo-atalho select{min-width:160px}
+.filtros .btn-portal{min-height:38px}
+.btn-ghost{background:var(--surface-2);color:var(--blue);border:1px solid var(--border)}
+.btn-ghost:hover{background:#e8eef8}
+
+/* ---- KPIs ------------------------------------------------------------------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--blue);border-radius:12px;padding:11px 13px;box-shadow:0 8px 20px rgba(16,24,40,.06)}
+.kpi .label{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--muted);letter-spacing:.03em}
+.kpi .value{font-size:23px;font-weight:900;color:var(--blue);margin-top:3px;letter-spacing:-.02em}
+.kpi .sub{font-size:11px;font-weight:700;color:var(--muted);margin-top:2px}
+.kpi .delta{font-size:11px;font-weight:800;margin-top:3px}
+.delta.up{color:#15803d}.delta.down{color:#b91c1c}.delta.flat{color:var(--muted)}
+.kpi-nohorario{border-left-color:var(--c-nohorario);background:var(--c-nohorario-bg)}
+.kpi-nohorario .value{color:var(--c-nohorario-txt)}
+.kpi-adiantado{border-left-color:var(--c-adiantado);background:var(--c-adiantado-bg)}
+.kpi-adiantado .value{color:var(--c-adiantado-txt)}
+.kpi-atrasado{border-left-color:var(--c-atrasado);background:var(--c-atrasado-bg)}
+.kpi-atrasado .value{color:var(--c-atrasado-txt)}
+.kpi-divergente{border-left-color:var(--c-divergente);background:var(--c-divergente-bg)}
+.kpi-divergente .value{color:var(--c-divergente-txt)}
+
+/* ---- Cards e tabelas -------------------------------------------------------- */
+.grid{display:grid;gap:14px;margin-bottom:14px}
+.grid-2{grid-template-columns:1fr 1fr}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 28px rgba(16,24,40,.07);overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.card-title{margin:0;color:var(--blue);font-size:14px;font-weight:900}
+.card-sub{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px}
+.card-body{padding:12px 14px;min-width:0}
+.card-body.sem-pad{padding:0}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab{border:1px solid var(--border);background:var(--surface-2);color:var(--muted);border-radius:8px;padding:5px 10px;font:inherit;font-size:11px;font-weight:800;cursor:pointer}
+.tab.ativo{background:var(--blue);border-color:var(--blue);color:#fff}
+.tabela-wrap{overflow:auto;max-height:420px}
+table.rel{width:100%;border-collapse:separate;border-spacing:0;font-size:11.5px}
+table.rel thead th{position:sticky;top:0;z-index:2;background:var(--blue);color:#fff;padding:8px 6px;font-size:9px;font-weight:900;text-transform:uppercase;text-align:center;white-space:nowrap}
+table.rel tbody td{border-bottom:1px solid #edf2f7;padding:6px 6px;text-align:center;background:var(--surface)}
+table.rel tbody tr:nth-child(even) td{background:#fafbfd}
+table.rel td.txt,table.rel th.txt{text-align:left}
+table.rel tbody tr:hover td{background:#eef6ff}
+.barra{position:relative;height:16px;border-radius:5px;background:var(--surface-2);overflow:hidden;min-width:70px}
+.barra i{position:absolute;inset:0 auto 0 0;display:block}
+.pct{font-weight:900}
+.chip{display:inline-flex;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:800}
+.aviso{padding:22px 16px;text-align:center;color:var(--muted);font-size:12.5px;font-weight:700}
+.legenda{font-size:11px;color:var(--muted);font-weight:700;line-height:1.5}
+.legenda b{color:var(--text)}
+canvas{max-width:100%}
+.page-footer{padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-top:1px solid var(--border);background:var(--surface)}
+@media(max-width:1080px){.grid-2{grid-template-columns:1fr}}
+@media(max-width:720px){.header{grid-template-columns:1fr;text-align:center}.campo{flex:1 1 100%}.campo select,.campo input{width:100%}}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
+<link rel="stylesheet" href="../assets/css/portal-titulos.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260720y">
+<script src="../assets/js/loading.js?v=20260718d"></script>
+<script type="module" src="../assets/js/auth.js?v=20260720a"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body data-require-perfis="Administrador,Supervisor,Analista">
+<header class="header">
+    <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
+    <div class="title-wrap">
+        <h1 class="header-title">CR-0108 · Pontualidade por Ponto de Controle</h1>
+        <div class="header-subtitle" id="subCabecalho">Carregando…</div>
+    </div>
+    <div class="header-actions">
+        <div class="ciop-session" aria-label="Sessão do usuário">
+            <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+            <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+            <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+            <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+        </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+    </div>
+</header>
+
+<main class="container">
+    <div class="toolbar">
+        <a class="btn-portal" href="relatorios.html"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Relatórios</a>
+    </div>
+
+    <section class="filtros">
+        <div class="campo campo-atalho">
+            <label for="fAtalho">Período</label>
+            <select id="fAtalho">
+                <option value="tudo">Todo o histórico</option>
+                <option value="7">Últimos 7 dias</option>
+                <option value="30">Últimos 30 dias</option>
+                <option value="mes">Mês atual</option>
+                <option value="mesAnterior">Mês anterior</option>
+                <option value="custom">Personalizado</option>
+            </select>
+        </div>
+        <div class="campo campo-data"><label for="fDe">De</label><input type="date" id="fDe"></div>
+        <div class="campo campo-data"><label for="fAte">Até</label><input type="date" id="fAte"></div>
+        <div class="campo campo-linha"><label for="fLinha">Linha</label><select id="fLinha"><option value="">Todas as linhas</option></select></div>
+        <div class="campo"><label for="fSentido">Sentido</label><select id="fSentido"><option value="">Ambos</option><option value="IDA">IDA</option><option value="VOLTA">VOLTA</option></select></div>
+        <div class="campo"><label for="fComparar">Comparar com</label><select id="fComparar">
+            <option value="">Sem comparação</option>
+            <option value="anterior">Período anterior de mesmo tamanho</option>
+        </select></div>
+        <button type="button" class="btn-portal btn-ghost" id="btnLimpar">Limpar filtros</button>
+    </section>
+
+    <section class="kpis" id="kpis"></section>
+
+    <div class="grid grid-2">
+        <div class="card">
+            <div class="card-head">
+                <div><h2 class="card-title">Evolução no tempo</h2><div class="card-sub" id="subEvolucao">—</div></div>
+                <div class="tabs" id="tabsEvolucao">
+                    <button type="button" class="tab ativo" data-gran="dia">Diário</button>
+                    <button type="button" class="tab" data-gran="mes">Mensal</button>
+                </div>
+            </div>
+            <div class="card-body"><canvas id="graficoEvolucao" height="150"></canvas></div>
+        </div>
+        <div class="card">
+            <div class="card-head">
+                <div><h2 class="card-title">Faixa horária</h2><div class="card-sub">Pontualidade por hora programada de passagem</div></div>
+            </div>
+            <div class="card-body"><canvas id="graficoHora" height="150"></canvas></div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+        <div class="card-head">
+            <div><h2 class="card-title">Ranking</h2><div class="card-sub" id="subRanking">—</div></div>
+            <div class="tabs" id="tabsRanking">
+                <button type="button" class="tab ativo" data-dim="linha">Linhas</button>
+                <button type="button" class="tab" data-dim="ponto">Pontos de controle</button>
+                <button type="button" class="tab" data-dim="operador">Operadores</button>
+                <button type="button" class="tab" data-dim="veiculo">Veículos</button>
+            </div>
+        </div>
+        <div class="card-body sem-pad">
+            <div class="tabela-wrap"><table class="rel" id="tabelaRanking"></table></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><div><h2 class="card-title">Régua de classificação</h2><div class="card-sub">Critério do CIOP, calculado a partir da coluna Diferença do relatório</div></div></div>
+        <div class="card-body">
+            <p class="legenda" style="margin:0">
+                <span class="chip" style="background:var(--c-nohorario-bg);color:var(--c-nohorario-txt)">No horário</span> de <b>−2 min</b> a <b>+6 min</b> &nbsp;·&nbsp;
+                <span class="chip" style="background:var(--c-adiantado-bg);color:var(--c-adiantado-txt)">Adiantado</span> de <b>−10 min</b> a <b>−3 min</b> &nbsp;·&nbsp;
+                <span class="chip" style="background:var(--c-atrasado-bg);color:var(--c-atrasado-txt)">Atrasado</span> de <b>+7 min</b> a <b>+15 min</b> &nbsp;·&nbsp;
+                <span class="chip" style="background:var(--c-divergente-bg);color:var(--c-divergente-txt)">Divergente</span> a partir de <b>+16 min</b> ou <b>−11 min</b>
+                <br>Valor negativo = passou antes do programado. As colunas <i>Status</i> e <i>OTP Status</i> do arquivo original não são usadas — elas divergem entre si.
+            </p>
+        </div>
+    </div>
+</main>
+
+<footer class="page-footer">Portal CIOP · TCGL — CR-0108 gerado a partir dos relatórios diários de ponto de controle</footer>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const BASE = "../assets/data/cr0108/";
+const CLASSES = [
+    { chave: "noHorario",  rotulo: "No horário",  cor: "#22c55e", txt: "#15803d" },
+    { chave: "adiantado",  rotulo: "Adiantado",   cor: "#dc2626", txt: "#b91c1c" },
+    { chave: "atrasado",   rotulo: "Atrasado",    cor: "#facc15", txt: "#a16207" },
+    { chave: "divergente", rotulo: "Divergente",  cor: "#7c3aed", txt: "#6d28d9" }
+];
+
+const DADOS = {};
+const estado = { gran: "dia", dim: "linha" };
+
+const nInt = n => Number(n || 0).toLocaleString("pt-BR");
+const nPct = n => n == null || !Number.isFinite(n) ? "—"
+    : Number(n).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const dataBR = iso => { const p = String(iso || "").split("-"); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso; };
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const mesBR = m => { const p = String(m || "").split("-"); return p.length === 2 ? `${MESES[+p[1] - 1]}/${p[0].slice(2)}` : m; };
+
+function vazio(){ return { noHorario: 0, adiantado: 0, atrasado: 0, divergente: 0, total: 0, somaDif: 0 }; }
+function acumular(acc, r){
+    acc.noHorario += r.noHorario || 0;
+    acc.adiantado += r.adiantado || 0;
+    acc.atrasado  += r.atrasado  || 0;
+    acc.divergente += r.divergente || 0;
+    acc.total     += r.total     || 0;
+    acc.somaDif   += r.somaDif   || 0;
+    return acc;
+}
+const pct = (parte, total) => total ? (parte / total) * 100 : null;
+
+async function baixar(nome){
+    const res = await fetch(BASE + nome + "?v=" + (DADOS.meta?.gerado || ""), { cache: "no-store" });
+    if (!res.ok) throw new Error(nome + ": HTTP " + res.status);
+    return res.json();
+}
+
+/* ---- Filtro ------------------------------------------------------------------
+   O recorte de período vale para todas as visões. Linha e sentido usam as bases
+   com essas dimensões; ranking de ponto/operador/veículo é mensal (o diário nessas
+   granularidades daria ~12 MB de JSON, inviável para carregar no navegador). */
+function periodo(){
+    const de = $("fDe").value || DADOS.meta.primeiroDia;
+    const ate = $("fAte").value || DADOS.meta.ultimoDia;
+    return de <= ate ? { de, ate } : { de: ate, ate: de };
+}
+const dentro = (iso, p) => iso >= p.de && iso <= p.ate;
+const mesesDoPeriodo = p => {
+    const set = new Set();
+    DADOS.porDia.forEach(r => { if (dentro(r.data, p)) set.add(r.data.slice(0, 7)); });
+    return set;
+};
+
+function seriePeriodo(p){
+    const linha = $("fLinha").value;
+    const sentido = $("fSentido").value;
+    // Com filtro de sentido, a única base que cruza sentido é a mensal — o recorte
+    // diário por sentido não existe no agregado; nesse caso a série vira mensal.
+    if (sentido) return null;
+    const base = linha ? DADOS.porDiaLinha.filter(r => r.linha === linha) : DADOS.porDia;
+    return base.filter(r => dentro(r.data, p));
+}
+
+function totalPeriodo(p){
+    const sentido = $("fSentido").value;
+    const linha = $("fLinha").value;
+    if (sentido){
+        const meses = mesesDoPeriodo(p);
+        return DADOS.porMesSentido
+            .filter(r => meses.has(r.mes) && r.sentido === sentido)
+            .reduce(acumular, vazio());
+    }
+    const serie = seriePeriodo(p) || [];
+    return serie.reduce(acumular, vazio());
+}
+
+function periodoAnterior(p){
+    const d1 = new Date(p.de + "T00:00:00"), d2 = new Date(p.ate + "T00:00:00");
+    const dias = Math.round((d2 - d1) / 86400000) + 1;
+    const fim = new Date(d1.getTime() - 86400000);
+    const ini = new Date(fim.getTime() - (dias - 1) * 86400000);
+    const iso = d => d.toISOString().slice(0, 10);
+    return { de: iso(ini), ate: iso(fim) };
+}
+
+/* ---- KPIs --------------------------------------------------------------------- */
+function renderKpis(){
+    const p = periodo();
+    const t = totalPeriodo(p);
+    const comparar = $("fComparar").value === "anterior";
+    const ant = comparar ? totalPeriodo(periodoAnterior(p)) : null;
+
+    const mediaDif = t.total ? t.somaDif / t.total : null;
+    const cartoes = [];
+    cartoes.push(`<div class="kpi"><div class="label">Passagens apuradas</div>
+        <div class="value">${nInt(t.total)}</div>
+        <div class="sub">${dataBR(p.de)} a ${dataBR(p.ate)}</div></div>`);
+
+    CLASSES.forEach(c => {
+        const v = pct(t[c.chave], t.total);
+        let delta = "";
+        if (ant && ant.total){
+            const va = pct(ant[c.chave], ant.total);
+            const d = (v ?? 0) - (va ?? 0);
+            // "Melhor" = mais no horário, menos de todo o resto.
+            const bom = c.chave === "noHorario" ? d > 0 : d < 0;
+            const cls = Math.abs(d) < 0.005 ? "flat" : (bom ? "up" : "down");
+            const sinal = d > 0 ? "+" : "";
+            delta = `<div class="delta ${cls}">${sinal}${d.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} p.p. vs período anterior</div>`;
+        }
+        cartoes.push(`<div class="kpi kpi-${c.chave.toLowerCase()}">
+            <div class="label">${c.rotulo}</div>
+            <div class="value">${nPct(v)}</div>
+            <div class="sub">${nInt(t[c.chave])} passagens</div>${delta}</div>`);
+    });
+
+    cartoes.push(`<div class="kpi"><div class="label">Desvio médio</div>
+        <div class="value">${mediaDif == null ? "—" : (mediaDif >= 0 ? "+" : "") + mediaDif.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " min"}</div>
+        <div class="sub">negativo = adiantado</div></div>`);
+
+    $("kpis").innerHTML = cartoes.join("");
+}
+
+/* ---- Gráficos ----------------------------------------------------------------- */
+let gEvolucao = null, gHora = null;
+
+function renderEvolucao(){
+    const p = periodo();
+    const serie = seriePeriodo(p);
+    const sub = $("subEvolucao");
+    if (!serie){
+        sub.textContent = "O recorte por sentido só existe na base mensal — remova o filtro de sentido para ver a série diária.";
+    } else {
+        sub.textContent = ($("fLinha").value ? "Linha " + $("fLinha").value : "Todas as linhas") + " · % de cada classe";
+    }
+    const bruto = serie || [];
+    let rotulos = [], grupos = [];
+    if (estado.gran === "mes" || !serie){
+        const mapa = new Map();
+        (serie || []).forEach(r => {
+            const m = r.data.slice(0, 7);
+            if (!mapa.has(m)) mapa.set(m, vazio());
+            acumular(mapa.get(m), r);
+        });
+        rotulos = [...mapa.keys()].sort();
+        grupos = rotulos.map(m => mapa.get(m));
+        rotulos = rotulos.map(mesBR);
+    } else {
+        const ord = bruto.slice().sort((a, b) => a.data.localeCompare(b.data));
+        rotulos = ord.map(r => dataBR(r.data));
+        grupos = ord;
+    }
+    const dados = {
+        labels: rotulos,
+        datasets: CLASSES.map(c => ({
+            label: c.rotulo,
+            data: grupos.map(g => pct(g[c.chave], g.total)),
+            borderColor: c.cor, backgroundColor: c.cor,
+            borderWidth: 2, pointRadius: rotulos.length > 60 ? 0 : 2, tension: .25
+        }))
+    };
+    const opcoes = {
+        responsive: true, maintainAspectRatio: true,
+        interaction: { mode: "index", intersect: false },
+        plugins: { legend: { labels: { boxWidth: 10, font: { size: 11, weight: "bold" } } },
+            tooltip: { callbacks: { label: ctx => ctx.dataset.label + ": " + nPct(ctx.parsed.y) } } },
+        scales: { y: { ticks: { callback: v => v + "%", font: { size: 10 } }, grid: { color: "#eef2f7" } },
+                  x: { ticks: { font: { size: 9 }, maxRotation: 60, autoSkip: true, maxTicksLimit: 16 }, grid: { display: false } } }
+    };
+    if (gEvolucao) gEvolucao.destroy();
+    gEvolucao = new Chart($("graficoEvolucao"), { type: "line", data: dados, options: opcoes });
+}
+
+function renderHora(){
+    const p = periodo();
+    const mapa = new Map();
+    DADOS.porDiaHora.forEach(r => {
+        if (!dentro(r.data, p)) return;
+        if (!mapa.has(r.hora)) mapa.set(r.hora, vazio());
+        acumular(mapa.get(r.hora), r);
+    });
+    const horas = [...mapa.keys()].sort();
+    const dados = {
+        labels: horas.map(h => h + "h"),
+        datasets: CLASSES.map(c => ({
+            label: c.rotulo,
+            data: horas.map(h => pct(mapa.get(h)[c.chave], mapa.get(h).total)),
+            backgroundColor: c.cor, borderWidth: 0
+        }))
+    };
+    const opcoes = {
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { labels: { boxWidth: 10, font: { size: 11, weight: "bold" } } },
+            tooltip: { callbacks: { label: ctx => ctx.dataset.label + ": " + nPct(ctx.parsed.y) } } },
+        scales: { x: { stacked: true, ticks: { font: { size: 9 } }, grid: { display: false } },
+                  y: { stacked: true, max: 100, ticks: { callback: v => v + "%", font: { size: 10 } }, grid: { color: "#eef2f7" } } }
+    };
+    if (gHora) gHora.destroy();
+    gHora = new Chart($("graficoHora"), { type: "bar", data: dados, options: opcoes });
+}
+
+/* ---- Ranking ------------------------------------------------------------------ */
+function dadosRanking(){
+    const p = periodo();
+    const meses = mesesDoPeriodo(p);
+    const linha = $("fLinha").value;
+    const dim = estado.dim;
+
+    if (dim === "linha"){
+        const mapa = new Map();
+        DADOS.porDiaLinha.forEach(r => {
+            if (!dentro(r.data, p)) return;
+            if (linha && r.linha !== linha) return;
+            if (!mapa.has(r.linha)) mapa.set(r.linha, vazio());
+            acumular(mapa.get(r.linha), r);
+        });
+        return { titulo: "Linha", diario: true, itens: [...mapa].map(([k, v]) => ({ chave: k, rotulo: k, extra: DADOS.meta.linhas[k] || "", ...v })) };
+    }
+    const cfg = {
+        ponto:    { base: DADOS.porMesPonto,    campo: "ponto",     titulo: "Ponto de controle" },
+        operador: { base: DADOS.porMesOperador, campo: "matricula", titulo: "Operador" },
+        veiculo:  { base: DADOS.porMesVeiculo,  campo: "veiculo",   titulo: "Veículo" }
+    }[dim];
+    const mapa = new Map();
+    cfg.base.forEach(r => {
+        if (!meses.has(r.mes)) return;
+        const k = r[cfg.campo];
+        if (!mapa.has(k)) mapa.set(k, { rotulo: k, extra: r.nome || "", ...vazio() });
+        acumular(mapa.get(k), r);
+    });
+    return { titulo: cfg.titulo, diario: false, itens: [...mapa].map(([k, v]) => ({ chave: k, ...v })) };
+}
+
+function renderRanking(){
+    const { titulo, diario, itens } = dadosRanking();
+    // Ordena pelo pior desempenho: menor % no horário primeiro, com um piso de
+    // volume para uma linha com 3 passagens não liderar o ranking por acaso.
+    const piso = Math.max(30, Math.round(itens.reduce((s, i) => s + i.total, 0) / Math.max(1, itens.length) * 0.05));
+    const lista = itens.filter(i => i.total > 0)
+        .sort((a, b) => {
+            const ra = a.total >= piso ? 0 : 1, rb = b.total >= piso ? 0 : 1;
+            if (ra !== rb) return ra - rb;
+            return (pct(a.noHorario, a.total) ?? 0) - (pct(b.noHorario, b.total) ?? 0);
+        }).slice(0, 200);
+
+    $("subRanking").textContent = (diario
+        ? "Recorte diário exato do período"
+        : "Recorte mensal — meses tocados pelo período selecionado")
+        + " · ordenado do pior para o melhor · " + nInt(lista.length) + " itens";
+
+    if (!lista.length){
+        $("tabelaRanking").innerHTML = '<tbody><tr><td class="aviso">Nenhum dado no período selecionado.</td></tr></tbody>';
+        return;
+    }
+    const cab = `<thead><tr>
+        <th style="width:44px">#</th>
+        <th class="txt">${esc(titulo)}</th>
+        <th style="width:90px">Passagens</th>
+        <th style="width:150px">No horário</th>
+        <th style="width:80px">Adiantado</th>
+        <th style="width:80px">Atrasado</th>
+        <th style="width:88px">Divergente</th>
+        <th style="width:92px">Desvio médio</th>
+    </tr></thead>`;
+    const corpo = lista.map((i, idx) => {
+        const p1 = pct(i.noHorario, i.total) ?? 0;
+        const media = i.total ? i.somaDif / i.total : 0;
+        const rot = esc(i.rotulo) + (i.extra ? ' <span style="color:var(--muted);font-weight:600">' + esc(i.extra) + "</span>" : "");
+        return `<tr>
+            <td>${idx + 1}</td>
+            <td class="txt">${rot}</td>
+            <td>${nInt(i.total)}</td>
+            <td><div style="display:flex;align-items:center;gap:6px">
+                <span class="barra"><i style="width:${p1.toFixed(1)}%;background:var(--c-nohorario)"></i></span>
+                <span class="pct" style="color:var(--c-nohorario-txt)">${nPct(p1)}</span></div></td>
+            <td style="color:var(--c-adiantado-txt);font-weight:800">${nPct(pct(i.adiantado, i.total))}</td>
+            <td style="color:var(--c-atrasado-txt);font-weight:800">${nPct(pct(i.atrasado, i.total))}</td>
+            <td style="color:var(--c-divergente-txt);font-weight:800">${nPct(pct(i.divergente, i.total))}</td>
+            <td>${(media >= 0 ? "+" : "") + media.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} min</td>
+        </tr>`;
+    }).join("");
+    $("tabelaRanking").innerHTML = cab + "<tbody>" + corpo + "</tbody>";
+}
+
+function renderTudo(){
+    renderKpis();
+    renderEvolucao();
+    renderHora();
+    renderRanking();
+}
+
+/* ---- Atalhos de período -------------------------------------------------------- */
+function aplicarAtalho(){
+    const v = $("fAtalho").value;
+    const meta = DADOS.meta;
+    if (v === "custom") return;
+    const ultimo = new Date(meta.ultimoDia + "T00:00:00");
+    const iso = d => d.toISOString().slice(0, 10);
+    if (v === "tudo"){ $("fDe").value = meta.primeiroDia; $("fAte").value = meta.ultimoDia; }
+    else if (v === "7" || v === "30"){
+        const ini = new Date(ultimo.getTime() - (Number(v) - 1) * 86400000);
+        $("fDe").value = iso(ini) < meta.primeiroDia ? meta.primeiroDia : iso(ini);
+        $("fAte").value = meta.ultimoDia;
+    } else if (v === "mes"){
+        $("fDe").value = meta.ultimoDia.slice(0, 8) + "01";
+        $("fAte").value = meta.ultimoDia;
+    } else if (v === "mesAnterior"){
+        const [y, m] = meta.ultimoDia.split("-").map(Number);
+        const ini = new Date(y, m - 2, 1), fim = new Date(y, m - 1, 0);
+        $("fDe").value = iso(ini); $("fAte").value = iso(fim);
+    }
+}
+
+function ligarEventos(){
+    $("fAtalho").addEventListener("change", () => { aplicarAtalho(); renderTudo(); });
+    ["fDe", "fAte"].forEach(id => $(id).addEventListener("change", () => {
+        $("fAtalho").value = "custom"; renderTudo();
+    }));
+    ["fLinha", "fSentido", "fComparar"].forEach(id => $(id).addEventListener("change", renderTudo));
+    $("btnLimpar").addEventListener("click", () => {
+        $("fAtalho").value = "tudo"; $("fLinha").value = ""; $("fSentido").value = ""; $("fComparar").value = "";
+        aplicarAtalho(); renderTudo();
+    });
+    $("tabsEvolucao").addEventListener("click", e => {
+        const b = e.target.closest(".tab"); if (!b) return;
+        estado.gran = b.dataset.gran;
+        [...$("tabsEvolucao").children].forEach(x => x.classList.toggle("ativo", x === b));
+        renderEvolucao();
+    });
+    $("tabsRanking").addEventListener("click", e => {
+        const b = e.target.closest(".tab"); if (!b) return;
+        estado.dim = b.dataset.dim;
+        [...$("tabsRanking").children].forEach(x => x.classList.toggle("ativo", x === b));
+        renderRanking();
+    });
+}
+
+async function iniciar(){
+    try {
+        const [meta, porDia, porDiaLinha, porDiaHora, porMesPonto, porMesOperador, porMesVeiculo, porMesSentido] =
+            await Promise.all([
+                baixar("meta.json"), baixar("por-dia.json"), baixar("por-dia-linha.json"),
+                baixar("por-dia-hora.json"), baixar("por-mes-ponto.json"),
+                baixar("por-mes-operador.json"), baixar("por-mes-veiculo.json"), baixar("por-mes-sentido.json")
+            ]);
+        Object.assign(DADOS, { meta, porDia, porDiaLinha, porDiaHora, porMesPonto, porMesOperador, porMesVeiculo, porMesSentido });
+
+        $("subCabecalho").textContent =
+            `${dataBR(meta.primeiroDia)} a ${dataBR(meta.ultimoDia)} · ${nInt(meta.registros)} passagens · ${meta.arquivos} relatórios diários`;
+
+        const sel = $("fLinha");
+        Object.entries(meta.linhas).sort((a, b) =>
+            String(a[0]).localeCompare(String(b[0]), "pt-BR", { numeric: true })
+        ).forEach(([cod, nome]) => {
+            const o = document.createElement("option");
+            o.value = cod; o.textContent = cod + (nome ? " — " + nome : "");
+            sel.appendChild(o);
+        });
+
+        $("fDe").min = meta.primeiroDia; $("fDe").max = meta.ultimoDia;
+        $("fAte").min = meta.primeiroDia; $("fAte").max = meta.ultimoDia;
+        aplicarAtalho();
+        ligarEventos();
+        renderTudo();
+    } catch (err){
+        $("subCabecalho").textContent = "Falha ao carregar os dados";
+        $("kpis").innerHTML = '<div class="card"><p class="aviso">Não foi possível carregar os dados do CR-0108.<br>' + esc(err.message) + "</p></div>";
+        console.error(err);
+    }
+}
+
+iniciar();
+</script>
+</body>
+</html>
