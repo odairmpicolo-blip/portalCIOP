@@ -123,6 +123,7 @@ body.oa-page footer.portal-site-footer{display:none!important}
   font-size:10.5px;font-weight:800;color:var(--blue);
 }
 .line-count.zero{opacity:.45;font-weight:700}
+.kpi-garagem{--kpi-cor:#0f766e;--kpi-cor-texto:#0f766e;--kpi-cor-fundo:#f0fdfa;--kpi-cor-borda:#99f6e4}
 .kpi-reserva{--kpi-cor:#7c3aed;--kpi-cor-texto:#6d28d9;--kpi-cor-fundo:#f5f3ff;--kpi-cor-borda:#ddd6fe}
 .kpi-gpsinvalido{--kpi-cor:#0b1f4d;--kpi-cor-texto:#0b1f4d;--kpi-cor-fundo:#eef2fa;--kpi-cor-borda:#c2cde6}
 .kpi-semcomunicacao{--kpi-cor:#0f172a;--kpi-cor-texto:#0f172a;--kpi-cor-fundo:#f1f5f9;--kpi-cor-borda:#cbd5e1}
@@ -801,6 +802,7 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-reserva" data-filtro-status="reserva" title="Fora de serviço dentro da área de um terminal"><b id="statReserva">0</b><span>Reserva</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-ocioso" data-filtro-status="ocioso"><b id="statOcioso">0</b><span>Ocioso</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-foraservico" data-filtro-status="foraServico"><b id="statForaServico">0</b><span>Fora de serviço</span></button>
+            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-garagem" data-filtro-status="garagem" title="Fora de serviço recolhido na garagem da TCGL"><b id="statGaragem">0</b><span>GA · TCGL</span></button>
         </div>
 
         <aside class="sidebar" id="oaBuscaPainel" aria-hidden="true">
@@ -1006,6 +1008,7 @@ const PONTUALIDADE = {
         semPrevisao: "#374151",
         gpsInvalido: "#0b1f4d",
         reserva: "#7c3aed",
+        garagem: "#0f766e",
         ocioso: "#7DD3FC",
         foraServico: "#3f4757"
     },
@@ -1050,12 +1053,23 @@ const TERMINAIS = [
     { nome: "Irerê",           lat: -23.5051000, lng: -51.1256000, raio: 250 }
 ];
 
+/** Área da garagem da TCGL. Diferente dos terminais: aqui o veículo continua FORA DE SERVIÇO,
+ *  só que o status deixa explícito que ele está recolhido na garagem — não é reserva de linha.
+ *  Centro apurado pelo aglomerado real da frota (70 veículos fora de serviço num raio de 193 m),
+ *  bem mais preciso que geocodificar o endereço. */
+const GARAGEM_AREA = { nome: "Garagem TCGL", lat: -23.293796, lng: -51.155893, raio: 250 };
+
 /** Distância em metros entre duas coordenadas (aproximação plana — a alguns km de distância
  *  o erro é centimétrico e o custo é bem menor que Haversine rodando pra frota inteira). */
 function distanciaMetros(lat1, lng1, lat2, lng2){
     const dLat = (lat1 - lat2) * 111320;
     const dLng = (lng1 - lng2) * 111320 * Math.cos(lat1 * Math.PI / 180);
     return Math.sqrt(dLat * dLat + dLng * dLng);
+}
+
+function dentroDaGaragem(lat, lng){
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+    return distanciaMetros(lat, lng, GARAGEM_AREA.lat, GARAGEM_AREA.lng) <= GARAGEM_AREA.raio;
 }
 
 /** Retorna o terminal cuja área contém o ponto (o mais próximo, se houver sobreposição). */
@@ -1183,6 +1197,10 @@ function statusPontualidade(v){
     // Fora de serviço dentro da área de um terminal = reserva daquele terminal.
     if (v.categoria === "foraServico" && v.terminalReserva){
         return { chave: "reserva", label: "Reserva · " + v.terminalReserva, cor: PONTUALIDADE.cores.reserva };
+    }
+    // Na garagem continua fora de serviço — o rótulo só deixa claro que está recolhido.
+    if (v.categoria === "foraServico" && v.naGaragem){
+        return { chave: "garagem", label: "Fora de serviço · Garagem", cor: PONTUALIDADE.cores.garagem };
     }
     if (v.categoria === "foraServico") return { chave: "foraServico", label: "Fora de serviço", cor: PONTUALIDADE.cores.foraServico };
     if (v.delaySec == null){
@@ -1496,6 +1514,7 @@ async function fetchCleverVehicles(){
             terminalReserva: (!gpsInvalido && categoria === "foraServico")
                 ? (terminalDoPonto(lat, lng)?.nome || null)
                 : null,
+            naGaragem: !gpsInvalido && categoria === "foraServico" && dentroDaGaragem(lat, lng),
             latOriginal: Number.isFinite(latBruta) ? latBruta : null,
             lngOriginal: Number.isFinite(lngBruta) ? lngBruta : null,
             routeId: route.routeId,
@@ -1735,14 +1754,16 @@ function initMapa(){
 function desenharAreasTerminais(){
     if (!state.mapa) return;
     state.camadaTerminais = L.layerGroup().addTo(state.mapa);
-    TERMINAIS.forEach(t => {
+    const areas = TERMINAIS.map(t => ({ ...t, cor: PONTUALIDADE.cores.reserva }))
+        .concat([{ ...GARAGEM_AREA, cor: PONTUALIDADE.cores.garagem }]);
+    areas.forEach(t => {
         L.circle([t.lat, t.lng], {
             radius: t.raio,
-            color: PONTUALIDADE.cores.reserva,
+            color: t.cor,
             weight: 1.5,
             opacity: .75,
             dashArray: "5 4",
-            fillColor: PONTUALIDADE.cores.reserva,
+            fillColor: t.cor,
             fillOpacity: .10,
             interactive: false
         }).addTo(state.camadaTerminais);
@@ -1750,7 +1771,7 @@ function desenharAreasTerminais(){
             interactive: false,
             icon: L.divIcon({
                 className: "terminal-rotulo-wrap",
-                html: '<span class="terminal-rotulo">' + esc(t.nome) + '</span>',
+                html: '<span class="terminal-rotulo" style="background:' + esc(t.cor) + '">' + esc(t.nome) + '</span>',
                 iconSize: [0, 0]
             })
         }).addTo(state.camadaTerminais);
@@ -1849,10 +1870,12 @@ function veiculoPassaFiltro(v){
             if (!v.gpsInvalido) return false;
         } else if (state.statusFiltro === "reserva"){
             if (v.gpsInvalido || v.categoria !== "foraServico" || !v.terminalReserva) return false;
+        } else if (state.statusFiltro === "garagem"){
+            if (v.gpsInvalido || v.categoria !== "foraServico" || v.terminalReserva || !v.naGaragem) return false;
         } else if (state.statusFiltro === "ocioso" || state.statusFiltro === "foraServico"){
             if (v.gpsInvalido || v.categoria !== state.statusFiltro) return false;
             // "Fora de serviço" exclui quem já está contado como reserva de terminal.
-            if (state.statusFiltro === "foraServico" && v.terminalReserva) return false;
+            if (state.statusFiltro === "foraServico" && (v.terminalReserva || v.naGaragem)) return false;
         } else {
             if (v.categoria !== "produtivo") return false;
             if (statusPontualidade(v).chave !== state.statusFiltro) return false;
@@ -1872,7 +1895,7 @@ function descricaoFiltroAtivo(){
     if (state.routeFiltro) partes.push("linha " + state.routeFiltro.shortName);
     if (state.operadorFiltro) partes.push(state.operadorFiltro);
     if (state.statusFiltro){
-        const rotulos = { reserva: "reserva de terminal", ocioso: "ocioso", foraServico: "fora de serviço", noHorario: "no horário", atrasado: "atrasado", adiantado: "adiantado", gpsInvalido: "GPS inválido" };
+        const rotulos = { reserva: "reserva de terminal", garagem: "na garagem", ocioso: "ocioso", foraServico: "fora de serviço", noHorario: "no horário", atrasado: "atrasado", adiantado: "adiantado", gpsInvalido: "GPS inválido" };
         partes.push(rotulos[state.statusFiltro] || state.statusFiltro);
     }
     const q = state.veiculoFiltro.trim();
@@ -1882,7 +1905,7 @@ function descricaoFiltroAtivo(){
 
 function textoStatusComQuantidade(v){
     const st = statusPontualidade(v);
-    if (st.chave === "especial" || st.chave === "gpsInvalido" || st.chave === "reserva" || v.delaySec == null) return st.label;
+    if (st.chave === "especial" || st.chave === "gpsInvalido" || st.chave === "reserva" || st.chave === "garagem" || v.delaySec == null) return st.label;
     const min = Math.round(Math.abs(v.delaySec) / 60);
     return st.label + (min > 0 ? (" · " + min + " min") : "");
 }
@@ -2662,7 +2685,7 @@ function atualizarMarcadores(){
     const visiveis = new Set();
     let countVis = 0;
     let countAtrasado = 0, countAdiantado = 0, countNoHorario = 0;
-    let countOcioso = 0, countForaServico = 0, countGpsInvalido = 0, countReserva = 0;
+    let countOcioso = 0, countForaServico = 0, countGpsInvalido = 0, countReserva = 0, countGaragem = 0;
     // Índice de performance desta tela ACOMPANHA os filtros do mapa (operadora/linha/status):
     // ele responde "como está o que eu estou olhando agora". O Painel TV é que fica fixo na
     // frota TCGL inteira, porque lá ninguém filtra nada — então os dois só coincidem quando
@@ -2676,6 +2699,7 @@ function atualizarMarcadores(){
         visiveis.add(key);
         if (chaveStatus === "gpsInvalido") countGpsInvalido += 1;
         else if (chaveStatus === "reserva") countReserva += 1;
+        else if (chaveStatus === "garagem") countGaragem += 1;
         else if (chaveStatus === "ocioso") countOcioso += 1;
         else if (chaveStatus === "foraServico") countForaServico += 1;
         else if (v.categoria === "produtivo"){
@@ -2738,6 +2762,7 @@ function atualizarMarcadores(){
     if ($("statOcioso")) $("statOcioso").textContent = countOcioso;
     if ($("statForaServico")) $("statForaServico").textContent = countForaServico;
     if ($("statReserva")) $("statReserva").textContent = countReserva;
+    if ($("statGaragem")) $("statGaragem").textContent = countGaragem;
     if ($("statGpsInvalido")) $("statGpsInvalido").textContent = countGpsInvalido;
     atualizarGpsInvalidoLista();
     atualizarKpisOperadora();
