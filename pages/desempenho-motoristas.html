@@ -101,6 +101,8 @@ canvas{max-width:100%}
 <script type="module" src="../assets/js/auth.js?v=20260720a"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
 <header class="header">
@@ -125,6 +127,7 @@ canvas{max-width:100%}
         <a class="btn-portal" href="../index.html"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Portal</a>
         <a class="btn-portal btn-ghost" href="cr0108.html">Relatório CR-0108</a>
         <button type="button" class="btn-portal btn-ghost" id="btnCsv">Baixar CSV</button>
+        <button type="button" class="btn-portal btn-ghost" id="btnPdf">Baixar PDF</button>
     </div>
 
     <div class="restrito">
@@ -382,6 +385,85 @@ function baixarCsv(){
     URL.revokeObjectURL(a.href);
 }
 
+/* ---- PDF ----------------------------------------------------------------------
+   Gerado com jsPDF + autoTable, respeitando os filtros da tela. Fonte padrão helvetica
+   com WinAnsiEncoding, que cobre os acentos do português. */
+function baixarPdf(){
+    const { lista, ini, fim } = ranking();
+    if (!lista.length){ alert("Nenhum motorista atende aos filtros."); return; }
+    if (!window.jspdf?.jsPDF){ alert("Biblioteca de PDF não carregou. Verifique a conexão e recarregue a página."); return; }
+
+    const doc = new window.jspdf.jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const larg = doc.internal.pageSize.getWidth();
+    const geral = lista.reduce((a, m) => acumular(a, m), vazio());
+    const pcts = lista.map(m => m.pct).sort((a, b) => a - b);
+    const mediana = pcts[Math.floor(pcts.length / 2)];
+    const abaixo85 = lista.filter(m => m.pct < 85).length;
+    const agora = new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+
+    doc.setFillColor(6, 36, 92);
+    doc.rect(0, 0, larg, 20, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+    doc.text("Desempenho dos Motoristas — Pontualidade", 12, 9);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+    doc.text(`Portal CIOP · TCGL · CR-0108 · Período ${mesBR(ini)} a ${mesBR(fim)} · Gerado em ${agora}`, 12, 15);
+
+    doc.setTextColor(60, 66, 80); doc.setFontSize(8.5);
+    const filtros = [
+        `Mínimo de passagens: ${nInt(Number($("fMin").value))}`,
+        `Ordem: ${$("fOrdem").selectedOptions[0].textContent}`,
+        $("fBusca").value.trim() ? `Busca: "${$("fBusca").value.trim()}"` : null
+    ].filter(Boolean).join("   |   ");
+    doc.text(filtros, 12, 26);
+    doc.setFont("helvetica", "bold");
+    doc.text(
+        `Motoristas: ${nInt(lista.length)}   |   Pontualidade da frota: ${nPct(pct(geral.noHorario, geral.total))}   |   `
+        + `Mediana individual: ${nPct(mediana)}   |   Abaixo de 85%: ${nInt(abaixo85)}   |   Passagens: ${nInt(geral.total)}`,
+        12, 31);
+
+    doc.autoTable({
+        startY: 35,
+        head: [["#", "Matrícula", "Motorista", "Passagens", "No horário", "Faixa", "Adiantado", "Atrasado", "Divergente", "Desvio médio"]],
+        body: lista.map((m, i) => [
+            i + 1, m.matricula, m.nome || "—", nInt(m.total), nPct(m.pct), faixa(m.pct).txt,
+            nPct(pct(m.adiantado, m.total)), nPct(pct(m.atrasado, m.total)),
+            nPct(pct(m.divergente, m.total)), (m.media >= 0 ? "+" : "") + n2(m.media) + " min"
+        ]),
+        styles: { font: "helvetica", fontSize: 7.5, cellPadding: 1.6, lineColor: [223, 229, 239], lineWidth: .1 },
+        headStyles: { fillColor: [6, 36, 92], textColor: 255, fontStyle: "bold", fontSize: 7, halign: "center" },
+        alternateRowStyles: { fillColor: [250, 251, 253] },
+        columnStyles: {
+            0: { halign: "center", cellWidth: 11 },
+            1: { halign: "center", cellWidth: 20 },
+            2: { halign: "left" },
+            3: { halign: "center", cellWidth: 20 },
+            4: { halign: "center", cellWidth: 22, fontStyle: "bold" },
+            5: { halign: "center", cellWidth: 18 },
+            6: { halign: "center", cellWidth: 21 },
+            7: { halign: "center", cellWidth: 20 },
+            8: { halign: "center", cellWidth: 22 },
+            9: { halign: "center", cellWidth: 24 }
+        },
+        // Pinta a coluna "No horário" e a faixa conforme o desempenho, igual à tela.
+        didParseCell: dados => {
+            if (dados.section !== "body") return;
+            const p = lista[dados.row.index].pct;
+            const cor = p >= 95 ? [21, 128, 61] : p >= 90 ? [11, 58, 138] : p >= 85 ? [161, 98, 7] : [185, 28, 28];
+            if (dados.column.index === 4 || dados.column.index === 5) dados.cell.styles.textColor = cor;
+        },
+        didDrawPage: () => {
+            const alt = doc.internal.pageSize.getHeight();
+            doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(120, 128, 145);
+            doc.text("Documento restrito — contém avaliação individual identificada. A pontualidade depende também da tabela horária e do trânsito.", 12, alt - 6);
+            doc.text(`Página ${doc.internal.getNumberOfPages()}`, larg - 12, alt - 6, { align: "right" });
+        },
+        margin: { top: 35, left: 10, right: 10, bottom: 12 }
+    });
+
+    doc.save(`desempenho-motoristas_${ini}_a_${fim}.pdf`);
+}
+
 async function iniciar(){
     try {
         const res = await fetch("../assets/data/cr0108/por-mes-operador.json", { cache: "no-store" });
@@ -413,6 +495,7 @@ async function iniciar(){
             render();
         });
         $("btnCsv").addEventListener("click", baixarCsv);
+        $("btnPdf").addEventListener("click", baixarPdf);
         render();
     } catch (err){
         $("subCabecalho").textContent = "Falha ao carregar os dados";
