@@ -161,6 +161,29 @@ canvas{max-width:100%}
 .selo-atualizacao.selo-velho{color:#5a2a00;background:rgba(255,236,206,.95);border-color:rgba(200,110,0,.55)}
 .selo-atualizacao.selo-velho::before{background:#e07b00;box-shadow:0 0 0 3px rgba(224,123,0,.22)}
 .selo-atualizacao:empty{display:none}
+/* Detalhamento em cascata do ranking */
+tr.linha-drill{cursor:pointer}
+tr.linha-drill:hover>td{background:rgba(31,111,235,.07)}
+tr.linha-drill.aberta>td{background:rgba(31,111,235,.10)}
+.disclosure{display:inline-block;width:14px;color:var(--muted);font-size:11px}
+tr.detalhe>td{padding:0!important;background:rgba(15,25,40,.045)}
+.det-bloco{padding:10px 12px 12px 30px}
+.det-bloco2{padding:8px 10px 10px 26px}
+.det-titulo{font-size:11.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;
+    color:var(--muted);margin-bottom:6px}
+.det-tabela{width:100%;background:rgba(255,255,255,.55);border-radius:8px;overflow:hidden}
+.det-tabela th{font-size:11px}
+.det-tabela td{font-size:12.5px}
+tr.det-ponto,tr.det-horario{cursor:pointer}
+tr.det-ponto:hover>td,tr.det-horario:hover>td{background:rgba(31,111,235,.08)}
+tr.det-ponto.aberta>td,tr.det-horario.aberta>td{background:rgba(31,111,235,.12)}
+.det-sentido{color:var(--muted);font-weight:700;font-size:11px}
+.det-pct{font-weight:800}
+.det-sugestao{font-weight:800;color:#0b6b45}
+.det-sub>td{padding:0!important;background:transparent}
+.det-carregando{padding:10px 14px;color:var(--muted);font-style:italic}
+.det-sugestao-box{margin:2px 8px 8px 26px;padding:9px 12px;border-radius:8px;font-size:12.5px;
+    line-height:1.5;background:rgba(255,244,214,.75);border:1px solid rgba(190,150,40,.35)}
 /* Seta de ordenacao nos cabecalhos de tabela. */
 .th-ord{cursor:pointer;user-select:none;position:relative;padding-right:17px!important}
 .th-ord::after{content:"";position:absolute;right:5px;top:50%;margin-top:-2px;
@@ -285,7 +308,7 @@ const CLASSES = [
 ];
 
 const DADOS = {};
-const estado = { gran: "dia", dim: "linha" };
+const estado = { gran: "dia", dim: "linha", drill: { linha: null, ponto: null, sentido: null, horario: null } };
 
 const nInt = n => Number(n || 0).toLocaleString("pt-BR");
 const nPct = n => n == null || !Number.isFinite(n) ? "—"
@@ -515,7 +538,8 @@ function dadosRanking(){
             if (!mapa.has(r.linha)) mapa.set(r.linha, vazio());
             acumular(mapa.get(r.linha), r);
         });
-        return { titulo: "Linha", diario: true, itens: [...mapa].map(([k, v]) => ({ chave: k, rotulo: k, extra: DADOS.meta.linhas[k] || "", ...v })) };
+        return { titulo: "Linha", diario: true, cascata: true,
+                 itens: [...mapa].map(([k, v]) => ({ chave: k, rotulo: k, extra: DADOS.meta.linhas[k] || "", ...v })) };
     }
     const cfg = {
         ponto:    { base: DADOS.porMesPonto,    campo: "ponto",     titulo: "Ponto de controle" },
@@ -533,7 +557,7 @@ function dadosRanking(){
 }
 
 function renderRanking(){
-    const { titulo, diario, itens } = dadosRanking();
+    const { titulo, diario, itens, cascata } = dadosRanking();
     // Ordena pelo pior desempenho: menor % no horário primeiro, com um piso de
     // volume para uma linha com 3 passagens não liderar o ranking por acaso.
     const piso = Math.max(30, Math.round(itens.reduce((s, i) => s + i.total, 0) / Math.max(1, itens.length) * 0.05));
@@ -567,9 +591,10 @@ function renderRanking(){
         const p1 = pct(i.noHorario, i.total) ?? 0;
         const media = i.total ? i.somaDif / i.total : 0;
         const rot = esc(i.rotulo) + (i.extra ? ' <span style="color:var(--muted);font-weight:600">' + esc(i.extra) + "</span>" : "");
-        return `<tr>
+        const aberta = cascata && estado.drill.linha === i.chave;
+        return `<tr${cascata ? ` class="linha-drill${aberta ? " aberta" : ""}" data-linha="${esc(i.chave)}"` : ""}>
             <td>${idx + 1}</td>
-            <td class="txt">${rot}</td>
+            <td class="txt">${cascata ? `<span class="disclosure">${aberta ? "▾" : "▸"}</span>` : ""}${rot}</td>
             <td>${nInt(i.total)}</td>
             <td><div style="display:flex;align-items:center;gap:6px">
                 <span class="barra"><i style="width:${p1.toFixed(1)}%;background:var(--c-nohorario)"></i></span>
@@ -578,9 +603,165 @@ function renderRanking(){
             <td style="color:var(--c-atrasado-txt);font-weight:800">${nPct(pct(i.atrasado, i.total))}</td>
             <td style="color:var(--c-divergente-txt);font-weight:800">${nPct(pct(i.divergente, i.total))}</td>
             <td>${(media >= 0 ? "+" : "") + media.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} min</td>
-        </tr>`;
+        </tr>`
+        + (aberta ? linhaDetalhe() : "");
     }).join("");
     $("tabelaRanking").innerHTML = cab + "<tbody>" + corpo + "</tbody>";
+}
+
+/* ---- Detalhamento em cascata --------------------------------------------------
+   Linha -> pontos de controle -> horários com problema -> sugestão de ajuste.
+   Tudo vem da série diária (assets/data/cr0108/serie-diaria.json), que guarda um
+   desvio por dia por viagem programada. Como ela cobre 100% das passagens, os
+   totais fecham com os do ranking. O download só acontece no primeiro clique. */
+const estado_drill_vazio = { linha: null, ponto: null, sentido: null, horario: null };
+let serieCtx = null;
+let baixandoSerie = null;
+
+async function carregarSerie(){
+    if (serieCtx) return serieCtx;
+    if (!baixandoSerie){
+        baixandoSerie = (async () => {
+            const res = await fetch("../assets/data/cr0108/serie-diaria.json", { cache: "force-cache" });
+            if (!res.ok) throw new Error("serie-diaria: HTTP " + res.status);
+            serieCtx = window.CR0108Serie.preparar(await res.json());
+            return serieCtx;
+        })();
+    }
+    return baixandoSerie;
+}
+
+const pctTxt = (a, b) => b ? nPct(100 * a / b) : "—";
+
+function linhaDetalhe(){
+    const d = estado.drill;
+    if (d.carregando) return `<tr class="detalhe"><td colspan="8" class="det-carregando">carregando o detalhamento…</td></tr>`;
+    if (d.erro) return `<tr class="detalhe"><td colspan="8" class="aviso">${esc(d.erro)}</td></tr>`;
+    if (!d.pontos) return "";
+    if (!d.pontos.length) return `<tr class="detalhe"><td colspan="8" class="aviso">Sem viagens programadas no período.</td></tr>`;
+
+    const pontos = d.pontos.map(pt => {
+        const id = pt.sentido + "|" + pt.ponto;
+        const ab = d.ponto === id;
+        const linhas = ab ? horariosDetalhe() : "";
+        return `<tr class="det-ponto${ab ? " aberta" : ""}" data-ponto="${esc(id)}">
+            <td class="txt"><span class="disclosure">${ab ? "▾" : "▸"}</span>${esc(pt.ponto)}</td>
+            <td class="det-sentido">${esc(pt.sentido)}</td>
+            <td>${nInt(pt.total)}</td>
+            <td class="det-pct">${pctTxt(pt.noHorario, pt.total)}</td>
+            <td>${pctTxt(pt.adiantado, pt.total)}</td>
+            <td>${pctTxt(pt.atrasado, pt.total)}</td>
+            <td>${pctTxt(pt.divergente, pt.total)}</td>
+        </tr>` + linhas;
+    }).join("");
+
+    return `<tr class="detalhe"><td colspan="8"><div class="det-bloco">
+        <div class="det-titulo">Pontos de controle da linha ${esc(d.linha)} · do pior para o melhor</div>
+        <table class="mini det-tabela"><thead><tr>
+            <th class="txt">Ponto de controle</th><th style="width:64px">Sentido</th>
+            <th style="width:80px">Passagens</th><th style="width:90px">No horário</th>
+            <th style="width:80px">Adiantado</th><th style="width:80px">Atrasado</th><th style="width:84px">Divergente</th>
+        </tr></thead><tbody>${pontos}</tbody></table>
+    </div></td></tr>`;
+}
+
+function horariosDetalhe(){
+    const d = estado.drill;
+    if (!d.horarios) return `<tr class="det-sub"><td colspan="7" class="det-carregando">carregando os horários…</td></tr>`;
+    /* Só interessa o que tem problema: horário cujo desempenho no horário não é pleno. */
+    const ruins = d.horarios.filter(h => h.noHorario < h.total);
+    if (!ruins.length) return `<tr class="det-sub"><td colspan="7" class="aviso">Nenhum horário com problema neste ponto.</td></tr>`;
+    const linhas = ruins.map(h => {
+        const id = h.sentido + "|" + h.programado;
+        const ab = d.horario === id;
+        return `<tr class="det-horario${ab ? " aberta" : ""}" data-horario="${esc(id)}">
+            <td class="txt"><span class="disclosure">${ab ? "▾" : "▸"}</span><b>${esc(h.programado)}</b></td>
+            <td>${nInt(h.total)}</td>
+            <td class="det-pct">${pctTxt(h.noHorario, h.total)}</td>
+            <td>${h.sugerido ? `<span class="det-sugestao">${esc(h.sugerido)}</span>` : "—"}</td>
+            <td>${h.shift ? (h.shift > 0 ? "+" : "") + h.shift + " min" : "—"}</td>
+        </tr>` + (ab ? sugestaoDetalhe(h) : "");
+    }).join("");
+    return `<tr class="det-sub"><td colspan="7"><div class="det-bloco2">
+        <div class="det-titulo">Horários com problema · clique para ver a sugestão</div>
+        <table class="mini det-tabela"><thead><tr>
+            <th class="txt">Programado</th><th style="width:74px">Passagens</th>
+            <th style="width:86px">No horário</th><th style="width:86px">Sugerido</th><th style="width:74px">Ajuste</th>
+        </tr></thead><tbody>${linhas}</tbody></table>
+    </div></td></tr>`;
+}
+
+function sugestaoDetalhe(h){
+    let corpo;
+    if (!h.massaSuficiente){
+        corpo = `<b>Sem massa para recomendar.</b> Só ${nInt(h.total)} passagem${h.total === 1 ? "" : "s"} no período — `
+            + "são necessárias ao menos 20 para o deslocamento não ser sorte. Amplie o período.";
+    } else if (!h.shift){
+        corpo = "<b>Mexer no horário não resolve.</b> Nenhum deslocamento entre −20 e +20 min melhora este horário: "
+            + "a variação vem da operação (trânsito, embarque), não da tabela.";
+    } else if (Math.abs(h.shift) <= 2){
+        corpo = `<b>Orientar o motorista.</b> O ajuste ideal é de apenas ${Math.abs(h.shift)} min, `
+            + "dentro do que a condução controla — não compensa mexer na tabela horária.";
+    } else {
+        corpo = `<b>Alterar a tabela horária:</b> ${esc(h.programado)} → <b>${esc(h.sugerido)}</b> `
+            + `(${h.shift > 0 ? "+" : ""}${h.shift} min). No horário iria de ${pctTxt(h.noHorario, h.total)} `
+            + `para ${nPct(h.pctPotencial)}, recuperando ${nInt(h.recuperadas)} das ${nInt(h.total)} passagens.`;
+    }
+    return `<tr class="det-sub"><td colspan="5"><div class="det-sugestao-box">${corpo}</div></td></tr>`;
+}
+
+async function carregarDrill(){
+    const d = estado.drill;
+    const p = periodo();
+    try {
+        const ctx = await carregarSerie();
+        const sentidoFiltro = $("fSentido").value;
+        d.pontos = window.CR0108Serie.pontosDaLinha(ctx, d.linha, sentidoFiltro, p.de, p.ate);
+        if (d.ponto){
+            const [sent, pto] = d.ponto.split("|");
+            d.horarios = window.CR0108Serie.horariosDoPonto(ctx, d.linha, sent, pto, p.de, p.ate);
+        } else {
+            d.horarios = null;
+        }
+    } catch (err){
+        console.error(err);
+        d.erro = "Não foi possível carregar o detalhamento.";
+    }
+    d.carregando = false;
+    renderRanking();
+}
+
+function ligarCascata(){
+    $("tabelaRanking").addEventListener("click", e => {
+        const trH = e.target.closest("tr.det-horario");
+        if (trH){
+            const id = trH.dataset.horario;
+            estado.drill.horario = estado.drill.horario === id ? null : id;
+            renderRanking();
+            return;
+        }
+        const trP = e.target.closest("tr.det-ponto");
+        if (trP){
+            const id = trP.dataset.ponto;
+            const mesmo = estado.drill.ponto === id;
+            estado.drill.ponto = mesmo ? null : id;
+            estado.drill.horario = null;
+            estado.drill.horarios = null;
+            if (mesmo){ renderRanking(); } else { renderRanking(); carregarDrill(); }
+            return;
+        }
+        const trL = e.target.closest("tr.linha-drill");
+        if (!trL) return;
+        const linha = trL.dataset.linha;
+        if (estado.drill.linha === linha){
+            estado.drill = { ...estado_drill_vazio };
+            renderRanking();
+            return;
+        }
+        estado.drill = { ...estado_drill_vazio, linha, carregando: true };
+        renderRanking();
+        carregarDrill();
+    });
 }
 
 function renderTudo(){
@@ -612,15 +793,20 @@ function aplicarAtalho(){
     }
 }
 
+/* Trocar filtro invalida o que está aberto: o detalhe é de um recorte, a linha de outro. */
+function fecharCascata(){ estado.drill = { linha: null, ponto: null, sentido: null, horario: null }; }
+
 function ligarEventos(){
-    $("fAtalho").addEventListener("change", () => { aplicarAtalho(); renderTudo(); });
+    ligarCascata();
+    $("fAtalho").addEventListener("change", () => { fecharCascata(); aplicarAtalho(); renderTudo(); });
     ["fDe", "fAte"].forEach(id => $(id).addEventListener("change", () => {
-        $("fAtalho").value = "custom"; renderTudo();
+        fecharCascata(); $("fAtalho").value = "custom"; renderTudo();
     }));
-    ["fLinha", "fSentido", "fComparar"].forEach(id => $(id).addEventListener("change", renderTudo));
+    ["fLinha", "fSentido", "fComparar"].forEach(id =>
+        $(id).addEventListener("change", () => { fecharCascata(); renderTudo(); }));
     $("btnLimpar").addEventListener("click", () => {
         $("fAtalho").value = "tudo"; $("fLinha").value = ""; $("fSentido").value = ""; $("fComparar").value = "";
-        aplicarAtalho(); renderTudo();
+        fecharCascata(); aplicarAtalho(); renderTudo();
     });
     $("tabsEvolucao").addEventListener("click", e => {
         const b = e.target.closest(".tab"); if (!b) return;
@@ -631,6 +817,7 @@ function ligarEventos(){
     $("tabsRanking").addEventListener("click", e => {
         const b = e.target.closest(".tab"); if (!b) return;
         estado.dim = b.dataset.dim;
+        fecharCascata();
         [...$("tabsRanking").children].forEach(x => x.classList.toggle("ativo", x === b));
         renderRanking();
     });
@@ -694,6 +881,7 @@ function selarAtualizacao(meta){
 
 iniciar();
 </script>
+<script src="../assets/js/cr0108-serie.js?v=20260731b"></script>
 <script src="../assets/js/ordenar-tabela.js?v=20260731"></script>
 </body>
 </html>
