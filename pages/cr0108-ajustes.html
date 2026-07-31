@@ -152,6 +152,19 @@ table.mini td{padding:4px 9px;border:1px solid var(--border);text-align:center;b
 <script src="../assets/js/portal-senha.js" defer></script>
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260720y">
 <link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260720y">
+<style>
+/* Selo de atualizacao: mesmo componente do CR-0108. Fica depois do portal-glass/futuristic
+   para nao ser sobrescrito pelos !important daqueles arquivos. */
+.selo-atualizacao{margin-left:auto;align-self:center;display:inline-flex;align-items:center;gap:7px;
+    padding:7px 12px;border-radius:999px;font-size:12.5px;font-weight:600;letter-spacing:.2px;
+    color:#0b3b2e;background:rgba(214,247,231,.92);border:1px solid rgba(16,140,100,.45);
+    box-shadow:0 1px 2px rgba(0,0,0,.10);white-space:nowrap}
+.selo-atualizacao::before{content:"";width:8px;height:8px;border-radius:50%;background:#12a06f;
+    box-shadow:0 0 0 3px rgba(18,160,111,.22)}
+.selo-atualizacao.selo-velho{color:#5a2a00;background:rgba(255,236,206,.95);border-color:rgba(200,110,0,.55)}
+.selo-atualizacao.selo-velho::before{background:#e07b00;box-shadow:0 0 0 3px rgba(224,123,0,.22)}
+.selo-atualizacao:empty{display:none}
+</style>
 </head>
 <body data-require-perfis="Administrador">
 <div class="body-bg-wall" aria-hidden="true"></div>
@@ -193,6 +206,7 @@ table.mini td{padding:4px 9px;border:1px solid var(--border);text-align:center;b
             <option value="impacto">Maior impacto</option>
         </select></div>
         <button type="button" class="btn-portal btn-ghost" id="btnLimpar">Limpar</button>
+        <span class="selo-atualizacao" id="seloAtual"></span>
         <button type="button" class="btn-portal btn-ghost" id="btnCsvHorarios">CSV horários</button>
         <button type="button" class="btn-portal btn-ghost" id="btnCsv">CSV pontos</button>
     </div>
@@ -519,11 +533,39 @@ function baixarCsv(){
     URL.revokeObjectURL(a.href);
 }
 
+/* Aviso de defasagem. Alem das 48h, o selo tambem alerta quando o diagnostico e mais
+   antigo que a ultima carga do CR-0108 — nesse caso ele foi calculado sem os dias novos. */
+function selarAtualizacao(geradoISO, meta){
+    const el = $("seloAtual");
+    if (!el || !geradoISO) return;
+    const gerado = new Date(geradoISO);
+    const horas = (Date.now() - gerado.getTime()) / 36e5;
+    const atrasBase = meta && meta.gerado && new Date(meta.gerado) > gerado;
+    const dias = Math.floor(horas / 24);
+    const quando = gerado.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit",
+        year: "numeric", hour: "2-digit", minute: "2-digit" });
+    if (atrasBase){
+        el.textContent = `Diagnóstico anterior à carga de ${dataBR(meta.ultimoDia)}`;
+        el.title = `Calculado em ${quando}, antes do último carregamento do CR-0108. `
+            + "Reprocesse com diagnostico.py e horarios.py para incluir os dias novos.";
+    } else if (horas >= 48){
+        el.textContent = `Diagnóstico de ${quando} · sem atualizar há ${dias} dia${dias === 1 ? "" : "s"}`;
+        el.title = "Reprocesse com diagnostico.py e horarios.py.";
+    } else {
+        el.textContent = `Diagnóstico de ${quando}`;
+        el.title = "";
+    }
+    el.classList.toggle("selo-velho", atrasBase || horas >= 48);
+}
+
+const dataBR = iso => { const [a, m, d] = String(iso).split("-"); return `${d}/${m}/${a}`; };
+
 async function iniciar(){
     try {
-        const [res, resH] = await Promise.all([
+        const [res, resH, resM] = await Promise.all([
             fetch("../assets/data/cr0108/diagnostico-pontos.json", { cache: "no-store" }),
-            fetch("../assets/data/cr0108/sugestao-horarios.json", { cache: "no-store" })
+            fetch("../assets/data/cr0108/sugestao-horarios.json", { cache: "no-store" }),
+            fetch("../assets/data/cr0108/meta.json", { cache: "no-store" })
         ]);
         if (!res.ok) throw new Error("diagnostico-pontos: HTTP " + res.status);
         if (!resH.ok) throw new Error("sugestao-horarios: HTTP " + resH.status);
@@ -536,6 +578,7 @@ async function iniciar(){
         const passagens = DADOS.itens.reduce((s, i) => s + i.n, 0);
         $("subCabecalho").textContent =
             `${nInt(DADOS.itens.length)} pontos de controle · ${nInt(passagens)} passagens analisadas · faixa No horário −2 a +6 min`;
+        selarAtualizacao(json.gerado || jsonH.gerado, resM.ok ? await resM.json() : null);
 
         const sel = $("fLinha");
         [...new Set(DADOS.itens.map(i => i.linha))]
