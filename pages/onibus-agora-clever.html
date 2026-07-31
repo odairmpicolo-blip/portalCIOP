@@ -369,6 +369,23 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
   .sidebar{left:10px;right:10px;width:auto}
 }
 
+/* Lista de carros por local (garagem / reserva de terminal). */
+.oa-lista-grupo{margin:0 0 12px}
+.oa-lista-grupo:last-child{margin-bottom:0}
+.oa-lista-grupo h4{
+  margin:0 0 6px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;
+}
+.oa-lista-grupo h4 em{font-style:normal;font-weight:800;color:var(--blue)}
+.oa-lista-carros{display:flex;flex-wrap:wrap;gap:5px}
+.oa-lista-carro{
+  display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:9px;cursor:pointer;
+  background:var(--surface-2);border:1px solid var(--border);
+  font-size:12px;font-weight:800;color:var(--blue);transition:.15s ease;
+}
+.oa-lista-carro:hover{background:#effcfb;border-color:rgba(45,180,191,.45);transform:translateY(-1px)}
+.oa-lista-carro small{font-size:9.5px;font-weight:700;color:var(--muted)}
+
 /* ===== Paleta de busca no centro da tela (Ctrl/Cmd+T) ================================== */
 .oa-paleta-overlay{
   position:fixed;inset:0;z-index:2000;display:none;
@@ -799,10 +816,10 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-adiantado" data-filtro-status="adiantado"><b id="statAdiantados">0</b><span>Adiantado</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-atrasado" data-filtro-status="atrasado"><b id="statAtrasados">0</b><span>Atrasado</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-nohorario" data-filtro-status="noHorario"><b id="statNoHorario">0</b><span>No horário</span></button>
-            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-reserva" data-filtro-status="reserva" title="Fora de serviço dentro da área de um terminal"><b id="statReserva">0</b><span>Reserva</span></button>
+            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-reserva" id="kpiReserva" data-filtro-status="reserva" title="Fora de serviço na área de um terminal · filtra e abre a lista"><b id="statReserva">0</b><span>Reserva</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-ocioso" data-filtro-status="ocioso"><b id="statOcioso">0</b><span>Ocioso</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-foraservico" data-filtro-status="foraServico"><b id="statForaServico">0</b><span>Fora de serviço</span></button>
-            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-garagem" data-filtro-status="garagem" title="Fora de serviço recolhido na garagem da TCGL"><b id="statGaragem">0</b><span>GA · TCGL</span></button>
+            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-garagem" id="kpiGaragem" data-filtro-status="garagem" title="Fora de serviço na garagem da TCGL · filtra e abre a lista"><b id="statGaragem">0</b><span>GA · TCGL</span></button>
         </div>
 
         <aside class="sidebar" id="oaBuscaPainel" aria-hidden="true">
@@ -908,6 +925,21 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
         </div>
         <div class="oa-sheet-body" id="oaSheetLinhasBody"></div>
     </aside>
+</div>
+
+<div class="oa-modal-overlay" id="oaListaOverlay">
+    <div class="oa-modal" role="dialog" aria-modal="true" aria-labelledby="oaListaTitulo">
+        <div class="oa-modal-head">
+            <div>
+                <h3 id="oaListaTitulo">Lista</h3>
+                <p id="oaListaSubtitulo">—</p>
+            </div>
+            <button type="button" class="oa-modal-close" id="oaListaFechar" aria-label="Fechar">×</button>
+        </div>
+        <div class="oa-modal-body">
+            <div id="oaListaConteudo"></div>
+        </div>
+    </div>
 </div>
 
 <div class="oa-paleta-overlay" id="oaPaletaOverlay">
@@ -2763,6 +2795,7 @@ function atualizarMarcadores(){
     if ($("statForaServico")) $("statForaServico").textContent = countForaServico;
     if ($("statReserva")) $("statReserva").textContent = countReserva;
     if ($("statGaragem")) $("statGaragem").textContent = countGaragem;
+    atualizarListaLocal();
     if ($("statGpsInvalido")) $("statGpsInvalido").textContent = countGpsInvalido;
     atualizarGpsInvalidoLista();
     atualizarKpisOperadora();
@@ -2938,6 +2971,88 @@ async function iniciarTelemetriaJanela(key){
         await new Promise(r => setTimeout(r, FLEETBUS.pollGapMs));
     }
     VEICULO_JANELA.pollAtivo = false;
+}
+
+/* ===== Listas por local: garagem e reserva de terminal ================================
+   Abrem ao clicar nos KPIs "GA · TCGL" e "Reserva". A lista é agrupada por local e cada
+   carro é clicável — abre a janela do veículo. Selecionamos pelo status do próprio veículo,
+   não pelo filtro do mapa, para a lista sempre responder "quem está lá agora". */
+let listaLocalAtiva = null;
+
+function carrosPorLocal(tipo){
+    const grupos = new Map();
+    state.vehicles.forEach((v, key) => {
+        const chave = statusPontualidade(v).chave;
+        if (tipo === "garagem" && chave !== "garagem") return;
+        if (tipo === "reserva" && chave !== "reserva") return;
+        const local = tipo === "garagem" ? GARAGEM_AREA.nome : v.terminalReserva;
+        if (!grupos.has(local)) grupos.set(local, []);
+        grupos.get(local).push({ key, v });
+    });
+    grupos.forEach(arr => arr.sort((a, b) =>
+        String(a.v.vehicleId).localeCompare(String(b.v.vehicleId), "pt-BR", { numeric: true })));
+    // Mantém a ordem em que os terminais estão declarados; garagem é grupo único.
+    const ordem = TERMINAIS.map(t => t.nome);
+    return [...grupos.entries()].sort((a, b) => {
+        const ia = ordem.indexOf(a[0]), ib = ordem.indexOf(b[0]);
+        return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    });
+}
+
+function renderListaLocal(){
+    if (!listaLocalAtiva) return;
+    const tipo = listaLocalAtiva;
+    const grupos = carrosPorLocal(tipo);
+    const total = grupos.reduce((n, g) => n + g[1].length, 0);
+    $("oaListaTitulo").textContent = tipo === "garagem"
+        ? "Veículos na garagem da TCGL"
+        : "Veículos em reserva nos terminais";
+    $("oaListaSubtitulo").textContent = total === 1
+        ? "1 veículo fora de serviço"
+        : total + " veículos fora de serviço" + (tipo === "reserva" ? " em " + grupos.length + (grupos.length === 1 ? " terminal" : " terminais") : "");
+
+    const alvo = $("oaListaConteudo");
+    if (!alvo) return;
+    if (!total){
+        alvo.innerHTML = '<p class="oa-semcom-empty">'
+            + (tipo === "garagem" ? "Nenhum veículo recolhido na garagem agora." : "Nenhum veículo em reserva nos terminais agora.")
+            + '</p>';
+        return;
+    }
+    alvo.innerHTML = grupos.map(([local, itens]) =>
+        '<div class="oa-lista-grupo">' +
+            '<h4>' + esc(local) + ' <em>' + itens.length + '</em></h4>' +
+            '<div class="oa-lista-carros">' +
+                itens.map(it =>
+                    '<button type="button" class="oa-lista-carro" data-key="' + esc(it.key) + '">' +
+                        esc(it.v.vehicleId) +
+                        '<small>' + esc(it.v.operadora || "—") + '</small>' +
+                    '</button>'
+                ).join("") +
+            '</div>' +
+        '</div>'
+    ).join("");
+    alvo.querySelectorAll(".oa-lista-carro").forEach(el => {
+        el.addEventListener("click", () => {
+            fecharListaLocal();
+            abrirJanelaVeiculo(el.dataset.key);
+        });
+    });
+}
+
+function abrirListaLocal(tipo){
+    listaLocalAtiva = tipo;
+    renderListaLocal();
+    $("oaListaOverlay")?.classList.add("open");
+}
+
+function fecharListaLocal(){
+    $("oaListaOverlay")?.classList.remove("open");
+    listaLocalAtiva = null;
+}
+
+function atualizarListaLocal(){
+    if ($("oaListaOverlay")?.classList.contains("open")) renderListaLocal();
 }
 
 /* ===== Paleta de busca central (Ctrl/Cmd+T) ===========================================
@@ -3141,6 +3256,12 @@ function bind(){
         if (e.target.id === "oaSemComOverlay") fecharSemComunicacao();
     });
     $("kpiGpsInvalido")?.addEventListener("click", abrirGpsInvalido);
+    $("kpiGaragem")?.addEventListener("click", () => abrirListaLocal("garagem"));
+    $("kpiReserva")?.addEventListener("click", () => abrirListaLocal("reserva"));
+    $("oaListaFechar")?.addEventListener("click", fecharListaLocal);
+    $("oaListaOverlay")?.addEventListener("click", e => {
+        if (e.target.id === "oaListaOverlay") fecharListaLocal();
+    });
     $("oaGpsInvFechar")?.addEventListener("click", fecharGpsInvalido);
     $("oaGpsInvOverlay")?.addEventListener("click", e => {
         if (e.target.id === "oaGpsInvOverlay") fecharGpsInvalido();
@@ -3188,6 +3309,7 @@ function bind(){
             fecharGpsInvalido();
             fecharIndicePerformance();
             fecharJanelaVeiculo();
+            fecharListaLocal();
             if (algumPainelMapaAberto()) fecharPaineisMapa();
             if (mapaEmTelaCheia()) alternarTelaCheiaMapa(false);
         }
