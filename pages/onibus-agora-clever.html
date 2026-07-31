@@ -117,6 +117,7 @@ body.oa-page footer.portal-site-footer{display:none!important}
   font-size:10.5px;font-weight:800;color:var(--blue);
 }
 .line-count.zero{opacity:.45;font-weight:700}
+.kpi-reserva{--kpi-cor:#7c3aed;--kpi-cor-texto:#6d28d9;--kpi-cor-fundo:#f5f3ff;--kpi-cor-borda:#ddd6fe}
 .kpi-gpsinvalido{--kpi-cor:#0b1f4d;--kpi-cor-texto:#0b1f4d;--kpi-cor-fundo:#eef2fa;--kpi-cor-borda:#c2cde6}
 .kpi-semcomunicacao{--kpi-cor:#0f172a;--kpi-cor-texto:#0f172a;--kpi-cor-fundo:#f1f5f9;--kpi-cor-borda:#cbd5e1}
 .kpi-chip-btn{
@@ -417,6 +418,15 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
 }
 
 /* Menus do mapa em pé, na parte de baixo, do mesmo lado da lupa (esquerda). */
+/* Rótulo do terminal no centro do círculo de abrangência. */
+.terminal-rotulo-wrap{pointer-events:none}
+.terminal-rotulo{
+  display:inline-block;transform:translate(-50%,-50%);white-space:nowrap;
+  padding:2px 7px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.2px;
+  background:rgba(124,58,237,.92);color:#fff;
+  box-shadow:0 2px 6px -2px rgba(15,23,42,.5);
+}
+
 .map-tools{position:absolute;left:10px;bottom:14px;right:auto;top:auto;z-index:500;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
 .map-tools .btn{min-height:26px;padding:0 10px;font-size:10.5px;font-weight:700;background:rgba(255,255,255,.95);backdrop-filter:blur(8px)}
 .map-tools .btn svg{width:12px;height:12px}
@@ -771,6 +781,7 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                 <b id="statIndicePerformance">—</b><span>Performance</span>
             </button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-ocioso" data-filtro-status="ocioso"><b id="statOcioso">0</b><span>Ocioso</span></button>
+            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-reserva" data-filtro-status="reserva" title="Fora de serviço dentro da área de um terminal"><b id="statReserva">0</b><span>Reserva</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-foraservico" data-filtro-status="foraServico"><b id="statForaServico">0</b><span>Fora de serviço</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-gpsinvalido" id="kpiGpsInvalido" data-filtro-status="gpsInvalido" title="Somente TCGL · filtra o mapa e abre a lista">
                 <b id="statGpsInvalido">0</b><span>GPS inválido</span>
@@ -983,6 +994,7 @@ const PONTUALIDADE = {
         adiantado: "#D30000", atrasado: "#FFFF00", noHorario: "#8FD400",
         semPrevisao: "#374151",
         gpsInvalido: "#0b1f4d",
+        reserva: "#7c3aed",
         ocioso: "#7DD3FC",
         foraServico: "#3f4757"
     },
@@ -1008,6 +1020,42 @@ function coordenadaNoBrasil(lat, lng){
     if (lat === 0 && lng === 0) return false;
     return lat >= LIMITES_BRASIL.latMin && lat <= LIMITES_BRASIL.latMax
         && lng >= LIMITES_BRASIL.lngMin && lng <= LIMITES_BRASIL.lngMax;
+}
+
+/** Terminais de Londrina com a área de abrangência usada para a "linha reserva": todo veículo
+ *  FORA DE SERVIÇO (código U) parado dentro do raio de um terminal é considerado reserva
+ *  daquele terminal. Coordenadas conferidas no OpenStreetMap e validadas contra a posição real
+ *  da frota; o raio de 250 m cobre a plataforma e o pátio sem invadir a via.
+ *  Irerê não existe como terminal no OSM — a coordenada veio do aglomerado real de veículos
+ *  da LondriSul no distrito. */
+const TERMINAIS = [
+    { nome: "Central",         lat: -23.3082945, lng: -51.1608587, raio: 300 },
+    { nome: "Vivi Xavier",     lat: -23.2607767, lng: -51.1729136, raio: 250 },
+    { nome: "Shopping Catuaí", lat: -23.3437533, lng: -51.1860741, raio: 250 },
+    { nome: "Ouro Verde",      lat: -23.2816540, lng: -51.1710105, raio: 250 },
+    { nome: "Milton Gavetti",  lat: -23.2815404, lng: -51.1525856, raio: 250 },
+    { nome: "Acapulco",        lat: -23.3603910, lng: -51.1552581, raio: 250 },
+    { nome: "Oeste",           lat: -23.2971857, lng: -51.1871866, raio: 250 },
+    { nome: "Irerê",           lat: -23.5051000, lng: -51.1256000, raio: 250 }
+];
+
+/** Distância em metros entre duas coordenadas (aproximação plana — a alguns km de distância
+ *  o erro é centimétrico e o custo é bem menor que Haversine rodando pra frota inteira). */
+function distanciaMetros(lat1, lng1, lat2, lng2){
+    const dLat = (lat1 - lat2) * 111320;
+    const dLng = (lng1 - lng2) * 111320 * Math.cos(lat1 * Math.PI / 180);
+    return Math.sqrt(dLat * dLat + dLng * dLng);
+}
+
+/** Retorna o terminal cuja área contém o ponto (o mais próximo, se houver sobreposição). */
+function terminalDoPonto(lat, lng){
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    let achado = null, menor = Infinity;
+    for (const t of TERMINAIS){
+        const d = distanciaMetros(lat, lng, t.lat, t.lng);
+        if (d <= t.raio && d < menor){ menor = d; achado = t; }
+    }
+    return achado;
 }
 
 /** Ocioso (PI/DH/PO) = azul claro. Fora de serviço (U) = cinza chumbo. Produtivo = linha numerada 080–999. */
@@ -1121,6 +1169,10 @@ function statusPontualidade(v){
     // GPS inválido vem antes de tudo: sem posição confiável, nenhum outro status é confiável.
     if (v.gpsInvalido) return { chave: "gpsInvalido", label: "GPS inválido", cor: PONTUALIDADE.cores.gpsInvalido };
     if (v.categoria === "ocioso") return { chave: "ocioso", label: "Ocioso", cor: PONTUALIDADE.cores.ocioso };
+    // Fora de serviço dentro da área de um terminal = reserva daquele terminal.
+    if (v.categoria === "foraServico" && v.terminalReserva){
+        return { chave: "reserva", label: "Reserva · " + v.terminalReserva, cor: PONTUALIDADE.cores.reserva };
+    }
     if (v.categoria === "foraServico") return { chave: "foraServico", label: "Fora de serviço", cor: PONTUALIDADE.cores.foraServico };
     if (v.delaySec == null){
         return { chave: "semPrevisao", label: "Sem previsão", cor: PONTUALIDADE.cores.semPrevisao };
@@ -1429,6 +1481,10 @@ async function fetchCleverVehicles(){
             vehicleId: vid,
             lat, lng,
             gpsInvalido,
+            // Só faz sentido para quem está fora de serviço e com posição confiável.
+            terminalReserva: (!gpsInvalido && categoria === "foraServico")
+                ? (terminalDoPonto(lat, lng)?.nome || null)
+                : null,
             latOriginal: Number.isFinite(latBruta) ? latBruta : null,
             lngOriginal: Number.isFinite(lngBruta) ? lngBruta : null,
             routeId: route.routeId,
@@ -1658,8 +1714,36 @@ function initMapa(){
         subdomains: "abc"
     }).addTo(state.mapa);
     ativarGestosMapa(state.mapa);
+    desenharAreasTerminais();
     setTimeout(() => state.mapa.invalidateSize(), 200);
     scheduleMapResize();
+}
+
+/** Desenha o círculo de abrangência de cada terminal. Fica na camada de baixo (pane de
+ *  overlay padrão), então os ônibus continuam clicáveis por cima. */
+function desenharAreasTerminais(){
+    if (!state.mapa) return;
+    state.camadaTerminais = L.layerGroup().addTo(state.mapa);
+    TERMINAIS.forEach(t => {
+        L.circle([t.lat, t.lng], {
+            radius: t.raio,
+            color: PONTUALIDADE.cores.reserva,
+            weight: 1.5,
+            opacity: .75,
+            dashArray: "5 4",
+            fillColor: PONTUALIDADE.cores.reserva,
+            fillOpacity: .10,
+            interactive: false
+        }).addTo(state.camadaTerminais);
+        L.marker([t.lat, t.lng], {
+            interactive: false,
+            icon: L.divIcon({
+                className: "terminal-rotulo-wrap",
+                html: '<span class="terminal-rotulo">' + esc(t.nome) + '</span>',
+                iconSize: [0, 0]
+            })
+        }).addTo(state.camadaTerminais);
+    });
 }
 
 function trocarTile(tipo){
@@ -1752,8 +1836,12 @@ function veiculoPassaFiltro(v){
         // os demais (atrasado/adiantado/noHorário) só fazem sentido para veículos produtivos.
         if (state.statusFiltro === "gpsInvalido"){
             if (!v.gpsInvalido) return false;
+        } else if (state.statusFiltro === "reserva"){
+            if (v.gpsInvalido || v.categoria !== "foraServico" || !v.terminalReserva) return false;
         } else if (state.statusFiltro === "ocioso" || state.statusFiltro === "foraServico"){
             if (v.gpsInvalido || v.categoria !== state.statusFiltro) return false;
+            // "Fora de serviço" exclui quem já está contado como reserva de terminal.
+            if (state.statusFiltro === "foraServico" && v.terminalReserva) return false;
         } else {
             if (v.categoria !== "produtivo") return false;
             if (statusPontualidade(v).chave !== state.statusFiltro) return false;
@@ -1773,7 +1861,7 @@ function descricaoFiltroAtivo(){
     if (state.routeFiltro) partes.push("linha " + state.routeFiltro.shortName);
     if (state.operadorFiltro) partes.push(state.operadorFiltro);
     if (state.statusFiltro){
-        const rotulos = { ocioso: "ocioso", foraServico: "fora de serviço", noHorario: "no horário", atrasado: "atrasado", adiantado: "adiantado", gpsInvalido: "GPS inválido" };
+        const rotulos = { reserva: "reserva de terminal", ocioso: "ocioso", foraServico: "fora de serviço", noHorario: "no horário", atrasado: "atrasado", adiantado: "adiantado", gpsInvalido: "GPS inválido" };
         partes.push(rotulos[state.statusFiltro] || state.statusFiltro);
     }
     const q = state.veiculoFiltro.trim();
@@ -1783,7 +1871,7 @@ function descricaoFiltroAtivo(){
 
 function textoStatusComQuantidade(v){
     const st = statusPontualidade(v);
-    if (st.chave === "especial" || st.chave === "gpsInvalido" || v.delaySec == null) return st.label;
+    if (st.chave === "especial" || st.chave === "gpsInvalido" || st.chave === "reserva" || v.delaySec == null) return st.label;
     const min = Math.round(Math.abs(v.delaySec) / 60);
     return st.label + (min > 0 ? (" · " + min + " min") : "");
 }
@@ -2563,7 +2651,7 @@ function atualizarMarcadores(){
     const visiveis = new Set();
     let countVis = 0;
     let countAtrasado = 0, countAdiantado = 0, countNoHorario = 0;
-    let countOcioso = 0, countForaServico = 0, countGpsInvalido = 0;
+    let countOcioso = 0, countForaServico = 0, countGpsInvalido = 0, countReserva = 0;
     // Índice de performance desta tela ACOMPANHA os filtros do mapa (operadora/linha/status):
     // ele responde "como está o que eu estou olhando agora". O Painel TV é que fica fixo na
     // frota TCGL inteira, porque lá ninguém filtra nada — então os dois só coincidem quando
@@ -2576,6 +2664,7 @@ function atualizarMarcadores(){
         countVis += 1;
         visiveis.add(key);
         if (chaveStatus === "gpsInvalido") countGpsInvalido += 1;
+        else if (chaveStatus === "reserva") countReserva += 1;
         else if (chaveStatus === "ocioso") countOcioso += 1;
         else if (chaveStatus === "foraServico") countForaServico += 1;
         else if (v.categoria === "produtivo"){
@@ -2637,6 +2726,7 @@ function atualizarMarcadores(){
     $("statAdiantados").textContent = countAdiantado;
     if ($("statOcioso")) $("statOcioso").textContent = countOcioso;
     if ($("statForaServico")) $("statForaServico").textContent = countForaServico;
+    if ($("statReserva")) $("statReserva").textContent = countReserva;
     if ($("statGpsInvalido")) $("statGpsInvalido").textContent = countGpsInvalido;
     atualizarGpsInvalidoLista();
     atualizarKpisOperadora();
