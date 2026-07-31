@@ -27,6 +27,12 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
 .header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
 .container{max-width:1500px;margin:16px auto 32px;padding:0 20px;flex:1;width:100%}
 .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+/* Barra única com navegação + filtros: alinha tudo pela base para os rótulos dos
+   campos não desencontrarem a altura dos botões. */
+.toolbar-filtros{align-items:flex-end;gap:10px 12px;padding:10px 12px;border-radius:12px;
+  background:var(--surface);border:1px solid var(--border);box-shadow:0 8px 20px rgba(16,24,40,.06)}
+.toolbar-filtros .btn-portal{min-height:38px}
+.toolbar-filtros .campo-busca input{min-width:190px}
 .btn-portal{display:inline-flex;align-items:center;gap:8px;min-height:40px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;background:var(--blue);color:#fff;border:0;cursor:pointer}
 .btn-portal:hover{background:var(--blue2)}
 .btn-ghost{background:var(--surface-2);color:var(--blue);border:1px solid var(--border)}
@@ -34,8 +40,6 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
 .btn-icon{display:inline-flex;width:16px;height:16px;flex:0 0 auto}
 .btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
-.restrito{background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--orange);border-radius:12px;padding:11px 15px;margin-bottom:14px;font-size:12px;font-weight:700;color:#9a3412;line-height:1.5}
-.restrito b{color:#7c2d12}
 
 .filtros{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 20px rgba(16,24,40,.06);padding:12px 14px;margin-bottom:14px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 14px}
 .campo{display:flex;flex-direction:column;gap:4px}
@@ -116,13 +120,12 @@ table.mini td{padding:4px 10px;border:1px solid var(--border);text-align:center;
     backdrop-filter:blur(18px) saturate(200%);
     -webkit-backdrop-filter:blur(18px) saturate(200%);
   }
-  .filtros,.explica,.restrito{
+  .filtros,.explica{
     background:rgba(255,255,255,.58) !important;
     border:1px solid rgba(255,255,255,.5) !important;
     backdrop-filter:blur(32px) saturate(165%);
     -webkit-backdrop-filter:blur(32px) saturate(165%);
   }
-  .restrito{background:rgba(255,244,232,.74) !important;border-color:rgba(253,186,116,.6) !important}
   /* Células transparentes para o vidro do card aparecer sob a tabela. */
   table.rel tbody td{background:transparent}
   table.rel tbody tr:nth-child(even) td{background:rgba(255,255,255,.26)}
@@ -184,22 +187,15 @@ table.mini td{padding:4px 10px;border:1px solid var(--border);text-align:center;
 </header>
 
 <main class="container">
-    <div class="toolbar">
+    <!-- Barra única: navegação, filtros e exportações na mesma linha. -->
+    <div class="toolbar toolbar-filtros">
         <a class="btn-portal" href="../index.html"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Portal</a>
-        <a class="btn-portal btn-ghost" href="cr0108.html">Relatório CR-0108</a>
-        <button type="button" class="btn-portal btn-ghost" id="btnCsv">Baixar CSV</button>
-        <button type="button" class="btn-portal btn-ghost" id="btnPdf">Baixar PDF</button>
-    </div>
+        <a class="btn-portal btn-ghost" href="cr0108.html">CR-0108</a>
 
-    <div class="restrito">
-        <b>Página restrita.</b> Contém avaliação individual identificada de motoristas. O acesso está travado ao seu e-mail — nem outros administradores conseguem abrir. A pontualidade depende também da tabela horária e do trânsito, então trate o ranking como ponto de partida para conversa, não como conclusão isolada sobre a pessoa.
-    </div>
-
-    <section class="filtros">
         <div class="campo campo-busca"><label for="fBusca">Buscar motorista</label><input type="search" id="fBusca" placeholder="Nome ou matrícula" autocomplete="off"></div>
         <div class="campo"><label for="fDe">Mês inicial</label><select id="fDe"></select></div>
         <div class="campo"><label for="fAte">Mês final</label><select id="fAte"></select></div>
-        <div class="campo"><label for="fMin">Mínimo de passagens</label><select id="fMin">
+        <div class="campo"><label for="fMin">Mín. passagens</label><select id="fMin">
             <option value="50">50</option>
             <option value="100" selected>100</option>
             <option value="300">300</option>
@@ -211,8 +207,11 @@ table.mini td{padding:4px 10px;border:1px solid var(--border);text-align:center;
             <option value="pior">Pior → melhor</option>
             <option value="volume">Mais passagens</option>
         </select></div>
+
         <button type="button" class="btn-portal btn-ghost" id="btnLimpar">Limpar</button>
-    </section>
+        <button type="button" class="btn-portal btn-ghost" id="btnCsv">CSV</button>
+        <button type="button" class="btn-portal btn-ghost" id="btnPdf">PDF</button>
+    </div>
 
     <section class="kpis" id="kpis"></section>
 
