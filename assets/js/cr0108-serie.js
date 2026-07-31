@@ -1,7 +1,7 @@
-/* Recorte por data das sugestões de horário do CR-0108.
-   A série diária guarda 1 byte por dia por viagem programada; aqui ela é recortada
-   pelo intervalo De/Até e a sugestão é recalculada. Validado contra o gerador em
-   Python: no período completo, 6.105 de 6.105 sugestões idênticas. */
+/* Série diária do CR-0108: recorte por data das sugestões e detalhamento em cascata
+   do ranking (linha -> ponto de controle -> horário -> sugestão).
+   Validado contra o gerador em Python: 6.105 de 6.105 sugestões idênticas, e os
+   totais por ponto e por horário conferem com o cálculo direto dos CSVs. */
 /* Núcleo do cálculo que vai rodar no navegador: recorta a série diária por De/Até e
    refaz a sugestão de horário. Exportado para poder ser testado fora da página. */
 function preparar(S){
@@ -40,6 +40,10 @@ function avalia(cnt, tot, L){
 const hm = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
 const hhmm = mi => { mi = ((mi % 1440) + 1440) % 1440; return `${String(Math.floor(mi/60)).padStart(2,"0")}:${String(mi%60).padStart(2,"0")}`; };
 
+function avaliarHistograma(cnt, tot, L){ return avalia(cnt, tot, L); }
+const paraMin = hm;
+const paraHm = hhmm;
+
 function sugerir(ctx, de, ate, { minOcorrencias = 20, minRecuperadas = 5 } = {}){
   const { S, val, extrasPorChave } = ctx;
   const L = S.limite;
@@ -67,4 +71,103 @@ function sugerir(ctx, de, ate, { minOcorrencias = 20, minRecuperadas = 5 } = {})
   return out;
 }
 
-window.CR0108Serie = { preparar: preparar, sugerir: sugerir };
+/* ---- Detalhamento em cascata do ranking do CR-0108 ----------------------------
+   Linha -> pontos de controle -> horários com problema -> sugestão de ajuste.
+   Tudo sai da mesma série diária, então os números fecham entre os níveis.
+   Régua do CIOP: -2..+6 no horário | -10..-3 adiantado | +7..+15 atrasado | resto divergente. */
+function classe(d){
+    if (d >= -2 && d <= 6) return "noHorario";
+    if (d >= -10 && d <= -3) return "adiantado";
+    if (d >= 7 && d <= 15) return "atrasado";
+    return "divergente";
+}
+function zero(){ return { noHorario: 0, adiantado: 0, atrasado: 0, divergente: 0, total: 0, somaDif: 0 }; }
+
+function janela(S, de, ate){
+    let i0 = S.dias.findIndex(d => d >= de);
+    if (i0 < 0) return null;
+    let i1 = S.dias.length - 1;
+    while (i1 >= 0 && S.dias[i1] > ate) i1--;
+    return i1 < i0 ? null : [i0, i1];
+}
+
+/* Percorre a série aplicando `visita(k, desvio)` em cada passagem do recorte que
+   passe pelo filtro `aceita(chave)`. Centraliza o tratamento das passagens extras. */
+function varrer(ctx, de, ate, aceita, visita){
+    const { S, val, extrasPorChave } = ctx;
+    const lim = janela(S, de, ate);
+    if (!lim) return;
+    const [i0, i1] = lim;
+    for (let k = 0; k < S.chaves.length; k++){
+        if (!aceita(S.chaves[k])) continue;
+        const s = S.series[k];
+        for (let i = i0; i <= i1; i++){
+            const v = val[s.charCodeAt(i)];
+            if (v !== 127) visita(k, v);
+        }
+        const ex = extrasPorChave.get(k);
+        if (ex) for (const [di, d] of ex) if (di >= i0 && di <= i1) visita(k, Math.max(-S.limite, Math.min(S.limite, d)));
+    }
+}
+
+function somar(acc, d){
+    acc[classe(d)] += 1;
+    acc.total += 1;
+    acc.somaDif += d;
+}
+
+/** Pontos de controle de uma linha, no recorte de datas. */
+function pontosDaLinha(ctx, linha, sentido, de, ate){
+    const mapa = new Map();
+    varrer(ctx, de, ate,
+        ch => ch[0] === linha && (!sentido || ch[1] === sentido),
+        (k, d) => {
+            const ch = ctx.S.chaves[k];
+            const id = ch[1] + "" + ch[2];
+            let a = mapa.get(id);
+            if (!a){ a = { sentido: ch[1], ponto: ch[2], ...zero() }; mapa.set(id, a); }
+            somar(a, d);
+        });
+    /* Ordena por IMPACTO — passagens fora do horário — e não por percentual: um ponto
+       com 3 passagens e 0% no horário não pode liderar a lista na frente de um com
+       2.000 passagens e 60%. É o mesmo critério do ranking principal. */
+    return [...mapa.values()].sort((a, b) =>
+        (b.total - b.noHorario) - (a.total - a.noHorario));
+}
+
+/** Horários de um ponto, já com a sugestão de ajuste de cada um. */
+function horariosDoPonto(ctx, linha, sentido, ponto, de, ate, minOcorrencias = 20){
+    const porChave = new Map();
+    varrer(ctx, de, ate,
+        ch => ch[0] === linha && ch[2] === ponto && (!sentido || ch[1] === sentido),
+        (k, d) => {
+            let a = porChave.get(k);
+            if (!a){ a = { chave: k, cnt: new Int32Array(2 * ctx.S.limite + 1), ...zero() }; porChave.set(k, a); }
+            a.cnt[d + ctx.S.limite] += 1;
+            somar(a, d);
+        });
+    const L = ctx.S.limite;
+    const saida = [];
+    for (const a of porChave.values()){
+        const ch = ctx.S.chaves[a.chave];
+        const item = { sentido: ch[1], programado: ch[3], noHorario: a.noHorario, adiantado: a.adiantado,
+                       atrasado: a.atrasado, divergente: a.divergente, total: a.total, somaDif: a.somaDif,
+                       shift: 0, sugerido: null, recuperadas: 0, pctPotencial: null, massaSuficiente: a.total >= minOcorrencias };
+        if (item.massaSuficiente){
+            const av = avaliarHistograma(a.cnt, a.total, L);
+            item.shift = av.shift;
+            item.recuperadas = av.recuperadas;
+            item.pctPotencial = av.pctPotencial;
+            if (av.shift !== 0) item.sugerido = paraHm(paraMin(ch[3]) + av.shift);
+        }
+        saida.push(item);
+    }
+    return saida.sort((a, b) => paraMin(a.programado) - paraMin(b.programado));
+}
+
+window.CR0108Serie = {
+    preparar: preparar,
+    sugerir: sugerir,
+    pontosDaLinha: pontosDaLinha,
+    horariosDoPonto: horariosDoPonto
+};
