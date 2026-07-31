@@ -319,10 +319,12 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
 .oa-lupa:hover{background:rgba(255,255,255,.92);transform:translateY(-1px)}
 .oa-lupa.aberto{background:rgba(6,36,92,.92);border-color:rgba(255,255,255,.5)}
 .oa-lupa.aberto svg{stroke:#fff}
+/* Botão de 3 riscos (lista de linhas), logo abaixo da lupa. */
+.oa-lupa--linhas{top:126px}
 
 /* Painel de vidro: fica preso à lateral esquerda do mapa e desliza para fora quando fechado. */
 .sidebar{
-  position:absolute;top:10px;left:52px;bottom:10px;width:268px;z-index:590;
+  position:absolute;top:10px;left:52px;width:258px;z-index:590;
   display:flex;flex-direction:column;gap:8px;min-height:0;
   padding:10px;border-radius:20px;
   background:linear-gradient(160deg, rgba(255,255,255,.62), rgba(240,246,255,.5));
@@ -336,6 +338,8 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
   transition:transform .32s cubic-bezier(.22,1,.36,1), opacity .22s ease, visibility .32s;
 }
 .sidebar.aberto{transform:translateX(0);opacity:1;visibility:visible;pointer-events:auto}
+/* Buscar: altura só do conteúdo. Linhas: ocupa até o rodapé do mapa, com a lista rolando. */
+.sidebar--linhas{top:10px;bottom:10px}
 /* Os cards internos perdem o fundo sólido para o vidro do painel aparecer atrás. */
 .sidebar .card{
   background:rgba(255,255,255,.5);
@@ -352,8 +356,9 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
   .sidebar{left:10px;right:10px;width:auto}
 }
 
-.map-tools{position:absolute;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:8px}
-.map-tools .btn{min-height:38px;padding:0 12px;font-size:12px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px)}
+.map-tools{position:absolute;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:5px}
+.map-tools .btn{min-height:26px;padding:0 10px;font-size:10.5px;font-weight:700;background:rgba(255,255,255,.95);backdrop-filter:blur(8px)}
+.map-tools .btn svg{width:12px;height:12px}
 body.oa-native-mode #mapa{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;flex:none!important}
 body.oa-native-mode #mapa,body.oa-native-mode .oa-map-shell{touch-action:none;overscroll-behavior:contain;-webkit-user-select:none;user-select:none}
 body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;order:1;width:100%;overflow:hidden}
@@ -733,7 +738,9 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                     <input class="input" id="buscaVeiculo" type="search" placeholder="Ex.: 1150" autocomplete="off">
                 </div>
             </div>
+        </aside>
 
+        <aside class="sidebar sidebar--linhas" id="oaLinhasPainel" aria-hidden="true">
             <div class="card card-pad" style="flex:1;display:flex;flex-direction:column;min-height:0">
                 <h2 class="card-title">Linhas</h2>
                 <p class="card-sub">Clique para focar no mapa. Vazio = ver todas.</p>
@@ -742,8 +749,11 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
             </div>
         </aside>
 
-                        <button type="button" class="oa-lupa" id="oaBtnLupa" aria-label="Buscar linhas e veículos" aria-expanded="false" title="Buscar linhas e veículos">
+                        <button type="button" class="oa-lupa" id="oaBtnLupa" aria-label="Buscar" aria-expanded="false" title="Buscar linha ou veículo">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+                        </button>
+                        <button type="button" class="oa-lupa oa-lupa--linhas" id="oaBtnLinhas" aria-label="Linhas" aria-expanded="false" title="Lista de linhas">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h11"/></svg>
                         </button>
 
                         <div class="map-tools">
@@ -2575,21 +2585,39 @@ function selecionarLinha(routeId){
     fecharSheetLinhas();
 }
 
-/** Painel de vidro (Buscar + Linhas) sobreposto à lateral do mapa, aberto pela lupa. */
-function painelBuscaAberto(){
-    return !!$("oaBuscaPainel")?.classList.contains("aberto");
+/** Painéis de vidro sobrepostos à lateral do mapa: "Buscar" (lupa) e "Linhas" (3 riscos).
+ *  Os dois ocupam a mesma posição, então abrir um fecha o outro. */
+const PAINEIS_MAPA = {
+    busca:  { painel: "oaBuscaPainel",  botao: "oaBtnLupa",   foco: "buscaLinha" },
+    linhas: { painel: "oaLinhasPainel", botao: "oaBtnLinhas", foco: null }
+};
+
+function painelMapaAberto(nome){
+    return !!$(PAINEIS_MAPA[nome]?.painel)?.classList.contains("aberto");
 }
 
-function alternarPainelBusca(forcar){
-    const painel = $("oaBuscaPainel");
-    const lupa = $("oaBtnLupa");
-    if (!painel) return;
-    const abrir = forcar != null ? forcar : !painelBuscaAberto();
-    painel.classList.toggle("aberto", abrir);
-    painel.setAttribute("aria-hidden", abrir ? "false" : "true");
-    lupa?.classList.toggle("aberto", abrir);
-    lupa?.setAttribute("aria-expanded", abrir ? "true" : "false");
-    if (abrir) setTimeout(() => $("buscaLinha")?.focus(), 120);
+function algumPainelMapaAberto(){
+    return Object.keys(PAINEIS_MAPA).some(painelMapaAberto);
+}
+
+function alternarPainelMapa(nome, forcar){
+    const cfg = PAINEIS_MAPA[nome];
+    if (!cfg) return;
+    const abrir = forcar != null ? forcar : !painelMapaAberto(nome);
+    Object.entries(PAINEIS_MAPA).forEach(([chave, item]) => {
+        const ativo = abrir && chave === nome;
+        const painel = $(item.painel);
+        const botao = $(item.botao);
+        painel?.classList.toggle("aberto", ativo);
+        painel?.setAttribute("aria-hidden", ativo ? "false" : "true");
+        botao?.classList.toggle("aberto", ativo);
+        botao?.setAttribute("aria-expanded", ativo ? "true" : "false");
+    });
+    if (abrir && cfg.foco) setTimeout(() => $(cfg.foco)?.focus(), 120);
+}
+
+function fecharPaineisMapa(){
+    Object.keys(PAINEIS_MAPA).forEach(nome => alternarPainelMapa(nome, false));
 }
 
 function limparFiltro(){
@@ -2678,23 +2706,29 @@ function bind(){
     $("oaIndicePerfOverlay")?.addEventListener("click", e => {
         if (e.target.id === "oaIndicePerfOverlay") fecharIndicePerformance();
     });
-    $("oaBtnLupa")?.addEventListener("click", () => alternarPainelBusca());
-    // O painel fica dentro do container do mapa: sem isso o Leaflet captura o clique/scroll
+    $("oaBtnLupa")?.addEventListener("click", () => alternarPainelMapa("busca"));
+    $("oaBtnLinhas")?.addEventListener("click", () => alternarPainelMapa("linhas"));
+    // Os painéis ficam dentro do container do mapa: sem isso o Leaflet captura o clique/scroll
     // e o operador acaba arrastando o mapa ao tentar rolar a lista de linhas.
-    const painelBusca = $("oaBuscaPainel");
-    if (painelBusca && typeof L !== "undefined"){
-        L.DomEvent.disableClickPropagation(painelBusca);
-        L.DomEvent.disableScrollPropagation(painelBusca);
+    if (typeof L !== "undefined"){
+        ["oaBuscaPainel", "oaLinhasPainel"].forEach(id => {
+            const el = $(id);
+            if (!el) return;
+            L.DomEvent.disableClickPropagation(el);
+            L.DomEvent.disableScrollPropagation(el);
+        });
+        ["oaBtnLupa", "oaBtnLinhas"].forEach(id => {
+            const el = $(id);
+            if (el) L.DomEvent.disableClickPropagation(el);
+        });
     }
-    const lupaEl = $("oaBtnLupa");
-    if (lupaEl && typeof L !== "undefined") L.DomEvent.disableClickPropagation(lupaEl);
     $("btnTelaCheia")?.addEventListener("click", () => alternarTelaCheiaMapa());
     document.addEventListener("keydown", e => {
         if (e.key === "Escape"){
             fecharSemComunicacao();
             fecharGpsInvalido();
             fecharIndicePerformance();
-            if (painelBuscaAberto()) alternarPainelBusca(false);
+            if (algumPainelMapaAberto()) fecharPaineisMapa();
             if (mapaEmTelaCheia()) alternarTelaCheiaMapa(false);
         }
     });
