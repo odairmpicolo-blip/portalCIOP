@@ -816,9 +816,9 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-adiantado" data-filtro-status="adiantado"><b id="statAdiantados">0</b><span>Adiantado</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-atrasado" data-filtro-status="atrasado"><b id="statAtrasados">0</b><span>Atrasado</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-nohorario" data-filtro-status="noHorario"><b id="statNoHorario">0</b><span>No horário</span></button>
-            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-reserva" id="kpiReserva" data-filtro-status="reserva" title="Fora de serviço na área de um terminal · filtra e abre a lista"><b id="statReserva">0</b><span>Reserva</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-ocioso" data-filtro-status="ocioso"><b id="statOcioso">0</b><span>Ocioso</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-foraservico" data-filtro-status="foraServico"><b id="statForaServico">0</b><span>Fora de serviço</span></button>
+            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-reserva" id="kpiReserva" data-filtro-status="reserva" title="Fora de serviço na área de um terminal · filtra e abre a lista"><b id="statReserva">0</b><span>Reserva</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-garagem" id="kpiGaragem" data-filtro-status="garagem" title="Fora de serviço na garagem da TCGL · filtra e abre a lista"><b id="statGaragem">0</b><span>GA · TCGL</span></button>
         </div>
 
@@ -1905,9 +1905,8 @@ function veiculoPassaFiltro(v){
         } else if (state.statusFiltro === "garagem"){
             if (v.gpsInvalido || v.categoria !== "foraServico" || v.terminalReserva || !v.naGaragem) return false;
         } else if (state.statusFiltro === "ocioso" || state.statusFiltro === "foraServico"){
+            // "Fora de serviço" inclui quem está em reserva de terminal ou na garagem.
             if (v.gpsInvalido || v.categoria !== state.statusFiltro) return false;
-            // "Fora de serviço" exclui quem já está contado como reserva de terminal.
-            if (state.statusFiltro === "foraServico" && (v.terminalReserva || v.naGaragem)) return false;
         } else {
             if (v.categoria !== "produtivo") return false;
             if (statusPontualidade(v).chave !== state.statusFiltro) return false;
@@ -2730,8 +2729,9 @@ function atualizarMarcadores(){
         countVis += 1;
         visiveis.add(key);
         if (chaveStatus === "gpsInvalido") countGpsInvalido += 1;
-        else if (chaveStatus === "reserva") countReserva += 1;
-        else if (chaveStatus === "garagem") countGaragem += 1;
+        // Reserva e garagem são RECORTES de "fora de serviço": somam nos dois lugares.
+        else if (chaveStatus === "reserva"){ countReserva += 1; countForaServico += 1; }
+        else if (chaveStatus === "garagem"){ countGaragem += 1; countForaServico += 1; }
         else if (chaveStatus === "ocioso") countOcioso += 1;
         else if (chaveStatus === "foraServico") countForaServico += 1;
         else if (v.categoria === "produtivo"){
