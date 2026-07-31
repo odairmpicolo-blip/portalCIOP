@@ -45,25 +45,21 @@ body.oa-page{
 .ciop-session-user{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
 .btn-logout{background:#ef4444;color:#fff;border:0;border-radius:999px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer}
 
-.shell{max-width:none;margin:0;padding:6px 8px 8px;width:100%;flex:1;display:flex;flex-direction:column;min-height:0}
+.shell{max-width:none;margin:0;padding:8px;width:100%;flex:1;display:flex;flex-direction:column;min-height:0}
 body.oa-page footer.portal-site-footer{display:none!important}
-.topbar{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:0;padding:4px 12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 2px rgba(15,23,42,.06)}
+/* A barra inteira (Portal + KPIs) flutua DENTRO do mapa, em vidro. O mapa fica atrás dela. */
+.topbar{position:absolute;top:8px;left:8px;right:8px;z-index:610;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  padding:5px 10px;border-radius:16px;
+  background:linear-gradient(160deg, rgba(255,255,255,.62), rgba(240,246,255,.5));
+  border:1px solid rgba(255,255,255,.7);
+  box-shadow:0 18px 40px -22px rgba(15,23,42,.55), inset 0 1px 0 rgba(255,255,255,.85);
+  backdrop-filter:blur(24px) saturate(200%);-webkit-backdrop-filter:blur(24px) saturate(200%)}
 .topbar-left,.topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 /* Com 8 KPIs de largura fixa a régua não cabe mais numa faixa absoluta centralizada — ela
    passava por cima do botão Portal e do "Atualizar agora". Agora ocupa o espaço que sobra
    entre os dois lados e quebra linha quando a janela é estreita, em vez de sobrepor. */
-/* A régua de KPIs mora DENTRO do mapa, flutuando no topo em vidro. */
-.topbar-kpis{
-  position:absolute;top:10px;left:50%;transform:translateX(-50%);
-  max-width:calc(100% - 20px);z-index:610;
-  display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;
-  padding:6px 8px;border-radius:16px;
-  background:linear-gradient(160deg, rgba(255,255,255,.6), rgba(240,246,255,.48));
-  border:1px solid rgba(255,255,255,.7);
-  box-shadow:0 18px 40px -22px rgba(15,23,42,.55), inset 0 1px 0 rgba(255,255,255,.85);
-  backdrop-filter:blur(24px) saturate(200%);
-  -webkit-backdrop-filter:blur(24px) saturate(200%);
-}
+.topbar-kpis{flex:1 1 auto;min-width:0;display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap}
 /* Todos os KPIs com a MESMA caixa: mesma largura e mesma altura, independente do tamanho
    do rótulo ("Ocioso" x "Fora de serviço") ou do valor ("7" x "79,91%"). O conteúdo é
    centralizado dentro da caixa fixa, então a régua da barra fica alinhada. */
@@ -304,7 +300,7 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
 
 #mapa{width:100%;height:100%;min-height:520px;background:#dbeafe}
 .oa-map-shell{position:absolute;inset:0;}
-.oa-map-shell .leaflet-top.leaflet-left{margin-top:48px}
+.oa-map-shell .leaflet-top.leaflet-left{margin-top:56px}
 #mapa.leaflet-container,
 #mapa .leaflet-map-pane,#mapa .leaflet-pane,#mapa .leaflet-tile-pane,#mapa .leaflet-marker-pane{
   touch-action:none;pointer-events:auto;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none
@@ -314,7 +310,7 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
    que abre pela lupa logo abaixo do controle de zoom do Leaflet (que fica em top:10px e tem
    ~64px de altura, daí o top:84px aqui). */
 .oa-lupa{
-  position:absolute;top:132px;left:10px;z-index:620;
+  position:absolute;top:140px;left:10px;z-index:620;
   width:34px;height:34px;padding:0;margin:0;border-radius:11px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   background:rgba(255,255,255,.78);
@@ -329,11 +325,11 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
 .oa-lupa.aberto{background:rgba(6,36,92,.92);border-color:rgba(255,255,255,.5)}
 .oa-lupa.aberto svg{stroke:#fff}
 /* Botão de 3 riscos (lista de linhas), logo abaixo da lupa. */
-.oa-lupa--linhas{top:174px}
+.oa-lupa--linhas{top:182px}
 
 /* Painel de vidro: fica preso à lateral esquerda do mapa e desliza para fora quando fechado. */
 .sidebar{
-  position:absolute;top:58px;left:52px;width:258px;z-index:600;
+  position:absolute;top:62px;left:52px;width:258px;z-index:600;
   display:flex;flex-direction:column;gap:8px;min-height:0;
   padding:10px;border-radius:20px;
   background:linear-gradient(160deg, rgba(255,255,255,.62), rgba(240,246,255,.5));
@@ -348,7 +344,7 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
 }
 .sidebar.aberto{transform:translateX(0);opacity:1;visibility:visible;pointer-events:auto}
 /* Buscar: altura só do conteúdo. Linhas: ocupa até o rodapé do mapa, com a lista rolando. */
-.sidebar--linhas{top:58px;bottom:10px}
+.sidebar--linhas{top:62px;bottom:10px}
 /* Os cards internos perdem o fundo sólido para o vidro do painel aparecer atrás. */
 .sidebar .card{
   background:rgba(255,255,255,.5);
@@ -747,15 +743,6 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 </div>
 
 <main class="shell">
-    <div class="topbar">
-        <div class="topbar-left">
-            <a class="btn btn-primary" href="../index.html">
-                <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg>
-                Portal
-            </a>
-        </div>
-    </div>
-
     <div class="layout">
         <section class="card main">
             <div class="panel-wrap">
@@ -763,6 +750,13 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                     <div class="oa-map-shell" id="oaMapShell">
                         <div id="mapa"></div>
 
+        <div class="topbar">
+        <div class="topbar-left">
+            <a class="btn btn-primary" href="../index.html">
+                <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+                Portal
+            </a>
+        </div>
         <div class="topbar-kpis" id="topbarKpis">
             <button type="button" class="kpi-chip kpi-chip-btn kpi-op kpi-op-tcgl" id="kpiOpTCGL" title="Filtrar somente TCGL">
                 <span>TCGL</span><b id="statOpTCGL">0</b>
@@ -784,6 +778,7 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-semcomunicacao" id="kpiSemComunicacao">
                 <b id="statSemComunicacao">0</b><span>Sem comunicação</span>
             </button>
+        </div>
         </div>
 
         <aside class="sidebar" id="oaBuscaPainel" aria-hidden="true">
