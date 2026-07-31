@@ -339,7 +339,7 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
 }
 .sidebar.aberto{transform:translateX(0);opacity:1;visibility:visible;pointer-events:auto}
 /* Buscar: altura só do conteúdo. Linhas: ocupa até o rodapé do mapa, com a lista rolando. */
-.sidebar--linhas{top:10px;bottom:10px}
+.sidebar--linhas{top:10px;bottom:46px}
 /* Os cards internos perdem o fundo sólido para o vidro do painel aparecer atrás. */
 .sidebar .card{
   background:rgba(255,255,255,.5);
@@ -375,7 +375,8 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
   .oa-veiculo-info{max-height:46vh}
 }
 
-.map-tools{position:absolute;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:5px}
+/* Menus do mapa no rodapé, do mesmo lado da lupa (esquerda), em linha. */
+.map-tools{position:absolute;left:10px;bottom:10px;right:auto;top:auto;z-index:500;display:flex;flex-direction:row;flex-wrap:wrap;gap:5px;max-width:calc(100% - 20px)}
 .map-tools .btn{min-height:26px;padding:0 10px;font-size:10.5px;font-weight:700;background:rgba(255,255,255,.95);backdrop-filter:blur(8px)}
 .map-tools .btn svg{width:12px;height:12px}
 body.oa-native-mode #mapa{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;flex:none!important}
@@ -707,27 +708,27 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                 <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg>
                 Portal
             </a>
+        </div>
+        <div class="topbar-kpis" id="topbarKpis">
             <button type="button" class="kpi-chip kpi-chip-btn kpi-op kpi-op-tcgl" id="kpiOpTCGL" title="Filtrar somente TCGL">
                 <span>TCGL</span><b id="statOpTCGL">0</b>
             </button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-op kpi-op-lsul" id="kpiOpLondriSul" title="Filtrar somente LondriSul">
                 <span>LSUL</span><b id="statOpLondriSul">0</b>
             </button>
-        </div>
-        <div class="topbar-kpis" id="topbarKpis">
-            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-nohorario" data-filtro-status="noHorario"><b id="statNoHorario">0</b><span>No horário</span></button>
-            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-atrasado" data-filtro-status="atrasado"><b id="statAtrasados">0</b><span>Atrasado</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-adiantado" data-filtro-status="adiantado"><b id="statAdiantados">0</b><span>Adiantado</span></button>
+            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-atrasado" data-filtro-status="atrasado"><b id="statAtrasados">0</b><span>Atrasado</span></button>
+            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-nohorario" data-filtro-status="noHorario"><b id="statNoHorario">0</b><span>No horário</span></button>
+            <button type="button" class="kpi-chip kpi-chip-btn kpi-chip-performance" id="kpiIndicePerformance" title="Ver índice de performance em tempo real">
+                <b id="statIndicePerformance">—</b><span>Performance</span>
+            </button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-ocioso" data-filtro-status="ocioso"><b id="statOcioso">0</b><span>Ocioso</span></button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-foraservico" data-filtro-status="foraServico"><b id="statForaServico">0</b><span>Fora de serviço</span></button>
-            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-gpsinvalido" id="kpiGpsInvalido" data-filtro-status="gpsInvalido" title="Filtra o mapa e abre a lista">
+            <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-gpsinvalido" id="kpiGpsInvalido" data-filtro-status="gpsInvalido" title="Somente TCGL · filtra o mapa e abre a lista">
                 <b id="statGpsInvalido">0</b><span>GPS inválido</span>
             </button>
             <button type="button" class="kpi-chip kpi-chip-btn kpi-status kpi-semcomunicacao" id="kpiSemComunicacao">
                 <b id="statSemComunicacao">0</b><span>Sem comunicação</span>
-            </button>
-            <button type="button" class="kpi-chip kpi-chip-btn kpi-chip-performance" id="kpiIndicePerformance" title="Ver índice de performance em tempo real">
-                <b id="statIndicePerformance">—</b><span>Performance</span>
             </button>
         </div>
     </div>
@@ -1348,10 +1349,16 @@ async function fetchCleverVehicles(){
     lista.forEach(v => {
         const latBruta = Number(v.lat);
         const lngBruta = Number(v.lon);
+        const vidBruto = String(v.vid ?? "?");
+        const coordOk = coordenadaNoBrasil(latBruta, lngBruta);
         // Coordenada fora do Brasil (ou ausente/zerada) = rastreador com defeito. Em vez de
         // sumir com o carro do mapa, ele é agrupado junto ao carro 411 (na garagem) com status
         // "GPS inválido", para o operador enxergar que o veículo existe mas está sem posição.
-        const gpsInvalido = !coordenadaNoBrasil(latBruta, lngBruta);
+        // Tratamento restrito à TCGL: veículos de outras operadoras com coordenada inválida
+        // continuam saindo do mapa, senão apareceriam empilhados na garagem da TCGL — que
+        // não é a garagem deles — ou plotados em (0,0) no meio do oceano.
+        const gpsInvalido = !coordOk && operadoraDoVeiculo(vidBruto) === "TCGL";
+        if (!coordOk && !gpsInvalido) return;
         // Espalha em espiral (ângulo áureo) ao redor da âncora para os ícones não empilharem
         // exatamente no mesmo pixel quando vários rastreadores falham ao mesmo tempo.
         let lat = latBruta, lng = lngBruta;
