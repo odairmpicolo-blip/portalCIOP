@@ -52,9 +52,17 @@ body.oa-page footer.portal-site-footer{display:none!important}
 /* Com 8 KPIs de largura fixa a régua não cabe mais numa faixa absoluta centralizada — ela
    passava por cima do botão Portal e do "Atualizar agora". Agora ocupa o espaço que sobra
    entre os dois lados e quebra linha quando a janela é estreita, em vez de sobrepor. */
+/* A régua de KPIs mora DENTRO do mapa, flutuando no topo em vidro. */
 .topbar-kpis{
-  flex:1 1 auto;min-width:0;
-  display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;z-index:1;
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  max-width:calc(100% - 20px);z-index:610;
+  display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;
+  padding:6px 8px;border-radius:16px;
+  background:linear-gradient(160deg, rgba(255,255,255,.6), rgba(240,246,255,.48));
+  border:1px solid rgba(255,255,255,.7);
+  box-shadow:0 18px 40px -22px rgba(15,23,42,.55), inset 0 1px 0 rgba(255,255,255,.85);
+  backdrop-filter:blur(24px) saturate(200%);
+  -webkit-backdrop-filter:blur(24px) saturate(200%);
 }
 /* Todos os KPIs com a MESMA caixa: mesma largura e mesma altura, independente do tamanho
    do rótulo ("Ocioso" x "Fora de serviço") ou do valor ("7" x "79,91%"). O conteúdo é
@@ -296,6 +304,7 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
 
 #mapa{width:100%;height:100%;min-height:520px;background:#dbeafe}
 .oa-map-shell{position:absolute;inset:0;}
+.oa-map-shell .leaflet-top.leaflet-left{margin-top:48px}
 #mapa.leaflet-container,
 #mapa .leaflet-map-pane,#mapa .leaflet-pane,#mapa .leaflet-tile-pane,#mapa .leaflet-marker-pane{
   touch-action:none;pointer-events:auto;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none
@@ -305,7 +314,7 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
    que abre pela lupa logo abaixo do controle de zoom do Leaflet (que fica em top:10px e tem
    ~64px de altura, daí o top:84px aqui). */
 .oa-lupa{
-  position:absolute;top:84px;left:10px;z-index:600;
+  position:absolute;top:132px;left:10px;z-index:620;
   width:34px;height:34px;padding:0;margin:0;border-radius:11px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   background:rgba(255,255,255,.78);
@@ -320,11 +329,11 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
 .oa-lupa.aberto{background:rgba(6,36,92,.92);border-color:rgba(255,255,255,.5)}
 .oa-lupa.aberto svg{stroke:#fff}
 /* Botão de 3 riscos (lista de linhas), logo abaixo da lupa. */
-.oa-lupa--linhas{top:126px}
+.oa-lupa--linhas{top:174px}
 
 /* Painel de vidro: fica preso à lateral esquerda do mapa e desliza para fora quando fechado. */
 .sidebar{
-  position:absolute;top:10px;left:52px;width:258px;z-index:590;
+  position:absolute;top:58px;left:52px;width:258px;z-index:600;
   display:flex;flex-direction:column;gap:8px;min-height:0;
   padding:10px;border-radius:20px;
   background:linear-gradient(160deg, rgba(255,255,255,.62), rgba(240,246,255,.5));
@@ -339,7 +348,7 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
 }
 .sidebar.aberto{transform:translateX(0);opacity:1;visibility:visible;pointer-events:auto}
 /* Buscar: altura só do conteúdo. Linhas: ocupa até o rodapé do mapa, com a lista rolando. */
-.sidebar--linhas{top:10px;bottom:10px}
+.sidebar--linhas{top:58px;bottom:10px}
 /* Os cards internos perdem o fundo sólido para o vidro do painel aparecer atrás. */
 .sidebar .card{
   background:rgba(255,255,255,.5);
@@ -355,6 +364,42 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
 @media (max-width:640px){
   .sidebar{left:10px;right:10px;width:auto}
 }
+
+/* ===== Paleta de busca no centro da tela (Ctrl/Cmd+T) ================================== */
+.oa-paleta-overlay{
+  position:fixed;inset:0;z-index:2000;display:none;
+  align-items:flex-start;justify-content:center;padding-top:14vh;
+  background:rgba(9,16,32,.42);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+}
+.oa-paleta-overlay.open{display:flex}
+.oa-paleta{
+  width:min(92vw,560px);border-radius:20px;overflow:hidden;
+  background:linear-gradient(160deg, rgba(255,255,255,.9), rgba(240,246,255,.86));
+  border:1px solid rgba(255,255,255,.8);
+  box-shadow:0 40px 90px -30px rgba(9,16,32,.7), inset 0 1px 0 rgba(255,255,255,.9);
+  backdrop-filter:blur(28px) saturate(200%);-webkit-backdrop-filter:blur(28px) saturate(200%);
+  animation:oaPaletaEntra .18s ease-out;
+}
+@keyframes oaPaletaEntra{from{opacity:0;transform:translateY(-10px) scale(.98)}to{opacity:1;transform:none}}
+.oa-paleta-campo{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(15,23,42,.1)}
+.oa-paleta-campo svg{width:20px;height:20px;fill:none;stroke:var(--muted);stroke-width:2.2;stroke-linecap:round;flex:0 0 auto}
+.oa-paleta-campo input{
+  flex:1;border:0;background:transparent;outline:none;font:inherit;font-size:17px;font-weight:600;color:var(--text);
+}
+.oa-paleta-campo input::placeholder{color:var(--muted);font-weight:500}
+.oa-paleta-lista{list-style:none;margin:0;padding:6px;max-height:46vh;overflow:auto}
+.oa-paleta-item{
+  display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;cursor:pointer;
+}
+.oa-paleta-item:hover,.oa-paleta-item.ativo{background:rgba(45,180,191,.16)}
+.oa-paleta-vid{
+  min-width:52px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;flex:0 0 auto;background:var(--blue);color:#fff
+}
+.oa-paleta-txt{min-width:0;flex:1;line-height:1.25}
+.oa-paleta-txt b{display:block;font-size:13px;font-weight:800;color:var(--text)}
+.oa-paleta-txt span{display:block;font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.oa-paleta-vazio{padding:18px 16px;text-align:center;font-size:12.5px;color:var(--muted);font-weight:600}
 
 /* ===== Janela do veículo: metade mapa, metade ficha ==================================== */
 .oa-modal-veiculo{max-width:960px;width:min(96vw,960px)}
@@ -375,8 +420,8 @@ body.oa-mapa-fullscreen-ativo{overflow:hidden}
   .oa-veiculo-info{max-height:46vh}
 }
 
-/* Menus do mapa em pé, na lateral direita. */
-.map-tools{position:absolute;top:12px;right:12px;left:auto;bottom:auto;z-index:500;display:flex;flex-direction:column;gap:5px}
+/* Menus do mapa em pé, na parte de baixo, do mesmo lado da lupa (esquerda). */
+.map-tools{position:absolute;left:10px;bottom:14px;right:auto;top:auto;z-index:500;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
 .map-tools .btn{min-height:26px;padding:0 10px;font-size:10.5px;font-weight:700;background:rgba(255,255,255,.95);backdrop-filter:blur(8px)}
 .map-tools .btn svg{width:12px;height:12px}
 body.oa-native-mode #mapa{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;flex:none!important}
@@ -709,6 +754,15 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                 Portal
             </a>
         </div>
+    </div>
+
+    <div class="layout">
+        <section class="card main">
+            <div class="panel-wrap">
+                <div class="panel" id="panelMapa">
+                    <div class="oa-map-shell" id="oaMapShell">
+                        <div id="mapa"></div>
+
         <div class="topbar-kpis" id="topbarKpis">
             <button type="button" class="kpi-chip kpi-chip-btn kpi-op kpi-op-tcgl" id="kpiOpTCGL" title="Filtrar somente TCGL">
                 <span>TCGL</span><b id="statOpTCGL">0</b>
@@ -731,14 +785,6 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                 <b id="statSemComunicacao">0</b><span>Sem comunicação</span>
             </button>
         </div>
-    </div>
-
-    <div class="layout">
-        <section class="card main">
-            <div class="panel-wrap">
-                <div class="panel" id="panelMapa">
-                    <div class="oa-map-shell" id="oaMapShell">
-                        <div id="mapa"></div>
 
         <aside class="sidebar" id="oaBuscaPainel" aria-hidden="true">
             <div class="card card-pad card-pad-compact">
@@ -843,6 +889,16 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
         </div>
         <div class="oa-sheet-body" id="oaSheetLinhasBody"></div>
     </aside>
+</div>
+
+<div class="oa-paleta-overlay" id="oaPaletaOverlay">
+    <div class="oa-paleta" role="dialog" aria-modal="true" aria-label="Buscar veículo ou motorista">
+        <div class="oa-paleta-campo">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+            <input id="oaPaletaInput" type="search" autocomplete="off" placeholder="Buscar veículo ou motorista…">
+        </div>
+        <ul class="oa-paleta-lista" id="oaPaletaLista"></ul>
+    </div>
 </div>
 
 <div class="oa-modal-overlay" id="oaVeiculoOverlay">
@@ -2763,19 +2819,71 @@ async function iniciarTelemetriaJanela(key){
     VEICULO_JANELA.pollAtivo = false;
 }
 
-/** Se a busca (veículo ou motorista) isolar exatamente um carro, abre a janela dele.
- *  Exige 3 caracteres para não disparar a cada tecla no começo da digitação. */
-function tentarAbrirJanelaPelaBusca(){
-    const veic = state.veiculoFiltro.trim();
-    const mot = state.motoristaFiltro.trim();
-    if (veic.length < 3 && mot.length < 3) return;
+/* ===== Paleta de busca central (Ctrl/Cmd+T) ===========================================
+   Busca por número do veículo OU matrícula do motorista. Ao escolher um resultado, abre a
+   janela do carro e a paleta some — é uma via de acesso rápido, não um filtro do mapa. */
+function paletaAberta(){
+    return !!$("oaPaletaOverlay")?.classList.contains("open");
+}
+
+function abrirPaleta(){
+    $("oaPaletaOverlay")?.classList.add("open");
+    const campo = $("oaPaletaInput");
+    if (campo){ campo.value = ""; setTimeout(() => campo.focus(), 40); }
+    renderPaleta("");
+}
+
+function fecharPaleta(){
+    $("oaPaletaOverlay")?.classList.remove("open");
+}
+
+function buscarNaPaleta(termo){
+    const q = String(termo || "").trim().toLowerCase();
+    if (!q) return [];
     const achados = [];
     state.vehicles.forEach((v, key) => {
-        if (veic && !String(v.vehicleId || "").includes(veic)) return;
-        if (mot && !String(v.motorista || "").toLowerCase().includes(mot.toLowerCase())) return;
-        achados.push(key);
+        const vid = String(v.vehicleId || "").toLowerCase();
+        const mot = String(v.motorista || "").toLowerCase();
+        if (vid.includes(q) || (mot && mot.includes(q))) achados.push({ key, v });
     });
-    if (achados.length === 1 && achados[0] !== VEICULO_JANELA.key) abrirJanelaVeiculo(achados[0]);
+    return achados
+        .sort((a, b) => String(a.v.vehicleId).localeCompare(String(b.v.vehicleId), "pt-BR", { numeric: true }))
+        .slice(0, 40);
+}
+
+function renderPaleta(termo){
+    const lista = $("oaPaletaLista");
+    if (!lista) return;
+    const achados = buscarNaPaleta(termo);
+    if (!String(termo || "").trim()){
+        lista.innerHTML = '<li class="oa-paleta-vazio">Digite o número do carro ou a matrícula do motorista.</li>';
+        return;
+    }
+    if (!achados.length){
+        lista.innerHTML = '<li class="oa-paleta-vazio">Nenhum veículo em operação com esse número ou motorista.</li>';
+        return;
+    }
+    lista.innerHTML = achados.map((item, i) => {
+        const v = item.v;
+        const st = statusPontualidade(v);
+        const linha = v.categoria === "produtivo" ? ("Linha " + (v.route?.shortName || "?")) : (CATEGORIA_LABEL[v.categoria] || "");
+        return '<li class="oa-paleta-item' + (i === 0 ? " ativo" : "") + '" data-key="' + esc(item.key) + '">' +
+            '<span class="oa-paleta-vid">' + esc(v.vehicleId) + '</span>' +
+            '<span class="oa-paleta-txt">' +
+                '<b>' + esc([v.operadora, linha].filter(Boolean).join(" · ")) + '</b>' +
+                '<span>Motorista ' + esc(v.motorista || "—") + ' · ' + esc(st.label) + '</span>' +
+            '</span>' +
+        '</li>';
+    }).join("");
+    lista.querySelectorAll(".oa-paleta-item").forEach(el => {
+        el.addEventListener("click", () => escolherNaPaleta(el.dataset.key));
+    });
+}
+
+function escolherNaPaleta(key){
+    if (!key) return;
+    fecharPaleta();
+    abrirJanelaVeiculo(key);
 }
 
 /** Painéis de vidro sobrepostos à lateral do mapa: "Buscar" (lupa) e "Linhas" (3 riscos).
@@ -2861,18 +2969,25 @@ function initNativeAppMode(){
 
 function bind(){
     $("buscaLinha").addEventListener("input", e => { state.buscaLinha = e.target.value; renderListaLinhas(); });
+    // O painel da lupa só FILTRA o mapa. Quem abre a janela do carro é a paleta central.
     $("buscaVeiculo").addEventListener("input", e => {
         state.veiculoFiltro = e.target.value.trim();
         atualizarMarcadores();
-        tentarAbrirJanelaPelaBusca();
     });
-    $("buscaVeiculo").addEventListener("keydown", e => { if (e.key === "Enter") tentarAbrirJanelaPelaBusca(); });
     $("buscaMotorista")?.addEventListener("input", e => {
         state.motoristaFiltro = e.target.value.trim();
         atualizarMarcadores();
-        tentarAbrirJanelaPelaBusca();
     });
-    $("buscaMotorista")?.addEventListener("keydown", e => { if (e.key === "Enter") tentarAbrirJanelaPelaBusca(); });
+    $("oaPaletaInput")?.addEventListener("input", e => renderPaleta(e.target.value));
+    $("oaPaletaInput")?.addEventListener("keydown", e => {
+        if (e.key === "Enter"){
+            e.preventDefault();
+            escolherNaPaleta($("oaPaletaLista")?.querySelector(".oa-paleta-item")?.dataset.key);
+        }
+    });
+    $("oaPaletaOverlay")?.addEventListener("click", e => {
+        if (e.target.id === "oaPaletaOverlay") fecharPaleta();
+    });
     $("oaVeiculoFechar")?.addEventListener("click", fecharJanelaVeiculo);
     $("oaVeiculoOverlay")?.addEventListener("click", e => {
         if (e.target.id === "oaVeiculoOverlay") fecharJanelaVeiculo();
@@ -2940,8 +3055,11 @@ function bind(){
         if ((mod && (e.key === "t" || e.key === "T" || e.key === "k" || e.key === "K"))
             || (e.key === "/" && !digitando && !mod)){
             e.preventDefault();
-            alternarPainelMapa("busca", true);
-            setTimeout(() => $("buscaVeiculo")?.focus(), 120);
+            abrirPaleta();
+            return;
+        }
+        if (e.key === "Escape" && paletaAberta()){
+            fecharPaleta();
             return;
         }
         if (e.key === "Escape"){
