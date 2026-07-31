@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desempenho dos Motoristas | Portal CIOP</title>
+<style>
+:root{
+  --blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--bg:#f5f7fb;--border:#dfe5ef;
+  --text:#101828;--muted:#3f4757;--surface:#fff;--surface-2:#f1f5f9;
+  --c-nohorario:#22c55e;--c-nohorario-txt:#15803d;--c-nohorario-bg:#f0fdf4;
+  --c-adiantado:#dc2626;--c-adiantado-txt:#b91c1c;--c-adiantado-bg:#fef2f2;
+  --c-atrasado:#facc15;--c-atrasado-txt:#a16207;--c-atrasado-bg:#fefce8;
+  --c-divergente:#7c3aed;--c-divergente-txt:#6d28d9;--c-divergente-bg:#f5f3ff;
+  --ouro:#eab308;--prata:#94a3b8;--bronze:#c2703f;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.header{background:var(--surface);display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);gap:16px;align-items:center;padding:8px 20px;border-bottom:1px solid #e8edf6}
+.header > a:first-child.portal-brand-mark{justify-self:start}
+.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.header-title{margin:0;color:var(--blue);font-size:18px;font-weight:900}
+.header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.container{max-width:1500px;margin:16px auto 32px;padding:0 20px;flex:1;width:100%}
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.btn-portal{display:inline-flex;align-items:center;gap:8px;min-height:40px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;background:var(--blue);color:#fff;border:0;cursor:pointer}
+.btn-portal:hover{background:var(--blue2)}
+.btn-ghost{background:var(--surface-2);color:var(--blue);border:1px solid var(--border)}
+.btn-ghost:hover{background:#e8eef8}
+.btn-icon{display:inline-flex;width:16px;height:16px;flex:0 0 auto}
+.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.restrito{background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid var(--orange);border-radius:12px;padding:11px 15px;margin-bottom:14px;font-size:12px;font-weight:700;color:#9a3412;line-height:1.5}
+.restrito b{color:#7c2d12}
+
+.filtros{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 20px rgba(16,24,40,.06);padding:12px 14px;margin-bottom:14px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 14px}
+.campo{display:flex;flex-direction:column;gap:4px}
+.campo label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+.campo select,.campo input{height:38px;border:1px solid var(--border);border-radius:10px;padding:0 10px;font:inherit;font-size:13px;font-weight:600;background:var(--surface-2);color:var(--text)}
+.campo select:focus,.campo input:focus{outline:none;border-color:#7dd3dc;box-shadow:0 0 0 4px rgba(45,180,191,.15);background:#fff}
+.campo-busca input{min-width:220px}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:14px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--blue);border-radius:12px;padding:11px 13px;box-shadow:0 8px 20px rgba(16,24,40,.06)}
+.kpi .label{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--muted);letter-spacing:.03em}
+.kpi .value{font-size:23px;font-weight:900;color:var(--blue);margin-top:3px;letter-spacing:-.02em}
+.kpi .sub{font-size:11px;font-weight:700;color:var(--muted);margin-top:2px;line-height:1.35}
+.kpi-bom{border-left-color:var(--c-nohorario);background:var(--c-nohorario-bg)}
+.kpi-bom .value{color:var(--c-nohorario-txt)}
+.kpi-ruim{border-left-color:var(--c-adiantado);background:var(--c-adiantado-bg)}
+.kpi-ruim .value{color:var(--c-adiantado-txt)}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 28px rgba(16,24,40,.07);overflow:hidden;margin-bottom:14px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.card-title{margin:0;color:var(--blue);font-size:14px;font-weight:900}
+.card-sub{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px;max-width:880px;line-height:1.45}
+.card-body{padding:12px 14px}
+.tabela-wrap{overflow:auto;max-height:680px}
+table.rel{width:100%;border-collapse:separate;border-spacing:0;font-size:11.5px}
+table.rel thead th{position:sticky;top:0;z-index:2;background:var(--blue);color:#fff;padding:8px 6px;font-size:9px;font-weight:900;text-transform:uppercase;text-align:center;white-space:nowrap;cursor:pointer;user-select:none}
+table.rel thead th:hover{background:var(--blue2)}
+table.rel thead th.txt{text-align:left}
+table.rel tbody td{border-bottom:1px solid #edf2f7;padding:6px 6px;text-align:center;background:var(--surface);vertical-align:middle}
+table.rel tbody tr:nth-child(even) td{background:#fafbfd}
+table.rel tbody tr.mot{cursor:pointer}
+table.rel tbody tr.mot:hover td{background:#eef6ff}
+table.rel td.txt{text-align:left}
+.pos{font-weight:900;font-size:13px;color:var(--muted)}
+.pos.p1{color:var(--ouro)}.pos.p2{color:var(--prata)}.pos.p3{color:var(--bronze)}
+.mot-nome{font-weight:800;color:var(--text)}
+.mot-mat{font-size:10px;color:var(--muted);font-weight:700}
+.barra{position:relative;height:15px;border-radius:5px;background:var(--surface-2);overflow:hidden;min-width:80px}
+.barra i{position:absolute;inset:0 auto 0 0;display:block;background:var(--c-nohorario)}
+.pct{font-weight:900;color:var(--c-nohorario-txt)}
+.faixa{display:inline-flex;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:800;white-space:nowrap}
+.f-otimo{background:var(--c-nohorario-bg);color:var(--c-nohorario-txt)}
+.f-bom{background:#eff6ff;color:var(--blue2)}
+.f-atencao{background:var(--c-atrasado-bg);color:var(--c-atrasado-txt)}
+.f-critico{background:var(--c-adiantado-bg);color:var(--c-adiantado-txt)}
+tr.detalhe td{background:#f7fafc!important;padding:0!important}
+.detalhe-inner{padding:10px 14px 12px}
+.detalhe-titulo{font-size:10.5px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:6px}
+table.mini{border-collapse:collapse;font-size:11px}
+table.mini th{background:var(--surface-2);color:var(--muted);padding:4px 10px;font-size:9px;font-weight:900;text-transform:uppercase;border:1px solid var(--border)}
+table.mini td{padding:4px 10px;border:1px solid var(--border);text-align:center;background:#fff}
+.aviso{padding:22px 16px;text-align:center;color:var(--muted);font-size:12.5px;font-weight:700}
+canvas{max-width:100%}
+.page-footer{padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-top:1px solid var(--border);background:var(--surface)}
+@media(max-width:720px){.header{grid-template-columns:1fr;text-align:center}}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
+<link rel="stylesheet" href="../assets/css/portal-titulos.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260720y">
+<script src="../assets/js/loading.js?v=20260718d"></script>
+<script type="module" src="../assets/js/auth.js?v=20260720a"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
+<header class="header">
+    <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
+    <div class="title-wrap">
+        <h1 class="header-title">Desempenho dos Motoristas</h1>
+        <div class="header-subtitle" id="subCabecalho">Carregando…</div>
+    </div>
+    <div class="header-actions">
+        <div class="ciop-session" aria-label="Sessão do usuário">
+            <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+            <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+            <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+            <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+        </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+    </div>
+</header>
+
+<main class="container">
+    <div class="toolbar">
+        <a class="btn-portal" href="../index.html"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Portal</a>
+        <a class="btn-portal btn-ghost" href="cr0108.html">Relatório CR-0108</a>
+        <button type="button" class="btn-portal btn-ghost" id="btnCsv">Baixar CSV</button>
+    </div>
+
+    <div class="restrito">
+        <b>Página restrita.</b> Contém avaliação individual identificada de motoristas. O acesso está travado ao seu e-mail — nem outros administradores conseguem abrir. A pontualidade depende também da tabela horária e do trânsito, então trate o ranking como ponto de partida para conversa, não como conclusão isolada sobre a pessoa.
+    </div>
+
+    <section class="filtros">
+        <div class="campo campo-busca"><label for="fBusca">Buscar motorista</label><input type="search" id="fBusca" placeholder="Nome ou matrícula" autocomplete="off"></div>
+        <div class="campo"><label for="fDe">Mês inicial</label><select id="fDe"></select></div>
+        <div class="campo"><label for="fAte">Mês final</label><select id="fAte"></select></div>
+        <div class="campo"><label for="fMin">Mínimo de passagens</label><select id="fMin">
+            <option value="50">50</option>
+            <option value="100" selected>100</option>
+            <option value="300">300</option>
+            <option value="500">500</option>
+            <option value="1">Sem mínimo</option>
+        </select></div>
+        <div class="campo"><label for="fOrdem">Ordenar</label><select id="fOrdem">
+            <option value="melhor">Melhor → pior</option>
+            <option value="pior">Pior → melhor</option>
+            <option value="volume">Mais passagens</option>
+        </select></div>
+        <button type="button" class="btn-portal btn-ghost" id="btnLimpar">Limpar</button>
+    </section>
+
+    <section class="kpis" id="kpis"></section>
+
+    <div class="card">
+        <div class="card-head">
+            <div><h2 class="card-title">Distribuição da frota</h2>
+            <div class="card-sub">Quantos motoristas em cada faixa de pontualidade — mostra se o problema é generalizado ou concentrado em poucos.</div></div>
+        </div>
+        <div class="card-body"><canvas id="grafico" height="90"></canvas></div>
+    </div>
+
+    <div class="card">
+        <div class="card-head">
+            <div><h2 class="card-title">Ranking de pontualidade</h2>
+            <div class="card-sub" id="subRanking">—</div></div>
+        </div>
+        <div class="tabela-wrap"><table class="rel" id="tabela"></table></div>
+    </div>
+</main>
+
+<footer class="page-footer">Portal CIOP · TCGL — apurado a partir dos relatórios diários CR-0108</footer>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const CLASSES = [
+    { chave: "noHorario",  rotulo: "No horário",  cor: "#22c55e" },
+    { chave: "adiantado",  rotulo: "Adiantado",   cor: "#dc2626" },
+    { chave: "atrasado",   rotulo: "Atrasado",    cor: "#facc15" },
+    { chave: "divergente", rotulo: "Divergente",  cor: "#7c3aed" }
+];
+/* O CR-0108 traz "No Badge Provided" quando a viagem rodou sem crachá identificado.
+   Não é um motorista — entraria no ranking como se fosse uma pessoa só, com o desempenho
+   somado de todo mundo que esqueceu de logar. Fica de fora. */
+const SEM_CRACHA = /no badge provided/i;
+
+const DADOS = { linhas: [], meses: [] };
+const nInt = n => Number(n || 0).toLocaleString("pt-BR");
+const n2 = n => Number(n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const nPct = n => n == null ? "—" : n2(n) + "%";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const mesBR = m => { const p = String(m || "").split("-"); return p.length === 2 ? `${MESES[+p[1] - 1]}/${p[0]}` : m; };
+
+function vazio(){ return { noHorario: 0, adiantado: 0, atrasado: 0, divergente: 0, total: 0, somaDif: 0 }; }
+function acumular(a, r){
+    a.noHorario += r.noHorario || 0; a.adiantado += r.adiantado || 0;
+    a.atrasado += r.atrasado || 0; a.divergente += r.divergente || 0;
+    a.total += r.total || 0; a.somaDif += r.somaDif || 0;
+    return a;
+}
+const pct = (p, t) => t ? (p / t) * 100 : null;
+
+function faixa(p){
+    if (p >= 95) return { classe: "f-otimo", txt: "Ótimo" };
+    if (p >= 90) return { classe: "f-bom", txt: "Bom" };
+    if (p >= 85) return { classe: "f-atencao", txt: "Atenção" };
+    return { classe: "f-critico", txt: "Crítico" };
+}
+
+/** Agrega os meses do intervalo por motorista, aplicando o piso de volume. */
+function ranking(){
+    const de = $("fDe").value, ate = $("fAte").value;
+    const [ini, fim] = de <= ate ? [de, ate] : [ate, de];
+    const min = Number($("fMin").value);
+    const q = $("fBusca").value.trim().toLowerCase();
+
+    const mapa = new Map();
+    DADOS.linhas.forEach(r => {
+        if (r.mes < ini || r.mes > fim) return;
+        if (SEM_CRACHA.test(r.matricula) || SEM_CRACHA.test(r.nome || "")) return;
+        if (!mapa.has(r.matricula)) mapa.set(r.matricula, { matricula: r.matricula, nome: r.nome || "", meses: [], ...vazio() });
+        const m = mapa.get(r.matricula);
+        acumular(m, r);
+        m.meses.push(r);
+        if (!m.nome && r.nome) m.nome = r.nome;
+    });
+
+    let lista = [...mapa.values()].filter(m => m.total >= min);
+    if (q) lista = lista.filter(m => `${m.matricula} ${m.nome}`.toLowerCase().includes(q));
+    lista.forEach(m => { m.pct = pct(m.noHorario, m.total); m.media = m.total ? m.somaDif / m.total : 0; });
+
+    const ordem = $("fOrdem").value;
+    lista.sort((a, b) =>
+        ordem === "volume" ? b.total - a.total
+        : ordem === "pior" ? a.pct - b.pct
+        : b.pct - a.pct);
+    return { lista, ini, fim };
+}
+
+function renderKpis(lista, ini, fim){
+    if (!lista.length){ $("kpis").innerHTML = ""; return; }
+    const geral = lista.reduce((a, m) => acumular(a, m), vazio());
+    const pcts = lista.map(m => m.pct).sort((a, b) => a - b);
+    const mediana = pcts[Math.floor(pcts.length / 2)];
+    const melhor = lista.reduce((a, b) => (a.pct >= b.pct ? a : b));
+    const pior = lista.reduce((a, b) => (a.pct <= b.pct ? a : b));
+    const abaixo85 = lista.filter(m => m.pct < 85).length;
+
+    $("kpis").innerHTML = `
+        <div class="kpi"><div class="label">Motoristas avaliados</div><div class="value">${nInt(lista.length)}</div>
+            <div class="sub">${mesBR(ini)} a ${mesBR(fim)} · mín. ${nInt(Number($("fMin").value))} passagens</div></div>
+        <div class="kpi"><div class="label">Pontualidade da frota</div><div class="value">${nPct(pct(geral.noHorario, geral.total))}</div>
+            <div class="sub">${nInt(geral.total)} passagens no período</div></div>
+        <div class="kpi"><div class="label">Mediana individual</div><div class="value">${nPct(mediana)}</div>
+            <div class="sub">metade dos motoristas está acima disso</div></div>
+        <div class="kpi kpi-bom"><div class="label">Melhor</div><div class="value">${nPct(melhor.pct)}</div>
+            <div class="sub">${esc(melhor.nome || melhor.matricula)}</div></div>
+        <div class="kpi kpi-ruim"><div class="label">Abaixo de 85%</div><div class="value">${nInt(abaixo85)}</div>
+            <div class="sub">${nPct(100 * abaixo85 / lista.length)} da equipe · pior: ${nPct(pior.pct)}</div></div>`;
+}
+
+let grafico = null;
+function renderGrafico(lista){
+    const baldes = [
+        { rot: "< 80%", teste: p => p < 80, cor: "#b91c1c" },
+        { rot: "80–85%", teste: p => p >= 80 && p < 85, cor: "#dc2626" },
+        { rot: "85–90%", teste: p => p >= 85 && p < 90, cor: "#facc15" },
+        { rot: "90–95%", teste: p => p >= 90 && p < 95, cor: "#60a5fa" },
+        { rot: "95–98%", teste: p => p >= 95 && p < 98, cor: "#22c55e" },
+        { rot: "≥ 98%", teste: p => p >= 98, cor: "#15803d" }
+    ];
+    const dados = baldes.map(b => lista.filter(m => b.teste(m.pct)).length);
+    if (grafico) grafico.destroy();
+    grafico = new Chart($("grafico"), {
+        type: "bar",
+        data: { labels: baldes.map(b => b.rot), datasets: [{ label: "Motoristas", data: dados, backgroundColor: baldes.map(b => b.cor), borderWidth: 0 }] },
+        options: {
+            responsive: true, maintainAspectRatio: true,
+            plugins: { legend: { display: false },
+                tooltip: { callbacks: { label: c => c.parsed.y + " motoristas" } } },
+            scales: { x: { grid: { display: false }, ticks: { font: { size: 11, weight: "bold" } } },
+                      y: { grid: { color: "#eef2f7" }, ticks: { precision: 0, font: { size: 10 } } } }
+        }
+    });
+}
+
+function detalheHtml(m){
+    const meses = m.meses.slice().sort((a, b) => a.mes.localeCompare(b.mes));
+    const linhas = meses.map(r => {
+        const p = pct(r.noHorario, r.total);
+        return `<tr><td><b>${esc(mesBR(r.mes))}</b></td><td>${nInt(r.total)}</td>
+            <td class="pct">${nPct(p)}</td>
+            <td>${nPct(pct(r.adiantado, r.total))}</td>
+            <td>${nPct(pct(r.atrasado, r.total))}</td>
+            <td>${nPct(pct(r.divergente, r.total))}</td>
+            <td>${r.total ? ((r.somaDif / r.total) >= 0 ? "+" : "") + n2(r.somaDif / r.total) : "—"} min</td></tr>`;
+    }).join("");
+    const primeiro = meses[0], ultimo = meses[meses.length - 1];
+    let tendencia = "";
+    if (meses.length >= 2){
+        const d = pct(ultimo.noHorario, ultimo.total) - pct(primeiro.noHorario, primeiro.total);
+        tendencia = ` · do primeiro ao último mês: ${d >= 0 ? "+" : ""}${n2(d)} p.p.`;
+    }
+    return `<div class="detalhe-inner">
+        <div class="detalhe-titulo">Evolução mês a mês${esc(tendencia)}</div>
+        <table class="mini"><thead><tr><th>Mês</th><th>Passagens</th><th>No horário</th><th>Adiantado</th><th>Atrasado</th><th>Divergente</th><th>Desvio médio</th></tr></thead>
+        <tbody>${linhas}</tbody></table></div>`;
+}
+
+function render(){
+    const { lista, ini, fim } = ranking();
+    renderKpis(lista, ini, fim);
+    renderGrafico(lista);
+
+    const el = $("tabela");
+    $("subRanking").textContent = lista.length
+        ? `${nInt(lista.length)} motoristas · clique na linha para ver a evolução mês a mês`
+        : "Nenhum motorista atende aos filtros";
+    if (!lista.length){
+        el.innerHTML = '<tbody><tr><td class="aviso">Nenhum motorista atende aos filtros.</td></tr></tbody>';
+        return;
+    }
+    const cab = `<thead><tr>
+        <th style="width:48px">#</th>
+        <th class="txt">Motorista</th>
+        <th style="width:80px">Passagens</th>
+        <th style="width:170px">No horário</th>
+        <th style="width:76px">Faixa</th>
+        <th style="width:78px">Adiantado</th>
+        <th style="width:78px">Atrasado</th>
+        <th style="width:84px">Divergente</th>
+        <th style="width:88px">Desvio médio</th>
+    </tr></thead>`;
+    const corpo = lista.map((m, i) => {
+        const f = faixa(m.pct);
+        const medalha = i < 3 && $("fOrdem").value === "melhor" ? ` p${i + 1}` : "";
+        return `<tr class="mot" data-mat="${esc(m.matricula)}">
+            <td><span class="pos${medalha}">${i + 1}</span></td>
+            <td class="txt"><div class="mot-nome">${esc(m.nome || "—")}</div><div class="mot-mat">Matrícula ${esc(m.matricula)}</div></td>
+            <td>${nInt(m.total)}</td>
+            <td><div style="display:flex;align-items:center;gap:7px">
+                <span class="barra"><i style="width:${(m.pct || 0).toFixed(1)}%"></i></span>
+                <span class="pct">${nPct(m.pct)}</span></div></td>
+            <td><span class="faixa ${f.classe}">${f.txt}</span></td>
+            <td style="color:var(--c-adiantado-txt);font-weight:800">${nPct(pct(m.adiantado, m.total))}</td>
+            <td style="color:var(--c-atrasado-txt);font-weight:800">${nPct(pct(m.atrasado, m.total))}</td>
+            <td style="color:var(--c-divergente-txt);font-weight:800">${nPct(pct(m.divergente, m.total))}</td>
+            <td>${(m.media >= 0 ? "+" : "") + n2(m.media)} min</td>
+        </tr>`;
+    }).join("");
+    el.innerHTML = cab + "<tbody>" + corpo + "</tbody>";
+
+    el.querySelectorAll("tr.mot").forEach(tr => {
+        tr.addEventListener("click", () => {
+            const prox = tr.nextElementSibling;
+            if (prox && prox.classList.contains("detalhe")){ prox.remove(); return; }
+            el.querySelectorAll("tr.detalhe").forEach(d => d.remove());
+            const m = lista.find(x => x.matricula === tr.dataset.mat);
+            const nova = document.createElement("tr");
+            nova.className = "detalhe";
+            nova.innerHTML = `<td colspan="9">${detalheHtml(m)}</td>`;
+            tr.after(nova);
+        });
+    });
+}
+
+function baixarCsv(){
+    const { lista } = ranking();
+    const cab = ["Posicao", "Matricula", "Nome", "Passagens", "No horario (%)", "Adiantado (%)",
+        "Atrasado (%)", "Divergente (%)", "Desvio medio (min)"];
+    const linhas = lista.map((m, i) => [i + 1, m.matricula, m.nome, m.total,
+        n2(m.pct), n2(pct(m.adiantado, m.total)), n2(pct(m.atrasado, m.total)),
+        n2(pct(m.divergente, m.total)), n2(m.media)]);
+    const csv = [cab, ...linhas].map(l => l.map(c => `"${String(c ?? "").replace(/"/g, '""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "desempenho-motoristas.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+async function iniciar(){
+    try {
+        const res = await fetch("../assets/data/cr0108/por-mes-operador.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        DADOS.linhas = await res.json();
+        DADOS.meses = [...new Set(DADOS.linhas.map(r => r.mes))].sort();
+
+        [$("fDe"), $("fAte")].forEach((sel, idx) => {
+            DADOS.meses.forEach(m => {
+                const o = document.createElement("option");
+                o.value = m; o.textContent = mesBR(m);
+                sel.appendChild(o);
+            });
+            sel.value = idx === 0 ? DADOS.meses[0] : DADOS.meses[DADOS.meses.length - 1];
+        });
+
+        const totalPassagens = DADOS.linhas.reduce((s, r) => s + r.total, 0);
+        const motoristas = new Set(DADOS.linhas.filter(r => !SEM_CRACHA.test(r.matricula)).map(r => r.matricula)).size;
+        $("subCabecalho").textContent =
+            `${nInt(motoristas)} motoristas · ${nInt(totalPassagens)} passagens · ${mesBR(DADOS.meses[0])} a ${mesBR(DADOS.meses[DADOS.meses.length - 1])}`;
+
+        ["fDe", "fAte", "fMin", "fOrdem"].forEach(id => $(id).addEventListener("change", render));
+        $("fBusca").addEventListener("input", render);
+        $("btnLimpar").addEventListener("click", () => {
+            $("fBusca").value = "";
+            $("fDe").value = DADOS.meses[0];
+            $("fAte").value = DADOS.meses[DADOS.meses.length - 1];
+            $("fMin").value = "100"; $("fOrdem").value = "melhor";
+            render();
+        });
+        $("btnCsv").addEventListener("click", baixarCsv);
+        render();
+    } catch (err){
+        $("subCabecalho").textContent = "Falha ao carregar os dados";
+        $("kpis").innerHTML = '<div class="card"><p class="aviso">Não foi possível carregar o desempenho.<br>' + esc(err.message) + "</p></div>";
+        console.error(err);
+    }
+}
+
+iniciar();
+</script>
+</body>
+</html>
