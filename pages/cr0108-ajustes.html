@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CR-0108 — Onde ajustar para melhorar a pontualidade | Portal CIOP</title>
+<style>
+:root{
+  --blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--bg:#f5f7fb;--border:#dfe5ef;
+  --text:#101828;--muted:#3f4757;--surface:#fff;--surface-2:#f1f5f9;
+  --c-nohorario:#22c55e;--c-nohorario-txt:#15803d;--c-nohorario-bg:#f0fdf4;--c-nohorario-bd:#bbf7d0;
+  --c-adiantado:#dc2626;--c-adiantado-txt:#b91c1c;--c-adiantado-bg:#fef2f2;
+  --c-atrasado:#facc15;--c-atrasado-txt:#a16207;--c-atrasado-bg:#fefce8;
+  --c-divergente:#7c3aed;--c-divergente-txt:#6d28d9;--c-divergente-bg:#f5f3ff;
+  --c-disp:#0f766e;--c-disp-bg:#f0fdfa;--c-disp-bd:#99f6e4;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.header{background:var(--surface);display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);gap:16px;align-items:center;padding:8px 20px;border-bottom:1px solid #e8edf6}
+.header > a:first-child.portal-brand-mark{justify-self:start}
+.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.header-title{margin:0;color:var(--blue);font-size:18px;font-weight:900}
+.header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.container{max-width:1680px;margin:16px auto 32px;padding:0 20px;flex:1;width:100%}
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.btn-portal{display:inline-flex;align-items:center;gap:8px;min-height:40px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;background:var(--blue);color:#fff;border:0;cursor:pointer}
+.btn-portal:hover{background:var(--blue2)}
+.btn-ghost{background:var(--surface-2);color:var(--blue);border:1px solid var(--border)}
+.btn-ghost:hover{background:#e8eef8}
+.btn-icon{display:inline-flex;width:16px;height:16px;flex:0 0 auto}
+.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.explica{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--orange);border-radius:12px;padding:13px 16px;margin-bottom:14px;box-shadow:0 8px 20px rgba(16,24,40,.06)}
+.explica h2{margin:0 0 6px;color:var(--blue);font-size:14px;font-weight:900}
+.explica p{margin:0 0 6px;font-size:12.5px;line-height:1.55;color:var(--muted);font-weight:600}
+.explica p:last-child{margin-bottom:0}
+.explica b{color:var(--text)}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--blue);border-radius:12px;padding:11px 13px;box-shadow:0 8px 20px rgba(16,24,40,.06)}
+.kpi .label{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--muted);letter-spacing:.03em}
+.kpi .value{font-size:23px;font-weight:900;color:var(--blue);margin-top:3px;letter-spacing:-.02em}
+.kpi .sub{font-size:11px;font-weight:700;color:var(--muted);margin-top:2px;line-height:1.35}
+.kpi-bom{border-left-color:var(--c-nohorario);background:var(--c-nohorario-bg)}
+.kpi-bom .value{color:var(--c-nohorario-txt)}
+.kpi-disp{border-left-color:var(--c-disp);background:var(--c-disp-bg)}
+.kpi-disp .value{color:var(--c-disp)}
+
+.filtros{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 20px rgba(16,24,40,.06);padding:12px 14px;margin-bottom:14px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 14px}
+.campo{display:flex;flex-direction:column;gap:4px}
+.campo label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+.campo select,.campo input{height:38px;border:1px solid var(--border);border-radius:10px;padding:0 10px;font:inherit;font-size:13px;font-weight:600;background:var(--surface-2);color:var(--text)}
+.campo select:focus,.campo input:focus{outline:none;border-color:#7dd3dc;box-shadow:0 0 0 4px rgba(45,180,191,.15);background:#fff}
+.campo-busca input{min-width:230px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 28px rgba(16,24,40,.07);overflow:hidden;margin-bottom:14px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.card-title{margin:0;color:var(--blue);font-size:14px;font-weight:900}
+.card-sub{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px;max-width:900px;line-height:1.45}
+.tabela-wrap{overflow:auto;max-height:640px}
+table.rel{width:100%;border-collapse:separate;border-spacing:0;font-size:11.5px}
+table.rel thead th{position:sticky;top:0;z-index:2;background:var(--blue);color:#fff;padding:8px 6px;font-size:9px;font-weight:900;text-transform:uppercase;text-align:center;white-space:nowrap}
+table.rel tbody td{border-bottom:1px solid #edf2f7;padding:6px 6px;text-align:center;background:var(--surface);vertical-align:middle}
+table.rel tbody tr:nth-child(even) td{background:#fafbfd}
+table.rel tbody tr.linha-pai{cursor:pointer}
+table.rel tbody tr.linha-pai:hover td{background:#eef6ff}
+table.rel td.txt{text-align:left}
+.ponto-nome{font-weight:800;color:var(--text)}
+.ponto-meta{font-size:10px;color:var(--muted);font-weight:700}
+.ajuste{display:inline-flex;align-items:center;justify-content:center;min-width:56px;padding:3px 8px;border-radius:8px;font-size:12.5px;font-weight:900}
+.ajuste.antecipar{background:var(--c-adiantado-bg);color:var(--c-adiantado-txt)}
+.ajuste.atrasar{background:var(--c-atrasado-bg);color:var(--c-atrasado-txt)}
+.ajuste.zero{background:var(--surface-2);color:var(--muted)}
+.seta{font-weight:900;color:var(--muted)}
+.pct-atual{font-weight:800;color:var(--c-adiantado-txt)}
+.pct-depois{font-weight:900;color:var(--c-nohorario-txt)}
+.ganho{font-weight:900;color:var(--c-nohorario-txt)}
+.barra{position:relative;height:14px;border-radius:5px;background:var(--surface-2);overflow:hidden;min-width:60px}
+.barra i{position:absolute;inset:0 auto 0 0;display:block;background:var(--c-nohorario)}
+.barra i.antes{background:#cbd5e1}
+.tag{display:inline-flex;padding:2px 7px;border-radius:999px;font-size:9.5px;font-weight:800;white-space:nowrap}
+.tag-tabela{background:var(--c-nohorario-bg);color:var(--c-nohorario-txt)}
+.tag-disp{background:var(--c-disp-bg);color:var(--c-disp)}
+tr.detalhe td{background:#f7fafc!important;padding:0!important}
+.detalhe-inner{padding:10px 14px 12px}
+.detalhe-titulo{font-size:10.5px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:6px}
+table.mini{width:auto;border-collapse:collapse;font-size:11px}
+table.mini th{background:var(--surface-2);color:var(--muted);padding:4px 9px;font-size:9px;font-weight:900;text-transform:uppercase;border:1px solid var(--border)}
+table.mini td{padding:4px 9px;border:1px solid var(--border);text-align:center;background:#fff}
+.aviso{padding:22px 16px;text-align:center;color:var(--muted);font-size:12.5px;font-weight:700}
+.page-footer{padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-top:1px solid var(--border);background:var(--surface)}
+@media(max-width:720px){.header{grid-template-columns:1fr;text-align:center}}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
+<link rel="stylesheet" href="../assets/css/portal-titulos.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260720y">
+<script src="../assets/js/loading.js?v=20260718d"></script>
+<script type="module" src="../assets/js/auth.js?v=20260720a"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+</head>
+<body data-require-perfis="Administrador,Supervisor,Analista">
+<header class="header">
+    <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
+    <div class="title-wrap">
+        <h1 class="header-title">Onde ajustar para melhorar a pontualidade</h1>
+        <div class="header-subtitle" id="subCabecalho">Carregando…</div>
+    </div>
+    <div class="header-actions">
+        <div class="ciop-session" aria-label="Sessão do usuário">
+            <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+            <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+            <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+            <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+        </div>
+        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+    </div>
+</header>
+
+<main class="container">
+    <div class="toolbar">
+        <a class="btn-portal" href="relatorios.html"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Relatórios</a>
+        <a class="btn-portal btn-ghost" href="cr0108.html">Ver o relatório CR-0108</a>
+    </div>
+
+    <section class="explica">
+        <h2>Como esta lista foi montada</h2>
+        <p>Para cada combinação de <b>linha + sentido + ponto de controle</b>, olhamos a distribuição real dos desvios do ano inteiro. Se um ponto passa quase sempre com o mesmo desvio — por exemplo, sempre 3 minutos adiantado — o problema não é o motorista: é o <b>tempo de percurso programado</b> até ali. Testamos deslocar o horário daquele ponto de −20 a +20 minutos e escolhemos o deslocamento que joga o máximo de passagens para dentro da faixa <b>No horário (−2 a +6 min)</b>.</p>
+        <p>A coluna <b>amplitude</b> é a distância entre o 10º e o 90º percentil dos desvios, ou seja, o quanto as passagens se espalham. Amplitude pequena significa comportamento previsível — aí mexer na tabela resolve. <b>Amplitude grande significa que nenhum horário resolve</b>: a variação vem de trânsito, embarque ou demanda, e o caso está separado na segunda tabela.</p>
+        <p>Só entram grupos com pelo menos <b>60 passagens</b> no ano, para a conclusão não vir de um punhado de viagens.</p>
+    </section>
+
+    <section class="kpis" id="kpis"></section>
+
+    <section class="filtros">
+        <div class="campo campo-busca"><label for="fBusca">Buscar ponto ou linha</label><input type="search" id="fBusca" placeholder="Ex.: 109, Terminal Ouro Verde…" autocomplete="off"></div>
+        <div class="campo"><label for="fLinha">Linha</label><select id="fLinha"><option value="">Todas</option></select></div>
+        <div class="campo"><label for="fSentido">Sentido</label><select id="fSentido"><option value="">Ambos</option><option value="IDA">IDA</option><option value="VOLTA">VOLTA</option></select></div>
+        <div class="campo"><label for="fMin">Ganho mínimo</label><select id="fMin">
+            <option value="0">Qualquer ganho</option>
+            <option value="2">A partir de 2 p.p.</option>
+            <option value="5" selected>A partir de 5 p.p.</option>
+            <option value="10">A partir de 10 p.p.</option>
+        </select></div>
+        <button type="button" class="btn-portal btn-ghost" id="btnLimpar">Limpar</button>
+        <button type="button" class="btn-portal" id="btnCsv">Baixar CSV</button>
+    </section>
+
+    <section class="card">
+        <div class="card-head">
+            <div>
+                <h2 class="card-title">1. Ajustar o horário programado</h2>
+                <div class="card-sub">Pontos com desvio sistemático e comportamento previsível. Clique na linha para ver em quais faixas horárias o ajuste rende mais.</div>
+            </div>
+        </div>
+        <div class="tabela-wrap"><table class="rel" id="tabelaAjuste"></table></div>
+    </section>
+
+    <section class="card">
+        <div class="card-head">
+            <div>
+                <h2 class="card-title">2. Horários sugeridos para a tabela</h2>
+                <div class="card-sub">Cada horário programado que aparece na tabela horária daquele ponto, com o horário corrigido ao lado. Só entram horários cumpridos ao menos 20 vezes no ano e cuja correção recupera 5 passagens ou mais. Use o botão de CSV para levar a lista para a programação.</div>
+            </div>
+            <button type="button" class="btn-portal" id="btnCsvHorarios">Baixar CSV dos horários</button>
+        </div>
+        <div class="tabela-wrap"><table class="rel" id="tabelaHorarios"></table></div>
+    </section>
+
+    <section class="card">
+        <div class="card-head">
+            <div>
+                <h2 class="card-title">3. Não adianta mexer no horário</h2>
+                <div class="card-sub">Mesmo com o melhor deslocamento possível, estes pontos continuam abaixo de 85% no horário. A variação é grande demais — o caminho aqui é tempo de percurso por faixa, ponto de parada, embarque ou reforço de frota.</div>
+            </div>
+        </div>
+        <div class="tabela-wrap"><table class="rel" id="tabelaDispersao"></table></div>
+    </section>
+</main>
+
+<footer class="page-footer">Portal CIOP · TCGL — diagnóstico gerado a partir dos relatórios diários CR-0108</footer>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const DADOS = { itens: [], horarios: [], linhas: {} };
+
+const nInt = n => Number(n || 0).toLocaleString("pt-BR");
+const n2 = n => Number(n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const nPct = n => n == null ? "—" : n2(n) + "%";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/** Traduz o deslocamento para linguagem de operação. Deslocar o horário programado para
+ *  MENOS significa que o carro está chegando antes do previsto: o horário deve ser
+ *  ANTECIPADO. Para MAIS, o percurso leva mais tempo do que a tabela prevê: ATRASAR. */
+function textoAjuste(shift){
+    if (!shift) return { classe: "zero", txt: "—", desc: "sem ajuste" };
+    const abs = Math.abs(shift);
+    return shift < 0
+        ? { classe: "antecipar", txt: "−" + abs + " min", desc: "antecipar o horário em " + abs + " min" }
+        : { classe: "atrasar", txt: "+" + abs + " min", desc: "atrasar o horário em " + abs + " min" };
+}
+
+function filtrados(){
+    const q = $("fBusca").value.trim().toLowerCase();
+    const linha = $("fLinha").value;
+    const sentido = $("fSentido").value;
+    const min = Number($("fMin").value);
+    return DADOS.itens.filter(i => {
+        if (linha && i.linha !== linha) return false;
+        if (sentido && i.sentido !== sentido) return false;
+        if (q && !(`${i.linha} ${i.linhaNome} ${i.ponto}`.toLowerCase().includes(q))) return false;
+        return i.ganhoPct >= min || min === 0;
+    });
+}
+
+const ehDispersao = i => i.pctPotencial < 85;
+
+function linhaHtml(i, idx, comAjuste){
+    const aj = textoAjuste(i.shift);
+    const tag = ehDispersao(i)
+        ? '<span class="tag tag-disp">dispersão</span>'
+        : '<span class="tag tag-tabela">tabela</span>';
+    return `<tr class="linha-pai" data-idx="${idx}">
+        <td>${idx + 1}</td>
+        <td class="txt">
+            <div class="ponto-nome">${esc(i.ponto)}</div>
+            <div class="ponto-meta">Linha ${esc(i.linha)}${i.linhaNome ? " · " + esc(i.linhaNome) : ""} · ${esc(i.sentido)} ${tag}</div>
+        </td>
+        <td>${nInt(i.n)}</td>
+        <td><span class="pct-atual">${nPct(i.pctAtual)}</span>
+            <div class="barra"><i class="antes" style="width:${i.pctAtual.toFixed(1)}%"></i></div></td>
+        ${comAjuste ? `<td><span class="ajuste ${aj.classe}" title="${esc(aj.desc)}">${aj.txt}</span></td>` : ""}
+        <td class="seta">→</td>
+        <td><span class="pct-depois">${nPct(i.pctPotencial)}</span>
+            <div class="barra"><i style="width:${i.pctPotencial.toFixed(1)}%"></i></div></td>
+        <td class="ganho">${i.ganhoPct > 0 ? "+" + n2(i.ganhoPct) + " p.p." : "—"}</td>
+        <td>${nInt(i.recuperadas)}</td>
+        <td>${i.mediana > 0 ? "+" : ""}${n2(i.mediana)} min</td>
+        <td>${i.amplitude} min</td>
+    </tr>`;
+}
+
+function detalheHtml(i){
+    if (!i.faixas || !i.faixas.length){
+        return '<div class="detalhe-inner"><div class="detalhe-titulo">Sem faixa horária com volume suficiente</div></div>';
+    }
+    const linhas = i.faixas.map(f => {
+        const aj = textoAjuste(f.shift);
+        return `<tr>
+            <td><b>${esc(f.hora)}h</b></td>
+            <td>${nInt(f.n)}</td>
+            <td>${nPct(f.pctAtual)}</td>
+            <td><span class="ajuste ${aj.classe}">${aj.txt}</span></td>
+            <td>${nPct(f.pctPotencial)}</td>
+            <td class="ganho">+${n2(f.ganhoPct)} p.p.</td>
+            <td>${nInt(f.recuperadas)}</td>
+            <td>${f.amplitude} min</td>
+        </tr>`;
+    }).join("");
+    const homogeneo = i.faixasHomogeneas
+        ? "O ajuste é o mesmo em todas as faixas — dá para corrigir a tabela inteira de uma vez."
+        : "O ajuste varia conforme a faixa horária — vale corrigir faixa a faixa em vez de deslocar o dia todo.";
+    return `<div class="detalhe-inner">
+        <div class="detalhe-titulo">Faixas horárias onde o ajuste rende mais · ${esc(homogeneo)}</div>
+        <table class="mini"><thead><tr>
+            <th>Faixa</th><th>Passagens</th><th>Atual</th><th>Ajuste</th><th>Depois</th><th>Ganho</th><th>Recuperadas</th><th>Amplitude</th>
+        </tr></thead><tbody>${linhas}</tbody></table>
+    </div>`;
+}
+
+function montarTabela(el, lista, comAjuste){
+    if (!lista.length){
+        el.innerHTML = '<tbody><tr><td class="aviso">Nenhum ponto atende aos filtros.</td></tr></tbody>';
+        return;
+    }
+    const cab = `<thead><tr>
+        <th style="width:40px">#</th>
+        <th class="txt">Ponto de controle</th>
+        <th style="width:80px">Passagens</th>
+        <th style="width:110px">No horário hoje</th>
+        ${comAjuste ? '<th style="width:88px">Ajuste</th>' : ""}
+        <th style="width:26px"></th>
+        <th style="width:110px">Ficaria</th>
+        <th style="width:86px">Ganho</th>
+        <th style="width:92px">Passagens<br>recuperadas</th>
+        <th style="width:86px">Desvio<br>mediano</th>
+        <th style="width:78px">Amplitude</th>
+    </tr></thead>`;
+    el.innerHTML = cab + "<tbody>" + lista.map((i, idx) => linhaHtml(i, idx, comAjuste)).join("") + "</tbody>";
+    el.querySelectorAll("tr.linha-pai").forEach(tr => {
+        tr.addEventListener("click", () => {
+            const prox = tr.nextElementSibling;
+            if (prox && prox.classList.contains("detalhe")){ prox.remove(); return; }
+            el.querySelectorAll("tr.detalhe").forEach(d => d.remove());
+            const item = lista[Number(tr.dataset.idx)];
+            const nova = document.createElement("tr");
+            nova.className = "detalhe";
+            nova.innerHTML = `<td colspan="${comAjuste ? 11 : 10}">${detalheHtml(item)}</td>`;
+            tr.after(nova);
+        });
+    });
+}
+
+/* ---- Horários sugeridos ---------------------------------------------------------
+   Aqui a unidade não é o ponto, é cada HORÁRIO da tabela naquele ponto — que é o que a
+   programação de fato edita. O deslocamento é recalculado por horário, porque um mesmo
+   ponto pode precisar de correções diferentes de manhã e à noite. */
+function horariosFiltrados(){
+    const q = $("fBusca").value.trim().toLowerCase();
+    const linha = $("fLinha").value;
+    const sentido = $("fSentido").value;
+    const min = Number($("fMin").value);
+    return DADOS.horarios.filter(i => {
+        if (linha && i.linha !== linha) return false;
+        if (sentido && i.sentido !== sentido) return false;
+        const nome = DADOS.linhas[i.linha] || "";
+        if (q && !(`${i.linha} ${nome} ${i.ponto}`.toLowerCase().includes(q))) return false;
+        return min === 0 || i.ganhoPct >= min;
+    }).sort((a, b) => b.recuperadas - a.recuperadas);
+}
+
+function renderHorarios(){
+    const lista = horariosFiltrados();
+    const el = $("tabelaHorarios");
+    if (!lista.length){
+        el.innerHTML = '<tbody><tr><td class="aviso">Nenhum horário atende aos filtros.</td></tr></tbody>';
+        return;
+    }
+    const cab = `<thead><tr>
+        <th style="width:40px">#</th>
+        <th class="txt">Ponto de controle</th>
+        <th style="width:78px">Hoje</th>
+        <th style="width:26px"></th>
+        <th style="width:78px">Sugerido</th>
+        <th style="width:82px">Ajuste</th>
+        <th style="width:70px">Ocorr.</th>
+        <th style="width:96px">No horário hoje</th>
+        <th style="width:96px">Ficaria</th>
+        <th style="width:82px">Ganho</th>
+        <th style="width:90px">Recuperadas</th>
+    </tr></thead>`;
+    const corpo = lista.slice(0, 1500).map((i, idx) => {
+        const aj = textoAjuste(i.shift);
+        const nome = DADOS.linhas[i.linha] || "";
+        return `<tr>
+            <td>${idx + 1}</td>
+            <td class="txt">
+                <div class="ponto-nome">${esc(i.ponto)}</div>
+                <div class="ponto-meta">Linha ${esc(i.linha)}${nome ? " · " + esc(nome) : ""} · ${esc(i.sentido)}</div>
+            </td>
+            <td><b style="font-size:13px">${esc(i.programado)}</b></td>
+            <td class="seta">→</td>
+            <td><b style="font-size:13px;color:var(--c-nohorario-txt)">${esc(i.sugerido)}</b></td>
+            <td><span class="ajuste ${aj.classe}" title="${esc(aj.desc)}">${aj.txt}</span></td>
+            <td>${nInt(i.n)}</td>
+            <td><span class="pct-atual">${nPct(i.pctAtual)}</span></td>
+            <td><span class="pct-depois">${nPct(i.pctPotencial)}</span></td>
+            <td class="ganho">+${n2(i.ganhoPct)} p.p.</td>
+            <td>${nInt(i.recuperadas)}</td>
+        </tr>`;
+    }).join("");
+    const aviso = lista.length > 1500
+        ? `<tr><td colspan="11" class="aviso">Mostrando os 1.500 horários de maior impacto, de ${nInt(lista.length)}. Refine os filtros ou baixe o CSV para ver todos.</td></tr>`
+        : "";
+    el.innerHTML = cab + "<tbody>" + corpo + aviso + "</tbody>";
+}
+
+function baixarCsvHorarios(){
+    const lista = horariosFiltrados();
+    const cab = ["Linha", "Nome da linha", "Sentido", "Ponto de controle",
+        "Horario atual", "Horario sugerido", "Ajuste (min)", "Ocorrencias no ano",
+        "No horario hoje (%)", "Ficaria (%)", "Ganho (p.p.)", "Passagens recuperadas",
+        "Desvio mediano (min)", "Amplitude (min)"];
+    const linhas = lista.map(i => [
+        i.linha, DADOS.linhas[i.linha] || "", i.sentido, i.ponto,
+        i.programado, i.sugerido, i.shift, i.n,
+        n2(i.pctAtual), n2(i.pctPotencial), n2(i.ganhoPct), i.recuperadas,
+        n2(i.mediana), i.amplitude
+    ]);
+    const csv = [cab, ...linhas]
+        .map(l => l.map(c => `"${String(c ?? "").replace(/"/g, '""')}"`).join(";"))
+        .join("\r\n");
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "cr0108-horarios-sugeridos.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+function renderKpis(){
+    const todos = DADOS.itens;
+    const ajustaveis = todos.filter(i => i.shift !== 0 && i.recuperadas > 0 && !ehDispersao(i));
+    const dispersos = todos.filter(ehDispersao);
+    const totalPassagens = todos.reduce((s, i) => s + i.n, 0);
+    const recuperadas = ajustaveis.reduce((s, i) => s + i.recuperadas, 0);
+    const top20 = ajustaveis.slice().sort((a, b) => b.recuperadas - a.recuperadas).slice(0, 20);
+    const recTop20 = top20.reduce((s, i) => s + i.recuperadas, 0);
+
+    $("kpis").innerHTML = `
+        <div class="kpi"><div class="label">Pontos analisados</div><div class="value">${nInt(todos.length)}</div>
+            <div class="sub">combinações de linha + sentido + ponto com massa suficiente</div></div>
+        <div class="kpi"><div class="label">Pontos a ajustar</div><div class="value">${nInt(ajustaveis.length)}</div>
+            <div class="sub">têm desvio sistemático e previsível</div></div>
+        <div class="kpi kpi-bom"><div class="label">Ganho potencial</div>
+            <div class="value">+${n2(100 * recuperadas / totalPassagens)} p.p.</div>
+            <div class="sub">${nInt(recuperadas)} passagens iriam para "No horário" só corrigindo a tabela</div></div>
+        <div class="kpi kpi-bom"><div class="label">Concentração</div>
+            <div class="value">${n2(100 * recTop20 / (recuperadas || 1))}%</div>
+            <div class="sub">do ganho vem dos 20 pontos do topo — é por onde começar</div></div>
+        <div class="kpi kpi-bom"><div class="label">Horários a corrigir</div><div class="value">${nInt(DADOS.horarios.length)}</div>
+            <div class="sub">entradas da tabela horária com ajuste recomendado</div></div>
+        <div class="kpi kpi-disp"><div class="label">Casos de dispersão</div><div class="value">${nInt(dispersos.length)}</div>
+            <div class="sub">nenhum horário resolve; exigem ação operacional</div></div>`;
+}
+
+function render(){
+    const lista = filtrados();
+    const ajuste = lista.filter(i => !ehDispersao(i) && i.shift !== 0 && i.recuperadas > 0)
+        .sort((a, b) => b.recuperadas - a.recuperadas);
+    const disp = lista.filter(ehDispersao).sort((a, b) => b.n - a.n);
+    montarTabela($("tabelaAjuste"), ajuste, true);
+    montarTabela($("tabelaDispersao"), disp, false);
+    renderHorarios();
+}
+
+function baixarCsv(){
+    const lista = filtrados().slice().sort((a, b) => b.recuperadas - a.recuperadas);
+    const cab = ["Linha", "Nome da linha", "Sentido", "Ponto de controle", "Passagens",
+        "No horario hoje (%)", "Ajuste (min)", "Ficaria (%)", "Ganho (p.p.)",
+        "Passagens recuperadas", "Desvio mediano (min)", "Amplitude (min)", "Diagnostico"];
+    const linhas = lista.map(i => [
+        i.linha, i.linhaNome, i.sentido, i.ponto, i.n,
+        n2(i.pctAtual), i.shift, n2(i.pctPotencial), n2(i.ganhoPct),
+        i.recuperadas, n2(i.mediana), i.amplitude,
+        ehDispersao(i) ? "Dispersao - ajuste de horario nao resolve" : "Ajustar tabela"
+    ]);
+    const csv = [cab, ...linhas]
+        .map(l => l.map(c => `"${String(c ?? "").replace(/"/g, '""')}"`).join(";"))
+        .join("\r\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "cr0108-ajustes-pontualidade.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+async function iniciar(){
+    try {
+        const [res, resH] = await Promise.all([
+            fetch("../assets/data/cr0108/diagnostico-pontos.json", { cache: "no-store" }),
+            fetch("../assets/data/cr0108/sugestao-horarios.json", { cache: "no-store" })
+        ]);
+        if (!res.ok) throw new Error("diagnostico-pontos: HTTP " + res.status);
+        if (!resH.ok) throw new Error("sugestao-horarios: HTTP " + resH.status);
+        const json = await res.json();
+        const jsonH = await resH.json();
+        DADOS.itens = json.itens || [];
+        DADOS.horarios = jsonH.itens || [];
+        DADOS.linhas = jsonH.linhas || {};
+
+        const passagens = DADOS.itens.reduce((s, i) => s + i.n, 0);
+        $("subCabecalho").textContent =
+            `${nInt(DADOS.itens.length)} pontos de controle · ${nInt(passagens)} passagens analisadas · faixa No horário −2 a +6 min`;
+
+        const sel = $("fLinha");
+        [...new Set(DADOS.itens.map(i => i.linha))]
+            .sort((a, b) => String(a).localeCompare(String(b), "pt-BR", { numeric: true }))
+            .forEach(cod => {
+                const nome = (DADOS.itens.find(i => i.linha === cod) || {}).linhaNome || "";
+                const o = document.createElement("option");
+                o.value = cod; o.textContent = cod + (nome ? " — " + nome : "");
+                sel.appendChild(o);
+            });
+
+        ["fBusca", "fLinha", "fSentido", "fMin"].forEach(id => {
+            $(id).addEventListener(id === "fBusca" ? "input" : "change", render);
+        });
+        $("btnLimpar").addEventListener("click", () => {
+            $("fBusca").value = ""; $("fLinha").value = ""; $("fSentido").value = ""; $("fMin").value = "5";
+            render();
+        });
+        $("btnCsv").addEventListener("click", baixarCsv);
+        $("btnCsvHorarios").addEventListener("click", baixarCsvHorarios);
+
+        renderKpis();
+        render();
+    } catch (err){
+        $("subCabecalho").textContent = "Falha ao carregar o diagnóstico";
+        $("kpis").innerHTML = '<div class="card"><p class="aviso">Não foi possível carregar o diagnóstico.<br>' + esc(err.message) + "</p></div>";
+        console.error(err);
+    }
+}
+
+iniciar();
+</script>
+</body>
+</html>
