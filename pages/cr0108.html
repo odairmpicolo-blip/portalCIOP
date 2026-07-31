@@ -26,7 +26,14 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
 .header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700}
 .header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
 .container{max-width:1680px;margin:16px auto 32px;padding:0 20px;flex:1;width:100%}
-.toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+.toolbar{display:flex;align-items:flex-end;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+/* Barra única com navegação + filtros: tudo alinhado pela base, senão o botão
+   desencontra a altura dos campos, que têm rótulo em cima. */
+.toolbar-filtros{align-items:flex-end;gap:10px 12px;padding:10px 12px;border-radius:12px;
+  background:var(--surface);border:1px solid var(--border);box-shadow:0 8px 20px rgba(16,24,40,.06)}
+.toolbar-filtros .btn-portal{min-height:38px}
+.toolbar-filtros .campo-linha select{min-width:210px}
+.toolbar-filtros .campo-data input{width:140px}
 .btn-portal{display:inline-flex;align-items:center;gap:8px;min-height:40px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;background:var(--blue);color:#fff;border:0;cursor:pointer}
 .btn-portal:hover{background:var(--blue2)}
 .btn-icon{display:inline-flex;width:16px;height:16px;flex:0 0 auto}
@@ -163,11 +170,10 @@ canvas{max-width:100%}
 </header>
 
 <main class="container">
-    <div class="toolbar">
+    <!-- Barra única: navegação e filtros na mesma linha. -->
+    <div class="toolbar toolbar-filtros">
         <a class="btn-portal" href="relatorios.html"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Relatórios</a>
-    </div>
 
-    <section class="filtros">
         <div class="campo campo-atalho">
             <label for="fAtalho">Período</label>
             <select id="fAtalho">
@@ -183,12 +189,12 @@ canvas{max-width:100%}
         <div class="campo campo-data"><label for="fAte">Até</label><input type="date" id="fAte"></div>
         <div class="campo campo-linha"><label for="fLinha">Linha</label><select id="fLinha"><option value="">Todas as linhas</option></select></div>
         <div class="campo"><label for="fSentido">Sentido</label><select id="fSentido"><option value="">Ambos</option><option value="IDA">IDA</option><option value="VOLTA">VOLTA</option></select></div>
-        <div class="campo"><label for="fComparar">Comparar com</label><select id="fComparar">
+        <div class="campo"><label for="fComparar">Comparar</label><select id="fComparar">
             <option value="">Sem comparação</option>
-            <option value="anterior">Período anterior de mesmo tamanho</option>
+            <option value="anterior">Período anterior</option>
         </select></div>
-        <button type="button" class="btn-portal btn-ghost" id="btnLimpar">Limpar filtros</button>
-    </section>
+        <button type="button" class="btn-portal btn-ghost" id="btnLimpar">Limpar</button>
+    </div>
 
     <section class="kpis" id="kpis"></section>
 
@@ -205,7 +211,7 @@ canvas{max-width:100%}
         </div>
         <div class="card">
             <div class="card-head">
-                <div><h2 class="card-title">Faixa horária</h2><div class="card-sub">Pontualidade por hora programada de passagem</div></div>
+                <div><h2 class="card-title">Faixa horária</h2><div class="card-sub" id="subHora">—</div></div>
             </div>
             <div class="card-body"><canvas id="graficoHora" height="150"></canvas></div>
         </div>
@@ -420,12 +426,35 @@ function renderEvolucao(){
 
 function renderHora(){
     const p = periodo();
+    const linha = $("fLinha").value;
+    const sentido = $("fSentido").value;
     const mapa = new Map();
-    DADOS.porDiaHora.forEach(r => {
-        if (!dentro(r.data, p)) return;
-        if (!mapa.has(r.hora)) mapa.set(r.hora, vazio());
-        acumular(mapa.get(r.hora), r);
-    });
+
+    // Sem filtro de linha/sentido usamos a base DIÁRIA, que recorta o período exato.
+    // Com filtro, a única base que cruza hora x linha x sentido é a MENSAL — o mesmo
+    // cruzamento em granularidade diária daria ~487 mil linhas de JSON.
+    if (!linha && !sentido){
+        DADOS.porDiaHora.forEach(r => {
+            if (!dentro(r.data, p)) return;
+            if (!mapa.has(r.hora)) mapa.set(r.hora, vazio());
+            acumular(mapa.get(r.hora), r);
+        });
+        $("subHora").textContent = "Pontualidade por hora programada de passagem · recorte diário do período";
+    } else {
+        const meses = mesesDoPeriodo(p);
+        DADOS.porMesHoraLinha.forEach(r => {
+            if (!meses.has(r.m)) return;
+            if (linha && r.l !== linha) return;
+            if (sentido && r.s !== sentido) return;
+            if (!mapa.has(r.h)) mapa.set(r.h, vazio());
+            // Base compacta: chaves curtas para o arquivo não passar de 1,5 MB.
+            acumular(mapa.get(r.h), {
+                noHorario: r.n, adiantado: r.a, atrasado: r.t, divergente: r.d, total: r.T, somaDif: 0
+            });
+        });
+        const recorte = [linha ? "linha " + linha : null, sentido].filter(Boolean).join(" · ");
+        $("subHora").textContent = "Pontualidade por hora · " + recorte + " · recorte mensal (meses tocados pelo período)";
+    }
     const horas = [...mapa.keys()].sort();
     const dados = {
         labels: horas.map(h => h + "h"),
@@ -584,13 +613,14 @@ function ligarEventos(){
 
 async function iniciar(){
     try {
-        const [meta, porDia, porDiaLinha, porDiaHora, porMesPonto, porMesOperador, porMesVeiculo, porMesSentido] =
+        const [meta, porDia, porDiaLinha, porDiaHora, porMesPonto, porMesOperador, porMesVeiculo, porMesSentido, porMesHoraLinha] =
             await Promise.all([
                 baixar("meta.json"), baixar("por-dia.json"), baixar("por-dia-linha.json"),
                 baixar("por-dia-hora.json"), baixar("por-mes-ponto.json"),
-                baixar("por-mes-operador.json"), baixar("por-mes-veiculo.json"), baixar("por-mes-sentido.json")
+                baixar("por-mes-operador.json"), baixar("por-mes-veiculo.json"), baixar("por-mes-sentido.json"),
+                baixar("por-mes-hora-linha.json")
             ]);
-        Object.assign(DADOS, { meta, porDia, porDiaLinha, porDiaHora, porMesPonto, porMesOperador, porMesVeiculo, porMesSentido });
+        Object.assign(DADOS, { meta, porDia, porDiaLinha, porDiaHora, porMesPonto, porMesOperador, porMesVeiculo, porMesSentido, porMesHoraLinha });
 
         $("subCabecalho").textContent =
             `${dataBR(meta.primeiroDia)} a ${dataBR(meta.ultimoDia)} · ${nInt(meta.registros)} passagens · ${meta.arquivos} relatórios diários`;
