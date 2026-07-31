@@ -148,6 +148,20 @@ canvas{max-width:100%}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260720y">
 <link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260720y">
+<style>
+/* Selo de atualizacao: mostra ate quando os dados vao e destaca quando o agregado
+   passa de 48h sem rodar. Fica depois do portal-glass/futuristic para nao ser
+   sobrescrito pelos !important daqueles arquivos. */
+.selo-atualizacao{margin-left:auto;align-self:center;display:inline-flex;align-items:center;gap:7px;
+    padding:7px 12px;border-radius:999px;font-size:12.5px;font-weight:600;letter-spacing:.2px;
+    color:#0b3b2e;background:rgba(214,247,231,.92);border:1px solid rgba(16,140,100,.45);
+    box-shadow:0 1px 2px rgba(0,0,0,.10);white-space:nowrap}
+.selo-atualizacao::before{content:"";width:8px;height:8px;border-radius:50%;background:#12a06f;
+    box-shadow:0 0 0 3px rgba(18,160,111,.22)}
+.selo-atualizacao.selo-velho{color:#5a2a00;background:rgba(255,236,206,.95);border-color:rgba(200,110,0,.55)}
+.selo-atualizacao.selo-velho::before{background:#e07b00;box-shadow:0 0 0 3px rgba(224,123,0,.22)}
+.selo-atualizacao:empty{display:none}
+</style>
 </head>
 <body data-require-perfis="Administrador">
 <div class="body-bg-wall" aria-hidden="true"></div>
@@ -194,6 +208,7 @@ canvas{max-width:100%}
             <option value="anterior">Período anterior</option>
         </select></div>
         <button type="button" class="btn-portal btn-ghost" id="btnLimpar">Limpar</button>
+        <span class="selo-atualizacao" id="seloAtual"></span>
     </div>
 
     <section class="kpis" id="kpis"></section>
@@ -612,6 +627,26 @@ function ligarEventos(){
 }
 
 async function iniciar(){
+/* Aviso de defasagem: a pagina le arquivo estatico, entao dado velho tem cara de dado
+   atual. O selo mostra ate quando vai a base e fica ambar quando o agregado passa de 48h. */
+function selarAtualizacao(meta){
+    const el = $("seloAtual");
+    if (!el || !meta || !meta.gerado) return;
+    const gerado = new Date(meta.gerado);
+    const horas = (Date.now() - gerado.getTime()) / 36e5;
+    const quando = gerado.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit",
+        year: "numeric", hour: "2-digit", minute: "2-digit" });
+    const velho = horas >= 48;
+    const dias = Math.floor(horas / 24);
+    el.textContent = velho
+        ? `Dados até ${dataBR(meta.ultimoDia)} · sem atualizar há ${dias} dia${dias === 1 ? "" : "s"}`
+        : `Dados até ${dataBR(meta.ultimoDia)}`;
+    el.title = `Agregado gerado em ${quando}.` + (velho
+        ? " Rode scripts/cr0108-incremental.py para carregar os dias novos da pasta."
+        : "");
+    el.classList.toggle("selo-velho", velho);
+}
+
     try {
         const [meta, porDia, porDiaLinha, porDiaHora, porMesPonto, porMesOperador, porMesVeiculo, porMesSentido, porMesHoraLinha] =
             await Promise.all([
@@ -624,6 +659,7 @@ async function iniciar(){
 
         $("subCabecalho").textContent =
             `${dataBR(meta.primeiroDia)} a ${dataBR(meta.ultimoDia)} · ${nInt(meta.registros)} passagens · ${meta.arquivos} relatórios diários`;
+        selarAtualizacao(meta);
 
         const sel = $("fLinha");
         Object.entries(meta.linhas).sort((a, b) =>
