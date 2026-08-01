@@ -403,79 +403,41 @@
   .next-progress-bar.anim{ animation:nextProgresso 8s linear forwards; }
   @keyframes nextProgresso{ from{ width:0%; } to{ width:100%; } }
 
-  /* ===== Slide Julho Amarelo & Verde (campanha de conscientização) ===== */
-  .julho-scene{
+  /* ===== Slide Agosto Lilás (combate à violência contra a mulher) ===== */
+  .agosto-scene{
     position:relative; z-index:1; width:100%; height:100%; overflow:hidden;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(20px,3.4vh,38px);
-    padding:clamp(20px,4vh,48px) clamp(16px,4vw,60px);
+    display:flex; align-items:center; justify-content:center;
     border-radius:clamp(16px,1.6vw,26px);
-    background:
-      linear-gradient(135deg, #0d5c34 0%, #1e8a45 22%, #4c9a1f 42%, #86a616 58%, #d4b514 76%, #f6c928 100%);
+    background:linear-gradient(135deg, #2a1046 0%, #4c2178 45%, #6b3a9e 100%);
   }
-  .julho-scene::before{
-    content:""; position:absolute; inset:0; z-index:1; pointer-events:none; opacity:.5;
-    background-image:repeating-linear-gradient(135deg, rgba(255,255,255,.07) 0px, rgba(255,255,255,.07) 2px, transparent 2px, transparent 46px);
+  .agosto-scene .hud-corner{ opacity:.5; animation:none; z-index:4; }
+  .agosto-scene .hud-corner{ border-color:rgba(255,255,255,.6); }
+  /* A arte mantém a proporção original para o coração continuar no mesmo ponto
+     da imagem em qualquer tamanho de tela. */
+  .agosto-arte{
+    position:relative; z-index:3; height:100%; width:auto; max-width:100%;
+    aspect-ratio:1024 / 577;
   }
-  .julho-scene::after{
-    content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
-    background:
-      radial-gradient(900px 620px at 10% 8%, rgba(255,255,255,.16), transparent 60%),
-      radial-gradient(900px 620px at 92% 95%, rgba(0,0,0,.18), transparent 60%);
+  .agosto-img{ width:100%; height:100%; object-fit:contain; display:block; }
+  .agosto-coracao{
+    /* Canto superior direito: a única área lisa da arte (desvio de cor 2,2),
+       então o coração não cobre nenhum texto nem a foto. */
+    position:absolute; right:2.2%; top:2.8%; width:10.5%; height:auto; z-index:4;
+    transform-origin:50% 55%;
+    filter:drop-shadow(0 6px 16px rgba(60,20,90,.35));
+    animation:tcglBatimento 1.5s ease-in-out infinite;
   }
-  .julho-scene .hud-corner{ opacity:.55; animation:none; z-index:4; }
-  .julho-scene .hud-tl,.julho-scene .hud-bl{ border-color:rgba(255,255,255,.65); }
-  .julho-scene .hud-tr,.julho-scene .hud-br{ border-color:rgba(20,30,15,.45); }
+  /* Batimento real: duas contrações (sístole e a segunda bulha) e uma pausa maior. */
+  @keyframes tcglBatimento{
+    0%,32%,100%{ transform:scale(1); }
+    8%         { transform:scale(1.14); }
+    16%        { transform:scale(1.01); }
+    23%        { transform:scale(1.08); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .agosto-coracao{ animation:none; }
+  }
 
-  .julho-band{
-    position:relative; z-index:4; display:flex; align-items:center; justify-content:center;
-    gap:clamp(6px,1.6vw,18px); width:100%;
-  }
-  .julho-ribbon-img{
-    height:clamp(120px,15vh,190px); width:auto; object-fit:contain;
-    filter:drop-shadow(0 10px 16px rgba(10,20,10,.35));
-    animation:julhoFloat 4.5s ease-in-out infinite;
-  }
-  .julho-ribbon-img:last-child{ animation-delay:.4s; }
-  @keyframes julhoFloat{
-    0%,100%{ transform:translateY(0) rotate(0deg); }
-    50%{ transform:translateY(-8px) rotate(1.5deg); }
-  }
-  .julho-script-wrap{
-    display:flex; align-items:center; justify-content:center; gap:clamp(4px,1vw,10px);
-    margin:0 clamp(2px,.6vw,10px);
-  }
-  .julho-script{
-    margin:0; font-family:'Yellowtail', cursive; font-weight:400;
-    font-size:clamp(46px,7vw,108px); line-height:1; color:#111a10;
-    text-shadow:0 2px 0 rgba(255,255,255,.25);
-  }
-  .julho-swash{ width:clamp(34px,4.4vw,80px); height:auto; flex-shrink:0; opacity:.85; }
-  .julho-swash path{ fill:none; stroke:#111a10; stroke-width:4; stroke-linecap:round; }
-
-  .julho-pills-row{
-    position:relative; z-index:4; display:flex; align-items:center; justify-content:center;
-    gap:clamp(10px,1.8vw,22px);
-  }
-  .julho-pill{
-    display:inline-flex; align-items:center; justify-content:center;
-    padding:clamp(8px,1.1vh,14px) clamp(22px,2.6vw,42px);
-    border-radius:999px; font-weight:900; letter-spacing:.03em; text-transform:uppercase;
-    font-size:clamp(14px,1.6vw,24px); color:#fff;
-    box-shadow:0 8px 18px rgba(10,20,10,.25);
-  }
-  .julho-pill-yellow{ background:linear-gradient(135deg, #fcd34d, #f59e0b); }
-  .julho-pill-green{ background:linear-gradient(135deg, #4ade80, #16a34a); }
-  .julho-amp{ font-family:'Yellowtail', cursive; font-size:clamp(24px,3vw,42px); color:#111a10; }
-
-  .julho-desc-row{
-    position:relative; z-index:4; display:grid; grid-template-columns:1fr 1fr;
-    gap:clamp(14px,2vw,28px); width:min(100%,1000px);
-  }
-  .julho-desc{
-    margin:0; text-align:center; font-weight:700; color:#12210f;
-    font-size:clamp(12px,1.15vw,17px); line-height:1.5;
-    text-shadow:0 1px 0 rgba(255,255,255,.2);
-  }
   /* ===== Carregamento inicial ===== */
   .boot-loading{
     position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
@@ -534,12 +496,8 @@
     .scene-hud-label{ font-size:8px; }
     .scene-hud-sub{ font-size:8px; gap:6px; }
     .hud-corner{ width:18px; height:18px; }
-    .julho-scene{ gap:14px; padding:18px 14px; }
-    .julho-desc-row{ grid-template-columns:1fr; gap:10px; }
-    .julho-ribbon-img{ height:70px; }
-    .julho-script{ font-size:34px; }
-    .julho-swash{ width:24px; }
-    .julho-pill{ padding:6px 16px; font-size:12px; }
+    .agosto-arte{ height:auto; width:100%; }
+    .agosto-coracao{ width:16%; }
   }
 </style>
 </head>
@@ -798,37 +756,18 @@
       </div>
     </section>
 
-    <!-- ===== Slide Julho Amarelo & Verde (campanha de conscientização) ===== -->
-    <section class="kiosk-slide" id="slide-julho">
-      <div class="julho-scene">
+    <!-- ===== Slide Agosto Lilás (combate à violência contra a mulher) ===== -->
+    <section class="kiosk-slide" id="slide-agosto">
+      <div class="agosto-scene">
         <span class="hud-corner hud-tl"></span>
         <span class="hud-corner hud-tr"></span>
         <span class="hud-corner hud-bl"></span>
         <span class="hud-corner hud-br"></span>
 
-        <div class="julho-band">
-          <img class="julho-ribbon-img" src="../assets/img/painel-tv-julho-laco-amarelo.png" alt="Laço amarelo">
-          <div class="julho-script-wrap">
-            <svg class="julho-swash" viewBox="0 0 120 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M4,12 C22,4 28,28 46,22 C64,16 62,34 116,26"/>
-            </svg>
-            <h2 class="julho-script">julho</h2>
-            <svg class="julho-swash" viewBox="0 0 120 50" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M4,26 C58,34 56,16 74,22 C92,28 98,4 116,12"/>
-            </svg>
-          </div>
-          <img class="julho-ribbon-img" src="../assets/img/painel-tv-julho-laco-verde.png" alt="Laço verde">
-        </div>
-
-        <div class="julho-pills-row">
-          <span class="julho-pill julho-pill-yellow">Amarelo</span>
-          <span class="julho-amp">&amp;</span>
-          <span class="julho-pill julho-pill-green">Verde</span>
-        </div>
-
-        <div class="julho-desc-row">
-          <p class="julho-desc">Mês de luta contra as hepatites virais. Previna-se, vacine-se e faça o teste — o diagnóstico precoce salva vidas.</p>
-          <p class="julho-desc">Mês de conscientização mundial sobre o câncer de cabeça e pescoço. Fique atento aos sinais e procure orientação médica.</p>
+        <div class="agosto-arte">
+          <img class="agosto-img" src="../assets/img/painel-tv-agosto-lilas.jpg"
+               alt="Agosto Lilás — mês de combate à violência contra a mulher. Você não está sozinha.">
+          <img class="agosto-coracao" src="../assets/img/logo-tcgl-coracao.png" alt="TCGL">
         </div>
       </div>
     </section>
@@ -948,7 +887,7 @@ function chartOptionsTv(extra) {
 let sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /* Estado compartilhado do rodapé: cada módulo grava sua última mensagem aqui */
-const statusPainel = { julho: "Campanha de saúde e prevenção · TCGL" };
+const statusPainel = { agosto: "Combate à violência contra a mulher · TCGL" };
 function atualizarStatusRodape(idAtivo) {
   const el = document.getElementById("tvAtualizado");
   if (!el) return;
@@ -1591,7 +1530,7 @@ const NOMES_PAINEL = {
   icv: "Cumprimento de Viagens",
   km: "Quilometragem TCGL",
   live: "Pontualidade em Tempo Real",
-  julho: "Julho Amarelo & Verde",
+  agosto: "Agosto Lilás",
   tempo: "Previsão do Tempo"
 };
 function tocarTransicao(proximoId) {
@@ -1614,10 +1553,10 @@ const INFO_SLIDE = {
   icv: { titulo: "Cumprimento de Viagens", tag: "ICV · mês a mês" },
   km: { titulo: "Quilometragem da Frota", tag: "KM · mês a mês" },
   live: { titulo: "Pontualidade em Tempo Real", tag: "Ao vivo · somente TCGL" },
-  julho: { titulo: "Julho Amarelo & Verde", tag: "Campanha de conscientização · TCGL" },
+  agosto: { titulo: "Agosto Lilás", tag: "Combate à violência contra a mulher · TCGL" },
   tempo: { titulo: "Previsão do Tempo", tag: "Clima · Londrina/PR" }
 };
-const ORDEM_SLIDES = ["ipv", "icv", "tempo", "km", "live", "julho"];
+const ORDEM_SLIDES = ["ipv", "icv", "tempo", "km", "live", "agosto"];
 const DURACAO_SLIDE_MS = 60 * 1000;
 const DURACAO_TRANSICAO_MS = 8000;
 let idxAtual = 0;
@@ -1733,7 +1672,7 @@ setInterval(carregarClima, CLIMA_REFRESH_MS);
   WEATHER.iniciarAutoRefresh();
   document.getElementById("bootLoading").style.display = "none";
 
-  // Abrir uma tela específica e fixa via ?tela=ipv|icv|tempo|km|live|julho
+  // Abrir uma tela específica e fixa via ?tela=ipv|icv|tempo|km|live|agosto
   // (dados e relógio/clima continuam atualizando; não entra no rodízio automático,
   // mas ainda dá pra arrastar/deslizar pra trocar de tela manualmente)
   const telaFixa = new URLSearchParams(location.search).get("tela");
