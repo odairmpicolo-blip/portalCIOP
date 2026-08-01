@@ -170,6 +170,13 @@ table.mini td{padding:4px 10px;border:1px solid var(--border);text-align:center;
 .th-ord.ord-asc::after{border-top:none;border-bottom:5px solid currentColor;opacity:.95}
 .th-ord.ord-desc::after{opacity:.95}
 .th-ord:focus-visible{outline:2px solid rgba(31,111,235,.65);outline-offset:-2px}
+/* Linhas que o motorista roda */
+.chip-linha{display:inline-block;margin:1px 3px 1px 0;padding:1px 6px;border-radius:5px;
+    background:rgba(31,111,235,.13);color:#1a3f75;font-size:11px;font-weight:800}
+.chip-mais{display:inline-block;padding:1px 5px;border-radius:5px;background:rgba(0,0,0,.07);
+    color:var(--muted);font-size:11px;font-weight:800;cursor:help}
+.sem-linha{color:var(--muted)}
+.linha-nome{color:var(--muted);font-weight:600;font-size:11px}
 
 </style>
 <style>
@@ -272,7 +279,7 @@ const CLASSES = [
    somado de todo mundo que esqueceu de logar. Fica de fora. */
 const SEM_CRACHA = /no badge provided/i;
 
-const DADOS = { linhas: [], meses: [] };
+const DADOS = { linhas: [], meses: [], nomesLinha: {} };
 const nInt = n => Number(n || 0).toLocaleString("pt-BR");
 const n2 = n => Number(n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const nPct = n => n == null ? "—" : n2(n) + "%";
@@ -296,6 +303,28 @@ function faixa(p){
     return { classe: "f-critico", txt: "Crítico" };
 }
 
+/* Em quais linhas cada motorista roda no recorte escolhido. A mediana é de 14 linhas
+   por motorista no ano (máximo 76), então a tabela mostra só as principais e a lista
+   completa fica no detalhe da linha. */
+function linhasPorMotorista(ini, fim){
+    const mapa = new Map();
+    (DADOS.opLinha || []).forEach(r => {
+        if (r.m < ini || r.m > fim) return;
+        let porOp = mapa.get(r.k);
+        if (!porOp){ porOp = new Map(); mapa.set(r.k, porOp); }
+        let a = porOp.get(r.l);
+        if (!a){ a = { linha: r.l, noHorario: 0, adiantado: 0, atrasado: 0, divergente: 0, total: 0, somaDif: 0 };
+                 porOp.set(r.l, a); }
+        a.noHorario += r.n; a.adiantado += r.a; a.atrasado += r.t;
+        a.divergente += r.d; a.total += r.T; a.somaDif += r.S;
+    });
+    const saida = new Map();
+    mapa.forEach((porOp, matricula) => {
+        saida.set(matricula, [...porOp.values()].sort((x, y) => y.total - x.total));
+    });
+    return saida;
+}
+
 /** Agrega os meses do intervalo por motorista, aplicando o piso de volume. */
 function ranking(){
     const de = $("fDe").value, ate = $("fAte").value;
@@ -313,6 +342,9 @@ function ranking(){
         m.meses.push(r);
         if (!m.nome && r.nome) m.nome = r.nome;
     });
+
+    const porLinha = linhasPorMotorista(ini, fim);
+    mapa.forEach(m => { m.linhasFeitas = porLinha.get(m.matricula) || []; });
 
     let lista = [...mapa.values()].filter(m => m.total >= min);
     if (q) lista = lista.filter(m => `${m.matricula} ${m.nome}`.toLowerCase().includes(q));
@@ -375,6 +407,15 @@ function renderGrafico(lista){
     });
 }
 
+/* Na tabela cabem as 3 linhas de maior volume; o resto vira "+N". A lista inteira,
+   com o desempenho em cada uma, fica no detalhe. */
+function resumoLinhas(linhas){
+    if (!linhas || !linhas.length) return '<span class="sem-linha">—</span>';
+    const top = linhas.slice(0, 3).map(l => `<span class="chip-linha">${esc(l.linha)}</span>`).join("");
+    const resto = linhas.length - 3;
+    return top + (resto > 0 ? `<span class="chip-mais" title="mais ${resto} linha${resto === 1 ? "" : "s"}">+${resto}</span>` : "");
+}
+
 function detalheHtml(m){
     const meses = m.meses.slice().sort((a, b) => a.mes.localeCompare(b.mes));
     const linhas = meses.map(r => {
@@ -392,10 +433,26 @@ function detalheHtml(m){
         const d = pct(ultimo.noHorario, ultimo.total) - pct(primeiro.noHorario, primeiro.total);
         tendencia = ` · do primeiro ao último mês: ${d >= 0 ? "+" : ""}${n2(d)} p.p.`;
     }
+    const feitas = (m.linhasFeitas || []);
+    const linhasHtml = feitas.map(l => {
+        const p = pct(l.noHorario, l.total);
+        return `<tr><td><b>${esc(l.linha)}</b> <span class="linha-nome">${esc(DADOS.nomesLinha[l.linha] || "")}</span></td>
+            <td>${nInt(l.total)}</td>
+            <td class="pct">${nPct(p)}</td>
+            <td>${nPct(pct(l.adiantado, l.total))}</td>
+            <td>${nPct(pct(l.atrasado, l.total))}</td>
+            <td>${nPct(pct(l.divergente, l.total))}</td>
+            <td>${l.total ? ((l.somaDif / l.total) >= 0 ? "+" : "") + n2(l.somaDif / l.total) : "—"} min</td></tr>`;
+    }).join("");
+    const totalLinhas = feitas.length;
+
     return `<div class="detalhe-inner">
         <div class="detalhe-titulo">Evolução mês a mês${esc(tendencia)}</div>
         <table class="mini"><thead><tr><th>Mês</th><th>Passagens</th><th>No horário</th><th>Adiantado</th><th>Atrasado</th><th>Divergente</th><th>Desvio médio</th></tr></thead>
-        <tbody>${linhas}</tbody></table></div>`;
+        <tbody>${linhas}</tbody></table>
+        ${totalLinhas ? `<div class="detalhe-titulo" style="margin-top:12px">${nInt(totalLinhas)} linha${totalLinhas === 1 ? "" : "s"} no período · da que mais roda para a que menos roda</div>
+        <table class="mini"><thead><tr><th>Linha</th><th>Passagens</th><th>No horário</th><th>Adiantado</th><th>Atrasado</th><th>Divergente</th><th>Desvio médio</th></tr></thead>
+        <tbody>${linhasHtml}</tbody></table>` : ""}</div>`;
 }
 
 function render(){
@@ -414,6 +471,7 @@ function render(){
     const cab = `<thead><tr>
         <th style="width:48px">#</th>
         <th class="txt">Motorista</th>
+        <th class="txt" style="width:180px">Linhas</th>
         <th style="width:80px">Passagens</th>
         <th style="width:170px">No horário</th>
         <th style="width:76px">Faixa</th>
@@ -428,6 +486,7 @@ function render(){
         return `<tr class="mot" data-mat="${esc(m.matricula)}">
             <td><span class="pos${medalha}">${i + 1}</span></td>
             <td class="txt"><div class="mot-nome">${esc(m.nome || "—")}</div><div class="mot-mat">Matrícula ${esc(m.matricula)}</div></td>
+            <td class="txt">${resumoLinhas(m.linhasFeitas)}</td>
             <td>${nInt(m.total)}</td>
             <td><div style="display:flex;align-items:center;gap:7px">
                 <span class="barra"><i style="width:${(m.pct || 0).toFixed(1)}%"></i></span>
@@ -449,7 +508,7 @@ function render(){
             const m = lista.find(x => x.matricula === tr.dataset.mat);
             const nova = document.createElement("tr");
             nova.className = "detalhe";
-            nova.innerHTML = `<td colspan="9">${detalheHtml(m)}</td>`;
+            nova.innerHTML = `<td colspan="10">${detalheHtml(m)}</td>`;
             tr.after(nova);
         });
     });
@@ -573,13 +632,21 @@ function selarAtualizacao(meta){
 
 async function iniciar(){
     try {
-        const [res, resM] = await Promise.all([
+        const [res, resM, resL] = await Promise.all([
             fetch("../assets/data/cr0108/por-mes-operador.json", { cache: "no-store" }),
-            fetch("../assets/data/cr0108/meta.json", { cache: "no-store" })
+            fetch("../assets/data/cr0108/meta.json", { cache: "no-store" }),
+            fetch("../assets/data/cr0108/por-mes-operador-linha.json", { cache: "no-store" })
         ]);
         if (!res.ok) throw new Error("HTTP " + res.status);
         DADOS.linhas = await res.json();
-        if (resM.ok) selarAtualizacao(await resM.json());
+        /* mês x operador x linha, com chaves curtas: m=mês k=matrícula l=linha
+           n/a/t/d=classes T=total S=soma das diferenças */
+        DADOS.opLinha = resL.ok ? await resL.json() : [];
+        if (resM.ok){
+            const meta = await resM.json();
+            DADOS.nomesLinha = meta.linhas || {};
+            selarAtualizacao(meta);
+        }
         DADOS.meses = [...new Set(DADOS.linhas.map(r => r.mes))].sort();
 
         [$("fDe"), $("fAte")].forEach((sel, idx) => {
