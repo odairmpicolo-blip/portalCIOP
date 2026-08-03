@@ -44,8 +44,12 @@ async function chamar(caminho, params = {}) {
 async function disponivel() {
   if (API !== null) return API;
   try {
-    const { awsApiEnabled } = await import("./aws-cfg.js");
-    if (!awsApiEnabled()) { API = false; return false; }
+    /* A URL da API vem de assets/data/portal-runtime.json e só existe DEPOIS de
+       initPortalAwsRuntime(). Sem esperar por ela, awsApiEnabled() responde "não"
+       e a página ficava presa no arquivo mesmo com o banco no ar. */
+    const cfg = await import("./aws-cfg.js");
+    if (typeof cfg.initPortalAwsRuntime === "function") await cfg.initPortalAwsRuntime();
+    if (!cfg.awsApiEnabled()) { API = false; return false; }
     const r = await chamar("/meta");
     API = Boolean(r && r.ok && r.registros > 0);
   } catch (err) {
