@@ -524,40 +524,21 @@ function renderHora(){
 }
 
 /* ---- Ranking ------------------------------------------------------------------ */
-function dadosRanking(){
+/* O ranking passa a vir da Fonte: Aurora DSQL quando o banco responde, arquivos
+   estáticos quando não. Os dois caminhos devolvem o mesmo formato, então o render
+   abaixo não mudou. `diario` diz se o recorte de data foi aplicado sobre a passagem
+   crua (banco) ou arredondado para meses inteiros (arquivo, para ponto/operador/veículo). */
+async function dadosRanking(){
     const p = periodo();
-    const meses = mesesDoPeriodo(p);
-    const linha = $("fLinha").value;
     const dim = estado.dim;
-
-    if (dim === "linha"){
-        const mapa = new Map();
-        DADOS.porDiaLinha.forEach(r => {
-            if (!dentro(r.data, p)) return;
-            if (linha && r.linha !== linha) return;
-            if (!mapa.has(r.linha)) mapa.set(r.linha, vazio());
-            acumular(mapa.get(r.linha), r);
-        });
-        return { titulo: "Linha", diario: true, cascata: true,
-                 itens: [...mapa].map(([k, v]) => ({ chave: k, rotulo: k, extra: DADOS.meta.linhas[k] || "", ...v })) };
-    }
-    const cfg = {
-        ponto:    { base: DADOS.porMesPonto,    campo: "ponto",     titulo: "Ponto de controle" },
-        operador: { base: DADOS.porMesOperador, campo: "matricula", titulo: "Operador" },
-        veiculo:  { base: DADOS.porMesVeiculo,  campo: "veiculo",   titulo: "Veículo" }
-    }[dim];
-    const mapa = new Map();
-    cfg.base.forEach(r => {
-        if (!meses.has(r.mes)) return;
-        const k = r[cfg.campo];
-        if (!mapa.has(k)) mapa.set(k, { rotulo: k, extra: r.nome || "", ...vazio() });
-        acumular(mapa.get(k), r);
-    });
-    return { titulo: cfg.titulo, diario: false, itens: [...mapa].map(([k, v]) => ({ chave: k, ...v })) };
+    const filtro = { de: p.de, ate: p.ate, linha: $("fLinha").value, sentido: $("fSentido").value };
+    const r = await Fonte.ranking(dim, filtro);
+    const titulos = { linha: "Linha", ponto: "Ponto de controle", operador: "Operador", veiculo: "Veículo" };
+    return { titulo: titulos[dim] || dim, diario: r.exato, cascata: dim === "linha", itens: r.itens };
 }
 
-function renderRanking(){
-    const { titulo, diario, itens, cascata } = dadosRanking();
+async function renderRanking(){
+    const { titulo, diario, itens, cascata } = await dadosRanking();
     // Ordena pelo pior desempenho: menor % no horário primeiro, com um piso de
     // volume para uma linha com 3 passagens não liderar o ranking por acaso.
     const piso = Math.max(30, Math.round(itens.reduce((s, i) => s + i.total, 0) / Math.max(1, itens.length) * 0.05));
@@ -768,7 +749,7 @@ function renderTudo(){
     renderKpis();
     renderEvolucao();
     renderHora();
-    renderRanking();
+    renderRanking();          // assíncrono: a tabela chega logo depois do resto
 }
 
 /* ---- Atalhos de período -------------------------------------------------------- */
@@ -869,6 +850,8 @@ function selarAtualizacao(meta){
 
         $("fDe").min = meta.primeiroDia; $("fDe").max = meta.ultimoDia;
         $("fAte").min = meta.primeiroDia; $("fAte").max = meta.ultimoDia;
+        Fonte.usarEstaticos(DADOS);
+        await Fonte.disponivel();      // uma sondagem só; se falhar, segue nos arquivos
         aplicarAtalho();
         ligarEventos();
         renderTudo();
@@ -882,6 +865,7 @@ function selarAtualizacao(meta){
 iniciar();
 </script>
 <script src="../assets/js/cr0108-serie.js?v=20260731b"></script>
+<script src="../assets/js/cr0108-fonte.js?v=20260803"></script>
 <script src="../assets/js/ordenar-tabela.js?v=20260731"></script>
 </body>
 </html>
