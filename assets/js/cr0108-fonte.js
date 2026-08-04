@@ -26,14 +26,14 @@ function origem() { return API ? "banco" : "arquivo"; }
 
 async function token() {
   if (tokenCache && tokenCache.exp > Date.now()) return tokenCache.valor;
-  const { firebaseIdToken } = await import("./aws-cfg.js");
+  const { firebaseIdToken } = await import("./portal-aws-config.js");
   const valor = await firebaseIdToken();
   tokenCache = { valor, exp: Date.now() + 5 * 60 * 1000 };
   return valor;
 }
 
 async function chamar(caminho, params = {}) {
-  const { awsFetch } = await import("./aws-cfg.js");
+  const { awsFetch } = await import("./portal-aws-config.js");
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v) qs.set(k, v);
   const sufixo = qs.toString() ? `?${qs}` : "";
@@ -47,7 +47,10 @@ async function disponivel() {
     /* A URL da API vem de assets/data/portal-runtime.json e só existe DEPOIS de
        initPortalAwsRuntime(). Sem esperar por ela, awsApiEnabled() responde "não"
        e a página ficava presa no arquivo mesmo com o banco no ar. */
-    const cfg = await import("./aws-cfg.js");
+    /* O modulo de configuracao chama-se portal-aws-config.js. O import apontava
+       para um nome que nao existe no repositorio: dava 404, o import falhava, o
+       catch abaixo engolia o erro e a Fonte ficava presa no arquivo para sempre. */
+    const cfg = await import("./portal-aws-config.js");
     if (typeof cfg.initPortalAwsRuntime === "function") await cfg.initPortalAwsRuntime();
     if (!cfg.awsApiEnabled()) { API = false; return false; }
     const r = await chamar("/meta");
