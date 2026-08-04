@@ -274,7 +274,30 @@ router.get("/icv", requireFirebaseUser, async (req, res) => {
   } catch (err) { erro(res, err); }
 });
 
+/* Duas medições distintas de pontualidade, cada uma na sua tabela:
+     2/6 (padrão)     cr_custom_ontime — 213 dias, IPV na casa dos 92%
+     1/3 (alternativo) cr_0258         — 44 dias (01/06 a 15/07), IPV na casa dos 80%
+   Elas NÃO se somam nem se misturam: medem coisas diferentes e uma média entre as
+   duas produziria um número sem significado. O parâmetro fonte escolhe qual ler, e a
+   resposta usa os mesmos nomes de campo nos dois casos para a página não traduzir.
+   Em cr_0258 o total de pontos vem com vírgula de milhar ("13,308"): o numero() tira
+   tudo que não é dígito, ponto ou menos, então vira 13308 — conferido. */
+const FONTES_IPV = {
+  "2-6": { tabela: "cr_custom_ontime",
+           ipv: "ipv_actual", adiantado: "adiantado", atrasado: "atrasado",
+           pontos: "pontos_de_controle_processados" },
+  "1-3": { tabela: "cr_0258",
+           ipv: "on_time", adiantado: "early", atrasado: "late",
+           pontos: "timepoints_processed" }
+};
+
 router.get("/ipv", requireFirebaseUser, async (req, res) => {
+  const chave = String(req.query.fonte || "2-6");
+  const f = FONTES_IPV[chave];
+  if (!f) {
+    res.status(400).json({ ok: false, erro: "fonte inválida (use 2-6 ou 1-3)" });
+    return;
+  }
   try {
     const cond = [];
     const par = [];
@@ -284,15 +307,15 @@ router.get("/ipv", requireFirebaseUser, async (req, res) => {
     }
     const r = await query(
       `SELECT data_ref::text AS data,
-              ${numero("ipv_actual")} AS ipv,
-              ${numero("adiantado")}  AS adiantado,
-              ${numero("atrasado")}   AS atrasado,
-              ${numero("pontos_de_controle_processados")} AS "pontosProcessados"
-       FROM cr_custom_ontime ${cond.length ? `WHERE ${cond.join(" AND ")}` : ""}
+              ${numero(f.ipv)}       AS ipv,
+              ${numero(f.adiantado)} AS adiantado,
+              ${numero(f.atrasado)}  AS atrasado,
+              ${numero(f.pontos)}    AS "pontosProcessados"
+       FROM ${f.tabela} ${cond.length ? `WHERE ${cond.join(" AND ")}` : ""}
        ORDER BY data_ref`,
       par
     );
-    res.json({ ok: true, origem: "dsql", itens: r.rows });
+    res.json({ ok: true, origem: "dsql", fonte: chave, itens: r.rows });
   } catch (err) { erro(res, err); }
 });
 
