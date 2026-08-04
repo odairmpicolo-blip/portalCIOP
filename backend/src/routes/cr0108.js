@@ -46,54 +46,70 @@ const AGG = `
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
-/* Acima disto a consulta passa dos 30 s que o API Gateway tolera. Medido: 31 dias
-   levam 3 s; o histórico inteiro, 32 s. A página avisada usa os agregados do arquivo,
-   que são idênticos — melhor isso do que um 504 sem explicação. */
-const MAX_DIAS = 120;
+/* Uma varredura do histórico inteiro leva ~32 s e o API Gateway corta em 30. Mas o
+   trabalho é divisível: faixas de datas são disjuntas, então quatro consultas menores
+   em paralelo terminam em ~8 s e depois somamos os contadores aqui. Medido: 31 dias
+   levam 3 s. Acima deste tamanho, divide. */
+const FAIXA_DIAS = 45;
 
-function janela(req) {
+const dia = (iso) => new Date(iso + "T00:00:00Z");
+const iso = (d) => d.toISOString().slice(0, 10);
+
+/** Quebra [de, ate] em pedaços de no máximo FAIXA_DIAS. Um só pedaço = período curto. */
+function faixas(req) {
   const de = String(req.query.de || "");
   const ate = String(req.query.ate || "");
-  if (!ISO.test(de) || !ISO.test(ate)) return null;
-  const dias = (Date.parse(ate) - Date.parse(de)) / 86400000;
-  return { de, ate, dias };
+  if (!ISO.test(de) || !ISO.test(ate)) return [{}];           // sem recorte: uma consulta só
+  const fim = dia(ate);
+  const pedacos = [];
+  let ini = dia(de);
+  while (ini <= fim) {
+    const prox = new Date(ini.getTime() + (FAIXA_DIAS - 1) * 86400000);
+    const ate2 = prox > fim ? fim : prox;
+    pedacos.push({ de: iso(ini), ate: iso(ate2) });
+    ini = new Date(ate2.getTime() + 86400000);
+  }
+  return pedacos;
 }
 
-/** Monta o SELECT interno já com os minutos calculados e os filtros aplicados. */
-function base(req, colunas = []) {
-  const cond = [];
-  const par = [];
-  const add = (sql, valor) => { par.push(valor); cond.push(sql.replace("?", `$${par.length}`)); };
+const SOMAVEIS = ["total", "noHorario", "adiantado", "atrasado", "divergente", "somaDif", "semDif"];
 
-  const de = String(req.query.de || "");
-  const ate = String(req.query.ate || "");
-  if (ISO.test(de)) add("data_ref >= ?::date", de);
-  if (ISO.test(ate)) add("data_ref <= ?::date", ate);
-  if (req.query.linha) add("linha = ?", String(req.query.linha));
-  if (req.query.sentido) add("direcao = ?", String(req.query.sentido));
-  if (req.query.garagem) add("garagem = ?", String(req.query.garagem));
-  if (req.query.ponto) add("ponto_de_controle = ?", String(req.query.ponto));
+/** Soma as linhas das faixas, agrupando pelas colunas-chave. */
+function juntar(listas, chaves) {
+  const mapa = new Map();
+  for (const linhas of listas) {
+    for (const l of linhas) {
+      const k = chaves.map((c) => l[c]).join("\u0001");
+      const atual = mapa.get(k);
+      if (!atual) { mapa.set(k, { ...l }); continue; }
+      for (const c of SOMAVEIS) {
+        if (l[c] !== undefined) atual[c] = Number(atual[c] || 0) + Number(l[c] || 0);
+      }
+      if (Array.isArray(l.desvios)) {
+        atual.desvios = (atual.desvios || []).concat(l.desvios);
+      }
+    }
+  }
+  return [...mapa.values()];
+}
 
-  const where = cond.length ? `WHERE ${cond.join(" AND ")}` : "";
-  const extras = colunas.length ? colunas.join(", ") + "," : "";
-  return { sql: `SELECT ${extras} ${MIN} AS m FROM cr_0108 ${where}`, par };
+/**
+ * Roda a consulta uma vez por faixa, em paralelo, e junta.
+ * `montar(sqlInterno)` devolve o SQL externo; `chaves` diz por onde agrupar ao somar.
+ */
+async function consultar(req, colunas, montar, chaves) {
+  const pedacos = faixas(req);
+  const resultados = await Promise.all(pedacos.map((f) => {
+    const reqFaixa = { query: { ...req.query, ...(f.de ? { de: f.de, ate: f.ate } : {}) } };
+    const b = base(reqFaixa, colunas);
+    return query(montar(b.sql), b.par).then((r) => r.rows);
+  }));
+  return pedacos.length === 1 ? resultados[0] : juntar(resultados, chaves);
 }
 
 function erro(res, err) {
   console.error("cr0108:", err);
   res.status(500).json({ ok: false, erro: err.message });
-}
-
-const grande = (res, j) => {
-  res.json({ ok: true, periodoLongo: true, dias: j?.dias ?? null, limite: MAX_DIAS, itens: [] });
-  return true;
-};
-
-/** true quando o período é grande demais e a resposta já foi enviada. */
-function barrar(req, res) {
-  const j = janela(req);
-  if (!j || j.dias > MAX_DIAS) return grande(res, j);
-  return false;
 }
 
 /* ------------------------------------------------------------------ meta */
@@ -113,7 +129,6 @@ router.get("/meta", requireFirebaseUser, async (_req, res) => {
       ok: true, origem: "dsql",
       primeiroDia: c.primeiroDia, ultimoDia: c.ultimoDia,
       registros: Number(c.registros || 0), dias: Number(c.dias || 0),
-      maxDias: MAX_DIAS,
       linhas: Object.fromEntries(linhas.rows.map((r) => [r.linha, ""]))
     });
   } catch (err) { erro(res, err); }
@@ -121,14 +136,12 @@ router.get("/meta", requireFirebaseUser, async (_req, res) => {
 
 /* ------------------------------------------------------------------ evolução por dia */
 router.get("/serie", requireFirebaseUser, async (req, res) => {
-  if (barrar(req, res)) return;
   try {
-    const b = base(req, ["data_ref"]);
-    const r = await query(
-      `SELECT data_ref::text AS data, ${AGG} FROM (${b.sql}) t GROUP BY data_ref ORDER BY data_ref`,
-      b.par
-    );
-    res.json({ ok: true, origem: "dsql", itens: r.rows });
+    const itens = await consultar(req, ["data_ref"],
+      (sql) => `SELECT data_ref::text AS data, ${AGG} FROM (${sql}) t GROUP BY data_ref ORDER BY data_ref`,
+      ["data"]);
+    itens.sort((a, b2) => a.data.localeCompare(b2.data));
+    res.json({ ok: true, origem: "dsql", itens });
   } catch (err) { erro(res, err); }
 });
 
@@ -145,44 +158,39 @@ const DIMENSOES = {
 router.get("/ranking", requireFirebaseUser, async (req, res) => {
   const col = DIMENSOES[String(req.query.dim || "linha")];
   if (!col) { res.status(400).json({ ok: false, erro: "dim inválida" }); return; }
-  if (barrar(req, res)) return;
   try {
-    const b = base(req, [col]);
     const limite = Math.min(Number(req.query.limite) || 500, 2000);
-    const r = await query(
-      `SELECT ${col} AS chave, ${AGG} FROM (${b.sql}) t
-       GROUP BY ${col} ORDER BY total DESC LIMIT ${limite}`,
-      b.par
-    );
-    res.json({ ok: true, origem: "dsql", dimensao: col, itens: r.rows });
+    /* O LIMIT vale por faixa; depois de somar, reordenamos e cortamos de novo — senão
+       um item que aparece pouco em cada mês some, mesmo sendo grande no total. */
+    const itens = await consultar(req, [col],
+      (sql) => `SELECT ${col} AS chave, ${AGG} FROM (${sql}) t GROUP BY ${col}`,
+      ["chave"]);
+    itens.sort((a, b2) => Number(b2.total) - Number(a.total));
+    res.json({ ok: true, origem: "dsql", dimensao: col, itens: itens.slice(0, limite) });
   } catch (err) { erro(res, err); }
 });
 
 /* ------------------------------------------------------------------ faixa horária */
 router.get("/hora", requireFirebaseUser, async (req, res) => {
-  if (barrar(req, res)) return;
   try {
-    const b = base(req, ["left(programado, 2) AS hora"]);
-    const r = await query(
-      `SELECT hora, ${AGG} FROM (${b.sql}) t GROUP BY hora ORDER BY hora`, b.par
-    );
-    res.json({ ok: true, origem: "dsql", itens: r.rows });
+    const itens = await consultar(req, ["left(programado, 2) AS hora"],
+      (sql) => `SELECT hora, ${AGG} FROM (${sql}) t GROUP BY hora`, ["hora"]);
+    itens.sort((a, b2) => String(a.hora).localeCompare(String(b2.hora)));
+    res.json({ ok: true, origem: "dsql", itens });
   } catch (err) { erro(res, err); }
 });
 
 /* ------------------------------------------------------------------ cascata: pontos da linha */
 router.get("/pontos", requireFirebaseUser, async (req, res) => {
   if (!req.query.linha) { res.status(400).json({ ok: false, erro: "informe a linha" }); return; }
-  if (barrar(req, res)) return;
   try {
-    const b = base(req, ["ponto_de_controle", "direcao"]);
-    const r = await query(
-      `SELECT ponto_de_controle AS ponto, direcao AS sentido, ${AGG} FROM (${b.sql}) t
-       GROUP BY ponto_de_controle, direcao
-       ORDER BY (count(*) - count(*) FILTER (WHERE m BETWEEN -2 AND 6)) DESC`,
-      b.par
-    );
-    res.json({ ok: true, origem: "dsql", itens: r.rows });
+    const itens = await consultar(req, ["ponto_de_controle", "direcao"],
+      (sql) => `SELECT ponto_de_controle AS ponto, direcao AS sentido, ${AGG} FROM (${sql}) t
+                GROUP BY ponto_de_controle, direcao`,
+      ["ponto", "sentido"]);
+    /* Ordena por impacto: passagens fora do horário, não percentual. */
+    itens.sort((a, b2) => (Number(b2.total) - Number(b2.noHorario)) - (Number(a.total) - Number(a.noHorario)));
+    res.json({ ok: true, origem: "dsql", itens });
   } catch (err) { erro(res, err); }
 });
 
@@ -193,16 +201,14 @@ router.get("/horarios", requireFirebaseUser, async (req, res) => {
   if (!req.query.linha || !req.query.ponto) {
     res.status(400).json({ ok: false, erro: "informe linha e ponto" }); return;
   }
-  if (barrar(req, res)) return;
   try {
-    const b = base(req, ["programado", "direcao"]);
-    const r = await query(
-      `SELECT programado, direcao AS sentido, ${AGG},
-              array_agg(m) FILTER (WHERE m IS NOT NULL) AS desvios
-       FROM (${b.sql}) t GROUP BY programado, direcao ORDER BY programado`,
-      b.par
-    );
-    res.json({ ok: true, origem: "dsql", itens: r.rows });
+    const itens = await consultar(req, ["programado", "direcao"],
+      (sql) => `SELECT programado, direcao AS sentido, ${AGG},
+                       array_agg(m) FILTER (WHERE m IS NOT NULL) AS desvios
+                FROM (${sql}) t GROUP BY programado, direcao`,
+      ["programado", "sentido"]);
+    itens.sort((a, b2) => String(a.programado).localeCompare(String(b2.programado)));
+    res.json({ ok: true, origem: "dsql", itens });
   } catch (err) { erro(res, err); }
 });
 
