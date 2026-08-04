@@ -1779,14 +1779,34 @@ async function carregarManifestPontualidade() {
 }
 
 async function carregarSnapshotPontualidade(cenario) {
-    try {
-        const res = await fetch(PONTUALIDADE_DATA_BASE + '/' + encodeURIComponent(cenario) + '.json', { cache: 'no-store' });
-        if (!res.ok) return null;
-        const payload = await res.json();
-        const bruto = payload.dados != null ? payload.dados : payload;
+    /* Le do banco (tabela pontualidade_snapshot, via /snapshots/pontualidade/:cenario)
+       e cai para o JSON publicado se o banco nao responder. carregarSnapshotAws devolve
+       null em qualquer falha - Lambda fora, usuario sem token, tabela vazia - entao o
+       arquivo garante que a tela nunca fica pior do que estava. */
+    const montar = (payload) => {
+        const bruto = payload && payload.dados != null ? payload.dados : payload;
         const rows = normalizeApiData(bruto);
         if (!rows.length) return null;
         return { rows, meta: payload };
+    };
+
+    try {
+        const mod = await import('../assets/js/portal-aws-config.js');
+        const snap = await mod.carregarSnapshotAws('/snapshots/pontualidade/' + encodeURIComponent(cenario));
+        if (snap && snap.payload) {
+            const pronto = montar(snap.payload);
+            if (pronto) { pronto.origem = 'banco'; return pronto; }
+        }
+    } catch (err) {
+        console.info('Pontualidade: banco indisponivel, usando o arquivo.', err && err.message);
+    }
+
+    try {
+        const res = await fetch(PONTUALIDADE_DATA_BASE + '/' + encodeURIComponent(cenario) + '.json', { cache: 'no-store' });
+        if (!res.ok) return null;
+        const pronto = montar(await res.json());
+        if (pronto) pronto.origem = 'arquivo';
+        return pronto;
     } catch (_) {
         return null;
     }
