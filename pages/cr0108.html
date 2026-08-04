@@ -308,7 +308,8 @@ const CLASSES = [
 ];
 
 const DADOS = {};
-const estado = { gran: "dia", dim: "linha", drill: { linha: null, ponto: null, sentido: null, horario: null } };
+const estado = { gran: "dia", dim: "linha", serie: null, hora: null, serieAnterior: null,
+                 drill: { linha: null, ponto: null, sentido: null, horario: null } };
 
 const nInt = n => Number(n || 0).toLocaleString("pt-BR");
 const nPct = n => n == null || !Number.isFinite(n) ? "—"
@@ -352,27 +353,21 @@ const mesesDoPeriodo = p => {
     return set;
 };
 
-function seriePeriodo(p){
-    const linha = $("fLinha").value;
-    const sentido = $("fSentido").value;
-    // Com filtro de sentido, a única base que cruza sentido é a mensal — o recorte
-    // diário por sentido não existe no agregado; nesse caso a série vira mensal.
-    if (sentido) return null;
-    const base = linha ? DADOS.porDiaLinha.filter(r => r.linha === linha) : DADOS.porDia;
-    return base.filter(r => dentro(r.data, p));
-}
+/* A série e a faixa horária são buscadas uma vez por render (em renderTudo) e ficam
+   em estado.serie / estado.hora. Vêm do banco quando ele responde e dos arquivos quando
+   não — a Fonte resolve isso. null significa "este recorte não existe nesta fonte":
+   acontece só no modo arquivo com filtro de sentido, porque o agregado com sentido é
+   mensal. Com o banco, o SQL filtra sentido direto na passagem crua. */
+function seriePeriodo(){ return estado.serie; }
 
-function totalPeriodo(p){
-    const sentido = $("fSentido").value;
-    const linha = $("fLinha").value;
-    if (sentido){
-        const meses = mesesDoPeriodo(p);
-        return DADOS.porMesSentido
-            .filter(r => meses.has(r.mes) && r.sentido === sentido)
-            .reduce(acumular, vazio());
-    }
-    const serie = seriePeriodo(p) || [];
-    return serie.reduce(acumular, vazio());
+function totalPeriodo(p, serie){
+    const lista = serie === undefined ? estado.serie : serie;
+    if (lista) return lista.reduce(acumular, vazio());
+    // Sem série (arquivo + filtro de sentido): o total sai do agregado mensal por sentido.
+    const meses = mesesDoPeriodo(p);
+    return DADOS.porMesSentido
+        .filter(r => meses.has(r.mes) && r.sentido === $("fSentido").value)
+        .reduce(acumular, vazio());
 }
 
 function periodoAnterior(p){
@@ -389,7 +384,7 @@ function renderKpis(){
     const p = periodo();
     const t = totalPeriodo(p);
     const comparar = $("fComparar").value === "anterior";
-    const ant = comparar ? totalPeriodo(periodoAnterior(p)) : null;
+    const ant = comparar ? totalPeriodo(periodoAnterior(p), estado.serieAnterior) : null;
 
     const mediaDif = t.total ? t.somaDif / t.total : null;
     const cartoes = [];
@@ -427,7 +422,7 @@ let gEvolucao = null, gHora = null;
 
 function renderEvolucao(){
     const p = periodo();
-    const serie = seriePeriodo(p);
+    const serie = seriePeriodo();
     const sub = $("subEvolucao");
     if (!serie){
         sub.textContent = "O recorte por sentido só existe na base mensal — remova o filtro de sentido para ver a série diária.";
@@ -478,30 +473,16 @@ function renderHora(){
     const sentido = $("fSentido").value;
     const mapa = new Map();
 
-    // Sem filtro de linha/sentido usamos a base DIÁRIA, que recorta o período exato.
-    // Com filtro, a única base que cruza hora x linha x sentido é a MENSAL — o mesmo
-    // cruzamento em granularidade diária daria ~487 mil linhas de JSON.
+    // Já vem filtrada da Fonte: recorte exato quando o banco responde; no arquivo, o
+    // cruzamento hora x linha x sentido só existe mensal (o diário daria ~487 mil linhas).
+    (estado.hora || []).forEach(r => mapa.set(r.hora, r));
+    const doBanco = Fonte.origem() === "banco";
     if (!linha && !sentido){
-        DADOS.porDiaHora.forEach(r => {
-            if (!dentro(r.data, p)) return;
-            if (!mapa.has(r.hora)) mapa.set(r.hora, vazio());
-            acumular(mapa.get(r.hora), r);
-        });
         $("subHora").textContent = "Pontualidade por hora programada de passagem · recorte diário do período";
     } else {
-        const meses = mesesDoPeriodo(p);
-        DADOS.porMesHoraLinha.forEach(r => {
-            if (!meses.has(r.m)) return;
-            if (linha && r.l !== linha) return;
-            if (sentido && r.s !== sentido) return;
-            if (!mapa.has(r.h)) mapa.set(r.h, vazio());
-            // Base compacta: chaves curtas para o arquivo não passar de 1,5 MB.
-            acumular(mapa.get(r.h), {
-                noHorario: r.n, adiantado: r.a, atrasado: r.t, divergente: r.d, total: r.T, somaDif: 0
-            });
-        });
         const recorte = [linha ? "linha " + linha : null, sentido].filter(Boolean).join(" · ");
-        $("subHora").textContent = "Pontualidade por hora · " + recorte + " · recorte mensal (meses tocados pelo período)";
+        $("subHora").textContent = "Pontualidade por hora · " + recorte
+            + (doBanco ? " · recorte diário do período" : " · recorte mensal (meses tocados pelo período)");
     }
     const horas = [...mapa.keys()].sort();
     const dados = {
@@ -745,11 +726,25 @@ function ligarCascata(){
     });
 }
 
-function renderTudo(){
+/* Um render = uma ida à fonte. Busca série, faixa horária e (se comparando) a série
+   do período anterior, guarda em `estado` e só então desenha — assim todos os blocos
+   da tela mostram o mesmo recorte, vindo do mesmo lugar. */
+async function renderTudo(){
+    const p = periodo();
+    const filtro = { de: p.de, ate: p.ate, linha: $("fLinha").value, sentido: $("fSentido").value };
+    try {
+        estado.serie = await Fonte.serie(filtro);
+        estado.hora  = await Fonte.hora(filtro);
+        estado.serieAnterior = $("fComparar").value === "anterior"
+            ? await Fonte.serie({ ...filtro, ...periodoAnterior(p) })
+            : null;
+    } catch (err){
+        console.error("CR-0108: falha ao buscar os dados do período.", err);
+    }
     renderKpis();
     renderEvolucao();
     renderHora();
-    renderRanking();          // assíncrono: a tabela chega logo depois do resto
+    renderRanking();
 }
 
 /* ---- Atalhos de período -------------------------------------------------------- */
@@ -865,7 +860,7 @@ function selarAtualizacao(meta){
 iniciar();
 </script>
 <script src="../assets/js/cr0108-serie.js?v=20260731b"></script>
-<script src="../assets/js/cr0108-fonte.js?v=20260803b"></script>
+<script src="../assets/js/cr0108-fonte.js?v=20260804"></script>
 <script src="../assets/js/ordenar-tabela.js?v=20260731"></script>
 </body>
 </html>
