@@ -270,8 +270,17 @@ async function ipv(p) {
   return r.itens.map(x => ({ ...x, ipv: +x.ipv }));
 }
 
+/* Período e totais segundo o banco. A página usa isto para corrigir o cabeçalho, o
+   selo de atualização e os limites dos campos de data, que sem isso ficam presos no
+   último dia do meta.json. */
+async function meta() {
+  if (!(await disponivel())) return null;
+  const r = await chamar("/meta");
+  return r && r.ok ? r : null;
+}
+
 global.Fonte = {
     usarEstaticos, origem, disponivel,
-    serie, ranking, hora, pontosDaLinha, horariosDoPonto, icv, ipv
+    meta, serie, ranking, hora, pontosDaLinha, horariosDoPonto, icv, ipv
 };
 })(window);
