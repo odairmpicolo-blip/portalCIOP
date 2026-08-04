@@ -95,7 +95,10 @@ function acumular(acc, r) {
 async function serie(p) {
   if (await disponivel()) {
     const r = await chamar("/serie", p);
-    return r.itens.map(x => ({ ...x, total: +x.total, noHorario: +x.noHorario, adiantado: +x.adiantado,
+    /* periodoLongo = a janela passa do limite do banco (o SQL levaria mais que os
+       30 s do gateway). Nao retornamos nada aqui: o codigo do arquivo, logo abaixo,
+       responde com os agregados publicados - que sao identicos, so menos recentes. */
+    if (!r.periodoLongo) return r.itens.map(x => ({ ...x, total: +x.total, noHorario: +x.noHorario, adiantado: +x.adiantado,
       atrasado: +x.atrasado, divergente: +x.divergente, somaDif: +x.somaDif, semDif: +x.semDif }));
   }
   /* No arquivo não existe série diária cruzada com sentido — o agregado que tem
@@ -125,7 +128,7 @@ const ESTATICA_POR_DIM = {
 async function ranking(dim, p) {
   if (await disponivel()) {
     const r = await chamar("/ranking", { ...p, dim });
-    return {
+    if (!r.periodoLongo) return {
       exato: true,
       itens: r.itens.map(x => ({
         chave: x.chave, rotulo: x.chave, extra: x.nome || "",
@@ -165,7 +168,7 @@ async function ranking(dim, p) {
 async function hora(p) {
   if (await disponivel()) {
     const r = await chamar("/hora", p);
-    return r.itens.map(x => ({ hora: x.hora, total: +x.total, noHorario: +x.noHorario,
+    if (!r.periodoLongo) return r.itens.map(x => ({ hora: x.hora, total: +x.total, noHorario: +x.noHorario,
       adiantado: +x.adiantado, atrasado: +x.atrasado, divergente: +x.divergente,
       somaDif: +x.somaDif, semDif: +x.semDif }));
   }
@@ -194,7 +197,7 @@ async function hora(p) {
 async function pontosDaLinha(linha, p) {
   if (await disponivel()) {
     const r = await chamar("/pontos", { ...p, linha });
-    return r.itens.map(x => ({ ponto: x.ponto, sentido: x.sentido, total: +x.total,
+    if (!r.periodoLongo) return r.itens.map(x => ({ ponto: x.ponto, sentido: x.sentido, total: +x.total,
       noHorario: +x.noHorario, adiantado: +x.adiantado, atrasado: +x.atrasado,
       divergente: +x.divergente, somaDif: +x.somaDif }));
   }
@@ -205,7 +208,7 @@ async function pontosDaLinha(linha, p) {
 async function horariosDoPonto(linha, sentido, ponto, p) {
   if (await disponivel()) {
     const r = await chamar("/horarios", { ...p, linha, ponto, sentido });
-    return r.itens.map(x => avaliarNoNavegador(x));
+    if (!r.periodoLongo) return r.itens.map(x => avaliarNoNavegador(x));
   }
   const ctx = await serieDiariaLocal();
   return window.CR0108Serie.horariosDoPonto(ctx, linha, sentido, ponto, p.de, p.ate);
@@ -250,8 +253,25 @@ async function serieDiariaLocal() {
   return ctxSerie;
 }
 
+
+/* ------------------------------------------------------------------ ICV e IPV
+   Vivem no banco (cr_custom e cr_custom_ontime), 213 dias completos. Nao ha
+   equivalente em arquivo, entao sem banco devolvemos null e a tela avisa. */
+
+async function icv(p) {
+  if (!(await disponivel())) return null;
+  const r = await chamar("/icv", p);
+  return r.itens.map(x => ({ ...x, icv: +x.icv, ipv: +x.ipv }));
+}
+
+async function ipv(p) {
+  if (!(await disponivel())) return null;
+  const r = await chamar("/ipv", p);
+  return r.itens.map(x => ({ ...x, ipv: +x.ipv }));
+}
+
 global.Fonte = {
     usarEstaticos, origem, disponivel,
-    serie, ranking, hora, pontosDaLinha, horariosDoPonto
+    serie, ranking, hora, pontosDaLinha, horariosDoPonto, icv, ipv
 };
 })(window);
