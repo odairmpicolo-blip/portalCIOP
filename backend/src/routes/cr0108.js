@@ -236,6 +236,51 @@ router.get("/horarios", requireFirebaseUser, async (req, res) => {
   } catch (err) { erro(res, err); }
 });
 
+/* ------------------------------------------------------------------ operador
+   A coluna `operador` guarda tudo numa string só, no formato
+       "GONCALVES, JOSE, 11976       "
+   ou seja: nome primeiro, matrícula por ÚLTIMO, com espaços à direita. E os nomes
+   têm vírgula dentro deles. Separar pela PRIMEIRA vírgula devolveria "GONCALVES"
+   como matrícula e produziria um ranking inteiro errado, com números plausíveis.
+   Por isso os regex ancoram na última vírgula.
+
+   O agrupamento é por `operador` inteiro (e não pelas partes), o que mantém o GROUP BY
+   estável mesmo se algum registro vier com espaçamento diferente. */
+const MATRICULA = `btrim(regexp_replace(operador, '^.*,\\s*([^,]*)$', '\\1'))`;
+const NOME      = `btrim(regexp_replace(operador, '^(.*),[^,]*$', '\\1'))`;
+const MES       = `to_char(data_ref, 'YYYY-MM')`;
+
+router.get("/operador", requireFirebaseUser, async (req, res) => {
+  try {
+    const itens = await consultar(req, [`${MES} AS mes`, "operador"],
+      (sql) => `SELECT mes, ${MATRICULA} AS matricula, ${NOME} AS nome, ${AGG}
+                FROM (${sql}) t GROUP BY mes, operador`,
+      ["mes", "matricula"]);
+    itens.sort((a, b) => a.mes.localeCompare(b.mes) || String(a.matricula).localeCompare(String(b.matricula)));
+    res.json({ ok: true, origem: "dsql", itens });
+  } catch (err) { erro(res, err); }
+});
+
+/* Mesmo agregado cruzado com a linha. A página consome com chaves curtas
+   (m, k, l, n, a, t, d, T, S) para o arquivo não ficar gigante — são ~34 mil linhas.
+   O SQL devolve os nomes longos de propósito: é o que a soma entre faixas conhece.
+   A troca para as chaves curtas acontece depois de somar. */
+router.get("/operador-linha", requireFirebaseUser, async (req, res) => {
+  try {
+    const itens = await consultar(req, [`${MES} AS mes`, "operador", "linha"],
+      (sql) => `SELECT mes, ${MATRICULA} AS matricula, linha, ${AGG}
+                FROM (${sql}) t GROUP BY mes, operador, linha`,
+      ["mes", "matricula", "linha"]);
+    const curto = itens.map((x) => ({
+      m: x.mes, k: x.matricula, l: x.linha,
+      n: Number(x.noHorario), a: Number(x.adiantado), t: Number(x.atrasado),
+      d: Number(x.divergente), T: Number(x.total), S: Number(x.somaDif)
+    }));
+    curto.sort((x, y) => x.m.localeCompare(y.m) || String(x.k).localeCompare(String(y.k)));
+    res.json({ ok: true, origem: "dsql", itens: curto });
+  } catch (err) { erro(res, err); }
+});
+
 /* ------------------------------------------------------------------ ICV e IPV
    Vivem sob /cr0108 de propósito: o API Gateway já tem ANY /cr0108/{proxy+}, então
    estas rotas funcionam sem tocar no template. Rota nova em caminho novo exigiria
