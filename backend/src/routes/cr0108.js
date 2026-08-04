@@ -107,6 +107,26 @@ async function consultar(req, colunas, montar, chaves) {
   return pedacos.length === 1 ? resultados[0] : juntar(resultados, chaves);
 }
 
+/** Monta o SELECT interno já com os minutos calculados e os filtros aplicados. */
+function base(req, colunas = []) {
+  const cond = [];
+  const par = [];
+  const add = (sql, valor) => { par.push(valor); cond.push(sql.replace("?", `$${par.length}`)); };
+
+  const de = String(req.query.de || "");
+  const ate = String(req.query.ate || "");
+  if (ISO.test(de)) add("data_ref >= ?::date", de);
+  if (ISO.test(ate)) add("data_ref <= ?::date", ate);
+  if (req.query.linha) add("linha = ?", String(req.query.linha));
+  if (req.query.sentido) add("direcao = ?", String(req.query.sentido));
+  if (req.query.garagem) add("garagem = ?", String(req.query.garagem));
+  if (req.query.ponto) add("ponto_de_controle = ?", String(req.query.ponto));
+
+  const where = cond.length ? `WHERE ${cond.join(" AND ")}` : "";
+  const extras = colunas.length ? colunas.join(", ") + "," : "";
+  return { sql: `SELECT ${extras} ${MIN} AS m FROM cr_0108 ${where}`, par };
+}
+
 function erro(res, err) {
   console.error("cr0108:", err);
   res.status(500).json({ ok: false, erro: err.message });
