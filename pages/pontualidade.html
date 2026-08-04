@@ -1823,6 +1823,28 @@ async function carregarSnapshotPontualidade(cenario) {
     return { rows, meta: Object.assign({}, arq.payload, bd.payload), origem: origens.join(' \u00b7 ') };
 }
 
+/* IPV direto do banco. Os dois cenarios da tela sao duas medicoes distintas, cada
+   uma na sua tabela, e a rota escolhe pela fonte:
+     padrao      Realidade 2/6  -> cr_custom_ontime
+     alternativo Realidade 1/3  -> cr_0258
+   Ambas com 213 dias conferidos (01/01 a 01/08) e pontos processados identicos dia a
+   dia. Os valores chegam como "92.72": parsePercentValue divide por 100 quando passa
+   de 1 - conferido. Falhando o banco, a planilha continua sendo o caminho. */
+const FONTE_IPV = { padrao: '2-6', alternativo: '1-3' };
+
+async function buscarBancoIpv(cenario) {
+    const fonte = FONTE_IPV[cenario];
+    if (!fonte) return [];
+    const mod = await import('../assets/js/portal-aws-config.js');
+    if (typeof mod.initPortalAwsRuntime === 'function') await mod.initPortalAwsRuntime();
+    if (!mod.awsApiEnabled()) return [];
+    const token = await mod.firebaseIdToken();
+    const r = await mod.awsFetch('/cr0108/ipv?fonte=' + encodeURIComponent(fonte), { token });
+    return normalizeApiData((r && r.itens ? r.itens : []).map(x => ({
+        date: x.data, no_horario: x.ipv, adiantado: x.adiantado, atrasado: x.atrasado
+    })));
+}
+
 async function buscarPontualidadeApi(cenario) {
     const cfg = CENARIOS[cenario];
     const sep = cfg.url.includes('?') ? '&' : '?';
@@ -1860,7 +1882,14 @@ async function loadDashboardData() {
     }
 
     try {
-        const novos = await buscarPontualidadeApi(cenarioAtual);
+        /* Banco primeiro; a planilha vira reserva. */
+        let novos = [];
+        try {
+            novos = await buscarBancoIpv(cenarioAtual);
+        } catch (bancoErro) {
+            console.info('Pontualidade: banco indisponivel, usando a planilha.', bancoErro && bancoErro.message);
+        }
+        if (!novos.length) novos = await buscarPontualidadeApi(cenarioAtual);
         if (novos.length) {
             rawData = mostrouSnapshot ? mesclarPontualidade(rawData, novos) : novos;
             initFilters();
