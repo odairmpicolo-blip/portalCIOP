@@ -95,6 +95,10 @@ async function serie(p) {
     return r.itens.map(x => ({ ...x, total: +x.total, noHorario: +x.noHorario, adiantado: +x.adiantado,
       atrasado: +x.atrasado, divergente: +x.divergente, somaDif: +x.somaDif, semDif: +x.semDif }));
   }
+  /* No arquivo não existe série diária cruzada com sentido — o agregado que tem
+     sentido é mensal. Devolver null avisa a página, que mostra a explicação.
+     Com o banco isso não acontece: o SQL filtra sentido na passagem crua. */
+  if (p.sentido) return null;
   const base = p.linha ? ESTATICO.porDiaLinha : ESTATICO.porDia;
   const mapa = new Map();
   base.forEach(r => {
