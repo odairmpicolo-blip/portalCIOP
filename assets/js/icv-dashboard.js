@@ -566,6 +566,26 @@ async function carregarSnapshot() {
   }
 }
 
+/* O ICV e o IPV vivem no Aurora DSQL (tabela cr_custom), com 213 dias completos.
+   A rota devolve nomes descritivos; o normalizeRows daqui conhece outro vocabulário.
+   Renomear neste ponto evita um deploy só para trocar apelido de coluna.
+   Os valores chegam como texto ("98.35", "5982"): parsePercent divide por 100 quando
+   passa de 1, e parseViagensCount converte inteiros — conferidos os dois. */
+async function carregarBanco() {
+  const cfg = await import("./portal-aws-config.js");
+  if (typeof cfg.initPortalAwsRuntime === "function") await cfg.initPortalAwsRuntime();
+  if (!cfg.awsApiEnabled()) return [];
+  const token = await cfg.firebaseIdToken();
+  const r = await cfg.awsFetch("/cr0108/icv", { token });
+  return normalizeRows((r?.itens || []).map((x) => ({
+    data: x.data,
+    icv: x.icv,
+    viagens: x.viagens,
+    viag_prog: x.viagensProgramadas,
+    supressao: x.suprimidas
+  })));
+}
+
 async function carregarApi() {
   const sep = ICV_API_URL.includes("?") ? "&" : "?";
   const response = await fetch(`${ICV_API_URL}${sep}_=${Date.now()}`, { cache: "no-store" });
@@ -598,8 +618,15 @@ async function loadDashboardData() {
 
   try {
     let novos = [];
+    /* Banco primeiro: é a fonte mais completa e não depende de planilha publicada.
+       Falhando ele, o caminho antigo (API da planilha e depois CSV) segue valendo. */
     try {
-      novos = await carregarApi();
+      novos = await carregarBanco();
+    } catch (bancoError) {
+      console.info("ICV: banco indisponível, tentando a planilha.", bancoError?.message);
+    }
+    try {
+      if (!novos.length) novos = await carregarApi();
     } catch (apiError) {
       console.warn("API ICV:", apiError);
       novos = await carregarCsv();
