@@ -1779,37 +1779,48 @@ async function carregarManifestPontualidade() {
 }
 
 async function carregarSnapshotPontualidade(cenario) {
-    /* Le do banco (tabela pontualidade_snapshot, via /snapshots/pontualidade/:cenario)
-       e cai para o JSON publicado se o banco nao responder. carregarSnapshotAws devolve
-       null em qualquer falha - Lambda fora, usuario sem token, tabela vazia - entao o
-       arquivo garante que a tela nunca fica pior do que estava. */
-    const montar = (payload) => {
-        const bruto = payload && payload.dados != null ? payload.dados : payload;
-        const rows = normalizeApiData(bruto);
-        if (!rows.length) return null;
-        return { rows, meta: payload };
+    /* Mesmo desenho da leitura de incidentes (incidentes-dados-leitura.js): consulta
+       o BANCO e o JSON publicado EM PARALELO e funde por data, em vez de escolher um
+       dos dois. Assim um dia que ja entrou no banco mas ainda nao foi commitado no
+       JSON aparece, e um dia que so existe no arquivo nao some. Em empate a data do
+       banco prevalece, porque entra por ultimo no mesclarPontualidade. */
+    const linhas = (payload) => {
+        if (!payload) return [];
+        const bruto = payload.dados != null ? payload.dados : payload;
+        return normalizeApiData(bruto) || [];
     };
 
-    try {
+    const doArquivo = (async () => {
+        const res = await fetch(PONTUALIDADE_DATA_BASE + '/' + encodeURIComponent(cenario) + '.json', { cache: 'no-store' });
+        if (!res.ok) return { payload: null, rows: [] };
+        const payload = await res.json();
+        return { payload, rows: linhas(payload) };
+    })();
+
+    const doBanco = (async () => {
         const mod = await import('../assets/js/portal-aws-config.js');
-        const snap = await mod.carregarSnapshotAws('/snapshots/pontualidade/' + encodeURIComponent(cenario));
-        if (snap && snap.payload) {
-            const pronto = montar(snap.payload);
-            if (pronto) { pronto.origem = 'banco'; return pronto; }
-        }
-    } catch (err) {
-        console.info('Pontualidade: banco indisponivel, usando o arquivo.', err && err.message);
+        const snap = await mod.carregarSnapshotAws('/snapshots/pontualidade/' + encodeURIComponent(cenario), { timeoutMs: 12000 });
+        if (!snap || !snap.payload) return { payload: null, rows: [] };
+        return { payload: snap.payload, rows: linhas(snap.payload) };
+    })();
+
+    const vazio = { payload: null, rows: [] };
+    const [resArquivo, resBanco] = await Promise.allSettled([doArquivo, doBanco]);
+    const arq = resArquivo.status === 'fulfilled' ? resArquivo.value : vazio;
+    const bd = resBanco.status === 'fulfilled' ? resBanco.value : vazio;
+    if (resBanco.status === 'rejected') {
+        console.info('Pontualidade: banco indisponivel.', resBanco.reason && resBanco.reason.message);
     }
 
-    try {
-        const res = await fetch(PONTUALIDADE_DATA_BASE + '/' + encodeURIComponent(cenario) + '.json', { cache: 'no-store' });
-        if (!res.ok) return null;
-        const pronto = montar(await res.json());
-        if (pronto) pronto.origem = 'arquivo';
-        return pronto;
-    } catch (_) {
-        return null;
-    }
+    const rows = mesclarPontualidade(arq.rows, bd.rows);
+    if (!rows.length) return null;
+
+    const origens = [];
+    if (bd.rows.length) origens.push('banco');
+    if (arq.rows.length) origens.push('arquivo');
+    console.info('Pontualidade (' + cenario + '): banco ' + bd.rows.length + ' dias, arquivo ' + arq.rows.length + ' dias, total ' + rows.length + '.');
+
+    return { rows, meta: Object.assign({}, arq.payload, bd.payload), origem: origens.join(' \u00b7 ') };
 }
 
 async function buscarPontualidadeApi(cenario) {
