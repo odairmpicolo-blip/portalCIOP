@@ -1704,6 +1704,50 @@ async function registrarProtocolo() {
     }
 }
 
+/* Guarda o PDF no acervo do portal (S3 + tabela relatorios_ocorrencia), que e o que
+   alimenta a pagina Relatorio de Ocorrencia. Ate aqui a pagina so fazia pdf.save():
+   o arquivo ia para o computador de quem gerou e mais nada, e por isso o historico
+   estava vazio para todos.
+
+   Falha aqui NAO pode atrapalhar o fluxo: o relatorio ja foi baixado e o protocolo ja
+   foi registrado. Por isso o erro so avisa e segue. */
+async function guardarRelatorioNoPortal(pdf) {
+    try {
+        const cfg = await import("../assets/js/portal-aws-config.js");
+        await cfg.initPortalAwsRuntime();
+        if (!cfg.awsApiEnabled()) return false;
+        const token = await cfg.firebaseIdToken();
+
+        const informativo = ehInformativo();
+        const registro = informativo ? "INFORMATIVO" : String(campos.registro.value || "").trim();
+        const nome = informativo ? "INFORMATIVO" : String(campos.nome.value || "").trim();
+        const texto = nome && registro && registro !== "INFORMATIVO" ? registro + " - " + nome : registro;
+
+        await cfg.awsFetch("/relatorios/upload", {
+            method: "POST",
+            token,
+            body: {
+                filename: nomeArquivoPdf(),
+                pdfBase64: pdfParaBase64(pdf),
+                dataDocumento: campos.data.value || hojeISO(),
+                protocolo: String(campos.numero.value || "").trim(),
+                funcionarioRegistro: registro,
+                funcionarioNome: nome,
+                funcionarioTexto: texto,
+                origem: "criar-relatorio",
+                /* `analista` e local de outra funcao — usar aqui lançaria ReferenceError
+                   e, por estar dentro do try, o envio falharia sempre em silencio.
+                   `usuarioCriador` e do escopo do modulo e guarda o mesmo dado. */
+                criadoPorNome: (usuarioCriador && usuarioCriador.nome) ? String(usuarioCriador.nome) : ""
+            }
+        });
+        return true;
+    } catch (err) {
+        console.error("Relatorio nao foi guardado no portal:", err && err.message);
+        return false;
+    }
+}
+
 function nomeArquivoPdf() {
     const numero = String(campos.numero.value || "").replace(/\D/g, "");
     const data = campos.data.value || hojeISO();
@@ -1917,6 +1961,7 @@ async function enviarRelatorio() {
         try {
             pdf = await construirPdfRelatorio();
             pdf.save(nomeArquivoPdf());
+            await guardarRelatorioNoPortal(pdf);
         } catch (errPdf) {
             window.print();
             throw errPdf;
