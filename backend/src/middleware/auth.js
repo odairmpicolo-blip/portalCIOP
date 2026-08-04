@@ -1,11 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import admin from "firebase-admin";
-import { OAuth2Client } from "google-auth-library";
+import { verificarIdTokenFirebase } from "./firebase-token.js";
 import { config } from "../config.js";
 
 let firebaseReady = false;
-const oauthClient = new OAuth2Client();
 
 function candidatosServiceAccount() {
   return [
@@ -63,16 +62,12 @@ async function verifyFirebaseToken(token) {
     const decoded = await admin.auth().verifyIdToken(token, true);
     return { email: decoded.email, uid: decoded.uid };
   }
-  const ticket = await oauthClient.verifyIdToken({
-    idToken: token,
-    audience: config.firebaseProjectId,
-    clockTolerance: 120
-  });
-  const payload = ticket.getPayload();
-  if (!payload?.email) throw new Error("Token sem e-mail");
-  const issOk = !payload.iss || payload.iss === `https://securetoken.google.com/${config.firebaseProjectId}`;
-  if (!issOk) throw new Error("Emissor do token inválido");
-  return { email: payload.email, uid: payload.sub };
+  /* Sem credencial de conta de serviço, o caminho certo é conferir a assinatura
+     contra as chaves públicas do Firebase. O verificador da google-auth-library que
+     estava aqui é para tokens OAuth do Google: ele usa outro conjunto de certificados
+     e por isso recusava TODO token do Firebase, com a mensagem "Token inválido".
+     Era o motivo de nenhuma página conseguir ler do banco. */
+  return verificarIdTokenFirebase(token, { projectId: config.firebaseProjectId });
 }
 
 export function requireApiKey(req, res, next) {
