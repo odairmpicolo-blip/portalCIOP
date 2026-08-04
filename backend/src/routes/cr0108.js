@@ -192,8 +192,12 @@ router.get("/ranking", requireFirebaseUser, async (req, res) => {
 
 /* ------------------------------------------------------------------ faixa horária */
 router.get("/hora", requireFirebaseUser, async (req, res) => {
+  /* O programado vem com espaço à esquerda (" 5:55") e às vezes com hora de um
+     dígito. left(...,2) pegava " 0" / " 1" / " 2": agrupava pelo primeiro dígito da
+     hora e devolvia 3 faixas em vez de 24. btrim + split_part corrige os dois casos. */
+  const HORA = "lpad(split_part(btrim(programado), ':', 1), 2, '0')";
   try {
-    const itens = await consultar(req, ["left(programado, 2) AS hora"],
+    const itens = await consultar(req, [`${HORA} AS hora`],
       (sql) => `SELECT hora, ${AGG} FROM (${sql}) t GROUP BY hora`, ["hora"]);
     itens.sort((a, b2) => String(a.hora).localeCompare(String(b2.hora)));
     res.json({ ok: true, origem: "dsql", itens });
@@ -222,7 +226,7 @@ router.get("/horarios", requireFirebaseUser, async (req, res) => {
     res.status(400).json({ ok: false, erro: "informe linha e ponto" }); return;
   }
   try {
-    const itens = await consultar(req, ["programado", "direcao"],
+    const itens = await consultar(req, ["btrim(programado) AS programado", "direcao"],
       (sql) => `SELECT programado, direcao AS sentido, ${AGG},
                        array_agg(m) FILTER (WHERE m IS NOT NULL) AS desvios
                 FROM (${sql}) t GROUP BY programado, direcao`,
