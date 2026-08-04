@@ -301,7 +301,7 @@ tr.det-ponto.aberta>td,tr.det-horario.aberta>td{background:rgba(31,111,235,.12)}
      do cache antes do download do fonte.js, retomava com Fonte ainda indefinida.
      Uma corrida que so aparecia quando o script nao estava em cache. -->
 <script src="../assets/js/cr0108-serie.js?v=20260731b"></script>
-<script src="../assets/js/cr0108-fonte.js?v=20260805b"></script>
+<script src="../assets/js/cr0108-fonte.js?v=20260805c"></script>
 
 <script>
 "use strict";
@@ -854,6 +854,22 @@ function selarAtualizacao(meta){
         $("fAte").min = meta.primeiroDia; $("fAte").max = meta.ultimoDia;
         Fonte.usarEstaticos(DADOS);
         await Fonte.disponivel();      // uma sondagem só; se falhar, segue nos arquivos
+
+        /* Com o banco no ar, o meta do arquivo fica velho: cabeçalho, selo e limites
+           de data continuariam parados no último dia do JSON, mesmo com dias novos já
+           carregados. Sobrescrevemos com o que o banco informa. `linhas` fica de fora
+           de propósito: no banco vem sem os nomes, e o arquivo os tem. */
+        const metaBanco = await Fonte.meta();
+        if (metaBanco) {
+            const { linhas: _ignorar, ...doBanco } = metaBanco;
+            Object.assign(meta, doBanco, { arquivos: doBanco.dias, gerado: new Date().toISOString() });
+            $("subCabecalho").textContent =
+                `${dataBR(meta.primeiroDia)} a ${dataBR(meta.ultimoDia)} · ${nInt(meta.registros)} passagens · ${meta.arquivos} relatórios diários`;
+            selarAtualizacao(meta);
+            $("fDe").min = meta.primeiroDia; $("fDe").max = meta.ultimoDia;
+            $("fAte").min = meta.primeiroDia; $("fAte").max = meta.ultimoDia;
+        }
+
         aplicarAtalho();
         ligarEventos();
         renderTudo();
