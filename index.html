@@ -37,22 +37,21 @@ document.documentElement.classList.add("portal-auth-pending");
     border-radius:999px;
     background:transparent;
     color:#0b2f6b;
-    font:600 14px/1.2 inherit;
+    font:600 15.5px/1.2 inherit;
     letter-spacing:.02em;
     transition:background .18s ease,color .18s ease,box-shadow .18s ease;
 }
-.portal-aba:hover{ background:rgba(6,36,92,.06); }
+/* Laranja no hover: mesma cor de destaque que o portal ja usa nos avisos.
+   So vale para a aba nao selecionada — sobre a ativa (azul escuro) o laranja
+   brigaria com o texto branco. */
+.portal-aba:not([aria-selected="true"]):hover{
+    background:rgba(243,146,55,.18);
+    color:#a24a00;
+}
 .portal-aba[aria-selected="true"]{
     background:linear-gradient(180deg,#12336f,#0b2350);
     color:#fff;
     box-shadow:0 4px 14px rgba(6,36,92,.28);
-}
-.portal-aba-conta{
-    display:inline-block;
-    margin-left:6px;
-    opacity:.65;
-    font-weight:500;
-    font-size:12px;
 }
 /* Com a aba nomeando a secao, o titulo interno vira repeticao. */
 .portal-abas-ativo .card-section-head{ display:none; }
@@ -2211,6 +2210,49 @@ html.dk-dark .ciop-command-inner{
     stroke-linejoin:round;
 }
 
+
+/* ---- Quadro de avisos mais enxuto -------------------------------------------
+   O que deixava o bloco alto era o min-height de 72px da pista e o empilhamento
+   texto -> pontinhos -> barra. Aqui a pista encolhe e os pontinhos vao para o lado,
+   numa grade de duas colunas, com a barra de progresso ocupando a linha de baixo
+   inteira. O resultado fica na mesma altura da barra de comando acima. */
+.notice-board{
+    padding:8px 12px !important;
+    gap:10px !important;
+}
+.notice-carousel-track{
+    min-height:46px !important;
+}
+.notice-item{
+    padding:7px 10px !important;
+}
+.notice-item-title{ font-size:13px; line-height:1.3; }
+.notice-item-text{ font-size:12.5px; line-height:1.4; margin-top:2px; }
+
+.notice-carousel-wrap{
+    display:grid !important;
+    grid-template-columns:1fr auto;
+    align-items:center;
+    gap:2px 10px !important;
+    padding:0 !important;
+}
+.notice-carousel-wrap > .notice-carousel-track{ grid-column:1; grid-row:1; }
+.notice-carousel-dots{
+    grid-column:2;
+    grid-row:1;
+    flex-direction:column;
+    gap:5px;
+    min-height:0;
+    padding:0;
+}
+.notice-carousel-progress{ grid-column:1 / -1; grid-row:2; }
+
+@media (max-width:640px){
+    /* Em tela estreita a coluna dos pontinhos rouba largura do texto: voltam para baixo. */
+    .notice-carousel-wrap{ grid-template-columns:1fr; }
+    .notice-carousel-dots{ grid-column:1; grid-row:2; flex-direction:row; }
+    .notice-carousel-progress{ grid-row:3; }
+}
 </style>
 <link rel="stylesheet" href="assets/css/portal-glass-desktop.css?v=20260720y">
 <link rel="stylesheet" href="assets/css/portal-futuristic.css?v=20260720y">
@@ -2637,9 +2679,9 @@ html.dk-dark .ciop-command-inner{
 
     <!-- PROTOTIPO: barra de abas. Fica fora das secoes para nao interferir na grade. -->
     <div class="portal-abas" id="portalAbas" role="tablist" aria-label="Areas do portal">
-        <button type="button" class="portal-aba" role="tab" data-alvo="secaoOperacao"  aria-selected="true">Operação<span class="portal-aba-conta" data-conta></span></button>
-        <button type="button" class="portal-aba" role="tab" data-alvo="secaoDashboards" aria-selected="false">Dashboards<span class="portal-aba-conta" data-conta></span></button>
-        <button type="button" class="portal-aba" role="tab" data-alvo="secaoRelatorios" aria-selected="false">Relatórios<span class="portal-aba-conta" data-conta></span></button>
+        <button type="button" class="portal-aba" role="tab" data-alvo="secaoOperacao"  aria-selected="true">Operação</button>
+        <button type="button" class="portal-aba" role="tab" data-alvo="secaoDashboards" aria-selected="false">Dashboards</button>
+        <button type="button" class="portal-aba" role="tab" data-alvo="secaoRelatorios" aria-selected="false">Relatórios</button>
     </div>
 
     <section id="secaoOperacao" class="card-section" aria-label="Operação">
@@ -4034,15 +4076,6 @@ if (window.portalUsuarioValidado) {
         if (guardar) { try { localStorage.setItem(CHAVE, id); } catch (_) {} }
     }
 
-    function contar() {
-        abas.forEach((b) => {
-            const sec = document.getElementById(b.dataset.alvo);
-            const alvo = b.querySelector("[data-conta]");
-            if (!sec || !alvo) return;
-            const n = sec.querySelectorAll("a.card:not([hidden])").length;
-            alvo.textContent = n ? String(n) : "";
-        });
-    }
 
     abas.forEach((b) => b.addEventListener("click", () => mostrar(b.dataset.alvo, true)));
 
@@ -4056,7 +4089,7 @@ if (window.portalUsuarioValidado) {
 
     function sincronizar() {
         const procurando = !!(busca && busca.value.trim());
-        if (!procurando) { mostrar(abaAtiva(), false); contar(); return; }
+        if (!procurando) { mostrar(abaAtiva(), false); return; }
         abas.forEach((b) => {
             const sec = document.getElementById(b.dataset.alvo);
             if (!sec) return;
@@ -4064,8 +4097,6 @@ if (window.portalUsuarioValidado) {
             sec.hidden = n === 0;
             const corpo = sec.querySelector(".card-section-corpo");
             if (corpo) corpo.classList.remove("portal-secao-fechada");
-            const alvo = b.querySelector("[data-conta]");
-            if (alvo) alvo.textContent = n ? String(n) : "";
             b.setAttribute("aria-selected", "false");
         });
     }
@@ -4083,9 +4114,6 @@ if (window.portalUsuarioValidado) {
     }
 
     mostrar(abaAtiva(), false);
-    contar();
-    /* Os cards so ganham/perdem o hidden depois que o perfil e validado. */
-    window.addEventListener("portal:usuario-validado", contar);
 })();
 </script>
 </body>
