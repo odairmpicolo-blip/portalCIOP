@@ -301,7 +301,7 @@ tr.det-ponto.aberta>td,tr.det-horario.aberta>td{background:rgba(31,111,235,.12)}
      do cache antes do download do fonte.js, retomava com Fonte ainda indefinida.
      Uma corrida que so aparecia quando o script nao estava em cache. -->
 <script src="../assets/js/cr0108-serie.js?v=20260731b"></script>
-<script src="../assets/js/cr0108-fonte.js?v=20260805d"></script>
+<script src="../assets/js/cr0108-fonte.js?v=20260805e"></script>
 
 <script>
 "use strict";
@@ -736,22 +736,58 @@ function ligarCascata(){
 /* Um render = uma ida à fonte. Busca série, faixa horária e (se comparando) a série
    do período anterior, guarda em `estado` e só então desenha — assim todos os blocos
    da tela mostram o mesmo recorte, vindo do mesmo lugar. */
-async function renderTudo(){
-    const p = periodo();
-    const filtro = { de: p.de, ate: p.ate, linha: $("fLinha").value, sentido: $("fSentido").value };
-    try {
-        estado.serie = await Fonte.serie(filtro);
-        estado.hora  = await Fonte.hora(filtro);
-        estado.serieAnterior = $("fComparar").value === "anterior"
-            ? await Fonte.serie({ ...filtro, ...periodoAnterior(p) })
-            : null;
-    } catch (err){
-        console.error("CR-0108: falha ao buscar os dados do período.", err);
-    }
+/* Cada chamada recebe um numero. Se o usuario mexer nos filtros antes de a segunda
+   passada terminar, o resultado velho e descartado em vez de sobrescrever a tela. */
+let renderSeq = 0;
+
+async function buscarTudo(filtro, p){
+    const dados = { serie: null, hora: null, serieAnterior: null };
+    dados.serie = await Fonte.serie(filtro);
+    dados.hora  = await Fonte.hora(filtro);
+    dados.serieAnterior = $("fComparar").value === "anterior"
+        ? await Fonte.serie({ ...filtro, ...periodoAnterior(p) })
+        : null;
+    return dados;
+}
+
+function pintar(dados){
+    estado.serie = dados.serie;
+    estado.hora = dados.hora;
+    estado.serieAnterior = dados.serieAnterior;
     renderKpis();
     renderEvolucao();
     renderHora();
     renderRanking();
+}
+
+/* Duas passadas: o arquivo pinta na hora, o banco corrige depois.
+   O banco varre a passagem crua e leva segundos; o arquivo ja esta carregado e responde
+   em milissegundos. Esperar so pelo banco deixava a tela vazia nesse intervalo. */
+async function renderTudo(){
+    const seq = ++renderSeq;
+    const p = periodo();
+    const filtro = { de: p.de, ate: p.ate, linha: $("fLinha").value, sentido: $("fSentido").value };
+
+    Fonte.usarSoArquivo(true);
+    try {
+        pintar(await buscarTudo(filtro, p));
+    } catch (err){
+        console.error("CR-0108: falha ao ler os arquivos.", err);
+    } finally {
+        Fonte.usarSoArquivo(false);
+    }
+
+    /* 2º plano: nao damos await, para a tela nao ficar presa esperando o banco. */
+    (async () => {
+        try {
+            if (!(await Fonte.disponivel())) return;
+            const dados = await buscarTudo(filtro, p);
+            if (seq !== renderSeq) return;          // os filtros mudaram no meio do caminho
+            if (dados.serie) pintar(dados);
+        } catch (err){
+            console.info("CR-0108: banco nao respondeu; a tela segue com os arquivos.", err && err.message);
+        }
+    })();
 }
 
 /* ---- Atalhos de período -------------------------------------------------------- */
