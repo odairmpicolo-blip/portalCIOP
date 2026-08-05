@@ -2253,6 +2253,56 @@ html.dk-dark .ciop-command-inner{
     .notice-carousel-dots{ grid-column:1; grid-row:2; flex-direction:row; }
     .notice-carousel-progress{ grid-row:3; }
 }
+
+/* ---- Abas: laranja do portal, letra maior e movimento ----------------------
+   O destaque agora e um indicador unico que desliza entre as abas, em vez de
+   cada botao acender o proprio fundo. Alem de mais moderno, deixa claro de onde
+   para onde a selecao foi — util quando as tres areas tem nomes parecidos. */
+.portal-abas{ position:relative; }
+.portal-aba{
+    position:relative;
+    z-index:1;
+    font:700 17px/1.2 inherit !important;
+    color:var(--azul);
+}
+.portal-aba-indicador{
+    position:absolute;
+    top:6px;
+    bottom:6px;
+    left:0;
+    width:0;
+    border-radius:999px;
+    background:linear-gradient(135deg,#ff9440 0%,var(--laranja) 100%);
+    box-shadow:0 8px 20px rgba(255,107,0,.35);
+    opacity:0;
+    z-index:0;
+    transition:transform .34s cubic-bezier(.22,.61,.36,1),
+               width .34s cubic-bezier(.22,.61,.36,1),
+               opacity .2s ease;
+    pointer-events:none;
+}
+.portal-aba[aria-selected="true"]{
+    background:transparent !important;
+    box-shadow:none !important;
+    color:#fff !important;
+}
+.portal-aba:not([aria-selected="true"]):hover{
+    background:transparent !important;
+    color:var(--laranja) !important;
+}
+
+/* Entrada dos cards ao trocar de area: sobem e aparecem em cascata curta. */
+@keyframes portalCardEntra{
+    from{ opacity:0; transform:translateY(12px) scale(.985); }
+    to{ opacity:1; transform:none; }
+}
+.portal-secao-entra a.card{
+    animation:portalCardEntra .36s cubic-bezier(.22,.61,.36,1) both;
+}
+@media (prefers-reduced-motion:reduce){
+    .portal-secao-entra a.card{ animation:none !important; }
+    .portal-aba-indicador{ transition:none; }
+}
 </style>
 <link rel="stylesheet" href="assets/css/portal-glass-desktop.css?v=20260720y">
 <link rel="stylesheet" href="assets/css/portal-futuristic.css?v=20260720y">
@@ -2679,6 +2729,7 @@ html.dk-dark .ciop-command-inner{
 
     <!-- PROTOTIPO: barra de abas. Fica fora das secoes para nao interferir na grade. -->
     <div class="portal-abas" id="portalAbas" role="tablist" aria-label="Areas do portal">
+        <span class="portal-aba-indicador" id="portalAbaIndicador" aria-hidden="true"></span>
         <button type="button" class="portal-aba" role="tab" data-alvo="secaoOperacao"  aria-selected="true">Operação</button>
         <button type="button" class="portal-aba" role="tab" data-alvo="secaoDashboards" aria-selected="false">Dashboards</button>
         <button type="button" class="portal-aba" role="tab" data-alvo="secaoRelatorios" aria-selected="false">Relatórios</button>
@@ -4074,7 +4125,36 @@ if (window.portalUsuarioValidado) {
             if (corpo) corpo.classList.remove("portal-secao-fechada");
         });
         if (guardar) { try { localStorage.setItem(CHAVE, id); } catch (_) {} }
+        moverIndicador();
+        const sec = document.getElementById(id);
+        if (sec && !sec.hidden) animarEntrada(sec);
     }
+
+    const indicador = document.getElementById("portalAbaIndicador");
+
+    /* O indicador acompanha a aba ativa em posicao e largura. Durante a busca nenhuma
+       aba fica ativa (as areas aparecem todas), entao ele desaparece. */
+    function moverIndicador() {
+        if (!indicador) return;
+        const ativa = abas.find((b) => b.getAttribute("aria-selected") === "true");
+        if (!ativa) { indicador.style.opacity = "0"; return; }
+        indicador.style.width = ativa.offsetWidth + "px";
+        indicador.style.transform = "translateX(" + ativa.offsetLeft + "px)";
+        indicador.style.opacity = "1";
+    }
+
+    /* Reinicia a animacao a cada troca: sem o reflow o navegador reaproveita a anterior
+       e os cards entrariam sem movimento na segunda vez. */
+    function animarEntrada(sec) {
+        sec.classList.remove("portal-secao-entra");
+        void sec.offsetWidth;
+        Array.prototype.forEach.call(sec.querySelectorAll("a.card:not([hidden])"), (c, i) => {
+            c.style.animationDelay = Math.min(i * 26, 320) + "ms";
+        });
+        sec.classList.add("portal-secao-entra");
+    }
+
+    window.addEventListener("resize", moverIndicador);
 
 
     abas.forEach((b) => b.addEventListener("click", () => mostrar(b.dataset.alvo, true)));
@@ -4099,6 +4179,9 @@ if (window.portalUsuarioValidado) {
             if (corpo) corpo.classList.remove("portal-secao-fechada");
             b.setAttribute("aria-selected", "false");
         });
+        /* Nenhuma aba ativa durante a busca: o indicador some em vez de ficar parado
+           sobre uma aba que nao representa mais o que esta na tela. */
+        moverIndicador();
     }
 
     function abaAtiva() {
