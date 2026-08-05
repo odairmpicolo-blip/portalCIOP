@@ -13,6 +13,53 @@ document.documentElement.classList.add("portal-auth-pending");
 <style id="portalAuthBootStyle">
 .portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;
 }
+
+/* PROTOTIPO — abas para Operacao / Dashboards / Relatorios.
+   Reaproveita a linguagem visual dos botoes de cenario da pagina de pontualidade,
+   para nao introduzir um componente novo no portal. */
+.portal-abas{
+    display:flex;
+    gap:6px;
+    margin:0 auto 14px;
+    padding:6px;
+    max-width:min(720px,92vw);
+    border-radius:999px;
+    background:rgba(255,255,255,.55);
+    border:1px solid rgba(6,36,92,.10);
+    box-shadow:0 6px 22px rgba(6,36,92,.10);
+    backdrop-filter:blur(10px);
+}
+.portal-aba{
+    flex:1;
+    border:0;
+    cursor:pointer;
+    padding:10px 14px;
+    border-radius:999px;
+    background:transparent;
+    color:#0b2f6b;
+    font:600 14px/1.2 inherit;
+    letter-spacing:.02em;
+    transition:background .18s ease,color .18s ease,box-shadow .18s ease;
+}
+.portal-aba:hover{ background:rgba(6,36,92,.06); }
+.portal-aba[aria-selected="true"]{
+    background:linear-gradient(180deg,#12336f,#0b2350);
+    color:#fff;
+    box-shadow:0 4px 14px rgba(6,36,92,.28);
+}
+.portal-aba-conta{
+    display:inline-block;
+    margin-left:6px;
+    opacity:.65;
+    font-weight:500;
+    font-size:12px;
+}
+/* Com a aba nomeando a secao, o titulo interno vira repeticao. */
+.portal-abas-ativo .card-section-head{ display:none; }
+@media (max-width:640px){
+    .portal-abas{ flex-direction:column; border-radius:18px; }
+    .portal-aba{ border-radius:12px; }
+}
 </style>
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
@@ -2587,6 +2634,14 @@ html.dk-dark .ciop-command-inner{
         <div id="senhaStatus" class="password-status"></div>
     </section>
 
+
+    <!-- PROTOTIPO: barra de abas. Fica fora das secoes para nao interferir na grade. -->
+    <div class="portal-abas" id="portalAbas" role="tablist" aria-label="Areas do portal">
+        <button type="button" class="portal-aba" role="tab" data-alvo="secaoOperacao"  aria-selected="true">Operação<span class="portal-aba-conta" data-conta></span></button>
+        <button type="button" class="portal-aba" role="tab" data-alvo="secaoDashboards" aria-selected="false">Dashboards<span class="portal-aba-conta" data-conta></span></button>
+        <button type="button" class="portal-aba" role="tab" data-alvo="secaoRelatorios" aria-selected="false">Relatórios<span class="portal-aba-conta" data-conta></span></button>
+    </div>
+
     <section id="secaoOperacao" class="card-section" aria-label="Operação">
         <div class="card-section-head">
             <button type="button" class="card-section-toggle" id="toggleSecaoOperacao" aria-expanded="true" aria-controls="conteudoSecaoOperacao" aria-label="Abrir ou fechar Operação">
@@ -3950,6 +4005,89 @@ if (window.portalUsuarioValidado) {
 })();
 </script>
 
+
+<script>
+/* PROTOTIPO — abas. Mostra uma secao por vez, lembrando a escolha no navegador.
+   Nao altera nenhum card: so controla qual das tres areas esta visivel. */
+(function () {
+    "use strict";
+    const CHAVE = "portalCiopAbaAtiva";
+    const abas = Array.prototype.slice.call(document.querySelectorAll(".portal-aba"));
+    if (!abas.length) return;
+    const secoes = abas.map((b) => document.getElementById(b.dataset.alvo)).filter(Boolean);
+    if (secoes.length !== abas.length) return;
+
+    document.body.classList.add("portal-abas-ativo");
+
+    function mostrar(id, guardar) {
+        abas.forEach((b) => {
+            const ativa = b.dataset.alvo === id;
+            b.setAttribute("aria-selected", ativa ? "true" : "false");
+            const sec = document.getElementById(b.dataset.alvo);
+            if (!sec) return;
+            sec.hidden = !ativa;
+            /* O portal guardava secoes recolhidas em localStorage. Com abas isso deixa
+               de fazer sentido e a classe so atrapalharia: a secao ficaria em branco. */
+            const corpo = sec.querySelector(".card-section-corpo");
+            if (corpo) corpo.classList.remove("portal-secao-fechada");
+        });
+        if (guardar) { try { localStorage.setItem(CHAVE, id); } catch (_) {} }
+    }
+
+    function contar() {
+        abas.forEach((b) => {
+            const sec = document.getElementById(b.dataset.alvo);
+            const alvo = b.querySelector("[data-conta]");
+            if (!sec || !alvo) return;
+            const n = sec.querySelectorAll("a.card:not([hidden])").length;
+            alvo.textContent = n ? String(n) : "";
+        });
+    }
+
+    abas.forEach((b) => b.addEventListener("click", () => mostrar(b.dataset.alvo, true)));
+
+    /* Busca x abas: o campo do topo procura em todos os modulos, mas o resultado podia
+       cair numa aba fechada — o usuario digitava e nao via nada. Enquanto ha texto na
+       busca, as abas saem do caminho e toda area COM resultado aparece; ao limpar, volta
+       a aba escolhida. A contagem tambem passa a refletir os achados. */
+    const busca = document.getElementById("ciopBuscaModulos");
+
+    const achados = (sec) => sec.querySelectorAll("a.card:not([hidden]):not(.ciop-search-hidden)").length;
+
+    function sincronizar() {
+        const procurando = !!(busca && busca.value.trim());
+        if (!procurando) { mostrar(abaAtiva(), false); contar(); return; }
+        abas.forEach((b) => {
+            const sec = document.getElementById(b.dataset.alvo);
+            if (!sec) return;
+            const n = achados(sec);
+            sec.hidden = n === 0;
+            const corpo = sec.querySelector(".card-section-corpo");
+            if (corpo) corpo.classList.remove("portal-secao-fechada");
+            const alvo = b.querySelector("[data-conta]");
+            if (alvo) alvo.textContent = n ? String(n) : "";
+            b.setAttribute("aria-selected", "false");
+        });
+    }
+
+    function abaAtiva() {
+        try { const g = localStorage.getItem(CHAVE); if (g && document.getElementById(g)) return g; } catch (_) {}
+        return "secaoOperacao";
+    }
+
+    if (busca) {
+        /* setTimeout para rodar DEPOIS do filtro do portal-futuristic.js, que e quem
+           marca os cards com ciop-search-hidden. Sem isso eu leria o estado anterior. */
+        ["input", "change", "search"].forEach((ev) =>
+            busca.addEventListener(ev, () => setTimeout(sincronizar, 0)));
+    }
+
+    mostrar(abaAtiva(), false);
+    contar();
+    /* Os cards so ganham/perdem o hidden depois que o perfil e validado. */
+    window.addEventListener("portal:usuario-validado", contar);
+})();
+</script>
 </body>
 
 </html>
