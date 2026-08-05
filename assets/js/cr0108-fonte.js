@@ -17,6 +17,11 @@
  */
 
 let API = null;          // null = ainda não testado; false = indisponível
+/* Quando ligado, a Fonte responde pelos arquivos mesmo com o banco no ar. Serve para
+   a primeira pintura da tela: o arquivo responde em milissegundos e o banco leva
+   segundos, entao mostramos o que ja temos e trocamos quando o banco chega. */
+let SO_ARQUIVO = false;
+function usarSoArquivo(v) { SO_ARQUIVO = !!v; }
 let tokenCache = null;
 let ESTATICO = null;     // dados dos JSONs, entregues pela página
 
@@ -42,6 +47,7 @@ async function chamar(caminho, params = {}) {
 
 /** Testa uma vez se o banco responde. Qualquer erro derruba para o arquivo. */
 async function disponivel() {
+  if (SO_ARQUIVO) return false;
   if (API !== null) return API;
   try {
     /* A URL da API vem de assets/data/portal-runtime.json e só existe DEPOIS de
@@ -280,7 +286,7 @@ async function meta() {
 }
 
 global.Fonte = {
-    usarEstaticos, origem, disponivel,
+    usarEstaticos, usarSoArquivo, origem, disponivel,
     meta, serie, ranking, hora, pontosDaLinha, horariosDoPonto, icv, ipv
 };
 })(window);
