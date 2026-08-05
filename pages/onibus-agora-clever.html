@@ -710,6 +710,17 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
     color:var(--blue) !important;
   }
 }
+
+/* Percentual no horario ao lado da contagem de cada operadora. Menor e mais claro que
+   o numero de veiculos: e informacao de apoio, nao o dado principal do chip. */
+.kpi-op-perf{
+    font-style:normal;
+    font-size:.78em;
+    opacity:.72;
+    margin-left:5px;
+    letter-spacing:.01em;
+}
+.kpi-op-perf:empty{ display:none; }
 </style>
 <link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
 <link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260720y">
@@ -797,10 +808,10 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
                     <span>TODOS</span><b id="statOpTodos">0</b>
                 </button>
                 <button type="button" class="kpi-chip kpi-chip-btn kpi-op kpi-op-tcgl" id="kpiOpTCGL" title="Filtrar somente TCGL">
-                    <span>TCGL</span><b id="statOpTCGL">0</b>
+                    <span>TCGL</span><b id="statOpTCGL">0</b><i class="kpi-op-perf" id="perfOpTCGL"></i>
                 </button>
                 <button type="button" class="kpi-chip kpi-chip-btn kpi-op kpi-op-lsul" id="kpiOpLondriSul" title="Filtrar somente LondriSul">
-                    <span>LSUL</span><b id="statOpLondriSul">0</b>
+                    <span>LSUL</span><b id="statOpLondriSul">0</b><i class="kpi-op-perf" id="perfOpLondriSul"></i>
                 </button>
             </div>
             <div class="topbar-mid">
@@ -1869,13 +1880,38 @@ function atualizarContagemLinhas(){
 /** Total da frota por operadora (independente dos filtros — é a régua de referência). */
 function atualizarKpisOperadora(){
     let tcgl = 0, lsul = 0;
+    /* O percentual "no horario" nao existe pronto por operadora: o indicador oficial so
+       traz chegadas, partidas e viagens perdidas, e o indice geral e da frota inteira.
+       Entao calculamos aqui, com a MESMA regra do indice do topo — so veiculos
+       produtivos entram, porque fora de servico, reserva e garagem nao tem horario a
+       cumprir e diluiriam o resultado. */
+    const perf = { TCGL: { ok: 0, tot: 0 }, LondriSul: { ok: 0, tot: 0 } };
     state.vehicles.forEach(v => {
         if (v.operadora === "TCGL") tcgl += 1;
         else if (v.operadora === "LondriSul") lsul += 1;
+        if (v.categoria !== "produtivo") return;
+        const alvo = perf[v.operadora];
+        if (!alvo) return;
+        const chave = statusPontualidade(v).chave;
+        if (chave === "noHorario" || chave === "atrasado" || chave === "adiantado"){
+            alvo.tot += 1;
+            if (chave === "noHorario") alvo.ok += 1;
+        }
     });
     if ($("statOpTodos")) $("statOpTodos").textContent = tcgl + lsul;
     if ($("statOpTCGL")) $("statOpTCGL").textContent = tcgl;
     if ($("statOpLondriSul")) $("statOpLondriSul").textContent = lsul;
+
+    /* Sem veiculo produtivo o percentual fica vazio em vez de mostrar 0%, que daria a
+       impressao de operacao pessima quando na verdade nao ha o que medir. */
+    const mostrar = (id, o) => {
+        const el = $(id);
+        if (!el) return;
+        el.textContent = o.tot ? formatarPctPerformance((o.ok / o.tot) * 100) : "";
+        el.title = o.tot ? o.ok + " de " + o.tot + " veiculos produtivos no horario" : "";
+    };
+    mostrar("perfOpTCGL", perf.TCGL);
+    mostrar("perfOpLondriSul", perf.LondriSul);
 }
 
 /** Marca visualmente quais chips estão filtrando o mapa no momento. */
