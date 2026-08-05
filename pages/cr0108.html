@@ -301,7 +301,7 @@ tr.det-ponto.aberta>td,tr.det-horario.aberta>td{background:rgba(31,111,235,.12)}
      do cache antes do download do fonte.js, retomava com Fonte ainda indefinida.
      Uma corrida que so aparecia quando o script nao estava em cache. -->
 <script src="../assets/js/cr0108-serie.js?v=20260731b"></script>
-<script src="../assets/js/cr0108-fonte.js?v=20260805e"></script>
+<script src="../assets/js/cr0108-fonte.js?v=20260805f"></script>
 
 <script>
 "use strict";
@@ -751,8 +751,10 @@ async function buscarTudo(filtro, p){
 }
 
 function pintar(dados){
-    estado.serie = dados.serie;
-    estado.hora = dados.hora;
+    /* Se uma fonte devolver vazio, mantemos o que ja esta na tela em vez de apagar.
+       Some dado bom por dado nenhum era o que fazia a tela "piscar" em branco. */
+    if (dados.serie) estado.serie = dados.serie;
+    if (dados.hora) estado.hora = dados.hora;
     estado.serieAnterior = dados.serieAnterior;
     renderKpis();
     renderEvolucao();
@@ -889,26 +891,33 @@ function selarAtualizacao(meta){
         $("fDe").min = meta.primeiroDia; $("fDe").max = meta.ultimoDia;
         $("fAte").min = meta.primeiroDia; $("fAte").max = meta.ultimoDia;
         Fonte.usarEstaticos(DADOS);
-        await Fonte.disponivel();      // uma sondagem só; se falhar, segue nos arquivos
 
-        /* Com o banco no ar, o meta do arquivo fica velho: cabeçalho, selo e limites
-           de data continuariam parados no último dia do JSON, mesmo com dias novos já
-           carregados. Sobrescrevemos com o que o banco informa. `linhas` fica de fora
-           de propósito: no banco vem sem os nomes, e o arquivo os tem. */
-        const metaBanco = await Fonte.meta();
-        if (metaBanco) {
-            const { linhas: _ignorar, ...doBanco } = metaBanco;
-            Object.assign(meta, doBanco, { arquivos: doBanco.dias, gerado: new Date().toISOString() });
-            $("subCabecalho").textContent =
-                `${dataBR(meta.primeiroDia)} a ${dataBR(meta.ultimoDia)} · ${nInt(meta.registros)} passagens · ${meta.arquivos} relatórios diários`;
-            selarAtualizacao(meta);
-            $("fDe").min = meta.primeiroDia; $("fDe").max = meta.ultimoDia;
-            $("fAte").min = meta.primeiroDia; $("fAte").max = meta.ultimoDia;
-        }
-
+        /* Nada de API antes da primeira pintura. Estas duas chamadas — a sondagem do
+           banco e o meta — ficavam com await aqui, e a tela so aparecia depois das
+           duas. Era esse o gargalo: nao o volume de dados, mas a espera. */
         aplicarAtalho();
         ligarEventos();
         renderTudo();
+
+        /* 2º plano: confirma o banco e corrige cabeçalho, selo e limites de data.
+           `linhas` fica de fora de propósito: no banco vem sem os nomes, e o arquivo
+           os tem. Falhando, a tela permanece com o que ja esta desenhado. */
+        (async () => {
+            try {
+                if (!(await Fonte.disponivel())) return;
+                const metaBanco = await Fonte.meta();
+                if (!metaBanco) return;
+                const { linhas: _ignorar, ...doBanco } = metaBanco;
+                Object.assign(meta, doBanco, { arquivos: doBanco.dias, gerado: new Date().toISOString() });
+                $("subCabecalho").textContent =
+                    `${dataBR(meta.primeiroDia)} a ${dataBR(meta.ultimoDia)} · ${nInt(meta.registros)} passagens · ${meta.arquivos} relatórios diários`;
+                selarAtualizacao(meta);
+                $("fDe").min = meta.primeiroDia; $("fDe").max = meta.ultimoDia;
+                $("fAte").min = meta.primeiroDia; $("fAte").max = meta.ultimoDia;
+            } catch (err){
+                console.info("CR-0108: meta do banco nao veio; seguimos com o arquivo.", err && err.message);
+            }
+        })();
     } catch (err){
         $("subCabecalho").textContent = "Falha ao carregar os dados";
         $("kpis").innerHTML = '<div class="card"><p class="aviso">Não foi possível carregar os dados do CR-0108.<br>' + esc(err.message) + "</p></div>";
