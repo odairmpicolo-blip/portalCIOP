@@ -897,7 +897,7 @@ function selarAtualizacao(meta){
            duas. Era esse o gargalo: nao o volume de dados, mas a espera. */
         aplicarAtalho();
         ligarEventos();
-        renderTudo();
+        /* O await nao espera o banco: renderTudo() so aguarda a primeira pintura, feita com os arquivos ja carregados. Ele existe por causa de usarSoArquivo(): renderTudo() liga esse modo de forma sincrona e so devolve o controle no primeiro await, entao sem esperar aqui o bloco de 2o plano abaixo rodava com SO_ARQUIVO ligado e disponivel() desistia na primeira linha (if SO_ARQUIVO return false). O selo ficava congelado na data do meta.json em 100% dos carregamentos. */ await renderTudo();
 
         /* 2º plano: confirma o banco e corrige cabeçalho, selo e limites de data.
            `linhas` fica de fora de propósito: no banco vem sem os nomes, e o arquivo
