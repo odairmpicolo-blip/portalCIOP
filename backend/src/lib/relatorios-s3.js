@@ -39,7 +39,7 @@ export async function enviarPdfRelatorioS3({ key, buffer, contentType = "applica
   for (const [k, v] of Object.entries(metadata || {})) {
     const val = String(v ?? "").trim();
     if (!val) continue;
-    meta[String(k).slice(0, 64)] = val.slice(0, 256);
+    meta[String(k).slice(0, 64)] = val.normalize("NFKD").replace(/[^\x20-\x7E]/g, "").slice(0, 256); // metadado do S3 precisa ser US-ASCII: entra no calculo da assinatura SigV4
   }
 
   await getClient().send(
