@@ -127,6 +127,60 @@ function base(req, colunas = []) {
   return { sql: `SELECT ${extras} ${MIN} AS m FROM cr_0108 ${where}`, par };
 }
 
+/* ================================================================== agregados diarios
+
+   O gargalo do relatorio era a varredura: qualquer corte do historico inteiro relia as
+   2,36 milhoes de passagens e reconvertia `diferenca` linha a linha, ~32 s no limite do
+   API Gateway. As tabelas cr0108_dia_linha e cr0108_dia_hora guardam os mesmos cinco
+   baldes do CIOP ja contados por dia, 34.574 e 5.130 linhas. A mesma pergunta que
+   levava dezenas de segundos responde em ~300 ms, sem paralelizar faixas.
+
+   Conferidas contra a passagem crua: ate 30/07 devolvem 2.335.186 registros,
+   2.138.906 no horario, 112.633 adiantado, 77.155 atrasado, 6.492 divergente,
+   semDif 0 e desvio medio 0,94, os mesmos seis numeros publicados.
+
+   LIMITE: os agregados so conhecem data, linha, sentido e hora programada. Filtro por
+   garagem ou por ponto de controle precisa da passagem crua, entao nesses casos as rotas
+   caem no caminho antigo. E de proposito: o caso lento e o historico sem recorte fino,
+   e ele passa pelo atalho.
+
+   MANUTENCAO: a carga da cr_0108 roda fora deste repositorio, e o DSQL nao tem trigger
+   nem materialized view. Depois de cada carga e preciso rodar o refresh do dia em
+   agregados-cr0108.sql. Se o agregado ficar para tras, /meta continua vindo de
+   cr_0108_cargas e vai mostrar um ultimo dia mais recente do que os graficos: e o
+   sintoma a procurar. */
+
+const AGG_PRE = `
+  sum(total)        AS total,
+  sum(no_horario)   AS "noHorario",
+  sum(adiantado)    AS adiantado,
+  sum(atrasado)     AS atrasado,
+  sum(divergente)   AS divergente,
+  sum(soma_dif)     AS "somaDif",
+  sum(sem_dif)      AS "semDif"`;
+
+/** Garagem e ponto nao existem nos agregados. */
+const temRecorteFino = (req) => Boolean(req.query.garagem || req.query.ponto);
+
+/** cr0108_dia_hora tambem nao tem linha nem sentido. */
+const temRecortePorLinha = (req) => Boolean(req.query.linha || req.query.sentido);
+
+/** WHERE sobre um agregado. `comLinha` libera os filtros de linha e sentido. */
+function filtroAgregado(req, comLinha) {
+  const cond = [];
+  const par = [];
+  const add = (sql, valor) => { par.push(valor); cond.push(sql.replace("?", `$${par.length}`)); };
+
+  const de = String(req.query.de || "");
+  const ate = String(req.query.ate || "");
+  if (ISO.test(de)) add("data_ref >= ?::date", de);
+  if (ISO.test(ate)) add("data_ref <= ?::date", ate);
+  if (comLinha && req.query.linha) add("linha = ?", String(req.query.linha));
+  if (comLinha && req.query.sentido) add("direcao = ?", String(req.query.sentido));
+
+  return { where: cond.length ? `WHERE ${cond.join(" AND ")}` : "", par };
+}
+
 function erro(res, err) {
   console.error("cr0108:", err);
   res.status(500).json({ ok: false, erro: err.message });
@@ -157,11 +211,23 @@ router.get("/meta", requireFirebaseUser, async (_req, res) => {
 /* ------------------------------------------------------------------ evolução por dia */
 router.get("/serie", requireFirebaseUser, async (req, res) => {
   try {
-    const itens = await consultar(req, ["data_ref"],
-      (sql) => `SELECT data_ref::text AS data, ${AGG} FROM (${sql}) t GROUP BY data_ref ORDER BY data_ref`,
-      ["data"]);
+    let itens;
+    let origem = "agregado";
+    if (temRecorteFino(req)) {
+      origem = "dsql";
+      itens = await consultar(req, ["data_ref"],
+        (sql) => `SELECT data_ref::text AS data, ${AGG} FROM (${sql}) t GROUP BY data_ref ORDER BY data_ref`,
+        ["data"]);
+    } else {
+      const f = filtroAgregado(req, true);
+      const r = await query(
+        `SELECT data_ref::text AS data, ${AGG_PRE}
+         FROM cr0108_dia_linha ${f.where}
+         GROUP BY data_ref ORDER BY data_ref`, f.par);
+      itens = r.rows;
+    }
     itens.sort((a, b2) => a.data.localeCompare(b2.data));
-    res.json({ ok: true, origem: "dsql", itens });
+    res.json({ ok: true, origem, itens });
   } catch (err) { erro(res, err); }
 });
 
@@ -176,31 +242,56 @@ const DIMENSOES = {
 };
 
 router.get("/ranking", requireFirebaseUser, async (req, res) => {
-  const col = DIMENSOES[String(req.query.dim || "linha")];
-  if (!col) { res.status(400).json({ ok: false, erro: "dim inválida" }); return; }
+  const dim = String(req.query.dim || "linha");
+  const col = DIMENSOES[dim];
+  if (!col) { res.status(400).json({ ok: false, erro: "dim invalida" }); return; }
   try {
     const limite = Math.min(Number(req.query.limite) || 500, 2000);
-    /* O LIMIT vale por faixa; depois de somar, reordenamos e cortamos de novo — senão
-       um item que aparece pouco em cada mês some, mesmo sendo grande no total. */
-    const itens = await consultar(req, [col],
-      (sql) => `SELECT ${col} AS chave, ${AGG} FROM (${sql}) t GROUP BY ${col}`,
-      ["chave"]);
+    let itens;
+    let origem = "agregado";
+    /* So a dimensao linha existe no agregado. As outras continuam na passagem crua. */
+    if (dim !== "linha" || temRecorteFino(req)) {
+      origem = "dsql";
+      /* O LIMIT vale por faixa; depois de somar, reordenamos e cortamos de novo, senao
+         um item que aparece pouco em cada mes some, mesmo sendo grande no total. */
+      itens = await consultar(req, [col],
+        (sql) => `SELECT ${col} AS chave, ${AGG} FROM (${sql}) t GROUP BY ${col}`,
+        ["chave"]);
+    } else {
+      const f = filtroAgregado(req, true);
+      const r = await query(
+        `SELECT linha AS chave, ${AGG_PRE}
+         FROM cr0108_dia_linha ${f.where} GROUP BY linha`, f.par);
+      itens = r.rows;
+    }
     itens.sort((a, b2) => Number(b2.total) - Number(a.total));
-    res.json({ ok: true, origem: "dsql", dimensao: col, itens: itens.slice(0, limite) });
+    res.json({ ok: true, origem, dimensao: col, itens: itens.slice(0, limite) });
   } catch (err) { erro(res, err); }
 });
 
 /* ------------------------------------------------------------------ faixa horária */
 router.get("/hora", requireFirebaseUser, async (req, res) => {
-  /* O programado vem com espaço à esquerda (" 5:55") e às vezes com hora de um
-     dígito. left(...,2) pegava " 0" / " 1" / " 2": agrupava pelo primeiro dígito da
-     hora e devolvia 3 faixas em vez de 24. btrim + split_part corrige os dois casos. */
+  /* O programado vem com espaco a esquerda (" 5:55") e as vezes com hora de um
+     digito. left(...,2) pegava " 0" / " 1" / " 2": agrupava pelo primeiro digito da
+     hora e devolvia 3 faixas em vez de 24. btrim + split_part corrige os dois casos.
+     O agregado cr0108_dia_hora ja guarda a hora normalizada assim, com dois digitos. */
   const HORA = "lpad(split_part(btrim(programado), ':', 1), 2, '0')";
   try {
-    const itens = await consultar(req, [`${HORA} AS hora`],
-      (sql) => `SELECT hora, ${AGG} FROM (${sql}) t GROUP BY hora`, ["hora"]);
+    let itens;
+    let origem = "agregado";
+    /* cr0108_dia_hora nao tem linha nem sentido, alem de nao ter garagem e ponto. */
+    if (temRecorteFino(req) || temRecortePorLinha(req)) {
+      origem = "dsql";
+      itens = await consultar(req, [`${HORA} AS hora`],
+        (sql) => `SELECT hora, ${AGG} FROM (${sql}) t GROUP BY hora`, ["hora"]);
+    } else {
+      const f = filtroAgregado(req, false);
+      const r = await query(
+        `SELECT hora, ${AGG_PRE} FROM cr0108_dia_hora ${f.where} GROUP BY hora`, f.par);
+      itens = r.rows;
+    }
     itens.sort((a, b2) => String(a.hora).localeCompare(String(b2.hora)));
-    res.json({ ok: true, origem: "dsql", itens });
+    res.json({ ok: true, origem, itens });
   } catch (err) { erro(res, err); }
 });
 
