@@ -32,7 +32,7 @@ export async function awsFetch(path, { method = "GET", body, token, apiKey } = {
   } catch (err) {
     const msg = String(err?.message || err || "");
     if (/load failed|failed to fetch|networkerror/i.test(msg)) {
-      throw new Error("Timeout ou falha de rede na API (tente enviar em partes menores)");
+      throw new Error("A API nao respondeu. Pode ser bloqueio de CORS no API Gateway, rede fora ou timeout: veja o status na aba Network");
     }
     throw err;
   }
