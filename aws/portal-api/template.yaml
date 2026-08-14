@@ -34,6 +34,22 @@ Resources:
             AbortIncompleteMultipartUpload:
               DaysAfterInitiation: 7
 
+  # O agente que apura OTP/CAD roda dentro da rede do CIOP (API em IP privado) e só
+  # faz conexão de saída para cá; a Lambda lê deste bucket e serve em /performance.
+  PerformanceBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "portal-ciop-performance-${AWS::AccountId}-${AWS::Region}"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
   PortalApiRole:
     Type: AWS::IAM::Role
     Properties:
@@ -68,6 +84,15 @@ Resources:
                 Resource:
                   - !GetAtt RelatoriosOcorrenciaBucket.Arn
                   - !Sub "${RelatoriosOcorrenciaBucket.Arn}/*"
+        - PolicyName: portal-api-performance-s3
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Somente leitura: quem escreve é o agente na rede do CIOP.
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: !Sub "${PerformanceBucket.Arn}/*"
 
   PortalApiFunction:
     Type: AWS::Lambda::Function
@@ -89,6 +114,9 @@ Resources:
           LIBERACAO_API_URL: "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec"
           RELATORIOS_S3_BUCKET: !Ref RelatoriosOcorrenciaBucket
           RELATORIOS_S3_REGION: !Ref AWS::Region
+          PERFORMANCE_S3_BUCKET: !Ref PerformanceBucket
+          PERFORMANCE_S3_KEY: performance.json
+          PERFORMANCE_S3_REGION: !Ref AWS::Region
       Code:
         ZipFile: |
           export const handler = async () => ({
@@ -195,6 +223,13 @@ Resources:
       RouteKey: "ANY /cr0108/{proxy+}"
       Target: !Sub integrations/${PortalApiIntegration}
 
+  PortalApiRoutePerformance:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApiId
+      RouteKey: ANY /performance
+      Target: !Sub integrations/${PortalApiIntegration}
+
   PortalApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -212,3 +247,6 @@ Outputs:
     Value: !Sub https://${Bus2ProxyApiId}.execute-api.${AWS::Region}.amazonaws.com/db-health
   RelatoriosBucket:
     Value: !Ref RelatoriosOcorrenciaBucket
+  PerformanceBucket:
+    Description: Destino do performance.json publicado pelo agente na rede do CIOP
+    Value: !Ref PerformanceBucket
