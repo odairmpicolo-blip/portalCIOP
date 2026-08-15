@@ -26,11 +26,13 @@ Resources:
       Role: !GetAtt Bus2ProxyRole.Arn
       Timeout: 30
       MemorySize: 256
+      # Congelado de propósito: o CloudFormation substitui o mapa inteiro.
+      # Tokens (FleetBus, Clever, Gemini) vivem só na Lambda, aplicados pelo
+      # scripts/deploy-bus2-proxy.sh. Incluir chave nova aqui apaga as demais.
       Environment:
         Variables:
           BUSTIME_BASE_URL: https://csr.mov1.com.br/bustime/api/v3
           BUSTIME_REFERER: https://csr.mov1.com.br/map
-          CLEVER_BASE_URL: http://146.235.63.7/bustime/api/v3
           BUSTIME_API_KEY: ""
       Code:
         ZipFile: |
@@ -48,10 +50,16 @@ Resources:
       CorsConfiguration:
         AllowOrigins:
           - "*"
+        # PUT é usado pelo navegador em assets/js/liberacao-aws.js; PATCH e
+        # DELETE acompanham o que já estava configurado na API. Reduzir esta
+        # lista quebra o preflight das rotas ANY servidas pela portal-api.
         AllowMethods:
           - GET
           - POST
           - OPTIONS
+          - PATCH
+          - PUT
+          - DELETE
         AllowHeaders:
           - "*"
         MaxAge: 3600

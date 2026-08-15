@@ -18,8 +18,20 @@ if ! "$AWS" sts get-caller-identity --region "$REGION" >/dev/null 2>&1; then
   exit 1
 fi
 
+FUNC="${LAMBDA_FUNCTION_NAME:-portal-ciop-bus2-proxy}"
+ENV_SNAP="$(mktemp /tmp/bus2-env-snap.XXXXXX.json)"
+ENV_PUT="$(mktemp /tmp/bus2-env-put.XXXXXX.json)"
+trap 'rm -f "$ENV_SNAP" "$ENV_PUT"' EXIT
+
+echo "==> Snapshot das variáveis da Lambda $FUNC (o CloudFormation substitui o mapa inteiro)"
+"$AWS" lambda get-function-configuration \
+  --function-name "$FUNC" \
+  --region "$REGION" \
+  --query "Environment.Variables" \
+  --output json > "$ENV_SNAP" 2>/dev/null || echo "{}" > "$ENV_SNAP"
+python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print('    %d variáveis preservadas' % len(d))" "$ENV_SNAP"
+
 if [[ "${BUS2_PROXY_SKIP_CFN:-}" == "1" ]]; then
-  FUNC="${LAMBDA_FUNCTION_NAME:-portal-ciop-bus2-proxy}"
   API_URL="${PORTAL_AWS_API_URL:-https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com}"
   echo "==> Modo rápido: atualizar código Lambda $FUNC (sem CloudFormation)"
 else
@@ -31,7 +43,16 @@ if ! "$AWS" cloudformation deploy \
   --region "$REGION" \
   --no-fail-on-empty-changeset; then
   echo ""
-  echo "ERRO: deploy CloudFormation falhou (permissões IAM insuficientes?)."
+  echo "ERRO: deploy CloudFormation falhou. Restaurando variáveis da Lambda a partir do snapshot."
+  python3 - "$ENV_SNAP" "$ENV_PUT" <<'PY'
+import json, sys
+vars_ = json.load(open(sys.argv[1]))
+json.dump({"Variables": vars_}, open(sys.argv[2], "w"))
+PY
+  "$AWS" lambda update-function-configuration \
+    --function-name "$FUNC" \
+    --region "$REGION" \
+    --environment "file://$ENV_PUT" >/dev/null || true
   echo "Anexe a política aws/bus2-proxy/iam-github-actions-policy.json ao usuário portal-ciop-github-actions"
   echo "ou rode localmente com credenciais admin: aws login && bash scripts/deploy-bus2-proxy.sh"
   exit 1
@@ -97,19 +118,14 @@ if [[ -n "$API_ID" ]]; then
   fi
 fi
 
-if [[ -n "${BUSTIME_API_KEY:-}" || -n "${GEMINI_API_KEY:-}" || -n "${CLEVER_API_KEY:-}" ]]; then
-  echo "==> Lendo variáveis atuais da Lambda (para não apagar FleetBus etc.)"
-  CURRENT_ENV_JSON=$("$AWS" lambda get-function-configuration \
-    --function-name "$FUNC" \
-    --region "$REGION" \
-    --query "Environment.Variables" \
-    --output json 2>/dev/null || echo "{}")
-
-  echo "==> Configurando variáveis na Lambda (mesclando com as já existentes)"
-  ENV_VARS=$(python3 - "$CURRENT_ENV_JSON" "${BUSTIME_API_KEY:-}" "${GEMINI_API_KEY:-}" "${CLEVER_API_KEY:-}" <<'PYEOF'
-import json, sys
-current = json.loads(sys.argv[1] or "{}")
-bustime_key, gemini_key, clever_key = sys.argv[2], sys.argv[3], sys.argv[4]
+echo "==> Restaurando variáveis da Lambda (JSON; o mapa do CloudFormation não leva os tokens)"
+BUSTIME_API_KEY="${BUSTIME_API_KEY:-}" GEMINI_API_KEY="${GEMINI_API_KEY:-}" CLEVER_API_KEY="${CLEVER_API_KEY:-}" \
+python3 - "$ENV_SNAP" "$ENV_PUT" <<'PY'
+import json, os, sys
+current = json.load(open(sys.argv[1]))
+bustime_key = os.environ.get("BUSTIME_API_KEY") or ""
+gemini_key = os.environ.get("GEMINI_API_KEY") or ""
+clever_key = os.environ.get("CLEVER_API_KEY") or ""
 if bustime_key:
     current["BUSTIME_BASE_URL"] = "https://csr.mov1.com.br/bustime/api/v3"
     current["BUSTIME_REFERER"] = "https://csr.mov1.com.br/map"
@@ -119,16 +135,15 @@ if gemini_key:
 if clever_key:
     current["CLEVER_BASE_URL"] = "http://146.235.63.7/bustime/api/v3"
     current["CLEVER_API_KEY"] = clever_key
-print(",".join(f"{k}={v}" for k, v in current.items()))
-PYEOF
-  )
-  "$AWS" lambda update-function-configuration \
-    --function-name "$FUNC" \
-    --region "$REGION" \
-    --environment "Variables={${ENV_VARS}}" >/dev/null
-else
-  echo "AVISO: defina BUSTIME_API_KEY, GEMINI_API_KEY e/ou CLEVER_API_KEY antes do deploy (export ...)"
-fi
+json.dump({"Variables": current}, open(sys.argv[2], "w"))
+print("    %d variáveis no mapa restaurado" % len(current))
+if not (bustime_key or gemini_key or clever_key):
+    print("    nenhuma chave nova via ambiente; snapshot reaplicado como está")
+PY
+"$AWS" lambda update-function-configuration \
+  --function-name "$FUNC" \
+  --region "$REGION" \
+  --environment "file://$ENV_PUT" >/dev/null
 
 echo "==> Teste /health"
 "$AWS" lambda wait function-updated --function-name "$FUNC" --region "$REGION"
