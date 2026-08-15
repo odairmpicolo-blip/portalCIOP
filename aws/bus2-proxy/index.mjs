@@ -621,14 +621,19 @@ async function proxyRelatorioIa(event) {
     };
   }
 
-  const modelos = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
+  // Auth keys (AQ.*) do AI Studio falham com ?key= na URL; o cabeçalho é o
+  // canal que o Gemini aceita para esse formato. Modelos novos primeiro.
+  const modelos = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
   let ultimoErro = "Falha ao consultar Gemini.";
 
   for (const model of modelos) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": key
+      },
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: { temperature: 0.35, maxOutputTokens: 2048 }
