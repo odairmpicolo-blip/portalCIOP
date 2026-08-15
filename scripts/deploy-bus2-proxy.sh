@@ -144,11 +144,16 @@ echo "Proxy Bus2 (legado): ${API_URL}/bus2/vehicles?..."
 echo "Relatório IA: POST ${API_URL}/relatorio-ia (requer GEMINI_API_KEY na Lambda)"
 
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1 && [[ "${SKIP_GH_SECRET:-}" != "1" ]]; then
-  echo "==> Gravando secret PORTAL_AWS_API_URL no GitHub (portal-teste)"
-  if gh secret set PORTAL_AWS_API_URL --body "$API_URL" --repo odairmpicolo-blip/portal-teste 2>/dev/null; then
-    echo "Secret atualizado."
+  # Segue o repositório de onde o script foi chamado; rodar daqui não deve
+  # reconfigurar o secret de outro ambiente. PORTAL_GH_REPO sobrescreve.
+  GH_REPO="${PORTAL_GH_REPO:-$(git -C "$ROOT" remote get-url origin 2>/dev/null \
+    | sed -E 's#(git@|https://)[^:/]+[:/]##; s#\.git$##')}"
+  if [[ -z "$GH_REPO" ]]; then
+    echo "AVISO: repositório do GitHub não identificado; defina PORTAL_GH_REPO."
+  elif gh secret set PORTAL_AWS_API_URL --body "$API_URL" --repo "$GH_REPO" 2>/dev/null; then
+    echo "Secret PORTAL_AWS_API_URL atualizado em $GH_REPO."
   else
-    echo "AVISO: não foi possível gravar secret (use PAT ou defina manualmente)."
+    echo "AVISO: não foi possível gravar secret em $GH_REPO (use PAT ou defina manualmente)."
   fi
 else
   echo "Configure: gh secret set PORTAL_AWS_API_URL --body \"$API_URL\""
