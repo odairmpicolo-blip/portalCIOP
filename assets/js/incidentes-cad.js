@@ -10,6 +10,8 @@
     "natureza", "categoria", "grupo",
     "motorista", "nome_motorista",
     "analista", "usuario", "criado_por",
+    "aberto_por", "opened_by", "aberto_para", "opened_for",
+    "departamento", "department", "setor",
     "estado", "status", "situacao",
     "descricao", "observacao", "comentario", "detalhe", "detalhes"
   ];
@@ -25,8 +27,14 @@
     carregando: false,
     atualizadoEm: "",
     totalBanco: 0,
-    jsonCount: 0
+    jsonCount: 0,
+    sortKey: "",
+    sortDir: "asc"
   };
+
+  var KEYS_ABERTO_POR = ["aberto_por", "opened_by", "openedby", "criado_por", "created_by", "usuario_abertura"];
+  var KEYS_ABERTO_PARA = ["aberto_para", "opened_for", "openedfor", "aberto_a", "assigned_to", "atribuido_para", "destinatario"];
+  var KEYS_DEPTO = ["departamento", "department", "setor", "area"];
 
   function $(id) { return document.getElementById(id); }
   function esc(v) {
@@ -49,6 +57,9 @@
       natureza: "Natureza", categoria: "Categoria", grupo: "Grupo",
       motorista: "Motorista", nomemotorista: "Motorista",
       analista: "Analista", usuario: "Usuário", criadopor: "Criado por",
+      abertopor: "Aberto por", openedby: "Aberto por",
+      abertopara: "Aberto para", openedfor: "Aberto para",
+      departamento: "Departamento", department: "Departamento", setor: "Departamento",
       estado: "Status", status: "Status", situacao: "Situação",
       descricao: "Descrição", observacao: "Observação", comentario: "Comentário",
       detalhe: "Detalhe", detalhes: "Detalhes"
@@ -184,6 +195,9 @@
     var tipo = $("fTipo").value;
     var estado = $("fEstado").value;
     var veiculo = $("fVeiculo").value;
+    var abertoPor = $("fAbertoPor") ? $("fAbertoPor").value : "";
+    var abertoPara = $("fAbertoPara") ? $("fAbertoPara").value : "";
+    var depto = $("fDepto") ? $("fDepto").value : "";
     state.filtrados = state.all.filter(function (r) {
       var d = pickDate(r);
       if (de && d && d < de) return false;
@@ -192,11 +206,36 @@
       if (tipo && String(get(r, ["tipo", "tipo_incidente", "natureza"])) !== tipo) return false;
       if (estado && String(get(r, ["estado", "status", "situacao"])) !== estado) return false;
       if (veiculo && String(get(r, ["veiculo", "prefixo", "carro"])) !== veiculo) return false;
+      if (abertoPor && String(get(r, KEYS_ABERTO_POR)) !== abertoPor) return false;
+      if (abertoPara && String(get(r, KEYS_ABERTO_PARA)) !== abertoPara) return false;
+      if (depto && String(get(r, KEYS_DEPTO)) !== depto) return false;
       if (!busca) return true;
       return JSON.stringify(r).toLowerCase().indexOf(busca) >= 0;
     });
+    aplicarOrdem();
     state.page = 1;
     pintar();
+  }
+
+  function valorSort(r, col) {
+    if (!col) return "";
+    if (normKey(col.label) === "data" || /data/i.test(col.key || "")) return pickDate(r);
+    if (normKey(col.label) === "hora" || /hora/i.test(col.key || "")) return pickHora(r);
+    var v = col.key && r[col.key] != null && String(r[col.key]).trim() !== "" ? r[col.key] : get(r, col.keys);
+    return textoCelula(v);
+  }
+
+  function aplicarOrdem() {
+    if (!state.sortKey || !state.colunas.length) return;
+    var col = state.colunas.find(function (c) { return c.key === state.sortKey; });
+    if (!col) return;
+    var dir = state.sortDir === "desc" ? -1 : 1;
+    state.filtrados.sort(function (a, b) {
+      var va = valorSort(a, col);
+      var vb = valorSort(b, col);
+      var c = String(va).localeCompare(String(vb), "pt-BR", { numeric: true, sensitivity: "base" });
+      return c * dir;
+    });
   }
 
   function topN(rows, keys, n) {
@@ -261,6 +300,12 @@
     var abertos = rows.filter(function (r) {
       return /aber|pend|andament|aguard/i.test(String(get(r, ["estado", "status", "situacao"])));
     }).length;
+    var por = uniqSorted(rows.map(function (r) { return String(get(r, KEYS_ABERTO_POR)); }));
+    var para = uniqSorted(rows.map(function (r) { return String(get(r, KEYS_ABERTO_PARA)); }));
+    var deptos = uniqSorted(rows.map(function (r) { return String(get(r, KEYS_DEPTO)); }));
+    var topPor = (topN(rows, KEYS_ABERTO_POR, 1)[0] || {}).k;
+    var topPara = (topN(rows, KEYS_ABERTO_PARA, 1)[0] || {}).k;
+    var topDepto = (topN(rows, KEYS_DEPTO, 1)[0] || {}).k;
     var bruto = state.totalBanco && state.totalBanco > state.all.length
       ? num(state.all.length) + " de " + num(state.totalBanco) + " no banco"
       : num(state.all.length) + " no banco";
@@ -270,9 +315,12 @@
       ["Linhas", num(linhas), "no filtro"],
       ["Veículos", num(veics), "envolvidos"],
       ["Tipos", num(tipos), "categorias"],
-      ["Em aberto", num(abertos), abertos ? "requerem atenção" : "nenhum pendente"]
+      ["Em aberto", num(abertos), abertos ? "requerem atenção" : "nenhum pendente"],
+      ["Aberto por", num(por.length), topPor && topPor !== "—" ? "mais: " + topPor : "pessoas distintas"],
+      ["Aberto para", num(para.length), topPara && topPara !== "—" ? "mais: " + topPara : "destinos distintos"],
+      ["Departamento", num(deptos.length), topDepto && topDepto !== "—" ? "mais: " + topDepto : "áreas distintas"]
     ].map(function (k) {
-      return '<article class="kpi"><div class="label">' + k[0] + '</div><div class="value">' + k[1] + '</div><div class="sub">' + k[2] + "</div></article>";
+      return '<article class="kpi"><div class="label">' + k[0] + '</div><div class="value">' + k[1] + '</div><div class="sub">' + esc(k[2]) + "</div></article>";
     }).join("");
   }
 
@@ -325,7 +373,15 @@
   function pintarTabela() {
     var cols = state.colunas.length ? state.colunas : descobrirColunas();
     state.colunas = cols;
-    $("tabelaHead").innerHTML = cols.map(function (c) { return "<th>" + esc(c.label) + "</th>"; }).join("");
+    $("tabelaHead").innerHTML = cols.map(function (c) {
+      var cls = "th-ord";
+      var icon = "↕";
+      if (state.sortKey === c.key) {
+        cls += state.sortDir === "desc" ? " ord-desc" : " ord-asc";
+        icon = state.sortDir === "desc" ? "↓" : "↑";
+      }
+      return '<th class="' + cls + '" data-key="' + esc(c.key) + '" title="Ordenar A–Z"><span class="sort-label">' + esc(c.label) + ' <span class="sort-icon" aria-hidden="true">' + icon + "</span></span></th>";
+    }).join("");
     var size = Number($("pageSize").value || state.pageSize);
     state.pageSize = size;
     var total = state.filtrados.length;
@@ -365,6 +421,8 @@
   }
 
   function pintar() {
+    if (!state.colunas.length && state.all.length) state.colunas = descobrirColunas();
+    aplicarOrdem();
     pintarKpis();
     var tipos = topN(state.filtrados, ["tipo", "tipo_incidente", "natureza"], 8);
     donut(tipos, state.filtrados.length);
@@ -379,6 +437,9 @@
     fillSelect("fTipo", uniqSorted(state.all.map(function (r) { return String(get(r, ["tipo", "tipo_incidente"])); })));
     fillSelect("fEstado", uniqSorted(state.all.map(function (r) { return String(get(r, ["estado", "status", "situacao"])); })));
     fillSelect("fVeiculo", uniqSorted(state.all.map(function (r) { return String(get(r, ["veiculo", "prefixo", "carro"])); })));
+    fillSelect("fAbertoPor", uniqSorted(state.all.map(function (r) { return String(get(r, KEYS_ABERTO_POR)); })));
+    fillSelect("fAbertoPara", uniqSorted(state.all.map(function (r) { return String(get(r, KEYS_ABERTO_PARA)); })));
+    fillSelect("fDepto", uniqSorted(state.all.map(function (r) { return String(get(r, KEYS_DEPTO)); })));
   }
 
   function receber(payload, origem, opcoes) {
@@ -491,14 +552,14 @@
   }
 
   function ligar() {
-    ["fBusca", "fDe", "fAte", "fLinha", "fTipo", "fEstado", "fVeiculo", "pageSize"].forEach(function (id) {
+    ["fBusca", "fDe", "fAte", "fLinha", "fTipo", "fEstado", "fVeiculo", "fAbertoPor", "fAbertoPara", "fDepto", "pageSize"].forEach(function (id) {
       var el = $(id);
       if (!el) return;
       el.addEventListener("input", aplicarFiltros);
       el.addEventListener("change", aplicarFiltros);
     });
     $("btnLimpar").addEventListener("click", function () {
-      ["fBusca", "fDe", "fAte", "fLinha", "fTipo", "fEstado", "fVeiculo"].forEach(function (id) { $(id).value = ""; });
+      ["fBusca", "fDe", "fAte", "fLinha", "fTipo", "fEstado", "fVeiculo", "fAbertoPor", "fAbertoPara", "fDepto"].forEach(function (id) { if ($(id)) $(id).value = ""; });
       aplicarFiltros();
     });
     $("btnAtualizar").addEventListener("click", iniciar);
@@ -507,6 +568,16 @@
     $("nextPage").addEventListener("click", function () {
       var pages = Math.max(1, Math.ceil(state.filtrados.length / state.pageSize));
       if (state.page < pages) { state.page++; pintarTabela(); }
+    });
+    $("tabelaHead").addEventListener("click", function (ev) {
+      var th = ev.target.closest("th[data-key]");
+      if (!th) return;
+      var key = th.getAttribute("data-key");
+      if (state.sortKey === key) state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
+      else { state.sortKey = key; state.sortDir = "asc"; }
+      aplicarOrdem();
+      state.page = 1;
+      pintarTabela();
     });
     $("tabelaBody").addEventListener("click", function (ev) {
       var tr = ev.target.closest("tr[data-idx]");
