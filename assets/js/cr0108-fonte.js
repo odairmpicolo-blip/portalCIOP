@@ -72,6 +72,19 @@ async function disponivel() {
 
 const dentro = (iso, p) => iso >= p.de && iso <= p.ate;
 
+function passaTipoDia(iso, tipo) {
+  const t = String(tipo || "").trim().toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (!t || t === "todos") return true;
+  const d = new Date(iso + "T12:00:00").getDay();
+  if (t === "uteis") return d >= 1 && d <= 5;
+  if (t === "sabado") return d === 6;
+  if (t === "domingo") return d === 0;
+  return true;
+}
+
+const noRecorte = (iso, p) => dentro(iso, p) && passaTipoDia(iso, p.tipoDia);
+
 /** Meses tocados pelo período — o recorte possível quando a base é mensal. */
 function mesesDoPeriodo(p) {
   const meses = new Set();
@@ -114,7 +127,7 @@ async function serie(p) {
   const base = p.linha ? ESTATICO.porDiaLinha : ESTATICO.porDia;
   const mapa = new Map();
   base.forEach(r => {
-    if (!dentro(r.data, p)) return;
+    if (!noRecorte(r.data, p)) return;
     if (p.linha && r.linha !== p.linha) return;
     if (!mapa.has(r.data)) mapa.set(r.data, { data: r.data, ...zero() });
     acumular(mapa.get(r.data), r);
@@ -150,13 +163,14 @@ async function ranking(dim, p) {
 
   if (cfg.diario) {
     ESTATICO[cfg.base].forEach(r => {
-      if (!dentro(r.data, p)) return;
+      if (!noRecorte(r.data, p)) return;
       if (p.linha && r.linha !== p.linha) return;
       const k = r[cfg.campo];
       if (!mapa.has(k)) mapa.set(k, { chave: k, rotulo: k, extra: ESTATICO.meta.linhas[k] || "", ...zero() });
       acumular(mapa.get(k), r);
     });
   } else {
+    if (p.tipoDia) return { exato: false, itens: [] };
     const meses = mesesDoPeriodo(p);
     ESTATICO[cfg.base].forEach(r => {
       if (!meses.has(r.mes)) return;
@@ -181,11 +195,12 @@ async function hora(p) {
   const mapa = new Map();
   if (!p.linha && !p.sentido) {
     ESTATICO.porDiaHora.forEach(r => {
-      if (!dentro(r.data, p)) return;
+      if (!noRecorte(r.data, p)) return;
       if (!mapa.has(r.hora)) mapa.set(r.hora, { hora: r.hora, ...zero() });
       acumular(mapa.get(r.hora), r);
     });
   } else {
+    if (p.tipoDia) return [];
     const meses = mesesDoPeriodo(p);
     ESTATICO.porMesHoraLinha.forEach(r => {
       if (!meses.has(r.m)) return;
@@ -208,7 +223,7 @@ async function pontosDaLinha(linha, p) {
       divergente: +x.divergente, somaDif: +x.somaDif }));
   }
   const ctx = await serieDiariaLocal();
-  return window.CR0108Serie.pontosDaLinha(ctx, linha, p.sentido || "", p.de, p.ate);
+  return window.CR0108Serie.pontosDaLinha(ctx, linha, p.sentido || "", p.de, p.ate, p.tipoDia);
 }
 
 async function horariosDoPonto(linha, sentido, ponto, p) {
@@ -217,7 +232,7 @@ async function horariosDoPonto(linha, sentido, ponto, p) {
     if (!r.periodoLongo) return r.itens.map(x => avaliarNoNavegador(x));
   }
   const ctx = await serieDiariaLocal();
-  return window.CR0108Serie.horariosDoPonto(ctx, linha, sentido, ponto, p.de, p.ate);
+  return window.CR0108Serie.horariosDoPonto(ctx, linha, sentido, ponto, p.de, p.ate, 20, p.tipoDia);
 }
 
 /* O banco devolve o histograma de desvios; o melhor deslocamento (-20..+20) é

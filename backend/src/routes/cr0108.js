@@ -46,6 +46,16 @@ const AGG = `
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
+/** 0=domingo … 6=sábado (calendário da data_ref, sem fuso). */
+function condTipoDia(req) {
+  const t = String(req.query.tipoDia || "").trim().toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (t === "uteis") return "EXTRACT(DOW FROM data_ref) BETWEEN 1 AND 5";
+  if (t === "sabado") return "EXTRACT(DOW FROM data_ref) = 6";
+  if (t === "domingo") return "EXTRACT(DOW FROM data_ref) = 0";
+  return "";
+}
+
 /* Uma varredura do histórico inteiro leva ~32 s e o API Gateway corta em 30. Mas o
    trabalho é divisível: faixas de datas são disjuntas, então quatro consultas menores
    em paralelo terminam em ~8 s e depois somamos os contadores aqui. Medido: 31 dias
@@ -121,6 +131,8 @@ function base(req, colunas = []) {
   if (req.query.sentido) add("direcao = ?", String(req.query.sentido));
   if (req.query.garagem) add("garagem = ?", String(req.query.garagem));
   if (req.query.ponto) add("ponto_de_controle = ?", String(req.query.ponto));
+  const tipoDia = condTipoDia(req);
+  if (tipoDia) cond.push(tipoDia);
 
   const where = cond.length ? `WHERE ${cond.join(" AND ")}` : "";
   const extras = colunas.length ? colunas.join(", ") + "," : "";
@@ -177,6 +189,8 @@ function filtroAgregado(req, comLinha) {
   if (ISO.test(ate)) add("data_ref <= ?::date", ate);
   if (comLinha && req.query.linha) add("linha = ?", String(req.query.linha));
   if (comLinha && req.query.sentido) add("direcao = ?", String(req.query.sentido));
+  const tipoDia = condTipoDia(req);
+  if (tipoDia) cond.push(tipoDia);
 
   return { where: cond.length ? `WHERE ${cond.join(" AND ")}` : "", par };
 }
@@ -391,6 +405,8 @@ router.get("/icv", requireFirebaseUser, async (req, res) => {
       const v = String(req.query[campo] || "");
       if (ISO.test(v)) { par.push(v); cond.push(sql.replace("?", `$${par.length}`)); }
     }
+    const tipoDia = condTipoDia(req);
+    if (tipoDia) cond.push(tipoDia);
     const r = await query(
       `SELECT data_ref::text AS data,
               ${numero("icv")}              AS icv,
@@ -441,6 +457,8 @@ router.get("/ipv", requireFirebaseUser, async (req, res) => {
       const v = String(req.query[campo] || "");
       if (ISO.test(v)) { par.push(v); cond.push(sql.replace("?", `$${par.length}`)); }
     }
+    const tipoDia = condTipoDia(req);
+    if (tipoDia) cond.push(tipoDia);
     const r = await query(
       `SELECT data_ref::text AS data,
               ${numero(f.ipv)}       AS ipv,

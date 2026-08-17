@@ -44,7 +44,7 @@ function avaliarHistograma(cnt, tot, L){ return avalia(cnt, tot, L); }
 const paraMin = hm;
 const paraHm = hhmm;
 
-function sugerir(ctx, de, ate, { minOcorrencias = 20, minRecuperadas = 5 } = {}){
+function sugerir(ctx, de, ate, { minOcorrencias = 20, minRecuperadas = 5, tipoDia } = {}){
   const { S, val, extrasPorChave } = ctx;
   const L = S.limite;
   let i0 = S.dias.findIndex(d => d >= de); if (i0 < 0) return [];
@@ -55,9 +55,9 @@ function sugerir(ctx, de, ate, { minOcorrencias = 20, minRecuperadas = 5 } = {})
   for (let k = 0; k < S.chaves.length; k++){
     cnt.fill(0); let tot = 0;
     const s = S.series[k];
-    for (let i = i0; i <= i1; i++){ const v = val[s.charCodeAt(i)]; if (v === 127) continue; cnt[v + L]++; tot++; }
+    for (let i = i0; i <= i1; i++){ if (!passaTipoDia(S.dias[i], tipoDia)) continue; const v = val[s.charCodeAt(i)]; if (v === 127) continue; cnt[v + L]++; tot++; }
     const ex = extrasPorChave.get(k);
-    if (ex) for (const [di, d] of ex) if (di >= i0 && di <= i1){ cnt[Math.max(-L, Math.min(L, d)) + L]++; tot++; }
+    if (ex) for (const [di, d] of ex) if (di >= i0 && di <= i1 && passaTipoDia(S.dias[di], tipoDia)){ cnt[Math.max(-L, Math.min(L, d)) + L]++; tot++; }
     if (tot < minOcorrencias) continue;
     const a = avalia(cnt, tot, L);
     if (a.shift === 0 || a.recuperadas < minRecuperadas) continue;
@@ -93,7 +93,17 @@ function janela(S, de, ate){
 
 /* Percorre a série aplicando `visita(k, desvio)` em cada passagem do recorte que
    passe pelo filtro `aceita(chave)`. Centraliza o tratamento das passagens extras. */
-function varrer(ctx, de, ate, aceita, visita){
+function passaTipoDia(iso, tipo){
+    const t = String(tipo || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (!t || t === "todos") return true;
+    const d = new Date(iso + "T12:00:00").getDay();
+    if (t === "uteis") return d >= 1 && d <= 5;
+    if (t === "sabado") return d === 6;
+    if (t === "domingo") return d === 0;
+    return true;
+}
+
+function varrer(ctx, de, ate, aceita, visita, tipoDia){
     const { S, val, extrasPorChave } = ctx;
     const lim = janela(S, de, ate);
     if (!lim) return;
@@ -102,11 +112,14 @@ function varrer(ctx, de, ate, aceita, visita){
         if (!aceita(S.chaves[k])) continue;
         const s = S.series[k];
         for (let i = i0; i <= i1; i++){
+            if (!passaTipoDia(S.dias[i], tipoDia)) continue;
             const v = val[s.charCodeAt(i)];
             if (v !== 127) visita(k, v);
         }
         const ex = extrasPorChave.get(k);
-        if (ex) for (const [di, d] of ex) if (di >= i0 && di <= i1) visita(k, Math.max(-S.limite, Math.min(S.limite, d)));
+        if (ex) for (const [di, d] of ex) {
+            if (di >= i0 && di <= i1 && passaTipoDia(S.dias[di], tipoDia)) visita(k, Math.max(-S.limite, Math.min(S.limite, d)));
+        }
     }
 }
 
@@ -117,7 +130,7 @@ function somar(acc, d){
 }
 
 /** Pontos de controle de uma linha, no recorte de datas. */
-function pontosDaLinha(ctx, linha, sentido, de, ate){
+function pontosDaLinha(ctx, linha, sentido, de, ate, tipoDia){
     const mapa = new Map();
     varrer(ctx, de, ate,
         ch => ch[0] === linha && (!sentido || ch[1] === sentido),
@@ -127,7 +140,7 @@ function pontosDaLinha(ctx, linha, sentido, de, ate){
             let a = mapa.get(id);
             if (!a){ a = { sentido: ch[1], ponto: ch[2], ...zero() }; mapa.set(id, a); }
             somar(a, d);
-        });
+        }, tipoDia);
     /* Ordena por IMPACTO — passagens fora do horário — e não por percentual: um ponto
        com 3 passagens e 0% no horário não pode liderar a lista na frente de um com
        2.000 passagens e 60%. É o mesmo critério do ranking principal. */
@@ -136,7 +149,7 @@ function pontosDaLinha(ctx, linha, sentido, de, ate){
 }
 
 /** Horários de um ponto, já com a sugestão de ajuste de cada um. */
-function horariosDoPonto(ctx, linha, sentido, ponto, de, ate, minOcorrencias = 20){
+function horariosDoPonto(ctx, linha, sentido, ponto, de, ate, minOcorrencias = 20, tipoDia){
     const porChave = new Map();
     varrer(ctx, de, ate,
         ch => ch[0] === linha && ch[2] === ponto && (!sentido || ch[1] === sentido),
@@ -145,7 +158,7 @@ function horariosDoPonto(ctx, linha, sentido, ponto, de, ate, minOcorrencias = 2
             if (!a){ a = { chave: k, cnt: new Int32Array(2 * ctx.S.limite + 1), ...zero() }; porChave.set(k, a); }
             a.cnt[d + ctx.S.limite] += 1;
             somar(a, d);
-        });
+        }, tipoDia);
     const L = ctx.S.limite;
     const saida = [];
     for (const a of porChave.values()){

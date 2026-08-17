@@ -213,6 +213,14 @@ table.mini td{padding:4px 9px;border:1px solid var(--border);text-align:center;b
         <div class="campo"><label for="fSentido">Sentido</label><select id="fSentido"><option value="">Ambos</option><option value="IDA">IDA</option><option value="VOLTA">VOLTA</option></select></div>
         <div class="campo campo-data"><label for="fDe">De</label><input type="date" id="fDe"></div>
         <div class="campo campo-data"><label for="fAte">Até</label><input type="date" id="fAte"></div>
+        <div class="campo"><label for="fTipoDia">Dias</label>
+            <select id="fTipoDia">
+                <option value="">Todos</option>
+                <option value="uteis">Úteis</option>
+                <option value="sabado">Sábado</option>
+                <option value="domingo">Domingo</option>
+            </select>
+        </div>
         <div class="campo"><label for="fMin">Ganho mínimo</label><select id="fMin">
             <option value="0">Qualquer</option>
             <option value="2">2 p.p.</option>
@@ -265,8 +273,8 @@ table.mini td{padding:4px 9px;border:1px solid var(--border);text-align:center;b
 
 <footer class="page-footer">Portal CIOP · TCGL — diagnóstico gerado a partir dos relatórios diários CR-0108</footer>
 
-<script src="../assets/js/cr0108-serie.js?v=20260731"></script>
-<script src="../assets/js/cr0108-fonte.js?v=20260816b"></script>
+<script src="../assets/js/cr0108-serie.js?v=20260817q"></script>
+<script src="../assets/js/cr0108-fonte.js?v=20260817q"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
@@ -611,7 +619,8 @@ function prepararPeriodo(){
 
 function periodoInteiro(){
     return !DADOS.meta || ($("fDe").value === DADOS.meta.primeiroDia
-        && $("fAte").value === DADOS.meta.ultimoDia);
+        && $("fAte").value === DADOS.meta.ultimoDia
+        && !$("fTipoDia").value);
 }
 
 async function carregarSerie(){
@@ -642,7 +651,7 @@ async function aplicarPeriodo(){
     if (selo) selo.textContent = "recalculando…";
     try {
         const ctx = await carregarSerie();
-        DADOS.horarios = window.CR0108Serie.sugerir(ctx, de, ate);
+        DADOS.horarios = window.CR0108Serie.sugerir(ctx, de, ate, { tipoDia: $("fTipoDia").value });
     } catch (err){
         console.error(err);
         if (selo) selo.textContent = "falha ao recortar por data";
@@ -670,7 +679,7 @@ function tentarBanco(){
                 $("fDe").max = $("fAte").max = DADOS.meta.ultimoDia;
                 selarAtualizacao(new Date().toISOString(), DADOS.meta);
             }
-            const hist = await Fonte.histograma({ de, ate, linha: $("fLinha").value, nomes });
+            const hist = await Fonte.histograma({ de, ate, linha: $("fLinha").value, tipoDia: $("fTipoDia").value, nomes });
             if (seq !== renderSeq) return;
             if (!hist || !hist.horarios) return;
             DADOS.horarios = hist.horarios;
@@ -721,9 +730,10 @@ async function iniciar(){
         ["fBusca", "fLinha", "fSentido", "fMin", "fOrdem"].forEach(id => {
             $(id).addEventListener(id === "fBusca" ? "input" : "change", render);
         });
-        ["fDe", "fAte"].forEach(id => $(id).addEventListener("change", aplicarPeriodo));
+        ["fDe", "fAte", "fTipoDia"].forEach(id => $(id).addEventListener("change", aplicarPeriodo));
         $("btnLimpar").addEventListener("click", () => {
             $("fBusca").value = ""; $("fLinha").value = ""; $("fSentido").value = ""; $("fMin").value = "5"; $("fOrdem").value = "linha";
+            if ($("fTipoDia")) $("fTipoDia").value = "";
             if (DADOS.meta){ $("fDe").value = DADOS.meta.primeiroDia; $("fAte").value = DADOS.meta.ultimoDia; }
             aplicarPeriodo();
         });

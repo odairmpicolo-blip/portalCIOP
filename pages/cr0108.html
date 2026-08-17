@@ -234,6 +234,14 @@ tr.det-ponto.aberta>td,tr.det-horario.aberta>td{background:rgba(31,111,235,.12)}
         </div>
         <div class="campo campo-data"><label for="fDe">De</label><input type="date" id="fDe"></div>
         <div class="campo campo-data"><label for="fAte">Até</label><input type="date" id="fAte"></div>
+        <div class="campo"><label for="fTipoDia">Dias</label>
+            <select id="fTipoDia">
+                <option value="">Todos</option>
+                <option value="uteis">Úteis</option>
+                <option value="sabado">Sábado</option>
+                <option value="domingo">Domingo</option>
+            </select>
+        </div>
         <div class="campo campo-linha"><label for="fLinha">Linha</label><select id="fLinha"><option value="">Todas as linhas</option></select></div>
         <div class="campo"><label for="fSentido">Sentido</label><select id="fSentido"><option value="">Ambos</option><option value="IDA">IDA</option><option value="VOLTA">VOLTA</option></select></div>
         <div class="campo"><label for="fComparar">Comparar</label><select id="fComparar">
@@ -300,8 +308,8 @@ tr.det-ponto.aberta>td,tr.det-horario.aberta>td{background:rgba(31,111,235,.12)}
      bloco abaixo. Estavam depois: iniciar() espera os JSONs e, quando eles vinham
      do cache antes do download do fonte.js, retomava com Fonte ainda indefinida.
      Uma corrida que so aparecia quando o script nao estava em cache. -->
-<script src="../assets/js/cr0108-serie.js?v=20260731b"></script>
-<script src="../assets/js/cr0108-fonte.js?v=20260816b"></script>
+<script src="../assets/js/cr0108-serie.js?v=20260817q"></script>
+<script src="../assets/js/cr0108-fonte.js?v=20260817q"></script>
 
 <script>
 "use strict";
@@ -351,7 +359,8 @@ async function baixar(nome){
 function periodo(){
     const de = $("fDe").value || DADOS.meta.primeiroDia;
     const ate = $("fAte").value || DADOS.meta.ultimoDia;
-    return de <= ate ? { de, ate } : { de: ate, ate: de };
+    const tipoDia = $("fTipoDia") ? $("fTipoDia").value : "";
+    return de <= ate ? { de, ate, tipoDia } : { de: ate, ate: de, tipoDia };
 }
 const dentro = (iso, p) => iso >= p.de && iso <= p.ate;
 const mesesDoPeriodo = p => {
@@ -519,7 +528,7 @@ function renderHora(){
 async function dadosRanking(){
     const p = periodo();
     const dim = estado.dim;
-    const filtro = { de: p.de, ate: p.ate, linha: $("fLinha").value, sentido: $("fSentido").value };
+    const filtro = { de: p.de, ate: p.ate, tipoDia: p.tipoDia, linha: $("fLinha").value, sentido: $("fSentido").value };
     const r = await Fonte.ranking(dim, filtro);
     const titulos = { linha: "Linha", ponto: "Ponto de controle", operador: "Operador", veiculo: "Veículo" };
     return { titulo: titulos[dim] || dim, diario: r.exato, cascata: dim === "linha", itens: r.itens };
@@ -685,10 +694,10 @@ async function carregarDrill(){
     try {
         const ctx = await carregarSerie();
         const sentidoFiltro = $("fSentido").value;
-        d.pontos = window.CR0108Serie.pontosDaLinha(ctx, d.linha, sentidoFiltro, p.de, p.ate);
+        d.pontos = window.CR0108Serie.pontosDaLinha(ctx, d.linha, sentidoFiltro, p.de, p.ate, p.tipoDia);
         if (d.ponto){
             const [sent, pto] = d.ponto.split("|");
-            d.horarios = window.CR0108Serie.horariosDoPonto(ctx, d.linha, sent, pto, p.de, p.ate);
+            d.horarios = window.CR0108Serie.horariosDoPonto(ctx, d.linha, sent, pto, p.de, p.ate, 20, p.tipoDia);
         } else {
             d.horarios = null;
         }
@@ -768,7 +777,7 @@ function pintar(dados){
 async function renderTudo(){
     const seq = ++renderSeq;
     const p = periodo();
-    const filtro = { de: p.de, ate: p.ate, linha: $("fLinha").value, sentido: $("fSentido").value };
+    const filtro = { de: p.de, ate: p.ate, tipoDia: p.tipoDia, linha: $("fLinha").value, sentido: $("fSentido").value };
 
     Fonte.usarSoArquivo(true);
     try {
@@ -823,10 +832,11 @@ function ligarEventos(){
     ["fDe", "fAte"].forEach(id => $(id).addEventListener("change", () => {
         fecharCascata(); $("fAtalho").value = "custom"; renderTudo();
     }));
-    ["fLinha", "fSentido", "fComparar"].forEach(id =>
+    ["fLinha", "fSentido", "fComparar", "fTipoDia"].forEach(id =>
         $(id).addEventListener("change", () => { fecharCascata(); renderTudo(); }));
     $("btnLimpar").addEventListener("click", () => {
         $("fAtalho").value = "tudo"; $("fLinha").value = ""; $("fSentido").value = ""; $("fComparar").value = "";
+        if ($("fTipoDia")) $("fTipoDia").value = "";
         fecharCascata(); aplicarAtalho(); renderTudo();
     });
     $("tabsEvolucao").addEventListener("click", e => {
