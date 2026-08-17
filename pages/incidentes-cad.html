@@ -50,24 +50,23 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica
 .campo.busca{flex:1.6 1 220px}
 .campo label{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .campo input,.campo select{height:38px;border:1px solid var(--border);border-radius:11px;padding:0 10px;font:inherit;font-size:13px;font-weight:600;background:#fff}
-.charts{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:12px;margin-bottom:14px}
-@media(max-width:1100px){.charts{grid-template-columns:1fr}}
+.charts{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:10px;margin-bottom:14px;overflow-x:auto}
 .chart-card,.table-card{border-radius:18px;background:rgba(255,255,255,.64);border:1px solid rgba(255,255,255,.5);box-shadow:0 14px 36px rgba(16,24,40,.08);overflow:hidden}
-.chart-card{padding:16px 16px 12px;min-height:280px}
-.card-title{margin:0 0 12px;color:var(--blue);font-size:14px;font-weight:900}
+.chart-card{padding:12px 12px 10px;min-height:240px;min-width:150px}
+.card-title{margin:0 0 10px;color:var(--blue);font-size:12px;font-weight:900}
+.donut-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;min-height:180px}
+.donut{width:110px;height:110px;border-radius:50%;flex:0 0 auto;background:#e2e8f0}
+.donut-hole{width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.92);margin:24px auto;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.donut-hole b{color:var(--blue);font-size:14px}
+.donut-hole span{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase}
+.legend{display:flex;flex-direction:column;gap:4px;flex:1;width:100%}
 .bar-row{display:grid;grid-template-columns:minmax(0,1fr) 42px;gap:8px;align-items:center;margin:7px 0}
 .bar-label{font-size:12px;font-weight:700;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bar-count{text-align:right;font-size:12px;font-weight:900;color:var(--blue)}
 .bar-track{grid-column:1/-1;height:8px;border-radius:999px;background:#edf2f7;overflow:hidden}
 .bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--blue),var(--orange))}
-.donut-wrap{display:flex;align-items:center;gap:16px;min-height:210px}
-.donut{width:150px;height:150px;border-radius:50%;flex:0 0 auto;background:#e2e8f0}
-.donut-hole{width:86px;height:86px;border-radius:50%;background:rgba(255,255,255,.92);margin:32px auto;display:flex;align-items:center;justify-content:center;flex-direction:column}
-.donut-hole b{color:var(--blue);font-size:18px}
-.donut-hole span{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase}
-.legend{display:flex;flex-direction:column;gap:6px;flex:1}
 .legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
-.legend div{font-size:12px;font-weight:700;color:#334155}
+.legend div{font-size:11px;font-weight:700;color:#334155}
 .table-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(15,23,42,.06)}
 .tabela-wrap{overflow:auto;max-height:calc(100vh - 360px);min-height:280px}
 table.rel{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;min-width:1280px}
@@ -141,7 +140,6 @@ table.rel tbody tr:hover{background:rgba(6,36,92,.05)}
   <div class="toolbar">
     <div class="nav-row">
       <a class="btn-portal" href="../index.html"><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Portal</a>
-      <a class="btn-ghost" href="relatorios.html">Relatórios</a>
       <a class="btn-ghost" href="incidentes-dashboard.html">Incidentes TCGL</a>
     </div>
     <div class="nav-row">
@@ -166,8 +164,11 @@ table.rel tbody tr:hover{background:rgba(6,36,92,.05)}
   </section>
   <section class="charts">
     <article class="chart-card"><h2 class="card-title">Tipos de incidente</h2><div class="donut-wrap"><div class="donut" id="donutTipo"><div class="donut-hole"><b id="donutTotal">0</b><span>total</span></div></div><div class="legend" id="legendTipo"></div></div></article>
-    <article class="chart-card"><h2 class="card-title">Linhas com mais ocorrências</h2><div id="chartLinha"></div></article>
+    <article class="chart-card"><h2 class="card-title">Linhas</h2><div id="chartLinha"></div></article>
     <article class="chart-card"><h2 class="card-title">Status</h2><div id="chartEstado"></div></article>
+    <article class="chart-card"><h2 class="card-title">Aberto por</h2><div id="chartAbertoPor"></div></article>
+    <article class="chart-card"><h2 class="card-title">Aberto para</h2><div id="chartAbertoPara"></div></article>
+    <article class="chart-card"><h2 class="card-title">Departamento</h2><div id="chartDepto"></div></article>
   </section>
   <section class="table-card">
     <div class="table-head">
@@ -208,7 +209,7 @@ table.rel tbody tr:hover{background:rgba(6,36,92,.05)}
 </div>
 <footer class="page-footer">Portal CIOP · Incidentes CAD · cr_0002</footer>
 <script src="../assets/js/cr0108-fonte.js?v=20260817k"></script>
-<script src="../assets/js/incidentes-cad.js?v=20260817k"></script>
+<script src="../assets/js/incidentes-cad.js?v=20260817m"></script>
 <script>
 IncidentesCad.ligar();
 IncidentesCad.iniciar();

@@ -292,8 +292,6 @@
 
   function pintarKpis() {
     var rows = state.filtrados;
-    var hoje = new Date().toISOString().slice(0, 10);
-    var hojeN = rows.filter(function (r) { return pickDate(r) === hoje; }).length;
     var linhas = uniqSorted(rows.map(function (r) { return String(get(r, ["linha", "codigo_linha"])); })).length;
     var veics = uniqSorted(rows.map(function (r) { return String(get(r, ["veiculo", "prefixo", "carro"])); })).length;
     var tipos = uniqSorted(rows.map(function (r) { return String(get(r, ["tipo", "tipo_incidente"])); })).length;
@@ -311,14 +309,13 @@
       : num(state.all.length) + " no banco";
     $("kpis").innerHTML = [
       ["Incidentes", num(rows.length), state.all.length ? bruto : "aguardando carga do 002"],
-      ["Hoje", num(hojeN), hoje],
       ["Linhas", num(linhas), "no filtro"],
       ["Veículos", num(veics), "envolvidos"],
       ["Tipos", num(tipos), "categorias"],
-      ["Em aberto", num(abertos), abertos ? "requerem atenção" : "nenhum pendente"],
       ["Aberto por", num(por.length), topPor && topPor !== "—" ? "mais: " + topPor : "pessoas distintas"],
       ["Aberto para", num(para.length), topPara && topPara !== "—" ? "mais: " + topPara : "destinos distintos"],
-      ["Departamento", num(deptos.length), topDepto && topDepto !== "—" ? "mais: " + topDepto : "áreas distintas"]
+      ["Departamento", num(deptos.length), topDepto && topDepto !== "—" ? "mais: " + topDepto : "áreas distintas"],
+      ["Em aberto", num(abertos), abertos ? "requerem atenção" : "nenhum pendente"]
     ].map(function (k) {
       return '<article class="kpi"><div class="label">' + k[0] + '</div><div class="value">' + k[1] + '</div><div class="sub">' + esc(k[2]) + "</div></article>";
     }).join("");
@@ -426,8 +423,11 @@
     pintarKpis();
     var tipos = topN(state.filtrados, ["tipo", "tipo_incidente", "natureza"], 8);
     donut(tipos, state.filtrados.length);
-    barras($("chartLinha"), topN(state.filtrados, ["linha", "codigo_linha"], 8));
-    barras($("chartEstado"), topN(state.filtrados, ["estado", "status", "situacao"], 8));
+    barras($("chartLinha"), topN(state.filtrados, ["linha", "codigo_linha"], 6));
+    barras($("chartEstado"), topN(state.filtrados, ["estado", "status", "situacao"], 6));
+    barras($("chartAbertoPor"), topN(state.filtrados, KEYS_ABERTO_POR, 6));
+    barras($("chartAbertoPara"), topN(state.filtrados, KEYS_ABERTO_PARA, 6));
+    barras($("chartDepto"), topN(state.filtrados, KEYS_DEPTO, 6));
     pintarTabela();
     $("origemPill").textContent = state.origem + (state.atualizadoEm ? " · " + state.atualizadoEm : "");
   }
@@ -488,21 +488,24 @@
     var mes = mesAtual();
     state.mesDe = mes.de;
     state.mesAte = mes.ate;
-    setStatus("Carregando histórico JSON…", "load");
+    window.portalMostrarCarregando?.("Carregando Incidentes CAD");
+    setStatus("Carregando…", "load");
     try {
       var json = await carregarJson();
       var nJson = linhasDe(json).length;
       state.jsonCount = nJson;
       if (nJson) {
         receber(json, "arquivo");
-        setStatus("Histórico JSON · " + num(nJson) + " · buscando " + mes.de.slice(0, 7) + " no banco…", "load");
+        window.portalOcultarCarregando?.();
+        setStatus("Histórico JSON · " + num(nJson) + " · buscando o banco…", "load");
       } else {
-        setStatus("JSON ainda sem histórico. Buscando o mês atual no banco…", "load");
+        window.portalMostrarCarregando?.("Buscando cr_0002 no banco…");
       }
     } catch (e) {
-      setStatus("Sem JSON de histórico. Aguardando sessão para o mês atual…", "load");
+      window.portalMostrarCarregando?.("Buscando cr_0002 no banco…");
     }
     await esperarAuth();
+    if (!state.all.length) window.portalMostrarCarregando?.("Carregando registros do CAD…");
     setStatus("Buscando todos os registros de cr_0002…", "load");
     try {
       var banco = await carregarBanco();
@@ -525,6 +528,7 @@
       else setStatus("Histórico JSON · banco do mês indisponível (" + (e2.message || e2) + ")", "ok");
     }
     state.carregando = false;
+    window.portalOcultarCarregando?.();
   }
 
   function csv() {
