@@ -67,6 +67,24 @@
     }
   }
 
+  function atualizarKpiUsuariosLogados(lista) {
+    const el = document.getElementById("ciopKpiUsuarios");
+    if (!el) return;
+    const n = Array.isArray(lista) ? lista.length : 0;
+    el.dataset.live = "1";
+    el.textContent = String(n);
+    el.title = n === 1 ? "1 usuário ativo agora" : n + " usuários ativos agora";
+  }
+
+  function iniciarKpiPresenca() {
+    if (!document.getElementById("ciopKpiUsuarios")) return;
+    import("./portal-presenca.js").then((m) => {
+      m.ouvirPresenca(atualizarKpiUsuariosLogados);
+    }).catch((err) => {
+      console.warn("Presença de usuários indisponível:", err);
+    });
+  }
+
   var CLIMA_CACHE_KEY = "ciop_clima_londrina_v1";
   var CLIMA_TTL_MS = 10 * 60 * 1000;
   var CLIMA_LAT = -23.3045;
@@ -497,6 +515,10 @@
     bindFlashSalvar();
     setInterval(atualizarCommandCenter, 1000);
     iniciarClimaCommandCenter();
+    iniciarKpiPresenca();
+    window.addEventListener("portal:presenca", (ev) => {
+      atualizarKpiUsuariosLogados(ev?.detail?.usuarios);
+    });
     window.addEventListener("portal:usuario-validado", () => {
       setTimeout(function () {
         enhanceDuotoneIcons();

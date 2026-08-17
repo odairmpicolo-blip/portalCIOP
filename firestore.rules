@@ -69,6 +69,12 @@ service cloud.firestore {
       allow delete: if gestor();
     }
 
+    match /presenca/{userEmail} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && userEmail == email();
+      allow delete: if signedIn() && (userEmail == email() || donoPortal());
+    }
+
     match /config/{docId} {
       allow read: if signedIn();
       allow write: if donoPortal();
