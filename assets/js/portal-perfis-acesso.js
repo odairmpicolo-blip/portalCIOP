@@ -144,22 +144,34 @@ function aplicarEstadoGlobal(estado) {
   return estado;
 }
 
+async function buscarAcessosRede() {
+  const snap = await getDoc(doc(db, ...DOC_PATH));
+  if (!snap.exists()) return null;
+  const estado = normalizarEstado(snap.data() || {});
+  gravarCache(estado);
+  aplicarEstadoGlobal(estado);
+  window.dispatchEvent(new CustomEvent("portal:acessos-atualizados"));
+  return estado;
+}
+
 export async function carregarAcessosPerfis() {
   const cache = lerCache();
   if (cache) aplicarEstadoGlobal(cache);
 
+  if (cache) {
+    buscarAcessosRede().catch((err) => {
+      console.warn("Não foi possível atualizar acessos de perfis:", err);
+    });
+    return cache;
+  }
+
   try {
-    const snap = await getDoc(doc(db, ...DOC_PATH));
-    if (snap.exists()) {
-      const estado = normalizarEstado(snap.data() || {});
-      gravarCache(estado);
-      return aplicarEstadoGlobal(estado);
-    }
+    const estado = await buscarAcessosRede();
+    if (estado) return estado;
   } catch (err) {
     console.warn("Não foi possível carregar acessos de perfis:", err);
   }
 
-  if (cache) return cache;
   const defaults = estadoVazio();
   return aplicarEstadoGlobal(defaults);
 }

@@ -5,6 +5,10 @@ Parameters:
   DsqlClusterId:
     Type: String
     Default: ort34httzig7iktrneb4ytcy5u
+  IncidentesStateBucket:
+    Type: String
+    Default: portal-ciop-incidentes-sync-incidentesstatebucket-feh4hxymmhlg
+    Description: Bucket do JSON incremental TCGL (Lambda incidentes-sync)
   Bus2ProxyApiId:
     Type: String
     Default: 62wvo4yk9b
@@ -93,6 +97,14 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource: !Sub "${PerformanceBucket.Arn}/*"
+        - PolicyName: portal-api-incidentes-s3
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: !Sub "arn:aws:s3:::${IncidentesStateBucket}/*"
 
   PortalApiFunction:
     Type: AWS::Lambda::Function
@@ -117,6 +129,9 @@ Resources:
           PERFORMANCE_S3_BUCKET: !Ref PerformanceBucket
           PERFORMANCE_S3_KEY: performance.json
           PERFORMANCE_S3_REGION: !Ref AWS::Region
+          INCIDENTES_STATE_S3_BUCKET: !Ref IncidentesStateBucket
+          INCIDENTES_STATE_S3_KEY: incidentes-tcgl.json
+          INCIDENTES_STATE_S3_REGION: !Ref AWS::Region
       Code:
         ZipFile: |
           export const handler = async () => ({

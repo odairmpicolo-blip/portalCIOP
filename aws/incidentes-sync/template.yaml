@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Portal CIOP - sync incidentes TCGL -> S3 cache -> Aurora DSQL (sa-east-1). De hora em hora, 05h-01h (Brasilia).
+Description: Portal CIOP - sync incidentes TCGL -> S3 (sa-east-1). De hora em hora, 05h-02h (Brasilia).
 
 Parameters:
   DsqlClusterId:
@@ -83,12 +83,12 @@ Resources:
         ZipFile: |
           export const handler = async () => ({ ok: false, error: "Deploy o pacote com scripts/build-incidentes-lambda.sh" });
 
-  # EventBridge cron em UTC (Brasilia = UTC-3): de hora em hora, 05h-01h Brasilia -> 08h-23h e 00h-04h UTC
+  # EventBridge cron em UTC (Brasilia = UTC-3): 05:00-02:00 BRT = 08-23 e 00-05 UTC
   IncidentesScheduleHoraria:
     Type: AWS::Events::Rule
     Properties:
-      Description: Sync incidentes TCGL -> DSQL - de hora em hora, 05:00-01:00 Brasilia
-      ScheduleExpression: cron(0 0-4,8-23 * * ? *)
+      Description: Sync incidentes TCGL -> S3 - de hora em hora, 05:00-02:00 Brasilia
+      ScheduleExpression: cron(0 0-5,8-23 * * ? *)
       State: ENABLED
       Targets:
         - Arn: !GetAtt IncidentesSyncFunction.Arn
@@ -110,4 +110,4 @@ Outputs:
   StateBucketArn:
     Value: !GetAtt IncidentesStateBucket.Arn
   ScheduleBrasilia:
-    Value: "05:00-01:00, de hora em hora (21x/dia)"
+    Value: "05:00-02:00, de hora em hora (22x/dia)"

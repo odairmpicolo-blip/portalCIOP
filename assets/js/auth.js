@@ -13,7 +13,7 @@ import {
 import { app, buscarUsuarioFirestore, normalizarCadastro } from "./portal-firestore.js";
 import { usuarios } from "./usuarios.js";
 import { aplicarSaudacaoHero } from "./portal-saudacao.js?v=20260704a";
-import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260817c";
+import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260817p";
 
 const auth = getAuth(app);
 
@@ -369,7 +369,7 @@ const CADASTRO_CACHE_TTL_MS = 8 * 60 * 60 * 1000;
 
 function lerCadastroCache(email) {
   try {
-    const raw = sessionStorage.getItem(CADASTRO_CACHE_KEY);
+    const raw = localStorage.getItem(CADASTRO_CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed?.email || parsed.email !== email || !parsed?.cadastro || !parsed?.ts) return null;
@@ -382,7 +382,7 @@ function lerCadastroCache(email) {
 
 function salvarCadastroCache(email, cadastro) {
   try {
-    sessionStorage.setItem(CADASTRO_CACHE_KEY, JSON.stringify({
+    localStorage.setItem(CADASTRO_CACHE_KEY, JSON.stringify({
       email,
       cadastro,
       ts: Date.now()
@@ -407,7 +407,7 @@ async function atualizarCadastroCache(email, user) {
 }
 
 window.logout = function () {
-  try { sessionStorage.removeItem(CADASTRO_CACHE_KEY); } catch (_) {}
+  try { localStorage.removeItem(CADASTRO_CACHE_KEY); } catch (_) {}
   signOut(auth).finally(() => {
     window.location.href = portalPath("login.html");
   });
@@ -563,6 +563,11 @@ function aplicarPermissoes(cadastro) {
   return true;
 }
 
+let cadastroAplicado = null;
+window.addEventListener("portal:acessos-atualizados", () => {
+  if (cadastroAplicado) aplicarPermissoes(cadastroAplicado);
+});
+
 authReady.finally(() => onAuthStateChanged(auth, async (user) => {
   const pagina = window.location.pathname.toLowerCase();
 
@@ -583,7 +588,11 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
 
     if (PORTAL_NATIVE_EMBEDDED) liberarHtmlValidado();
 
-    const cadastro = { ...await getCadastro(user), email: String(user.email || "").toLowerCase() };
+    const [cadastroBase] = await Promise.all([
+      getCadastro(user),
+      carregarAcessosPerfis().catch(() => null)
+    ]);
+    const cadastro = { ...cadastroBase, email: String(user.email || "").toLowerCase() };
 
     if (cadastro.ativo === false) {
       alert("Seu acesso ao portal esta desativado. Procure um administrador.");
@@ -609,7 +618,7 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
     }
     atualizarSaudacaoHero(cadastro);
     modernizarSessaoUsuario();
-    await carregarAcessosPerfis().catch(() => null);
+    cadastroAplicado = cadastro;
     if (aplicarPermissoes(cadastro) !== false) {
       window.portalUsuarioValidado = true;
       liberarHtmlValidado();

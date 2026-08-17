@@ -117,8 +117,15 @@ async function importIncidentes(pool) {
     console.warn("[incidentes] JSON não encontrado");
     return;
   }
-  await upsertSnapshot(pool, "incidentes_snapshot", payload);
-  const n = payload.incidentes?.length || payload.totalExtraido || 0;
+  const { idsProcessados, idsDetalhesConsultados, ...portal } = payload;
+  const bytes = Buffer.byteLength(JSON.stringify(portal));
+  // Aurora DSQL recusa jsonb > 1 MB. O portal lê o JSON completo no S3.
+  if (bytes > 900000) {
+    console.warn(`[incidentes] ${bytes} bytes — acima do jsonb DSQL (1 MB). Snapshot do portal fica no S3.`);
+    return;
+  }
+  await upsertSnapshot(pool, "incidentes_snapshot", portal);
+  const n = portal.incidentes?.length || portal.totalExtraido || 0;
   console.log(`[incidentes] ${n} linhas (planilha → DSQL)`);
 }
 

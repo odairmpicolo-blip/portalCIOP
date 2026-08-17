@@ -72,7 +72,7 @@ function montarPayload(fontes, incidentes) {
 }
 
 async function carregarAws() {
-  const snap = await carregarSnapshotAws("/snapshots/incidentes", { timeoutMs: 12000 });
+  const snap = await carregarSnapshotAws("/snapshots/incidentes", { timeoutMs: 25000 });
   if (!snap?.payload) return { payload: null, incidentes: [], atualizadoEm: null };
   const incidentes = Array.isArray(snap.payload?.incidentes) ? snap.payload.incidentes : [];
   const atualizadoEm = snap.atualizadoEm || snap.payload?.atualizadoEm || null;
@@ -83,7 +83,7 @@ async function carregarAws() {
 export async function carregarDadosIncidentes({ onProgress } = {}) {
   onProgress?.("Consultando AWS e JSON...");
   const [awsRes, jsonRes] = await Promise.allSettled([
-    withTimeout(carregarAws(), 15000),
+    withTimeout(carregarAws(), 30000),
     withTimeout(carregarJsonSnapshot(), 20000)
   ]);
 

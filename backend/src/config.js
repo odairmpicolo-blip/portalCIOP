@@ -24,7 +24,10 @@ export const config = {
     performanceS3Bucket: process.env.PERFORMANCE_S3_BUCKET || "",
     performanceS3Key: process.env.PERFORMANCE_S3_KEY || "performance.json",
     performanceS3Region: process.env.PERFORMANCE_S3_REGION || process.env.AWS_REGION || process.env.DSQL_REGION || "sa-east-1",
-    relatoriosS3Region: process.env.RELATORIOS_S3_REGION || process.env.AWS_REGION || process.env.DSQL_REGION || "sa-east-1"
+    relatoriosS3Region: process.env.RELATORIOS_S3_REGION || process.env.AWS_REGION || process.env.DSQL_REGION || "sa-east-1",
+    incidentesS3Bucket: process.env.INCIDENTES_STATE_S3_BUCKET || "",
+    incidentesS3Key: process.env.INCIDENTES_STATE_S3_KEY || "incidentes-tcgl.json",
+    incidentesS3Region: process.env.INCIDENTES_STATE_S3_REGION || process.env.AWS_REGION || process.env.DSQL_REGION || "sa-east-1"
 };
 
 if (!config.liberacaoApiUrl) {
