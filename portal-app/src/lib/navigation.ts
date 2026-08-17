@@ -99,6 +99,16 @@ export const portalCards: PortalCard[] = [
     section: 'dashboards',
   },
   {
+    id: 'incidentes-cad',
+    title: 'Incidentes CAD',
+    description: 'Relatório 002 do Clever, com JSON e banco em segundo plano.',
+    action: 'Abrir relatório',
+    theme: 'teal',
+    legacyPath: '/pages/incidentes-cad.html',
+    access: adminSupervisorGerenciaAnalista,
+    section: 'dashboards',
+  },
+  {
     id: 'incidentes-analise',
     title: 'Dashboard de Incidentes',
     description: 'Análise detalhada e indicadores dos incidentes.',

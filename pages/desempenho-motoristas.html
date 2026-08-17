@@ -265,6 +265,7 @@ table.mini td{padding:4px 10px;border:1px solid var(--border);text-align:center;
 
 <footer class="page-footer">Portal CIOP · TCGL — apurado a partir dos relatórios diários CR-0108</footer>
 
+<script src="../assets/js/cr0108-fonte.js?v=20260816c"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
@@ -630,6 +631,65 @@ function selarAtualizacao(meta){
     el.classList.toggle("selo-velho", velho);
 }
 
+function preencherMeses(){
+    DADOS.meses = [...new Set(DADOS.linhas.map(r => r.mes))].sort();
+    const deVal = $("fDe").value, ateVal = $("fAte").value;
+    [$("fDe"), $("fAte")].forEach((sel, idx) => {
+        const atual = sel.value;
+        sel.innerHTML = "";
+        DADOS.meses.forEach(m => {
+            const o = document.createElement("option");
+            o.value = m; o.textContent = mesBR(m);
+            sel.appendChild(o);
+        });
+        if (idx === 0) sel.value = DADOS.meses.includes(deVal) ? deVal : DADOS.meses[0];
+        else sel.value = DADOS.meses.includes(ateVal) ? ateVal : DADOS.meses[DADOS.meses.length - 1];
+        if (!atual && DADOS.meses.length) sel.value = idx === 0 ? DADOS.meses[0] : DADOS.meses[DADOS.meses.length - 1];
+    });
+}
+
+function tentarBanco(){
+    (async () => {
+        try {
+            if (!(await Fonte.disponivel())) return;
+            const metaBanco = await Fonte.meta();
+            if (metaBanco && metaBanco.ultimoDia) {
+                selarAtualizacao(Object.assign({}, metaBanco, { gerado: new Date().toISOString() }));
+            }
+            const de = metaBanco && metaBanco.primeiroDia;
+            const ate = metaBanco && metaBanco.ultimoDia;
+            let op = [];
+            let opL = [];
+            let r001 = null;
+            try { r001 = await Fonte.ranking001({}); } catch (_) { /* rota 001 ainda pode não existir na Lambda */ }
+            if (r001 && r001.itens && r001.itens.length) {
+                op = r001.itens;
+            } else {
+                const [a, b] = await Promise.all([
+                    Fonte.operador({ de, ate }),
+                    Fonte.operadorLinha({ de, ate })
+                ]);
+                op = a || [];
+                opL = b || [];
+            }
+            if (!op.length) {
+                console.info("Desempenho: banco sem ranking; seguimos com o JSON até " + (DADOS.meses[DADOS.meses.length - 1] || "?"));
+                return;
+            }
+            DADOS.linhas = op;
+            if (opL.length) DADOS.opLinha = opL;
+            preencherMeses();
+            const totalPassagens = DADOS.linhas.reduce((s, row) => s + row.total, 0);
+            const motoristas = new Set(DADOS.linhas.filter(row => !SEM_CRACHA.test(row.matricula)).map(row => row.matricula)).size;
+            $("subCabecalho").textContent =
+                `${nInt(motoristas)} motoristas · ${nInt(totalPassagens)} passagens · ${mesBR(DADOS.meses[0])} a ${mesBR(DADOS.meses[DADOS.meses.length - 1])}`;
+            render();
+        } catch (err) {
+            console.info("Desempenho: banco não veio; seguimos com o JSON.", err && err.message);
+        }
+    })();
+}
+
 async function iniciar(){
     try {
         const [res, resM, resL] = await Promise.all([
@@ -648,15 +708,7 @@ async function iniciar(){
             selarAtualizacao(meta);
         }
         DADOS.meses = [...new Set(DADOS.linhas.map(r => r.mes))].sort();
-
-        [$("fDe"), $("fAte")].forEach((sel, idx) => {
-            DADOS.meses.forEach(m => {
-                const o = document.createElement("option");
-                o.value = m; o.textContent = mesBR(m);
-                sel.appendChild(o);
-            });
-            sel.value = idx === 0 ? DADOS.meses[0] : DADOS.meses[DADOS.meses.length - 1];
-        });
+        preencherMeses();
 
         const totalPassagens = DADOS.linhas.reduce((s, r) => s + r.total, 0);
         const motoristas = new Set(DADOS.linhas.filter(r => !SEM_CRACHA.test(r.matricula)).map(r => r.matricula)).size;
@@ -675,6 +727,7 @@ async function iniciar(){
         $("btnCsv").addEventListener("click", baixarCsv);
         $("btnPdf").addEventListener("click", baixarPdf);
         render();
+        tentarBanco();
     } catch (err){
         $("subCabecalho").textContent = "Falha ao carregar os dados";
         $("kpis").innerHTML = '<div class="card"><p class="aviso">Não foi possível carregar o desempenho.<br>' + esc(err.message) + "</p></div>";

@@ -1660,6 +1660,7 @@ const CENARIOS = {
 };
 let cenarioAtual = 'padrao';
 let rawData = [];
+let loadSeq = 0;
 const PONTUALIDADE_DATA_BASE = '../assets/data/pontualidade';
 const PONTUALIDADE_MANIFEST_URL = PONTUALIDADE_DATA_BASE + '/manifest.json';
 let pontualidadeManifest = null;
@@ -1778,7 +1779,7 @@ async function carregarManifestPontualidade() {
     }
 }
 
-async function carregarSnapshotPontualidade(cenario) {
+async function carregarSnapshotPontualidade(cenario, { soArquivo } = {}) {
     /* Mesmo desenho da leitura de incidentes (incidentes-dados-leitura.js): consulta
        o BANCO e o JSON publicado EM PARALELO e funde por data, em vez de escolher um
        dos dois. Assim um dia que ja entrou no banco mas ainda nao foi commitado no
@@ -1796,6 +1797,11 @@ async function carregarSnapshotPontualidade(cenario) {
         const payload = await res.json();
         return { payload, rows: linhas(payload) };
     })();
+
+    if (soArquivo) {
+        const arq = await doArquivo;
+        return arq.rows.length ? { rows: arq.rows, meta: arq.payload, origem: 'arquivo' } : null;
+    }
 
     const doBanco = (async () => {
         const mod = await import('../assets/js/portal-aws-config.js');
@@ -1864,13 +1870,16 @@ async function buscarPontualidadeApi(cenario) {
 }
 
 async function loadDashboardData() {
+    const seq = ++loadSeq;
     const cenario = CENARIOS[cenarioAtual];
     let mostrouSnapshot = false;
 
     if (!pontualidadeManifest) pontualidadeManifest = await carregarManifestPontualidade();
-    const snapshot = await carregarSnapshotPontualidade(cenarioAtual);
-    if (snapshot?.rows?.length) {
-        rawData = snapshot.rows;
+
+    const jsonPrimeiro = await carregarSnapshotPontualidade(cenarioAtual, { soArquivo: true });
+    if (seq !== loadSeq) return;
+    if (jsonPrimeiro?.rows?.length) {
+        rawData = jsonPrimeiro.rows;
         mostrouSnapshot = true;
         initFilters();
         renderDashboard();
@@ -1881,36 +1890,49 @@ async function loadDashboardData() {
         document.getElementById('dashboardSubtitle').innerText = 'Carregando ' + cenario.nome + '...';
     }
 
-    try {
-        /* Banco primeiro; a planilha vira reserva. */
-        let novos = [];
+    (async () => {
         try {
-            novos = await buscarBancoIpv(cenarioAtual);
-        } catch (bancoErro) {
-            console.info('Pontualidade: banco indisponivel, usando a planilha.', bancoErro && bancoErro.message);
+            const snapshot = await carregarSnapshotPontualidade(cenarioAtual);
+            if (seq !== loadSeq) return;
+            if (snapshot?.rows?.length) {
+                rawData = mostrouSnapshot ? mesclarPontualidade(rawData, snapshot.rows) : snapshot.rows;
+                mostrouSnapshot = true;
+                initFilters();
+                renderDashboard();
+            }
+
+            let novos = [];
+            try {
+                novos = await buscarBancoIpv(cenarioAtual);
+            } catch (bancoErro) {
+                console.info('Pontualidade: banco indisponivel, usando a planilha.', bancoErro && bancoErro.message);
+            }
+            if (seq !== loadSeq) return;
+            if (!novos.length) novos = await buscarPontualidadeApi(cenarioAtual);
+            if (seq !== loadSeq) return;
+            if (novos.length) {
+                rawData = mostrouSnapshot ? mesclarPontualidade(rawData, novos) : novos;
+                initFilters();
+                renderDashboard();
+            } else if (!mostrouSnapshot) {
+                rawData = [];
+                document.getElementById('dashboardSubtitle').innerText = cenario.nome + ' · sem dados';
+                initFilters();
+                renderDashboard();
+            }
+        } catch (error) {
+            console.error('Erro ao carregar dados:', error);
+            if (seq !== loadSeq) return;
+            if (!mostrouSnapshot) {
+                rawData = [];
+                document.getElementById('dashboardSubtitle').innerText = 'Erro ao carregar ' + cenario.nome + ': ' + error.message;
+                initFilters();
+                renderDashboard();
+            }
+        } finally {
+            if (seq === loadSeq) window.portalOcultarCarregando?.();
         }
-        if (!novos.length) novos = await buscarPontualidadeApi(cenarioAtual);
-        if (novos.length) {
-            rawData = mostrouSnapshot ? mesclarPontualidade(rawData, novos) : novos;
-            initFilters();
-            renderDashboard();
-        } else if (!mostrouSnapshot) {
-            rawData = [];
-            document.getElementById('dashboardSubtitle').innerText = cenario.nome + ' · sem dados';
-            initFilters();
-            renderDashboard();
-        }
-    } catch (error) {
-        console.error('Erro ao carregar dados:', error);
-        if (!mostrouSnapshot) {
-            rawData = [];
-            document.getElementById('dashboardSubtitle').innerText = 'Erro ao carregar ' + cenario.nome + ': ' + error.message;
-            initFilters();
-            renderDashboard();
-        }
-    } finally {
-        window.portalOcultarCarregando?.();
-    }
+    })();
 }
 
 const monthToQuarter = {

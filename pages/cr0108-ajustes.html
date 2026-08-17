@@ -265,6 +265,8 @@ table.mini td{padding:4px 9px;border:1px solid var(--border);text-align:center;b
 
 <footer class="page-footer">Portal CIOP · TCGL — diagnóstico gerado a partir dos relatórios diários CR-0108</footer>
 
+<script src="../assets/js/cr0108-serie.js?v=20260731"></script>
+<script src="../assets/js/cr0108-fonte.js?v=20260816b"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
@@ -625,12 +627,15 @@ async function carregarSerie(){
     return baixandoSerie;
 }
 
+let renderSeq = 0;
+
 async function aplicarPeriodo(){
     let de = $("fDe").value, ate = $("fAte").value;
     if (de && ate && de > ate){ const t = de; de = ate; ate = t; $("fDe").value = de; $("fAte").value = ate; }
-    if (periodoInteiro()){
+    if (periodoInteiro() && !DADOS.doBanco){
         DADOS.horarios = DADOS.horariosCompletos;
         render();
+        tentarBanco();
         return;
     }
     const selo = $("seloPeriodo");
@@ -645,6 +650,39 @@ async function aplicarPeriodo(){
     }
     if (selo) selo.textContent = "";
     render();
+    tentarBanco();
+}
+
+/* JSON pinta na hora; o banco recalcula o recorte em 2º plano quando a janela cabe. */
+function tentarBanco(){
+    const seq = ++renderSeq;
+    const de = $("fDe").value, ate = $("fAte").value;
+    const nomes = {};
+    (DADOS.itens || []).forEach(i => { if (i.linha && i.linhaNome) nomes[i.linha] = i.linhaNome; });
+    (async () => {
+        try {
+            if (!(await Fonte.disponivel())) return;
+            const metaBanco = await Fonte.meta();
+            if (metaBanco && DADOS.meta) {
+                const { linhas: _ignorar, ...doBanco } = metaBanco;
+                Object.assign(DADOS.meta, doBanco, { arquivos: doBanco.dias, gerado: new Date().toISOString() });
+                $("fDe").min = $("fAte").min = DADOS.meta.primeiroDia;
+                $("fDe").max = $("fAte").max = DADOS.meta.ultimoDia;
+                selarAtualizacao(new Date().toISOString(), DADOS.meta);
+            }
+            const hist = await Fonte.histograma({ de, ate, linha: $("fLinha").value, nomes });
+            if (seq !== renderSeq) return;
+            if (!hist || !hist.horarios) return;
+            DADOS.horarios = hist.horarios;
+            if (hist.pontos && hist.pontos.length) DADOS.itens = hist.pontos;
+            DADOS.doBanco = true;
+            if ($("seloPeriodo")) $("seloPeriodo").textContent = "banco";
+            renderKpis();
+            render();
+        } catch (err) {
+            console.info("CR-0108 ajustes: banco não veio; seguimos com o JSON.", err && err.message);
+        }
+    })();
 }
 
 async function iniciar(){
@@ -694,6 +732,7 @@ async function iniciar(){
 
         renderKpis();
         render();
+        tentarBanco();
     } catch (err){
         $("subCabecalho").textContent = "Falha ao carregar o diagnóstico";
         $("kpis").innerHTML = '<div class="card"><p class="aviso">Não foi possível carregar o diagnóstico.<br>' + esc(err.message) + "</p></div>";
@@ -703,7 +742,6 @@ async function iniciar(){
 
 iniciar();
 </script>
-<script src="../assets/js/cr0108-serie.js?v=20260731"></script>
 <script src="../assets/js/ordenar-tabela.js?v=20260731"></script>
 </body>
 </html>

@@ -72,7 +72,7 @@ function faixas(req) {
   return pedacos;
 }
 
-const SOMAVEIS = ["total", "noHorario", "adiantado", "atrasado", "divergente", "somaDif", "semDif"];
+const SOMAVEIS = ["total", "noHorario", "adiantado", "atrasado", "divergente", "somaDif", "semDif", "n"];
 
 /** Soma as linhas das faixas, agrupando pelas colunas-chave. */
 function juntar(listas, chaves) {
@@ -452,6 +452,110 @@ router.get("/ipv", requireFirebaseUser, async (req, res) => {
       par
     );
     res.json({ ok: true, origem: "dsql", fonte: chave, itens: r.rows });
+  } catch (err) { erro(res, err); }
+});
+
+/* Histograma compacto para o diagnóstico de ajustes: um bin por
+   (linha, sentido, ponto, programado, desvio). Só para janelas de até 90 dias —
+   o histórico inteiro estoura o gateway. A página pinta o JSON e só pede isto
+   quando o recorte cabe. */
+router.get("/histograma", requireFirebaseUser, async (req, res) => {
+  const de = String(req.query.de || "");
+  const ate = String(req.query.ate || "");
+  if (!ISO.test(de) || !ISO.test(ate)) {
+    res.json({ ok: true, periodoLongo: true, itens: [] });
+    return;
+  }
+  const nDias = (dia(ate) - dia(de)) / 86400000 + 1;
+  if (nDias > 90) {
+    res.json({ ok: true, periodoLongo: true, itens: [] });
+    return;
+  }
+  try {
+    const itens = await consultar(
+      req,
+      ["linha", "direcao", "ponto_de_controle", "btrim(programado) AS programado"],
+      (sql) => `SELECT linha, direcao AS sentido, ponto_de_controle AS ponto, programado,
+                       m::int AS desvio, count(*)::int AS n
+                FROM (${sql}) t
+                WHERE m BETWEEN -90 AND 90
+                GROUP BY linha, direcao, ponto_de_controle, programado, m`,
+      ["linha", "sentido", "ponto", "programado", "desvio"]
+    );
+    res.json({ ok: true, origem: "dsql", itens });
+  } catch (err) { erro(res, err); }
+});
+
+/* Relatório Clever 002 — tabela real no DSQL: cr_0002 (+ cr_0002_cargas).
+   Não confundir com cr_0108 (ranking/pontos) nem com cr_0258/custom (IPV). */
+router.get("/cad", requireFirebaseUser, async (req, res) => {
+  try {
+    const de = String(req.query.de || "");
+    const ate = String(req.query.ate || "");
+    const cond = [];
+    const par = [];
+    if (ISO.test(de)) { par.push(de); cond.push(`data_ref >= $${par.length}::date`); }
+    if (ISO.test(ate)) { par.push(ate); cond.push(`data_ref <= $${par.length}::date`); }
+    const where = cond.length ? ` WHERE ${cond.join(" AND ")}` : "";
+    const r = await query(`SELECT * FROM cr_0002${where} LIMIT 8000`, par);
+    let meta = null;
+    try {
+      const c = await query(
+        `SELECT min(data_ref)::text AS "primeiroDia",
+                max(data_ref)::text AS "ultimoDia",
+                count(*)::int AS dias,
+                coalesce(sum(linhas), 0) AS registros
+         FROM cr_0002_cargas`
+      );
+      meta = c.rows[0] || null;
+    } catch (_) { /* cargas pode ter outro desenho; a página segue com as linhas */ }
+    res.json({ ok: true, origem: "dsql", tabela: "cr_0002", meta, itens: r.rows });
+  } catch (err) { erro(res, err); }
+});
+
+async function primeiraTabela(nomes) {
+  for (const nome of nomes) {
+    try {
+      await query(`SELECT 1 FROM ${nome} LIMIT 1`);
+      return nome;
+    } catch (_) { /* próximo nome */ }
+  }
+  return null;
+}
+
+function campo(row, chaves) {
+  for (const k of chaves) {
+    if (row[k] != null && String(row[k]).trim() !== "") return row[k];
+  }
+  return "";
+}
+
+/* Relatório Clever 001 — ranking de motoristas. Não usa cr_0108 nem o 002. */
+router.get("/ranking-001", requireFirebaseUser, async (req, res) => {
+  try {
+    const tabela = await primeiraTabela(["cr_001", "cr_0001", "cr_001_reports"]);
+    if (!tabela) {
+      res.json({ ok: true, origem: "dsql", tabela: null, itens: [] });
+      return;
+    }
+    const r = await query(`SELECT * FROM ${tabela} LIMIT 20000`);
+    const itens = r.rows.map((row) => {
+      const data = String(campo(row, ["mes", "month", "data_ref", "data", "date"]));
+      const mes = /^\d{4}-\d{2}/.test(data) ? data.slice(0, 7) : data;
+      return {
+        mes,
+        matricula: String(campo(row, ["matricula", "badge", "operator_id", "id"])),
+        nome: String(campo(row, ["nome", "name", "operador", "operator"])),
+        noHorario: Number(campo(row, ["noHorario", "no_horario", "on_time"]) || 0),
+        adiantado: Number(campo(row, ["adiantado", "early"]) || 0),
+        atrasado: Number(campo(row, ["atrasado", "late"]) || 0),
+        divergente: Number(campo(row, ["divergente", "divergent"]) || 0),
+        total: Number(campo(row, ["total", "trips", "passagens"]) || 0),
+        somaDif: Number(campo(row, ["somaDif", "soma_dif", "sum_diff"]) || 0),
+        semDif: Number(campo(row, ["semDif", "sem_dif"]) || 0)
+      };
+    }).filter((x) => x.mes && x.matricula);
+    res.json({ ok: true, origem: "dsql", tabela, itens });
   } catch (err) { erro(res, err); }
 });
 

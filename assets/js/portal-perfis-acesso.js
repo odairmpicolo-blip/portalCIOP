@@ -47,6 +47,7 @@ export const MODULOS_PORTAL = [
   { id: "autuacoes", label: "Autuações", grupo: "Indicadores" },
   { id: "evidencias", label: "Evidências", grupo: "Indicadores" },
   { id: "incidentes", label: "Incidentes", grupo: "Indicadores" },
+  { id: "incidentes-cad", label: "Incidentes CAD (relatório 002)", grupo: "Indicadores" },
   { id: "incidentes-analise", label: "Analytics de Incidentes", grupo: "Indicadores" },
   { id: "liberacao-dashboard", label: "Liberação (dashboard)", grupo: "Indicadores" },
   { id: "comparacao-km", label: "Comparação de KM", grupo: "Indicadores" },

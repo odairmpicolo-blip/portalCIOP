@@ -276,6 +276,155 @@ async function ipv(p) {
   return r.itens.map(x => ({ ...x, ipv: +x.ipv }));
 }
 
+async function operador(p) {
+  if (!(await disponivel())) return null;
+  const r = await chamar("/operador", p);
+  if (!r || r.periodoLongo || !r.itens) return null;
+  return r.itens.map(x => ({
+    mes: x.mes, matricula: x.matricula, nome: x.nome,
+    noHorario: +x.noHorario, adiantado: +x.adiantado, atrasado: +x.atrasado,
+    divergente: +x.divergente, total: +x.total, somaDif: +x.somaDif, semDif: +x.semDif || 0
+  }));
+}
+
+async function operadorLinha(p) {
+  if (!(await disponivel())) return null;
+  const r = await chamar("/operador-linha", p);
+  if (!r || r.periodoLongo || !r.itens) return null;
+  return r.itens;
+}
+
+function avaliaHist(cnt) {
+  let total = 0;
+  for (const n of Object.values(cnt)) total += n;
+  if (!total) return null;
+  const noHorario = (s) => {
+    let v = 0;
+    for (const [d, n] of Object.entries(cnt)) {
+      const x = Number(d) - s;
+      if (x >= -2 && x <= 6) v += n;
+    }
+    return v;
+  };
+  const atual = noHorario(0);
+  let melhor = atual, melhorS = 0;
+  for (let s = -20; s <= 20; s++) {
+    const v = noHorario(s);
+    if (v > melhor || (v === melhor && Math.abs(s) < Math.abs(melhorS))) {
+      melhor = v; melhorS = s;
+    }
+  }
+  const desvios = [];
+  Object.keys(cnt).sort((a, b) => Number(a) - Number(b)).forEach(d => {
+    for (let i = 0; i < cnt[d]; i++) desvios.push(Number(d));
+  });
+  const p10 = desvios[Math.floor(desvios.length * 0.10)];
+  const p90 = desvios[Math.floor(desvios.length * 0.90)];
+  const mediana = desvios[Math.floor(desvios.length / 2)];
+  return {
+    n: total,
+    pctAtual: Math.round(10000 * atual / total) / 100,
+    shift: melhorS,
+    pctPotencial: Math.round(10000 * melhor / total) / 100,
+    ganhoPct: Math.round(10000 * (melhor - atual) / total) / 100,
+    recuperadas: melhor - atual,
+    mediana, p10, p90, amplitude: p90 - p10
+  };
+}
+
+function hmShift(prog, shift) {
+  const m = String(prog || "").match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const mi = (((Number(m[1]) * 60 + Number(m[2]) + shift) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(mi / 60)).padStart(2, "0")}:${String(mi % 60).padStart(2, "0")}`;
+}
+
+/** Converte o histograma do banco no mesmo formato dos JSONs de ajustes. */
+function montarAjustes(bins, nomes = {}) {
+  const porHorario = new Map();
+  (bins || []).forEach(b => {
+    const k = [b.linha, b.sentido, b.ponto, b.programado].join("\u0001");
+    let cnt = porHorario.get(k);
+    if (!cnt) {
+      cnt = { linha: b.linha, sentido: b.sentido, ponto: b.ponto, programado: b.programado, cnt: {} };
+      porHorario.set(k, cnt);
+    }
+    cnt.cnt[String(b.desvio)] = (cnt.cnt[String(b.desvio)] || 0) + Number(b.n || 0);
+  });
+
+  const porPonto = new Map();
+  const porFaixa = new Map();
+  const horarios = [];
+  porHorario.forEach(h => {
+    const a = avaliaHist(h.cnt);
+    if (!a) return;
+    const pk = [h.linha, h.sentido, h.ponto].join("\u0001");
+    if (!porPonto.has(pk)) {
+      porPonto.set(pk, { linha: h.linha, sentido: h.sentido, ponto: h.ponto, cnt: {} });
+    }
+    const pto = porPonto.get(pk);
+    Object.entries(h.cnt).forEach(([d, n]) => { pto.cnt[d] = (pto.cnt[d] || 0) + n; });
+
+    const hora = /^\d{2}:/.test(h.programado) ? h.programado.slice(0, 2) : "??";
+    const fk = pk + "\u0001" + hora;
+    if (!porFaixa.has(fk)) porFaixa.set(fk, { hora, cnt: {} });
+    const fx = porFaixa.get(fk);
+    Object.entries(h.cnt).forEach(([d, n]) => { fx.cnt[d] = (fx.cnt[d] || 0) + n; });
+
+    if (!/^\d{1,2}:\d{2}$/.test(h.programado) || a.n < 20) return;
+    if (a.shift === 0 || a.recuperadas < 5) return;
+    horarios.push({
+      linha: h.linha, sentido: h.sentido, ponto: h.ponto,
+      programado: h.programado, sugerido: hmShift(h.programado, a.shift),
+      ...a
+    });
+  });
+
+  const pontos = [];
+  porPonto.forEach((p, pk) => {
+    const a = avaliaHist(p.cnt);
+    if (!a || a.n < 60) return;
+    const faixas = [];
+    porFaixa.forEach((f, fk) => {
+      if (!fk.startsWith(pk + "\u0001")) return;
+      const af = avaliaHist(f.cnt);
+      if (!af || af.n < 20) return;
+      faixas.push({ hora: f.hora, ...af });
+    });
+    faixas.sort((x, y) => y.recuperadas - x.recuperadas);
+    pontos.push({
+      linha: p.linha, linhaNome: nomes[p.linha] || "",
+      sentido: p.sentido, ponto: p.ponto, ...a,
+      faixas: faixas.slice(0, 5),
+      faixasHomogeneas: faixas.length ? (new Set(faixas.map(f => f.shift)).size <= 2) : null
+    });
+  });
+  pontos.sort((a, b) => b.recuperadas - a.recuperadas);
+  horarios.sort((a, b) => b.recuperadas - a.recuperadas);
+  return { pontos, horarios };
+}
+
+async function histograma(p) {
+  if (!(await disponivel())) return null;
+  const r = await chamar("/histograma", p);
+  if (!r || r.periodoLongo || !r.itens) return null;
+  return montarAjustes(r.itens, p.nomes || {});
+}
+
+async function cad(p) {
+  if (!(await disponivel())) return null;
+  const r = await chamar("/cad", p);
+  if (!r || !r.ok) return null;
+  return r;
+}
+
+async function ranking001(p) {
+  if (!(await disponivel())) return null;
+  const r = await chamar("/ranking-001", p);
+  if (!r || !r.ok) return null;
+  return r;
+}
+
 /* Período e totais segundo o banco. A página usa isto para corrigir o cabeçalho, o
    selo de atualização e os limites dos campos de data, que sem isso ficam presos no
    último dia do meta.json. */
@@ -287,6 +436,7 @@ async function meta() {
 
 global.Fonte = {
     usarEstaticos, usarSoArquivo, origem, disponivel,
-    meta, serie, ranking, hora, pontosDaLinha, horariosDoPonto, icv, ipv
+    meta, serie, ranking, hora, pontosDaLinha, horariosDoPonto, icv, ipv,
+    operador, operadorLinha, histograma, cad, ranking001, montarAjustes
 };
 })(window);
