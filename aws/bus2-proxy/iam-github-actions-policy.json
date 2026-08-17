@@ -1,0 +1,66 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PortalBus2ProxyDeploy",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:CreateStack",
+        "cloudformation:UpdateStack",
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:GetTemplateSummary",
+        "cloudformation:CreateChangeSet",
+        "cloudformation:DescribeChangeSet",
+        "cloudformation:ExecuteChangeSet",
+        "cloudformation:DeleteChangeSet"
+      ],
+      "Resource": "arn:aws:cloudformation:sa-east-1:*:stack/portal-ciop-bus2-proxy/*"
+    },
+    {
+      "Sid": "PortalBus2ProxyLambda",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:CreateFunction",
+        "lambda:UpdateFunctionCode",
+        "lambda:UpdateFunctionConfiguration",
+        "lambda:GetFunction",
+        "lambda:AddPermission",
+        "lambda:RemovePermission",
+        "lambda:CreateFunctionUrlConfig",
+        "lambda:UpdateFunctionUrlConfig",
+        "lambda:GetFunctionUrlConfig"
+      ],
+      "Resource": "arn:aws:lambda:sa-east-1:*:function:portal-ciop-bus2-proxy"
+    },
+    {
+      "Sid": "PortalBus2ProxyApiGateway",
+      "Effect": "Allow",
+      "Action": [
+        "apigateway:GET",
+        "apigateway:POST",
+        "apigateway:PUT",
+        "apigateway:PATCH",
+        "apigateway:DELETE"
+      ],
+      "Resource": "arn:aws:apigateway:sa-east-1::/*"
+    },
+    {
+      "Sid": "PortalBus2ProxyIamPassRole",
+      "Effect": "Allow",
+      "Action": ["iam:PassRole", "iam:GetRole"],
+      "Resource": "arn:aws:iam::*:role/portal-ciop-bus2-proxy-role"
+    },
+    {
+      "Sid": "PortalBus2ProxyIamRole",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:AttachRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:TagRole"
+      ],
+      "Resource": "arn:aws:iam::*:role/portal-ciop-bus2-proxy-role"
+    }
+  ]
+}

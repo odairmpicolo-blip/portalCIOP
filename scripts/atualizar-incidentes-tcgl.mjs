@@ -1,6 +1,9 @@
 /**
  * Busca incidentes no TCGL (Gerenciamento de Incidentes).
- * Incremental: incidentes já conhecidos só atualizam estado; detalhes só para novos.
+ *
+ * Incremental (padrão): relê a lista desde CIOP_INCIDENTES_DATA_MIN e atualiza
+ * detalhes dos últimos CIOP_INCIDENTES_JANELA_ATUALIZACAO_DIAS (180).
+ * Completo: CIOP_INCIDENTES_FULL=1 relê lista e detalhes de toda a base.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,7 +26,8 @@ const detailLimit = Number(process.env.CIOP_INCIDENTES_DETALHES_LIMITE || 0);
 const loadDetails = process.env.CIOP_INCIDENTES_DETALHES !== '0';
 const pageLength = Number(process.env.CIOP_INCIDENTES_LOTE || 2000);
 const DATA_MINIMA_ISO = String(process.env.CIOP_INCIDENTES_DATA_MIN || "2026-01-01").trim();
-const JANELA_ATUALIZACAO_DIAS = Number(process.env.CIOP_INCIDENTES_JANELA_ATUALIZACAO_DIAS || 10);
+const JANELA_ATUALIZACAO_DIAS = Number(process.env.CIOP_INCIDENTES_JANELA_ATUALIZACAO_DIAS || 180);
+const FORCE_FULL = process.env.CIOP_INCIDENTES_FULL === "1";
 if (!usuario || !senha) {
   throw new Error('Configure CIOP_INCIDENTES_USUARIO e CIOP_INCIDENTES_SENHA antes de atualizar os incidentes.');
 }
@@ -294,6 +298,7 @@ function isOnOrAfterMinDate(row) {
 }
 
 function isDentroJanelaAtualizacao(row) {
+  if (FORCE_FULL) return true;
   const date = parseBrazilianDate(row.data);
   if (!date) return true;
   return date >= janelaAtualizacaoCutoff;
@@ -591,13 +596,22 @@ let start = 0;
 let total = null;
 const rows = [];
 
-console.log(`Atualização: buscando todos os incidentes TCGL desde ${DATA_MINIMA_ISO.split("-").reverse().join("/")}.`);
+if (FORCE_FULL) {
+  console.log(`Atualização COMPLETA: toda a base TCGL desde ${DATA_MINIMA_ISO.split("-").reverse().join("/")}.`);
+} else {
+  console.log(`Atualização: lista completa desde ${DATA_MINIMA_ISO.split("-").reverse().join("/")} e detalhes dos últimos ${JANELA_ATUALIZACAO_DIAS} dias.`);
+}
 
 while (total === null || start < total) {
   const chunk = await loadChunk(jar, start, pageLength);
   if (chunk.length === 0) break;
   total = Number(chunk[0].QueryRowCount || chunk.length);
-  const normalized = chunk.map(normalize).filter((row) => isOnOrAfterMinDate(row));
+  const chunkNormalizedAll = chunk.map(normalize);
+  if (chunkNormalizedAll.length > 0 && chunkNormalizedAll.every(isBeforeMinDate)) {
+    console.log(`Atualização: lote anterior a ${DATA_MINIMA_ISO}. Encerrando paginação.`);
+    break;
+  }
+  const normalized = chunkNormalizedAll.filter((row) => isOnOrAfterMinDate(row));
   rows.push(...normalized);
   const snapshot = {
     atualizadoEm: new Date().toISOString(),
@@ -610,28 +624,10 @@ while (total === null || start < total) {
   };
   fs.writeFileSync(partialFile, JSON.stringify(snapshot));
   console.log(`Baixados ${rows.length}/${total} (desde ${DATA_MINIMA_ISO})`);
-  const chunkNormalizedAll = chunk.map(normalize);
-  if (chunkNormalizedAll.length > 0 && chunkNormalizedAll.every(isBeforeMinDate)) {
-    console.log(`Atualização: lote anterior a ${DATA_MINIMA_ISO}. Encerrando paginação.`);
-    break;
-  }
-if (chunkNormalizedAll.length > 0 && chunkSemNovidade(chunkNormalizedAll, existingPayload)) {
-    const chunkDentroJanela = chunkNormalizedAll.some(isDentroJanelaAtualizacao);
-    if (!chunkDentroJanela) {
-      console.log(`Atualização: lote sem novidades e fora da janela de ${JANELA_ATUALIZACAO_DIAS} dias - continuando mesmo assim para manter incidentes antigos atualizados (ex: mudança de proprietário).`);
-    } else {
-      console.log(`Atualização: lote sem novidades, mas dentro da janela de ${JANELA_ATUALIZACAO_DIAS} dias - continuando para garantir cobertura completa.`);
-    }
-  }
   start += pageLength;
 }
 
 const { merged: mergedRows, countNovos, countEstado, countDados, novosIds, atualizadosIds } = mergeRows(rows, existingPayload);
-if (fs.existsSync(outputFile) && countNovos === 0 && countEstado === 0 && countDados === 0) {
-  fs.rmSync(partialFile, { force: true });
-  console.log('Atualização incremental: nenhum incidente novo ou atualizado. JSON mantido sem alterações.');
-  process.exit(0);
-}
 const novosParaDetalhe = mergedRows.filter((row) => {
     const key = rowKey(row);
     if (!key) return false;
