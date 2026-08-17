@@ -444,6 +444,7 @@ function renderChart(visual) {
       responsive: true,
       maintainAspectRatio: false,
       interaction: { mode: "index", intersect: false },
+      animation: { duration: 650, easing: "easeOutQuart" },
       scales: {
         y: {
           position: "left",
