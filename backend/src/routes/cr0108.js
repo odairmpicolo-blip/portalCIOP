@@ -528,8 +528,36 @@ function citarColuna(nome) {
   return `"${n.replace(/"/g, "")}"`;
 }
 
-/* Relatório Clever 002 — cr_0002. Padrão: só o mês atual (histórico vai no JSON da página).
-   ?todos=1 devolve a tabela inteira em páginas. Inclui descrição/observação. */
+function isoCad(v) {
+  if (v == null || v === "") return "";
+  if (v instanceof Date && !Number.isNaN(v.getTime())) return v.toISOString().slice(0, 10);
+  const t = String(v).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10);
+  const br = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (br) return `${br[3]}-${br[2].padStart(2, "0")}-${br[1].padStart(2, "0")}`;
+  return "";
+}
+
+function dataDaLinhaCad(row, dataCol) {
+  const keys = [dataCol, "data_ref", "data", "dt", "date", "dt_incidente", "data_hora", "inicio"].filter(Boolean);
+  for (const k of keys) {
+    if (row?.[k] != null) {
+      const iso = isoCad(row[k]);
+      if (iso) return iso;
+    }
+    const found = Object.keys(row || {}).find((x) => x.toLowerCase() === String(k).toLowerCase());
+    if (found) {
+      const iso = isoCad(row[found]);
+      if (iso) return iso;
+    }
+  }
+  return "";
+}
+
+/* Relatório Clever 002 — cr_0002.
+   Histórico: JSON da página. Banco: mês atual em JS (não no SQL), porque a data
+   do 002 pode vir dd/mm/aaaa e o WHERE ::text zerava o resultado.
+   Se o mês vier vazio, devolve a tabela (carga nova após o wipe). */
 router.get("/cad", requireFirebaseUser, async (req, res) => {
   try {
     const pagina = Math.max(1, Number(req.query.pagina) || 1);
@@ -563,34 +591,32 @@ router.get("/cad", requireFirebaseUser, async (req, res) => {
 
     const dataCol = colunas.find((n) => /^(data_ref|data|dt|date)$/i.test(n))
       || colunas.find((n) => /data|date|dia/i.test(n));
-    const cond = [];
-    const par = [];
-    if (dataCol && ISO.test(de)) {
-      par.push(de);
-      cond.push(`${citarColuna(dataCol)}::text >= $${par.length}`);
-    }
-    if (dataCol && ISO.test(ate)) {
-      par.push(ate);
-      cond.push(`${citarColuna(dataCol)}::text <= $${par.length}`);
-    }
-    const where = cond.length ? ` WHERE ${cond.join(" AND ")}` : "";
     const lista = colunas.length ? colunas.map(citarColuna).join(", ") : "*";
-    const ordem = dataCol ? ` ORDER BY ${citarColuna(dataCol)} DESC` : "";
-
-    const totalQ = await query(`SELECT count(*)::int AS n FROM cr_0002${where}`, par);
-    const total = Number(totalQ.rows?.[0]?.n || 0);
 
     let r;
     try {
-      r = await query(
-        `SELECT ${lista} FROM cr_0002${where}${ordem} LIMIT ${limite} OFFSET ${offset}`,
-        par
-      );
+      r = await query(`SELECT ${lista} FROM cr_0002 LIMIT 5000`);
     } catch (_) {
-      r = await query(`SELECT ${lista} FROM cr_0002${where} LIMIT ${limite} OFFSET ${offset}`, par);
+      r = await query(`SELECT * FROM cr_0002 LIMIT 5000`);
     }
-    const itens = (r.rows || []).map(cadLinha);
+    let itens = (r.rows || []).map(cadLinha);
     if (!colunas.length && itens[0]) colunas = Object.keys(itens[0]);
+
+    let janela = "tabela";
+    if (!todos && ISO.test(de) && ISO.test(ate)) {
+      const doMes = itens.filter((row) => {
+        const iso = dataDaLinhaCad(row, dataCol);
+        if (!iso) return true;
+        return iso >= de && iso <= ate;
+      });
+      if (doMes.length) {
+        itens = doMes;
+        janela = "mes-atual";
+      }
+    }
+
+    const total = itens.length;
+    itens = itens.slice(offset, offset + limite);
 
     let cargas = {};
     try {
@@ -617,7 +643,7 @@ router.get("/cad", requireFirebaseUser, async (req, res) => {
         temMais: offset + itens.length < total,
         de: ISO.test(de) ? de : null,
         ate: ISO.test(ate) ? ate : null,
-        janela: todos ? "todos" : "mes-atual",
+        janela,
         ...cargas
       },
       itens

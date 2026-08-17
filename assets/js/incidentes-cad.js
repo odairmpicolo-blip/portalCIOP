@@ -143,7 +143,7 @@
     });
   }
   function pickDate(row) {
-    var raw = get(row, ["data", "data_ref", "dt_incidente", "dt", "created_at", "data_hora", "inicio"]);
+    var raw = get(row, ["data", "data_ref", "dt_incidente", "dt", "created_at", "data_hora", "inicio", "date", "dia", "data_ocorrencia", "dt_cad"]);
     var s = String(raw || "").slice(0, 10);
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
     var m = String(raw || "").match(/^(\d{2})\/(\d{2})\/(\d{4})/);
@@ -452,13 +452,14 @@
       var bruto = banco ? linhasDe(banco) : [];
       var doMes = bruto.filter(function (r) {
         var d = pickDate(r);
-        return d && d >= mes.de && d <= mes.ate;
+        if (!d) return true;
+        return d >= mes.de && d <= mes.ate;
       });
       if (!doMes.length && bruto.length) doMes = bruto;
       var nMes = doMes.length;
       if (nMes) {
         receber({ itens: doMes, colunas: banco.colunas, meta: banco.meta, origem: banco.origem }, state.jsonCount ? "json + banco" : "banco", { mesclar: Boolean(state.jsonCount) });
-        setStatus("Histórico JSON (" + num(state.jsonCount) + ") + mês atual (" + num(nMes) + ") · " + num(state.all.length) + " no total", "ok");
+        setStatus("Banco cr_0002 · " + num(nMes) + " registros" + (banco.meta && banco.meta.janela === "tabela" ? " (tabela atual)" : " no mês") + (state.jsonCount ? " + JSON " + num(state.jsonCount) : ""), "ok");
       } else if (state.all.length) {
         setStatus("Histórico JSON · " + num(state.all.length) + " · mês atual ainda sem linhas no banco", "ok");
       } else {
