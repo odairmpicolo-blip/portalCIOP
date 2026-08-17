@@ -279,7 +279,7 @@ tr:last-child td{border-bottom:0}
   <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
   <div class="title-wrap">
     <h1 class="relatorio-title-art" aria-label="Relatório de Ocorrência"><img src="../assets/img/titulo-relatorio.png" alt="Relatório de Ocorrência"></h1>
-    <div class="header-subtitle">PDFs salvos na AWS · por usuário e data</div>
+    <div class="header-subtitle">PDFs salvos na AWS · todos os relatórios gerados no portal</div>
   </div>
   <div class="header-actions">
     <div class="ciop-session" aria-label="Sessão do usuário">
@@ -300,7 +300,7 @@ tr:last-child td{border-bottom:0}
 
   <section class="panel">
     <h2>Relatório de Ocorrência</h2>
-    <p>Lista os PDFs já gerados/enviados e armazenados na AWS na pasta do usuário logado, organizados por data.</p>
+    <p>Lista os PDFs gerados em Criar Relatório e armazenados na AWS, de todos os usuários, organizados por data.</p>
     <div class="filters">
       <div class="field">
         <label for="filtroDe">De</label>
@@ -323,7 +323,7 @@ tr:last-child td{border-bottom:0}
           <th>Protocolo</th>
           <th>Funcionário</th>
           <th>Arquivo</th>
-          <th>Origem</th>
+          <th>Criado por</th>
           <th>Ações</th>
         </tr>
       </thead>
@@ -337,7 +337,7 @@ tr:last-child td{border-bottom:0}
 <footer class="page-footer">Portal CIOP · Relatório de Ocorrência · TCGL</footer>
 
 <script type="module">
-import { listarRelatoriosOcorrencia, urlDownloadRelatorioOcorrencia } from "../assets/js/relatorio-storage.js?v=20260720b";
+import { listarRelatoriosOcorrencia, urlDownloadRelatorioOcorrencia } from "../assets/js/relatorio-storage.js?v=20260817r";
 
 const statusEl = document.getElementById("statusLinha");
 const tbody = document.getElementById("tabelaBody");
@@ -384,7 +384,7 @@ async function carregar() {
         <td>${escapeHtml(item.protocolo || "—")}</td>
         <td>${escapeHtml(func)}</td>
         <td>${escapeHtml(item.nomeArquivo || "—")}</td>
-        <td>${escapeHtml(item.origem || "—")}</td>
+        <td>${escapeHtml(item.criadoPorNome || item.userEmail || "—")}</td>
         <td class="actions">
           <button type="button" class="btn-link" data-download="${escapeHtml(item.id)}">Abrir PDF</button>
         </td>

@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { config } from "../config.js";
 
@@ -80,4 +80,35 @@ export async function urlAssinadaRelatorioS3(key, expiresIn = 60 * 30) {
     new GetObjectCommand({ Bucket: bucket, Key: key }),
     { expiresIn }
   );
+}
+
+export function parseChaveRelatorio(key) {
+  const m = String(key || "").match(/^relatorios\/([^/]+)\/(\d{4}-\d{2}-\d{2})\/(.+)$/);
+  if (!m) return null;
+  return { userEmail: decodeURIComponent(m[1]), dataIso: m[2], filename: m[3], key };
+}
+
+export async function listarPdfsRelatorioS3() {
+  const bucket = String(config.relatoriosS3Bucket || "").trim();
+  if (!bucket) return [];
+  const itens = [];
+  let token;
+  do {
+    const res = await getClient().send(new ListObjectsV2Command({
+      Bucket: bucket,
+      Prefix: "relatorios/",
+      ContinuationToken: token
+    }));
+    for (const obj of res.Contents || []) {
+      const parsed = parseChaveRelatorio(obj.Key);
+      if (!parsed) continue;
+      itens.push({
+        ...parsed,
+        size: obj.Size || 0,
+        lastModified: obj.LastModified || null
+      });
+    }
+    token = res.IsTruncated ? res.NextContinuationToken : undefined;
+  } while (token);
+  return itens;
 }
