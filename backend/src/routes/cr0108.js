@@ -486,35 +486,66 @@ router.get("/histograma", requireFirebaseUser, async (req, res) => {
   } catch (err) { erro(res, err); }
 });
 
+function jsonSafe(v) {
+  if (v == null) return v;
+  if (typeof v === "bigint") return Number(v);
+  if (v instanceof Date) return v.toISOString();
+  if (typeof v === "string") return v.length > 220 ? v.slice(0, 220) : v;
+  if (Array.isArray(v)) return v.slice(0, 20).map(jsonSafe);
+  if (typeof v === "object") {
+    const o = {};
+    for (const [k, val] of Object.entries(v)) {
+      if (/descricao|observ|comentario|payload|html|xml|foto|image|blob/i.test(k)) continue;
+      o[k] = jsonSafe(val);
+    }
+    return o;
+  }
+  return v;
+}
+
+function compactarLinha(row) {
+  if (!row || typeof row !== "object") return row;
+  const extra = row.payload && typeof row.payload === "object" && !Array.isArray(row.payload) ? row.payload : null;
+  return jsonSafe(extra ? { ...row, ...extra } : row);
+}
+
+function citarColuna(nome) {
+  const n = String(nome || "");
+  if (/^[a-z_][a-z0-9_]*$/i.test(n)) return n;
+  return `"${n.replace(/"/g, "")}"`;
+}
+
 /* Relatório Clever 002 — tabela real no DSQL: cr_0002 (+ cr_0002_cargas).
-   Não confundir com cr_0108 (ranking/pontos) nem com cr_0258/custom (IPV). */
+   SELECT * com 8000 linhas estoura o limite de 6 MB da Lambda (HTTP 413/500). */
 router.get("/cad", requireFirebaseUser, async (req, res) => {
   try {
-    const de = String(req.query.de || "");
-    const ate = String(req.query.ate || "");
-    const cond = [];
-    const par = [];
-    if (ISO.test(de)) { par.push(de); cond.push(`data_ref >= $${par.length}::date`); }
-    if (ISO.test(ate)) { par.push(ate); cond.push(`data_ref <= $${par.length}::date`); }
-    const where = cond.length ? ` WHERE ${cond.join(" AND ")}` : "";
+    const limite = Math.min(Math.max(Number(req.query.limite) || 1200, 50), 2500);
+    let colunas = [];
+    try {
+      const c = await query(
+        `SELECT column_name FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'cr_0002'
+         ORDER BY ordinal_position`
+      );
+      colunas = c.rows.map((r) => r.column_name).filter((n) =>
+        !/descricao|observ|comentario|payload|html|xml|foto|image|blob/i.test(n)
+      ).slice(0, 36);
+    } catch (_) { /* cai no SELECT * compactado */ }
+
+    const lista = colunas.length ? colunas.map(citarColuna).join(", ") : "*";
+    const dataCol = colunas.find((n) => /^(data_ref|data|dt|date)$/i.test(n))
+      || colunas.find((n) => /data|date|dia/i.test(n));
     let r;
     try {
-      r = await query(`SELECT * FROM cr_0002 LIMIT 8000`);
-    } catch (e1) {
-      try {
-        r = await query(`SELECT * FROM cr_0002${where} LIMIT 8000`, par);
-      } catch (e2) {
-        throw e1;
-      }
+      const ordem = dataCol ? ` ORDER BY ${citarColuna(dataCol)} DESC` : "";
+      r = await query(`SELECT ${lista} FROM cr_0002${ordem} LIMIT ${limite}`);
+    } catch (_) {
+      r = await query(`SELECT ${lista} FROM cr_0002 LIMIT ${limite}`);
     }
-    let itens = r.rows || [];
-    itens = itens.map((row) => {
-      if (!row || typeof row !== "object") return row;
-      const extra = row.payload;
-      if (extra && typeof extra === "object" && !Array.isArray(extra)) return { ...row, ...extra };
-      return row;
-    });
-    let meta = null;
+    const itens = (r.rows || []).map(compactarLinha);
+    const total = itens.length;
+
+    let meta = { total, limite, recorte: itens.length };
     try {
       const c = await query(
         `SELECT min(data_ref)::text AS "primeiroDia",
@@ -523,9 +554,10 @@ router.get("/cad", requireFirebaseUser, async (req, res) => {
                 coalesce(sum(linhas), 0) AS registros
          FROM cr_0002_cargas`
       );
-      meta = c.rows[0] || null;
-    } catch (_) { /* cargas pode ter outro desenho; a página segue com as linhas */ }
-    res.json({ ok: true, origem: "dsql", tabela: "cr_0002", meta, itens });
+      meta = { ...meta, ...(c.rows[0] || {}) };
+    } catch (_) { /* cargas pode ter outro desenho */ }
+
+    res.json({ ok: true, origem: "dsql", tabela: "cr_0002", colunas, meta, itens });
   } catch (err) { erro(res, err); }
 });
 

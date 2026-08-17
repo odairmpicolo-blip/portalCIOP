@@ -318,7 +318,10 @@
       }
       if (banco && linhasDe(banco).length) {
         receber(banco, banco.origem === "dsql" ? "banco" : (banco.origem || "banco"));
-        setStatus("Banco cr_0002 · " + num(state.all.length) + " registros", "ok");
+        var extra = banco.meta && (banco.meta.registros || banco.meta.total) && Number(banco.meta.registros || banco.meta.total) > state.all.length
+          ? " (recorte de " + num(banco.meta.registros || banco.meta.total) + ")"
+          : "";
+        setStatus("Banco cr_0002 · " + num(state.all.length) + " registros" + extra, "ok");
       } else if (!state.all.length) {
         setStatus((banco && banco.erro) ? banco.erro : "A API respondeu, mas cr_0002 veio sem linhas.", "");
       } else {
