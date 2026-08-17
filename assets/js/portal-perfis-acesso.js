@@ -189,10 +189,21 @@ export function listaModulosDePerfil(perfil, mapa) {
   return lista;
 }
 
+const ALIASES_MODULO = {
+  "incidentes-cad": ["incidentes-cad", "incidentes", "pontualidadeincidentes"],
+};
+
+function listaTemModulo(lista, moduloId) {
+  if (!Array.isArray(lista) || !moduloId) return false;
+  if (lista.includes("*")) return true;
+  const ids = ALIASES_MODULO[moduloId] || [moduloId];
+  return ids.some((id) => lista.includes(id));
+}
+
 export function perfilTemModulo(perfil, moduloId, mapa) {
   const lista = listaModulosDePerfil(perfil, mapa);
   if (!lista || !moduloId) return null;
-  return lista.includes(moduloId) || lista.includes("*");
+  return listaTemModulo(lista, moduloId);
 }
 
 export function usuarioTemModulo(email, perfil, moduloId) {
@@ -202,8 +213,7 @@ export function usuarioTemModulo(email, perfil, moduloId) {
   if (usuarios && Object.prototype.hasOwnProperty.call(usuarios, emailKey)) {
     const lista = usuarios[emailKey];
     if (!Array.isArray(lista)) return null;
-    if (lista.includes("*")) return true;
-    return lista.includes(moduloId);
+    return listaTemModulo(lista, moduloId);
   }
   return perfilTemModulo(perfil, moduloId);
 }
