@@ -918,7 +918,7 @@ html.dk-dark .paper label{
 import { buscarUsuarioFirestore, normalizarCadastro } from "../assets/js/portal-firestore.js";
 import { usuarios as usuariosLocais } from "../assets/js/usuarios.js";
 import { TIPOS_RELATORIO, gerarTextoModelo, gerarTextoIA, corrigirTextoIA, configurarRelatorioIa, resumirErroIa } from "../assets/js/relatorio-ia.js?v=20260701b";
-import { salvarPdfRelatorioOcorrencia } from "../assets/js/relatorio-storage.js?v=20260720b";
+import { salvarPdfRelatorioOcorrencia } from "../assets/js/relatorio-storage.js?v=20260817a";
 import { initPortalAwsRuntime } from "../assets/js/portal-aws-config.js";
 
 const SHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
@@ -1711,43 +1711,6 @@ async function registrarProtocolo() {
 
    Falha aqui NAO pode atrapalhar o fluxo: o relatorio ja foi baixado e o protocolo ja
    foi registrado. Por isso o erro so avisa e segue. */
-async function guardarRelatorioNoPortal(pdf) {
-    try {
-        const cfg = await import("../assets/js/portal-aws-config.js");
-        await cfg.initPortalAwsRuntime();
-        if (!cfg.awsApiEnabled()) return false;
-        const token = await cfg.firebaseIdToken();
-
-        const informativo = ehInformativo();
-        const registro = informativo ? "INFORMATIVO" : String(campos.registro.value || "").trim();
-        const nome = informativo ? "INFORMATIVO" : String(campos.nome.value || "").trim();
-        const texto = nome && registro && registro !== "INFORMATIVO" ? registro + " - " + nome : registro;
-
-        await cfg.awsFetch("/relatorios/upload", {
-            method: "POST",
-            token,
-            body: {
-                filename: nomeArquivoPdf(),
-                pdfBase64: pdfParaBase64(pdf),
-                dataDocumento: campos.data.value || hojeISO(),
-                protocolo: String(campos.numero.value || "").trim(),
-                funcionarioRegistro: registro,
-                funcionarioNome: nome,
-                funcionarioTexto: texto,
-                origem: "criar-relatorio",
-                /* `analista` e local de outra funcao — usar aqui lançaria ReferenceError
-                   e, por estar dentro do try, o envio falharia sempre em silencio.
-                   `usuarioCriador` e do escopo do modulo e guarda o mesmo dado. */
-                criadoPorNome: (usuarioCriador && usuarioCriador.nome) ? String(usuarioCriador.nome) : ""
-            }
-        });
-        return true;
-    } catch (err) {
-        console.error("Relatorio nao foi guardado no portal:", err && err.message);
-        return false;
-    }
-}
-
 function nomeArquivoPdf() {
     const numero = String(campos.numero.value || "").replace(/\D/g, "");
     const data = campos.data.value || hojeISO();
@@ -1838,17 +1801,17 @@ async function construirPdfRelatorio() {
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
-    const imgData = canvas.toDataURL("image/png");
+    const imgData = canvas.toDataURL("image/jpeg", 0.72);
     const imgH = (canvas.height * pageW) / canvas.width;
 
     let y = 0;
     let restante = imgH;
-    pdf.addImage(imgData, "PNG", 0, y, pageW, imgH, undefined, "FAST");
+    pdf.addImage(imgData, "JPEG", 0, y, pageW, imgH, undefined, "FAST");
     restante -= pageH;
     while (restante > 1) {
         pdf.addPage();
         y = restante - imgH;
-        pdf.addImage(imgData, "PNG", 0, y, pageW, imgH, undefined, "FAST");
+        pdf.addImage(imgData, "JPEG", 0, y, pageW, imgH, undefined, "FAST");
         restante -= pageH;
     }
 
@@ -1961,7 +1924,6 @@ async function enviarRelatorio() {
         try {
             pdf = await construirPdfRelatorio();
             pdf.save(nomeArquivoPdf());
-            await guardarRelatorioNoPortal(pdf);
         } catch (errPdf) {
             window.print();
             throw errPdf;

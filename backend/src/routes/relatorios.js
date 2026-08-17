@@ -2,7 +2,15 @@ import { Router } from "express";
 import { randomUUID } from "node:crypto";
 import { query } from "../db.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
-import { enviarPdfRelatorioS3, listarPdfsRelatorioS3, montarChaveRelatorio, relatoriosS3Configurado, urlAssinadaRelatorioS3 } from "../lib/relatorios-s3.js";
+import {
+  enviarPdfRelatorioS3,
+  listarPdfsRelatorioS3,
+  montarChaveRelatorio,
+  relatorioExisteNoS3,
+  relatoriosS3Configurado,
+  urlAssinadaRelatorioS3,
+  urlPresignPutRelatorioS3
+} from "../lib/relatorios-s3.js";
 
 const router = Router();
 const MAX_PDF_BYTES = 12 * 1024 * 1024;
@@ -19,6 +27,25 @@ function dataIsoValida(valor) {
     return `${br[3]}-${br[2].padStart(2, "0")}-${br[1].padStart(2, "0")}`;
   }
   return new Date().toISOString().slice(0, 10);
+}
+
+function camposUpload(body) {
+  return {
+    filename: String(body?.filename || "relatorio.pdf").trim() || "relatorio.pdf",
+    dataDocumento: dataIsoValida(body?.dataDocumento),
+    protocolo: String(body?.protocolo || "").trim().slice(0, 80),
+    funcionarioRegistro: String(body?.funcionarioRegistro || "").trim().slice(0, 80),
+    funcionarioNome: String(body?.funcionarioNome || "").trim().slice(0, 180),
+    funcionarioTexto: String(body?.funcionarioTexto || "").trim().slice(0, 260),
+    origem: String(body?.origem || "pdf").trim().slice(0, 40) || "pdf",
+    criadoPorNome: String(body?.criadoPorNome || "").trim().slice(0, 180)
+  };
+}
+
+function chaveDoUsuario(key, userEmail) {
+  const esperado = montarChaveRelatorio({ userEmail, dataIso: "2000-01-01", filename: "x.pdf" })
+    .replace(/\/2000-01-01\/x\.pdf$/, "/");
+  return String(key || "").startsWith(esperado);
 }
 
 function decodeBase64Pdf(base64) {
@@ -144,20 +171,14 @@ router.post("/upload", requireFirebaseUser, async (req, res) => {
       return;
     }
 
-    const filename = String(req.body?.filename || "relatorio.pdf").trim() || "relatorio.pdf";
-    const dataDocumento = dataIsoValida(req.body?.dataDocumento);
-    const protocolo = String(req.body?.protocolo || "").trim().slice(0, 80);
-    const funcionarioRegistro = String(req.body?.funcionarioRegistro || "").trim().slice(0, 80);
-    const funcionarioNome = String(req.body?.funcionarioNome || "").trim().slice(0, 180);
-    const funcionarioTexto = String(req.body?.funcionarioTexto || "").trim().slice(0, 260);
-    const origem = String(req.body?.origem || "pdf").trim().slice(0, 40) || "pdf";
-    const criadoPorNome = String(req.body?.criadoPorNome || "").trim().slice(0, 180);
+    const campos = camposUpload(req.body);
     const buffer = decodeBase64Pdf(req.body?.pdfBase64);
 
     const key = montarChaveRelatorio({
       userEmail,
-      dataIso: dataDocumento,
-      filename
+      dataIso: campos.dataDocumento,
+      filename: campos.filename,
+      uniqueId: randomUUID().slice(0, 8)
     });
 
     await garantirTabela();
@@ -166,9 +187,9 @@ router.post("/upload", requireFirebaseUser, async (req, res) => {
       buffer,
       metadata: {
         criadoPor: userEmail,
-        protocolo,
-        origem,
-        dataDocumento
+        protocolo: campos.protocolo,
+        origem: campos.origem,
+        dataDocumento: campos.dataDocumento
       }
     });
 
@@ -177,23 +198,23 @@ router.post("/upload", requireFirebaseUser, async (req, res) => {
     await registrarMetadado({
       id,
       userEmail,
-      dataDocumento,
-      protocolo,
-      funcionarioRegistro,
-      funcionarioNome,
-      funcionarioTexto,
-      nomeArquivo: filename,
+      dataDocumento: campos.dataDocumento,
+      protocolo: campos.protocolo,
+      funcionarioRegistro: campos.funcionarioRegistro,
+      funcionarioNome: campos.funcionarioNome,
+      funcionarioTexto: campos.funcionarioTexto,
+      nomeArquivo: campos.filename,
       storageKey: s3.key,
       storageUri: s3.s3Uri,
-      origem,
-      criadoPorNome
+      origem: campos.origem,
+      criadoPorNome: campos.criadoPorNome
     });
 
     res.json({
       ok: true,
       id,
       userEmail,
-      dataDocumento,
+      dataDocumento: campos.dataDocumento,
       storageKey: s3.key,
       storageUri: s3.s3Uri,
       url: s3.url || ""
@@ -201,6 +222,92 @@ router.post("/upload", requireFirebaseUser, async (req, res) => {
   } catch (err) {
     console.error("relatorios/upload:", err);
     res.status(500).json({ ok: false, erro: err.message || "Falha ao salvar PDF" });
+  }
+});
+
+router.post("/presign", requireFirebaseUser, async (req, res) => {
+  try {
+    if (!relatoriosS3Configurado()) {
+      res.status(503).json({ ok: false, erro: "Armazenamento S3 de relatórios não configurado" });
+      return;
+    }
+    const userEmail = normalizarEmail(req.user?.email);
+    if (!userEmail || userEmail === "api-key") {
+      res.status(401).json({ ok: false, erro: "Usuário inválido" });
+      return;
+    }
+    const campos = camposUpload(req.body);
+    const key = montarChaveRelatorio({
+      userEmail,
+      dataIso: campos.dataDocumento,
+      filename: campos.filename,
+      uniqueId: randomUUID().slice(0, 8)
+    });
+    const uploadUrl = await urlPresignPutRelatorioS3(key);
+    res.json({
+      ok: true,
+      key,
+      uploadUrl,
+      contentType: "application/pdf",
+      ...campos,
+      userEmail
+    });
+  } catch (err) {
+    console.error("relatorios/presign:", err);
+    res.status(500).json({ ok: false, erro: err.message || "Falha ao assinar upload" });
+  }
+});
+
+router.post("/confirmar", requireFirebaseUser, async (req, res) => {
+  try {
+    if (!relatoriosS3Configurado()) {
+      res.status(503).json({ ok: false, erro: "Armazenamento S3 de relatórios não configurado" });
+      return;
+    }
+    const userEmail = normalizarEmail(req.user?.email);
+    if (!userEmail || userEmail === "api-key") {
+      res.status(401).json({ ok: false, erro: "Usuário inválido" });
+      return;
+    }
+    const key = String(req.body?.key || req.body?.storageKey || "").trim();
+    if (!chaveDoUsuario(key, userEmail)) {
+      res.status(403).json({ ok: false, erro: "Chave de armazenamento inválida" });
+      return;
+    }
+    const existe = await relatorioExisteNoS3(key);
+    if (!existe) {
+      res.status(400).json({ ok: false, erro: "PDF ainda não está no S3" });
+      return;
+    }
+    const campos = camposUpload(req.body);
+    const bucket = String(process.env.RELATORIOS_S3_BUCKET || "").trim();
+    const id = randomUUID();
+    await garantirTabela();
+    await registrarMetadado({
+      id,
+      userEmail,
+      dataDocumento: campos.dataDocumento,
+      protocolo: campos.protocolo,
+      funcionarioRegistro: campos.funcionarioRegistro,
+      funcionarioNome: campos.funcionarioNome,
+      funcionarioTexto: campos.funcionarioTexto,
+      nomeArquivo: campos.filename,
+      storageKey: key,
+      storageUri: bucket ? `s3://${bucket}/${key}` : "",
+      origem: campos.origem,
+      criadoPorNome: campos.criadoPorNome
+    });
+    res.json({
+      ok: true,
+      id,
+      userEmail,
+      dataDocumento: campos.dataDocumento,
+      storageKey: key,
+      storageUri: bucket ? `s3://${bucket}/${key}` : ""
+    });
+  } catch (err) {
+    console.error("relatorios/confirmar:", err);
+    res.status(500).json({ ok: false, erro: err.message || "Falha ao confirmar PDF" });
   }
 });
 
