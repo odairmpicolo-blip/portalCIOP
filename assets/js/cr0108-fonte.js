@@ -427,9 +427,8 @@ async function cad(p) {
     const cfg = await import("./portal-aws-config.js");
     if (typeof cfg.initPortalAwsRuntime === "function") await cfg.initPortalAwsRuntime();
     if (!cfg.awsApiEnabled()) return { ok: false, erro: "API AWS não configurada", itens: [] };
-    const mes = mesAtualCad();
-    const limite = Number(p?.limite) || 1500;
-    const base = { de: mes.de, ate: mes.ate, ...(p || {}) };
+    const limite = Number(p?.limite) || 800;
+    const base = { todos: "1", ...(p || {}) };
     delete base.pagina;
     delete base.limite;
     let pagina = 1;
@@ -437,18 +436,18 @@ async function cad(p) {
     let colunas = [];
     let meta = {};
     let prevSig = "";
-    while (pagina <= 40) {
+    while (pagina <= 200) {
       const r = await chamar("/cad", { ...base, pagina, limite });
       if (!r) return { ok: false, erro: "resposta vazia da API", itens };
-      if (r.ok === false) return itens.length ? { ...r, ok: true, itens, colunas, meta } : r;
+      if (r.ok === false) return itens.length ? { ok: true, origem: "dsql", tabela: "cr_0002", itens, colunas, meta } : r;
       colunas = r.colunas && r.colunas.length ? r.colunas : colunas;
       meta = r.meta || meta;
       const lote = Array.isArray(r.itens) ? r.itens : [];
-      const sig = JSON.stringify(lote[0] || null);
+      const sig = JSON.stringify(lote[0] || null) + "|" + lote.length;
       if (pagina > 1 && sig && sig === prevSig) break;
       prevSig = sig;
       itens = itens.concat(lote);
-      const total = Number(meta.total || 0);
+      const total = Number(meta.totalTabela || meta.total || 0);
       if (!lote.length) break;
       if (total && itens.length >= total) break;
       if (lote.length < limite) break;
@@ -460,7 +459,7 @@ async function cad(p) {
       origem: "dsql",
       tabela: "cr_0002",
       colunas,
-      meta: { ...meta, total: Number(meta.total || itens.length), carregados: itens.length, de: base.de, ate: base.ate, janela: "mes-atual" },
+      meta: { ...meta, total: Number(meta.totalTabela || meta.total || itens.length), carregados: itens.length, janela: "tabela" },
       itens
     };
   } catch (err) {

@@ -479,8 +479,7 @@
 
   async function carregarBanco() {
     if (!window.Fonte || typeof Fonte.cad !== "function") return null;
-    var mes = mesAtual();
-    return Fonte.cad({ de: mes.de, ate: mes.ate });
+    return Fonte.cad({ todos: "1", limite: 800 });
   }
 
   async function iniciar() {
@@ -504,23 +503,18 @@
       setStatus("Sem JSON de histórico. Aguardando sessão para o mês atual…", "load");
     }
     await esperarAuth();
-    setStatus("Buscando cr_0002 só em " + mes.de.slice(0, 7) + "…", "load");
+    setStatus("Buscando todos os registros de cr_0002…", "load");
     try {
       var banco = await carregarBanco();
       if (banco && banco.ok === false && !linhasDe(banco).length) {
         throw new Error(banco.erro || "API CAD recusou a leitura");
       }
       var bruto = banco ? linhasDe(banco) : [];
-      var doMes = bruto.filter(function (r) {
-        var d = pickDate(r);
-        if (!d) return true;
-        return d >= mes.de && d <= mes.ate;
-      });
-      if (!doMes.length && bruto.length) doMes = bruto;
-      var nMes = doMes.length;
+      var nMes = bruto.length;
+      var totalTab = Number(banco && banco.meta && (banco.meta.totalTabela || banco.meta.total)) || nMes;
       if (nMes) {
-        receber({ itens: doMes, colunas: banco.colunas, meta: banco.meta, origem: banco.origem }, state.jsonCount ? "json + banco" : "banco", { mesclar: Boolean(state.jsonCount) });
-        setStatus("Banco cr_0002 · " + num(nMes) + " registros" + (banco.meta && banco.meta.janela === "tabela" ? " (tabela atual)" : " no mês") + (state.jsonCount ? " + JSON " + num(state.jsonCount) : ""), "ok");
+        receber({ itens: bruto, colunas: banco.colunas, meta: banco.meta, origem: banco.origem }, state.jsonCount ? "json + banco" : "banco", { mesclar: Boolean(state.jsonCount) });
+        setStatus("Banco cr_0002 · " + num(state.all.length) + " registros" + (totalTab > nMes ? " de " + num(totalTab) : "") + (state.jsonCount ? " + JSON " + num(state.jsonCount) : ""), "ok");
       } else if (state.all.length) {
         setStatus("Histórico JSON · " + num(state.all.length) + " · mês atual ainda sem linhas no banco", "ok");
       } else {

@@ -554,27 +554,13 @@ function dataDaLinhaCad(row, dataCol) {
   return "";
 }
 
-/* Relatório Clever 002 — cr_0002.
-   Histórico: JSON da página. Banco: mês atual em JS (não no SQL), porque a data
-   do 002 pode vir dd/mm/aaaa e o WHERE ::text zerava o resultado.
-   Se o mês vier vazio, devolve a tabela (carga nova após o wipe). */
+/* Relatório Clever 002 — cr_0002 em páginas (OFFSET). Sem teto de 5000.
+   O cliente junta as páginas até count(*). */
 router.get("/cad", requireFirebaseUser, async (req, res) => {
   try {
     const pagina = Math.max(1, Number(req.query.pagina) || 1);
-    const limite = Math.min(Math.max(Number(req.query.limite) || 1500, 50), 4000);
+    const limite = Math.min(Math.max(Number(req.query.limite) || 800, 50), 2000);
     const offset = (pagina - 1) * limite;
-    const todos = String(req.query.todos || "") === "1";
-    const br = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-    const [y, mo] = br.split("-");
-    const ultimo = new Date(Number(y), Number(mo), 0).getDate();
-    const mesDe = `${y}-${mo}-01`;
-    const mesAte = `${y}-${mo}-${String(ultimo).padStart(2, "0")}`;
-    let de = String(req.query.de || "");
-    let ate = String(req.query.ate || "");
-    if (!todos && !ISO.test(de) && !ISO.test(ate)) {
-      de = mesDe;
-      ate = mesAte;
-    }
 
     let colunas = [];
     try {
@@ -591,32 +577,27 @@ router.get("/cad", requireFirebaseUser, async (req, res) => {
 
     const dataCol = colunas.find((n) => /^(data_ref|data|dt|date)$/i.test(n))
       || colunas.find((n) => /data|date|dia/i.test(n));
+    const idCol = colunas.find((n) => /^(id|id_incidente|pk)$/i.test(n));
     const lista = colunas.length ? colunas.map(citarColuna).join(", ") : "*";
+    const ordem = idCol
+      ? ` ORDER BY ${citarColuna(idCol)}`
+      : (dataCol ? ` ORDER BY ${citarColuna(dataCol)} DESC` : " ORDER BY 1");
+
+    let totalTabela = 0;
+    try {
+      const c = await query(`SELECT count(*)::int AS n FROM cr_0002`);
+      totalTabela = Number(c.rows?.[0]?.n || 0);
+    } catch (_) { /* segue no SELECT */ }
 
     let r;
     try {
-      r = await query(`SELECT ${lista} FROM cr_0002 LIMIT 5000`);
+      r = await query(`SELECT ${lista} FROM cr_0002${ordem} LIMIT ${limite} OFFSET ${offset}`);
     } catch (_) {
-      r = await query(`SELECT * FROM cr_0002 LIMIT 5000`);
+      r = await query(`SELECT ${lista} FROM cr_0002 LIMIT ${limite} OFFSET ${offset}`);
     }
-    let itens = (r.rows || []).map(cadLinha);
+    const itens = (r.rows || []).map(cadLinha);
     if (!colunas.length && itens[0]) colunas = Object.keys(itens[0]);
-
-    let janela = "tabela";
-    if (!todos && ISO.test(de) && ISO.test(ate)) {
-      const doMes = itens.filter((row) => {
-        const iso = dataDaLinhaCad(row, dataCol);
-        if (!iso) return true;
-        return iso >= de && iso <= ate;
-      });
-      if (doMes.length) {
-        itens = doMes;
-        janela = "mes-atual";
-      }
-    }
-
-    const total = itens.length;
-    itens = itens.slice(offset, offset + limite);
+    if (!totalTabela) totalTabela = offset + itens.length + (itens.length === limite ? 1 : 0);
 
     let cargas = {};
     try {
@@ -636,14 +617,13 @@ router.get("/cad", requireFirebaseUser, async (req, res) => {
       tabela: "cr_0002",
       colunas,
       meta: {
-        total,
+        total: totalTabela,
+        totalTabela,
         pagina,
         limite,
         recorte: itens.length,
-        temMais: offset + itens.length < total,
-        de: ISO.test(de) ? de : null,
-        ate: ISO.test(ate) ? ate : null,
-        janela,
+        temMais: offset + itens.length < totalTabela,
+        janela: "tabela",
         ...cargas
       },
       itens
