@@ -12,7 +12,9 @@ function dkNormalize(pref) {
 }
 
 function dkStoredPref() {
-  return dkNormalize(localStorage.getItem(DK_KEY));
+  var stored = localStorage.getItem(DK_KEY);
+  if (stored == null) return "auto";
+  return dkNormalize(stored);
 }
 
 function dkPreferDarkByTime(date) {
@@ -115,6 +117,10 @@ function dkSetPref(pref) {
 
 (function dkBoot() {
   var stored = localStorage.getItem(DK_KEY);
+  if (stored == null) {
+    stored = "auto";
+    localStorage.setItem(DK_KEY, stored);
+  }
   var mode = dkNormalize(stored);
   if (stored !== mode) localStorage.setItem(DK_KEY, mode);
   dkApply(mode);
