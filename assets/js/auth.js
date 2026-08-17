@@ -13,12 +13,7 @@ import {
 import { app, buscarUsuarioFirestore, normalizarCadastro } from "./portal-firestore.js";
 import { usuarios } from "./usuarios.js";
 import { aplicarSaudacaoHero } from "./portal-saudacao.js?v=20260704a";
-import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260817b";
-import {
-  iniciarHeartbeatPresenca,
-  pararHeartbeatPresenca,
-  marcarPresencaOffline
-} from "./portal-chat.js?v=20260720b";
+import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260817c";
 
 const auth = getAuth(app);
 
@@ -283,18 +278,6 @@ function notificarPortalPronto() {
   if (typeof window.iniciarAvisosPortal === "function") {
     window.iniciarAvisosPortal();
   }
-  garantirChatWidget();
-}
-
-function garantirChatWidget() {
-  if (document.querySelector("script[data-portal-chat-widget]")) return;
-  const path = String(window.location.pathname || "");
-  if (/\/login\.html$/i.test(path)) return;
-  const script = document.createElement("script");
-  script.type = "module";
-  script.src = portalPath("assets/js/portal-chat-widget.js?v=20260720b");
-  script.dataset.portalChatWidget = "1";
-  document.head.appendChild(script);
 }
 
 function garantirMarcaPortal() {
@@ -425,12 +408,8 @@ async function atualizarCadastroCache(email, user) {
 
 window.logout = function () {
   try { sessionStorage.removeItem(CADASTRO_CACHE_KEY); } catch (_) {}
-  const email = window.portalUsuario?.email;
-  pararHeartbeatPresenca();
-  Promise.resolve(marcarPresencaOffline(email)).finally(() => {
-    signOut(auth).finally(() => {
-      window.location.href = portalPath("login.html");
-    });
+  signOut(auth).finally(() => {
+    window.location.href = portalPath("login.html");
   });
 };
 
@@ -636,7 +615,6 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
       liberarHtmlValidado();
       ocultarCarregando();
       notificarPortalPronto();
-      try { iniciarHeartbeatPresenca(window.portalUsuario); } catch (_) {}
     } else {
       liberarHtmlValidado();
       ocultarCarregando();

@@ -6,7 +6,7 @@ service cloud.firestore {
     }
 
     function email() {
-      // Auth pode devolver maiúsculas; membros do chat são gravados em minúsculas.
+      // Auth pode devolver maiúsculas.
       return request.auth.token.email.lower();
     }
 
@@ -46,36 +46,6 @@ service cloud.firestore {
       return signedIn() && email() == 'odair.marin@icloud.com';
     }
 
-    function eMembroSala(salaId) {
-      // Preferência: id da sala (sempre com e-mails em minúsculas) + lista membros.
-      return signedIn() && (
-        email() in salaId.split('__')
-        || (
-          resource.data.membros is list
-          && (email() in resource.data.membros || request.auth.token.email in resource.data.membros)
-        )
-      );
-    }
-
-    function seraMembroSala() {
-      return signedIn()
-        && request.resource.data.membros is list
-        && email() in request.resource.data.membros;
-    }
-
-    function podeLerMensagensSala(salaId) {
-      return donoPortal()
-        || (signedIn() && email() in salaId.split('__'))
-        || (
-          signedIn()
-          && get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros is list
-          && (
-            email() in get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros
-            || request.auth.token.email in get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros
-          )
-        );
-    }
-
     match /avisos/{avisoId} {
       allow read: if signedIn() && (
         podePostarAviso() ||
@@ -102,41 +72,6 @@ service cloud.firestore {
     match /config/{docId} {
       allow read: if signedIn();
       allow write: if donoPortal();
-    }
-
-    match /presenca/{userEmail} {
-      allow read: if signedIn();
-      allow create, update: if signedIn() && userEmail == email();
-      allow delete: if signedIn() && (userEmail == email() || donoPortal());
-    }
-
-    match /chatSalas/{salaId} {
-      allow read: if donoPortal() || eMembroSala(salaId);
-      allow create: if seraMembroSala()
-        && request.resource.data.tipo == 'dm'
-        && request.resource.data.membros.size() == 2;
-      allow update: if donoPortal() || eMembroSala(salaId);
-      allow delete: if donoPortal();
-
-      match /mensagens/{msgId} {
-        allow read: if podeLerMensagensSala(salaId);
-        allow create: if signedIn()
-          && request.resource.data.de == email()
-          && request.resource.data.texto is string
-          && request.resource.data.texto.size() > 0
-          && request.resource.data.texto.size() <= 4000
-          && (
-            email() in salaId.split('__')
-            || (
-              get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros is list
-              && (
-                email() in get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros
-                || request.auth.token.email in get(/databases/$(database)/documents/chatSalas/$(salaId)).data.membros
-              )
-            )
-          );
-        allow update, delete: if donoPortal();
-      }
     }
   }
 }
