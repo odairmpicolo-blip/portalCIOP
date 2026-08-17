@@ -412,10 +412,18 @@ async function histograma(p) {
 }
 
 async function cad(p) {
-  if (!(await disponivel())) return null;
-  const r = await chamar("/cad", p);
-  if (!r || !r.ok) return null;
-  return r;
+  try {
+    if (SO_ARQUIVO) return null;
+    const cfg = await import("./portal-aws-config.js");
+    if (typeof cfg.initPortalAwsRuntime === "function") await cfg.initPortalAwsRuntime();
+    if (!cfg.awsApiEnabled()) return null;
+    const r = await chamar("/cad", p || {});
+    if (!r || !r.ok) return null;
+    return r;
+  } catch (err) {
+    console.info("CAD: banco indisponível, usando o arquivo.", err.message);
+    return null;
+  }
 }
 
 async function ranking001(p) {

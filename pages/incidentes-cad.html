@@ -7,53 +7,87 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Incidentes CAD | Portal CIOP</title>
 <style>
-:root{--blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--bg:#f5f7fb;--border:#dfe5ef;--text:#101828;--muted:#3f4757;--surface:#fff;--surface-2:#f1f5f9}
+:root{
+  --blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--cyan:#0891b2;
+  --bg:#f5f7fb;--border:#dfe5ef;--text:#101828;--muted:#3f4757;
+  --surface:#fff;--ok:#059669;--warn:#d97706;--bad:#dc2626;
+}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;flex-direction:column}
 .header{background:var(--surface);display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);gap:16px;align-items:center;padding:8px 20px;border-bottom:1px solid #e8edf6}
 .header > a:first-child.portal-brand-mark{justify-self:start}
 .logo-tcgl{height:46px;object-fit:contain}
 .title-wrap{justify-self:center;text-align:center}
-.header-title{margin:0;color:var(--blue);font-size:18px;font-weight:900}
+.cad-kicker{margin:0;font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--orange)}
+.header-title{margin:2px 0 0;color:var(--blue);font-size:22px;font-weight:900;letter-spacing:-.03em}
 .header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700}
 .header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
-.container{max-width:none;margin:16px auto 32px;padding:0 14px;flex:1;width:100%}
-.toolbar-filtros{display:flex;align-items:flex-end;gap:10px 12px;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--border);box-shadow:0 8px 20px rgba(16,24,40,.06);margin-bottom:14px;flex-wrap:wrap}
-.btn-portal{display:inline-flex;align-items:center;gap:8px;min-height:38px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;background:var(--blue);color:#fff;border:0;cursor:pointer}
+.container{max-width:none;margin:16px auto 32px;padding:0 16px;flex:1;width:100%}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.nav-row{display:flex;gap:8px;flex-wrap:wrap}
+.btn-portal,.btn-ghost,.btn-accent{display:inline-flex;align-items:center;gap:8px;min-height:38px;text-decoration:none;border-radius:12px;font-size:13px;font-weight:800;padding:8px 14px;border:0;cursor:pointer;font-family:inherit}
+.btn-portal{background:var(--blue);color:#fff}
 .btn-portal:hover{background:var(--blue2)}
-.btn-ghost{background:var(--surface-2);color:var(--blue);border:1px solid var(--border)}
-.btn-icon{display:inline-flex;width:16px;height:16px;flex:0 0 auto}
+.btn-ghost{background:rgba(255,255,255,.72);color:var(--blue);border:1px solid rgba(6,36,92,.12)}
+.btn-accent{background:linear-gradient(135deg,#ff6b00,#ff8a3d);color:#fff}
+.btn-icon{display:inline-flex;width:16px;height:16px}
 .btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.campo{display:flex;flex-direction:column;gap:4px}
-.campo label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
-.campo select,.campo input{height:38px;border:1px solid var(--border);border-radius:10px;padding:0 10px;font:inherit;font-size:13px;font-weight:600;background:var(--surface-2);color:var(--text)}
-.campo-busca input{min-width:200px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px}
-.kpi{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--blue);border-radius:12px;padding:11px 13px;box-shadow:0 8px 20px rgba(16,24,40,.06)}
-.kpi .label{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--muted)}
-.kpi .value{font-size:23px;font-weight:900;color:var(--blue);margin-top:3px}
-.kpi .sub{font-size:11px;font-weight:700;color:var(--muted);margin-top:2px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 28px rgba(16,24,40,.07);overflow:hidden;margin-bottom:14px}
-.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.card-title{margin:0;color:var(--blue);font-size:14px;font-weight:900}
-.card-sub{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px}
-.tabela-wrap{overflow:auto;max-height:calc(100vh - 340px);min-height:320px}
-table.rel{width:100%;border-collapse:separate;border-spacing:0;font-size:11.5px;min-width:1100px}
-table.rel thead th{position:sticky;top:0;z-index:2;background:var(--blue);color:#fff;padding:8px 6px;font-size:9px;font-weight:900;text-transform:uppercase;text-align:center}
-table.rel tbody td{border-bottom:1px solid #edf2f7;padding:6px;text-align:center;background:var(--surface);vertical-align:middle}
-table.rel tbody tr:nth-child(even) td{background:#fafbfd}
+.status-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:700;color:var(--muted);background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.5)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#94a3b8}
+.status-dot.ok{background:var(--ok)}
+.status-dot.load{background:var(--orange);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.4}}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(140px,1fr));gap:12px;margin-bottom:14px}
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:720px){.kpis{grid-template-columns:1fr 1fr}.header{grid-template-columns:1fr;text-align:center}}
+.kpi{position:relative;overflow:hidden;padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.5);box-shadow:0 12px 32px rgba(16,24,40,.08)}
+.kpi::after{content:"";position:absolute;inset:auto -20% -40% auto;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(255,107,0,.18),transparent 70%)}
+.kpi .label{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kpi .value{margin-top:6px;font-size:24px;font-weight:900;color:var(--blue);letter-spacing:-.03em;line-height:1.1}
+.kpi .sub{margin-top:4px;font-size:11px;font-weight:700;color:var(--muted)}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:12px;border-radius:16px;margin-bottom:14px;background:rgba(255,255,255,.58);border:1px solid rgba(255,255,255,.45)}
+.campo{display:flex;flex-direction:column;gap:4px;flex:1 1 140px;min-width:120px}
+.campo.busca{flex:1.6 1 220px}
+.campo label{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.campo input,.campo select{height:38px;border:1px solid var(--border);border-radius:11px;padding:0 10px;font:inherit;font-size:13px;font-weight:600;background:#fff}
+.charts{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:12px;margin-bottom:14px}
+@media(max-width:1100px){.charts{grid-template-columns:1fr}}
+.chart-card,.table-card{border-radius:18px;background:rgba(255,255,255,.64);border:1px solid rgba(255,255,255,.5);box-shadow:0 14px 36px rgba(16,24,40,.08);overflow:hidden}
+.chart-card{padding:16px 16px 12px;min-height:280px}
+.card-title{margin:0 0 12px;color:var(--blue);font-size:14px;font-weight:900}
+.bar-row{display:grid;grid-template-columns:minmax(0,1fr) 42px;gap:8px;align-items:center;margin:7px 0}
+.bar-label{font-size:12px;font-weight:700;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-count{text-align:right;font-size:12px;font-weight:900;color:var(--blue)}
+.bar-track{grid-column:1/-1;height:8px;border-radius:999px;background:#edf2f7;overflow:hidden}
+.bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--blue),var(--orange))}
+.donut-wrap{display:flex;align-items:center;gap:16px;min-height:210px}
+.donut{width:150px;height:150px;border-radius:50%;flex:0 0 auto;background:#e2e8f0}
+.donut-hole{width:86px;height:86px;border-radius:50%;background:rgba(255,255,255,.92);margin:32px auto;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.donut-hole b{color:var(--blue);font-size:18px}
+.donut-hole span{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase}
+.legend{display:flex;flex-direction:column;gap:6px;flex:1}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.legend div{font-size:12px;font-weight:700;color:#334155}
+.table-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(15,23,42,.06)}
+.tabela-wrap{overflow:auto;max-height:calc(100vh - 360px);min-height:280px}
+table.rel{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;min-width:1080px}
+table.rel thead th{position:sticky;top:0;z-index:2;background:#06245c;color:#fff;padding:10px 8px;font-size:9px;letter-spacing:.04em;text-transform:uppercase;text-align:center}
+table.rel td{padding:9px 8px;text-align:center;border-bottom:1px solid rgba(15,23,42,.05)}
 table.rel td.txt{text-align:left}
-.aviso{padding:22px 16px;text-align:center;color:var(--muted);font-size:12.5px;font-weight:700}
-.pager{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-top:1px solid var(--border);flex-wrap:wrap}
+.tag{display:inline-flex;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:800}
+.tag-ok{background:#ecfdf5;color:#047857}
+.tag-warn{background:#fff7ed;color:#c2410c}
+.tag-info{background:#eff6ff;color:#1d4ed8}
+.empty{padding:48px 20px;text-align:center}
+.empty h3{margin:0 0 6px;color:var(--blue);font-size:18px}
+.empty p{margin:0;color:var(--muted);font-weight:700}
+.pager{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;flex-wrap:wrap;font-size:12px;font-weight:700;color:var(--muted)}
 .page-footer{padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-top:1px solid var(--border);background:var(--surface)}
-@media(max-width:720px){.header{grid-template-columns:1fr;text-align:center}}
 @media (min-width:721px){
   body{background:transparent !important}
   .body-bg-wall{position:fixed;inset:0;z-index:-3;background-image:url('../assets/img/portal-bg-onibus.jpg?v=20260718j');background-size:cover;background-position:center}
-  .body-bg-stain{position:fixed;inset:0;z-index:-2;pointer-events:none;background:linear-gradient(180deg, rgba(6,20,50,.30) 0%, rgba(6,20,50,.55) 100%)}
-  .header,.page-footer{background:rgba(255,255,255,.7) !important;backdrop-filter:blur(18px) saturate(200%)}
-  table.rel tbody td{background:transparent}
-  table.rel tbody tr:nth-child(even) td{background:rgba(255,255,255,.26)}
+  .body-bg-stain{position:fixed;inset:0;z-index:-2;pointer-events:none;background:linear-gradient(180deg, rgba(6,20,50,.28) 0%, rgba(6,20,50,.58) 100%)}
+  .header,.page-footer{background:rgba(255,255,255,.7)!important;backdrop-filter:blur(18px) saturate(180%)}
 }
 </style>
 <link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
@@ -71,72 +105,85 @@ table.rel td.txt{text-align:left}
 <div class="body-bg-wall" aria-hidden="true"></div>
 <div class="body-bg-stain" aria-hidden="true"></div>
 <header class="header">
-    <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
-    <div class="title-wrap">
-        <h1 class="header-title">Incidentes CAD</h1>
-        <div class="header-subtitle" id="statusLine">Relatório 002 · só incidentes CAD, sem misturar ranking nem IPV</div>
+  <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/titulo-portal-ciop.png" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
+  <div class="title-wrap">
+    <p class="cad-kicker">Clever · relatório 002</p>
+    <h1 class="header-title">Incidentes CAD</h1>
+    <div class="header-subtitle" id="statusLine">Carregando…</div>
+  </div>
+  <div class="header-actions">
+    <div class="ciop-session" aria-label="Sessão do usuário">
+      <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+      <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+      <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+      <button onclick="logout()" class="btn-logout" type="button">Sair</button>
     </div>
-    <div class="header-actions">
-        <div class="ciop-session" aria-label="Sessão do usuário">
-            <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
-            <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
-            <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
-            <button onclick="logout()" class="btn-logout" type="button">Sair</button>
-        </div>
-        <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
-    </div>
+    <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+  </div>
 </header>
 <main class="container">
-    <div class="toolbar toolbar-filtros">
-        <a class="btn-portal" href="../index.html"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Portal</a>
-        <a class="btn-portal btn-ghost" href="relatorios.html">Relatórios</a>
-        <div class="campo campo-busca"><label for="fBusca">Buscar</label><input type="search" id="fBusca" placeholder="ID, linha, veículo, tipo…" autocomplete="off"></div>
-        <div class="campo"><label for="fLinha">Linha</label><select id="fLinha"><option value="">Todas</option></select></div>
-        <div class="campo"><label for="fTipo">Tipo</label><select id="fTipo"><option value="">Todos</option></select></div>
-        <div class="campo"><label for="fDe">De</label><input type="date" id="fDe"></div>
-        <div class="campo"><label for="fAte">Até</label><input type="date" id="fAte"></div>
-        <button type="button" class="btn-portal btn-ghost" id="btnLimpar">Limpar</button>
-        <button type="button" class="btn-portal btn-ghost" id="btnCsv">CSV</button>
+  <div class="toolbar">
+    <div class="nav-row">
+      <a class="btn-portal" href="../index.html"><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Portal</a>
+      <a class="btn-ghost" href="relatorios.html">Relatórios</a>
+      <a class="btn-ghost" href="incidentes-dashboard.html">Incidentes TCGL</a>
     </div>
-    <section class="kpis" id="kpis"></section>
-    <section class="card">
-        <div class="card-head">
-            <div>
-                <h2 class="card-title">Incidentes CAD · relatório 002</h2>
-                <div class="card-sub">Fonte exclusiva do relatório 002. Não mistura ranking de motoristas (001) nem pontualidade (custom / 0258).</div>
-            </div>
-        </div>
-        <div class="tabela-wrap">
-            <table class="rel">
-                <thead>
-                    <tr>
-                        <th>ID</th><th>Data</th><th>Hora</th><th>Veículo</th><th>Linha</th>
-                        <th>Tipo</th><th>Motorista</th><th>Analista</th><th>Status</th><th>Natureza</th>
-                    </tr>
-                </thead>
-                <tbody id="tabelaBody"></tbody>
-            </table>
-        </div>
-        <div class="pager">
-            <div id="pageInfo">0 registros</div>
-            <div>
-                <button type="button" class="btn-portal btn-ghost" id="prevPage">Anterior</button>
-                <select id="pageSize">
-                    <option value="50">50</option>
-                    <option value="100" selected>100</option>
-                    <option value="250">250</option>
-                </select>
-                <button type="button" class="btn-portal btn-ghost" id="nextPage">Próxima</button>
-            </div>
-        </div>
-    </section>
+    <div class="nav-row">
+      <span class="status-pill"><span class="status-dot load" id="statusDot"></span><span id="origemPill">arquivo</span></span>
+      <button type="button" class="btn-ghost" id="btnAtualizar">Atualizar</button>
+      <button type="button" class="btn-accent" id="btnCsv">Exportar CSV</button>
+    </div>
+  </div>
+  <section class="kpis" id="kpis"></section>
+  <section class="filters">
+    <div class="campo busca"><label for="fBusca">Busca</label><input id="fBusca" type="search" placeholder="ID, linha, veículo, tipo, motorista…"></div>
+    <div class="campo"><label for="fDe">De</label><input id="fDe" type="date"></div>
+    <div class="campo"><label for="fAte">Até</label><input id="fAte" type="date"></div>
+    <div class="campo"><label for="fLinha">Linha</label><select id="fLinha"><option value="">Todas</option></select></div>
+    <div class="campo"><label for="fTipo">Tipo</label><select id="fTipo"><option value="">Todos</option></select></div>
+    <div class="campo"><label for="fEstado">Status</label><select id="fEstado"><option value="">Todos</option></select></div>
+    <div class="campo"><label for="fVeiculo">Veículo</label><select id="fVeiculo"><option value="">Todos</option></select></div>
+    <button type="button" class="btn-ghost" id="btnLimpar">Limpar</button>
+  </section>
+  <section class="charts">
+    <article class="chart-card"><h2 class="card-title">Tipos de incidente</h2><div class="donut-wrap"><div class="donut" id="donutTipo"><div class="donut-hole"><b id="donutTotal">0</b><span>total</span></div></div><div class="legend" id="legendTipo"></div></div></article>
+    <article class="chart-card"><h2 class="card-title">Linhas com mais ocorrências</h2><div id="chartLinha"></div></article>
+    <article class="chart-card"><h2 class="card-title">Status</h2><div id="chartEstado"></div></article>
+  </section>
+  <section class="table-card">
+    <div class="table-head">
+      <div>
+        <h2 class="card-title" style="margin:0">Registros CAD</h2>
+        <div class="header-subtitle" id="subTabela">—</div>
+      </div>
+    </div>
+    <div class="tabela-wrap">
+      <table class="rel">
+        <thead>
+          <tr id="tabelaHead">
+            <th>ID</th><th>Data</th><th>Hora</th><th>Veículo</th><th>Linha</th>
+            <th>Tipo</th><th>Motorista</th><th>Analista</th><th>Status</th><th>Natureza</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaBody"></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <div id="pageInfo">0 registros</div>
+      <div class="nav-row">
+        <button type="button" class="btn-ghost" id="prevPage">Anterior</button>
+        <select id="pageSize"><option value="50">50</option><option value="100" selected>100</option><option value="250">250</option></select>
+        <button type="button" class="btn-ghost" id="nextPage">Próxima</button>
+      </div>
+    </div>
+  </section>
 </main>
-<footer class="page-footer">Portal CIOP · Relatórios · Incidentes CAD (Clever 002)</footer>
-<script src="../assets/js/incidentes-cad.js?v=20260816b"></script>
+<footer class="page-footer">Portal CIOP · Incidentes CAD · cr_0002</footer>
+<script src="../assets/js/cr0108-fonte.js?v=20260817a"></script>
+<script src="../assets/js/incidentes-cad.js?v=20260817a"></script>
 <script>
 IncidentesCad.ligar();
 IncidentesCad.iniciar();
 </script>
-<script src="../assets/js/theme-toggle.js?v=20260720w"></script>
 </body>
 </html>

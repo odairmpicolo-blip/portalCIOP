@@ -1,249 +1,350 @@
-(function (global) {
-"use strict";
-
-const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({
-  "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-}[c]));
-const nInt = (n) => Number(n || 0).toLocaleString("pt-BR");
-
-function pick(row, keys) {
-  for (const k of keys) {
-    if (row[k] != null && String(row[k]).trim() !== "") return row[k];
-  }
-  return "";
-}
-
-function isoDe(valor) {
-  const t = String(valor || "").trim();
-  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10);
-  const br = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (br) return `${br[3]}-${br[2].padStart(2, "0")}-${br[1].padStart(2, "0")}`;
-  if (valor instanceof Date && !Number.isNaN(valor.getTime())) return valor.toISOString().slice(0, 10);
-  return "";
-}
-
-function normalizar(row) {
-  if (!row || typeof row !== "object") return null;
-  const dataIso = isoDe(pick(row, ["data_iso", "data_ref", "data", "date", "event_date", "dia"]));
-  const dataBr = dataIso ? dataIso.split("-").reverse().join("/") : String(pick(row, ["data", "date"]));
-  return {
-    incidentId: String(pick(row, ["incidentId", "incident_id", "id", "numero", "event_id"])),
-    data: dataBr,
-    dataIso,
-    hora: String(pick(row, ["hora", "time", "hora_evento", "event_time"])).slice(0, 8),
-    veiculo: String(pick(row, ["veiculo", "vehicle", "bus", "prefixo"])),
-    linha: String(pick(row, ["linha", "route", "line", "route_name"])),
-    tipo: String(pick(row, ["tipo", "type", "event_type", "tipoOriginal", "natureza"])),
-    estado: String(pick(row, ["estado", "status", "state"])),
-    criadoPor: String(pick(row, ["criadoPor", "created_by", "analista", "criado_por"])),
-    proprietario: String(pick(row, ["proprietario", "owner", "agente"])),
-    natureOfProblem: String(pick(row, ["natureOfProblem", "natureza", "problem", "descricao"])),
-    instructions: String(pick(row, ["instructions", "instrucoes", "comments", "observacao"])),
-    motorista: String(pick(row, ["motorista", "driver", "operador"])),
-    motoristaNr: String(pick(row, ["motoristaNr", "driver_nr", "matricula"])),
-    departamento: String(pick(row, ["departamento", "department"]))
+(function () {
+  var PAGE = 100;
+  var CORES = ["#06245c", "#ff6b00", "#0891b2", "#7c3aed", "#059669", "#dc2626", "#d97706", "#2563eb"];
+  var state = {
+    all: [],
+    filtrados: [],
+    page: 1,
+    pageSize: 100,
+    origem: "arquivo",
+    carregando: false,
+    atualizadoEm: ""
   };
-}
 
-function chave(row) {
-  return row.incidentId || [row.dataIso, row.hora, row.veiculo, row.linha].join("|");
-}
-
-function mesclar(listas) {
-  const mapa = new Map();
-  listas.forEach((lista) => {
-    (lista || []).forEach((row) => {
-      const n = normalizar(row);
-      if (!n) return;
-      mapa.set(chave(n), n);
-    });
-  });
-  return [...mapa.values()].sort((a, b) =>
-    String(b.dataIso).localeCompare(String(a.dataIso)) || String(b.hora).localeCompare(String(a.hora))
-  );
-}
-
-const state = { all: [], filtered: [], origem: "arquivo", page: 1, pageSize: 100, seq: 0 };
-
-function status(msg) {
-  const el = $("statusLine");
-  if (el) el.textContent = msg;
-}
-
-function aplicar(lista, origem) {
-  state.all = lista;
-  state.origem = origem || state.origem;
-  preencherFiltros();
-  filtrar();
-}
-
-function preencherFiltros() {
-  const tipos = [...new Set(state.all.map((r) => r.tipo).filter(Boolean))].sort();
-  const linhas = [...new Set(state.all.map((r) => r.linha).filter(Boolean))].sort((a, b) =>
-    a.localeCompare(b, "pt-BR", { numeric: true })
-  );
-  const selT = $("fTipo"), selL = $("fLinha");
-  const tVal = selT.value, lVal = selL.value;
-  selT.innerHTML = '<option value="">Todos</option>' + tipos.map((t) => `<option>${esc(t)}</option>`).join("");
-  selL.innerHTML = '<option value="">Todas</option>' + linhas.map((t) => `<option>${esc(t)}</option>`).join("");
-  if ([...selT.options].some((o) => o.value === tVal)) selT.value = tVal;
-  if ([...selL.options].some((o) => o.value === lVal)) selL.value = lVal;
-}
-
-function filtrar() {
-  const q = ($("fBusca").value || "").trim().toLowerCase();
-  const tipo = $("fTipo").value;
-  const linha = $("fLinha").value;
-  const de = $("fDe").value;
-  const ate = $("fAte").value;
-  state.filtered = state.all.filter((r) => {
-    if (tipo && r.tipo !== tipo) return false;
-    if (linha && r.linha !== linha) return false;
-    if (de && r.dataIso && r.dataIso < de) return false;
-    if (ate && r.dataIso && r.dataIso > ate) return false;
-    if (!q) return true;
-    const blob = `${r.incidentId} ${r.veiculo} ${r.linha} ${r.tipo} ${r.motorista} ${r.criadoPor} ${r.natureOfProblem}`.toLowerCase();
-    return blob.includes(q);
-  });
-  state.page = 1;
-  render();
-}
-
-function renderKpis() {
-  const lista = state.filtered;
-  const porTipo = new Map();
-  const porLinha = new Map();
-  lista.forEach((r) => {
-    if (r.tipo) porTipo.set(r.tipo, (porTipo.get(r.tipo) || 0) + 1);
-    if (r.linha) porLinha.set(r.linha, (porLinha.get(r.linha) || 0) + 1);
-  });
-  const topTipo = [...porTipo.entries()].sort((a, b) => b[1] - a[1])[0];
-  const topLinha = [...porLinha.entries()].sort((a, b) => b[1] - a[1])[0];
-  $("kpis").innerHTML = `
-    <div class="kpi"><div class="label">Incidentes</div><div class="value">${nInt(lista.length)}</div>
-      <div class="sub">${nInt(state.all.length)} no recorte carregado · ${esc(state.origem)}</div></div>
-    <div class="kpi"><div class="label">Tipos</div><div class="value">${nInt(porTipo.size)}</div>
-      <div class="sub">${topTipo ? esc(topTipo[0]) + " · " + nInt(topTipo[1]) : "—"}</div></div>
-    <div class="kpi"><div class="label">Linha com mais registros</div><div class="value">${topLinha ? esc(topLinha[0]) : "—"}</div>
-      <div class="sub">${topLinha ? nInt(topLinha[1]) + " incidentes" : "sem recorte"}</div></div>`;
-}
-
-function renderTabela() {
-  const ini = (state.page - 1) * state.pageSize;
-  const fatia = state.filtered.slice(ini, ini + state.pageSize);
-  const tb = $("tabelaBody");
-  if (!fatia.length) {
-    tb.innerHTML = '<tr><td colspan="10" class="aviso">Nenhum incidente para os filtros.</td></tr>';
-  } else {
-    tb.innerHTML = fatia.map((r) => `<tr>
-      <td>${esc(r.incidentId)}</td>
-      <td>${esc(r.data)}</td>
-      <td>${esc(r.hora)}</td>
-      <td>${esc(r.veiculo)}</td>
-      <td class="txt">${esc(r.linha)}</td>
-      <td class="txt">${esc(r.tipo)}</td>
-      <td class="txt">${esc(r.motorista || r.motoristaNr)}</td>
-      <td class="txt">${esc(r.criadoPor)}</td>
-      <td>${esc(r.estado)}</td>
-      <td class="txt">${esc(r.natureOfProblem)}</td>
-    </tr>`).join("");
+  function $(id) { return document.getElementById(id); }
+  function esc(v) {
+    return String(v == null ? "" : v)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
-  const totalPag = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
-  $("pageInfo").textContent = `${nInt(state.filtered.length)} registros · página ${state.page} de ${totalPag}`;
-  $("prevPage").disabled = state.page <= 1;
-  $("nextPage").disabled = state.page >= totalPag;
-}
-
-function render() {
-  renderKpis();
-  renderTabela();
-}
-
-function csvValue(v) {
-  return `"${String(v ?? "").replace(/"/g, '""')}"`;
-}
-
-function baixarCsv() {
-  const cab = ["ID", "Data", "Hora", "Veículo", "Linha", "Tipo", "Motorista", "Analista", "Status", "Natureza"];
-  const linhas = state.filtered.map((r) => [r.incidentId, r.data, r.hora, r.veiculo, r.linha, r.tipo, r.motorista, r.criadoPor, r.estado, r.natureOfProblem]);
-  const csv = [cab, ...linhas].map((l) => l.map(csvValue).join(";")).join("\r\n");
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
-  a.download = "incidentes-cad.csv";
-  a.click();
-}
-
-async function jsonCad() {
-  try {
-    const res = await fetch("../assets/data/incidentes-cad.json?t=" + Date.now(), { cache: "no-store" });
-    if (!res.ok) return { lista: [], origem: "arquivo 002" };
-    const payload = await res.json();
-    const lista = Array.isArray(payload.incidentes) ? payload.incidentes : (Array.isArray(payload) ? payload : []);
-    return { lista, origem: "arquivo 002", payload };
-  } catch (_) {
-    return { lista: [], origem: "arquivo 002" };
+  function num(n) { return Number(n || 0).toLocaleString("pt-BR"); }
+  function normKey(k) {
+    return String(k || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "");
   }
-}
-
-async function iniciar() {
-  const seq = ++state.seq;
-  status("Carregando JSON do 002…");
-  const arq = await jsonCad();
-  if (seq !== state.seq) return;
-  aplicar(mesclar([arq.lista]), arq.origem);
-  status(arq.lista.length
-    ? `${nInt(arq.lista.length)} registros no JSON 002 · buscando o banco…`
-    : "JSON 002 vazio · buscando o relatório 002 no banco…");
-
-  const segundoPlano = async () => {
-    try {
-      const cfg = await import("./portal-aws-config.js");
-      if (typeof cfg.initPortalAwsRuntime === "function") await cfg.initPortalAwsRuntime();
-      if (!cfg.awsApiEnabled()) {
-        status(`${nInt(state.all.length)} registros · ${state.origem}`);
-        return;
-      }
-      const token = await cfg.firebaseIdToken();
-      const cad = await cfg.awsFetch("/cr0108/cad", { token });
-      if (seq !== state.seq) return;
-      const itens = cad && cad.itens ? cad.itens : [];
-      if (itens.length) {
-        aplicar(mesclar([itens]), "banco 002" + (cad.tabela ? " · " + cad.tabela : ""));
-        status(`${nInt(state.all.length)} incidentes do relatório 002`);
-      } else {
-        status(`${nInt(state.all.length)} registros · ${state.origem}` + (cad && cad.tabela == null ? " · tabela 002 ainda não encontrada" : ""));
-      }
-    } catch (err) {
-      console.info("Incidentes CAD: banco 002 não veio.", err && err.message);
-      status(`${nInt(state.all.length)} registros · ${state.origem}`);
+  function get(row, keys) {
+    if (!row) return "";
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      if (row[k] != null && String(row[k]).trim() !== "") return row[k];
     }
-  };
+    var lower = {};
+    Object.keys(row).forEach(function (k) { lower[normKey(k)] = row[k]; });
+    for (var j = 0; j < keys.length; j++) {
+      var lk = normKey(keys[j]);
+      if (lower[lk] != null && String(lower[lk]).trim() !== "") return lower[lk];
+    }
+    for (var h = 0; h < keys.length; h++) {
+      var hint = normKey(keys[h]);
+      if (!hint) continue;
+      var found = Object.keys(lower).find(function (k) { return k.indexOf(hint) >= 0; });
+      if (found && lower[found] != null && String(lower[found]).trim() !== "") return lower[found];
+    }
+    return "";
+  }
+  function linhasDe(payload) {
+    if (!payload) return [];
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload.itens)) return payload.itens;
+    if (Array.isArray(payload.rows)) return payload.rows;
+    if (Array.isArray(payload.incidentes)) return payload.incidentes;
+    return [];
+  }
+  function pickDate(row) {
+    var raw = get(row, ["data", "data_ref", "dt_incidente", "dt", "created_at", "data_hora", "inicio"]);
+    var s = String(raw || "").slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    var m = String(raw || "").match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    return m ? m[3] + "-" + m[2] + "-" + m[1] : "";
+  }
+  function pickHora(row) {
+    var raw = get(row, ["hora", "horario", "hora_inicio", "data_hora"]);
+    var s = String(raw || "");
+    var m = s.match(/(\d{2}:\d{2})/);
+    return m ? m[1] : s.slice(11, 16);
+  }
+  function uniqSorted(arr) {
+    return Array.from(new Set(arr.filter(Boolean))).sort(function (a, b) {
+      return String(a).localeCompare(String(b), "pt-BR", { numeric: true });
+    });
+  }
+  function fillSelect(id, values) {
+    var el = $(id);
+    var cur = el.value;
+    el.innerHTML = '<option value="">' + (id === "fLinha" ? "Todas" : "Todos") + "</option>";
+    values.forEach(function (v) {
+      el.innerHTML += '<option value="' + esc(v) + '">' + esc(v) + "</option>";
+    });
+    if (values.indexOf(cur) >= 0) el.value = cur;
+  }
+  function setStatus(txt, cls) {
+    $("statusLine").textContent = txt;
+    $("statusDot").className = "status-dot " + (cls || "");
+  }
 
-  if (window.portalUsuarioValidado) segundoPlano();
-  else window.addEventListener("portal:usuario-validado", segundoPlano, { once: true });
-}
-
-function ligar() {
-  ["fBusca"].forEach((id) => $(id).addEventListener("input", filtrar));
-  ["fTipo", "fLinha", "fDe", "fAte"].forEach((id) => $(id).addEventListener("change", filtrar));
-  $("btnLimpar").addEventListener("click", () => {
-    $("fBusca").value = ""; $("fTipo").value = ""; $("fLinha").value = "";
-    $("fDe").value = ""; $("fAte").value = "";
-    filtrar();
-  });
-  $("btnCsv").addEventListener("click", baixarCsv);
-  $("pageSize").addEventListener("change", () => {
-    state.pageSize = Number($("pageSize").value) || 100;
+  function aplicarFiltros() {
+    var busca = ($("fBusca").value || "").toLowerCase();
+    var de = $("fDe").value;
+    var ate = $("fAte").value;
+    var linha = $("fLinha").value;
+    var tipo = $("fTipo").value;
+    var estado = $("fEstado").value;
+    var veiculo = $("fVeiculo").value;
+    state.filtrados = state.all.filter(function (r) {
+      var d = pickDate(r);
+      if (de && d && d < de) return false;
+      if (ate && d && d > ate) return false;
+      if (linha && String(get(r, ["linha", "codigo_linha"])) !== linha) return false;
+      if (tipo && String(get(r, ["tipo", "tipo_incidente", "natureza"])) !== tipo) return false;
+      if (estado && String(get(r, ["estado", "status", "situacao"])) !== estado) return false;
+      if (veiculo && String(get(r, ["veiculo", "prefixo", "carro"])) !== veiculo) return false;
+      if (!busca) return true;
+      return JSON.stringify(r).toLowerCase().indexOf(busca) >= 0;
+    });
     state.page = 1;
-    renderTabela();
-  });
-  $("prevPage").addEventListener("click", () => { if (state.page > 1) { state.page -= 1; renderTabela(); } });
-  $("nextPage").addEventListener("click", () => {
-    const totalPag = Math.ceil(state.filtered.length / state.pageSize);
-    if (state.page < totalPag) { state.page += 1; renderTabela(); }
-  });
-}
+    pintar();
+  }
 
-global.IncidentesCad = { iniciar, ligar };
-})(window);
+  function topN(rows, keys, n) {
+    var m = {};
+    rows.forEach(function (r) {
+      var k = String(get(r, keys) || "—");
+      m[k] = (m[k] || 0) + 1;
+    });
+    return Object.keys(m).map(function (k) { return { k: k, n: m[k] }; })
+      .sort(function (a, b) { return b.n - a.n; }).slice(0, n);
+  }
+
+  function barras(el, items) {
+    if (!items.length) {
+      el.innerHTML = '<div class="empty"><p>Sem dados para o filtro atual.</p></div>';
+      return;
+    }
+    var max = items[0].n || 1;
+    el.innerHTML = items.map(function (it) {
+      var pct = Math.max(6, Math.round(100 * it.n / max));
+      return '<div class="bar-row"><div class="bar-label" title="' + esc(it.k) + '">' + esc(it.k) +
+        '</div><div class="bar-count">' + num(it.n) + '</div><div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div></div>';
+    }).join("");
+  }
+
+  function donut(items, total) {
+    $("donutTotal").textContent = num(total);
+    if (!items.length || !total) {
+      $("donutTipo").style.background = "#e2e8f0";
+      $("legendTipo").innerHTML = "<div>Sem tipos no recorte.</div>";
+      return;
+    }
+    var acc = 0;
+    var stops = items.map(function (it, i) {
+      var start = acc;
+      acc += 100 * it.n / total;
+      return CORES[i % CORES.length] + " " + start.toFixed(1) + "% " + acc.toFixed(1) + "%";
+    });
+    $("donutTipo").style.background = "conic-gradient(" + stops.join(",") + ")";
+    $("legendTipo").innerHTML = items.map(function (it, i) {
+      var pct = Math.round(100 * it.n / total);
+      return '<div><i style="background:' + CORES[i % CORES.length] + '"></i>' + esc(it.k) + " · " + pct + "%</div>";
+    }).join("");
+  }
+
+  function tagStatus(v) {
+    var s = String(v || "—");
+    var cls = "tag-info";
+    var low = s.toLowerCase();
+    if (/final|encerr|conclu|ok|resolv/.test(low)) cls = "tag-ok";
+    else if (/aber|pend|andament|aguard/.test(low)) cls = "tag-warn";
+    return '<span class="tag ' + cls + '">' + esc(s) + "</span>";
+  }
+
+  function pintarKpis() {
+    var rows = state.filtrados;
+    var hoje = new Date().toISOString().slice(0, 10);
+    var hojeN = rows.filter(function (r) { return pickDate(r) === hoje; }).length;
+    var linhas = uniqSorted(rows.map(function (r) { return String(get(r, ["linha", "codigo_linha"])); })).length;
+    var veics = uniqSorted(rows.map(function (r) { return String(get(r, ["veiculo", "prefixo", "carro"])); })).length;
+    var tipos = uniqSorted(rows.map(function (r) { return String(get(r, ["tipo", "tipo_incidente"])); })).length;
+    var abertos = rows.filter(function (r) {
+      return /aber|pend|andament|aguard/i.test(String(get(r, ["estado", "status", "situacao"])));
+    }).length;
+    $("kpis").innerHTML = [
+      ["Incidentes", num(rows.length), state.all.length ? num(state.all.length) + " no recorte bruto" : "aguardando carga"],
+      ["Hoje", num(hojeN), hoje],
+      ["Linhas", num(linhas), "no filtro"],
+      ["Veículos", num(veics), "envolvidos"],
+      ["Tipos", num(tipos), "categorias"],
+      ["Em aberto", num(abertos), abertos ? "requerem atenção" : "nenhum pendente"]
+    ].map(function (k) {
+      return '<article class="kpi"><div class="label">' + k[0] + '</div><div class="value">' + k[1] + '</div><div class="sub">' + k[2] + "</div></article>";
+    }).join("");
+  }
+
+  var COLS_FIXAS = [
+    { label: "ID", keys: ["id", "id_incidente", "codigo", "incidente"] },
+    { label: "Data", keys: ["data", "data_ref", "dt_incidente", "dt"] },
+    { label: "Hora", keys: ["hora", "horario", "hora_inicio"] },
+    { label: "Veículo", keys: ["veiculo", "prefixo", "carro", "bus"] },
+    { label: "Linha", keys: ["linha", "codigo_linha", "cod_linha"] },
+    { label: "Tipo", keys: ["tipo", "tipo_incidente"] },
+    { label: "Motorista", keys: ["motorista", "nome_motorista"] },
+    { label: "Analista", keys: ["analista", "usuario", "criado_por"] },
+    { label: "Status", keys: ["estado", "status", "situacao"] },
+    { label: "Natureza", keys: ["natureza", "categoria", "grupo"] }
+  ];
+
+  function celula(r, col) {
+    if (col.label === "Data") return esc(pickDate(r) || get(r, col.keys));
+    if (col.label === "Hora") return esc(pickHora(r) || get(r, col.keys));
+    if (col.label === "Status") return tagStatus(get(r, col.keys));
+    var v = get(r, col.keys);
+    if (v === "" && col.key) v = r[col.key] == null ? "" : r[col.key];
+    return esc(v);
+  }
+
+  function colunasDaTabela() {
+    var amostra = state.all[0];
+    if (!amostra) return COLS_FIXAS;
+    var cols = COLS_FIXAS.filter(function (c) {
+      return get(amostra, c.keys) !== "" || (c.label === "Data" && pickDate(amostra)) || (c.label === "Hora" && pickHora(amostra));
+    });
+    if (cols.length >= 4) return cols;
+    return Object.keys(amostra).slice(0, 12).map(function (k) {
+      return { label: k.replace(/_/g, " "), keys: [k], key: k };
+    });
+  }
+
+  function pintarTabela() {
+    var cols = colunasDaTabela();
+    $("tabelaHead").innerHTML = cols.map(function (c) { return "<th>" + esc(c.label) + "</th>"; }).join("");
+    var size = Number($("pageSize").value || state.pageSize);
+    state.pageSize = size;
+    var total = state.filtrados.length;
+    var pages = Math.max(1, Math.ceil(total / size));
+    if (state.page > pages) state.page = pages;
+    var start = (state.page - 1) * size;
+    var slice = state.filtrados.slice(start, start + size);
+    $("subTabela").textContent = total
+      ? num(total) + " registros · página " + state.page + " de " + pages
+      : "Nenhum registro no filtro";
+    $("pageInfo").textContent = total
+      ? (start + 1) + "–" + Math.min(start + size, total) + " de " + num(total)
+      : "0 registros";
+    if (!slice.length) {
+      $("tabelaBody").innerHTML = '<tr><td colspan="' + cols.length + '"><div class="empty"><h3>Nenhum incidente neste recorte</h3><p>Ajuste os filtros ou aguarde a carga do relatório 002 (cr_0002).</p></div></td></tr>';
+      return;
+    }
+    $("tabelaBody").innerHTML = slice.map(function (r) {
+      return "<tr>" + cols.map(function (c) {
+        var cls = /tipo|motorista|analista|natureza|id/i.test(c.label) ? ' class="txt"' : "";
+        return "<td" + cls + ">" + celula(r, c) + "</td>";
+      }).join("") + "</tr>";
+    }).join("");
+  }
+
+  function pintar() {
+    pintarKpis();
+    var tipos = topN(state.filtrados, ["tipo", "tipo_incidente", "natureza"], 8);
+    donut(tipos, state.filtrados.length);
+    barras($("chartLinha"), topN(state.filtrados, ["linha", "codigo_linha"], 8));
+    barras($("chartEstado"), topN(state.filtrados, ["estado", "status", "situacao"], 8));
+    pintarTabela();
+    $("origemPill").textContent = state.origem + (state.atualizadoEm ? " · " + state.atualizadoEm : "");
+  }
+
+  function popularFiltros() {
+    fillSelect("fLinha", uniqSorted(state.all.map(function (r) { return String(get(r, ["linha", "codigo_linha"])); })));
+    fillSelect("fTipo", uniqSorted(state.all.map(function (r) { return String(get(r, ["tipo", "tipo_incidente"])); })));
+    fillSelect("fEstado", uniqSorted(state.all.map(function (r) { return String(get(r, ["estado", "status", "situacao"])); })));
+    fillSelect("fVeiculo", uniqSorted(state.all.map(function (r) { return String(get(r, ["veiculo", "prefixo", "carro"])); })));
+  }
+
+  function receber(payload, origem) {
+    state.all = linhasDe(payload);
+    state.origem = origem || (payload && payload.origem) || "arquivo";
+    var meta = payload && payload.meta;
+    var quando = (payload && (payload.atualizadoEm || payload.atualizado_em)) || (meta && (meta.ultimoDia || meta.ultimo_dia));
+    state.atualizadoEm = quando ? String(quando).slice(0, 16).replace("T", " ") : "";
+    popularFiltros();
+    aplicarFiltros();
+  }
+
+  async function carregarJson() {
+    var res = await fetch("../assets/data/incidentes-cad.json?v=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("json " + res.status);
+    return res.json();
+  }
+
+  async function carregarBanco() {
+    if (!window.Fonte || typeof Fonte.cad !== "function") return null;
+    return Fonte.cad();
+  }
+
+  async function iniciar() {
+    state.carregando = true;
+    setStatus("Carregando arquivo local…", "load");
+    try {
+      var json = await carregarJson();
+      receber(json, json.origem || "arquivo");
+      setStatus((json.atualizadoEm ? "Arquivo · " + json.atualizadoEm : "Arquivo local") + " · " + num(state.all.length) + " registros", "ok");
+    } catch (e) {
+      receber({ rows: [] }, "vazio");
+      setStatus("Arquivo local vazio. Tentando banco…", "load");
+    }
+    try {
+      var banco = await carregarBanco();
+      if (banco && linhasDe(banco).length) {
+        receber(banco, banco.origem === "dsql" ? "banco" : (banco.origem || "banco"));
+        setStatus("Banco cr_0002 · " + num(state.all.length) + " registros", "ok");
+      } else if (!state.all.length) {
+        setStatus("Sem dados no JSON e no banco (cr_0002). Confira a carga do relatório 002.", "");
+      } else {
+        setStatus("Mantido arquivo local · banco sem linhas novas", "ok");
+      }
+    } catch (e2) {
+      if (!state.all.length) setStatus("Não foi possível ler o CAD. " + (e2.message || e2), "");
+    }
+    state.carregando = false;
+  }
+
+  function csv() {
+    var cols = ["id", "data", "hora", "veiculo", "linha", "tipo", "motorista", "analista", "status", "natureza"];
+    var lines = [cols.join(";")];
+    state.filtrados.forEach(function (r) {
+      lines.push([
+        get(r, ["id", "id_incidente", "codigo"]),
+        pickDate(r),
+        pickHora(r),
+        get(r, ["veiculo", "prefixo", "carro"]),
+        get(r, ["linha", "codigo_linha"]),
+        get(r, ["tipo", "tipo_incidente"]),
+        get(r, ["motorista", "nome_motorista"]),
+        get(r, ["analista", "usuario"]),
+        get(r, ["estado", "status", "situacao"]),
+        get(r, ["natureza", "categoria"])
+      ].map(function (v) { return '"' + String(v || "").replace(/"/g, '""') + '"'; }).join(";"));
+    });
+    var blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "incidentes-cad.csv";
+    a.click();
+  }
+
+  function ligar() {
+    ["fBusca", "fDe", "fAte", "fLinha", "fTipo", "fEstado", "fVeiculo", "pageSize"].forEach(function (id) {
+      $(id).addEventListener("input", aplicarFiltros);
+      $(id).addEventListener("change", aplicarFiltros);
+    });
+    $("btnLimpar").addEventListener("click", function () {
+      ["fBusca", "fDe", "fAte", "fLinha", "fTipo", "fEstado", "fVeiculo"].forEach(function (id) { $(id).value = ""; });
+      aplicarFiltros();
+    });
+    $("btnAtualizar").addEventListener("click", iniciar);
+    $("btnCsv").addEventListener("click", csv);
+    $("prevPage").addEventListener("click", function () { if (state.page > 1) { state.page--; pintarTabela(); } });
+    $("nextPage").addEventListener("click", function () {
+      var pages = Math.max(1, Math.ceil(state.filtrados.length / state.pageSize));
+      if (state.page < pages) { state.page++; pintarTabela(); }
+    });
+  }
+
+  window.IncidentesCad = { iniciar: iniciar, ligar: ligar };
+})();

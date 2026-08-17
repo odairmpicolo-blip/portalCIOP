@@ -497,7 +497,12 @@ router.get("/cad", requireFirebaseUser, async (req, res) => {
     if (ISO.test(de)) { par.push(de); cond.push(`data_ref >= $${par.length}::date`); }
     if (ISO.test(ate)) { par.push(ate); cond.push(`data_ref <= $${par.length}::date`); }
     const where = cond.length ? ` WHERE ${cond.join(" AND ")}` : "";
-    const r = await query(`SELECT * FROM cr_0002${where} LIMIT 8000`, par);
+    let r;
+    try {
+      r = await query(`SELECT * FROM cr_0002${where} LIMIT 8000`, par);
+    } catch (e1) {
+      r = await query(`SELECT * FROM cr_0002 LIMIT 8000`);
+    }
     let meta = null;
     try {
       const c = await query(
