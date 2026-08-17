@@ -411,15 +411,58 @@ async function histograma(p) {
   return montarAjustes(r.itens, p.nomes || {});
 }
 
+function mesAtualCad() {
+  const br = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const [y, m] = br.split("-");
+  const ultimo = new Date(Number(y), Number(m), 0).getDate();
+  return {
+    de: `${y}-${m}-01`,
+    ate: `${y}-${m}-${String(ultimo).padStart(2, "0")}`
+  };
+}
+
 async function cad(p) {
   try {
     if (SO_ARQUIVO) return { ok: false, erro: "modo arquivo", itens: [] };
     const cfg = await import("./portal-aws-config.js");
     if (typeof cfg.initPortalAwsRuntime === "function") await cfg.initPortalAwsRuntime();
     if (!cfg.awsApiEnabled()) return { ok: false, erro: "API AWS não configurada", itens: [] };
-    const r = await chamar("/cad", p || {});
-    if (!r) return { ok: false, erro: "resposta vazia da API", itens: [] };
-    return r;
+    const mes = mesAtualCad();
+    const limite = Number(p?.limite) || 1500;
+    const base = { de: mes.de, ate: mes.ate, ...(p || {}) };
+    delete base.pagina;
+    delete base.limite;
+    let pagina = 1;
+    let itens = [];
+    let colunas = [];
+    let meta = {};
+    let prevSig = "";
+    while (pagina <= 40) {
+      const r = await chamar("/cad", { ...base, pagina, limite });
+      if (!r) return { ok: false, erro: "resposta vazia da API", itens };
+      if (r.ok === false) return itens.length ? { ...r, ok: true, itens, colunas, meta } : r;
+      colunas = r.colunas && r.colunas.length ? r.colunas : colunas;
+      meta = r.meta || meta;
+      const lote = Array.isArray(r.itens) ? r.itens : [];
+      const sig = JSON.stringify(lote[0] || null);
+      if (pagina > 1 && sig && sig === prevSig) break;
+      prevSig = sig;
+      itens = itens.concat(lote);
+      const total = Number(meta.total || 0);
+      if (!lote.length) break;
+      if (total && itens.length >= total) break;
+      if (lote.length < limite) break;
+      if (meta.temMais === false) break;
+      pagina += 1;
+    }
+    return {
+      ok: true,
+      origem: "dsql",
+      tabela: "cr_0002",
+      colunas,
+      meta: { ...meta, total: Number(meta.total || itens.length), carregados: itens.length, de: base.de, ate: base.ate, janela: "mes-atual" },
+      itens
+    };
   } catch (err) {
     return { ok: false, erro: err.message || String(err), itens: [] };
   }

@@ -4,6 +4,23 @@ export const LIBERACAO_MANIFEST_URL = `${LIBERACAO_DATA_BASE}/manifest.json`;
 export const LIBERACAO_ACOMPANHAMENTO_URL = `${LIBERACAO_DATA_BASE}/acompanhamento-semana.json`;
 export const CACHE_STORAGE_KEY = "portal_liberacao_lancamento_v2";
 
+export function parseJsonTexto(texto, rotulo = "JSON") {
+  const t = String(texto || "").trim();
+  if (!t) throw new Error(`${rotulo} vazio.`);
+  if (t.charAt(0) === "<") throw new Error(`${rotulo} veio como HTML (página de erro), não como dados.`);
+  try {
+    return JSON.parse(t);
+  } catch (_) {
+    throw new Error(`${rotulo} inválido ou incompleto.`);
+  }
+}
+
+export async function lerJsonResposta(res, rotulo = "JSON") {
+  const texto = await res.text();
+  if (!res.ok) throw new Error(`${rotulo}: HTTP ${res.status}`);
+  return parseJsonTexto(texto, rotulo);
+}
+
 export function normalizarDataIsoRow(row) {
   if (row?.data_iso) return row.data_iso;
   const br = String(row?.data || "").trim();
@@ -72,7 +89,7 @@ async function carregarManifestLiberacao() {
   try {
     const res = await fetch(LIBERACAO_MANIFEST_URL, { cache: "no-store" });
     if (!res.ok) return null;
-    return await res.json();
+    return parseJsonTexto(await res.text(), "manifest");
   } catch (_) {
     return null;
   }
@@ -97,7 +114,7 @@ async function carregarSnapshotDia(data, manifest) {
   try {
     const res = await fetch(`${urlSnapshotDia(data, manifest)}?t=${Date.now()}`, { cache: "no-store" });
     if (!res.ok) return [];
-    const payload = await res.json();
+    const payload = parseJsonTexto(await res.text(), "snapshot do dia");
     return Array.isArray(payload?.dados) ? payload.dados : [];
   } catch (_) {
     return [];
@@ -117,7 +134,7 @@ async function carregarSnapshotSemana(manifest) {
     const url = arquivo ? `${LIBERACAO_DATA_BASE}/${arquivo}` : LIBERACAO_ACOMPANHAMENTO_URL;
     const res = await fetch(`${url}?t=${Date.now()}`, { cache: "no-store" });
     if (!res.ok) return [];
-    const payload = await res.json();
+    const payload = parseJsonTexto(await res.text(), "snapshot da semana");
     return Array.isArray(payload?.dados) ? payload.dados : [];
   } catch (_) {
     return [];
@@ -155,12 +172,7 @@ async function apiGet(params) {
   })}`;
   const res = await fetch(url, { cache: "no-store", redirect: "follow" });
   const texto = await res.text();
-  let data;
-  try {
-    data = JSON.parse(texto);
-  } catch (_) {
-    throw new Error("Resposta inválida da planilha.");
-  }
+  const data = parseJsonTexto(texto, "planilha");
   if (!data.ok) throw new Error(data.erro || "Erro ao buscar dados.");
   return data.dados || [];
 }

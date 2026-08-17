@@ -1,14 +1,31 @@
 (function () {
-  var PAGE = 100;
   var CORES = ["#06245c", "#ff6b00", "#0891b2", "#7c3aed", "#059669", "#dc2626", "#d97706", "#2563eb"];
+  var PREFERIDAS = [
+    "id", "id_incidente", "codigo", "incidente",
+    "data", "data_ref", "dt_incidente", "dt",
+    "hora", "horario", "hora_inicio",
+    "veiculo", "prefixo", "carro", "bus",
+    "linha", "codigo_linha", "cod_linha",
+    "tipo", "tipo_incidente",
+    "natureza", "categoria", "grupo",
+    "motorista", "nome_motorista",
+    "analista", "usuario", "criado_por",
+    "estado", "status", "situacao",
+    "descricao", "observacao", "comentario", "detalhe", "detalhes"
+  ];
+  var OCULTAS = { payload: 1, html: 1, xml: 1, foto: 1, image: 1, blob: 1 };
   var state = {
     all: [],
     filtrados: [],
+    colunas: [],
+    colunasApi: [],
     page: 1,
     pageSize: 100,
     origem: "arquivo",
     carregando: false,
-    atualizadoEm: ""
+    atualizadoEm: "",
+    totalBanco: 0,
+    jsonCount: 0
   };
 
   function $(id) { return document.getElementById(id); }
@@ -19,6 +36,25 @@
   function num(n) { return Number(n || 0).toLocaleString("pt-BR"); }
   function normKey(k) {
     return String(k || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "");
+  }
+  function rotulo(k) {
+    var n = normKey(k);
+    var mapa = {
+      id: "ID", idincidente: "ID", codigo: "Código", incidente: "Incidente",
+      data: "Data", dataref: "Data", dtincidente: "Data", dt: "Data",
+      hora: "Hora", horario: "Hora", horainicio: "Hora",
+      veiculo: "Veículo", prefixo: "Prefixo", carro: "Carro",
+      linha: "Linha", codigolinha: "Linha",
+      tipo: "Tipo", tipoincidente: "Tipo",
+      natureza: "Natureza", categoria: "Categoria", grupo: "Grupo",
+      motorista: "Motorista", nomemotorista: "Motorista",
+      analista: "Analista", usuario: "Usuário", criadopor: "Criado por",
+      estado: "Status", status: "Status", situacao: "Situação",
+      descricao: "Descrição", observacao: "Observação", comentario: "Comentário",
+      detalhe: "Detalhe", detalhes: "Detalhes"
+    };
+    if (mapa[n]) return mapa[n];
+    return String(k || "").replace(/_/g, " ");
   }
   function get(row, keys) {
     if (!row) return "";
@@ -40,6 +76,13 @@
     }
     return "";
   }
+  function textoCelula(v) {
+    if (v == null) return "";
+    if (typeof v === "object") {
+      try { return JSON.stringify(v); } catch (_) { return String(v); }
+    }
+    return String(v);
+  }
   function linhasDe(payload) {
     if (!payload) return [];
     var arr = [];
@@ -52,11 +95,41 @@
     return arr.map(function (r) {
       if (!r || typeof r !== "object") return r;
       var extra = r.payload;
+      if (typeof extra === "string") {
+        try { extra = JSON.parse(extra); } catch (_) { extra = null; }
+      }
       if (extra && typeof extra === "object" && !Array.isArray(extra)) {
-        return Object.assign({}, r, extra);
+        var m = Object.assign({}, r, extra);
+        delete m.payload;
+        return m;
       }
       return r;
     });
+  }
+  function mesAtual() {
+    var br = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    var p = br.split("-");
+    var y = Number(p[0]);
+    var m = p[1];
+    var ultimo = new Date(y, Number(m), 0).getDate();
+    return { de: y + "-" + m + "-01", ate: y + "-" + m + "-" + String(ultimo).padStart(2, "0") };
+  }
+  function chaveLinha(r) {
+    var id = String(get(r, ["id", "id_incidente", "codigo", "incidente"]) || "").trim();
+    if (id) return "id:" + id;
+    return [
+      pickDate(r),
+      pickHora(r),
+      String(get(r, ["veiculo", "prefixo", "carro"])),
+      String(get(r, ["linha", "codigo_linha"])),
+      String(get(r, ["tipo", "tipo_incidente"]))
+    ].join("|");
+  }
+  function mesclarItens(historico, mesAtualItens) {
+    var mapa = new Map();
+    (historico || []).forEach(function (r) { if (r) mapa.set(chaveLinha(r), r); });
+    (mesAtualItens || []).forEach(function (r) { if (r) mapa.set(chaveLinha(r), r); });
+    return Array.from(mapa.values());
   }
   function esperarAuth() {
     return new Promise(function (resolve) {
@@ -89,8 +162,10 @@
   }
   function fillSelect(id, values) {
     var el = $(id);
+    if (!el) return;
     var cur = el.value;
-    el.innerHTML = '<option value="">' + (id === "fLinha" ? "Todas" : "Todos") + "</option>";
+    var todas = id === "fLinha" || id === "fVeiculo" ? "Todas" : "Todos";
+    el.innerHTML = '<option value="">' + todas + "</option>";
     values.forEach(function (v) {
       el.innerHTML += '<option value="' + esc(v) + '">' + esc(v) + "</option>";
     });
@@ -186,8 +261,11 @@
     var abertos = rows.filter(function (r) {
       return /aber|pend|andament|aguard/i.test(String(get(r, ["estado", "status", "situacao"])));
     }).length;
+    var bruto = state.totalBanco && state.totalBanco > state.all.length
+      ? num(state.all.length) + " de " + num(state.totalBanco) + " no banco"
+      : num(state.all.length) + " no banco";
     $("kpis").innerHTML = [
-      ["Incidentes", num(rows.length), state.all.length ? num(state.all.length) + " no recorte bruto" : "aguardando carga"],
+      ["Incidentes", num(rows.length), state.all.length ? bruto : "aguardando carga do 002"],
       ["Hoje", num(hojeN), hoje],
       ["Linhas", num(linhas), "no filtro"],
       ["Veículos", num(veics), "envolvidos"],
@@ -198,42 +276,55 @@
     }).join("");
   }
 
-  var COLS_FIXAS = [
-    { label: "ID", keys: ["id", "id_incidente", "codigo", "incidente"] },
-    { label: "Data", keys: ["data", "data_ref", "dt_incidente", "dt"] },
-    { label: "Hora", keys: ["hora", "horario", "hora_inicio"] },
-    { label: "Veículo", keys: ["veiculo", "prefixo", "carro", "bus"] },
-    { label: "Linha", keys: ["linha", "codigo_linha", "cod_linha"] },
-    { label: "Tipo", keys: ["tipo", "tipo_incidente"] },
-    { label: "Motorista", keys: ["motorista", "nome_motorista"] },
-    { label: "Analista", keys: ["analista", "usuario", "criado_por"] },
-    { label: "Status", keys: ["estado", "status", "situacao"] },
-    { label: "Natureza", keys: ["natureza", "categoria", "grupo"] }
-  ];
-
-  function celula(r, col) {
-    if (col.label === "Data") return esc(pickDate(r) || get(r, col.keys));
-    if (col.label === "Hora") return esc(pickHora(r) || get(r, col.keys));
-    if (col.label === "Status") return tagStatus(get(r, col.keys));
-    var v = get(r, col.keys);
-    if (v === "" && col.key) v = r[col.key] == null ? "" : r[col.key];
-    return esc(v);
+  function descobrirColunas() {
+    var ordem = [];
+    var visto = {};
+    function add(k) {
+      if (!k || visto[k] || OCULTAS[normKey(k)]) return;
+      visto[k] = 1;
+      ordem.push(k);
+    }
+    (state.colunasApi || []).forEach(add);
+    PREFERIDAS.forEach(function (p) {
+      state.all.slice(0, 80).forEach(function (r) {
+        Object.keys(r || {}).forEach(function (k) {
+          if (normKey(k) === normKey(p)) add(k);
+        });
+      });
+    });
+    var contagem = {};
+    state.all.slice(0, 120).forEach(function (r) {
+      Object.keys(r || {}).forEach(function (k) {
+        if (r[k] != null && String(r[k]).trim() !== "") contagem[k] = (contagem[k] || 0) + 1;
+      });
+    });
+    Object.keys(contagem).sort(function (a, b) { return contagem[b] - contagem[a]; }).forEach(add);
+    return ordem.map(function (k) {
+      return { label: rotulo(k), key: k, keys: [k] };
+    });
   }
 
-  function colunasDaTabela() {
-    var amostra = state.all[0];
-    if (!amostra) return COLS_FIXAS;
-    var cols = COLS_FIXAS.filter(function (c) {
-      return get(amostra, c.keys) !== "" || (c.label === "Data" && pickDate(amostra)) || (c.label === "Hora" && pickHora(amostra));
-    });
-    if (cols.length >= 4) return cols;
-    return Object.keys(amostra).slice(0, 12).map(function (k) {
-      return { label: k.replace(/_/g, " "), keys: [k], key: k };
-    });
+  function celula(r, col) {
+    if (normKey(col.label) === "data" || /data/i.test(col.key || "")) {
+      var d = pickDate(r);
+      if (d) return esc(d.split("-").reverse().join("/"));
+    }
+    if (normKey(col.label) === "hora" || /hora/i.test(col.key || "")) {
+      var h = pickHora(r);
+      if (h) return esc(h);
+    }
+    if (/status|estado|situacao/i.test(col.key || "") || /status|situa/i.test(col.label)) {
+      return tagStatus(get(r, col.keys));
+    }
+    var v = col.key && r[col.key] != null && String(r[col.key]).trim() !== "" ? r[col.key] : get(r, col.keys);
+    var t = textoCelula(v);
+    if (t.length > 140) return '<span class="txt-clip" title="' + esc(t) + '">' + esc(t.slice(0, 140)) + "…</span>";
+    return esc(t);
   }
 
   function pintarTabela() {
-    var cols = colunasDaTabela();
+    var cols = state.colunas.length ? state.colunas : descobrirColunas();
+    state.colunas = cols;
     $("tabelaHead").innerHTML = cols.map(function (c) { return "<th>" + esc(c.label) + "</th>"; }).join("");
     var size = Number($("pageSize").value || state.pageSize);
     state.pageSize = size;
@@ -243,21 +334,34 @@
     var start = (state.page - 1) * size;
     var slice = state.filtrados.slice(start, start + size);
     $("subTabela").textContent = total
-      ? num(total) + " registros · página " + state.page + " de " + pages
+      ? num(total) + " registros · " + cols.length + " colunas · página " + state.page + " de " + pages
       : "Nenhum registro no filtro";
     $("pageInfo").textContent = total
       ? (start + 1) + "–" + Math.min(start + size, total) + " de " + num(total)
       : "0 registros";
     if (!slice.length) {
-      $("tabelaBody").innerHTML = '<tr><td colspan="' + cols.length + '"><div class="empty"><h3>Nenhum incidente neste recorte</h3><p>Ajuste os filtros ou aguarde a carga do relatório 002 (cr_0002).</p></div></td></tr>';
+      $("tabelaBody").innerHTML = '<tr><td colspan="' + Math.max(cols.length, 1) + '"><div class="empty"><h3>Nenhum incidente neste recorte</h3><p>O histórico vem do JSON; o banco só entrega o mês atual. Ajuste o filtro ou atualize depois da carga.</p></div></td></tr>';
       return;
     }
-    $("tabelaBody").innerHTML = slice.map(function (r) {
-      return "<tr>" + cols.map(function (c) {
-        var cls = /tipo|motorista|analista|natureza|id/i.test(c.label) ? ' class="txt"' : "";
+    $("tabelaBody").innerHTML = slice.map(function (r, i) {
+      var idx = start + i;
+      return '<tr data-idx="' + idx + '" title="Clique para ver todos os campos">' + cols.map(function (c) {
+        var cls = /tipo|motorista|analista|natureza|descricao|observ|id|detalh/i.test(c.label + c.key) ? ' class="txt"' : "";
         return "<td" + cls + ">" + celula(r, c) + "</td>";
       }).join("") + "</tr>";
     }).join("");
+  }
+
+  function abrirDetalhe(idx) {
+    var r = state.filtrados[idx];
+    var box = $("cadDetalhe");
+    var body = $("cadDetalheBody");
+    if (!r || !box || !body) return;
+    var keys = Object.keys(r).filter(function (k) { return !OCULTAS[normKey(k)]; });
+    body.innerHTML = keys.map(function (k) {
+      return '<div class="det-row"><dt>' + esc(rotulo(k)) + '</dt><dd>' + esc(textoCelula(r[k])) + "</dd></div>";
+    }).join("") || "<p>Sem campos.</p>";
+    box.hidden = false;
   }
 
   function pintar() {
@@ -277,12 +381,28 @@
     fillSelect("fVeiculo", uniqSorted(state.all.map(function (r) { return String(get(r, ["veiculo", "prefixo", "carro"])); })));
   }
 
-  function receber(payload, origem) {
-    state.all = linhasDe(payload);
+  function receber(payload, origem, opcoes) {
+    var novos = linhasDe(payload);
+    if (opcoes && opcoes.mesclar && state.all.length) {
+      state.all = mesclarItens(state.all, novos);
+    } else {
+      state.all = novos;
+    }
+    var colsApi = payload && payload.colunas ? payload.colunas : [];
+    if (colsApi.length) {
+      var visto = {};
+      state.colunasApi = (state.colunasApi || []).concat(colsApi).filter(function (k) {
+        if (visto[k]) return false;
+        visto[k] = 1;
+        return true;
+      });
+    }
+    state.colunas = [];
     state.origem = origem || (payload && payload.origem) || "arquivo";
     var meta = payload && payload.meta;
+    if (meta && (meta.total || meta.registros)) state.totalBanco = Number(meta.total || meta.registros) || 0;
     var quando = (payload && (payload.atualizadoEm || payload.atualizado_em)) || (meta && (meta.ultimoDia || meta.ultimo_dia));
-    state.atualizadoEm = quando ? String(quando).slice(0, 16).replace("T", " ") : "";
+    if (quando) state.atualizadoEm = String(quando).slice(0, 16).replace("T", " ");
     popularFiltros();
     aplicarFiltros();
   }
@@ -290,66 +410,77 @@
   async function carregarJson() {
     var res = await fetch("../assets/data/incidentes-cad.json?v=" + Date.now(), { cache: "no-store" });
     if (!res.ok) throw new Error("json " + res.status);
-    return res.json();
+    var texto = await res.text();
+    var t = String(texto || "").trim();
+    if (!t || t.charAt(0) === "<") throw new Error("JSON local veio como HTML");
+    return JSON.parse(t);
   }
 
   async function carregarBanco() {
     if (!window.Fonte || typeof Fonte.cad !== "function") return null;
-    return Fonte.cad();
+    var mes = mesAtual();
+    return Fonte.cad({ de: mes.de, ate: mes.ate });
   }
 
   async function iniciar() {
+    if (state.carregando) return;
     state.carregando = true;
-    setStatus("Carregando arquivo local…", "load");
+    var mes = mesAtual();
+    state.mesDe = mes.de;
+    state.mesAte = mes.ate;
+    setStatus("Carregando histórico JSON…", "load");
     try {
       var json = await carregarJson();
-      receber(json, json.origem || "arquivo");
-      setStatus((json.atualizadoEm ? "Arquivo · " + json.atualizadoEm : "Arquivo local") + " · " + num(state.all.length) + " registros", state.all.length ? "ok" : "load");
+      var nJson = linhasDe(json).length;
+      state.jsonCount = nJson;
+      if (nJson) {
+        receber(json, "arquivo");
+        setStatus("Histórico JSON · " + num(nJson) + " · buscando " + mes.de.slice(0, 7) + " no banco…", "load");
+      } else {
+        setStatus("JSON ainda sem histórico. Buscando o mês atual no banco…", "load");
+      }
     } catch (e) {
-      receber({ itens: [] }, "vazio");
-      setStatus("Arquivo local vazio. Aguardando sessão para ler o banco…", "load");
+      setStatus("Sem JSON de histórico. Aguardando sessão para o mês atual…", "load");
     }
     await esperarAuth();
-    setStatus("Buscando cr_0002 no banco…", "load");
+    setStatus("Buscando cr_0002 só em " + mes.de.slice(0, 7) + "…", "load");
     try {
       var banco = await carregarBanco();
-      if (banco && banco.ok === false) {
+      if (banco && banco.ok === false && !linhasDe(banco).length) {
         throw new Error(banco.erro || "API CAD recusou a leitura");
       }
-      if (banco && linhasDe(banco).length) {
-        receber(banco, banco.origem === "dsql" ? "banco" : (banco.origem || "banco"));
-        var extra = banco.meta && (banco.meta.registros || banco.meta.total) && Number(banco.meta.registros || banco.meta.total) > state.all.length
-          ? " (recorte de " + num(banco.meta.registros || banco.meta.total) + ")"
-          : "";
-        setStatus("Banco cr_0002 · " + num(state.all.length) + " registros" + extra, "ok");
-      } else if (!state.all.length) {
-        setStatus((banco && banco.erro) ? banco.erro : "A API respondeu, mas cr_0002 veio sem linhas.", "");
+      var bruto = banco ? linhasDe(banco) : [];
+      var doMes = bruto.filter(function (r) {
+        var d = pickDate(r);
+        return d && d >= mes.de && d <= mes.ate;
+      });
+      if (!doMes.length && bruto.length) doMes = bruto;
+      var nMes = doMes.length;
+      if (nMes) {
+        receber({ itens: doMes, colunas: banco.colunas, meta: banco.meta, origem: banco.origem }, state.jsonCount ? "json + banco" : "banco", { mesclar: Boolean(state.jsonCount) });
+        setStatus("Histórico JSON (" + num(state.jsonCount) + ") + mês atual (" + num(nMes) + ") · " + num(state.all.length) + " no total", "ok");
+      } else if (state.all.length) {
+        setStatus("Histórico JSON · " + num(state.all.length) + " · mês atual ainda sem linhas no banco", "ok");
       } else {
-        setStatus("Mantido arquivo local · banco sem linhas novas", "ok");
+        setStatus((banco && banco.erro) ? banco.erro : "Sem histórico no JSON e cr_0002 vazio neste mês. Atualize depois da carga.", "load");
       }
     } catch (e2) {
       if (!state.all.length) setStatus("Não foi possível ler o CAD. " + (e2.message || e2), "");
-      else setStatus("Arquivo local · banco indisponível (" + (e2.message || e2) + ")", "ok");
+      else setStatus("Histórico JSON · banco do mês indisponível (" + (e2.message || e2) + ")", "ok");
     }
     state.carregando = false;
   }
 
   function csv() {
-    var cols = ["id", "data", "hora", "veiculo", "linha", "tipo", "motorista", "analista", "status", "natureza"];
-    var lines = [cols.join(";")];
+    var cols = state.colunas.length ? state.colunas : descobrirColunas();
+    var lines = [cols.map(function (c) { return c.label; }).join(";")];
     state.filtrados.forEach(function (r) {
-      lines.push([
-        get(r, ["id", "id_incidente", "codigo"]),
-        pickDate(r),
-        pickHora(r),
-        get(r, ["veiculo", "prefixo", "carro"]),
-        get(r, ["linha", "codigo_linha"]),
-        get(r, ["tipo", "tipo_incidente"]),
-        get(r, ["motorista", "nome_motorista"]),
-        get(r, ["analista", "usuario"]),
-        get(r, ["estado", "status", "situacao"]),
-        get(r, ["natureza", "categoria"])
-      ].map(function (v) { return '"' + String(v || "").replace(/"/g, '""') + '"'; }).join(";"));
+      lines.push(cols.map(function (c) {
+        var v = c.key && r[c.key] != null ? textoCelula(r[c.key]) : textoCelula(get(r, c.keys));
+        if (normKey(c.label) === "data") v = pickDate(r) || v;
+        if (normKey(c.label) === "hora") v = pickHora(r) || v;
+        return '"' + String(v || "").replace(/"/g, '""') + '"';
+      }).join(";"));
     });
     var blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
     var a = document.createElement("a");
@@ -360,8 +491,10 @@
 
   function ligar() {
     ["fBusca", "fDe", "fAte", "fLinha", "fTipo", "fEstado", "fVeiculo", "pageSize"].forEach(function (id) {
-      $(id).addEventListener("input", aplicarFiltros);
-      $(id).addEventListener("change", aplicarFiltros);
+      var el = $(id);
+      if (!el) return;
+      el.addEventListener("input", aplicarFiltros);
+      el.addEventListener("change", aplicarFiltros);
     });
     $("btnLimpar").addEventListener("click", function () {
       ["fBusca", "fDe", "fAte", "fLinha", "fTipo", "fEstado", "fVeiculo"].forEach(function (id) { $(id).value = ""; });
@@ -374,6 +507,15 @@
       var pages = Math.max(1, Math.ceil(state.filtrados.length / state.pageSize));
       if (state.page < pages) { state.page++; pintarTabela(); }
     });
+    $("tabelaBody").addEventListener("click", function (ev) {
+      var tr = ev.target.closest("tr[data-idx]");
+      if (!tr) return;
+      abrirDetalhe(Number(tr.getAttribute("data-idx")));
+    });
+    var fechar = $("cadDetalheFechar");
+    var fundo = $("cadDetalhe");
+    if (fechar) fechar.addEventListener("click", function () { fundo.hidden = true; });
+    if (fundo) fundo.addEventListener("click", function (ev) { if (ev.target === fundo) fundo.hidden = true; });
   }
 
   window.IncidentesCad = { iniciar: iniciar, ligar: ligar };

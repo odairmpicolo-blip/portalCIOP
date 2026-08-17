@@ -36,7 +36,19 @@ export async function awsFetch(path, { method = "GET", body, token, apiKey } = {
     }
     throw err;
   }
-  const data = await res.json().catch(() => ({}));
+  const texto = await res.text();
+  const t = String(texto || "").trim();
+  let data = {};
+  if (t.charAt(0) === "<") {
+    throw new Error(res.ok ? "A API devolveu HTML em vez de JSON" : `HTTP ${res.status}`);
+  }
+  if (t) {
+    try {
+      data = JSON.parse(t);
+    } catch (_) {
+      throw new Error("A API devolveu JSON inválido ou truncado");
+    }
+  }
   if (!res.ok) {
     if (res.status === 504 || res.status === 502) {
       throw new Error("Timeout na API — o envio continuará em lotes menores");

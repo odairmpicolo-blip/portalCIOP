@@ -353,17 +353,25 @@ table.relatorio tbody tr.row-div td{box-shadow:inset 3px 0 0 var(--orange)}
     var base="../assets/data/liberacao/";
     var d=new Date();
     var iso=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    function lerJsonPrecarga(r){
+        if(!r||!r.ok) return Promise.resolve(null);
+        return r.text().then(function(t){
+            t=String(t||"").trim();
+            if(!t||t.charAt(0)==="<") return null;
+            try{ return JSON.parse(t); }catch(_){ return null; }
+        });
+    }
     window.__liberacaoPrecargaHojeIso=iso;
     window.__liberacaoPrecargaSemana=fetch(base+"acompanhamento-semana.json",{cache:"no-store"})
-        .then(function(r){return r.ok?r.json():null;})
+        .then(lerJsonPrecarga)
         .catch(function(){return null;});
     window.__liberacaoPrecargaHoje=fetch(base+"manifest.json",{cache:"no-store"})
-        .then(function(r){return r.ok?r.json():null;})
+        .then(lerJsonPrecarga)
         .then(function(m){
             var arquivo=m&&m.dias&&m.dias[iso];
             if(!arquivo) return null;
             return fetch(base+arquivo,{cache:"no-store"})
-                .then(function(r){return r.ok?r.json():null;})
+                .then(lerJsonPrecarga)
                 .then(function(p){return p&&Array.isArray(p.dados)&&p.dados.length?p:null;});
         })
         .catch(function(){return null;});

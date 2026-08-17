@@ -486,27 +486,40 @@ router.get("/histograma", requireFirebaseUser, async (req, res) => {
   } catch (err) { erro(res, err); }
 });
 
-function jsonSafe(v) {
+function cadValor(v, profundidade = 0) {
   if (v == null) return v;
   if (typeof v === "bigint") return Number(v);
   if (v instanceof Date) return v.toISOString();
-  if (typeof v === "string") return v.length > 220 ? v.slice(0, 220) : v;
-  if (Array.isArray(v)) return v.slice(0, 20).map(jsonSafe);
+  if (typeof v === "string") return v.length > 4000 ? `${v.slice(0, 4000)}…` : v;
+  if (Buffer.isBuffer(v)) return undefined;
+  if (Array.isArray(v)) {
+    if (profundidade > 2) return v.slice(0, 20).map(String);
+    return v.slice(0, 80).map((x) => cadValor(x, profundidade + 1));
+  }
   if (typeof v === "object") {
+    if (profundidade > 3) return undefined;
     const o = {};
     for (const [k, val] of Object.entries(v)) {
-      if (/descricao|observ|comentario|payload|html|xml|foto|image|blob/i.test(k)) continue;
-      o[k] = jsonSafe(val);
+      if (/html|xml|foto|image|blob|bytea/i.test(k)) continue;
+      const n = cadValor(val, profundidade + 1);
+      if (n !== undefined) o[k] = n;
     }
     return o;
   }
   return v;
 }
 
-function compactarLinha(row) {
+function cadLinha(row) {
   if (!row || typeof row !== "object") return row;
-  const extra = row.payload && typeof row.payload === "object" && !Array.isArray(row.payload) ? row.payload : null;
-  return jsonSafe(extra ? { ...row, ...extra } : row);
+  let extra = row.payload;
+  if (typeof extra === "string") {
+    try { extra = JSON.parse(extra); } catch (_) { extra = null; }
+  }
+  const merged = extra && typeof extra === "object" && !Array.isArray(extra)
+    ? { ...row, ...extra }
+    : { ...row };
+  delete merged.payload;
+  return cadValor(merged);
 }
 
 function citarColuna(nome) {
@@ -515,37 +528,71 @@ function citarColuna(nome) {
   return `"${n.replace(/"/g, "")}"`;
 }
 
-/* Relatório Clever 002 — tabela real no DSQL: cr_0002 (+ cr_0002_cargas).
-   SELECT * com 8000 linhas estoura o limite de 6 MB da Lambda (HTTP 413/500). */
+/* Relatório Clever 002 — cr_0002. Padrão: só o mês atual (histórico vai no JSON da página).
+   ?todos=1 devolve a tabela inteira em páginas. Inclui descrição/observação. */
 router.get("/cad", requireFirebaseUser, async (req, res) => {
   try {
-    const limite = Math.min(Math.max(Number(req.query.limite) || 1200, 50), 2500);
+    const pagina = Math.max(1, Number(req.query.pagina) || 1);
+    const limite = Math.min(Math.max(Number(req.query.limite) || 1500, 50), 4000);
+    const offset = (pagina - 1) * limite;
+    const todos = String(req.query.todos || "") === "1";
+    const br = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    const [y, mo] = br.split("-");
+    const ultimo = new Date(Number(y), Number(mo), 0).getDate();
+    const mesDe = `${y}-${mo}-01`;
+    const mesAte = `${y}-${mo}-${String(ultimo).padStart(2, "0")}`;
+    let de = String(req.query.de || "");
+    let ate = String(req.query.ate || "");
+    if (!todos && !ISO.test(de) && !ISO.test(ate)) {
+      de = mesDe;
+      ate = mesAte;
+    }
+
     let colunas = [];
     try {
       const c = await query(
-        `SELECT column_name FROM information_schema.columns
+        `SELECT column_name, data_type
+         FROM information_schema.columns
          WHERE table_schema = 'public' AND table_name = 'cr_0002'
          ORDER BY ordinal_position`
       );
-      colunas = c.rows.map((r) => r.column_name).filter((n) =>
-        !/descricao|observ|comentario|payload|html|xml|foto|image|blob/i.test(n)
-      ).slice(0, 36);
-    } catch (_) { /* cai no SELECT * compactado */ }
+      colunas = c.rows
+        .filter((r) => !/bytea|xml/i.test(r.data_type || "") && !/html|foto|image|blob/i.test(r.column_name))
+        .map((r) => r.column_name);
+    } catch (_) { /* SELECT * */ }
 
-    const lista = colunas.length ? colunas.map(citarColuna).join(", ") : "*";
     const dataCol = colunas.find((n) => /^(data_ref|data|dt|date)$/i.test(n))
       || colunas.find((n) => /data|date|dia/i.test(n));
+    const cond = [];
+    const par = [];
+    if (dataCol && ISO.test(de)) {
+      par.push(de);
+      cond.push(`${citarColuna(dataCol)}::text >= $${par.length}`);
+    }
+    if (dataCol && ISO.test(ate)) {
+      par.push(ate);
+      cond.push(`${citarColuna(dataCol)}::text <= $${par.length}`);
+    }
+    const where = cond.length ? ` WHERE ${cond.join(" AND ")}` : "";
+    const lista = colunas.length ? colunas.map(citarColuna).join(", ") : "*";
+    const ordem = dataCol ? ` ORDER BY ${citarColuna(dataCol)} DESC` : "";
+
+    const totalQ = await query(`SELECT count(*)::int AS n FROM cr_0002${where}`, par);
+    const total = Number(totalQ.rows?.[0]?.n || 0);
+
     let r;
     try {
-      const ordem = dataCol ? ` ORDER BY ${citarColuna(dataCol)} DESC` : "";
-      r = await query(`SELECT ${lista} FROM cr_0002${ordem} LIMIT ${limite}`);
+      r = await query(
+        `SELECT ${lista} FROM cr_0002${where}${ordem} LIMIT ${limite} OFFSET ${offset}`,
+        par
+      );
     } catch (_) {
-      r = await query(`SELECT ${lista} FROM cr_0002 LIMIT ${limite}`);
+      r = await query(`SELECT ${lista} FROM cr_0002${where} LIMIT ${limite} OFFSET ${offset}`, par);
     }
-    const itens = (r.rows || []).map(compactarLinha);
-    const total = itens.length;
+    const itens = (r.rows || []).map(cadLinha);
+    if (!colunas.length && itens[0]) colunas = Object.keys(itens[0]);
 
-    let meta = { total, limite, recorte: itens.length };
+    let cargas = {};
     try {
       const c = await query(
         `SELECT min(data_ref)::text AS "primeiroDia",
@@ -554,10 +601,27 @@ router.get("/cad", requireFirebaseUser, async (req, res) => {
                 coalesce(sum(linhas), 0) AS registros
          FROM cr_0002_cargas`
       );
-      meta = { ...meta, ...(c.rows[0] || {}) };
+      cargas = c.rows[0] || {};
     } catch (_) { /* cargas pode ter outro desenho */ }
 
-    res.json({ ok: true, origem: "dsql", tabela: "cr_0002", colunas, meta, itens });
+    res.json({
+      ok: true,
+      origem: "dsql",
+      tabela: "cr_0002",
+      colunas,
+      meta: {
+        total,
+        pagina,
+        limite,
+        recorte: itens.length,
+        temMais: offset + itens.length < total,
+        de: ISO.test(de) ? de : null,
+        ate: ISO.test(ate) ? ate : null,
+        janela: todos ? "todos" : "mes-atual",
+        ...cargas
+      },
+      itens
+    });
   } catch (err) { erro(res, err); }
 });
 

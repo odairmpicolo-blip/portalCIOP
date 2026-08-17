@@ -438,12 +438,20 @@ tbody td.col-maquina .cell-readonly{background:transparent;color:inherit;padding
     var d=new Date();
     var iso=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
     window.__liberacaoPrecargaHojeIso=iso;
+    function lerJsonPrecarga(r){
+        if(!r||!r.ok) return Promise.resolve(null);
+        return r.text().then(function(t){
+            t=String(t||"").trim();
+            if(!t||t.charAt(0)==="<") return null;
+            try{ return JSON.parse(t); }catch(_){ return null; }
+        });
+    }
     window.__liberacaoPrecargaHoje=fetch(base+"acompanhamento-dia-"+iso+".json",{cache:"no-store"})
-        .then(function(r){return r.ok?r.json():null;})
+        .then(lerJsonPrecarga)
         .then(function(p){return p&&Array.isArray(p.dados)&&p.dados.length?p:null;})
         .catch(function(){return null;});
     window.__liberacaoPrecargaSemana=fetch(base+"acompanhamento-semana.json",{cache:"no-store"})
-        .then(function(r){return r.ok?r.json():null;})
+        .then(lerJsonPrecarga)
         .catch(function(){return null;});
 })();
 </script>
@@ -1004,6 +1012,11 @@ function fetchComTimeout(url,opts,ms){
     return fetch(url,Object.assign({},opts,{signal:ctrl.signal}))
         .finally(()=>clearTimeout(timer));
 }
+function parseJsonOpcionalTexto(texto){
+    const t=String(texto||"").trim();
+    if(!t||t.charAt(0)==="<") return null;
+    try{ return JSON.parse(t); }catch(_){ return null; }
+}
 async function apiGet(params){
     const p=Object.assign({liberacao:"1"},params);
     if(p.vivo==="1") p._=String(Date.now());
@@ -1016,7 +1029,12 @@ async function apiGet(params){
     }
     const texto=await res.text();
     let data;
-    try{ data=JSON.parse(texto); }catch(_){ throw new Error("Resposta inválida da planilha."); }
+    try{
+        const t=String(texto||"").trim();
+        if(!t) throw new Error("vazio");
+        if(t.charAt(0)==="<") throw new Error("html");
+        data=JSON.parse(t);
+    }catch(_){ throw new Error("A planilha devolveu HTML ou JSON inválido. Tente atualizar de novo."); }
     if(!data.ok) throw new Error(data.erro||"Erro na leitura.");
     return data;
 }
@@ -1036,11 +1054,12 @@ async function apiPost(payload){
     }
     const texto=await res.text();
     let data;
-    try{ data=JSON.parse(texto); }catch(_){
-        const trecho=String(texto||"").replace(/\s+/g," ").slice(0,120);
-        throw new Error(trecho
-            ? `Resposta inválida da planilha ao salvar (${trecho})`
-            : "Resposta inválida da planilha ao salvar.");
+    try{
+        const t=String(texto||"").trim();
+        if(!t||t.charAt(0)==="<") throw new Error("html");
+        data=JSON.parse(t);
+    }catch(_){
+        throw new Error("A planilha devolveu HTML ou JSON inválido ao salvar. Tente de novo.");
     }
     if(!data.ok) throw new Error(data.erro||"Erro ao salvar.");
     if(String(payload.action||"").toLowerCase()==="update" && data.acao && String(data.acao).toLowerCase()!=="update"){
@@ -1636,7 +1655,7 @@ async function carregarManifestLiberacao(){
     try{
         const res=await fetch(LIBERACAO_MANIFEST_URL,{cache:"no-store"});
         if(!res.ok) return null;
-        return await res.json();
+        return parseJsonOpcionalTexto(await res.text());
     }catch(_){
         return null;
     }
@@ -1729,7 +1748,7 @@ async function carregarSnapshotDia(data,bust){
         const url=urlSnapshotDia(data)+(bust?"?"+Date.now():"");
         const res=await fetch(url,{cache:"no-store"});
         if(!res.ok) return null;
-        const payload=await res.json();
+        const payload=parseJsonOpcionalTexto(await res.text());
         if(!Array.isArray(payload?.dados)||!payload.dados.length) return null;
         return payload;
     }catch(_){
@@ -1747,7 +1766,10 @@ async function carregarSnapshotSemana(dataDe,dataAteJanela,data){
     if(!snapPayload){
         await (liberacaoManifest?Promise.resolve(liberacaoManifest):carregarManifestLiberacao().then(m=>{if(m)liberacaoManifest=m;return m;}));
         snapPayload=await fetch(LIBERACAO_ACOMPANHAMENTO_URL,{cache:"no-store"})
-            .then(r=>r.ok?r.json():null)
+            .then(async r=>{
+                if(!r.ok) return null;
+                return parseJsonOpcionalTexto(await r.text());
+            })
             .catch(()=>null);
     }
     if(!Array.isArray(snapPayload?.dados)||!snapPayload.dados.length) return null;

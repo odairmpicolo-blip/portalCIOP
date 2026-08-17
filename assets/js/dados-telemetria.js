@@ -848,17 +848,12 @@ async function carregarSnapshotInicial() {
   if ($("filtroDataDe")) $("filtroDataDe").value = de;
   if ($("filtroDataAte")) $("filtroDataAte").value = ate;
 
-  const json = await carregarSnapshotTelemetriaJson();
-  if (json?.dados?.length) {
-    aplicarSnapshotBruto(json);
-    await aguardar(0);
-    aplicarFonteAtiva();
-    atualizarStatusJson();
-  }
+  /* Planilha primeiro: o dump estático (~23 MB) quebra o parse no navegador. */
+  const jsonP = carregarSnapshotTelemetriaJson();
 
   if (planilhaAoVivo) {
     try {
-      const ok = await atualizarDaPlanilha({ silencioso: Boolean(json?.dados?.length) });
+      const ok = await atualizarDaPlanilha({ silencioso: false });
       if (ok) {
         await aguardar(0);
         aplicarFonteAtiva();
@@ -866,8 +861,19 @@ async function carregarSnapshotInicial() {
       }
     } catch (err) {
       console.warn("Planilha ao vivo:", err);
-      if (json?.dados?.length) atualizarStatusJson();
     }
+  }
+
+  const json = await jsonP;
+  if (json?.dados?.length) {
+    if (snapshotRaw?.dados?.length) {
+      aplicarSnapshotMesclado(json, { fonte: "todos" });
+    } else {
+      aplicarSnapshotBruto(json);
+    }
+    await aguardar(0);
+    aplicarFonteAtiva();
+    atualizarStatusJson();
   }
 
   return Boolean(snapshotRaw?.dados?.length);
@@ -2279,7 +2285,7 @@ async function iniciar() {
       renderTabelaVazia("Não foi possível carregar os dados de telemetria. Verifique a conexão ou tente novamente.");
       const el = $("statusJson");
       if (el) {
-        el.innerHTML = `Erro no JSON · <a href="${PLANILHA_TELEMETRIA_URL}" target="_blank" rel="noopener">Abrir planilha</a>`;
+        el.innerHTML = `Sem dados no JSON estático nem na planilha · <a href="${PLANILHA_TELEMETRIA_URL}" target="_blank" rel="noopener">Abrir planilha</a>`;
         el.className = "status-json warn";
       }
     }

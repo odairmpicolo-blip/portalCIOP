@@ -12,6 +12,20 @@ let telemetriaScriptUrlCache = "";
 
 const FONTES_PLANILHA = ["clever", "tcgl", "fleetbus"];
 const JSON_FETCH_TIMEOUT_MS = 90000;
+/** dados.json chega a ~23 MB; JSON.parse disso trava Safari/Chrome e vira "Erro no JSON". */
+const JSON_MAX_BYTES = 6 * 1024 * 1024;
+
+function parseJsonSeguro(texto, rotulo = "JSON") {
+  const t = String(texto || "").trim();
+  if (!t) throw new Error(`${rotulo} vazio.`);
+  if (t.charAt(0) === "<") throw new Error(`${rotulo} veio como HTML, não como dados.`);
+  if (t.length > JSON_MAX_BYTES) throw new Error(`${rotulo} grande demais para o navegador.`);
+  try {
+    return JSON.parse(t);
+  } catch (_) {
+    throw new Error(`${rotulo} inválido ou truncado.`);
+  }
+}
 
 function urlsTelemetriaAsset(relativePath) {
   const urls = [relativePath];
@@ -168,7 +182,13 @@ async function fetchJsonComTimeout(url, timeoutMs = JSON_FETCH_TIMEOUT_MS) {
   try {
     const res = await fetch(url, { cache: "no-store", signal: ctrl.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
+    const len = Number(res.headers.get("content-length") || 0);
+    if (len > JSON_MAX_BYTES) {
+      try { await res.body?.cancel(); } catch (_) { /* ignore */ }
+      throw new Error("arquivo JSON grande demais para o navegador");
+    }
+    const texto = await res.text();
+    return parseJsonSeguro(texto, "JSON");
   } finally {
     clearTimeout(timer);
   }
@@ -244,6 +264,11 @@ export async function carregarManifestTelemetria() {
 }
 
 export async function carregarSnapshotTelemetriaJson() {
+  const manifest = await carregarManifestTelemetria();
+  if (Number(manifest?.total || 0) > 15000) {
+    console.warn("Telemetria JSON: dump estático grande demais; a página usa a planilha.");
+    return null;
+  }
   let ultimoErro = "";
   for (const base of urlsTelemetriaAsset(TELEMETRIA_DADOS_URL)) {
     for (let tentativa = 1; tentativa <= 2; tentativa++) {
