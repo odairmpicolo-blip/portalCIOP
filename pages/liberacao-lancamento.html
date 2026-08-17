@@ -447,7 +447,7 @@ tbody td.col-maquina .cell-readonly{background:transparent;color:inherit;padding
         .catch(function(){return null;});
 })();
 </script>
-<script type="module" src="../assets/js/auth.js?v=20260720a"></script>
+<script type="module" src="../assets/js/auth.js?v=20260817c"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260720y">
 <link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260720y">
@@ -1849,11 +1849,13 @@ async function sincronizarJsonHoje(){
 }
 
 async function carregarLiberacaoAws_(dataIso){
-    // Leitura rápida via AWS (DSQL) — a planilha alimenta o DSQL a cada poucos minutos (GitHub Actions).
     try{
         const mod=await moduloLiberacaoAws();
         if(!mod||!await mod.liberacaoAwsDisponivel()) return null;
-        const res=await mod.carregarJanelaLiberacaoAws(dataIso,dataIso);
+        const res=await Promise.race([
+            mod.carregarJanelaLiberacaoAws(dataIso,dataIso),
+            new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout AWS")),8000))
+        ]);
         return Array.isArray(res?.dados)?res.dados:null;
     }catch(err){
         console.warn("Leitura AWS (DSQL) falhou, usando planilha direta:",err?.message||err);
@@ -1898,7 +1900,10 @@ async function carregarJanelaLiberacaoAwsFallback_(dataDe,dataAte){
     try{
         const mod=await moduloLiberacaoAws();
         if(!mod||!await mod.liberacaoAwsDisponivel()) return null;
-        const res=await mod.carregarJanelaLiberacaoAws(dataDe,dataAte);
+        const res=await Promise.race([
+            mod.carregarJanelaLiberacaoAws(dataDe,dataAte),
+            new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout AWS")),8000))
+        ]);
         return Array.isArray(res?.dados)?res.dados:null;
     }catch(err){
         console.warn("Leitura AWS (DSQL) da janela falhou, usando planilha direta:",err?.message||err);
@@ -1994,10 +1999,11 @@ async function iniciarCarregamento(forceRefresh=false){
         const snapSemana=await carregarSnapshotSemana(dataDe,amanha,data);
         if(snapSemana?.dados?.length){
             complementarSemanaCarregada(escolherFonteJanela(cache,snapSemana,snapDia,data)||{dados:snapSemana.dados,rotulo:"arquivo JSON"},data);
-        }
-
-        if(state.dados.length){
             finalizarCarregamentoInicial(true);
+            if(ehDiaAtual(data) && !state.dados.length){
+                setStatus("Hoje ainda sem JSON. Buscando planilha em segundo plano…","load");
+                complementarPlanilhaBackground("planilha · hoje");
+            }
             return;
         }
     }
@@ -2005,7 +2011,10 @@ async function iniciarCarregamento(forceRefresh=false){
     if(ehDiaAtual(data)){
         try{
             atualizarOverlayOperacao("Buscando lançamentos na planilha...");
-            const dadosPlanilha=await obterPlanilhaHoje(true,false);
+            const dadosPlanilha=await Promise.race([
+                obterPlanilhaHoje(true,false),
+                new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),15000))
+            ]);
             if(dadosPlanilha?.length){
                 complementarSemanaCarregada({dados:dadosPlanilha,rotulo:"planilha · hoje"},data);
                 finalizarCarregamentoInicial(true);

@@ -426,7 +426,7 @@ body{
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="../assets/js/loading.js?v=20260718d"></script>
-<script type="module" src="../assets/js/auth.js?v=20260720a"></script>
+<script type="module" src="../assets/js/auth.js?v=20260817c"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260720y">
 <link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260720y">
@@ -578,10 +578,19 @@ atualizadoEm: Date.now()
 }
 
 async function apiGet(params){
-const res = await fetch(API_URL+"?"+new URLSearchParams(Object.assign({liberacao:"1"},params)), {cache:"no-store"});
+const ctrl = new AbortController();
+const timer = setTimeout(() => ctrl.abort(), 12000);
+try {
+const res = await fetch(API_URL+"?"+new URLSearchParams(Object.assign({liberacao:"1"},params)), {cache:"no-store", signal: ctrl.signal});
 const data = await res.json();
 if(!data.ok) throw new Error(data.erro||"Falha na API.");
 return data;
+} catch (e) {
+if (e.name === "AbortError") throw new Error("Timeout na planilha de liberação.");
+throw e;
+} finally {
+clearTimeout(timer);
+}
 }
 
 function montarHtmlGraficos(){
@@ -822,7 +831,13 @@ renderGraficos();
 const extra = liberacaoManifest?.atualizadoEm
 ? " · snapshot: " + new Date(liberacaoManifest.atualizadoEm).toLocaleString("pt-BR")
 : "";
-setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · arquivo JSON" + extra, "ok");
+const vazioHoje = (snapshot.total_linhas || 0) === 0;
+setStatus(
+  vazioHoje
+    ? "Ainda não há lançamentos neste período no JSON. Consultando a planilha…"
+    : formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · arquivo JSON" + extra,
+  vazioHoje ? "load" : "ok"
+);
 mostrouSnapshot = true;
 }
 
@@ -854,6 +869,27 @@ renderGraficos();
 const cacheTxt = res.meta && res.meta.cache ? " · cache servidor" : "";
 const origem = (mostrouCache || mostrouSnapshot) ? " · atualizado" : "";
 setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + cacheTxt + origem, "ok");
+} catch (e) {
+if (mostrouCache || mostrouSnapshot) {
+if (!state.totalLinhas) {
+const g7 = liberacaoManifest?.graficos?.["7d"];
+if (g7?.arquivo) {
+const s7 = await carregarSnapshotGraficos(g7.data_de, g7.data_ate);
+if (s7 && (s7.total_linhas || 0) > 0) {
+$("dataDe").value = g7.data_de;
+$("dataAte").value = g7.data_ate;
+state.mapaGraficos = s7.categorias || {};
+state.totalLinhas = s7.total_linhas || 0;
+state.cacheChave = g7.data_de + "|" + g7.data_ate;
+renderGraficos();
+setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(g7.data_de) + " a " + brDate(g7.data_ate) + " · 7 dias (hoje ainda sem lançamento)", "ok");
+return;
+}
+}
+}
+} else {
+setStatus(e.message || "Não foi possível carregar a liberação.", "erro");
+}
 } finally {
 window.portalOcultarCarregando?.();
 }
