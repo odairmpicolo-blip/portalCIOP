@@ -413,16 +413,15 @@ async function histograma(p) {
 
 async function cad(p) {
   try {
-    if (SO_ARQUIVO) return null;
+    if (SO_ARQUIVO) return { ok: false, erro: "modo arquivo", itens: [] };
     const cfg = await import("./portal-aws-config.js");
     if (typeof cfg.initPortalAwsRuntime === "function") await cfg.initPortalAwsRuntime();
-    if (!cfg.awsApiEnabled()) return null;
+    if (!cfg.awsApiEnabled()) return { ok: false, erro: "API AWS não configurada", itens: [] };
     const r = await chamar("/cad", p || {});
-    if (!r || !r.ok) return null;
+    if (!r) return { ok: false, erro: "resposta vazia da API", itens: [] };
     return r;
   } catch (err) {
-    console.info("CAD: banco indisponível, usando o arquivo.", err.message);
-    return null;
+    return { ok: false, erro: err.message || String(err), itens: [] };
   }
 }
 

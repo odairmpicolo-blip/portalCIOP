@@ -499,10 +499,21 @@ router.get("/cad", requireFirebaseUser, async (req, res) => {
     const where = cond.length ? ` WHERE ${cond.join(" AND ")}` : "";
     let r;
     try {
-      r = await query(`SELECT * FROM cr_0002${where} LIMIT 8000`, par);
-    } catch (e1) {
       r = await query(`SELECT * FROM cr_0002 LIMIT 8000`);
+    } catch (e1) {
+      try {
+        r = await query(`SELECT * FROM cr_0002${where} LIMIT 8000`, par);
+      } catch (e2) {
+        throw e1;
+      }
     }
+    let itens = r.rows || [];
+    itens = itens.map((row) => {
+      if (!row || typeof row !== "object") return row;
+      const extra = row.payload;
+      if (extra && typeof extra === "object" && !Array.isArray(extra)) return { ...row, ...extra };
+      return row;
+    });
     let meta = null;
     try {
       const c = await query(
@@ -514,7 +525,7 @@ router.get("/cad", requireFirebaseUser, async (req, res) => {
       );
       meta = c.rows[0] || null;
     } catch (_) { /* cargas pode ter outro desenho; a página segue com as linhas */ }
-    res.json({ ok: true, origem: "dsql", tabela: "cr_0002", meta, itens: r.rows });
+    res.json({ ok: true, origem: "dsql", tabela: "cr_0002", meta, itens });
   } catch (err) { erro(res, err); }
 });
 

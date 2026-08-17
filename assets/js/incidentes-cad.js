@@ -42,11 +42,32 @@
   }
   function linhasDe(payload) {
     if (!payload) return [];
-    if (Array.isArray(payload)) return payload;
-    if (Array.isArray(payload.itens)) return payload.itens;
-    if (Array.isArray(payload.rows)) return payload.rows;
-    if (Array.isArray(payload.incidentes)) return payload.incidentes;
-    return [];
+    var arr = [];
+    if (Array.isArray(payload)) arr = payload;
+    else if (Array.isArray(payload.itens)) arr = payload.itens;
+    else if (Array.isArray(payload.rows)) arr = payload.rows;
+    else if (Array.isArray(payload.incidentes)) arr = payload.incidentes;
+    else if (payload.payload && Array.isArray(payload.payload.incidentes)) arr = payload.payload.incidentes;
+    else if (payload.payload && Array.isArray(payload.payload.itens)) arr = payload.payload.itens;
+    return arr.map(function (r) {
+      if (!r || typeof r !== "object") return r;
+      var extra = r.payload;
+      if (extra && typeof extra === "object" && !Array.isArray(extra)) {
+        return Object.assign({}, r, extra);
+      }
+      return r;
+    });
+  }
+  function esperarAuth() {
+    return new Promise(function (resolve) {
+      if (window.portalUsuarioValidado) return resolve();
+      if (typeof window.portalAguardarUsuario === "function") {
+        window.portalAguardarUsuario(function () { resolve(); });
+        return;
+      }
+      window.addEventListener("portal:usuario-validado", function () { resolve(); }, { once: true });
+      setTimeout(resolve, 12000);
+    });
   }
   function pickDate(row) {
     var raw = get(row, ["data", "data_ref", "dt_incidente", "dt", "created_at", "data_hora", "inicio"]);
@@ -283,23 +304,29 @@
     try {
       var json = await carregarJson();
       receber(json, json.origem || "arquivo");
-      setStatus((json.atualizadoEm ? "Arquivo · " + json.atualizadoEm : "Arquivo local") + " · " + num(state.all.length) + " registros", "ok");
+      setStatus((json.atualizadoEm ? "Arquivo · " + json.atualizadoEm : "Arquivo local") + " · " + num(state.all.length) + " registros", state.all.length ? "ok" : "load");
     } catch (e) {
-      receber({ rows: [] }, "vazio");
-      setStatus("Arquivo local vazio. Tentando banco…", "load");
+      receber({ itens: [] }, "vazio");
+      setStatus("Arquivo local vazio. Aguardando sessão para ler o banco…", "load");
     }
+    await esperarAuth();
+    setStatus("Buscando cr_0002 no banco…", "load");
     try {
       var banco = await carregarBanco();
+      if (banco && banco.ok === false) {
+        throw new Error(banco.erro || "API CAD recusou a leitura");
+      }
       if (banco && linhasDe(banco).length) {
         receber(banco, banco.origem === "dsql" ? "banco" : (banco.origem || "banco"));
         setStatus("Banco cr_0002 · " + num(state.all.length) + " registros", "ok");
       } else if (!state.all.length) {
-        setStatus("Sem dados no JSON e no banco (cr_0002). Confira a carga do relatório 002.", "");
+        setStatus((banco && banco.erro) ? banco.erro : "A API respondeu, mas cr_0002 veio sem linhas.", "");
       } else {
         setStatus("Mantido arquivo local · banco sem linhas novas", "ok");
       }
     } catch (e2) {
       if (!state.all.length) setStatus("Não foi possível ler o CAD. " + (e2.message || e2), "");
+      else setStatus("Arquivo local · banco indisponível (" + (e2.message || e2) + ")", "ok");
     }
     state.carregando = false;
   }
