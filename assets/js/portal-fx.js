@@ -11,6 +11,7 @@
     '<div class="portal-fx-3d-ceil"></div>' +
     '<div class="portal-fx-3d-floor"></div>' +
     '<div class="portal-fx-3d-scan"></div>' +
+    '<div class="portal-fx-bus"></div>' +
     '<svg class="portal-fx-3d-lines" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" focusable="false">' +
       '<defs>' +
         '<linearGradient id="fxLineAzul" x1="0" y1="0" x2="1" y2="1">' +
