@@ -76,7 +76,7 @@ body:has(#portalAbas) .grid .card-figure svg {
 }
 
 body:has(#portalAbas) .grid .card-btn {
-  display: flex !important;
+  display: none !important;
 }
 
 body:has(#portalAbas) .grid .card:hover,
@@ -100,6 +100,23 @@ body:has(#portalAbas) .header.header-v2 {
   padding-top: 8px !important;
   padding-bottom: 8px !important;
 }
+body:has(#portalAbas) .hero-pro-logo--emblem,
+body:has(#portalAbas) .hero-pro-logo {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+}
+body:has(#portalAbas) .hero-pro-logo-img {
+  max-height: 36px !important;
+}
+body:has(#portalAbas) .header-hero-campanha-titulo,
+body:has(#portalAbas) .header-hero-mes {
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+}
+body:has(#portalAbas) .hero-pro-welcome {
+  font-size: 14px !important;
+}
 body:has(#portalAbas) .ciop-command-inner {
   gap: 10px;
 }
@@ -108,31 +125,26 @@ body:has(#portalAbas) .toolbar {
   padding-bottom: 8px;
 }
 
-/* —— Títulos de módulo: tipografia real —— */
-h1[class*="title-art"],
-h1.header-title,
-.header .subtitle {
+/* —— Títulos de módulo: texto no lugar do PNG —— */
+h1[class*="title-art"] {
   font-family: var(--font) !important;
-}
-h1[class*="title-art"],
-h1.header-title {
   font-size: clamp(1.05rem, 2vw, 1.35rem) !important;
   font-weight: 800 !important;
   letter-spacing: -0.03em !important;
   color: var(--azul) !important;
   line-height: 1.15 !important;
   text-align: center;
-  margin: 0;
 }
 h1[class*="title-art"] img {
   display: none !important;
 }
 h1[class*="title-art"][aria-label]::after {
-  content: none !important;
-  display: none !important;
+  content: attr(aria-label);
+  display: block;
+  max-width: min(42ch, 90vw);
+  margin-inline: auto;
 }
-html.dk-dark h1[class*="title-art"],
-html.dk-dark h1.header-title {
+html.dk-dark h1[class*="title-art"] {
   color: #f4f6f8 !important;
 }
 
@@ -184,144 +196,3 @@ body.login-v2 input,
 body.login-v2 button {
   font-family: var(--font) !important;
 }
-
-/* —— Home: wallpaper mais quieto (a saudação volta no portal-home-ops) —— */
-body:has(#portalAbas) .bg-blobs,
-body:has(#portalAbas) .bg-blob-mid {
-  opacity: 0.28 !important;
-}
-body:has(#portalAbas) .grid {
-  gap: 12px !important;
-}
-body:has(#portalAbas) .grid .card-desc {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-body:has(#portalAbas) .ciop-kpi-label {
-  font-size: 10px !important;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-body:has(#portalAbas) .ciop-kpi-value {
-  font-size: 15px !important;
-  font-weight: 700 !important;
-}
-
-/* —— Casco interno: header estável, dados em superfície, sem vidro extra no desktop —— */
-@media (min-width: 861px) {
-  body:has(.body-bg-wall) .header,
-  body:has(.body-bg-stain) .header {
-    display: grid;
-    grid-template-columns: minmax(120px, 1fr) minmax(0, 2.2fr) minmax(120px, 1fr);
-    align-items: center;
-    min-height: 56px;
-    padding: 8px 18px !important;
-    background: color-mix(in srgb, var(--surface) 92%, transparent) !important;
-    border-bottom: 1px solid var(--borda) !important;
-    box-shadow: none !important;
-  }
-  body:has(.body-bg-wall) .kpi-card,
-  body:has(.body-bg-wall) .chart-card,
-  body:has(.body-bg-wall) .table-card,
-  body:has(.body-bg-wall) .toolbar,
-  body:has(.body-bg-wall) .sidebar.portal-filters-bar,
-  body:has(.body-bg-wall) .filters-panel,
-  body:has(.body-bg-wall) .panel,
-  body:has(.body-bg-wall) .password-panel {
-    background: var(--surface) !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    border: 1px solid var(--borda) !important;
-    box-shadow: var(--shadow) !important;
-  }
-  body:has(.body-bg-wall) .body-bg-stain {
-    opacity: 0.22;
-  }
-}
-
-body:has(.body-bg-wall) table th {
-  background: var(--surface) !important;
-  box-shadow: inset 0 -1px 0 var(--borda);
-  color: var(--texto) !important;
-}
-
-body:has(.body-bg-wall) .portal-filters-bar,
-body:has(.body-bg-wall) .filters-panel,
-body:has(.body-bg-wall) .toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 10px;
-}
-
-html.dk-dark body:has(.body-bg-wall) .kpi-card,
-html.dk-dark body:has(.body-bg-wall) .chart-card,
-html.dk-dark body:has(.body-bg-wall) .table-card,
-html.dk-dark body:has(.body-bg-wall) .toolbar,
-html.dk-dark body:has(.body-bg-wall) .panel {
-  background: var(--surface) !important;
-  border-color: var(--borda) !important;
-}
-
-/* —— Próximo passo: fundo de produto, não wallpaper —— */
-body:has(.header):not(:has(#portalAbas)) .body-bg-wall,
-body:has(.header):not(:has(#portalAbas)) .body-bg-stain {
-  opacity: 0 !important;
-  pointer-events: none;
-}
-body:has(.header):not(:has(#portalAbas)):not(.login-v2) {
-  background: var(--fundo) !important;
-}
-
-body:has(.header):not(:has(#portalAbas)) .btn-portal {
-  background: var(--azul) !important;
-  color: #fff !important;
-  border: 0 !important;
-  border-radius: var(--radius-sm) !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-}
-body:has(.header):not(:has(#portalAbas)) .btn-portal:hover {
-  background: var(--azul-hover) !important;
-  transform: none;
-}
-
-body:has(.portal-filters-bar) .filter-group,
-body:has(.filters-panel) .filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 140px;
-}
-body:has(.portal-filters-bar) .filter-group label,
-body:has(.filters-panel) .filter-group label {
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  color: var(--muted) !important;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-body:has(.kpi-card) .kpi-title {
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  color: var(--muted) !important;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-body:has(.kpi-card) .kpi-value {
-  font-variant-numeric: tabular-nums;
-  font-weight: 800 !important;
-  letter-spacing: -0.03em;
-  color: var(--texto) !important;
-}
-
-/* Cor só para estado operacional */
-.kpi-card.highlight .kpi-value,
-.tv-hero-ok,
-.chip-ok,
-.status-ok { color: var(--teal) !important; }
-.status-warn, .chip-warn { color: var(--laranja) !important; }
-.status-bad, .chip-bad { color: #dc2626 !important; }
