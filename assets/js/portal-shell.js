@@ -59,7 +59,7 @@
       sessionHtml +
       extras.join("") +
       '<a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener" class="logo-tcgl-link" aria-label="Site TCGL">' +
-        '<img class="logo-tcgl" src="' + base + 'assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">' +
+        '<img class="logo-tcgl" src="' + base + 'assets/img/LOGO_TCGL-dark.png" alt="TCGL">' +
       "</a>" +
     "</div>";
 
