@@ -116,10 +116,11 @@ export function LoginPage() {
 
   return (
     <div className="login-page">
-      <form className="login-card" onSubmit={onSubmit}>
+      <div className="login-stack">
         <div className="login-brand portal-brand-mark portal-brand-mark--center" aria-label="Portal CIOP TCGL Operações">
           <img className="portal-brand-art" src={portalBrandSrc()} alt="Portal CIOP TCGL Operações" />
         </div>
+      <form className="login-card" onSubmit={onSubmit}>
 
         {native && temLoginSalvo && biometriaDisponivel && biometricEnabled ? (
           <button
@@ -180,6 +181,7 @@ export function LoginPage() {
           </a>
         ) : null}
       </form>
+      </div>
     </div>
   )
 }

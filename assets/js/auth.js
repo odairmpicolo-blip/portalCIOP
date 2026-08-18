@@ -264,7 +264,7 @@ function garantirCssMarca() {
   if (document.querySelector("link[data-portal-brand]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-brand.css?v=20260818q");
+  link.href = portalPath("assets/css/portal-brand.css?v=20260818s");
   link.dataset.portalBrand = "1";
   document.head.appendChild(link);
 }
