@@ -200,6 +200,19 @@ function negarAcessoPagina() {
   return false;
 }
 
+function iniciaisNome(nome) {
+  const parts = String(nome || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!parts.length) return "U";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+const CIOP_GEAR_SVG =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M19.4 13.5a7.6 7.6 0 0 0 .1-1.5 7.6 7.6 0 0 0-.1-1.5l1.7-1.3-1.6-2.8-2 .8a7.4 7.4 0 0 0-2.6-1.5L14.5 3h-5l-.4 2.2a7.4 7.4 0 0 0-2.6 1.5l-2-.8-1.6 2.8 1.7 1.3a7.6 7.6 0 0 0-.1 1.5 7.6 7.6 0 0 0 .1 1.5L3.3 14.8l1.6 2.8 2-.8a7.4 7.4 0 0 0 2.6 1.5l.4 2.2h5l.4-2.2a7.4 7.4 0 0 0 2.6-1.5l2 .8 1.6-2.8z"/></svg>';
+
 function modernizarSessaoUsuario() {
   const session = document.querySelector(".ciop-session");
   if (!session) return;
@@ -217,7 +230,14 @@ function modernizarSessaoUsuario() {
     if (cargoEl) info.appendChild(cargoEl);
   }
 
-  session.querySelector(".ciop-session-avatar")?.remove();
+  let avatar = session.querySelector(".ciop-session-avatar");
+  if (!avatar) {
+    avatar = document.createElement("span");
+    avatar.className = "ciop-session-avatar";
+    avatar.setAttribute("aria-hidden", "true");
+    session.insertBefore(avatar, info);
+  }
+  avatar.textContent = iniciaisNome(userEl.textContent);
 
   let actions = session.querySelector(".ciop-session-actions");
   if (!actions) {
@@ -230,6 +250,15 @@ function modernizarSessaoUsuario() {
     if (btn.parentElement !== actions) actions.appendChild(btn);
   });
 
+  const senhaBtn = session.querySelector(".btn-senha-portal, [data-portal-senha-btn]");
+  if (senhaBtn && senhaBtn.dataset.iconized !== "1") {
+    senhaBtn.dataset.iconized = "1";
+    senhaBtn.classList.add("ciop-icon-btn");
+    senhaBtn.setAttribute("aria-label", "Alterar senha");
+    senhaBtn.setAttribute("title", "Alterar senha");
+    senhaBtn.innerHTML = CIOP_GEAR_SVG;
+  }
+
   session.classList.add("ciop-session-modern");
 }
 
@@ -241,7 +270,7 @@ function atualizarSaudacaoHero(cadastroOuNome) {
   aplicarSaudacaoHero(nome, { genero });
 }
 
-const PORTAL_SESSION_CSS_V = "20260718h";
+const PORTAL_SESSION_CSS_V = "20260817ah";
 
 function garantirCssSessao() {
   const href = portalPath(`assets/css/portal-session.css?v=${PORTAL_SESSION_CSS_V}`);
