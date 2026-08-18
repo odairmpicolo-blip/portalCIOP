@@ -1,0 +1,181 @@
+/* Portal CIOP — linhas 3D, vidro e caixas de título. */
+
+:root {
+  --home-glass: rgba(226, 232, 240, 0.78);
+  --home-glass-border: rgba(255, 255, 255, 0.58);
+  --home-glass-blur: blur(22px) saturate(170%);
+}
+
+html.dk-dark {
+  --home-glass: rgba(32, 38, 46, 0.78);
+  --home-glass-border: rgba(255, 255, 255, 0.12);
+}
+
+.portal-fx-3d {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  perspective: 920px;
+  perspective-origin: 50% 118%;
+}
+
+.portal-fx-3d-floor {
+  position: absolute;
+  left: -18%;
+  right: -18%;
+  bottom: -8%;
+  height: 58%;
+  transform: rotateX(66deg);
+  transform-origin: center bottom;
+  background-image:
+    linear-gradient(to right, rgba(56, 189, 248, 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 107, 0, 0.12) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.48), transparent 78%);
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.48), transparent 78%);
+}
+
+.portal-fx-3d-scan {
+  position: absolute;
+  left: -18%;
+  right: -18%;
+  bottom: 8%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.85), rgba(255, 107, 0, 0.7), transparent);
+  filter: blur(0.4px);
+  animation: portalFxScan 7.5s ease-in-out infinite;
+  opacity: 0.65;
+}
+
+.portal-fx-3d-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.62;
+}
+
+@keyframes portalFxScan {
+  0%, 100% { opacity: 0.12; transform: rotateX(66deg) translateY(80px); }
+  50% { opacity: 0.8; transform: rotateX(66deg) translateY(-40px); }
+}
+
+html.dk-dark .portal-fx-3d-floor {
+  background-image:
+    linear-gradient(to right, rgba(56, 189, 248, 0.26) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 107, 0, 0.18) 1px, transparent 1px);
+}
+
+body:has(.header) .header,
+body:has(.header) .toolbar,
+body:has(.header) .container,
+body:has(.header) .main-content,
+body:has(.header) main {
+  position: relative;
+  z-index: 1;
+}
+
+/* Caixa de letras — título de módulo */
+.portal-letterbox,
+.portal-shell-title .header-title {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  max-width: min(100%, 34rem);
+  margin: 0 auto !important;
+  padding: 0.5em 1.05em !important;
+  font-family: var(--font, Inter, system-ui, sans-serif) !important;
+  font-size: clamp(1.02rem, 1.9vw, 1.32rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.15 !important;
+  color: var(--azul, #06245c) !important;
+  text-align: center;
+  background: var(--home-glass) !important;
+  backdrop-filter: var(--home-glass-blur) !important;
+  -webkit-backdrop-filter: var(--home-glass-blur) !important;
+  border: 1px solid var(--home-glass-border) !important;
+  border-radius: 14px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    inset 0 -8px 16px rgba(6, 36, 92, 0.05),
+    0 14px 28px -18px rgba(6, 36, 92, 0.4) !important;
+  position: relative;
+}
+
+.portal-letterbox::after,
+.portal-shell-title .header-title::after {
+  content: "";
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 12px;
+  height: 12px;
+  border-top: 1.5px solid color-mix(in srgb, #38bdf8 75%, white);
+  border-right: 1.5px solid color-mix(in srgb, #ff6b00 70%, white);
+  pointer-events: none;
+}
+
+.portal-letterbox-sub,
+.portal-shell-title .subtitle,
+.portal-shell-title .header-subtitle {
+  display: inline-flex !important;
+  margin-top: 6px !important;
+  padding: 0.28em 0.75em;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted, #64748b) !important;
+  background: color-mix(in srgb, var(--home-glass) 88%, white) !important;
+  border: 1px solid var(--home-glass-border) !important;
+  border-radius: 999px !important;
+}
+
+html.dk-dark .portal-letterbox,
+html.dk-dark .portal-shell-title .header-title {
+  color: #f4f6f8 !important;
+}
+
+/* Páginas internas: casco e dados em vidro 3D */
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .header,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .header.portal-shell-header {
+  background: var(--home-glass) !important;
+  backdrop-filter: var(--home-glass-blur) !important;
+  -webkit-backdrop-filter: var(--home-glass-blur) !important;
+  border-bottom: 1px solid color-mix(in srgb, #38bdf8 28%, var(--home-glass-border)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 16px 32px -22px rgba(6, 36, 92, 0.4) !important;
+}
+
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .kpi-card,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .chart-card,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .table-card,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .toolbar,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .filters-panel,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .panel,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .filter-wrapper,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .content-body > .toolbar {
+  background: var(--home-glass) !important;
+  backdrop-filter: var(--home-glass-blur) !important;
+  -webkit-backdrop-filter: var(--home-glass-blur) !important;
+  border: 1px solid var(--home-glass-border) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 14px 28px -18px rgba(6, 36, 92, 0.32) !important;
+}
+
+body:has(#kiosk) .portal-fx-3d,
+body.login-v2 .portal-fx-3d {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-fx-3d-scan {
+    animation: none;
+    opacity: 0.22;
+  }
+}

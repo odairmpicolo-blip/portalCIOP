@@ -52,7 +52,7 @@
       '<span class="portal-brand-meta">TCGL · Operações</span>' +
     "</a>" +
     '<div class="portal-shell-title">' +
-      '<h1 class="header-title">' + esc(title) + "</h1>" +
+      '<h1 class="header-title portal-letterbox">' + esc(title) + "</h1>" +
       subHtml +
     "</div>" +
     '<div class="header-actions">' +
@@ -62,4 +62,7 @@
         '<img class="logo-tcgl" src="' + base + 'assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">' +
       "</a>" +
     "</div>";
+
+  var subEl = header.querySelector(".subtitle, .header-subtitle");
+  if (subEl) subEl.classList.add("portal-letterbox-sub");
 })();
