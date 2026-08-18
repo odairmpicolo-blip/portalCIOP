@@ -8,5 +8,5 @@ export function portalBrandSrc(dark?: boolean): string {
       document.documentElement.classList.contains('native-dark') ||
       getThemeMode() === 'dark')
   const file = isDark ? 'logomarca-portalciop-tcgl-escuro.png' : 'logomarca-portalciop-tcgl-claro.png'
-  return portalAsset(`/assets/img/${file}?v=20260818m`)
+  return portalAsset(`/assets/img/${file}?v=20260818n`)
 }

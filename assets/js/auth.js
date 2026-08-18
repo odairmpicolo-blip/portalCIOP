@@ -264,7 +264,7 @@ function garantirCssMarca() {
   if (document.querySelector("link[data-portal-brand]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-brand.css?v=20260818m");
+  link.href = portalPath("assets/css/portal-brand.css?v=20260818n");
   link.dataset.portalBrand = "1";
   document.head.appendChild(link);
 }
@@ -273,7 +273,7 @@ function garantirCssHeader() {
   if (document.querySelector("link[data-portal-header]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-header.css?v=20260818m");
+  link.href = portalPath("assets/css/portal-header.css?v=20260818n");
   link.dataset.portalHeader = "1";
   document.head.appendChild(link);
 }
@@ -288,7 +288,7 @@ function notificarPortalPronto() {
 function garantirMarcaPortal() {
   if (document.querySelector("script[data-portal-brand-js]")) return;
   const script = document.createElement("script");
-  script.src = portalPath("assets/js/portal-brand.js?v=20260818m");
+  script.src = portalPath("assets/js/portal-brand.js?v=20260818n");
   script.defer = true;
   script.dataset.portalBrandJs = "1";
   script.onload = () => {
@@ -303,7 +303,7 @@ function garantirCssLiquidGlass() {
   if (document.querySelector("link[data-portal-liquid]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-liquid-glass.css?v=20260818m");
+  link.href = portalPath("assets/css/portal-liquid-glass.css?v=20260818n");
   link.dataset.portalLiquid = "1";
   document.head.appendChild(link);
 }
@@ -311,7 +311,7 @@ function garantirCssLiquidGlass() {
 function garantirThemeToggle() {
   if (document.querySelector("script[src*='theme-toggle.js']")) return;
   const script = document.createElement("script");
-  script.src = portalPath("assets/js/theme-toggle.js?v=20260818m");
+  script.src = portalPath("assets/js/theme-toggle.js?v=20260818n");
   document.head.appendChild(script);
 }
 
