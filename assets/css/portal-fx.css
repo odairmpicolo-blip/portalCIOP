@@ -1,18 +1,26 @@
 /* Portal CIOP — linhas 3D, vidro e caixas de título. */
 
 :root {
-  --home-glass: rgba(248, 250, 252, 0.28);
-  --home-glass-border: rgba(255, 255, 255, 0.55);
-  --home-glass-blur: blur(28px) saturate(180%);
-  --home-edge: linear-gradient(135deg, #06245c 0%, #1d4ed8 48%, #ff6b00 100%);
-  --home-glass-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(226, 232, 240, 0.22));
+  --home-glass: rgba(255, 255, 255, 0.46);
+  --home-glass-border: rgba(255, 255, 255, 0.72);
+  --home-glass-blur: blur(22px) saturate(170%);
+  --home-edge: linear-gradient(135deg, #1d4ed8 0%, #2563eb 55%, #38bdf8 100%);
+  --home-glass-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(226, 232, 240, 0.36));
+  --home-neon: #2563eb;
+  --home-glow: 0 10px 28px rgba(37, 99, 235, 0.18);
+  --home-ink: #06245c;
+  --home-muted: #475569;
 }
 
 html.dk-dark {
-  --home-glass: rgba(16, 20, 26, 0.22);
-  --home-glass-border: rgba(255, 255, 255, 0.22);
-  --home-edge: linear-gradient(135deg, rgba(125, 211, 252, 0.85) 0%, rgba(148, 163, 184, 0.28) 50%, rgba(255, 107, 0, 0.7) 100%);
-  --home-glass-fill: linear-gradient(165deg, rgba(44, 50, 60, 0.28) 0%, rgba(12, 16, 22, 0.32) 100%);
+  --home-glass: rgba(8, 16, 32, 0.42);
+  --home-glass-border: rgba(56, 189, 248, 0.42);
+  --home-edge: linear-gradient(135deg, rgba(56, 189, 248, 0.95) 0%, rgba(14, 165, 233, 0.45) 50%, rgba(255, 107, 0, 0.55) 100%);
+  --home-glass-fill: linear-gradient(165deg, rgba(18, 36, 64, 0.48) 0%, rgba(6, 12, 24, 0.52) 100%);
+  --home-neon: #38bdf8;
+  --home-glow: 0 0 22px rgba(56, 189, 248, 0.42);
+  --home-ink: #fff;
+  --home-muted: #dbeafe;
 }
 
 .portal-fx-3d {
@@ -498,5 +506,363 @@ html.dk-dark body:has(.header):not(:has(#portalAbas)):not(.login-v2) table td {
   .portal-fx-3d-scan {
     animation: none;
     opacity: 0.22;
+  }
+}
+
+/* —— Cockpit das referências: trilho, abas, cards, faixa de avisos —— */
+html.portal-cockpit body:not(.login-v2):not(:has(#kiosk)) {
+  padding-left: 86px;
+}
+
+.portal-rail {
+  position: fixed;
+  z-index: 45;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 86px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px 18px;
+  background: var(--home-glass);
+  backdrop-filter: var(--home-glass-blur);
+  -webkit-backdrop-filter: var(--home-glass-blur);
+  border-right: 1px solid var(--home-glass-border);
+  box-shadow: var(--home-glow);
+}
+
+.portal-rail-item {
+  position: relative;
+  width: 70px;
+  min-height: 62px;
+  padding: 8px 4px 6px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--home-muted);
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font: 700 9px/1.1 Inter, system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.portal-rail-item svg {
+  width: 22px;
+  height: 22px;
+}
+
+.portal-rail-item.is-active,
+.portal-rail-item:hover {
+  color: var(--home-neon);
+  background: color-mix(in srgb, var(--home-neon) 12%, transparent);
+}
+
+.portal-rail-item.is-active {
+  box-shadow: inset 3px 0 0 var(--home-neon), var(--home-glow);
+}
+
+.portal-rail-support {
+  margin-top: auto;
+}
+
+.portal-rail-badge {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 9px;
+  line-height: 16px;
+}
+
+html:not(.dk-dark) .portal-fx-3d {
+  opacity: 0.28;
+}
+
+html.dk-dark .portal-fx-3d {
+  opacity: 0.72;
+}
+
+body:has(#portalAbas) .toolbar-inner > .menu-toggle {
+  display: none !important;
+}
+
+body:has(#portalAbas) .toolbar-inner {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+body:has(#portalAbas) .ciop-command-whatsapp,
+body:has(#portalAbas) .toolbar-whatsapp {
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  min-height: 48px !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: 0 8px 20px rgba(37, 211, 102, 0.35) !important;
+}
+
+.ciop-search {
+  position: relative;
+  display: flex !important;
+  align-items: center;
+  overflow: visible !important;
+}
+
+body:has(#portalAbas) .ciop-command-inner > .ciop-hud-bell {
+  flex: 0 0 auto;
+  display: inline-flex;
+}
+
+.ciop-search-kbd {
+  margin-right: 8px;
+  padding: 3px 7px;
+  border-radius: 8px;
+  border: 1px solid var(--home-glass-border);
+  background: color-mix(in srgb, var(--home-glass) 80%, white);
+  color: var(--home-muted);
+  font: 700 10px/1 Inter, system-ui, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.portal-avisos-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: var(--home-glass-fill) padding-box, var(--home-edge) border-box;
+  border: 1px solid transparent;
+  backdrop-filter: var(--home-glass-blur);
+  -webkit-backdrop-filter: var(--home-glass-blur);
+  box-shadow: var(--home-glow);
+  cursor: pointer;
+  color: var(--home-ink);
+}
+
+.portal-avisos-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.portal-avisos-copy {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.portal-avisos-copy em {
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: var(--home-neon);
+}
+
+.portal-avisos-copy span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.portal-avisos-more {
+  border: 0;
+  background: transparent;
+  color: var(--home-neon);
+  font: 800 12px/1 Inter, system-ui, sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+body:has(#portalAbas) .portal-abas {
+  max-width: min(720px, 92vw) !important;
+  width: auto !important;
+  margin: 0 auto 18px !important;
+  padding: 6px !important;
+  border-radius: 999px !important;
+  background: var(--home-glass) !important;
+  border: 1px solid var(--home-glass-border) !important;
+  box-shadow: var(--home-glow) !important;
+}
+
+body:has(#portalAbas) .portal-aba-indicador {
+  display: none !important;
+}
+
+body:has(#portalAbas) .portal-aba {
+  border-radius: 999px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: var(--home-ink) !important;
+}
+
+html:not(.dk-dark) body:has(#portalAbas) .portal-aba[aria-selected="true"] {
+  background: #1d4ed8 !important;
+  color: #fff !important;
+  box-shadow: 0 8px 22px rgba(29, 78, 216, 0.38) !important;
+}
+
+html.dk-dark body:has(#portalAbas) .portal-aba[aria-selected="true"] {
+  background: rgba(56, 189, 248, 0.18) !important;
+  color: #fff !important;
+  box-shadow:
+    0 0 0 1px #38bdf8,
+    0 0 22px rgba(56, 189, 248, 0.55) !important;
+}
+
+body:has(#portalAbas) .grid {
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)) !important;
+  gap: 16px !important;
+}
+
+body:has(#portalAbas) .grid .card,
+body:not(.oa-page) .grid .card {
+  min-height: 196px !important;
+  overflow: visible !important;
+  border-radius: 18px !important;
+  background: var(--home-glass-fill) padding-box, var(--home-edge) border-box !important;
+  border: 1px solid transparent !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    var(--home-glow) !important;
+}
+
+body:has(#portalAbas) .grid .card::before,
+body:not(.oa-page) .grid .card::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 10px !important;
+  width: auto !important;
+  top: 10px !important;
+  left: 10px !important;
+  right: 10px !important;
+  bottom: 10px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background:
+    linear-gradient(var(--home-neon), var(--home-neon)) top left / 16px 2px no-repeat,
+    linear-gradient(var(--home-neon), var(--home-neon)) top left / 2px 16px no-repeat,
+    linear-gradient(var(--home-neon), var(--home-neon)) top right / 16px 2px no-repeat,
+    linear-gradient(var(--home-neon), var(--home-neon)) top right / 2px 16px no-repeat,
+    linear-gradient(var(--home-neon), var(--home-neon)) bottom left / 16px 2px no-repeat,
+    linear-gradient(var(--home-neon), var(--home-neon)) bottom left / 2px 16px no-repeat,
+    linear-gradient(var(--home-neon), var(--home-neon)) bottom right / 16px 2px no-repeat,
+    linear-gradient(var(--home-neon), var(--home-neon)) bottom right / 2px 16px no-repeat !important;
+  opacity: 0.9 !important;
+  pointer-events: none;
+  z-index: 2;
+}
+
+body:has(#portalAbas) .grid .card::after {
+  display: none !important;
+}
+
+body:has(#portalAbas) .grid .card-figure {
+  background: color-mix(in srgb, var(--home-neon) 14%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--home-neon) 35%, transparent) !important;
+  color: var(--home-neon) !important;
+  box-shadow: none !important;
+}
+
+body:has(#portalAbas) .grid .card-btn {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: auto !important;
+  min-width: 70%;
+  margin-top: 8px !important;
+  z-index: 3;
+}
+
+html:not(.dk-dark) body:has(#portalAbas) .grid .card-btn {
+  background: transparent !important;
+  color: #1d4ed8 !important;
+  box-shadow: none !important;
+  font-weight: 800 !important;
+}
+
+html.dk-dark body:has(#portalAbas) .grid .card-btn {
+  background: rgba(56, 189, 248, 0.16) !important;
+  color: #fff !important;
+  border: 1px solid #38bdf8 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.35) !important;
+}
+
+html.dk-dark body:has(#portalAbas) .grid .card:hover .card-btn,
+html:not(.dk-dark) body:has(#portalAbas) .grid .card:hover .card-btn {
+  background: var(--home-neon) !important;
+  color: #fff !important;
+}
+
+body:has(.header):not(:has(#kiosk)):not(.login-v2) .header,
+body:has(.header):not(:has(#kiosk)):not(.login-v2) .ciop-command-inner,
+body:has(.header):not(:has(#kiosk)):not(.login-v2) .hero-pro-panel {
+  background: var(--home-glass) !important;
+  backdrop-filter: var(--home-glass-blur) !important;
+  -webkit-backdrop-filter: var(--home-glass-blur) !important;
+  border-color: var(--home-glass-border) !important;
+}
+
+@media (max-width: 860px) {
+  html.portal-cockpit body:not(.login-v2):not(:has(#kiosk)) {
+    padding-left: 0;
+  }
+
+  .portal-rail {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: auto;
+    height: 64px;
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 6px 8px;
+    border-right: 0;
+    border-top: 1px solid var(--home-glass-border);
+  }
+
+  .portal-rail-item {
+    width: auto;
+    min-height: 52px;
+    flex: 1;
+  }
+
+  .portal-rail-support {
+    margin-top: 0;
+  }
+
+  body:has(#portalAbas) .toolbar-inner > .menu-toggle {
+    display: flex !important;
   }
 }
