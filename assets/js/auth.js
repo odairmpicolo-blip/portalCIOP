@@ -264,7 +264,7 @@ function garantirCssMarca() {
   if (document.querySelector("link[data-portal-brand]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-brand.css?v=20260818s");
+  link.href = portalPath("assets/css/portal-brand.css?v=20260818t");
   link.dataset.portalBrand = "1";
   document.head.appendChild(link);
 }
@@ -311,7 +311,7 @@ function garantirCssLiquidGlass() {
 function garantirThemeToggle() {
   if (document.querySelector("script[src*='theme-toggle.js']")) return;
   const script = document.createElement("script");
-  script.src = portalPath("assets/js/theme-toggle.js?v=20260818p");
+  script.src = portalPath("assets/js/theme-toggle.js?v=20260818t");
   document.head.appendChild(script);
 }
 

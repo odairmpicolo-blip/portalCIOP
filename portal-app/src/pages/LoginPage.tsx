@@ -117,8 +117,8 @@ export function LoginPage() {
   return (
     <div className="login-page">
       <div className="login-stack">
-        <div className="login-brand portal-brand-mark portal-brand-mark--center" aria-label="Portal CIOP TCGL Operações">
-          <img className="portal-brand-art" src={portalBrandSrc()} alt="Portal CIOP TCGL Operações" />
+        <div className="login-brand portal-brand-mark" aria-label="Portal CIOP TCGL Operações">
+          <img className="portal-brand-art" src={portalBrandSrc(undefined, true)} alt="Portal CIOP TCGL Operações" />
         </div>
       <form className="login-card" onSubmit={onSubmit}>
 

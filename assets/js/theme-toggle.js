@@ -35,8 +35,11 @@ function dkIsDark(pref) {
 
 function dkTcglPath(img, fileName) {
   var src = img.getAttribute("src") || "";
-  if (src.indexOf("../assets/") !== -1) return "../assets/img/" + fileName + "?v=20260818p";
-  if (src.indexOf("assets/") !== -1) return "assets/img/" + fileName + "?v=20260818p";
+  if (src.indexOf("-login.png") !== -1) {
+    fileName = fileName.replace(".png", "-login.png");
+  }
+  if (src.indexOf("../assets/") !== -1) return "../assets/img/" + fileName + "?v=20260818t";
+  if (src.indexOf("assets/") !== -1) return "assets/img/" + fileName + "?v=20260818t";
   return fileName;
 }
 
