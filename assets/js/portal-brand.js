@@ -6,15 +6,16 @@
   }
 
   function brandImgSrc() {
+    var dark = document.documentElement.classList.contains("dk-dark");
+    var file = dark ? "logomarca-portalciop-tcgl-escuro.png" : "logomarca-portalciop-tcgl-claro.png";
     return window.location.pathname.includes("/pages/")
-      ? "../assets/img/titulo-portal-ciop.png"
-      : "assets/img/titulo-portal-ciop.png";
+      ? "../assets/img/" + file
+      : "assets/img/" + file;
   }
 
   function brandInnerHtml() {
     return (
-      '<img class="portal-brand-art" src="' + brandImgSrc() + '" alt="Portal CIOP">' +
-      '<span class="portal-brand-meta">TCGL · Operações</span>'
+      '<img class="portal-brand-art" src="' + brandImgSrc() + '" alt="Portal CIOP TCGL Operações">'
     );
   }
 
@@ -69,6 +70,10 @@
         img.replaceWith(mark);
       }
     });
+
+    if (typeof window.dkSwapBrandLogos === "function") {
+      window.dkSwapBrandLogos(document.documentElement.classList.contains("dk-dark"));
+    }
   }
 
   window.modernizarMarcaPortal = modernizarMarcaPortal;

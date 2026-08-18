@@ -1,6 +1,6 @@
 var DK_KEY = "dk-theme";
-var DK_TCGL_LIGHT = "LOGO_TCGL-removebg-preview.png";
-var DK_TCGL_DARK = "LOGO_TCGL-dark.png";
+var DK_BRAND_LIGHT = "logomarca-portalciop-tcgl-claro.png";
+var DK_BRAND_DARK = "logomarca-portalciop-tcgl-escuro.png";
 var DK_AUTO_TIMER = null;
 /** Escurece a partir das 18h; clareia a partir das 6h (horário local). */
 var DK_AUTO_DARK_FROM = 18;
@@ -40,17 +40,20 @@ function dkTcglPath(img, fileName) {
   return fileName;
 }
 
-function dkSwapTcglLogos(isDark) {
-  /* GL do logo é branco: sempre a arte escura, sobre placa azul no CSS. */
-  var fileName = DK_TCGL_DARK;
+function dkSwapBrandLogos(isDark) {
+  var fileName = isDark ? DK_BRAND_DARK : DK_BRAND_LIGHT;
   var imgs = document.querySelectorAll(
-    'img.logo-tcgl, img.logo-right, img[src*="LOGO_TCGL-removebg"], img[src*="LOGO_TCGL-dark"]'
+    "img.portal-brand-art, img[src*='logomarca-portalciop-tcgl'], img[src*='titulo-portal-ciop']"
   );
   for (var i = 0; i < imgs.length; i++) {
     var img = imgs[i];
     img.setAttribute("src", dkTcglPath(img, fileName));
-    img.classList.toggle("logo-tcgl-dark-mode", !!isDark);
+    img.setAttribute("alt", "Portal CIOP TCGL Operações");
   }
+}
+
+function dkSwapTcglLogos(isDark) {
+  dkSwapBrandLogos(isDark);
 }
 
 function dkPrefLabel(pref) {
@@ -155,3 +158,4 @@ document.addEventListener("DOMContentLoaded", dkInit);
 // API usada por páginas que reagem à troca de tema
 window.dkSetPref = dkSetPref;
 window.dkIsDark = dkIsDark;
+window.dkSwapBrandLogos = dkSwapBrandLogos;

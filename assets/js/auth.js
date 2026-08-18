@@ -264,7 +264,7 @@ function garantirCssMarca() {
   if (document.querySelector("link[data-portal-brand]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-brand.css");
+  link.href = portalPath("assets/css/portal-brand.css?v=20260818i");
   link.dataset.portalBrand = "1";
   document.head.appendChild(link);
 }
@@ -288,7 +288,7 @@ function notificarPortalPronto() {
 function garantirMarcaPortal() {
   if (document.querySelector("script[data-portal-brand-js]")) return;
   const script = document.createElement("script");
-  script.src = portalPath("assets/js/portal-brand.js");
+  script.src = portalPath("assets/js/portal-brand.js?v=20260818i");
   script.defer = true;
   script.dataset.portalBrandJs = "1";
   script.onload = () => {
@@ -299,9 +299,27 @@ function garantirMarcaPortal() {
   document.head.appendChild(script);
 }
 
+function garantirCssLiquidGlass() {
+  if (document.querySelector("link[data-portal-liquid]")) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = portalPath("assets/css/portal-liquid-glass.css?v=20260818i");
+  link.dataset.portalLiquid = "1";
+  document.head.appendChild(link);
+}
+
+function garantirThemeToggle() {
+  if (document.querySelector("script[src*='theme-toggle.js']")) return;
+  const script = document.createElement("script");
+  script.src = portalPath("assets/js/theme-toggle.js?v=20260818i");
+  document.head.appendChild(script);
+}
+
 garantirCssSessao();
 garantirCssMarca();
 garantirCssHeader();
+garantirCssLiquidGlass();
+garantirThemeToggle();
 garantirMarcaPortal();
 
 function garantirRodapePortal() {

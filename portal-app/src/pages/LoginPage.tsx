@@ -4,7 +4,8 @@ import { useAuth } from '../hooks/useAuth'
 import { useAppPreferences } from '../context/app-preferences-context'
 import { useBiometryLabels } from '../hooks/useBiometryLabels'
 import { promptBiometricFromGesture } from '../lib/biometric-auth'
-import { portalAsset, isNativeApp } from '../lib/portal-origin'
+import { isNativeApp } from '../lib/portal-origin'
+import { portalBrandSrc } from '../lib/brand'
 import {
   canSaveLoginLocally,
   clearSavedLogin,
@@ -117,8 +118,7 @@ export function LoginPage() {
     <div className="login-page">
       <form className="login-card" onSubmit={onSubmit}>
         <div className="login-brand portal-brand-mark portal-brand-mark--center" aria-label="Portal CIOP TCGL Operações">
-          <img className="portal-brand-art" src={portalAsset('/assets/img/titulo-portal-ciop.png')} alt="Portal CIOP" />
-          <span className="portal-brand-meta">TCGL · Operações</span>
+          <img className="portal-brand-art" src={portalBrandSrc()} alt="Portal CIOP TCGL Operações" />
         </div>
 
         {native && temLoginSalvo && biometriaDisponivel && biometricEnabled ? (

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { portalAsset } from '../lib/portal-origin'
+import { portalBrandSrc } from '../lib/brand'
+import { getThemeMode } from '../lib/app-preferences'
 
 function initials(name?: string): string {
   if (!name) return '?'
@@ -21,7 +22,7 @@ export function Header({
   home?: boolean
 }) {
   const { user, logout } = useAuth()
-  const brandSrc = portalAsset('/assets/img/titulo-portal-ciop.png')
+  const brandSrc = portalBrandSrc(getThemeMode() === 'dark')
 
   return (
     <header className="app-header">
@@ -36,14 +37,12 @@ export function Header({
           </button>
         ) : null}
         <div className="brand portal-brand-mark" aria-label="Portal CIOP TCGL Operações">
-          <img className="portal-brand-art" src={brandSrc} alt="Portal CIOP" />
-          <span className="portal-brand-meta">TCGL · Operações</span>
+          <img className="portal-brand-art" src={brandSrc} alt="Portal CIOP TCGL Operações" />
         </div>
       </div>
 
       <div className={`header-brand-mobile portal-brand-mark${home ? ' header-brand-mobile--hidden' : ''}`} aria-hidden="true">
         <img className="portal-brand-art" src={brandSrc} alt="" />
-        <span className="portal-brand-meta">TCGL · Operações</span>
       </div>
 
       <div className="header-right">
