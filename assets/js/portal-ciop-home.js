@@ -14,4 +14,25 @@
   dock.appendChild(areas);
   dock.appendChild(tabs);
   document.body.classList.add("portal-dock-on");
+
+  function placeDock() {
+    if (window.matchMedia("(max-width: 900px)").matches) {
+      dock.style.top = "";
+      dock.style.maxHeight = "";
+      return;
+    }
+    var avisos = document.querySelector(".notice-board");
+    var top = 220;
+    if (avisos) {
+      top = Math.round(avisos.getBoundingClientRect().bottom + 10);
+    }
+    dock.style.top = top + "px";
+    dock.style.maxHeight = "calc(100dvh - " + (top + 16) + "px)";
+  }
+
+  placeDock();
+  window.addEventListener("resize", placeDock);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(placeDock);
+  }
 })();
