@@ -7,16 +7,10 @@
 
   function brandImgSrc() {
     var dark = document.documentElement.classList.contains("dk-dark");
-    var home = Boolean(document.getElementById("portalAbas"));
-    var file;
-    if (home) {
-      file = dark ? "logomarca-ciop-home-escuro.png" : "logomarca-ciop-home-claro.png";
-    } else {
-      file = dark ? "logomarca-portalciop-tcgl-escuro.png" : "logomarca-portalciop-tcgl-claro.png";
-    }
+    var file = dark ? "logomarca-portalciop-tcgl-escuro.png" : "logomarca-portalciop-tcgl-claro.png";
     return window.location.pathname.includes("/pages/")
-      ? "../assets/img/" + file + "?v=20260818v"
-      : "assets/img/" + file + "?v=20260818v";
+      ? "../assets/img/" + file + "?v=20260818p"
+      : "assets/img/" + file + "?v=20260818p";
   }
 
   function brandInnerHtml() {

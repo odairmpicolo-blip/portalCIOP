@@ -35,33 +35,23 @@ function dkIsDark(pref) {
 
 function dkTcglPath(img, fileName) {
   var src = img.getAttribute("src") || "";
-  var isDarkFile = fileName.indexOf("escuro") !== -1;
-  if (src.indexOf("logomarca-ciop-home") !== -1) {
-    fileName = isDarkFile ? "logomarca-ciop-home-escuro.png" : "logomarca-ciop-home-claro.png";
-  } else if (src.indexOf("logomarca-selo-tcgl-home") !== -1) {
-    fileName = isDarkFile ? "logomarca-selo-tcgl-home-escuro.png" : "logomarca-selo-tcgl-home-claro.png";
-  } else if (src.indexOf("-login.png") !== -1) {
+  if (src.indexOf("-login.png") !== -1) {
     fileName = fileName.replace(".png", "-login.png");
   }
-  if (src.indexOf("../assets/") !== -1) return "../assets/img/" + fileName + "?v=20260818v";
-  if (src.indexOf("assets/") !== -1) return "assets/img/" + fileName + "?v=20260818v";
+  if (src.indexOf("../assets/") !== -1) return "../assets/img/" + fileName + "?v=20260818t";
+  if (src.indexOf("assets/") !== -1) return "assets/img/" + fileName + "?v=20260818t";
   return fileName;
 }
 
 function dkSwapBrandLogos(isDark) {
   var fileName = isDark ? DK_BRAND_DARK : DK_BRAND_LIGHT;
   var imgs = document.querySelectorAll(
-    "img.portal-brand-art, img[src*='logomarca-portalciop-tcgl'], img[src*='logomarca-ciop-home'], img[src*='logomarca-selo-tcgl-home'], img[src*='titulo-portal-ciop']"
+    "img.portal-brand-art, img[src*='logomarca-portalciop-tcgl'], img[src*='titulo-portal-ciop']"
   );
   for (var i = 0; i < imgs.length; i++) {
     var img = imgs[i];
-    var src = img.getAttribute("src") || "";
     img.setAttribute("src", dkTcglPath(img, fileName));
-    if (src.indexOf("selo-tcgl-home") !== -1) {
-      img.setAttribute("alt", "TCGL");
-    } else {
-      img.setAttribute("alt", "Portal CIOP TCGL Operações");
-    }
+    img.setAttribute("alt", "Portal CIOP TCGL Operações");
   }
 }
 
