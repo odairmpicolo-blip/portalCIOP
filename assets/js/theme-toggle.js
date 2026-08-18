@@ -38,8 +38,8 @@ function dkTcglPath(img, fileName) {
   if (src.indexOf("-login.png") !== -1) {
     fileName = fileName.replace(".png", "-login.png");
   }
-  if (src.indexOf("../assets/") !== -1) return "../assets/img/" + fileName + "?v=20260818logo3";
-  if (src.indexOf("assets/") !== -1) return "assets/img/" + fileName + "?v=20260818logo3";
+  if (src.indexOf("../assets/") !== -1) return "../assets/img/" + fileName + "?v=20260818logo4";
+  if (src.indexOf("assets/") !== -1) return "assets/img/" + fileName + "?v=20260818logo4";
   return fileName;
 }
 
