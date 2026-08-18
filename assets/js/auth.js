@@ -241,7 +241,7 @@ function atualizarSaudacaoHero(cadastroOuNome) {
   aplicarSaudacaoHero(nome, { genero });
 }
 
-const PORTAL_SESSION_CSS_V = "20260817al";
+const PORTAL_SESSION_CSS_V = "20260817an";
 
 function garantirCssSessao() {
   const href = portalPath(`assets/css/portal-session.css?v=${PORTAL_SESSION_CSS_V}`);
