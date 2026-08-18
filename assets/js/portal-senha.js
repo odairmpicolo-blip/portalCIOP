@@ -144,12 +144,9 @@
 
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "btn-senha-portal ciop-icon-btn";
+    btn.className = "btn-senha-portal";
     btn.dataset.portalSenhaBtn = "1";
-    btn.setAttribute("aria-label", "Alterar senha");
-    btn.setAttribute("title", "Alterar senha");
-    btn.innerHTML =
-      '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M19.4 13.5a7.6 7.6 0 0 0 .1-1.5 7.6 7.6 0 0 0-.1-1.5l1.7-1.3-1.6-2.8-2 .8a7.4 7.4 0 0 0-2.6-1.5L14.5 3h-5l-.4 2.2a7.4 7.4 0 0 0-2.6 1.5l-2-.8-1.6 2.8 1.7 1.3a7.6 7.6 0 0 0-.1 1.5 7.6 7.6 0 0 0 .1 1.5L3.3 14.8l1.6 2.8 2-.8a7.4 7.4 0 0 0 2.6 1.5l.4 2.2h5l.4-2.2a7.4 7.4 0 0 0 2.6-1.5l2 .8 1.6-2.8z"/></svg>';
+    btn.textContent = "Senha";
     btn.addEventListener("click", function () {
       window.toggleSenhaPanel();
     });

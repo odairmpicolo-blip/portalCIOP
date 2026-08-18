@@ -41,7 +41,8 @@ function dkTcglPath(img, fileName) {
 }
 
 function dkSwapTcglLogos(isDark) {
-  var fileName = isDark ? DK_TCGL_DARK : DK_TCGL_LIGHT;
+  /* GL do logo é branco: sempre a arte escura, sobre placa azul no CSS. */
+  var fileName = DK_TCGL_DARK;
   var imgs = document.querySelectorAll(
     'img.logo-tcgl, img.logo-right, img[src*="LOGO_TCGL-removebg"], img[src*="LOGO_TCGL-dark"]'
   );

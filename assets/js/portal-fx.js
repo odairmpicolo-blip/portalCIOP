@@ -1,28 +1,27 @@
 /* Overlay 3D compartilhado (home e páginas internas). */
 (function () {
   if (document.getElementById("kiosk")) return;
+  if (document.body && document.body.classList.contains("login-v2")) return;
   if (document.querySelector(".portal-fx-3d")) return;
 
   var wrap = document.createElement("div");
   wrap.className = "portal-fx-3d";
   wrap.setAttribute("aria-hidden", "true");
   wrap.innerHTML =
-    '<div class="portal-fx-3d-veil"></div>' +
-    '<div class="portal-fx-3d-bars"></div>' +
     '<div class="portal-fx-3d-ceil"></div>' +
     '<div class="portal-fx-3d-floor"></div>' +
     '<div class="portal-fx-3d-scan"></div>' +
     '<svg class="portal-fx-3d-lines" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" focusable="false">' +
       '<defs>' +
         '<linearGradient id="fxLineAzul" x1="0" y1="0" x2="1" y2="1">' +
-          '<stop offset="0%" stop-color="#2eb5c0" stop-opacity="0"/>' +
-          '<stop offset="35%" stop-color="#2eb5c0" stop-opacity=".85"/>' +
+          '<stop offset="0%" stop-color="#38bdf8" stop-opacity="0"/>' +
+          '<stop offset="35%" stop-color="#38bdf8" stop-opacity=".85"/>' +
           '<stop offset="100%" stop-color="#06245c" stop-opacity=".1"/>' +
         "</linearGradient>" +
         '<linearGradient id="fxLineLaranja" x1="1" y1="0" x2="0" y2="1">' +
-          '<stop offset="0%" stop-color="#f5af35" stop-opacity="0"/>' +
-          '<stop offset="40%" stop-color="#f5af35" stop-opacity=".8"/>' +
-          '<stop offset="100%" stop-color="#ffd27a" stop-opacity=".05"/>' +
+          '<stop offset="0%" stop-color="#ff6b00" stop-opacity="0"/>' +
+          '<stop offset="40%" stop-color="#ff6b00" stop-opacity=".8"/>' +
+          '<stop offset="100%" stop-color="#ffb347" stop-opacity=".05"/>' +
         "</linearGradient>" +
       "</defs>" +
       '<g fill="none" stroke-linecap="round" stroke-linejoin="round">' +
@@ -34,12 +33,12 @@
         '<path stroke="url(#fxLineLaranja)" stroke-width="1" d="M200 760 L360 680 L640 680 L760 560"/>' +
         '<path stroke="url(#fxLineAzul)" stroke-width="1.1" d="M90 640 L90 520 L220 480 L220 400"/>' +
         '<path stroke="url(#fxLineLaranja)" stroke-width="1.1" d="M1350 640 L1350 500 L1220 460 L1220 380"/>' +
-        '<circle cx="260" cy="120" r="3.2" fill="#2eb5c0"/>' +
-        '<circle cx="320" cy="220" r="2.6" fill="#7edce4"/>' +
-        '<circle cx="1180" cy="90" r="3.2" fill="#f5af35"/>' +
-        '<circle cx="1120" cy="180" r="2.6" fill="#ffd27a"/>' +
-        '<circle cx="180" cy="360" r="2.4" fill="#2eb5c0"/>' +
-        '<circle cx="640" cy="680" r="2.4" fill="#f5af35"/>' +
+        '<circle cx="260" cy="120" r="3.2" fill="#38bdf8"/>' +
+        '<circle cx="320" cy="220" r="2.6" fill="#7dd3fc"/>' +
+        '<circle cx="1180" cy="90" r="3.2" fill="#ff6b00"/>' +
+        '<circle cx="1120" cy="180" r="2.6" fill="#ffb347"/>' +
+        '<circle cx="180" cy="360" r="2.4" fill="#38bdf8"/>' +
+        '<circle cx="640" cy="680" r="2.4" fill="#ff6b00"/>' +
       "</g>" +
     "</svg>";
 

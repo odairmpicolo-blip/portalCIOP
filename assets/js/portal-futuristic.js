@@ -29,16 +29,6 @@
     return wd + ", " + day + " " + mo;
   }
 
-  function dataHudLabel() {
-    const d = new Date();
-    const texto = d.toLocaleDateString("pt-BR", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    });
-    return texto.charAt(0).toUpperCase() + texto.slice(1);
-  }
-
   function horaLabel() {
     return new Date().toLocaleTimeString("pt-BR", {
       hour: "2-digit",
@@ -56,7 +46,7 @@
     const isOnline = navigator.onLine !== false;
 
     if (data) {
-      data.textContent = document.querySelector(".ciop-hud-meta") ? dataHudLabel() : dataCurtaLabel();
+      data.textContent = dataCurtaLabel();
       data.title = dataCompletaLabel();
     }
     if (hora) hora.textContent = horaLabel();
@@ -67,16 +57,6 @@
       const raw = contador ? String(contador.textContent || "").trim() : "";
       const n = Number.parseInt(raw, 10);
       avisos.textContent = Number.isFinite(n) ? String(n) : raw || "—";
-    }
-
-    var badge = document.getElementById("ciopBellBadge");
-    if (badge) {
-      const contador = document.getElementById("avisosContador");
-      const raw = contador ? String(contador.textContent || "").trim() : "";
-      const n = Number.parseInt(raw, 10);
-      const qtd = Number.isFinite(n) ? n : 0;
-      badge.textContent = qtd > 99 ? "99+" : String(qtd);
-      badge.hidden = qtd <= 0;
     }
 
     if (online) {
@@ -524,27 +504,11 @@
     });
   }
 
-  function bindBellAvisos() {
-    var btn = document.getElementById("ciopBellAvisos");
-    if (!btn || btn.dataset.bound === "1") return;
-    btn.dataset.bound = "1";
-    btn.addEventListener("click", function () {
-      var board = document.querySelector(".notice-board");
-      if (!board) return;
-      board.scrollIntoView({ behavior: "smooth", block: "center" });
-      board.classList.add("ciop-notice-pulse");
-      window.setTimeout(function () {
-        board.classList.remove("ciop-notice-pulse");
-      }, 1400);
-    });
-  }
-
   function init() {
     ensureIconGradient();
     enhanceDuotoneIcons();
     ensureHud();
     bindModuleSearch();
-    bindBellAvisos();
     atualizarCommandCenter();
     staggerCards();
     bindRipples();
