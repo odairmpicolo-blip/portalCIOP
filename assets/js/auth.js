@@ -303,7 +303,7 @@ function garantirCssLiquidGlass() {
   if (document.querySelector("link[data-portal-liquid]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-liquid-glass.css?v=20260818i");
+  link.href = portalPath("assets/css/portal-liquid-glass.css?v=20260818j");
   link.dataset.portalLiquid = "1";
   document.head.appendChild(link);
 }
