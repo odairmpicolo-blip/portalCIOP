@@ -264,7 +264,7 @@ function garantirCssMarca() {
   if (document.querySelector("link[data-portal-brand]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-brand.css?v=20260818u");
+  link.href = portalPath("assets/css/portal-brand.css?v=20260818y");
   link.dataset.portalBrand = "1";
   document.head.appendChild(link);
 }
@@ -288,7 +288,7 @@ function notificarPortalPronto() {
 function garantirMarcaPortal() {
   if (document.querySelector("script[data-portal-brand-js]")) return;
   const script = document.createElement("script");
-  script.src = portalPath("assets/js/portal-brand.js?v=20260818x");
+  script.src = portalPath("assets/js/portal-brand.js?v=20260818y");
   script.defer = true;
   script.dataset.portalBrandJs = "1";
   script.onload = () => {
@@ -311,7 +311,7 @@ function garantirCssLiquidGlass() {
 function garantirThemeToggle() {
   if (document.querySelector("script[src*='theme-toggle.js']")) return;
   const script = document.createElement("script");
-  script.src = portalPath("assets/js/theme-toggle.js?v=20260818x");
+  script.src = portalPath("assets/js/theme-toggle.js?v=20260818y");
   document.head.appendChild(script);
 }
 
