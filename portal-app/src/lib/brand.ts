@@ -14,5 +14,5 @@ export function portalBrandSrc(dark?: boolean, login = false): string {
     : login
       ? 'logomarca-portalciop-tcgl-claro-login.png'
       : 'logomarca-portalciop-tcgl-claro.png'
-  return portalAsset(`/assets/img/${file}?v=20260818ab`)
+  return portalAsset(`/assets/img/${file}?v=20260818ad`)
 }
