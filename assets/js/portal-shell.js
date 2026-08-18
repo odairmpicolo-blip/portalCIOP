@@ -47,10 +47,15 @@
 
   header.classList.add("portal-shell-header");
   header.innerHTML =
-    '<a class="portal-brand-mark" href="' + base + 'index.html" aria-label="Portal CIOP TCGL Operações">' +
-      '<img class="portal-brand-art" src="' + base + 'assets/img/titulo-portal-ciop.png" alt="Portal CIOP">' +
-      '<span class="portal-brand-meta">TCGL · Operações</span>' +
-    "</a>" +
+    '<div class="portal-brand-lockup">' +
+      '<a class="portal-brand-mark" href="' + base + 'index.html" aria-label="Portal CIOP TCGL Operações">' +
+        '<img class="portal-brand-art" src="' + base + 'assets/img/titulo-portal-ciop.png" alt="Portal CIOP">' +
+        '<span class="portal-brand-meta">TCGL · Operações</span>' +
+      "</a>" +
+      '<a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener" class="logo-tcgl-link" aria-label="Site TCGL">' +
+        '<img class="logo-tcgl" src="' + base + 'assets/img/LOGO_TCGL-dark.png" alt="TCGL">' +
+      "</a>" +
+    "</div>" +
     '<div class="portal-shell-title">' +
       '<h1 class="header-title portal-letterbox">' + esc(title) + "</h1>" +
       subHtml +
@@ -58,9 +63,6 @@
     '<div class="header-actions">' +
       sessionHtml +
       extras.join("") +
-      '<a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener" class="logo-tcgl-link" aria-label="Site TCGL">' +
-        '<img class="logo-tcgl" src="' + base + 'assets/img/LOGO_TCGL-dark.png" alt="TCGL">' +
-      "</a>" +
     "</div>";
 
   var subEl = header.querySelector(".subtitle, .header-subtitle");

@@ -1,9 +1,9 @@
 /* Home: comando sobre avisos, vidro cinza, sem acesso rápido. */
 
 body:has(#portalAbas) {
-  --home-glass: rgba(226, 232, 240, 0.78);
-  --home-glass-border: rgba(255, 255, 255, 0.58);
-  --home-glass-blur: blur(22px) saturate(170%);
+  --home-glass: rgba(241, 245, 249, 0.72);
+  --home-glass-border: rgba(255, 255, 255, 0.7);
+  --home-glass-blur: blur(18px) saturate(160%);
 }
 
 html.dk-dark body:has(#portalAbas) {
@@ -136,8 +136,8 @@ body:has(#portalAbas) .toolbar {
 
 body:has(#portalAbas) .toolbar-inner {
   display: grid !important;
-  grid-template-columns: 56px minmax(0, 1fr) 56px !important;
-  grid-template-rows: auto auto;
+  grid-template-columns: 56px minmax(0, 1fr) !important;
+  grid-template-rows: auto;
   align-items: stretch !important;
   gap: 10px 12px !important;
   width: 100% !important;
@@ -145,13 +145,13 @@ body:has(#portalAbas) .toolbar-inner {
   box-sizing: border-box !important;
 }
 
-body:has(#portalAbas) .toolbar-inner > .menu-toggle,
-body:has(#portalAbas) .toolbar-inner > .toolbar-whatsapp {
+body:has(#portalAbas) .toolbar-inner > .menu-toggle {
   position: static !important;
   left: auto !important;
   right: auto !important;
   top: auto !important;
   grid-row: 1;
+  grid-column: 1;
   width: 56px !important;
   height: auto !important;
   min-width: 56px !important;
@@ -164,14 +164,6 @@ body:has(#portalAbas) .toolbar-inner > .toolbar-whatsapp {
   -webkit-backdrop-filter: var(--home-glass-blur) !important;
 }
 
-body:has(#portalAbas) .toolbar-inner > .menu-toggle {
-  grid-column: 1;
-}
-
-body:has(#portalAbas) .toolbar-inner > .toolbar-whatsapp {
-  grid-column: 3;
-}
-
 body:has(#portalAbas) .toolbar-main {
   display: contents !important;
 }
@@ -182,19 +174,147 @@ body:has(#portalAbas) .ciop-command-row {
   margin: 0 !important;
 }
 
-body:has(#portalAbas) .notice-board {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  width: 100% !important;
-  max-width: none !important;
-  min-width: 0 !important;
+body:has(#portalAbas) .ciop-command-whatsapp,
+body:has(#portalAbas) .ciop-command-inner > .toolbar-whatsapp {
+  position: static !important;
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  flex: 0 0 auto;
+  margin-left: 4px;
+  border-radius: 12px !important;
+}
+
+body:has(#portalAbas) .header-actions {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+}
+
+body:has(#portalAbas) .ciop-hud-bell {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, #38bdf8 40%, #06245c);
+  background: color-mix(in srgb, #06245c 78%, transparent);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+body:has(#portalAbas) .ciop-hud-bell svg {
+  width: 20px;
+  height: 20px;
+}
+
+body:has(#portalAbas) .ciop-hud-bell-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+}
+
+body:has(#portalAbas) .ciop-kpi-avisos {
+  cursor: pointer;
+}
+
+.avisos-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(6, 36, 92, 0.38);
+  backdrop-filter: blur(10px);
+}
+
+.avisos-popup-backdrop[hidden] {
+  display: none !important;
+}
+
+.avisos-popup {
+  width: min(640px, 94vw);
+  max-height: min(78vh, 620px);
+  overflow: auto;
+  border-radius: 18px;
+  background: var(--home-glass-fill, var(--home-glass));
+  border: 2px solid transparent;
+  background-image:
+    linear-gradient(180deg, rgba(248, 250, 252, 0.94), rgba(226, 232, 240, 0.88)),
+    linear-gradient(135deg, #06245c, #ff6b00);
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: 0 28px 48px -20px rgba(6, 36, 92, 0.5);
+}
+
+.avisos-popup-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 8px;
+}
+
+.avisos-popup-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--azul, #06245c);
+}
+
+.avisos-popup-manage {
+  margin-left: auto;
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 700;
+  background: #06245c;
+  color: #fff;
+  cursor: pointer;
+}
+
+.avisos-popup-close {
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(6, 36, 92, 0.08);
+  cursor: pointer;
+}
+
+.avisos-popup-manage:not([hidden]) {
+  margin-left: auto;
+}
+
+.avisos-popup-manage:not([hidden]) ~ .avisos-popup-close {
+  margin-left: 0;
+}
+
+.avisos-popup-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.avisos-popup .notice-board {
   margin: 0 !important;
-  background: var(--home-glass) !important;
-  border: 1px solid var(--home-glass-border) !important;
-  backdrop-filter: var(--home-glass-blur) !important;
-  -webkit-backdrop-filter: var(--home-glass-blur) !important;
-  box-shadow: var(--shadow) !important;
-  border-radius: var(--radius) !important;
+  width: auto !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }
 
 body:has(#portalAbas) .ciop-command,
@@ -370,8 +490,7 @@ body:has(#portalAbas) .grid .card {
   background: var(--home-glass) !important;
   backdrop-filter: var(--home-glass-blur) !important;
   -webkit-backdrop-filter: var(--home-glass-blur) !important;
-  border: 1px solid var(--home-glass-border) !important;
-  border-left: 3px solid var(--accent-op) !important;
+  border: 2px solid transparent !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.72),
     inset 0 -10px 18px rgba(6, 36, 92, 0.06),
@@ -380,28 +499,15 @@ body:has(#portalAbas) .grid .card {
   transform-style: preserve-3d;
 }
 
-body:has(#portalAbas) #secaoDashboards .grid .card {
-  border-left-color: var(--accent-dash) !important;
-}
-
-body:has(#portalAbas) #secaoRelatorios .grid .card {
-  border-left-color: var(--accent-rel) !important;
-}
-
 @media (max-width: 860px) {
   body:has(#portalAbas) .toolbar-inner {
-    grid-template-columns: 48px 1fr 48px !important;
+    grid-template-columns: 48px 1fr !important;
     padding: 0 10px !important;
   }
 
   body:has(#portalAbas) .toolbar-inner > .menu-toggle {
     grid-row: 1;
     grid-column: 1;
-  }
-
-  body:has(#portalAbas) .toolbar-inner > .toolbar-whatsapp {
-    grid-row: 1;
-    grid-column: 3;
   }
 
   body:has(#portalAbas) .portal-atalhos {
@@ -489,8 +595,8 @@ body:has(#portalAbas) .grid .card {
 body:has(#portalAbas) .grid .card::before {
   content: "";
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
+  inset: 2px;
+  border-radius: 14px;
   pointer-events: none;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.42) 0%, transparent 38%, rgba(6, 36, 92, 0.06) 100%);

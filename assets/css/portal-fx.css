@@ -1,14 +1,18 @@
 /* Portal CIOP — linhas 3D, vidro e caixas de título. */
 
 :root {
-  --home-glass: rgba(226, 232, 240, 0.78);
-  --home-glass-border: rgba(255, 255, 255, 0.58);
-  --home-glass-blur: blur(22px) saturate(170%);
+  --home-glass: rgba(241, 245, 249, 0.72);
+  --home-glass-border: rgba(255, 255, 255, 0.7);
+  --home-glass-blur: blur(18px) saturate(160%);
+  --home-edge: linear-gradient(135deg, #06245c 0%, #1d4ed8 48%, #ff6b00 100%);
+  --home-glass-fill: linear-gradient(180deg, rgba(248, 250, 252, 0.94), rgba(236, 242, 247, 0.88));
 }
 
 html.dk-dark {
-  --home-glass: rgba(32, 38, 46, 0.78);
-  --home-glass-border: rgba(255, 255, 255, 0.12);
+  --home-glass: rgba(32, 38, 46, 0.72);
+  --home-glass-border: rgba(255, 255, 255, 0.14);
+  --home-edge: linear-gradient(135deg, #38bdf8 0%, #64748b 50%, #ff6b00 100%);
+  --home-glass-fill: linear-gradient(180deg, rgba(42, 48, 58, 0.92), rgba(24, 30, 38, 0.88));
 }
 
 .portal-fx-3d {
@@ -110,11 +114,11 @@ body:has(.header) main {
   line-height: 1.15 !important;
   color: var(--azul, #06245c) !important;
   text-align: center;
-  background: var(--home-glass) !important;
+  background: var(--home-glass-fill) padding-box, var(--home-edge) border-box !important;
   backdrop-filter: var(--home-glass-blur) !important;
   -webkit-backdrop-filter: var(--home-glass-blur) !important;
-  border: 1px solid var(--home-glass-border) !important;
-  border-radius: 14px !important;
+  border: 2px solid transparent !important;
+  border-radius: 16px !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.78),
     inset 0 -8px 16px rgba(6, 36, 92, 0.05),
@@ -171,23 +175,44 @@ body:has(.header):not(:has(#portalAbas)):not(.login-v2) .header.portal-shell-hea
 body:has(.header):not(:has(#portalAbas)):not(.login-v2) .kpi-card,
 body:has(.header):not(:has(#portalAbas)):not(.login-v2) .chart-card,
 body:has(.header):not(:has(#portalAbas)):not(.login-v2) .table-card,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .stat-card,
 body:has(.header):not(:has(#portalAbas)):not(.login-v2) .toolbar,
 body:has(.header):not(:has(#portalAbas)):not(.login-v2) .filters-panel,
 body:has(.header):not(:has(#portalAbas)):not(.login-v2) .panel,
 body:has(.header):not(:has(#portalAbas)):not(.login-v2) .filter-wrapper,
-body:has(.header):not(:has(#portalAbas)):not(.login-v2) .content-body > .toolbar {
-  background: var(--home-glass) !important;
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .content-body > .toolbar,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .sidebar.portal-filters-bar,
+body:has(#portalAbas) .grid .card,
+body:has(#portalAbas) .hero-pro-panel,
+body:has(#portalAbas) .ciop-command-inner {
+  background: var(--home-glass-fill) padding-box, var(--home-edge) border-box !important;
   backdrop-filter: var(--home-glass-blur) !important;
   -webkit-backdrop-filter: var(--home-glass-blur) !important;
-  border: 1px solid var(--home-glass-border) !important;
+  border: 2px solid transparent !important;
+  border-radius: 16px !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.65),
-    0 14px 28px -18px rgba(6, 36, 92, 0.32) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 16px 32px -18px rgba(6, 36, 92, 0.35) !important;
+}
+
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) table th {
+  background: color-mix(in srgb, #06245c 10%, transparent) !important;
+  color: var(--azul, #06245c) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.03em;
+}
+
+html.dk-dark body:has(.header):not(:has(#portalAbas)):not(.login-v2) table th {
+  color: #e2e8f0 !important;
+}
+
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .chart-card canvas,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .chart-card .chart-wrap {
+  filter: drop-shadow(0 10px 18px rgba(6, 36, 92, 0.12));
 }
 
 .logo-tcgl-link,
-.header-actions a:has(.logo-tcgl),
-.header-actions a:has(.logo-right) {
+.portal-brand-lockup .logo-tcgl-link {
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
@@ -200,12 +225,12 @@ body:has(.header):not(:has(#portalAbas)):not(.login-v2) .content-body > .toolbar
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
     0 10px 20px -12px rgba(6, 36, 92, 0.55);
+  flex: 0 0 auto;
 }
 
 .logo-tcgl-link .logo-tcgl,
 .logo-tcgl-link .logo-right,
-.header-actions .logo-tcgl,
-.header-actions .logo-right {
+.portal-brand-lockup .logo-tcgl {
   height: 44px !important;
   max-height: 44px !important;
   width: auto !important;
@@ -226,9 +251,194 @@ body:has(.header):not(.login-v2) .header::before {
   opacity: 0.7;
 }
 
+.ciop-session,
+.ciop-session.ciop-session-modern,
+html.dk-dark .ciop-session,
+html.dk-dark .ciop-session.ciop-session-modern {
+  background: color-mix(in srgb, #06245c 78%, transparent) !important;
+  border: 1px solid color-mix(in srgb, #38bdf8 40%, #06245c) !important;
+  color: #fff !important;
+}
+
+.ciop-session-user {
+  color: #fff !important;
+}
+
+.ciop-session-cargo,
+.ciop-session-profile {
+  color: rgba(226, 232, 240, 0.92) !important;
+}
+
 body:has(#kiosk) .portal-fx-3d,
 body.login-v2 .portal-fx-3d {
   display: none !important;
+}
+
+/* Contraste: texto e botões sobre vidro claro */
+body:has(#portalAbas) .grid .card-title,
+body:has(#portalAbas) .grid .card-title * {
+  color: #06245c !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+body:has(#portalAbas) .grid .card-desc {
+  color: #475569 !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+body:has(#portalAbas) .ciop-kpi-label {
+  color: #475569 !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+body:has(#portalAbas) .ciop-kpi-value,
+body:has(#portalAbas) .ciop-search-input,
+body:has(#portalAbas) .ciop-search-icon {
+  color: #06245c !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+body:has(#portalAbas) .hero-pro-nome {
+  color: #06245c !important;
+  -webkit-text-fill-color: #06245c;
+  background: none !important;
+}
+
+body:has(#portalAbas) .hero-pro-saudacao-label {
+  color: #334155 !important;
+}
+
+.avisos-popup-head h2,
+.avisos-popup .notice-board-title,
+.avisos-popup .notice-item-title,
+.avisos-popup .notice-item-title-inner {
+  color: #06245c !important;
+  text-shadow: none !important;
+}
+
+.avisos-popup .notice-item-text,
+.avisos-popup .notice-item-text-inner,
+.avisos-popup .notice-empty {
+  color: #475569 !important;
+  text-shadow: none !important;
+}
+
+body:has(.header):not(:has(#kiosk)):not(.login-v2) .btn-portal,
+body:has(.header):not(:has(#kiosk)):not(.login-v2) .btn-primary,
+body:has(.header):not(:has(#kiosk)):not(.login-v2) .card-btn {
+  color: #fff !important;
+  opacity: 1 !important;
+}
+
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .btn-portal,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .btn-primary,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .btn-small:not(.secondary):not(.danger) {
+  opacity: 1 !important;
+}
+
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .btn-small.secondary,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .btn-secondary,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .btn-ghost {
+  color: #06245c !important;
+  opacity: 1 !important;
+}
+
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .panel-title,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .kpi-title,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .kpi-value,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .stat-card .val,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .card-title {
+  color: #06245c !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .kpi-label,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .kpi-sub,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .muted,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .help-text,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .card-desc,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) label,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .header-subtitle,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) .subtitle {
+  color: #334155 !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) input,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) select,
+body:has(.header):not(:has(#portalAbas)):not(.login-v2) textarea {
+  color: #0f172a !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+}
+
+body:has(.header):not(:has(#kiosk)):not(.login-v2) .ciop-session .btn-senha-portal {
+  background: #ff6b00 !important;
+  color: #fff !important;
+}
+
+body:has(.header):not(:has(#kiosk)):not(.login-v2) .ciop-session .btn-logout:not(.btn-senha-portal) {
+  background: #fff !important;
+  color: #b91c1c !important;
+}
+
+html.dk-dark body:has(#portalAbas) .grid .card-title,
+html.dk-dark body:has(#portalAbas) .ciop-kpi-value,
+html.dk-dark body:has(#portalAbas) .hero-pro-nome {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc;
+}
+
+html.dk-dark body:has(#portalAbas) .grid .card-desc,
+html.dk-dark body:has(#portalAbas) .ciop-kpi-label,
+html.dk-dark body:has(#portalAbas) .hero-pro-saudacao-label {
+  color: #cbd5e1 !important;
+}
+
+html.dk-dark .avisos-popup-head h2,
+html.dk-dark .avisos-popup .notice-item-title,
+html.dk-dark .avisos-popup .notice-item-title-inner {
+  color: #f8fafc !important;
+}
+
+html.dk-dark .avisos-popup .notice-item-text,
+html.dk-dark .avisos-popup .notice-empty {
+  color: #cbd5e1 !important;
+}
+
+html.dk-dark body:has(.header):not(:has(#portalAbas)):not(.login-v2) .panel-title,
+html.dk-dark body:has(.header):not(:has(#portalAbas)):not(.login-v2) .kpi-value,
+html.dk-dark body:has(.header):not(:has(#portalAbas)):not(.login-v2) .card-title {
+  color: #f8fafc !important;
+}
+
+html.dk-dark body:has(.header):not(:has(#portalAbas)):not(.login-v2) .kpi-label,
+html.dk-dark body:has(.header):not(:has(#portalAbas)):not(.login-v2) .muted,
+html.dk-dark body:has(.header):not(:has(#portalAbas)):not(.login-v2) label,
+html.dk-dark body:has(.header):not(:has(#portalAbas)):not(.login-v2) .header-subtitle {
+  color: #cbd5e1 !important;
+}
+
+html.dk-dark body:has(.header):not(:has(#portalAbas)):not(.login-v2) input,
+html.dk-dark body:has(.header):not(:has(#portalAbas)):not(.login-v2) select,
+html.dk-dark body:has(.header):not(:has(#portalAbas)):not(.login-v2) textarea {
+  color: #f8fafc !important;
+  background: rgba(15, 23, 42, 0.72) !important;
+}
+
+html.dk-dark body:has(.header):not(:has(#portalAbas)):not(.login-v2) table td {
+  color: #e2e8f0 !important;
+}
+
+html.dk-dark body:has(.header):not(:has(#portalAbas)):not(.login-v2) .btn-small.secondary,
+html.dk-dark body:has(.header):not(:has(#portalAbas)):not(.login-v2) .btn-secondary,
+html.dk-dark body:has(.header):not(:has(#portalAbas)):not(.login-v2) .btn-ghost {
+  color: #f8fafc !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
