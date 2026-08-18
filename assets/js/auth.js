@@ -264,7 +264,7 @@ function garantirCssMarca() {
   if (document.querySelector("link[data-portal-brand]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-brand.css?v=20260818logo5");
+  link.href = portalPath("assets/css/portal-brand.css?v=20260818slim");
   link.dataset.portalBrand = "1";
   document.head.appendChild(link);
 }
@@ -273,7 +273,7 @@ function garantirCssHeader() {
   if (document.querySelector("link[data-portal-header]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-header.css?v=20260818q");
+  link.href = portalPath("assets/css/portal-header.css?v=20260818slim");
   link.dataset.portalHeader = "1";
   document.head.appendChild(link);
 }
