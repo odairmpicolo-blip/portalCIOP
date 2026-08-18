@@ -35,8 +35,8 @@ function dkIsDark(pref) {
 
 function dkTcglPath(img, fileName) {
   var src = img.getAttribute("src") || "";
-  if (src.indexOf("../assets/") !== -1) return "../assets/img/" + fileName;
-  if (src.indexOf("assets/") !== -1) return "assets/img/" + fileName;
+  if (src.indexOf("../assets/") !== -1) return "../assets/img/" + fileName + "?v=20260818m";
+  if (src.indexOf("assets/") !== -1) return "assets/img/" + fileName + "?v=20260818m";
   return fileName;
 }
 

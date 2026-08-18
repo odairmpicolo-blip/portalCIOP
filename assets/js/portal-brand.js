@@ -9,8 +9,8 @@
     var dark = document.documentElement.classList.contains("dk-dark");
     var file = dark ? "logomarca-portalciop-tcgl-escuro.png" : "logomarca-portalciop-tcgl-claro.png";
     return window.location.pathname.includes("/pages/")
-      ? "../assets/img/" + file
-      : "assets/img/" + file;
+      ? "../assets/img/" + file + "?v=20260818m"
+      : "assets/img/" + file + "?v=20260818m";
   }
 
   function brandInnerHtml() {
