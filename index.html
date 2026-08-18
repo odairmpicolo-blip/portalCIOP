@@ -2316,7 +2316,7 @@ html.dk-dark .ciop-command-inner{
 <link rel="stylesheet" href="assets/css/portal-futuristic.css?v=20260818p">
 <link rel="stylesheet" href="assets/css/portal-tokens.css?v=20260818z">
 <link rel="stylesheet" href="assets/css/portal-unify.css?v=20260818r">
-<link rel="stylesheet" href="assets/css/portal-ciop-home.css?v=20260818nome">
+<link rel="stylesheet" href="assets/css/portal-ciop-home.css?v=20260818abape">
 <link rel="stylesheet" href="assets/css/portal-liquid-glass.css?v=20260818p">
 <script src="assets/js/theme-toggle.js?v=20260818logo6"></script>
 <script src="assets/js/portal-futuristic.js?v=20260817d" defer></script>
@@ -3256,20 +3256,21 @@ function aplicarEstadoSecaoPortal(botao, corpo, aberta) {
 }
 
 function aplicarPreferenciasSecoesPortal(preferencias = lerPreferenciasSecoesPortal()) {
+    const abasAtivas = Boolean(document.getElementById("portalAbas"));
     aplicarEstadoSecaoPortal(
         document.getElementById("toggleSecaoOperacao"),
         document.getElementById("conteudoSecaoOperacao"),
-        preferencias.operacao
+        abasAtivas ? true : preferencias.operacao
     );
     aplicarEstadoSecaoPortal(
         document.getElementById("toggleSecaoDashboards"),
         document.getElementById("conteudoSecaoDashboards"),
-        preferencias.dashboards
+        abasAtivas ? true : preferencias.dashboards
     );
     aplicarEstadoSecaoPortal(
         document.getElementById("toggleSecaoRelatorios"),
         document.getElementById("conteudoSecaoRelatorios"),
-        preferencias.relatorios
+        abasAtivas ? true : preferencias.relatorios
     );
 }
 
@@ -4110,8 +4111,8 @@ if (window.portalUsuarioValidado) {
 
 
 <script>
-/* PROTOTIPO — abas. Mostra uma secao por vez, lembrando a escolha no navegador.
-   Nao altera nenhum card: so controla qual das tres areas esta visivel. */
+/* Abas: uma secao por vez. Cada recarregamento abre Operação (inicio).
+   A escolha durante a sessao nao e restaurada no F5. */
 (function () {
     "use strict";
     const CHAVE = "portalCiopAbaAtiva";
@@ -4119,10 +4120,12 @@ if (window.portalUsuarioValidado) {
     if (!abas.length) return;
     const secoes = abas.map((b) => document.getElementById(b.dataset.alvo)).filter(Boolean);
     if (secoes.length !== abas.length) return;
+    let atual = "secaoOperacao";
 
     document.body.classList.add("portal-abas-ativo");
 
     function mostrar(id, guardar) {
+        atual = id;
         abas.forEach((b) => {
             const ativa = b.dataset.alvo === id;
             b.setAttribute("aria-selected", ativa ? "true" : "false");
@@ -4134,7 +4137,7 @@ if (window.portalUsuarioValidado) {
             const corpo = sec.querySelector(".card-section-corpo");
             if (corpo) corpo.classList.remove("portal-secao-fechada");
         });
-        if (guardar) { try { localStorage.setItem(CHAVE, id); } catch (_) {} }
+        if (guardar) { try { localStorage.removeItem(CHAVE); } catch (_) {} }
         moverIndicador();
         const sec = document.getElementById(id);
         if (sec && !sec.hidden) animarEntrada(sec);
@@ -4195,8 +4198,7 @@ if (window.portalUsuarioValidado) {
     }
 
     function abaAtiva() {
-        try { const g = localStorage.getItem(CHAVE); if (g && document.getElementById(g)) return g; } catch (_) {}
-        return "secaoOperacao";
+        return atual || "secaoOperacao";
     }
 
     if (busca) {
@@ -4206,7 +4208,9 @@ if (window.portalUsuarioValidado) {
             busca.addEventListener(ev, () => setTimeout(sincronizar, 0)));
     }
 
-    mostrar(abaAtiva(), false);
+    mostrar("secaoOperacao", false);
+    window.addEventListener("portal:usuario-validado", () => mostrar(atual || "secaoOperacao", false));
+    try { localStorage.removeItem(CHAVE); } catch (_) {}
 })();
 </script>
 </body>
