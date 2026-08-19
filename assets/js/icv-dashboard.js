@@ -263,10 +263,18 @@ function montarVisualizacao(filteredData, anoSel, mesSel, diaSel) {
     }
     linhas.push({
       periodo,
+      chave: key,
       viag_prog: agg.viag_prog,
       viagens: agg.viagens,
       supressao: agg.supressao,
-      icv: agg.icv * 100
+      icv: agg.icv * 100,
+      dias: groupKey[key].slice().sort((a, b) => a.date.localeCompare(b.date)).map((d) => ({
+        periodo: formatDateBR(d.date),
+        viag_prog: d.viag_prog,
+        viagens: d.viagens,
+        supressao: d.supressao,
+        icv: d.icv * 100
+      }))
     });
     chartLabels.push(labelGrafico);
     chartIcv.push(agg.icv * 100);
@@ -369,6 +377,37 @@ function updateFilters(trigger) {
   renderDashboard();
 }
 
+function celulaMes(periodo) {
+  return `<span class="tabela-mes-rotulo"><span class="tabela-mes-caret" aria-hidden="true"></span><span>${periodo}</span></span>`;
+}
+
+function ligarExpansaoTabela() {
+  const tbody = document.getElementById("tableBody");
+  if (!tbody || tbody.dataset.expandeMes === "1") return;
+  tbody.dataset.expandeMes = "1";
+  const alternar = (trMes) => {
+    const chave = trMes.getAttribute("data-abre-mes");
+    if (!chave) return;
+    const aberto = trMes.getAttribute("aria-expanded") === "true";
+    trMes.setAttribute("aria-expanded", aberto ? "false" : "true");
+    tbody.querySelectorAll('tr.tabela-dia[data-mes="' + chave + '"]').forEach((tr) => {
+      tr.hidden = aberto;
+    });
+  };
+  tbody.addEventListener("click", (ev) => {
+    const trMes = ev.target.closest("tr.tabela-mes");
+    if (!trMes || !tbody.contains(trMes)) return;
+    alternar(trMes);
+  });
+  tbody.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Enter" && ev.key !== " ") return;
+    const trMes = ev.target.closest("tr.tabela-mes");
+    if (!trMes || !tbody.contains(trMes)) return;
+    ev.preventDefault();
+    alternar(trMes);
+  });
+}
+
 function renderizarTabela(visual) {
   const tbody = document.getElementById("tableBody");
   const thPeriodo = document.getElementById("thColPeriodo");
@@ -383,15 +422,36 @@ function renderizarTabela(visual) {
     return;
   }
 
-  tbody.innerHTML = visual.linhas.map((row) => `
-    <tr>
+  tbody.innerHTML = visual.linhas.map((row) => {
+    const dias = Array.isArray(row.dias) ? row.dias : [];
+    if (!dias.length) {
+      return `<tr>
       <td>${row.periodo}</td>
       <td>${formatInt(row.viag_prog)}</td>
       <td>${formatInt(row.viagens)}</td>
       <td>${formatInt(row.supressao)}</td>
       <td class="icv-cell">${row.icv.toFixed(2)}%</td>
+    </tr>`;
+    }
+    const chave = String(row.chave || row.periodo);
+    const mes = `<tr class="tabela-mes" data-abre-mes="${chave}" tabindex="0" aria-expanded="false">
+      <td>${celulaMes(row.periodo)}</td>
+      <td>${formatInt(row.viag_prog)}</td>
+      <td>${formatInt(row.viagens)}</td>
+      <td>${formatInt(row.supressao)}</td>
+      <td class="icv-cell">${row.icv.toFixed(2)}%</td>
+    </tr>`;
+    const filhos = dias.map((dia) => `<tr class="tabela-dia" hidden data-mes="${chave}">
+      <td class="tabela-dia-label">${dia.periodo}</td>
+      <td>${formatInt(dia.viag_prog)}</td>
+      <td>${formatInt(dia.viagens)}</td>
+      <td>${formatInt(dia.supressao)}</td>
+      <td class="icv-cell">${dia.icv.toFixed(2)}%</td>
     </tr>`).join("");
+    return mes + filhos;
+  }).join("");
 
+  ligarExpansaoTabela();
   if (btnPdf) btnPdf.disabled = false;
   icvExportState = { ...visual };
 }

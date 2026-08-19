@@ -333,6 +333,17 @@ td {
 tr:hover {
     background: #f8fafc;
 }
+.tabela-mes { cursor: pointer; }
+.tabela-mes-rotulo { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; }
+.tabela-mes-caret {
+    display: inline-block; width: 0; height: 0;
+    border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+    border-left: 6px solid currentColor; opacity: .7;
+    transition: transform .15s ease;
+}
+.tabela-mes[aria-expanded="true"] .tabela-mes-caret { transform: rotate(90deg); }
+.tabela-dia td { background: #f8fafc; color: var(--muted); }
+.tabela-dia-label { padding-left: 28px !important; font-weight: 600; }
 .highlight-cell {
     font-weight: bold;
     background-color: #f2faf4;
@@ -2070,11 +2081,12 @@ function montarVisualizacaoPontualidade(filteredData, anoSel, mesSel, diaSel) {
     filteredData.forEach((d) => {
         const parts = d.date.split('-');
         const key = (anoSel === 'todos') ? parts[0] + '-' + parts[1] : parts[1];
-        if (!groupKey[key]) groupKey[key] = { no_horario: 0, adiantado: 0, atrasado: 0, count: 0 };
+        if (!groupKey[key]) groupKey[key] = { no_horario: 0, adiantado: 0, atrasado: 0, count: 0, dias: [] };
         groupKey[key].no_horario += d.no_horario;
         groupKey[key].adiantado += d.adiantado;
         groupKey[key].atrasado += d.atrasado;
         groupKey[key].count++;
+        groupKey[key].dias.push(d);
     });
 
     const linhas = [];
@@ -2097,9 +2109,18 @@ function montarVisualizacaoPontualidade(filteredData, anoSel, mesSel, diaSel) {
         }
         linhas.push({
             periodo,
+            chave: key,
             no_horario: (groupKey[key].no_horario / count) * 100,
             adiantado: (groupKey[key].adiantado / count) * 100,
-            atrasado: (groupKey[key].atrasado / count) * 100
+            atrasado: (groupKey[key].atrasado / count) * 100,
+            dias: groupKey[key].dias.slice().sort(function (a, b) { return a.date.localeCompare(b.date); }).map(function (d) {
+                return {
+                    periodo: formatDateBR(d.date),
+                    no_horario: d.no_horario * 100,
+                    adiantado: d.adiantado * 100,
+                    atrasado: d.atrasado * 100
+                };
+            })
         });
         chartLabels.push(labelGrafico);
         chartNoHorario.push((groupKey[key].no_horario / count) * 100);
@@ -2119,6 +2140,33 @@ function montarVisualizacaoPontualidade(filteredData, anoSel, mesSel, diaSel) {
     };
 }
 
+function ligarExpansaoTabelaPontualidade() {
+    const tbody = document.getElementById('tableBody');
+    if (!tbody || tbody.dataset.expandeMes === '1') return;
+    tbody.dataset.expandeMes = '1';
+    const alternar = (trMes) => {
+        const chave = trMes.getAttribute('data-abre-mes');
+        if (!chave) return;
+        const aberto = trMes.getAttribute('aria-expanded') === 'true';
+        trMes.setAttribute('aria-expanded', aberto ? 'false' : 'true');
+        tbody.querySelectorAll('tr.tabela-dia[data-mes="' + chave + '"]').forEach((tr) => {
+            tr.hidden = aberto;
+        });
+    };
+    tbody.addEventListener('click', (ev) => {
+        const trMes = ev.target.closest('tr.tabela-mes');
+        if (!trMes || !tbody.contains(trMes)) return;
+        alternar(trMes);
+    });
+    tbody.addEventListener('keydown', (ev) => {
+        if (ev.key !== 'Enter' && ev.key !== ' ') return;
+        const trMes = ev.target.closest('tr.tabela-mes');
+        if (!trMes || !tbody.contains(trMes)) return;
+        ev.preventDefault();
+        alternar(trMes);
+    });
+}
+
 function renderizarTabelaFiltrada(visual) {
     const tbody = document.getElementById('tableBody');
     const thPeriodo = document.getElementById('thColPeriodo');
@@ -2136,14 +2184,29 @@ function renderizarTabelaFiltrada(visual) {
     }
 
     tbody.innerHTML = visual.linhas.map((row) => {
-        return `<tr>
+        const dias = Array.isArray(row.dias) ? row.dias : [];
+        const celulas = (item, classeTd) => `<td class="${classeTd || ''}">${item.no_horario.toFixed(2)}%</td>
+            <td style="color: var(--red); font-weight: 500;">${item.adiantado.toFixed(2)}%</td>
+            <td style="color: var(--yellow); font-weight: 500;">${item.atrasado.toFixed(2)}%</td>`;
+        if (!dias.length) {
+            return `<tr>
             <td>${row.periodo}</td>
-            <td class="highlight-cell">${row.no_horario.toFixed(2)}%</td>
-            <td style="color: var(--red); font-weight: 500;">${row.adiantado.toFixed(2)}%</td>
-            <td style="color: var(--yellow); font-weight: 500;">${row.atrasado.toFixed(2)}%</td>
+            ${celulas(row, 'highlight-cell')}
         </tr>`;
+        }
+        const chave = String(row.chave || row.periodo);
+        const mes = `<tr class="tabela-mes" data-abre-mes="${chave}" tabindex="0" aria-expanded="false">
+            <td><span class="tabela-mes-rotulo"><span class="tabela-mes-caret" aria-hidden="true"></span><span>${row.periodo}</span></span></td>
+            ${celulas(row, 'highlight-cell')}
+        </tr>`;
+        const filhos = dias.map((dia) => `<tr class="tabela-dia" hidden data-mes="${chave}">
+            <td class="tabela-dia-label">${dia.periodo}</td>
+            ${celulas(dia, 'highlight-cell')}
+        </tr>`).join('');
+        return mes + filhos;
     }).join('');
 
+    ligarExpansaoTabelaPontualidade();
     if (btnPdf) btnPdf.disabled = false;
     pontualidadeExportState = { ...visual };
 }
