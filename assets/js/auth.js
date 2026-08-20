@@ -236,6 +236,38 @@ function modernizarSessaoUsuario() {
 
 window.modernizarSessaoUsuario = modernizarSessaoUsuario;
 
+function paginaEhHomePortal() {
+  const file = (window.location.pathname.split("/").pop() || "").split("?")[0];
+  return file === "" || file === "index.html" || file === "login.html";
+}
+
+function jaTemVoltarAoPortal() {
+  if (document.querySelector(".portal-return, [data-portal-voltar], a.btn-portal[href*='index.html']")) {
+    return true;
+  }
+  return [...document.querySelectorAll("a[href]")].some((a) => {
+    if (a.classList.contains("portal-brand-mark")) return false;
+    const href = a.getAttribute("href") || "";
+    if (!/index\.html(\?|$|#)/.test(href)) return false;
+    const rotulo = `${a.textContent || ""} ${a.getAttribute("aria-label") || ""}`;
+    return /voltar/i.test(rotulo);
+  });
+}
+
+function garantirVoltarAoPortal() {
+  if (PORTAL_NATIVE_EMBEDDED || paginaEhHomePortal() || jaTemVoltarAoPortal()) return;
+  const header = document.querySelector(".header");
+  if (!header) return;
+  const alvo = header.querySelector(".header-actions") || header;
+  const a = document.createElement("a");
+  a.href = portalPath("index.html");
+  a.className = "portal-voltar-auto";
+  a.dataset.portalVoltar = "1";
+  a.setAttribute("aria-label", "Voltar ao portal");
+  a.textContent = "Portal";
+  alvo.insertBefore(a, alvo.firstChild);
+}
+
 function atualizarSaudacaoHero(cadastroOuNome) {
   const nome = typeof cadastroOuNome === "string" ? cadastroOuNome : cadastroOuNome?.nome;
   const genero = typeof cadastroOuNome === "object" ? cadastroOuNome?.genero : "";
@@ -549,6 +581,7 @@ function aplicarPermissoes(cadastro) {
 
   atualizarSaudacaoHero(cadastro);
   modernizarSessaoUsuario();
+  garantirVoltarAoPortal();
 
   document.querySelectorAll("[data-admin-only]").forEach((el) => {
     el.style.display = admin ? "flex" : "none";

@@ -57,8 +57,18 @@ Detalhes: `docs/fase-5-login.md`
 - [x] Sem segredos no código público (`apiKey` Firebase é pública; SA e `.env` fora do git)
 - [x] Regras de API e Firestore (cadastro ativo na API com SA; `firestore.rules` com deny default)
 
-## Fases 6–19
+## Fase 6 — Interface
 
-Interface, dashboard, incidentes, relatórios, integrações, tempo real, automações, performance, auditoria, testes, publicação, PWA, IA, manutenção — ainda não iniciadas.
+Detalhes: `docs/fase-6-interface.md`
 
-Próximo: **Fase 6** — interface (quando você pedir). 2FA TOTP só vale depois de ligar MFA no console Firebase. Regras Firestore só sobem em produção com confirmação.
+- [x] Padronizar cores, fonte e botões (tokens + unify; TV permanece tema próprio)
+- [x] Menu / voltar ao portal (dock na home; `btn-portal` ou injeção `portal-voltar-auto`)
+- [x] Layout no celular (viewport + unify ≤720px + login ≤520px — conferir no aparelho)
+- [x] Loading (overlay de sessão no `auth.js`)
+- [x] Mensagens de erro no login (português). Feedback das APIs nas telas: Fase 7
+
+## Fases 7–19
+
+Dashboard, incidentes, relatórios, integrações, tempo real, automações, performance, auditoria, testes, publicação, PWA, IA, manutenção — ainda não iniciadas.
+
+Próximo: **Fase 7** — dashboard (quando você pedir). Publicar a Fase 6 nos dois portais só com confirmação.
