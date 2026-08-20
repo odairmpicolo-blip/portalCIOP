@@ -78,8 +78,21 @@ Detalhes: `docs/fase-7-dashboard.md`
 - [x] Atualizar / exportar (botão Atualizar, PDF/CSV onde já existia)
 - [x] Erro da API na tela (`portal-dashboard-ui.js` + faixa nas telas IPV, liberação, incidentes)
 
-## Fases 8–19
+## Fase 8 — Incidentes
 
-Incidentes, relatórios, integrações, tempo real, automações, performance, auditoria, testes, publicação, PWA, IA, manutenção — ainda não iniciadas.
+Detalhes: `docs/fase-8-incidentes.md`
 
-Próximo: **Fase 8** — incidentes (quando você pedir). Publicar a Fase 7 nos dois portais só com confirmação.
+- [x] Listar / filtrar (TCGL, CAD, análise)
+- [x] Status no CAD (filtro e gráfico; origem Clever)
+- [x] Relatório interno (ocorrência PDF na AWS)
+- [x] Aviso na home (pendências do analista)
+- [x] Navegação entre as quatro telas
+- [x] Erro da API na tela (CAD e ocorrência)
+
+Cadastro/fechamento no Clever fica fora: o portal só lê o CAD.
+
+## Fases 9–19
+
+Relatórios, integrações, tempo real, automações, performance, auditoria, testes, publicação, PWA, IA, manutenção — ainda não iniciadas.
+
+Próximo: **Fase 9** — relatórios (quando você pedir).

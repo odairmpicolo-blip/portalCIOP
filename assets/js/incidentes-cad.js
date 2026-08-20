@@ -185,6 +185,12 @@
   function setStatus(txt, cls) {
     $("statusLine").textContent = txt;
     $("statusDot").className = "status-dot " + (cls || "");
+    if (cls === "erro") {
+      var msg = window.portalMensagemErro ? window.portalMensagemErro({ message: txt }) : txt;
+      if (window.portalMostrarAvisoDashboard) window.portalMostrarAvisoDashboard(msg);
+    } else if ((cls === "ok" || cls === "load") && window.portalLimparAvisoDashboard) {
+      window.portalLimparAvisoDashboard();
+    }
   }
 
   function aplicarFiltros() {
@@ -524,7 +530,7 @@
         setStatus((banco && banco.erro) ? banco.erro : "Sem histórico no JSON e cr_0002 vazio neste mês. Atualize depois da carga.", "load");
       }
     } catch (e2) {
-      if (!state.all.length) setStatus("Não foi possível ler o CAD. " + (e2.message || e2), "");
+      if (!state.all.length) setStatus("Não foi possível ler o CAD. " + (e2.message || e2), "erro");
       else setStatus("Histórico JSON · banco do mês indisponível (" + (e2.message || e2) + ")", "ok");
     }
     state.carregando = false;

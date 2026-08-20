@@ -349,12 +349,24 @@ function garantirThemeToggle() {
   document.head.appendChild(script);
 }
 
+function garantirNavIncidentes() {
+  const file = (window.location.pathname.split("/").pop() || "").split("?")[0];
+  if (!/^incidentes-|^relatorio-ocorrencia\.html$/.test(file)) return;
+  if (document.querySelector("script[data-portal-inc-nav]")) return;
+  const script = document.createElement("script");
+  script.src = portalPath("assets/js/incidentes-nav.js?v=20260820i8");
+  script.defer = true;
+  script.dataset.portalIncNav = "1";
+  document.head.appendChild(script);
+}
+
 garantirCssSessao();
 garantirCssMarca();
 garantirCssHeader();
 garantirCssLiquidGlass();
 garantirThemeToggle();
 garantirMarcaPortal();
+garantirNavIncidentes();
 
 function garantirRodapePortal() {
   if (document.querySelector("script[data-portal-footer]")) return;

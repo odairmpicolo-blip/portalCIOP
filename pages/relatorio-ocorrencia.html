@@ -267,12 +267,12 @@ tr:last-child td{border-bottom:0}
 <link rel="stylesheet" href="../assets/css/dashboard-kit.css">
 <script src="../assets/js/theme-toggle.js?v=20260818logo6"></script>
 <script src="../assets/js/loading.js?v=20260718d"></script>
-<script type="module" src="../assets/js/auth.js?v=20260820d7"></script>
+<script type="module" src="../assets/js/auth.js?v=20260820i8"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260818p">
 <link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260818p">
 <link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260818p">
-<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260820d7">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260820i8">
 </head>
 <body data-require-perfis="Administrador,Supervisor,Analista,Gerência,Gerencia">
 <div class="body-bg-wall" aria-hidden="true"></div>
@@ -361,8 +361,13 @@ function escapeHtml(value) {
 }
 
 function setStatus(texto, tipo) {
-  statusEl.textContent = texto;
+  const msg = tipo === "erro" && window.portalMensagemErro
+    ? window.portalMensagemErro(texto && texto.message ? texto : { message: texto })
+    : texto;
+  statusEl.textContent = msg;
   statusEl.className = "status" + (tipo ? " " + tipo : "");
+  if (tipo === "erro") window.portalMostrarAvisoDashboard?.(msg);
+  else window.portalLimparAvisoDashboard?.();
 }
 
 async function carregar() {
