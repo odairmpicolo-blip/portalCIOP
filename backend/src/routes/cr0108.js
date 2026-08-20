@@ -3,7 +3,7 @@ import { query } from "../db.js";
 import { DATA_ISO as ISO } from "../lib/validar.js";
 import { intervaloDatas } from "../lib/validar.js";
 import { asyncHandler } from "../lib/http.js";
-import { ipvAjustadoDia, ipvAjustadoPeriodo, extraPontosIncidentes, chaveLinha, numeroCampo } from "../lib/ipv-ajustado.js";
+import { ipvAjustadoDia, ipvAjustadoPeriodo, chaveLinha, numeroCampo, pontosOficiaisDaLinha, pontosRecuperadosDoIncidente, agregarExtras } from "../lib/ipv-ajustado.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
 
 /**
@@ -482,40 +482,98 @@ async function catalogoPontosPorLinha(de, ate) {
     ? new Date(ateD.getTime() - 13 * 86400000).toISOString().slice(0, 10)
     : de;
   return query(
-    `SELECT btrim(linha) AS linha,
-            count(DISTINCT btrim(ponto_de_controle))::int AS pontos
+    `SELECT btrim(linha) AS linha, btrim(ponto_de_controle) AS ponto
      FROM cr_0108
      WHERE data_ref >= $1::date AND data_ref <= $2::date
        AND btrim(coalesce(linha, '')) <> ''
        AND btrim(coalesce(ponto_de_controle, '')) <> ''
-     GROUP BY 1`,
+     GROUP BY 1, 2`,
     [deCat < de ? de : deCat, ate]
   );
 }
 
-async function incidentesPorDiaLinha(de, ate) {
-  try {
-    const r = await query(
-      `SELECT data_ref::date::text AS dia, btrim(linha) AS linha, count(*)::int AS n
-       FROM cr_0002
-       WHERE data_ref >= $1::date AND data_ref <= $2::date
-       GROUP BY 1, 2`,
-      [de, ate]
-    );
-    const itens = r.rows
-      .map((row) => ({
-        data: isoCad(row.dia),
-        linha: chaveLinha(row.linha),
-        n: Number(row.n) || 0
-      }))
-      .filter((row) => row.data && row.data >= de && row.data <= ate && row.n > 0);
-    return { itens, aviso: null };
-  } catch (_) {
-    return { itens: [], aviso: "cr_0002 indisponível" };
-  }
+async function passagensDosIncidentes(de, ate) {
+  return query(
+    `SELECT c.id::text AS id,
+            c.data_ref::date::text AS dia,
+            btrim(c.linha) AS linha,
+            c.instrucao,
+            c.natureza_do_ploblema AS natureza,
+            c.duracao_de_abertura_total_hh_mm AS duracao,
+            btrim(p.ponto_de_controle) AS ponto,
+            btrim(p.programado) AS programado,
+            btrim(p.hora_realizada) AS realizado,
+            ${MIN} AS desvio
+     FROM cr_0002 c
+     LEFT JOIN cr_0108 p
+       ON p.data_ref = c.data_ref
+      AND btrim(coalesce(c.veiculo, '')) <> ''
+      AND btrim(p.veiculo) = btrim(c.veiculo)
+      AND regexp_replace(btrim(p.linha), '[^0-9]', '', 'g')
+          = regexp_replace(btrim(c.linha), '[^0-9]', '', 'g')
+      AND (btrim(coalesce(c.direcao, '')) = ''
+           OR btrim(p.direcao) = btrim(c.direcao))
+     WHERE c.data_ref >= $1::date AND c.data_ref <= $2::date`,
+    [de, ate]
+  );
 }
 
-/** IPV Custom ponderado por pontos + 1 incidente = 1 viagem = todos os pontos da linha. */
+function montarCatalogoOficial(rows) {
+  const nomes = new Map();
+  for (const r of rows || []) {
+    const k = chaveLinha(r.linha);
+    if (!k) continue;
+    const arr = nomes.get(k) || [];
+    arr.push(r.ponto);
+    nomes.set(k, arr);
+  }
+  const catalogo = new Map();
+  for (const [k, lista] of nomes) {
+    const oficiais = pontosOficiaisDaLinha(lista);
+    catalogo.set(k, { pontos: oficiais.length, nomes: oficiais });
+  }
+  return catalogo;
+}
+
+function incidentesLigados(rows) {
+  const porId = new Map();
+  for (const r of rows || []) {
+    const id = String(r.id || "");
+    if (!id) continue;
+    const cur = porId.get(id) || {
+      id,
+      data: isoCad(r.dia),
+      linha: chaveLinha(r.linha),
+      instrucao: r.instrucao,
+      natureza: r.natureza,
+      duracao: r.duracao,
+      passagens: []
+    };
+    if (r.ponto) {
+      cur.passagens.push({
+        ponto: r.ponto,
+        programado: r.programado,
+        realizado: r.realizado,
+        desvio: r.desvio == null ? null : Number(r.desvio)
+      });
+    }
+    porId.set(id, cur);
+  }
+  return [...porId.values()].map((inc) => {
+    const rec = pontosRecuperadosDoIncidente(inc.passagens, inc);
+    return {
+      data: inc.data,
+      linha: inc.linha,
+      extra: rec.extra,
+      pontos: rec.pontos,
+      motivos: rec.motivos
+    };
+  });
+}
+
+}
+
+/** IPV Custom ponderado por pontos. Recupera só ponto com conexão de horário/veículo/linha. */
 router.get("/ipv-ajustado", requireFirebaseUser, asyncHandler(async (req, res) => {
   const hoje = new Date().toISOString().slice(0, 10);
   const { de, ate } = intervaloDatas(req.query.de || hoje, req.query.ate || req.query.de || hoje);
@@ -529,24 +587,25 @@ router.get("/ipv-ajustado", requireFirebaseUser, asyncHandler(async (req, res) =
     [de, ate]
   );
 
-  const [cad, cat] = await Promise.all([
-    incidentesPorDiaLinha(de, ate),
-    catalogoPontosPorLinha(de, ate).catch(() => ({ rows: [] }))
-  ]);
-  const catalogo = new Map(
-    (cat.rows || []).map((r) => [chaveLinha(r.linha), Number(r.pontos) || 0]).filter(([k, v]) => k && v > 0)
-  );
-
-  const extraPorDia = new Map();
-  for (const row of cad.itens) {
-    const bucket = extraPorDia.get(row.data) || [];
-    bucket.push({ linha: row.linha, n: row.n });
-    extraPorDia.set(row.data, bucket);
+  let avisoJoin = null;
+  let ligados = [];
+  let catalogo = new Map();
+  try {
+    const [pass, cat] = await Promise.all([
+      passagensDosIncidentes(de, ate),
+      catalogoPontosPorLinha(de, ate).catch(() => ({ rows: [] }))
+    ]);
+    ligados = incidentesLigados(pass.rows);
+    catalogo = montarCatalogoOficial(cat.rows);
+  } catch (err) {
+    avisoJoin = "Não foi possível cruzar 002 × CR-0108 neste recorte";
+    console.warn("ipv-ajustado join:", err?.message || err);
   }
 
+  const tot = agregarExtras(ligados);
   const dias = ontime.rows.map((r) => {
     const data = String(r.data).slice(0, 10);
-    const extraDia = extraPontosIncidentes(extraPorDia.get(data) || [], catalogo);
+    const extraDia = tot.extraPorDia.get(data) || { extra: 0, incidentes: 0, semConexao: 0 };
     const base = {
       data,
       ipv: numeroCampo(r.ipv),
@@ -554,42 +613,47 @@ router.get("/ipv-ajustado", requireFirebaseUser, asyncHandler(async (req, res) =
       extraPontos: extraDia.extra,
       incidentes: extraDia.incidentes
     };
-    return { ...base, ...ipvAjustadoDia(base), semCatalogo: extraDia.semCatalogo };
+    return { ...base, ...ipvAjustadoDia(base), semConexao: extraDia.semConexao };
   });
 
-  for (const [data, itens] of extraPorDia) {
+  for (const [data, extraDia] of tot.extraPorDia) {
     if (dias.some((d) => d.data === data)) continue;
-    const extraDia = extraPontosIncidentes(itens, catalogo);
     const base = { data, ipv: 0, pontos: 0, extraPontos: extraDia.extra, incidentes: extraDia.incidentes };
-    dias.push({ ...base, ...ipvAjustadoDia(base), customPendente: true, semCatalogo: extraDia.semCatalogo });
+    dias.push({ ...base, ...ipvAjustadoDia(base), customPendente: true, semConexao: extraDia.semConexao });
   }
   dias.sort((a, b) => a.data.localeCompare(b.data));
 
   const periodo = ipvAjustadoPeriodo(dias.filter((d) => !d.customPendente));
-  const linhas = extraPontosIncidentes(cad.itens, catalogo);
+  const linhas = tot.porLinha.map((l) => {
+    const catL = catalogo.get(l.linha);
+    return {
+      ...l,
+      pontosControle: catL?.pontos || l.pontos.length,
+      nomes: catL?.nomes || l.pontos
+    };
+  });
   const aviso = [
-    cad.aviso,
-    linhas.semCatalogo
-      ? `${linhas.semCatalogo} incidente(s) sem catálogo de pontos da linha no CR-0108`
-      : null
+    avisoJoin,
+    tot.semConexao ? `${tot.semConexao} incidente(s) sem ponto ligado no horário` : null
   ].filter(Boolean).join(" · ") || null;
 
   res.json({
     ok: true,
     origem: "dsql",
-    regra: "1 incidente = 1 viagem = todos os pontos de controle daquela linha",
-    exemplo: "Linha 904: Terminal Acapulco, Estação Catuai, Terminal Oeste e Terminal Vivi Xavier (4 pontos).",
+    regra: "Recupera o ponto só se o incidente (veículo, linha, sentido e horário) ligar à passagem do CR-0108. Na 407 os pontos oficiais são Terminal Central, Terminal Milton Gavetti e Bairro.",
+    exemplo: "407: Central, Milton Gavetti e bairro (3). 904: Acapulco, Catuai, Oeste e Vivi Xavier (4).",
     de,
     ate,
     ipv: periodo.ipv,
     ipvAjustado: periodo.ipvAjustado,
     ganhoPp: periodo.ganhoPp,
-    incidentes: linhas.incidentes,
-    extraPontos: linhas.extra,
+    incidentes: tot.incidentes,
+    extraPontos: tot.extra,
+    semConexao: tot.semConexao,
     volume: periodo.volume,
     linhasCatalogo: catalogo.size,
     aviso,
-    linhas: linhas.porLinha,
+    linhas,
     dias
   });
 }));

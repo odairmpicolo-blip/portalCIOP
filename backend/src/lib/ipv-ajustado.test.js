@@ -5,7 +5,11 @@ import {
   ipvAjustadoPeriodo,
   fracaoIpv,
   chaveLinha,
-  extraPontosIncidentes
+  extraPontosIncidentes,
+  pontosOficiaisDaLinha,
+  pontoOficial,
+  minutosDeHora,
+  pontosRecuperadosDoIncidente
 } from "./ipv-ajustado.js";
 
 test("fracaoIpv aceita 91.34 e 0.9134", () => {
@@ -53,4 +57,30 @@ test("periodo pondera como o 91,34% do Clever", () => {
 test("acréscimo de incidentes não passa de 100%", () => {
   const a = ipvAjustadoDia({ ipv: 0.99, pontos: 100, extraPontos: 50, incidentes: 10 });
   assert.equal(a.ipvAjustado, 1);
+});
+
+test("407: 11 checkpoints do CR-0108 viram 3 pontos oficiais", () => {
+  const nomes = pontosOficiaisDaLinha([
+    "Terminal Central pista B",
+    "Terminal Central piso inferior",
+    "Terminal Milton Gavetti",
+    "Avenida Saul Elkind 585",
+    "Jumper",
+    "Rua Francisco Bueno"
+  ]);
+  assert.deepEqual(nomes, ["Terminal Central", "Terminal Milton Gavetti", "Bairro"]);
+  assert.equal(pontoOficial("Terminal Central piso superior"), "Terminal Central");
+});
+
+test("liga o horário da instrução ao ponto realizado", () => {
+  assert.equal(minutosDeHora(" 10:40"), 10 * 60 + 40);
+  const rec = pontosRecuperadosDoIncidente(
+    [
+      { ponto: "Terminal Central pista B", programado: " 11:45", realizado: " 10:42", desvio: 0 },
+      { ponto: "Terminal Milton Gavetti", programado: " 09:52", realizado: " 09:55", desvio: 3 }
+    ],
+    { instrucao: "CARRO SAINDO NO HORARIO DAS 10:40 TERMINAL PI", duracao: "00:13" }
+  );
+  assert.equal(rec.extra, 1);
+  assert.deepEqual(rec.pontos, ["Terminal Central"]);
 });

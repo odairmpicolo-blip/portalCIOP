@@ -33,8 +33,8 @@ function pintar(r) {
   $("kpis").innerHTML = [
     ["IPV Custom", pct(r.ipv), "ponderado pelos pontos processados"],
     ["IPV + Incidentes", pct(r.ipvAjustado), `+${Number(r.ganhoPp || 0).toFixed(2)} p.p.`, true],
-    ["Incidentes CAD", num(r.incidentes), "1 incidente = 1 viagem"],
-    ["Pontos recuperados", num(r.extraPontos), "pontos da linha × incidentes"],
+    ["Incidentes CAD", num(r.incidentes), r.semConexao ? `${num(r.semConexao)} sem conexão de horário` : "ligados ao CR-0108"],
+    ["Pontos recuperados", num(r.extraPontos), "só ponto com horário/veículo/linha"],
     ["Pontos processados", num(r.volume), "denominador do Custom (Clever 2/6)"]
   ].map(([label, value, sub, hi]) =>
     `<article class="kpi-card${hi ? " highlight" : ""}">
@@ -45,17 +45,18 @@ function pintar(r) {
   ).join("");
 
   $("nota").innerHTML =
-    `Cada incidente do Relatório 002 é <strong>uma viagem</strong>. Essa viagem recupera <strong>todos os pontos de controle da linha</strong> — ` +
-    `na 904, quatro: Terminal Acapulco, Estação Catuai, Terminal Oeste e Terminal Vivi Xavier. ` +
-    `O denominador permanece o total de pontos processados no Custom (${num(r.volume)} neste recorte). ` +
-    `Numerador = pontos no horário + (incidentes × pontos daquela linha).`;
+    `Cada incidente só recupera o ponto se houver <strong>conexão</strong>: mesmo veículo, linha e sentido no CR-0108, e horário da instrução (ou ponto citado) batendo com o programado/realizado. ` +
+    `Na <strong>407</strong> os pontos oficiais são só três — Terminal Central, Terminal Milton Gavetti e bairro — não os 11 nomes de rua do relatório. ` +
+    `Denominador do Custom: ${num(r.volume)} pontos processados.`;
 
   $("tbodyLinhas").innerHTML = (r.linhas || []).map((l) => `<tr>
     <td class="lin">${l.linha || "—"}</td>
     <td>${num(l.incidentes)}</td>
     <td>${l.pontosControle ? num(l.pontosControle) : "—"}</td>
+    <td class="lin">${(l.nomes || l.pontos || []).join(" · ") || "—"}</td>
     <td>${num(l.pontosRecuperados)}</td>
-  </tr>`).join("") || `<tr><td colspan="4">Sem incidentes neste recorte.</td></tr>`;
+    <td>${num(l.semConexao)}</td>
+  </tr>`).join("") || `<tr><td colspan="6">Sem incidentes neste recorte.</td></tr>`;
 
   $("tbodyDias").innerHTML = (r.dias || []).map((d) => {
     const cls = d.customPendente ? "pend" : "";
