@@ -3,7 +3,7 @@ import { query } from "../db.js";
 import { DATA_ISO as ISO } from "../lib/validar.js";
 import { intervaloDatas } from "../lib/validar.js";
 import { asyncHandler } from "../lib/http.js";
-import { ipvAjustadoDia, ipvAjustadoPeriodo } from "../lib/ipv-ajustado.js";
+import { ipvAjustadoDia, ipvAjustadoPeriodo, extraPontosIncidentes, chaveLinha, numeroCampo } from "../lib/ipv-ajustado.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
 
 /**
@@ -475,52 +475,47 @@ router.get("/ipv", requireFirebaseUser, async (req, res) => {
   } catch (err) { erro(res, err); }
 });
 
-async function colunaDataCad() {
-  const c = await query(
-    `SELECT column_name, data_type
-     FROM information_schema.columns
-     WHERE table_schema = 'public' AND table_name = 'cr_0002'
-     ORDER BY ordinal_position`
+async function catalogoPontosPorLinha(de, ate) {
+  const ateD = new Date(`${ate}T00:00:00Z`);
+  const deD = new Date(`${de}T00:00:00Z`);
+  const deCat = (ateD - deD) / 86400000 > 14
+    ? new Date(ateD.getTime() - 13 * 86400000).toISOString().slice(0, 10)
+    : de;
+  return query(
+    `SELECT btrim(linha) AS linha,
+            count(DISTINCT btrim(ponto_de_controle))::int AS pontos
+     FROM cr_0108
+     WHERE data_ref >= $1::date AND data_ref <= $2::date
+       AND btrim(coalesce(linha, '')) <> ''
+       AND btrim(coalesce(ponto_de_controle, '')) <> ''
+     GROUP BY 1`,
+    [deCat < de ? de : deCat, ate]
   );
-  const row = c.rows.find((r) => /^(data_ref|data|dt|date)$/i.test(r.column_name))
-    || c.rows.find((r) => /data|date|dia/i.test(r.column_name));
-  return row || null;
 }
 
-async function incidentesPorDia(de, ate) {
-  const mapa = new Map();
-  let meta;
+async function incidentesPorDiaLinha(de, ate) {
   try {
-    meta = await colunaDataCad();
-  } catch (_) {
-    return { mapa, total: 0, aviso: "cr_0002 indisponível" };
-  }
-  if (!meta) return { mapa, total: 0, aviso: "cr_0002 sem coluna de data" };
-  const col = citarColuna(meta.column_name);
-  const ehData = /date|timestamp/i.test(meta.data_type || "");
-  const r = ehData
-    ? await query(
-      `SELECT ${col}::date::text AS dia, count(*)::int AS n
+    const r = await query(
+      `SELECT data_ref::date::text AS dia, btrim(linha) AS linha, count(*)::int AS n
        FROM cr_0002
-       WHERE ${col}::date >= $1::date AND ${col}::date <= $2::date
-       GROUP BY 1`,
+       WHERE data_ref >= $1::date AND data_ref <= $2::date
+       GROUP BY 1, 2`,
       [de, ate]
-    )
-    : await query(
-      `SELECT btrim(${col}::text) AS dia, count(*)::int AS n FROM cr_0002 GROUP BY 1`
     );
-  let total = 0;
-  for (const row of r.rows) {
-    const dia = isoCad(row.dia);
-    if (!dia || dia < de || dia > ate) continue;
-    const n = Number(row.n) || 0;
-    mapa.set(dia, n);
-    total += n;
+    const itens = r.rows
+      .map((row) => ({
+        data: isoCad(row.dia),
+        linha: chaveLinha(row.linha),
+        n: Number(row.n) || 0
+      }))
+      .filter((row) => row.data && row.data >= de && row.data <= ate && row.n > 0);
+    return { itens, aviso: null };
+  } catch (_) {
+    return { itens: [], aviso: "cr_0002 indisponível" };
   }
-  return { mapa, total, aviso: null };
 }
 
-/** IPV Custom ponderado (91,34% de junho) + Relatório 002 como viagem desculpada. */
+/** IPV Custom ponderado por pontos + 1 incidente = 1 viagem = todos os pontos da linha. */
 router.get("/ipv-ajustado", requireFirebaseUser, asyncHandler(async (req, res) => {
   const hoje = new Date().toISOString().slice(0, 10);
   const { de, ate } = intervaloDatas(req.query.de || hoje, req.query.ate || req.query.de || hoje);
@@ -533,51 +528,68 @@ router.get("/ipv-ajustado", requireFirebaseUser, asyncHandler(async (req, res) =
      ORDER BY data_ref`,
     [de, ate]
   );
-  let viagensPorDia = new Map();
-  try {
-    const custom = await query(
-      `SELECT data_ref::text AS data, ${numero("trips")} AS viagens
-       FROM cr_custom
-       WHERE data_ref >= $1::date AND data_ref <= $2::date`,
-      [de, ate]
-    );
-    viagensPorDia = new Map(custom.rows.map((r) => [String(r.data).slice(0, 10), Number(r.viagens) || 0]));
-  } catch (_) { /* trips pode ter outro nome */ }
 
-  const cad = await incidentesPorDia(de, ate);
+  const [cad, cat] = await Promise.all([
+    incidentesPorDiaLinha(de, ate),
+    catalogoPontosPorLinha(de, ate).catch(() => ({ rows: [] }))
+  ]);
+  const catalogo = new Map(
+    (cat.rows || []).map((r) => [chaveLinha(r.linha), Number(r.pontos) || 0]).filter(([k, v]) => k && v > 0)
+  );
+
+  const extraPorDia = new Map();
+  for (const row of cad.itens) {
+    const bucket = extraPorDia.get(row.data) || [];
+    bucket.push({ linha: row.linha, n: row.n });
+    extraPorDia.set(row.data, bucket);
+  }
+
   const dias = ontime.rows.map((r) => {
     const data = String(r.data).slice(0, 10);
+    const extraDia = extraPontosIncidentes(extraPorDia.get(data) || [], catalogo);
     const base = {
       data,
-      ipv: Number(r.ipv) || 0,
-      pontos: Number(r.pontos) || 0,
-      viagens: viagensPorDia.get(data) || 0,
-      incidentes: cad.mapa.get(data) || 0
+      ipv: numeroCampo(r.ipv),
+      pontos: numeroCampo(r.pontos),
+      extraPontos: extraDia.extra,
+      incidentes: extraDia.incidentes
     };
-    return { ...base, ...ipvAjustadoDia(base) };
+    return { ...base, ...ipvAjustadoDia(base), semCatalogo: extraDia.semCatalogo };
   });
 
-  for (const [data, n] of cad.mapa) {
-    if (data < de || data > ate) continue;
+  for (const [data, itens] of extraPorDia) {
     if (dias.some((d) => d.data === data)) continue;
-    const base = { data, ipv: 0, pontos: 0, viagens: viagensPorDia.get(data) || 0, incidentes: n };
-    dias.push({ ...base, ...ipvAjustadoDia(base), customPendente: true });
+    const extraDia = extraPontosIncidentes(itens, catalogo);
+    const base = { data, ipv: 0, pontos: 0, extraPontos: extraDia.extra, incidentes: extraDia.incidentes };
+    dias.push({ ...base, ...ipvAjustadoDia(base), customPendente: true, semCatalogo: extraDia.semCatalogo });
   }
   dias.sort((a, b) => a.data.localeCompare(b.data));
 
   const periodo = ipvAjustadoPeriodo(dias.filter((d) => !d.customPendente));
+  const linhas = extraPontosIncidentes(cad.itens, catalogo);
+  const aviso = [
+    cad.aviso,
+    linhas.semCatalogo
+      ? `${linhas.semCatalogo} incidente(s) sem catálogo de pontos da linha no CR-0108`
+      : null
+  ].filter(Boolean).join(" · ") || null;
+
   res.json({
     ok: true,
     origem: "dsql",
-    regra: "custom-2-6-ponderado + cr_0002 como viagem desculpada",
+    regra: "1 incidente = 1 viagem = todos os pontos de controle daquela linha",
+    exemplo: "Linha 904: Terminal Acapulco, Estação Catuai, Terminal Oeste e Terminal Vivi Xavier (4 pontos).",
     de,
     ate,
     ipv: periodo.ipv,
     ipvAjustado: periodo.ipvAjustado,
     ganhoPp: periodo.ganhoPp,
-    incidentes: cad.total,
+    incidentes: linhas.incidentes,
+    extraPontos: linhas.extra,
     volume: periodo.volume,
-    aviso: cad.aviso,
+    linhasCatalogo: catalogo.size,
+    aviso,
+    linhas: linhas.porLinha,
     dias
   });
 }));
