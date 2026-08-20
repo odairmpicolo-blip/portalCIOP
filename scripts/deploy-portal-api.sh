@@ -20,6 +20,9 @@ if ! "$AWS" sts get-caller-identity --region "$REGION" >/dev/null 2>&1; then
   exit 1
 fi
 
+echo "==> Testes da API"
+(cd "$ROOT/backend" && npm test)
+
 echo "==> CloudFormation stack: $STACK (API portal → API Gateway $API_ID)"
 "$AWS" cloudformation deploy \
   --template-file "$AWS_DIR/template.yaml" \

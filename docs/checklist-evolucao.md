@@ -147,8 +147,17 @@ Detalhes: `docs/fase-14-auditoria.md`
 - [x] Tela Administrador (`GET /audit`)
 - [ ] Login / 2FA — console Firebase; não inventado no DSQL
 
-## Fases 15–19
+## Fase 15 — Testes
 
-Testes, publicação, PWA, IA, manutenção.
+Detalhes: `docs/fase-15-testes.md`
 
-Próximo: **Fase 15** — testes.
+- [x] `npm test` (API + resumo de km)
+- [x] Deploy da Lambda bloqueado se o teste falhar
+- [ ] E2E no navegador — não inventado
+- [x] YAML de CI em `docs/github-workflows/testes.yml`
+
+## Fases 16–19
+
+Publicação, PWA, IA, manutenção.
+
+Próximo: **Fase 16** — publicação.

@@ -12,7 +12,7 @@ Navegador (www.portalciop.com.br)
           → Aurora DSQL / S3 / planilha Apps Script
 ```
 
-Rotas no Gateway: `/liberacao`, `/telemetria`, `/snapshots`, `/terminais`, `/relatorios`, `/cr0108`, `/performance`, `/db-health`.
+Rotas no Gateway: `/liberacao`, `/telemetria`, `/snapshots`, `/terminais`, `/relatorios`, `/cr0108`, `/performance`, `/audit`, `/db-health`.
 
 ## O que esta fatia fez
 
@@ -28,6 +28,7 @@ Rotas no Gateway: `/liberacao`, `/telemetria`, `/snapshots`, `/terminais`, `/rel
 
 ```bash
 cd backend && npm test
+# ou na raiz: npm test
 # com .env: npm run dev  → GET http://localhost:3000/health
 ```
 
