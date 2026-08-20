@@ -19,6 +19,7 @@ import {
   converterPlanilha,
   linhasParaRegistros
 } from "./lib/telemetria-planilha-parse.mjs";
+import { agregarKmTelemetria } from "./lib/telemetria-km-resumo.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT_DIR = path.join(ROOT, "assets/data/telemetria");
@@ -155,6 +156,8 @@ async function main() {
     dados
   };
 
+  const { kmPorMes, kmAno } = agregarKmTelemetria(dados);
+
   const manifest = {
     atualizadoEm,
     arquivo: "dados.json",
@@ -164,7 +167,9 @@ async function main() {
     total_tcgl: tcgl.length,
     total_fleetbus: fleetbus.length,
     data_de: snapshot.data_de,
-    data_ate: snapshot.data_ate
+    data_ate: snapshot.data_ate,
+    kmPorMes,
+    kmAno
   };
 
   fs.writeFileSync(path.join(OUT_DIR, "dados.json"), JSON.stringify(snapshot) + "\n");

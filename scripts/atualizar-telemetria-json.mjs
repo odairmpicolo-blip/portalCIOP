@@ -9,6 +9,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { query, closePool } from "../backend/src/db.js";
 import { normalizarLinhaTelemetria } from "../backend/src/lib/telemetria-merge.js";
+import { agregarKmTelemetria } from "./lib/telemetria-km-resumo.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT_DIR = path.join(ROOT, "assets/data/telemetria");
@@ -41,12 +42,15 @@ async function main() {
     data_ate: datas[datas.length - 1] || null,
     dados
   };
+  const { kmPorMes, kmAno } = agregarKmTelemetria(dados);
   const manifest = {
     atualizadoEm,
     arquivo: "dados.json",
     total: dados.length,
     data_de: snapshot.data_de,
-    data_ate: snapshot.data_ate
+    data_ate: snapshot.data_ate,
+    kmPorMes,
+    kmAno
   };
 
   fs.mkdirSync(OUT_DIR, { recursive: true });

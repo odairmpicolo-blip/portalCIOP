@@ -130,8 +130,17 @@ Detalhes: `docs/fase-12-automacoes.md`
 - [ ] E-mail / PDF agendado — não existe; não inventado
 - [x] Incidentes: sem Action; CAD por Lambda/sync
 
-## Fases 13–19
+## Fase 13 — Performance
 
-Performance, auditoria, testes, publicação, PWA, IA, manutenção.
+Detalhes: `docs/fase-13-performance.md`
 
-Próximo: **Fase 13** — performance.
+- [x] TV sem baixar o dump de 23 MB (resumo no manifest)
+- [x] Fonte da TV sem `@import` bloqueante
+- [x] Logo home/login com prioridade de fetch
+- [ ] JSON operacional fora do git — fica para manutenção (Fase 19)
+
+## Fases 14–19
+
+Auditoria, testes, publicação, PWA, IA, manutenção.
+
+Próximo: **Fase 14** — auditoria.

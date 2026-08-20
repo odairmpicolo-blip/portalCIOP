@@ -4,9 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Painel TV · Portal CIOP TCGL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&display=swap');
   :root{
     --bg-1:#050b18;
     --bg-2:#0a1730;
@@ -1393,64 +1395,36 @@ const ICV = (function () {
    Módulo KM
 ============================================================ */
 const KM = (function () {
-  const URL = "../assets/data/telemetria/dados.json";
-  const KM_DIARIO_MAX = 1000;
   const REFRESH_MS = 15 * 60 * 1000;
   const FONTES = ["tcgl", "clever", "fleetbus"];
   let chartRef = null, mesesData = [], rotacaoIndex = -1, rotacaoTimer = null;
   const ROTACAO_MS = 10 * 1000;
 
   function formatKm(v) { return Math.round(Number(v) || 0).toLocaleString("pt-BR") + " km"; }
-  function parseNumero(val) {
-    const s = String(val ?? "").trim();
-    if (!s) return NaN;
-    const hasComma = s.includes(","), hasDot = s.includes(".");
-    let normalized = s;
-    if (hasComma && hasDot) {
-      normalized = s.lastIndexOf(",") > s.lastIndexOf(".") ? s.replace(/\./g, "").replace(",", ".") : s.replace(/,/g, "");
-    } else if (hasComma) {
-      normalized = s.replace(/\./g, "").replace(",", ".");
-    } else if (hasDot) {
-      const parts = s.split(".");
-      normalized = parts.length > 2 ? parts.join("") : s;
-    }
-    const n = Number(normalized);
-    return Number.isNaN(n) ? NaN : n;
-  }
-  function processarTelemetria(dados) {
-    const porMes = new Map();
-    function bucket(chave, fonte) {
-      if (!porMes.has(chave)) {
-        const obj = {};
-        FONTES.forEach((f) => { obj[f] = { km: 0, registros: 0, veiculos: new Set(), dias: new Set() }; });
-        porMes.set(chave, obj);
-      }
-      return porMes.get(chave)[fonte];
-    }
-    (dados || []).forEach((r) => {
-      const fonte = String(r?.fonte || "").toLowerCase();
-      if (!FONTES.includes(fonte)) return;
-      const iso = String(r?.data_iso || "").slice(0, 10);
-      if (!iso) return;
-      const chave = iso.slice(0, 7);
-      const b = bucket(chave, fonte);
-      b.registros++;
-      const veic = String(r?.veiculo || r?.payload?.veiculo_norm || "").trim();
-      if (veic) b.veiculos.add(veic);
-      b.dias.add(iso);
-      const km = parseNumero(r?.payload?.["Km Percorrido"]);
-      if (Number.isFinite(km) && km > 0 && km <= KM_DIARIO_MAX) b.km += km;
+  function porMesDoResumo(kmPorMes) {
+    return (kmPorMes || []).map((row) => {
+      const fontes = {};
+      FONTES.forEach((f) => {
+        const s = row[f] || { km: 0, registros: 0, veiculos: 0, dias: 0 };
+        fontes[f] = {
+          km: s.km || 0,
+          registros: s.registros || 0,
+          veiculos: { size: s.veiculos || 0 },
+          dias: { size: s.dias || 0 }
+        };
+      });
+      return [row.mes, fontes];
     });
-    return [...porMes.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }
-  function render(porMes) {
+  function render(porMes, kmAno) {
     if (!porMes.length) return;
     const mesesAno = porMes.filter(([chave]) => chave.startsWith(ANO_FIXO));
-    const totalAnoKm = mesesAno.reduce((acc, [, dados]) => acc + dados.tcgl.km, 0);
-    const veiculosAno = new Set();
-    mesesAno.forEach(([, dados]) => dados.tcgl.veiculos.forEach((v) => veiculosAno.add(v)));
+    const ano = (kmAno && kmAno[ANO_FIXO]) || {};
+    const totalAnoKm = ano.tcgl?.km != null
+      ? ano.tcgl.km
+      : mesesAno.reduce((acc, [, dados]) => acc + dados.tcgl.km, 0);
     document.getElementById("kmHeroValor").textContent = formatKm(totalAnoKm);
-    document.getElementById("kmFrotaAtiva").textContent = formatInt(veiculosAno.size);
+    document.getElementById("kmFrotaAtiva").textContent = formatInt(ano.tcgl?.veiculos || 0);
 
     mesesData = mesesAno.map(([chave, dados]) => ({ chave, tcgl: dados.tcgl }));
     const ultimo = mesesData[mesesData.length - 1];
@@ -1505,12 +1479,15 @@ const KM = (function () {
 
   async function carregar() {
     try {
-      const payload = await carregarJson(URL);
-      const porMes = processarTelemetria(payload.dados || []);
-      render(porMes);
+      const manifest = await carregarJson("../assets/data/telemetria/manifest.json");
+      if (!manifest?.kmPorMes?.length) {
+        throw new Error("resumo de km ainda não publicado");
+      }
+      const porMes = porMesDoResumo(manifest.kmPorMes);
+      render(porMes, manifest.kmAno);
       atualizarMesAtual();
       iniciarRotacao();
-      statusPainel.km = payload.atualizadoEm ? "Dados atualizados em " + new Date(payload.atualizadoEm).toLocaleString("pt-BR") : "Dados carregados";
+      statusPainel.km = manifest.atualizadoEm ? "Dados atualizados em " + new Date(manifest.atualizadoEm).toLocaleString("pt-BR") : "Dados carregados";
       marcarFresco("km");
     } catch (err) {
       statusPainel.km = "Falha ao carregar quilometragem: " + (err.message || err);
