@@ -71,10 +71,10 @@ td{padding:10px;border-right:1px solid #e5eaf3;border-bottom:1px solid #e5eaf3;f
 <link rel="stylesheet" href="../assets/css/portal-header.css">
 <link rel="stylesheet" href="../assets/css/portal-session.css">
 <link rel="stylesheet" href="../assets/css/portal-filtros.css">
-<script type="module" src="../assets/js/auth.js?v=20260820i8"></script>
+<script type="module" src="../assets/js/auth.js?v=20260820r9"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 <link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260818p">
-<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260820i8">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260820r9">
 </head>
 <body data-require-perfis="Administrador,Supervisor,Gerência,Gerencia">
 <header class="header">
@@ -113,6 +113,7 @@ td{padding:10px;border-right:1px solid #e5eaf3;border-bottom:1px solid #e5eaf3;f
       <div><label>Fonte com KM</label><select id="fonte"><option value="">Todas</option><option value="tcgl">TCGL - Foto</option><option value="noxxon">Noxxon</option><option value="fleetbus">Fleetbus</option><option value="gps">GPS Reports</option></select></div>
       <div><label>Pesquisar</label><input id="q" placeholder="Digite data, prefixo ou arquivo..."></div>
       <button id="limpar" type="button">Limpar</button>
+      <button id="csvKm" type="button">CSV</button>
     </div>
   </section>
   <section class="comparisons">
@@ -155,6 +156,17 @@ document.getElementById('prefixo').innerHTML='<option value="">Todos</option>'+p
 const allDates=DATA.map(r=>r.date).sort(); document.getElementById('d1').value=allDates[0]||''; document.getElementById('d2').value=allDates[allDates.length-1]||'';
 ['d1','d2','prefixo','fonte','q'].forEach(id=>document.getElementById(id).addEventListener('input',render));
 document.getElementById('limpar').onclick=()=>{document.getElementById('d1').value=allDates[0]||'';document.getElementById('d2').value=allDates[allDates.length-1]||'';document.getElementById('prefixo').value='';document.getElementById('fonte').value='';document.getElementById('q').value='';render();};
+document.getElementById('csvKm').onclick=()=>{
+  const rows=filtered();
+  const cols=['date','prefixo','tcgl','noxxon','fleetbus','gps'];
+  const lines=[cols.join(';')].concat(rows.map(r=>cols.map(c=>r[c]??'').join(';')));
+  const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='comparacao-km.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
 render();
 </script>
 </body>

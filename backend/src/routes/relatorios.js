@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { query } from "../db.js";
 import { registrarAudit } from "../lib/audit.js";
 import { HttpError } from "../lib/http.js";
-import { intervaloDatas } from "../lib/validar.js";
+import { ehDataIso, intervaloDatas } from "../lib/validar.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
 import {
   enviarPdfRelatorioS3,
@@ -24,12 +24,18 @@ function normalizarEmail(email) {
 
 function dataIsoValida(valor) {
   const s = String(valor || "").trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  if (!s) return new Date().toISOString().slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    if (!ehDataIso(s)) throw new HttpError(400, "Data inválida (YYYY-MM-DD)", "DATA_INVALIDA");
+    return s;
+  }
   const br = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (br) {
-    return `${br[3]}-${br[2].padStart(2, "0")}-${br[1].padStart(2, "0")}`;
+    const iso = `${br[3]}-${br[2].padStart(2, "0")}-${br[1].padStart(2, "0")}`;
+    if (!ehDataIso(iso)) throw new HttpError(400, "Data inválida", "DATA_INVALIDA");
+    return iso;
   }
-  return new Date().toISOString().slice(0, 10);
+  throw new HttpError(400, "Data inválida (YYYY-MM-DD)", "DATA_INVALIDA");
 }
 
 function camposUpload(body) {

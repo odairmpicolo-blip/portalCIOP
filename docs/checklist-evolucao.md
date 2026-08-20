@@ -91,8 +91,18 @@ Detalhes: `docs/fase-8-incidentes.md`
 
 Cadastro/fechamento no Clever fica fora: o portal só lê o CAD.
 
-## Fases 9–19
+## Fase 9 — Relatórios
 
-Relatórios, integrações, tempo real, automações, performance, auditoria, testes, publicação, PWA, IA, manutenção — ainda não iniciadas.
+Detalhes: `docs/fase-9-relatorios.md`
 
-Próximo: **Fase 9** — relatórios (quando você pedir).
+- [x] Catálogo (`relatorios.html`) com os relatórios em uso
+- [x] Filtros e exportação CSV / Excel / PDF onde já existiam
+- [x] Histórico de ocorrência (lista AWS) + criar PDF
+- [x] CSV da comparação de KM
+- [x] Data inválida recusada no upload de PDF (API; implantar Lambda)
+
+Sem agendamento de PDF. Próximo: **Fase 10** — integrações.
+
+## Fases 10–19
+
+Integrações, tempo real, automações, performance, auditoria, testes, publicação, PWA, IA, manutenção — ainda não iniciadas.

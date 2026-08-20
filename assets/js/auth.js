@@ -360,6 +360,17 @@ function garantirNavIncidentes() {
   document.head.appendChild(script);
 }
 
+function garantirNavRelatorios() {
+  const file = (window.location.pathname.split("/").pop() || "").split("?")[0];
+  if (!/^(relatorios|criar-relatorio|liberacao-relatorio|folha-servico-relatorio|relatorio-ocorrencia)\.html$/.test(file)) return;
+  if (document.querySelector("script[data-portal-rel-nav]")) return;
+  const script = document.createElement("script");
+  script.src = portalPath("assets/js/relatorios-nav.js?v=20260820r9");
+  script.defer = true;
+  script.dataset.portalRelNav = "1";
+  document.head.appendChild(script);
+}
+
 garantirCssSessao();
 garantirCssMarca();
 garantirCssHeader();
@@ -367,6 +378,7 @@ garantirCssLiquidGlass();
 garantirThemeToggle();
 garantirMarcaPortal();
 garantirNavIncidentes();
+garantirNavRelatorios();
 
 function garantirRodapePortal() {
   if (document.querySelector("script[data-portal-footer]")) return;
