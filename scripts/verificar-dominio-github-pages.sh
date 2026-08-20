@@ -5,7 +5,23 @@ set -euo pipefail
 DOMAIN="${PORTAL_DOMAIN:-portalciop.com.br}"
 REPO="${GITHUB_REPO:-odairmpicolo-blip/portalCIOP}"
 
-echo "=== DNS A para ${DOMAIN} (GitHub Pages) ==="
+WWW="${PORTAL_WWW:-www.${DOMAIN}}"
+
+echo "=== DNS CNAME ${WWW} ==="
+if command -v dig >/dev/null 2>&1; then
+  dig +short CNAME "$WWW" || true
+  dig +short A "$WWW" | sort -u || true
+else
+  echo "dig não instalado"
+fi
+
+echo ""
+echo "=== HTTPS ${WWW} ==="
+code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 20 "https://${WWW}/" || echo "000")
+echo "HTTP $code (esperado 200)"
+
+echo ""
+echo "=== DNS A para ${DOMAIN} (apex, opcional) ==="
 if command -v dig >/dev/null 2>&1; then
   dig +short A "$DOMAIN" | sort -u || true
 else

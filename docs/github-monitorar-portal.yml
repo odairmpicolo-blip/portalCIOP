@@ -1,0 +1,24 @@
+# Confere se o site de produção responde (HTTPS 200).
+name: Monitorar portal
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: HTTPS www.portalciop.com.br
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /tmp/portal-home.html -w "%{http_code}" --max-time 25 https://www.portalciop.com.br/)
+          echo "HTTP $code"
+          test "$code" = "200"
+          grep -qi "portal" /tmp/portal-home.html
+          echo "Site no ar."
