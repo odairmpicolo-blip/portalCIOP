@@ -156,8 +156,17 @@ Detalhes: `docs/fase-15-testes.md`
 - [ ] E2E no navegador — não inventado
 - [x] YAML de CI em `docs/github-workflows/testes.yml`
 
-## Fases 16–19
+## Fase 16 — Publicação
 
-Publicação, PWA, IA, manutenção.
+Detalhes: `docs/fase-16-publicacao.md`
 
-Próximo: **Fase 16** — publicação.
+- [x] Fluxo teste → `/tmp/portalciop-live` → `portalCIOP` `main` → Pages
+- [x] Script `scripts/publicar-producao.sh` (pula dumps e workflows)
+- [x] Lambda / Firestore / Apps Script fora do Pages
+- [x] Sem force-push em `main`
+
+## Fases 17–19
+
+PWA, IA, manutenção.
+
+Próximo: **Fase 17** — PWA.
