@@ -67,6 +67,7 @@ export const MODULOS_PORTAL = [
   { id: "gerenciar-usuarios", label: "Menu: Gerenciar Usuários", grupo: "Menu lateral" },
   { id: "integracoes", label: "Menu: Integrações", grupo: "Menu lateral" },
   { id: "automacoes", label: "Menu: Automações", grupo: "Menu lateral" },
+  { id: "auditoria", label: "Menu: Auditoria", grupo: "Menu lateral" },
   { id: "side-ponto", label: "Menu: Ponto Eletrônico", grupo: "Menu lateral" },
   { id: "side-reconhecimento", label: "Menu: Reconhecimento Facial", grupo: "Menu lateral" },
   { id: "side-linea", label: "Menu: Linea", grupo: "Menu lateral" },

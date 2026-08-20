@@ -139,8 +139,16 @@ Detalhes: `docs/fase-13-performance.md`
 - [x] Logo home/login com prioridade de fetch
 - [ ] JSON operacional fora do git — fica para manutenção (Fase 19)
 
-## Fases 14–19
+## Fase 14 — Auditoria
 
-Auditoria, testes, publicação, PWA, IA, manutenção.
+Detalhes: `docs/fase-14-auditoria.md`
 
-Próximo: **Fase 14** — auditoria.
+- [x] Trilha de escritas da API (`audit_log`; falha no log não derruba o write)
+- [x] Tela Administrador (`GET /audit`)
+- [ ] Login / 2FA — console Firebase; não inventado no DSQL
+
+## Fases 15–19
+
+Testes, publicação, PWA, IA, manutenção.
+
+Próximo: **Fase 15** — testes.

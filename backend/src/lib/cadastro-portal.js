@@ -8,6 +8,10 @@ export function normalizarPerfil(perfil) {
     .trim();
 }
 
+export function ehAdministrador(cadastro) {
+  return normalizarPerfil(cadastro?.perfil) === "administrador";
+}
+
 export function cadastroAtivo(cadastro) {
   return Boolean(cadastro && cadastro.ativo !== false);
 }

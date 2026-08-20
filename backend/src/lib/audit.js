@@ -36,18 +36,22 @@ export async function registrarAudit({
   antes = null,
   depois = null
 }) {
-  await garantirAuditLog();
-  await query(
-    `INSERT INTO audit_log (id, quando, uid, tabela, chave, acao, antes, depois)
-     VALUES ($1, NOW(), $2, $3, $4, $5, $6::jsonb, $7::jsonb)`,
-    [
-      randomUUID(),
-      uid || null,
-      String(tabela),
-      String(chave).slice(0, 400),
-      String(acao).slice(0, 40),
-      JSON.stringify(recorteJson(antes)),
-      JSON.stringify(recorteJson(depois))
-    ]
-  );
+  try {
+    await garantirAuditLog();
+    await query(
+      `INSERT INTO audit_log (id, quando, uid, tabela, chave, acao, antes, depois)
+       VALUES ($1, NOW(), $2, $3, $4, $5, $6::jsonb, $7::jsonb)`,
+      [
+        randomUUID(),
+        uid || null,
+        String(tabela),
+        String(chave).slice(0, 400),
+        String(acao).slice(0, 40),
+        JSON.stringify(recorteJson(antes)),
+        JSON.stringify(recorteJson(depois))
+      ]
+    );
+  } catch (err) {
+    console.warn("audit_log:", err?.message || err);
+  }
 }

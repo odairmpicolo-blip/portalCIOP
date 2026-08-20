@@ -4,7 +4,7 @@ import admin from "firebase-admin";
 import { verificarIdTokenFirebase } from "./firebase-token.js";
 import { config } from "../config.js";
 import { jsonErro } from "../lib/http.js";
-import { cadastroAtivo, resolverCadastro } from "../lib/cadastro-portal.js";
+import { cadastroAtivo, ehAdministrador, resolverCadastro } from "../lib/cadastro-portal.js";
 
 const cadastroCache = new Map();
 const CADASTRO_TTL_MS = 60 * 1000;
@@ -148,4 +148,19 @@ export async function requireFirebaseUser(req, res, next) {
     console.warn("auth:", erro, msg.slice(0, 160));
     jsonErro(res, 401, erro, erro === "Token expirado" ? "TOKEN_EXPIRADO" : "TOKEN_INVALIDO");
   }
+}
+
+export async function requireAdministrador(req, res, next) {
+  await requireFirebaseUser(req, res, () => {
+    if (res.headersSent) return;
+    if (String(req.user?.email || "") === "api-key") {
+      jsonErro(res, 403, "Só administrador", "SEM_PERFIL");
+      return;
+    }
+    if (!ehAdministrador(req.cadastro || req.user)) {
+      jsonErro(res, 403, "Só administrador", "SEM_PERFIL");
+      return;
+    }
+    next();
+  });
 }

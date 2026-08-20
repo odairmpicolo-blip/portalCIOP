@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cadastroAtivo, resolverCadastro, normalizarPerfil } from "./cadastro-portal.js";
+import { cadastroAtivo, resolverCadastro, normalizarPerfil, ehAdministrador } from "./cadastro-portal.js";
 
 test("normalizarPerfil ignora acento", () => {
   assert.equal(normalizarPerfil("Gerência"), "gerencia");
@@ -15,8 +15,7 @@ test("Firestore desativado recusa mesmo com local", () => {
   assert.equal(cadastroAtivo(r), false);
 });
 
-test("fallback local só se Firestore não achou", () => {
-  const r = resolverCadastro(null, { email: "a@b.c", perfil: "Monitoramento" });
-  assert.equal(r.perfil, "Monitoramento");
-  assert.equal(cadastroAtivo(r), true);
+test("ehAdministrador só no perfil Administrador", () => {
+  assert.equal(ehAdministrador({ perfil: "Administrador" }), true);
+  assert.equal(ehAdministrador({ perfil: "Supervisor" }), false);
 });

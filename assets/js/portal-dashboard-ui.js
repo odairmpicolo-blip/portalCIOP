@@ -11,6 +11,7 @@ export function mensagemErroPortal(err) {
     NAO_ENCONTRADA: "Não encontramos esse recurso.",
     CORS: "A origem não está autorizada a chamar a API.",
     ERRO_INTERNO: "A API falhou. Tente de novo em instantes.",
+    SEM_PERFIL: "Só o administrador vê este recurso.",
     NAO_AUTENTICADO: "Sessão expirada. Entre de novo."
   };
   if (map[codigo]) return map[codigo];

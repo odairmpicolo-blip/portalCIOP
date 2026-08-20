@@ -10,6 +10,7 @@ import snapshotsRouter from "./routes/snapshots.js";
 import telemetriaRouter from "./routes/telemetria.js";
 import relatoriosRouter from "./routes/relatorios.js";
 import performanceRouter from "./routes/performance.js";
+import auditRouter from "./routes/audit.js";
 import cr0108Router from "./routes/cr0108.js";
 
 const app = express();
@@ -88,6 +89,7 @@ app.use("/snapshots", snapshotsRouter);
 app.use("/telemetria", telemetriaRouter);
 app.use("/relatorios", relatoriosRouter);
 app.use("/performance", performanceRouter);
+app.use("/audit", auditRouter);
 app.use("/cr0108", cr0108Router);
 
 app.use((_req, res) => {
