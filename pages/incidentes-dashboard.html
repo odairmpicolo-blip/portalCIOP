@@ -450,7 +450,7 @@ h1{font-size:20px}
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260818p">
 <link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260818p">
 <link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260818p">
-<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260820i">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260820d7">
 </head>
 <body data-require-perfis="Administrador,Supervisor,Gerência,Gerencia,Analista">
 <div class="body-bg-wall" aria-hidden="true"></div>
@@ -655,7 +655,7 @@ h1{font-size:20px}
 <link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
 <link rel="stylesheet" href="../assets/css/portal-filtros.css">
 <script src="../assets/js/loading.js?v=20260718d"></script>
-<script type="module" src="../assets/js/auth.js?v=20260820i"></script>
+<script type="module" src="../assets/js/auth.js?v=20260820d7"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 <link rel="stylesheet" href="../assets/css/dashboard-kit.css">
 
@@ -1166,13 +1166,17 @@ atualizarStatusLinha(res.payload, state.all.length);
 if (res.origem) {
 document.getElementById("statusLine").textContent += " · " + res.origem;
 }
+window.portalLimparAvisoDashboard?.();
 }
 } catch (error) {
+const msg = window.portalMensagemErro ? window.portalMensagemErro(error) : (error.message || "Erro ao atualizar incidentes.");
 if (!cacheLocal) {
-status.textContent = error.message || "Erro ao atualizar incidentes.";
+status.textContent = msg;
+window.portalMostrarAvisoDashboard?.(msg);
 throw error;
 }
-status.textContent = "Cache local · falha ao atualizar (" + (error.message || "erro") + ")";
+status.textContent = "Cache local · falha ao atualizar (" + msg + ")";
+window.portalMostrarAvisoDashboard?.(msg, "info");
 } finally {
 carregandoIncidentes = false;
 btn.disabled = false;

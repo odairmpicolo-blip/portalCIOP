@@ -3,6 +3,7 @@
  * Defina antes dos módulos de dados, se necessário:
  *   window.PORTAL_AWS_API_URL = "https://sua-api.amazonaws.com";
  */
+import { mensagemErroPortal } from "./portal-dashboard-ui.js";
 let runtimeReady = false;
 let runtimePromise = null;
 
@@ -32,7 +33,7 @@ export async function awsFetch(path, { method = "GET", body, token, apiKey } = {
   } catch (err) {
     const msg = String(err?.message || err || "");
     if (/load failed|failed to fetch|networkerror/i.test(msg)) {
-      throw new Error("A API nao respondeu. Pode ser bloqueio de CORS no API Gateway, rede fora ou timeout: veja o status na aba Network");
+      throw new Error(mensagemErroPortal(err));
     }
     throw err;
   }
@@ -51,9 +52,19 @@ export async function awsFetch(path, { method = "GET", body, token, apiKey } = {
   }
   if (!res.ok) {
     if (res.status === 504 || res.status === 502) {
-      throw new Error("Timeout na API — o envio continuará em lotes menores");
+      const timeout = new Error("A API demorou demais. Tente de novo; envios grandes seguem em lotes menores.");
+      timeout.status = res.status;
+      timeout.codigo = "TIMEOUT";
+      throw timeout;
     }
-    throw new Error(data.erro || `HTTP ${res.status}`);
+    const err = new Error(mensagemErroPortal({
+      codigo: data.codigo,
+      message: data.erro || `HTTP ${res.status}`,
+      status: res.status
+    }));
+    err.status = res.status;
+    err.codigo = data.codigo || "ERRO";
+    throw err;
   }
   return data;
 }

@@ -67,8 +67,19 @@ Detalhes: `docs/fase-6-interface.md`
 - [x] Loading (overlay de sessão no `auth.js`)
 - [x] Mensagens de erro no login (português). Feedback das APIs nas telas: Fase 7
 
-## Fases 7–19
+## Fase 7 — Dashboard
 
-Dashboard, incidentes, relatórios, integrações, tempo real, automações, performance, auditoria, testes, publicação, PWA, IA, manutenção — ainda não iniciadas.
+Detalhes: `docs/fase-7-dashboard.md`
 
-Próximo: **Fase 7** — dashboard (quando você pedir). Publicar a Fase 6 nos dois portais só com confirmação.
+- [x] Painel principal (home com KPIs de contexto e cards)
+- [x] Indicadores nas telas (IPV, ICV, KM, liberação, incidentes)
+- [x] Filtros de período / busca (já nas telas; conferido)
+- [x] Gráficos (Chart.js nas telas acima)
+- [x] Atualizar / exportar (botão Atualizar, PDF/CSV onde já existia)
+- [x] Erro da API na tela (`portal-dashboard-ui.js` + faixa nas telas IPV, liberação, incidentes)
+
+## Fases 8–19
+
+Incidentes, relatórios, integrações, tempo real, automações, performance, auditoria, testes, publicação, PWA, IA, manutenção — ainda não iniciadas.
+
+Próximo: **Fase 8** — incidentes (quando você pedir). Publicar a Fase 7 nos dois portais só com confirmação.

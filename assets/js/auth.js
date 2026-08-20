@@ -20,6 +20,7 @@ import {
   pararHeartbeatPresenca,
   marcarPresencaOffline
 } from "./portal-presenca.js?v=20260817a";
+import "./portal-dashboard-ui.js?v=20260820d7";
 
 const auth = getAuth(app);
 
