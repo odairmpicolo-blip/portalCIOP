@@ -360,6 +360,27 @@ function garantirNavIncidentes() {
   document.head.appendChild(script);
 }
 
+function garantirNavTempoReal() {
+  const file = (window.location.pathname.split("/").pop() || "").split("?")[0];
+  if (!/^(onibus-agora|onibus-horarios|fleetbus-agora|terminais-agora)\.html$/.test(file)) return;
+  if (document.querySelector("script[data-portal-live-nav]")) return;
+  const script = document.createElement("script");
+  script.src = portalPath("assets/js/tempo-real-nav.js?v=20260820t11");
+  script.defer = true;
+  script.dataset.portalLiveNav = "1";
+  document.head.appendChild(script);
+}
+
+function garantirTempoRealPoll() {
+  const file = (window.location.pathname.split("/").pop() || "").split("?")[0];
+  if (!/^(onibus-agora|onibus-agora-clever|onibus-horarios|fleetbus-agora|terminais-agora)\.html$/.test(file)) return;
+  if (document.querySelector("script[data-portal-live-poll]")) return;
+  const script = document.createElement("script");
+  script.src = portalPath("assets/js/portal-tempo-real.js?v=20260820t11");
+  script.dataset.portalLivePoll = "1";
+  document.head.appendChild(script);
+}
+
 function garantirNavRelatorios() {
   const file = (window.location.pathname.split("/").pop() || "").split("?")[0];
   if (!/^(relatorios|criar-relatorio|liberacao-relatorio|folha-servico-relatorio|relatorio-ocorrencia)\.html$/.test(file)) return;
@@ -379,6 +400,8 @@ garantirThemeToggle();
 garantirMarcaPortal();
 garantirNavIncidentes();
 garantirNavRelatorios();
+garantirNavTempoReal();
+garantirTempoRealPoll();
 
 function garantirRodapePortal() {
   if (document.querySelector("script[data-portal-footer]")) return;

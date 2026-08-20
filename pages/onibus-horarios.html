@@ -585,7 +585,7 @@ body.oa-native-mode .oa-bottom-pont{
 })();
 </script>
 <script src="../assets/js/loading.js?v=20260718d"></script>
-<script type="module" src="../assets/js/auth.js?v=20260820r10"></script>
+<script type="module" src="../assets/js/auth.js?v=20260820t11"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260818p">
@@ -1799,6 +1799,7 @@ async function buscarVeiculosRota(route){
 }
 
 async function pollLote(){
+    if (document.hidden) return;
     if (!state.routes.length) return;
     if (!BUS2.proxyBase){
         setLive("Horários OK · mapa ao vivo requer API AWS", false);
@@ -1840,6 +1841,12 @@ function iniciarPoll(){
     clearInterval(state.pollTimer);
     pollLote();
     state.pollTimer = setInterval(pollLote, BUS2.intervaloMs);
+    if (!state._visHook) {
+        state._visHook = true;
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) pollLote();
+        });
+    }
 }
 
 async function selecionarLinha(routeId){

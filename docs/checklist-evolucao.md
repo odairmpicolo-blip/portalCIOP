@@ -111,8 +111,17 @@ Detalhes: `docs/fase-10-integracoes.md`
 - [x] Checagem da API DSQL na tela (Administrador)
 - [x] MTRAN: não existe no código — sem ligação inventada
 
-## Fases 11–19
+## Fase 11 — Tempo real
 
-Tempo real, automações, performance, auditoria, testes, publicação, PWA, IA, manutenção — ainda não iniciadas.
+Detalhes: `docs/fase-11-tempo-real.md`
 
-Próximo: **Fase 11** — tempo real.
+- [x] Poll só com a aba visível (ônibus, horários, FleetBus; terminais já tinham)
+- [x] Navegação entre as telas ao vivo
+- [ ] WebSocket — não existe nas APIs atuais; não inventado
+- [x] TV / quiosque sem redesign
+
+## Fases 12–19
+
+Automações, performance, auditoria, testes, publicação, PWA, IA, manutenção.
+
+Próximo: **Fase 12** — automações.

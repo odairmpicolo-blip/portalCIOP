@@ -742,7 +742,7 @@ body.oa-native-mode .oa-map-shell{flex:1 1 0;min-height:0;position:relative;orde
 })();
 </script>
 <script src="../assets/js/loading.js?v=20260718d"></script>
-<script type="module" src="../assets/js/auth.js?v=20260820r10"></script>
+<script type="module" src="../assets/js/auth.js?v=20260820t11"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260818p">
@@ -2859,6 +2859,7 @@ function atualizarMarcadores(){
 }
 
 async function pollLote(){
+    if (document.hidden) return;
     setLive("Atualizando posições...", true);
     try {
         const lista = await fetchCleverVehicles();
@@ -2880,6 +2881,12 @@ function iniciarPoll(){
     clearInterval(state.pollTimer);
     pollLote();
     state.pollTimer = setInterval(pollLote, CLEVER.intervaloMs);
+    if (!state._visHook) {
+        state._visHook = true;
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) pollLote();
+        });
+    }
 }
 
 function selecionarLinha(routeId){
