@@ -120,8 +120,18 @@ Detalhes: `docs/fase-11-tempo-real.md`
 - [ ] WebSocket — não existe nas APIs atuais; não inventado
 - [x] TV / quiosque sem redesign
 
-## Fases 12–19
+## Fase 12 — Automações
 
-Automações, performance, auditoria, testes, publicação, PWA, IA, manutenção.
+Detalhes: `docs/fase-12-automacoes.md`
 
-Próximo: **Fase 12** — automações.
+- [x] Jobs do GitHub Actions catalogados (tela + `docs/github-workflows/`)
+- [x] Datas dos JSON na tela (sem secrets)
+- [x] Apps Script listados (reimplante manual)
+- [ ] E-mail / PDF agendado — não existe; não inventado
+- [x] Incidentes: sem Action; CAD por Lambda/sync
+
+## Fases 13–19
+
+Performance, auditoria, testes, publicação, PWA, IA, manutenção.
+
+Próximo: **Fase 13** — performance.

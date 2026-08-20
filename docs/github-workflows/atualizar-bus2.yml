@@ -1,0 +1,35 @@
+name: Atualizar dados Bus2
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Sincronizar rotas e horários Bus2
+        run: node scripts/sync-bus2-static.mjs
+
+      - name: Commit se houver alterações
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/data/bus2/
+          if git diff --staged --quiet; then
+            echo "Sem alterações nos dados Bus2."
+          else
+            git commit -m "Atualiza dados estáticos Bus2 (rotas e horários)."
+            git push
+          fi

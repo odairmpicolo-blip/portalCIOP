@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automações | Portal CIOP</title>
+<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260818p">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260820r9">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
+<script type="module" src="../assets/js/auth.js?v=20260820t12"></script>
+<style>
+body{margin:0;background:var(--bg,#f5f7fb);color:#101828;font-family:var(--font,Inter,sans-serif)}
+.container{max-width:960px;margin:20px auto 40px;padding:0 18px}
+.intro{margin:0 0 16px;color:#3f4757;font-weight:600;line-height:1.45}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #dfe5ef;border-radius:12px;overflow:hidden;margin-bottom:22px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #edf2f7;font-size:13px;vertical-align:top}
+th{background:#f8fafc;color:#06245c;font-size:11px;text-transform:uppercase}
+.ok{color:#15803d;font-weight:800}
+.fail{color:#b42318;font-weight:800}
+.skip{color:#667085;font-weight:700}
+h2{margin:8px 0 10px;color:#06245c;font-size:16px}
+a.ext{font-weight:700;color:#0b3a8a}
+</style>
+</head>
+<body data-require-perfis="Administrador">
+<header class="header">
+  <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP"><img class="portal-brand-art" src="../assets/img/logomarca-portalciop-tcgl-claro.png?v=20260818logo6" alt="Portal CIOP"></a>
+  <div class="title-wrap"><h1 style="margin:0;color:#06245c;font-size:22px">Automações</h1></div>
+  <div class="header-actions">
+    <div class="ciop-session">
+      <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+      <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+      <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+    </div>
+  </div>
+</header>
+<main class="container">
+  <a class="btn-portal" href="../index.html" style="display:inline-flex;margin-bottom:14px;background:#06245c;color:#fff;text-decoration:none;padding:8px 14px;border-radius:10px;font-weight:800">Portal</a>
+  <p class="intro">Jobs que já existem no GitHub Actions e nos Apps Script. Sem e-mail de PDF agendado — isso não existe no repositório. YAML também está em <code>docs/github-workflows/</code> (PAT sem escopo workflow não sobe <code>.github/workflows/</code>).</p>
+  <p class="intro">Horários em <strong>UTC</strong>. A coluna “último JSON” lê o manifesto publicado no Pages, sem secrets.</p>
+
+  <h2>Agenda (GitHub Actions)</h2>
+  <table>
+    <thead><tr><th>Job</th><th>Cron UTC</th><th>Último JSON</th></tr></thead>
+    <tbody>
+      <tr><td>Liberação (D-3 + hoje + amanhã)</td><td>a cada 5 min</td><td id="st-liberacao">…</td></tr>
+      <tr><td>Terminais</td><td>a cada 5 min</td><td id="st-terminais">…</td></tr>
+      <tr><td>Folha, IPV, autuações, ICV</td><td>a cada 30 min</td><td id="st-folha">…</td></tr>
+      <tr><td>Monitorar www</td><td>a cada 15 min</td><td class="skip">ping HTTPS (sem JSON)</td></tr>
+      <tr><td>Telemetria</td><td>a cada 2 h</td><td id="st-telemetria">…</td></tr>
+      <tr><td>Bus2 rotas/horários</td><td>06:00</td><td id="st-bus2">…</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Só manual</h2>
+  <table>
+    <thead><tr><th>Job</th><th>Quando</th></tr></thead>
+    <tbody>
+      <tr><td>Deploy GitHub Pages</td><td>push em <code>main</code> + botão</td></tr>
+      <tr><td>Implantar API / Bus2 proxy / migração DSQL</td><td>botão no Actions</td></tr>
+      <tr><td>Diagnóstico relatórios / S3</td><td>botão no Actions</td></tr>
+      <tr><td>Incidentes CAD</td><td>Lambda/sync — Action desligada</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Apps Script (Google)</h2>
+  <p class="intro">Reimplante no Google é manual. Arquivos em <code>scripts/*.gs</code>: folha, liberação, telemetria, autuações, escala, tabelas, decreto, relatório IA.</p>
+  <p class="intro"><a class="ext" href="integracoes.html">Integrações</a> · Actions em GitHub → repositório <code>portalCIOP</code>.</p>
+</main>
+<script type="module">
+const JOBS = [
+  { id: "st-liberacao", url: "../assets/data/liberacao/manifest.json" },
+  { id: "st-folha", url: "../assets/data/folha-servico/manifest.json" },
+  { id: "st-telemetria", url: "../assets/data/telemetria/manifest.json" },
+  { id: "st-bus2", url: "../assets/data/bus2/manifest.json" }
+];
+
+function fmtIso(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return String(iso);
+  return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+async function preencher(job) {
+  const el = document.getElementById(job.id);
+  try {
+    const res = await fetch(job.url, { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const iso = data.atualizadoEm || data.geradoEm;
+    el.innerHTML = iso ? '<span class="ok">' + fmtIso(iso) + "</span>" : '<span class="skip">sem data</span>';
+  } catch (err) {
+    el.innerHTML = '<span class="fail">' + (window.portalMensagemErro?.(err) || err.message) + "</span>";
+  }
+}
+
+async function preencherTerminais() {
+  const el = document.getElementById("st-terminais");
+  try {
+    const res = await fetch("../assets/data/terminais-agora.json", { method: "HEAD", cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const lm = res.headers.get("last-modified");
+    el.innerHTML = lm
+      ? '<span class="ok">' + fmtIso(lm) + "</span> <span class="skip">(Last-Modified)</span>"
+      : '<span class="skip">arquivo grande; ver Actions</span>';
+  } catch (err) {
+    el.innerHTML = '<span class="fail">' + (window.portalMensagemErro?.(err) || err.message) + "</span>";
+  }
+}
+
+function iniciar() {
+  JOBS.forEach(preencher);
+  preencherTerminais();
+}
+
+if (window.portalUsuarioValidado) iniciar();
+else window.addEventListener("portal:usuario-validado", iniciar, { once: true });
+</script>
+</body>
+</html>
