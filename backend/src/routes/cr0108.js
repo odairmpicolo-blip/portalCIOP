@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { query } from "../db.js";
 import { DATA_ISO as ISO } from "../lib/validar.js";
+import { intervaloDatas } from "../lib/validar.js";
+import { asyncHandler } from "../lib/http.js";
+import { ipvAjustadoDia, ipvAjustadoPeriodo } from "../lib/ipv-ajustado.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
 
 /**
@@ -471,6 +474,113 @@ router.get("/ipv", requireFirebaseUser, async (req, res) => {
     res.json({ ok: true, origem: "dsql", fonte: chave, itens: r.rows });
   } catch (err) { erro(res, err); }
 });
+
+async function colunaDataCad() {
+  const c = await query(
+    `SELECT column_name, data_type
+     FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'cr_0002'
+     ORDER BY ordinal_position`
+  );
+  const row = c.rows.find((r) => /^(data_ref|data|dt|date)$/i.test(r.column_name))
+    || c.rows.find((r) => /data|date|dia/i.test(r.column_name));
+  return row || null;
+}
+
+async function incidentesPorDia(de, ate) {
+  const mapa = new Map();
+  let meta;
+  try {
+    meta = await colunaDataCad();
+  } catch (_) {
+    return { mapa, total: 0, aviso: "cr_0002 indisponível" };
+  }
+  if (!meta) return { mapa, total: 0, aviso: "cr_0002 sem coluna de data" };
+  const col = citarColuna(meta.column_name);
+  const ehData = /date|timestamp/i.test(meta.data_type || "");
+  const r = ehData
+    ? await query(
+      `SELECT ${col}::date::text AS dia, count(*)::int AS n
+       FROM cr_0002
+       WHERE ${col}::date >= $1::date AND ${col}::date <= $2::date
+       GROUP BY 1`,
+      [de, ate]
+    )
+    : await query(
+      `SELECT btrim(${col}::text) AS dia, count(*)::int AS n FROM cr_0002 GROUP BY 1`
+    );
+  let total = 0;
+  for (const row of r.rows) {
+    const dia = isoCad(row.dia);
+    if (!dia || dia < de || dia > ate) continue;
+    const n = Number(row.n) || 0;
+    mapa.set(dia, n);
+    total += n;
+  }
+  return { mapa, total, aviso: null };
+}
+
+/** IPV Custom ponderado (91,34% de junho) + Relatório 002 como viagem desculpada. */
+router.get("/ipv-ajustado", requireFirebaseUser, asyncHandler(async (req, res) => {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const { de, ate } = intervaloDatas(req.query.de || hoje, req.query.ate || req.query.de || hoje);
+  const ontime = await query(
+    `SELECT data_ref::text AS data,
+            ${numero("ipv_actual")} AS ipv,
+            ${numero("pontos_de_controle_processados")} AS pontos
+     FROM cr_custom_ontime
+     WHERE data_ref >= $1::date AND data_ref <= $2::date
+     ORDER BY data_ref`,
+    [de, ate]
+  );
+  let viagensPorDia = new Map();
+  try {
+    const custom = await query(
+      `SELECT data_ref::text AS data, ${numero("trips")} AS viagens
+       FROM cr_custom
+       WHERE data_ref >= $1::date AND data_ref <= $2::date`,
+      [de, ate]
+    );
+    viagensPorDia = new Map(custom.rows.map((r) => [String(r.data).slice(0, 10), Number(r.viagens) || 0]));
+  } catch (_) { /* trips pode ter outro nome */ }
+
+  const cad = await incidentesPorDia(de, ate);
+  const dias = ontime.rows.map((r) => {
+    const data = String(r.data).slice(0, 10);
+    const base = {
+      data,
+      ipv: Number(r.ipv) || 0,
+      pontos: Number(r.pontos) || 0,
+      viagens: viagensPorDia.get(data) || 0,
+      incidentes: cad.mapa.get(data) || 0
+    };
+    return { ...base, ...ipvAjustadoDia(base) };
+  });
+
+  for (const [data, n] of cad.mapa) {
+    if (data < de || data > ate) continue;
+    if (dias.some((d) => d.data === data)) continue;
+    const base = { data, ipv: 0, pontos: 0, viagens: viagensPorDia.get(data) || 0, incidentes: n };
+    dias.push({ ...base, ...ipvAjustadoDia(base), customPendente: true });
+  }
+  dias.sort((a, b) => a.data.localeCompare(b.data));
+
+  const periodo = ipvAjustadoPeriodo(dias.filter((d) => !d.customPendente));
+  res.json({
+    ok: true,
+    origem: "dsql",
+    regra: "custom-2-6-ponderado + cr_0002 como viagem desculpada",
+    de,
+    ate,
+    ipv: periodo.ipv,
+    ipvAjustado: periodo.ipvAjustado,
+    ganhoPp: periodo.ganhoPp,
+    incidentes: cad.total,
+    volume: periodo.volume,
+    aviso: cad.aviso,
+    dias
+  });
+}));
 
 /* Histograma compacto para o diagnóstico de ajustes: um bin por
    (linha, sentido, ponto, programado, desvio). Só para janelas de até 90 dias —
