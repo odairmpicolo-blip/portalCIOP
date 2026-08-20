@@ -33,7 +33,7 @@ Site estático no Pages aguenta o uso do CIOP. Gargalo não é a home: são Lamb
 | Código | Git `portalCIOP` `main` |
 | JSON operacionais | Workflows que commitam `assets/data/**` |
 | Firestore | Backup nativo Google (ativar no console se ainda não estiver) |
-| Aurora DSQL | Snapshot/backup AWS — **restore ainda não foi testado** (Fase 4) |
+| Aurora DSQL | Dump lógico testado (S3 `dsql-backup/fase4-2026-08-20/nucleo.json` + restore sonda). AWS Backup do cluster: outra conta IAM |
 
 ## Monitoramento
 

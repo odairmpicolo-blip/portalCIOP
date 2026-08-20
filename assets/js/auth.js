@@ -14,6 +14,7 @@ import { app, buscarUsuarioFirestore, normalizarCadastro } from "./portal-firest
 import { usuarios } from "./usuarios.js";
 import { aplicarSaudacaoHero } from "./portal-saudacao.js?v=20260704a";
 import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260817p";
+import "./portal-mfa.js?v=20260820mfa";
 import {
   iniciarHeartbeatPresenca,
   pararHeartbeatPresenca,
@@ -362,16 +363,14 @@ async function getCadastro(user) {
 
   const cadastroLocal = usuarios[email] || usuarios[user.email];
   if (!cadastroLocal) {
-    const padrao = {
+    return {
       email,
       nome: user.displayName || user.email,
       perfil: "Usuario",
       registro: "",
       cargo: "",
-      ativo: true
+      ativo: false
     };
-    salvarCadastroCache(email, padrao);
-    return padrao;
   }
 
   const cadastro = normalizarCadastro(cadastroLocal, email);
@@ -388,7 +387,7 @@ async function getCadastro(user) {
 }
 
 const CADASTRO_CACHE_KEY = "portal_cadastro_v1";
-const CADASTRO_CACHE_TTL_MS = 8 * 60 * 60 * 1000;
+const CADASTRO_CACHE_TTL_MS = 30 * 60 * 1000;
 
 function lerCadastroCache(email) {
   try {

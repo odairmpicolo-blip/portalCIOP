@@ -2,6 +2,7 @@ import { Router } from "express";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { config } from "../config.js";
 import { query } from "../db.js";
+import { registrarAudit } from "../lib/audit.js";
 import { asyncHandler, HttpError } from "../lib/http.js";
 import { exigirObjeto } from "../lib/validar.js";
 import { requireApiKey, requireFirebaseUser } from "../middleware/auth.js";
@@ -85,6 +86,13 @@ router.put("/pontualidade/:cenario", requireApiKey, asyncHandler(async (req, res
        atualizado_em = NOW()`,
     [cenario, JSON.stringify(payload)]
   );
+  await registrarAudit({
+    uid: "api-key",
+    tabela: "pontualidade_snapshot",
+    chave: cenario,
+    acao: "update",
+    depois: { bytes: JSON.stringify(payload).length }
+  });
   res.json({ ok: true });
 }));
 
@@ -135,6 +143,13 @@ router.put("/:nome", requireApiKey, asyncHandler(async (req, res) => {
        atualizado_em = NOW()`,
     [JSON.stringify(payload)]
   );
+  await registrarAudit({
+    uid: "api-key",
+    tabela: table,
+    chave: "atual",
+    acao: "update",
+    depois: { bytes: JSON.stringify(payload).length }
+  });
   res.json({ ok: true });
 }));
 

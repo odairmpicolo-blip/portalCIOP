@@ -4,6 +4,31 @@ import admin from "firebase-admin";
 import { verificarIdTokenFirebase } from "./firebase-token.js";
 import { config } from "../config.js";
 import { jsonErro } from "../lib/http.js";
+import { cadastroAtivo, resolverCadastro } from "../lib/cadastro-portal.js";
+
+const cadastroCache = new Map();
+const CADASTRO_TTL_MS = 60 * 1000;
+
+async function buscarCadastroFirestore(email) {
+  const id = String(email || "").trim().toLowerCase();
+  if (!id || !initFirebaseAdmin()) return { disponivel: false, cadastro: null };
+  const agora = Date.now();
+  const hit = cadastroCache.get(id);
+  if (hit && agora - hit.ts < CADASTRO_TTL_MS) {
+    return { disponivel: true, cadastro: hit.cadastro };
+  }
+  const snap = await admin.firestore().collection("usuarios").doc(id).get();
+  const cadastro = snap.exists
+    ? {
+      email: id,
+      nome: snap.data()?.nome || id,
+      perfil: snap.data()?.perfil || "Usuario",
+      ativo: snap.data()?.ativo !== false
+    }
+    : null;
+  cadastroCache.set(id, { ts: agora, cadastro });
+  return { disponivel: true, cadastro };
+}
 
 let firebaseReady = false;
 
@@ -98,6 +123,24 @@ export async function requireFirebaseUser(req, res, next) {
 
   try {
     req.user = await verifyFirebaseToken(token);
+    const email = String(req.user?.email || "").toLowerCase();
+    const { disponivel, cadastro } = await buscarCadastroFirestore(email);
+    if (disponivel) {
+      const ok = resolverCadastro(cadastro, null);
+      if (!ok || !cadastroAtivo(ok)) {
+        jsonErro(
+          res,
+          403,
+          cadastro && cadastro.ativo === false
+            ? "Acesso desativado"
+            : "Usuário não cadastrado no portal",
+          cadastro && cadastro.ativo === false ? "ACESSO_DESATIVADO" : "SEM_CADASTRO"
+        );
+        return;
+      }
+      req.user = { ...req.user, email, perfil: ok.perfil };
+      req.cadastro = ok;
+    }
     next();
   } catch (err) {
     const msg = String(err?.message || "");

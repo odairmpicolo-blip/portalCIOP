@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { query } from "../db.js";
+import { registrarAudit } from "../lib/audit.js";
 import { asyncHandler, HttpError } from "../lib/http.js";
 import { ehDataIso, intervaloDatas } from "../lib/validar.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
@@ -149,6 +150,13 @@ router.post("/import", requireFirebaseUser, asyncHandler(async (req, res) => {
     );
   }
 
+  await registrarAudit({
+    uid: req.user?.email || null,
+    tabela: "telemetria_linhas",
+    chave: origemArquivo || "import",
+    acao: "import",
+    depois: { inseridos, total: linhas.length, unificados: mapaImport.size, origemArquivo }
+  });
   res.json({ ok: true, inseridos, total: linhas.length, unificados: mapaImport.size });
 }));
 

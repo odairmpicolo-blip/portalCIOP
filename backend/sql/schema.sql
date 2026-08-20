@@ -72,3 +72,16 @@ CREATE TABLE IF NOT EXISTS relatorios_ocorrencia (
   criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (id)
 );
+
+-- Trilha de escritas críticas (liberação, telemetria, relatórios, snapshots)
+CREATE TABLE IF NOT EXISTS audit_log (
+  id TEXT NOT NULL,
+  quando TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  uid TEXT,
+  tabela TEXT NOT NULL,
+  chave TEXT NOT NULL,
+  acao TEXT NOT NULL,
+  antes JSONB,
+  depois JSONB,
+  PRIMARY KEY (id)
+);

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { query } from "../db.js";
+import { registrarAudit } from "../lib/audit.js";
 import { asyncHandler } from "../lib/http.js";
 import { exigirObjeto } from "../lib/validar.js";
 import { requireApiKey, requireFirebaseUser } from "../middleware/auth.js";
@@ -34,6 +35,13 @@ router.put("/atual", requireApiKey, asyncHandler(async (req, res) => {
        atualizado_em = NOW()`,
     [JSON.stringify(payload), payload.fonte || "import"]
   );
+  await registrarAudit({
+    uid: "api-key",
+    tabela: "terminais_snapshot",
+    chave: "atual",
+    acao: "update",
+    depois: { fonte: payload.fonte || "import", bytes: JSON.stringify(payload).length }
+  });
   res.json({ ok: true });
 }));
 

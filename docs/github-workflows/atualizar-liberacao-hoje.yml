@@ -1,0 +1,64 @@
+name: Atualizar JSON liberação (D-3 + hoje + amanhã)
+
+on:
+  schedule:
+    # A cada 5 minutos — JSON (3 dias antes + hoje + amanhã) + DSQL para leitura ao vivo rápida no portal
+    - cron: "*/5 * * * *" # Runs every 5 minutes
+  workflow_dispatch:
+  repository_dispatch:
+    types: [folha-servico, liberacao]
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Baixar portal
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Sincronizar com origin
+        run: git pull --rebase --autostash origin main
+
+      - name: Gerar JSON de liberação (3 dias antes + hoje + amanhã)
+        env:
+          PORTAL_ROOT: ${{ github.workspace }}
+          PORTAL_JSON_TIMEOUT_MS: 180000
+          LIBERACAO_API_URL: ${{ secrets.LIBERACAO_API_URL }}
+          FOLHA_SERVICO_API_URL: ${{ secrets.FOLHA_SERVICO_API_URL }}
+          LIBERACAO_DIAS_HOJE: "3"
+        run: node scripts/atualizar-portais-json.mjs --liberacao-hoje
+
+      - name: Sincronizar antes do commit
+        run: git pull --rebase --autostash origin main
+
+      - name: Publicar JSON de liberação (D-3 + hoje + amanhã)
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Atualiza JSON liberação (3 dias antes + hoje + amanhã)"
+          file_pattern: assets/data/liberacao/*.json
+
+      - name: Importar liberação (D-3 + hoje + amanhã) no DSQL (planilha → JSON → AWS)
+        env:
+          DSQL_CLUSTER_ID: ${{ secrets.DSQL_CLUSTER_ID }}
+          DSQL_REGION: sa-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          PORTAL_ROOT: ${{ github.workspace }}
+          LIBERACAO_DIAS_HOJE: "3"
+        run: |
+          if [ -z "$DSQL_CLUSTER_ID" ]; then
+            echo "DSQL_CLUSTER_ID não configurado — import DSQL ignorado."
+            exit 0
+          fi
+          bash scripts/ci-import-dsql.sh liberacao-hoje

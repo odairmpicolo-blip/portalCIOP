@@ -571,8 +571,6 @@ function incidentesLigados(rows) {
   });
 }
 
-}
-
 /** IPV Custom ponderado por pontos. Recupera só ponto com conexão de horário/veículo/linha. */
 router.get("/ipv-ajustado", requireFirebaseUser, asyncHandler(async (req, res) => {
   const hoje = new Date().toISOString().slice(0, 10);

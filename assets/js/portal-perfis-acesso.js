@@ -9,12 +9,15 @@ export const DOC_PATH = ["config", "perfisAcesso"];
 export const PERFIS_PORTAL = [
   "Administrador",
   "Supervisor",
+  "Encarregado",
   "Gerência",
   "Analista",
+  "Planejamento",
   "SAC",
   "Fiscalização",
   "Monitoramento",
   "Secretária",
+  "Consulta",
 ];
 
 /** Módulos configuráveis (home + menu lateral) */
@@ -86,7 +89,9 @@ export function defaultsAcessos() {
   PERFIS_PORTAL.forEach((perfil) => {
     const key = normalizarPerfilKey(perfil);
     if (key === "administrador") mapa[key] = ["*"];
-    else mapa[key] = [...todos];
+    else if (key === "consulta") {
+      mapa[key] = MODULOS_PORTAL.filter((m) => m.grupo === "Indicadores").map((m) => m.id);
+    } else mapa[key] = [...todos];
   });
   return mapa;
 }

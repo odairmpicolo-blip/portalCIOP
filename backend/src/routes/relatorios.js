@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { randomUUID } from "node:crypto";
 import { query } from "../db.js";
+import { registrarAudit } from "../lib/audit.js";
 import { HttpError } from "../lib/http.js";
 import { intervaloDatas } from "../lib/validar.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
@@ -108,14 +109,15 @@ function mapearLinha(r) {
 }
 
 async function registrarMetadado(row) {
-  await query(
+  const ins = await query(
     `INSERT INTO relatorios_ocorrencia (
        id, user_email, data_documento, protocolo, funcionario_registro, funcionario_nome,
        funcionario_texto, nome_arquivo, storage_key, storage_uri, origem, criado_por_nome, criado_em
      ) VALUES (
        $1, $2, $3::date, $4, $5, $6, $7, $8, $9, $10, $11, $12, COALESCE($13::timestamptz, NOW())
      )
-     ON CONFLICT (id) DO NOTHING`,
+     ON CONFLICT (id) DO NOTHING
+     RETURNING id`,
     [
       row.id,
       row.userEmail,
@@ -132,6 +134,19 @@ async function registrarMetadado(row) {
       row.criadoEm || null
     ]
   );
+  if (!ins.rowCount) return;
+  await registrarAudit({
+    uid: row.userEmail || null,
+    tabela: "relatorios_ocorrencia",
+    chave: row.id,
+    acao: "insert",
+    depois: {
+      dataDocumento: row.dataDocumento,
+      protocolo: row.protocolo || null,
+      nomeArquivo: row.nomeArquivo,
+      storageKey: row.storageKey
+    }
+  });
 }
 
 async function sincronizarS3() {

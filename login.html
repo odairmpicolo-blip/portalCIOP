@@ -45,6 +45,17 @@ if (/[?&](app|novo)=1(?:&|$)/.test(location.search)) {
       required
     >
 
+    <div id="mfaBox" hidden>
+      <label for="mfaCodigo">Código do autenticador (2FA)</label>
+      <input
+        type="text"
+        id="mfaCodigo"
+        inputmode="numeric"
+        autocomplete="one-time-code"
+        maxlength="8"
+      >
+    </div>
+
     <div id="erro" class="login-error-v2" role="alert" hidden></div>
 
     <button type="submit" class="btn-primary" id="btnEntrar">
@@ -69,13 +80,21 @@ import {
  signInWithEmailAndPassword,
  sendPasswordResetEmail,
  setPersistence,
- browserSessionPersistence
+ browserSessionPersistence,
+ getMultiFactorResolver,
+ TotpMultiFactorGenerator
 }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 import { firebaseConfig } from "./assets/js/firebase-config.js";
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+let mfaResolver = null;
+
+function mostrarMfa(mostrar) {
+  const box = document.getElementById("mfaBox");
+  if (box) box.hidden = !mostrar;
+}
 
 function mostrarCarregando(texto) {
   window.portalMostrarCarregando?.(texto || "Carregando");
@@ -110,6 +129,12 @@ function mensagemErroLogin(error) {
   if (code === "auth/too-many-requests") {
     return "Muitas tentativas. Aguarde um pouco e tente novamente.";
   }
+  if (code === "auth/multi-factor-auth-required") {
+    return "Informe o código do autenticador.";
+  }
+  if (code === "auth/invalid-verification-code") {
+    return "Código 2FA inválido.";
+  }
   return "Não foi possível entrar: " + (error.message || code);
 }
 
@@ -120,6 +145,8 @@ window.login = async function(){
 
  const senha =
  document.getElementById("senha").value;
+
+ const codigoMfa = document.getElementById("mfaCodigo")?.value || "";
 
  const btn = document.getElementById("btnEntrar");
 
@@ -132,11 +159,22 @@ window.login = async function(){
 
    await setPersistence(auth, browserSessionPersistence);
 
-   await signInWithEmailAndPassword(
-      auth,
-      email,
-      senha
-   );
+   if (mfaResolver) {
+     const hint = mfaResolver.hints.find((h) => h.factorId === TotpMultiFactorGenerator.FACTOR_ID)
+       || mfaResolver.hints[0];
+     if (!hint || !codigoMfa) {
+       throw Object.assign(new Error("Informe o código 2FA."), { code: "auth/multi-factor-auth-required" });
+     }
+     const assertion = TotpMultiFactorGenerator.assertionForSignIn(hint.uid, codigoMfa.trim());
+     await mfaResolver.resolveSignIn(assertion);
+     mfaResolver = null;
+   } else {
+     await signInWithEmailAndPassword(
+        auth,
+        email,
+        senha
+     );
+   }
 
    window.location.href =
    "index.html";
@@ -146,6 +184,11 @@ window.login = async function(){
    ocultarCarregando();
    btn.disabled = false;
    btn.textContent = "Entrar";
+   if (error.code === "auth/multi-factor-auth-required") {
+     mfaResolver = getMultiFactorResolver(auth, error);
+     mostrarMfa(true);
+     document.getElementById("mfaCodigo")?.focus();
+   }
    mostrarErro(mensagemErroLogin(error));
 
  }
@@ -155,7 +198,7 @@ window.login = async function(){
 document.addEventListener("keydown", function(event) {
  const isLoginField =
    event.target &&
-   (event.target.id === "email" || event.target.id === "senha");
+   (event.target.id === "email" || event.target.id === "senha" || event.target.id === "mfaCodigo");
 
  if (isLoginField && event.key === "Enter") {
    event.preventDefault();

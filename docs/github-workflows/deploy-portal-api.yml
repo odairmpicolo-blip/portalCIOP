@@ -1,0 +1,65 @@
+name: Implantar API do portal (Lambda + API Gateway)
+
+# Sobe o código da API para a AWS sem precisar de terminal, Homebrew ou AWS CLI na
+# máquina de ninguém: o runner do GitHub já tem a CLI, e as credenciais vêm dos
+# Secrets do repositório — as mesmas usadas pelo workflow de migração do banco.
+#
+# Rode em: aba Actions -> "Implantar API do portal" -> Run workflow.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  implantar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Baixar portal
+        uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Conferir os segredos antes de começar
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+            echo "AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY não estão nos Secrets do repositório."
+            echo "Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          echo "Segredos presentes."
+
+      - name: Implantar
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: sa-east-1
+          DSQL_CLUSTER_ID: ${{ secrets.DSQL_CLUSTER_ID }}
+        run: |
+          aws --version
+          aws sts get-caller-identity
+          bash scripts/deploy-portal-api.sh
+
+      # O deploy já testa /db-health. Aqui confirmamos a rota nova: sem token o
+      # esperado é 401. Se vier 404, o API Gateway não recebeu a rota.
+      - name: Conferir a rota /cr0108
+        run: |
+          BASE=$(python3 -c "import json;print(json.load(open('assets/data/portal-runtime.json'))['awsApiUrl'])")
+          CODIGO=$(curl -s -o /tmp/cr0108.json -w "%{http_code}" "$BASE/cr0108/meta" || echo 000)
+          echo "GET /cr0108/meta -> HTTP $CODIGO"
+          cat /tmp/cr0108.json || true
+          echo ""
+          case "$CODIGO" in
+            401) echo "OK: a rota existe e está protegida, como as demais." ;;
+            404) echo "FALHOU: o API Gateway ainda não tem a rota. Confira se aws/portal-api/template.yaml foi commitado."; exit 1 ;;
+            200) echo "ATENÇÃO: respondeu 200 sem token — verifique o middleware de autenticação."; exit 1 ;;
+            *)   echo "Resposta inesperada."; exit 1 ;;
+          esac

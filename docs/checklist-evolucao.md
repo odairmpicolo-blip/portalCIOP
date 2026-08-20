@@ -38,23 +38,27 @@ Pendências menores da fase: validar upload de relatórios/CR-0108 com o mesmo h
 
 ## Fase 4 — Banco
 
-- [ ] Revisar tabelas DSQL
-- [ ] Duplicados / índices / consultas lentas
-- [ ] Backup e restore testados
-- [ ] Auditoria de alterações críticas
+Detalhes: `docs/fase-4-banco.md`
+
+- [x] Revisar tabelas DSQL (23 tabelas + 2 views + `audit_log`; CR-* fora do `schema.sql`)
+- [x] Duplicados / índices / consultas lentas (`idx_cr_0108_dia_veiculo` válido; sem duplicados de PK)
+- [x] Backup e restore testados (dump S3 + restore sonda de `avisos`; AWS Backup do cluster ainda exige outra conta)
+- [x] Auditoria de alterações críticas (`audit_log` nas escritas da API)
 
 ## Fase 5 — Login e segurança
 
-- [ ] Revisar fluxo de login (Firebase)
-- [ ] Tokens/sessões
-- [ ] Perfis (admin, encarregado, monitoramento, planejamento, consulta)
-- [ ] Recuperação de senha
-- [ ] 2FA admin (se possível)
-- [ ] Sem segredos no código público
-- [ ] Regras de API e Firestore
+Detalhes: `docs/fase-5-login.md`
+
+- [x] Revisar fluxo de login (Firebase e-mail/senha; sessão por aba; cadastro Firestore obrigatório)
+- [x] Tokens/sessões (ID token ~1 h; API Bearer; revogação se houver SA)
+- [x] Perfis (atuais + Encarregado, Planejamento, Consulta)
+- [x] Recuperação de senha (`sendPasswordResetEmail` + alterar senha logado)
+- [x] 2FA admin (TOTP no login e no painel Senha; ligar MFA no console Firebase)
+- [x] Sem segredos no código público (`apiKey` Firebase é pública; SA e `.env` fora do git)
+- [x] Regras de API e Firestore (cadastro ativo na API com SA; `firestore.rules` com deny default)
 
 ## Fases 6–19
 
 Interface, dashboard, incidentes, relatórios, integrações, tempo real, automações, performance, auditoria, testes, publicação, PWA, IA, manutenção — ainda não iniciadas.
 
-Próximo: **Fase 4 — banco (DSQL)** — tabelas, índices, backup/restore, auditoria.
+Próximo: **Fase 6** — interface (quando você pedir). 2FA TOTP só vale depois de ligar MFA no console Firebase. Regras Firestore só sobem em produção com confirmação.

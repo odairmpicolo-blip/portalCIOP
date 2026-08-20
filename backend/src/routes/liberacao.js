@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { query } from "../db.js";
+import { registrarAudit } from "../lib/audit.js";
 import { asyncHandler, HttpError } from "../lib/http.js";
 import { exigirDataIso, exigirObjeto, intervaloDatas } from "../lib/validar.js";
 import { requireApiKey, requireFirebaseUser } from "../middleware/auth.js";
@@ -20,7 +21,13 @@ function sanitizarPayload(row, dataIso) {
   return payload;
 }
 
-async function upsertLinha(dataIso, rowId, payload, origem) {
+async function upsertLinha(dataIso, rowId, payload, origem, { auditar = true } = {}) {
+  const atual = auditar
+    ? await query(
+      `SELECT payload FROM liberacao_linhas WHERE data_iso = $1::date AND row_id = $2`,
+      [dataIso, rowId]
+    )
+    : { rows: [] };
   await query(
     `INSERT INTO liberacao_linhas (data_iso, row_id, payload, atualizado_por, atualizado_em)
      VALUES ($1::date, $2, $3::jsonb, $4, NOW())
@@ -30,6 +37,15 @@ async function upsertLinha(dataIso, rowId, payload, origem) {
        atualizado_em = NOW()`,
     [dataIso, rowId, JSON.stringify(payload), origem]
   );
+  if (!auditar) return;
+  await registrarAudit({
+    uid: origem || null,
+    tabela: "liberacao_linhas",
+    chave: `${dataIso}|${rowId}`,
+    acao: atual.rows.length ? "update" : "insert",
+    antes: atual.rows[0]?.payload || null,
+    depois: payload
+  });
 }
 
 export async function importarPlanilhaParaDsql(dataDe, dataAte, origem) {
@@ -40,7 +56,7 @@ export async function importarPlanilhaParaDsql(dataDe, dataAte, origem) {
     for (const row of linhas) {
       const rowId = String(row?._row || "").trim();
       if (!rowId) continue;
-      await upsertLinha(dia, rowId, sanitizarPayload(row, dia), origem);
+      await upsertLinha(dia, rowId, sanitizarPayload(row, dia), origem, { auditar: false });
       total += 1;
     }
   }
@@ -83,17 +99,29 @@ router.post("/import-planilha", requireFirebaseUser, asyncHandler(async (req, re
     req.query.de || req.body?.de || data,
     req.query.ate || req.body?.ate || data
   );
-  const total = await importarPlanilhaParaDsql(
-    dataDe,
-    dataAte,
-    req.user?.email || "import-planilha"
-  );
+  const origem = req.user?.email || "import-planilha";
+  const total = await importarPlanilhaParaDsql(dataDe, dataAte, origem);
+  await registrarAudit({
+    uid: origem,
+    tabela: "liberacao_linhas",
+    chave: `${dataDe}..${dataAte}`,
+    acao: "import",
+    depois: { total, data_de: dataDe, data_ate: dataAte }
+  });
   res.json({ ok: true, total, data_de: dataDe, data_ate: dataAte });
 }));
 
 router.post("/sync-dia/:dataIso", requireFirebaseUser, asyncHandler(async (req, res) => {
   const dataIso = exigirDataIso(req.params.dataIso);
-  const total = await importarPlanilhaParaDsql(dataIso, dataIso, req.user?.email || "sync-dia");
+  const origem = req.user?.email || "sync-dia";
+  const total = await importarPlanilhaParaDsql(dataIso, dataIso, origem);
+  await registrarAudit({
+    uid: origem,
+    tabela: "liberacao_linhas",
+    chave: dataIso,
+    acao: "import",
+    depois: { total, data: dataIso }
+  });
   const result = await query(
     `SELECT payload FROM liberacao_linhas
      WHERE data_iso = $1::date ORDER BY row_id`,
@@ -110,6 +138,13 @@ router.post("/sync-dia/:dataIso", requireFirebaseUser, asyncHandler(async (req, 
 router.post("/internal/sync-hoje", requireApiKey, asyncHandler(async (_req, res) => {
   const hoje = new Date().toISOString().slice(0, 10);
   const total = await importarPlanilhaParaDsql(hoje, hoje, "lambda-sync");
+  await registrarAudit({
+    uid: "lambda-sync",
+    tabela: "liberacao_linhas",
+    chave: hoje,
+    acao: "import",
+    depois: { total, data: hoje }
+  });
   res.json({ ok: true, total, data: hoje });
 }));
 
