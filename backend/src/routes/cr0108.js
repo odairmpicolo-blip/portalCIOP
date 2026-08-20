@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { query } from "../db.js";
+import { DATA_ISO as ISO } from "../lib/validar.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
 
 /**
@@ -43,8 +44,6 @@ const AGG = `
   count(*) FILTER (WHERE m >= 16 OR m <= -11)           AS divergente,
   coalesce(sum(m), 0)                                   AS "somaDif",
   count(*) FILTER (WHERE m IS NULL)                     AS "semDif"`;
-
-const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
 /** 0=domingo … 6=sábado (calendário da data_ref, sem fuso). */
 function condTipoDia(req) {

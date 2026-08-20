@@ -3,6 +3,7 @@ import path from "node:path";
 import admin from "firebase-admin";
 import { verificarIdTokenFirebase } from "./firebase-token.js";
 import { config } from "../config.js";
+import { jsonErro } from "../lib/http.js";
 
 let firebaseReady = false;
 
@@ -73,7 +74,7 @@ async function verifyFirebaseToken(token) {
 export function requireApiKey(req, res, next) {
   const key = req.get("X-Portal-Api-Key") || "";
   if (!config.apiKey || key !== config.apiKey) {
-    res.status(401).json({ ok: false, erro: "API key inválida" });
+    jsonErro(res, 401, "API key inválida", "API_KEY");
     return;
   }
   next();
@@ -91,7 +92,7 @@ export async function requireFirebaseUser(req, res, next) {
   }
 
   if (!token) {
-    res.status(401).json({ ok: false, erro: "Token ausente" });
+    jsonErro(res, 401, "Token ausente", "TOKEN_AUSENTE");
     return;
   }
 
@@ -102,6 +103,6 @@ export async function requireFirebaseUser(req, res, next) {
     const msg = String(err?.message || "");
     const erro = /expired|expir/i.test(msg) ? "Token expirado" : "Token inválido";
     console.warn("auth:", erro, msg.slice(0, 160));
-    res.status(401).json({ ok: false, erro });
+    jsonErro(res, 401, erro, erro === "Token expirado" ? "TOKEN_EXPIRADO" : "TOKEN_INVALIDO");
   }
 }

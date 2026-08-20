@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import { config } from "./config.js";
 import { query, isDsqlMode } from "./db.js";
+import { errorHandler } from "./lib/http.js";
+import { requestLog } from "./middleware/request-log.js";
 import liberacaoRouter from "./routes/liberacao.js";
 import terminaisRouter from "./routes/terminais.js";
 import snapshotsRouter from "./routes/snapshots.js";
@@ -12,6 +14,7 @@ import cr0108Router from "./routes/cr0108.js";
 
 const app = express();
 app.use(express.json({ limit: "20mb" }));
+app.use(requestLog);
 
 // Em producao (Lambda) ou com NODE_ENV=production, se CORS_ORIGINS nao estiver
 // configurada, bloqueamos por padrao (fail-closed) em vez de liberar geral.
@@ -88,8 +91,10 @@ app.use("/performance", performanceRouter);
 app.use("/cr0108", cr0108Router);
 
 app.use((_req, res) => {
-    res.status(404).json({ ok: false, erro: "Rota não encontrada" });
+    res.status(404).json({ ok: false, erro: "Rota não encontrada", codigo: "NAO_ENCONTRADA" });
 });
+
+app.use(errorHandler);
 
 export { app };
 

@@ -21,7 +21,7 @@ Não há Firebase Hosting. Apps Script (`.gs`) precisa reimplante manual no Goog
 |---|---|
 | Portal clássico | `index.html`, `login.html`, `pages/`, `assets/` |
 | Portal React / app | `portal-app/` → build em `app/` no workflow Pages |
-| API Node | `backend/` (Express); Lambda `aws/portal-api` |
+| API Node | `backend/` (Express); Lambda `aws/portal-api` — ver `docs/fase-3-backend.md` |
 | Syncs AWS | `aws/incidentes-sync`, `aws/liberacao-sync`, `aws/bus2-proxy` |
 | Scripts / jobs | `scripts/`, `.github/workflows/` |
 | Regras Firestore | `firestore.rules` → `firebase deploy --only firestore:rules --project portal-ciop` |

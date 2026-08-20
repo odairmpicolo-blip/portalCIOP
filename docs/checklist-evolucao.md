@@ -26,11 +26,15 @@ Detalhes: `docs/fase-2-infra.md`
 
 ## Fase 3 — Back-end
 
-- [ ] Arquitetura de API central (já existe `backend/` + Lambda; evoluir, não trocar por Laravel sem decisão)
-- [ ] Separar regras de negócio do HTML
-- [ ] Padronizar erros da API
-- [ ] Validar entradas no servidor
-- [ ] Logs centralizados
+Detalhes: `docs/fase-3-backend.md`
+
+- [x] Arquitetura de API central (Express `backend/` + Lambda `portal-ciop-api`; sem Laravel)
+- [x] Regras de negócio já no servidor (`backend/src/lib/` + rotas); HTML só consome
+- [x] Erros padronizados (`ok`, `erro`, `codigo` + handler global)
+- [x] Validar datas ISO no servidor (liberação, telemetria, relatórios)
+- [x] Logs JSON por request (CloudWatch / terminal)
+
+Pendências menores da fase: validar upload de relatórios/CR-0108 com o mesmo helper.
 
 ## Fase 4 — Banco
 
@@ -53,4 +57,4 @@ Detalhes: `docs/fase-2-infra.md`
 
 Interface, dashboard, incidentes, relatórios, integrações, tempo real, automações, performance, auditoria, testes, publicação, PWA, IA, manutenção — ainda não iniciadas.
 
-Próximo: **Fase 3 — back-end** (API `backend/` + Lambda), ou **Fase 5 — login** se a operação pedir segurança antes.
+Próximo: **Fase 4 — banco (DSQL)** — tabelas, índices, backup/restore, auditoria.

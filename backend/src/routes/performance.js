@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { config } from "../config.js";
+import { asyncHandler, HttpError } from "../lib/http.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
 
 const router = Router();
@@ -20,11 +21,10 @@ function getClient() {
  * (a API OTP fica num IP privado, inalcançável daqui) e depositado no S3. Esta rota
  * só lê e devolve — nunca busca na origem.
  */
-router.get("/", requireFirebaseUser, async (_req, res) => {
+router.get("/", requireFirebaseUser, asyncHandler(async (_req, res) => {
   const bucket = String(config.performanceS3Bucket || "").trim();
   if (!bucket) {
-    res.status(503).json({ ok: false, erro: "PERFORMANCE_S3_BUCKET não configurado" });
-    return;
+    throw new HttpError(503, "PERFORMANCE_S3_BUCKET não configurado", "NAO_CONFIGURADO");
   }
 
   try {
@@ -33,8 +33,7 @@ router.get("/", requireFirebaseUser, async (_req, res) => {
     );
     const texto = await out.Body?.transformToString();
     if (!texto) {
-      res.status(404).json({ ok: false, erro: "performance.json vazio" });
-      return;
+      throw new HttpError(404, "performance.json vazio", "NAO_ENCONTRADA");
     }
 
     // O agente pode estar parado; devolver a idade deixa o cliente decidir se ainda
@@ -56,12 +55,12 @@ router.get("/", requireFirebaseUser, async (_req, res) => {
       origem: "aws"
     });
   } catch (err) {
+    if (err instanceof HttpError) throw err;
     if (err?.name === "NoSuchKey" || err?.$metadata?.httpStatusCode === 404) {
-      res.status(404).json({ ok: false, erro: "performance.json ainda não publicado" });
-      return;
+      throw new HttpError(404, "performance.json ainda não publicado", "NAO_ENCONTRADA");
     }
-    res.status(500).json({ ok: false, erro: err.message });
+    throw err;
   }
-});
+}));
 
 export default router;

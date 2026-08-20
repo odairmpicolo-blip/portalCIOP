@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { query } from "../db.js";
+import { asyncHandler, HttpError } from "../lib/http.js";
+import { exigirDataIso, exigirObjeto, intervaloDatas } from "../lib/validar.js";
 import { requireApiKey, requireFirebaseUser } from "../middleware/auth.js";
 import {
   buscarLiberacaoPlanilhaDia,
@@ -45,112 +47,70 @@ export async function importarPlanilhaParaDsql(dataDe, dataAte, origem) {
   return total;
 }
 
-router.get("/", requireFirebaseUser, async (req, res) => {
-  const dataDe = String(req.query.de || "").slice(0, 10);
-  const dataAte = String(req.query.ate || "").slice(0, 10);
-  if (!dataDe || !dataAte || dataAte < dataDe) {
-    res.status(400).json({ ok: false, erro: "Parâmetros de e ate obrigatórios (YYYY-MM-DD)" });
-    return;
-  }
-  try {
-    const result = await query(
-      `SELECT payload FROM liberacao_linhas
-       WHERE data_iso >= $1::date AND data_iso <= $2::date
-       ORDER BY data_iso, row_id`,
-      [dataDe, dataAte]
-    );
-    const dados = result.rows.map((r) => r.payload);
-    res.json({ ok: true, dados, total: dados.length, origem: "aws" });
-  } catch (err) {
-    res.status(500).json({ ok: false, erro: err.message });
-  }
-});
+router.get("/", requireFirebaseUser, asyncHandler(async (req, res) => {
+  const { de: dataDe, ate: dataAte } = intervaloDatas(req.query.de, req.query.ate);
+  const result = await query(
+    `SELECT payload FROM liberacao_linhas
+     WHERE data_iso >= $1::date AND data_iso <= $2::date
+     ORDER BY data_iso, row_id`,
+    [dataDe, dataAte]
+  );
+  const dados = result.rows.map((r) => r.payload);
+  res.json({ ok: true, dados, total: dados.length, origem: "aws" });
+}));
 
-router.put("/:dataIso/:rowId", requireFirebaseUser, async (req, res) => {
-  const dataIso = String(req.params.dataIso || "").slice(0, 10);
+router.put("/:dataIso/:rowId", requireFirebaseUser, asyncHandler(async (req, res) => {
+  const dataIso = exigirDataIso(req.params.dataIso);
   const rowId = String(req.params.rowId || "").trim();
-  const payload = req.body;
-  if (!dataIso || !rowId || !payload || typeof payload !== "object") {
-    res.status(400).json({ ok: false, erro: "Payload inválido" });
-    return;
-  }
-  try {
-    const clean = sanitizarPayload(payload, dataIso);
-    clean._row = rowId;
-    clean.origem = "portal";
-    await upsertLinha(dataIso, rowId, clean, req.user?.email || null);
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ ok: false, erro: err.message });
-  }
-});
+  const payload = exigirObjeto(req.body);
+  if (!rowId) throw new HttpError(400, "Payload inválido", "PAYLOAD_INVALIDO");
+  const clean = sanitizarPayload(payload, dataIso);
+  clean._row = rowId;
+  clean.origem = "portal";
+  await upsertLinha(dataIso, rowId, clean, req.user?.email || null);
+  res.json({ ok: true });
+}));
 
-router.post("/planilha-linha", requireFirebaseUser, async (req, res) => {
-  const payload = req.body;
-  if (!payload || typeof payload !== "object") {
-    res.status(400).json({ ok: false, erro: "Payload inválido" });
-    return;
-  }
-  try {
-    const planilha = await enviarLinhaPlanilha(payload);
-    res.json({ ok: true, planilha });
-  } catch (err) {
-    res.status(500).json({ ok: false, erro: err.message });
-  }
-});
+router.post("/planilha-linha", requireFirebaseUser, asyncHandler(async (req, res) => {
+  const payload = exigirObjeto(req.body);
+  const planilha = await enviarLinhaPlanilha(payload);
+  res.json({ ok: true, planilha });
+}));
 
-router.post("/import-planilha", requireFirebaseUser, async (req, res) => {
-  const data = String(req.query.data || req.body?.data || "").slice(0, 10);
-  const dataDe = String(req.query.de || req.body?.de || data).slice(0, 10);
-  const dataAte = String(req.query.ate || req.body?.ate || data).slice(0, 10);
-  if (!dataDe || !dataAte || dataAte < dataDe) {
-    res.status(400).json({ ok: false, erro: "Informe data ou de/ate (YYYY-MM-DD)" });
-    return;
-  }
-  try {
-    const total = await importarPlanilhaParaDsql(
-      dataDe,
-      dataAte,
-      req.user?.email || "import-planilha"
-    );
-    res.json({ ok: true, total, data_de: dataDe, data_ate: dataAte });
-  } catch (err) {
-    res.status(500).json({ ok: false, erro: err.message });
-  }
-});
+router.post("/import-planilha", requireFirebaseUser, asyncHandler(async (req, res) => {
+  const data = req.query.data || req.body?.data || "";
+  const { de: dataDe, ate: dataAte } = intervaloDatas(
+    req.query.de || req.body?.de || data,
+    req.query.ate || req.body?.ate || data
+  );
+  const total = await importarPlanilhaParaDsql(
+    dataDe,
+    dataAte,
+    req.user?.email || "import-planilha"
+  );
+  res.json({ ok: true, total, data_de: dataDe, data_ate: dataAte });
+}));
 
-router.post("/sync-dia/:dataIso", requireFirebaseUser, async (req, res) => {
-  const dataIso = String(req.params.dataIso || "").slice(0, 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dataIso)) {
-    res.status(400).json({ ok: false, erro: "Data inválida" });
-    return;
-  }
-  try {
-    const total = await importarPlanilhaParaDsql(dataIso, dataIso, req.user?.email || "sync-dia");
-    const result = await query(
-      `SELECT payload FROM liberacao_linhas
-       WHERE data_iso = $1::date ORDER BY row_id`,
-      [dataIso]
-    );
-    res.json({
-      ok: true,
-      total,
-      dados: result.rows.map((r) => r.payload)
-    });
-  } catch (err) {
-    res.status(500).json({ ok: false, erro: err.message });
-  }
-});
+router.post("/sync-dia/:dataIso", requireFirebaseUser, asyncHandler(async (req, res) => {
+  const dataIso = exigirDataIso(req.params.dataIso);
+  const total = await importarPlanilhaParaDsql(dataIso, dataIso, req.user?.email || "sync-dia");
+  const result = await query(
+    `SELECT payload FROM liberacao_linhas
+     WHERE data_iso = $1::date ORDER BY row_id`,
+    [dataIso]
+  );
+  res.json({
+    ok: true,
+    total,
+    dados: result.rows.map((r) => r.payload)
+  });
+}));
 
 /** Sync planilha → DSQL (cron/Lambda via API key). */
-router.post("/internal/sync-hoje", requireApiKey, async (_req, res) => {
+router.post("/internal/sync-hoje", requireApiKey, asyncHandler(async (_req, res) => {
   const hoje = new Date().toISOString().slice(0, 10);
-  try {
-    const total = await importarPlanilhaParaDsql(hoje, hoje, "lambda-sync");
-    res.json({ ok: true, total, data: hoje });
-  } catch (err) {
-    res.status(500).json({ ok: false, erro: err.message });
-  }
-});
+  const total = await importarPlanilhaParaDsql(hoje, hoje, "lambda-sync");
+  res.json({ ok: true, total, data: hoje });
+}));
 
 export default router;
