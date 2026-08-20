@@ -38,7 +38,7 @@ Não há Firebase Hosting. Apps Script (`.gs`) precisa reimplante manual no Goog
 | Bus2 / Mobilibus | Ônibus agora, horários | Lambda `bus2-proxy` |
 | Noxxon | Comparação de KM | Páginas `km-dashboard`, `comparacao-km` (dados na página/planilha) |
 | GPS Reports | Comparação de KM | Idem |
-| MTRAN | Checklist — ainda não mapeado como API no código | Pendente Fase 10 |
+| MTRAN | Não usado no portal | Sem API no código (Fase 10) |
 | Google Sheets / Apps Script | Folha, pontualidade, ICV, liberação, autuações, telemetria | URLs em secrets GitHub / `.env` |
 | Firebase Auth + Firestore | Login e perfis | Projeto `portal-ciop` |
 

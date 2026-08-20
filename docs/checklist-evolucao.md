@@ -101,8 +101,18 @@ Detalhes: `docs/fase-9-relatorios.md`
 - [x] CSV da comparação de KM
 - [x] Data inválida recusada no upload de PDF (API; implantar Lambda)
 
-Sem agendamento de PDF. Próximo: **Fase 10** — integrações.
+Sem agendamento de PDF. A data inválida no upload de PDF vale depois de implantar a Lambda.
 
-## Fases 10–19
+## Fase 10 — Integrações
 
-Integrações, tempo real, automações, performance, auditoria, testes, publicação, PWA, IA, manutenção — ainda não iniciadas.
+Detalhes: `docs/fase-10-integracoes.md`
+
+- [x] Sistemas externos mapeados (mapa + tela Integrações)
+- [x] Checagem da API DSQL na tela (Administrador)
+- [x] MTRAN: não existe no código — sem ligação inventada
+
+## Fases 11–19
+
+Tempo real, automações, performance, auditoria, testes, publicação, PWA, IA, manutenção — ainda não iniciadas.
+
+Próximo: **Fase 11** — tempo real.
