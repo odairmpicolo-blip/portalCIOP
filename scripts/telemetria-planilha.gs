@@ -9,7 +9,7 @@
  *    - Executar como: Eu
  *    - Quem tem acesso: Qualquer pessoa
  * 3. Copiar a URL do Web App (use no portal ou no script de importação)
- *    Deploy atual: https://script.google.com/macros/s/AKfycbzXrGVHJauMOgrHqLpjex2RodmQZoOIrA4lUeoDRnKrc0ZbCc6c7A4ET5B6H-ogsFYBNg/exec
+ *    Deploy atual: https://script.google.com/macros/s/AKfycbzLn1lEdRpdVicvt1oxDwXZ0U8L4sAnCgSfc5yZkisq4GgolUh43GM-SYDaAu4lV_LZww/exec
  *    → assets/data/portal-runtime.json → telemetriaScriptUrl
  *
  * OPCIONAL — atualizar JSON no GitHub automaticamente:
