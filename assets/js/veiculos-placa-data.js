@@ -1,5 +1,8 @@
 /** Placas por prefixo — extraido do Excel de Evidencias */
 window.CIOP_VEICULOS_PLACA = {
+  "1042": "ATR 8J28",
+  "1044": "ETQ 2G42",
+  "1052": "ARY 1611",
   "1150": "TAX 2F62",
   "1151": "TAX 2F50",
   "1152": "TAX 2F58",
