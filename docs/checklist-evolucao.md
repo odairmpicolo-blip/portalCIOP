@@ -182,8 +182,12 @@ Detalhes: `docs/fase-18-ia.md`
 - [x] Chave fora do git
 - [ ] Chatbot genérico / outro provedor — não inventado
 
-## Fase 19
+## Fase 19 — Manutenção
 
-Manutenção.
+Detalhes: `docs/fase-19-manutencao.md`
 
-Próximo: **Fase 19** — manutenção.
+- [x] Runbook do dia a dia (JSON, Pages, Lambda, login, IA, iOS)
+- [x] Fluxo de código (teste → live → `main`)
+- [x] Dívidas listadas, sem fatia nova de produto
+
+Checklist das 19 fases **encerrado**. O que sobra é operação contínua, não fase nova.

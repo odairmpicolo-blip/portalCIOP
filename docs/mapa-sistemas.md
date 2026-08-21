@@ -1,7 +1,7 @@
 # Mapa do Portal CIOP — ambientes e integrações
 
 Fonte de verdade da produção: GitHub `odairmpicolo-blip/portalCIOP` commit `342d41c` (main).  
-Publicação em produção: `docs/fase-16-publicacao.md` (`scripts/publicar-producao.sh`).
+Publicação em produção: `docs/fase-16-publicacao.md`. Manutenção: `docs/fase-19-manutencao.md`.
 
 ## Ambientes
 
