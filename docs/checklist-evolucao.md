@@ -165,8 +165,16 @@ Detalhes: `docs/fase-16-publicacao.md`
 - [x] Lambda / Firestore / Apps Script fora do Pages
 - [x] Sem force-push em `main`
 
-## Fases 17–19
+## Fase 17 — PWA
 
-PWA, IA, manutenção.
+Detalhes: `docs/fase-17-pwa.md`
 
-Próximo: **Fase 17** — PWA.
+- [x] Manifest + ícone na tela inicial (portal clássico)
+- [x] App Capacitor já documentado (`docs/mobile-app.md`)
+- [ ] Service Worker de cache / push — não inventado (dado ao vivo)
+
+## Fases 18–19
+
+IA, manutenção.
+
+Próximo: **Fase 18** — IA.

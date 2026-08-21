@@ -13,7 +13,7 @@ import {
 import { app, buscarUsuarioFirestore, normalizarCadastro } from "./portal-firestore.js";
 import { usuarios } from "./usuarios.js";
 import { aplicarSaudacaoHero } from "./portal-saudacao.js?v=20260704a";
-import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260820t14";
+import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260820t17";
 import "./portal-mfa.js?v=20260820mfa";
 import {
   iniciarHeartbeatPresenca,
@@ -381,6 +381,29 @@ function garantirTempoRealPoll() {
   document.head.appendChild(script);
 }
 
+function garantirPwa() {
+  const file = (window.location.pathname.split("/").pop() || "").split("?")[0];
+  if (/^painel-tv|^pontualidade-tempo-real\.html$/.test(file)) return;
+  if (!document.querySelector("link[rel=\"manifest\"]")) {
+    const man = document.createElement("link");
+    man.rel = "manifest";
+    man.href = portalPath("assets/pwa/manifest.webmanifest");
+    document.head.appendChild(man);
+  }
+  if (!document.querySelector("meta[name=\"theme-color\"]")) {
+    const meta = document.createElement("meta");
+    meta.name = "theme-color";
+    meta.content = "#06245c";
+    document.head.appendChild(meta);
+  }
+  if (!document.querySelector("link[rel=\"apple-touch-icon\"]")) {
+    const icon = document.createElement("link");
+    icon.rel = "apple-touch-icon";
+    icon.href = portalPath("assets/img/logomarca-portalciop-tcgl-claro.png?v=20260818logo6");
+    document.head.appendChild(icon);
+  }
+}
+
 function garantirNavRelatorios() {
   const file = (window.location.pathname.split("/").pop() || "").split("?")[0];
   if (!/^(relatorios|criar-relatorio|liberacao-relatorio|folha-servico-relatorio|relatorio-ocorrencia)\.html$/.test(file)) return;
@@ -402,6 +425,7 @@ garantirNavIncidentes();
 garantirNavRelatorios();
 garantirNavTempoReal();
 garantirTempoRealPoll();
+garantirPwa();
 
 function garantirRodapePortal() {
   if (document.querySelector("script[data-portal-footer]")) return;
