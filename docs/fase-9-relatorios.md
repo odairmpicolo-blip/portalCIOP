@@ -22,7 +22,7 @@ Agenda automática de PDF **não** existe (e não foi inventada): os JSON sobem 
 - Faixa **Catálogo · Criar · Liberação · Folha · Ocorrência**.
 - KM: botão **CSV** da tabela filtrada.
 - Criar relatório: faixa de erro em português.
-- API: data do upload de PDF recusa `2026-02-31` (`DATA_INVALIDA`). Vale depois de implantar a Lambda.
+- API: data do upload de PDF recusa `2026-02-31` (`DATA_INVALIDA`). CR-0108 usa o mesmo helper.
 
 ## Como conferir
 

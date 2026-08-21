@@ -31,10 +31,8 @@ Detalhes: `docs/fase-3-backend.md`
 - [x] Arquitetura de API central (Express `backend/` + Lambda `portal-ciop-api`; sem Laravel)
 - [x] Regras de negócio já no servidor (`backend/src/lib/` + rotas); HTML só consome
 - [x] Erros padronizados (`ok`, `erro`, `codigo` + handler global)
-- [x] Validar datas ISO no servidor (liberação, telemetria, relatórios)
+- [x] Validar datas ISO no servidor (liberação, telemetria, relatórios, CR-0108)
 - [x] Logs JSON por request (CloudWatch / terminal)
-
-Pendências menores da fase: validar upload de relatórios/CR-0108 com o mesmo helper.
 
 ## Fase 4 — Banco
 
@@ -99,9 +97,9 @@ Detalhes: `docs/fase-9-relatorios.md`
 - [x] Filtros e exportação CSV / Excel / PDF onde já existiam
 - [x] Histórico de ocorrência (lista AWS) + criar PDF
 - [x] CSV da comparação de KM
-- [x] Data inválida recusada no upload de PDF (API; implantar Lambda)
+- [x] Data inválida recusada no upload de PDF e no CR-0108 (API)
 
-Sem agendamento de PDF. A data inválida no upload de PDF vale depois de implantar a Lambda.
+Sem agendamento de PDF.
 
 ## Fase 10 — Integrações
 
@@ -153,8 +151,8 @@ Detalhes: `docs/fase-15-testes.md`
 
 - [x] `npm test` (API + resumo de km)
 - [x] Deploy da Lambda bloqueado se o teste falhar
+- [x] YAML de CI em `docs/github-workflows/testes.yml` e `.github/workflows/testes.yml` no teste
 - [ ] E2E no navegador — não inventado
-- [x] YAML de CI em `docs/github-workflows/testes.yml`
 
 ## Fase 16 — Publicação
 

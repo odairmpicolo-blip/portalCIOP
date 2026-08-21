@@ -24,6 +24,11 @@ test("dataIsoOuVazio permite omitir o filtro", () => {
   assert.throws(() => dataIsoOuVazio("ontem"), HttpError);
 });
 
+test("intervalo opcional recusa 31/02 e aceita filtro vazio", () => {
+  assert.deepEqual(intervaloDatas("", "", { obrigatorio: false }), { de: "", ate: "" });
+  assert.throws(() => intervaloDatas("2026-02-31", "2026-08-01", { obrigatorio: false }), HttpError);
+});
+
 test("exigirObjeto recusa array e null", () => {
   assert.deepEqual(exigirObjeto({ a: 1 }), { a: 1 });
   assert.throws(() => exigirObjeto(null), HttpError);

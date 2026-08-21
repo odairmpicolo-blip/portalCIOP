@@ -365,7 +365,7 @@ function garantirNavTempoReal() {
   if (!/^(onibus-agora|onibus-horarios|fleetbus-agora|terminais-agora)\.html$/.test(file)) return;
   if (document.querySelector("script[data-portal-live-nav]")) return;
   const script = document.createElement("script");
-  script.src = portalPath("assets/js/tempo-real-nav.js?v=20260820t11");
+  script.src = portalPath("assets/js/tempo-real-nav.js?v=20260820t20");
   script.defer = true;
   script.dataset.portalLiveNav = "1";
   document.head.appendChild(script);
@@ -376,7 +376,7 @@ function garantirTempoRealPoll() {
   if (!/^(onibus-agora|onibus-agora-clever|onibus-horarios|fleetbus-agora|terminais-agora)\.html$/.test(file)) return;
   if (document.querySelector("script[data-portal-live-poll]")) return;
   const script = document.createElement("script");
-  script.src = portalPath("assets/js/portal-tempo-real.js?v=20260820t11");
+  script.src = portalPath("assets/js/portal-tempo-real.js?v=20260820t20");
   script.dataset.portalLivePoll = "1";
   document.head.appendChild(script);
 }

@@ -21,7 +21,7 @@ Não é produto novo. É o que olhar quando o portal “parou” ou o JSON envel
 2. `npm test` se mexer na API.
 3. `bash scripts/publicar-producao.sh <commit> --push`
 4. **Não** commitar dumps de `assets/data/**` (folha, liberação, telemetria). Exceção: `decreto_context.txt`.
-5. **Não** force-push em `main`. Clone de produção: `/tmp/portalciop-live`, nunca `~/portalCIOP`.
+- Fastly: após mudar `auth.js`, subir `?v=` em **todas** as telas (senão a home pega PWA e o resto fica no JS velho).
 
 ## Dívidas que ficam (não são fase nova)
 

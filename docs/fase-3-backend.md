@@ -34,4 +34,4 @@ cd backend && npm test
 
 Deploy da Lambda (produção): workflow **Implantar API do portal** — só depois de confirmar publicação e o teste passar.
 
-Pendências da fase (próximas fatiadas): validar body do CR-0108/relatórios upload; não extrair JS das páginas HTML nesta fase.
+Pendências da fase: nenhuma nesta fatia. Upload de PDF já valida data no `relatorios.js`; CR-0108 usa o mesmo `intervaloDatas` (recusa `2026-02-31`).

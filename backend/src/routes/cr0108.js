@@ -1,8 +1,7 @@
 import { Router } from "express";
 import { query } from "../db.js";
-import { DATA_ISO as ISO } from "../lib/validar.js";
 import { intervaloDatas } from "../lib/validar.js";
-import { asyncHandler } from "../lib/http.js";
+import { HttpError, asyncHandler } from "../lib/http.js";
 import { ipvAjustadoDia, ipvAjustadoPeriodo, chaveLinha, numeroCampo, pontosOficiaisDaLinha, pontosRecuperadosDoIncidente, agregarExtras } from "../lib/ipv-ajustado.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
 
@@ -69,9 +68,8 @@ const iso = (d) => d.toISOString().slice(0, 10);
 
 /** Quebra [de, ate] em pedaços de no máximo FAIXA_DIAS. Um só pedaço = período curto. */
 function faixas(req) {
-  const de = String(req.query.de || "");
-  const ate = String(req.query.ate || "");
-  if (!ISO.test(de) || !ISO.test(ate)) return [{}];           // sem recorte: uma consulta só
+  const { de, ate } = intervaloDatas(req.query.de, req.query.ate, { obrigatorio: false });
+  if (!de || !ate) return [{}];           // sem recorte: uma consulta só
   const fim = dia(ate);
   const pedacos = [];
   let ini = dia(de);
@@ -125,10 +123,7 @@ function base(req, colunas = []) {
   const par = [];
   const add = (sql, valor) => { par.push(valor); cond.push(sql.replace("?", `$${par.length}`)); };
 
-  const de = String(req.query.de || "");
-  const ate = String(req.query.ate || "");
-  if (ISO.test(de)) add("data_ref >= ?::date", de);
-  if (ISO.test(ate)) add("data_ref <= ?::date", ate);
+  pushDatas(req, add);
   if (req.query.linha) add("linha = ?", String(req.query.linha));
   if (req.query.sentido) add("direcao = ?", String(req.query.sentido));
   if (req.query.garagem) add("garagem = ?", String(req.query.garagem));
@@ -185,10 +180,7 @@ function filtroAgregado(req, comLinha) {
   const par = [];
   const add = (sql, valor) => { par.push(valor); cond.push(sql.replace("?", `$${par.length}`)); };
 
-  const de = String(req.query.de || "");
-  const ate = String(req.query.ate || "");
-  if (ISO.test(de)) add("data_ref >= ?::date", de);
-  if (ISO.test(ate)) add("data_ref <= ?::date", ate);
+  pushDatas(req, add);
   if (comLinha && req.query.linha) add("linha = ?", String(req.query.linha));
   if (comLinha && req.query.sentido) add("direcao = ?", String(req.query.sentido));
   const tipoDia = condTipoDia(req);
@@ -197,7 +189,17 @@ function filtroAgregado(req, comLinha) {
   return { where: cond.length ? `WHERE ${cond.join(" AND ")}` : "", par };
 }
 
+function pushDatas(req, add) {
+  const { de, ate } = intervaloDatas(req.query.de, req.query.ate, { obrigatorio: false });
+  if (de) add("data_ref >= ?::date", de);
+  if (ate) add("data_ref <= ?::date", ate);
+}
+
 function erro(res, err) {
+  if (err instanceof HttpError) {
+    res.status(err.status).json({ ok: false, erro: err.message, codigo: err.codigo });
+    return;
+  }
   console.error("cr0108:", err);
   res.status(500).json({ ok: false, erro: err.message });
 }
@@ -403,10 +405,8 @@ router.get("/icv", requireFirebaseUser, async (req, res) => {
   try {
     const cond = [];
     const par = [];
-    for (const [campo, sql] of [["de", "data_ref >= ?::date"], ["ate", "data_ref <= ?::date"]]) {
-      const v = String(req.query[campo] || "");
-      if (ISO.test(v)) { par.push(v); cond.push(sql.replace("?", `$${par.length}`)); }
-    }
+    const add = (sql, valor) => { par.push(valor); cond.push(sql.replace("?", `$${par.length}`)); };
+    pushDatas(req, add);
     const tipoDia = condTipoDia(req);
     if (tipoDia) cond.push(tipoDia);
     const r = await query(
@@ -455,10 +455,8 @@ router.get("/ipv", requireFirebaseUser, async (req, res) => {
   try {
     const cond = [];
     const par = [];
-    for (const [campo, sql] of [["de", "data_ref >= ?::date"], ["ate", "data_ref <= ?::date"]]) {
-      const v = String(req.query[campo] || "");
-      if (ISO.test(v)) { par.push(v); cond.push(sql.replace("?", `$${par.length}`)); }
-    }
+    const add = (sql, valor) => { par.push(valor); cond.push(sql.replace("?", `$${par.length}`)); };
+    pushDatas(req, add);
     const tipoDia = condTipoDia(req);
     if (tipoDia) cond.push(tipoDia);
     const r = await query(
@@ -661,18 +659,17 @@ router.get("/ipv-ajustado", requireFirebaseUser, asyncHandler(async (req, res) =
    o histórico inteiro estoura o gateway. A página pinta o JSON e só pede isto
    quando o recorte cabe. */
 router.get("/histograma", requireFirebaseUser, async (req, res) => {
-  const de = String(req.query.de || "");
-  const ate = String(req.query.ate || "");
-  if (!ISO.test(de) || !ISO.test(ate)) {
-    res.json({ ok: true, periodoLongo: true, itens: [] });
-    return;
-  }
-  const nDias = (dia(ate) - dia(de)) / 86400000 + 1;
-  if (nDias > 90) {
-    res.json({ ok: true, periodoLongo: true, itens: [] });
-    return;
-  }
   try {
+    const { de, ate } = intervaloDatas(req.query.de, req.query.ate, { obrigatorio: false });
+    if (!de || !ate) {
+      res.json({ ok: true, periodoLongo: true, itens: [] });
+      return;
+    }
+    const nDias = (dia(ate) - dia(de)) / 86400000 + 1;
+    if (nDias > 90) {
+      res.json({ ok: true, periodoLongo: true, itens: [] });
+      return;
+    }
     const itens = await consultar(
       req,
       ["linha", "direcao", "ponto_de_controle", "btrim(programado) AS programado"],
