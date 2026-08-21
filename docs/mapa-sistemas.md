@@ -39,7 +39,8 @@ Não há Firebase Hosting. Apps Script (`.gs`) precisa reimplante manual no Goog
 | Noxxon | Comparação de KM | Páginas `km-dashboard`, `comparacao-km` (dados na página/planilha) |
 | GPS Reports | Comparação de KM | Idem |
 | MTRAN | Não usado no portal | Sem API no código (Fase 10) |
-| Google Sheets / Apps Script | Folha, pontualidade, ICV, liberação, autuações, telemetria | URLs em secrets GitHub / `.env` |
+| Google Sheets / Apps Script | Folha, pontualidade, ICV, liberação, autuações, telemetria, **IA** | URLs em secrets GitHub / `.env` |
+| Gemini | Relatório de ocorrência e consulta do decreto | Apps Script; chave só no Google |
 | Firebase Auth + Firestore | Login e perfis | Projeto `portal-ciop` |
 
 ## Segredos (não versionar)

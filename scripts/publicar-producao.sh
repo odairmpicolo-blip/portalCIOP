@@ -26,6 +26,8 @@ skip_arquivo() {
   case "$1" in
     .github/workflows/*|.cursor/*|*.secrets*|backend/.env|**/node_modules/*|app/assets/*.map)
       return 0 ;;
+    assets/data/decreto_context.txt)
+      return 1 ;;
     assets/data/*)
       return 0 ;;
   esac

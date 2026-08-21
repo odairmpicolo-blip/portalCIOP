@@ -39,7 +39,7 @@ a.ext{font-weight:700;color:#0b3a8a}
 </header>
 <main class="container">
   <a class="btn-portal" href="../index.html" style="display:inline-flex;margin-bottom:14px;background:#06245c;color:#fff;text-decoration:none;padding:8px 14px;border-radius:10px;font-weight:800">Portal</a>
-  <p class="intro">Mapa das ligações externas. Segredos não aparecem aqui. MTRAN não tem API neste repositório. Agenda dos jobs: <a class="ext" href="automacoes.html">Automações</a>.</p>
+  <p class="intro">Mapa das ligações externas. Segredos não aparecem aqui. MTRAN não tem API neste repositório. Agenda: <a class="ext" href="automacoes.html">Automações</a>. IA: <code>docs/fase-18-ia.md</code>.</p>
   <p id="statusApi" class="intro">Conferindo a API…</p>
   <table>
     <thead><tr><th>Sistema</th><th>Uso</th><th>Como entra</th><th>Tela</th></tr></thead>
@@ -53,6 +53,8 @@ a.ext{font-weight:700;color:#0b3a8a}
       <tr><td>Noxxon / GPS Reports</td><td>Comparação de KM</td><td>Dados na página / planilha</td><td><a class="ext" href="km-dashboard.html">KM</a></td></tr>
       <tr><td>Google Sheets</td><td>Folha, IPV, ICV, liberação, telemetria</td><td>Apps Script (URL nos secrets)</td><td>várias</td></tr>
       <tr><td>Hitachi / e-mail CSV</td><td>Telemetria</td><td>Gmail + Apps Script</td><td><a class="ext" href="dados-telemetria.html">Telemetria</a></td></tr>
+      <tr><td>Gemini (relatório)</td><td>Redigir / corrigir ocorrência</td><td>Apps Script + secret <code>RELATORIO_IA_SCRIPT_URL</code> (sem chave no git)</td><td><a class="ext" href="criar-relatorio.html">Criar relatório</a></td></tr>
+      <tr><td>Gemini (decreto)</td><td>Perguntas sobre os decretos</td><td>Apps Script + <code>decreto_context.txt</code></td><td><a class="ext" href="consulta-decreto.html">Consulta do Decreto</a></td></tr>
       <tr><td>MTRAN</td><td>—</td><td>Não há cliente nem URL no código</td><td>fora do portal</td></tr>
     </tbody>
   </table>
@@ -71,11 +73,18 @@ async function pingApi() {
     }
     const res = await fetch(base.replace(/\/$/, "") + "/db-health", { cache: "no-store" });
     const data = await res.json().catch(() => ({}));
+    let linha = "";
     if (res.ok && data.ok) {
-      el.innerHTML = 'API DSQL: <span class="ok">ok</span> · ' + (data.modo || "dsql");
+      linha = 'API DSQL: <span class="ok">ok</span> · ' + (data.modo || "dsql");
     } else {
-      el.innerHTML = 'API DSQL: <span class="fail">falhou</span> · HTTP ' + res.status;
+      linha = 'API DSQL: <span class="fail">falhou</span> · HTTP ' + res.status;
     }
+    const rt = await fetch("../assets/data/portal-runtime.json?t=" + Date.now(), { cache: "no-store" }).then((r) => r.json()).catch(() => ({}));
+    const ia = String(rt.relatorioIaScriptUrl || "").trim();
+    linha += ia
+      ? ' · Relatório IA: <span class="ok">URL no runtime</span>'
+      : ' · Relatório IA: <span class="skip">sem URL no runtime (secret Pages ou Apps Script)</span>';
+    el.innerHTML = linha;
   } catch (err) {
     el.innerHTML = 'API DSQL: <span class="fail">' + (window.portalMensagemErro?.(err) || err.message) + "</span>";
   }

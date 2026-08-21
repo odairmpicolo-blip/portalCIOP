@@ -173,8 +173,17 @@ Detalhes: `docs/fase-17-pwa.md`
 - [x] App Capacitor já documentado (`docs/mobile-app.md`)
 - [ ] Service Worker de cache / push — não inventado (dado ao vivo)
 
-## Fases 18–19
+## Fase 18 — IA
 
-IA, manutenção.
+Detalhes: `docs/fase-18-ia.md`
 
-Próximo: **Fase 18** — IA.
+- [x] Relatório de ocorrência (Gemini via Apps Script / proxy)
+- [x] Consulta do Decreto (Gemini + texto oficial)
+- [x] Chave fora do git
+- [ ] Chatbot genérico / outro provedor — não inventado
+
+## Fase 19
+
+Manutenção.
+
+Próximo: **Fase 19** — manutenção.
