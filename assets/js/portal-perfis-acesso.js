@@ -39,7 +39,7 @@ export const MODULOS_PORTAL = [
   { id: "canva", label: "Canva", grupo: "Operação" },
   { id: "cenario-atual", label: "Cenário Atual", grupo: "Operação" },
   { id: "pontos-controle", label: "Pontos de controle", grupo: "Operação" },
-  { id: "planilha", label: "Planilha", grupo: "Operação" },
+  { id: "planilha", label: "Planilha", grupo: "Relatórios" },
   { id: "gerenciar-patio", label: "Gerenciar Pátio", grupo: "Operação" },
   { id: "escala-saida-carros", label: "Saída de carros (escala)", grupo: "Operação" },
   { id: "relatorios", label: "Relatórios", grupo: "Operação" },
@@ -104,6 +104,17 @@ function estadoVazio() {
   return { acessos: defaultsAcessos(), usuarios: {} };
 }
 
+/** Lista salva antiga (~catálogo cheio) ganha módulos novos; lista enxuta não. */
+function completarListaModulos(lista) {
+  if (!Array.isArray(lista) || lista.includes("*")) return lista;
+  const todos = MODULOS_PORTAL.map((m) => m.id);
+  if (!todos.length) return lista;
+  const cobertos = todos.filter((id) => lista.includes(id)).length;
+  if (cobertos / todos.length < 0.8) return lista;
+  const extra = todos.filter((id) => !lista.includes(id));
+  return extra.length ? lista.concat(extra) : lista;
+}
+
 /** Garante chaves de perfil conhecidas + mapa de usuários válido. */
 export function normalizarEstado(raw) {
   const base = defaultsAcessos();
@@ -111,13 +122,13 @@ export function normalizarEstado(raw) {
   const acessos = { ...base };
   Object.keys(acessosIn).forEach((key) => {
     const lista = acessosIn[key];
-    if (Array.isArray(lista)) acessos[key] = lista;
+    if (Array.isArray(lista)) acessos[key] = completarListaModulos(lista);
   });
   const usuariosIn = raw?.usuarios && typeof raw.usuarios === "object" ? raw.usuarios : {};
   const usuarios = {};
   Object.keys(usuariosIn).forEach((email) => {
     const lista = usuariosIn[email];
-    if (Array.isArray(lista)) usuarios[normalizarEmailKey(email)] = lista;
+    if (Array.isArray(lista)) usuarios[normalizarEmailKey(email)] = completarListaModulos(lista);
   });
   return { acessos, usuarios };
 }
