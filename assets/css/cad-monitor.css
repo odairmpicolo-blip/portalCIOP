@@ -1,12 +1,15 @@
 html,body{height:100%;margin:0}
-body.cad-page{display:flex;flex-direction:column;color:#101828;font-family:var(--font,Inter,sans-serif);min-height:100vh}
+body.cad-page{display:flex;flex-direction:column;color:#101828;font-family:var(--font,Inter,sans-serif);height:100%;min-height:100vh;overflow:hidden}
+.body-bg-wall{position:fixed;inset:0;z-index:-3;background:#0b1f4d url('../assets/img/portal-bg-onibus.jpg?v=20260718j') center/cover no-repeat}
+body.cad-page .header{flex:0 0 auto}
+body.cad-page footer.portal-site-footer{display:none!important}
 .body-bg-wall{position:fixed;inset:0;z-index:-3;background:#0b1f4d url('../assets/img/portal-bg-onibus.jpg?v=20260718j') center/cover no-repeat}
 body.cad-page .header{flex:0 0 auto}
 .btn-prog{
   border:0;background:#06245c;color:#fff;border-radius:999px;padding:8px 16px;font-weight:800;cursor:pointer;margin-right:8px
 }
-.cad-app{flex:1;display:flex;flex-direction:column;min-height:0;padding:0 14px 14px}
-.cad-views{display:flex;gap:8px;align-items:center;padding:10px 4px 0;flex-wrap:wrap}
+.cad-app{flex:1;display:flex;flex-direction:column;min-height:0;padding:0 8px 8px}
+.cad-views{display:flex;gap:8px;align-items:center;padding:6px 4px 0;flex-wrap:wrap}
 .cad-views button{
   border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.72);padding:9px 16px;font-size:13px;font-weight:800;
   cursor:pointer;border-radius:12px;color:#06245c;backdrop-filter:blur(16px)
@@ -21,7 +24,58 @@ body.cad-page .header{flex:0 0 auto}
 .cad-pane.ativo{display:flex}
 #paneMapa{overflow:hidden}
 #paneMapa,#paneStatus{flex-direction:column}
-#cadMap{flex:1;min-height:280px;background:#dbe4ee}
+#cadMap{flex:1;min-height:0;height:100%;background:#dbe4ee}
+.map-body{flex:1;min-height:0;display:flex}
+.map-linhas{
+  width:240px;flex:0 0 240px;display:flex;flex-direction:column;min-height:0;
+  border-right:1px solid #e8eef6;background:rgba(255,255,255,.92);padding:10px
+}
+.map-linhas h2{margin:0 0 8px;font-size:14px;color:#06245c}
+.map-linhas input{width:100%;min-height:34px;border:1px solid #dfe5ef;border-radius:8px;padding:4px 8px;font-weight:700;box-sizing:border-box}
+.map-linhas-dica{margin:6px 0 8px;font-size:11px;font-weight:600;color:#667085}
+.map-linhas .lines{flex:1;min-height:0;overflow:auto;display:grid;gap:2px;align-content:start}
+.map-linhas #btnLimparLinha{
+  margin-top:8px;width:100%;border:1px solid #dfe5ef;background:#fff;border-radius:10px;padding:8px;font-weight:800;cursor:pointer;color:#06245c
+}
+.line-btn{width:100%;display:flex;align-items:center;gap:8px;border:1px solid transparent;background:transparent;border-radius:10px;padding:5px 6px;cursor:pointer;font:inherit;text-align:left;color:#101828}
+.line-btn:hover{background:#f1f5f9}
+.line-btn.active{background:#effcfb;border-color:rgba(45,180,191,.35)}
+.line-count{min-width:22px;font-size:11px;font-weight:800;color:#06245c;text-align:center}
+.line-count.zero{color:#94a3b8}
+.line-chip{width:36px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex:0 0 auto}
+.line-meta{min-width:0;flex:1}
+.line-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.line-route{font-size:10px;color:#667085;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.map-canvas-wrap{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
+.kpi-chip-performance{
+  display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 10px;border-radius:10px;
+  border:1px solid #bbf7d0;background:#f0fdf4;cursor:pointer;font-weight:800;color:#0b7a55
+}
+.kpi-chip-performance b{font-size:13px}
+.kpi-chip-performance span{font-size:11px}
+.veh-pin.ghost-pin-veh{cursor:default;opacity:.55;animation:ghostPulse 1.8s ease-in-out infinite}
+@keyframes ghostPulse{0%,100%{opacity:.4}50%{opacity:.75}}
+.leaflet-tooltip.ghost-tooltip{background:#06245c;color:#fff;border:0;font-weight:800;font-size:11px;padding:4px 8px;border-radius:8px}
+.leaflet-tooltip.ghost-tooltip::before{border-top-color:#06245c}
+.terminal-rotulo-wrap{pointer-events:none;background:none!important;border:0!important}
+.terminal-rotulo{display:inline-block;transform:translate(-50%,-120%);color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 6px rgba(15,23,42,.3)}
+.cad-pop-overlay{position:fixed;inset:0;z-index:8500;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:18px}
+.cad-pop-overlay[hidden]{display:none!important}
+.cad-pop-box{position:relative;max-width:min(620px,96vw);max-height:min(86vh,760px);overflow:auto;background:#fff;border-radius:16px;padding:14px 16px 16px;box-shadow:0 24px 60px rgba(15,23,42,.35)}
+.cad-pop-box.veiculo-popup{background:transparent;box-shadow:none;padding:0}
+.cad-pop-fechar{position:absolute;top:6px;right:8px;border:0;background:transparent;font-size:22px;cursor:pointer;color:#667085;z-index:2}
+.cad-pop-mapa{margin-top:8px;width:100%;border:0;background:#06245c;color:#fff;border-radius:10px;padding:9px;font-weight:800;cursor:pointer}
+.oa-modal-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}
+.oa-modal-head h3{margin:0;color:#06245c;font-size:18px}
+.oa-modal-head p{margin:4px 0 0;font-size:12px;font-weight:600;color:#667085}
+.oa-perf-numero{font-size:32px;font-weight:800;color:#06245c;letter-spacing:-.04em;margin:0 0 10px}
+.oa-perf-bars{display:flex;align-items:flex-end;justify-content:center;gap:14px;height:118px;border-bottom:1px solid #e8eef6;padding-bottom:2px}
+.oa-perf-bar-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;width:48px}
+.oa-perf-bar{width:100%;border-radius:3px 3px 0 0;min-height:3px}
+.oa-perf-bar-val{font-size:10px;font-weight:800;padding:1px 3px;border-radius:4px;margin-bottom:2px}
+.oa-perf-bar-lab{font-size:10px;color:#667085;margin-top:5px;text-align:center}
+.oa-perf-card h4{margin:0 0 6px;color:#06245c}
+.oa-perf-card-sub{margin:0 0 8px;font-size:12px;color:#667085;font-weight:600}
 .map-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 10px;background:rgba(255,255,255,.92);border-bottom:1px solid #e8eef6;z-index:500}
 .cad-map-ctrl{display:flex}
 .cad-map-ctrl button{border:1px solid #c5d0de;background:#fff;padding:6px 12px;font-weight:800;font-size:12px;cursor:pointer;color:#06245c}
@@ -122,13 +176,20 @@ body.cad-page .header{flex:0 0 auto}
 .mn-chip{display:inline-block;margin-left:6px;font-size:10px;font-weight:800;color:#06245c;background:#e8f0fa;border-radius:999px;padding:1px 7px}
 .cad-ads-modal{position:fixed;inset:18px;z-index:8000;display:flex;flex-direction:column;background:#0f172a;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden}
 .cad-ads-modal[hidden]{display:none !important}
-.cad-ads-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;background:#06245c;color:#fff}
+.cad-ads-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;background:#06245c;color:#fff;flex:0 0 auto}
 .cad-ads-bar strong{font-size:15px}
 .cad-ads-bar span{font-size:12px;opacity:.88;flex:1}
 .cad-ads-bar button{border:0;border-radius:999px;padding:7px 14px;font-weight:800;cursor:pointer}
 #cadAdsNovaAba{background:#fff;color:#06245c}
 #cadAdsFechar{background:#ef4444;color:#fff}
-.cad-ads-modal iframe{flex:1;width:100%;border:0;background:#fff}
+.cad-ads-scroll{
+  flex:1;min-height:0;overflow:auto;overflow-y:scroll;
+  background:#fff;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable
+}
+.cad-ads-scroll::-webkit-scrollbar{width:12px;height:12px}
+.cad-ads-scroll::-webkit-scrollbar-thumb{background:#64748b;border-radius:8px;border:2px solid #fff}
+.cad-ads-scroll::-webkit-scrollbar-track{background:#e2e8f0}
+.cad-ads-modal iframe{display:block;width:100%;min-width:1100px;height:180vh;min-height:1200px;border:0;background:#fff;pointer-events:auto}
 html.dk-dark .cad-stage,html.dk-dark .mn-painel{background:rgba(16,24,40,.82);border-color:rgba(186,210,230,.28)}
 html.dk-dark .cad-views button{background:rgba(16,24,40,.7);color:#f8fafc}
 html.dk-dark .title-wrap h1,html.dk-dark .mn-painel h2,html.dk-dark .mn-row strong,html.dk-dark .st-kpi b{color:#f8fafc}

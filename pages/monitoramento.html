@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260821hud">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="../assets/css/cad-monitor.css?v=20260821cad13">
+<link rel="stylesheet" href="../assets/css/cad-monitor.css?v=20260821cad16">
 <script type="module" src="../assets/js/auth.js?v=20260820t21"></script>
 </head>
 <body class="cad-page" data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
@@ -51,7 +51,10 @@
           <button type="button" class="ativo" data-map-filtro="todos">TCGL</button>
           <button type="button" data-map-filtro="fora">Fora de serviço</button>
         </div>
-        <input id="mapBusca" type="search" placeholder="Localizar prefixo" aria-label="Localizar no mapa">
+        <input id="mapBusca" type="search" placeholder="Buscar prefixo ou linha" aria-label="Buscar prefixo ou linha">
+        <button type="button" class="kpi-chip kpi-chip-performance" id="kpiIndicePerformance" title="Índice de performance">
+          <b id="statIndicePerformance">—</b><span>Performance</span>
+        </button>
         <span class="map-legenda">
           <i style="background:#16a34a"></i>No horário
           <i style="background:#eab308"></i>Atrasado
@@ -59,8 +62,18 @@
           <i style="background:#94a3b8"></i>Fora / ocioso
         </span>
       </div>
-      <div id="cadMap"></div>
-      <p class="map-foot">Somente TCGL. Clique no ônibus (ou na lista Frota agora) para abrir o popup.</p>
+      <div class="map-body">
+        <aside class="map-linhas" aria-label="Linhas">
+          <h2>Linhas</h2>
+          <input id="buscaLinha" type="search" placeholder="Filtrar linha: 501, Vivi…" aria-label="Filtrar linhas">
+          <p class="map-linhas-dica">Clique na linha para o sinótico e o fantasminha.</p>
+          <div class="lines" id="listaLinhas"></div>
+          <button type="button" id="btnLimparLinha">Todas as linhas</button>
+        </aside>
+        <div class="map-canvas-wrap">
+          <div id="cadMap"></div>
+        </div>
+      </div>
     </section>
 
     <section class="cad-pane" id="paneStatus">
@@ -80,9 +93,12 @@
           <option>Fora de serviço</option>
         </select>
         <input id="stBusca" type="search" placeholder="Buscar prefixo, linha, serviço ou motorista">
+        <select id="stFiltroLinha" aria-label="Filtrar por linha">
+          <option value="">Todas as linhas</option>
+        </select>
         <span class="st-live" id="stLive">Atualizando…</span>
       </div>
-      <p class="st-dica">Somente TCGL · clique no veículo para abrir o popup no mapa</p>
+      <p class="st-dica">Somente TCGL · clique no veículo para abrir o popup</p>
       <div class="st-grid-wrap" id="cadStatusLista"></div>
     </section>
 
@@ -126,6 +142,28 @@
   </div>
 </div>
 
+<div class="cad-pop-overlay" id="stVeicOverlay" hidden>
+  <div class="cad-pop-box veiculo-popup">
+    <button type="button" class="cad-pop-fechar" id="stVeicFechar" aria-label="Fechar">×</button>
+    <div id="stVeicBox"></div>
+    <button type="button" class="cad-pop-mapa" id="stVeicNoMapa">Ver no mapa</button>
+  </div>
+</div>
+
+<div class="cad-pop-overlay" id="oaIndicePerfOverlay" hidden>
+  <div class="cad-pop-box oa-modal-performance">
+    <div class="oa-modal-head">
+      <div>
+        <h3 id="oaIndicePerfTitulo">Índice de performance</h3>
+        <p id="oaIndicePerfSubtitulo">Calculando…</p>
+      </div>
+      <button type="button" class="cad-pop-fechar" id="oaIndicePerfFechar" aria-label="Fechar">×</button>
+    </div>
+    <div id="oaIndicePerfNumero" class="oa-perf-numero"></div>
+    <div id="oaIndicePerfBreakdown"></div>
+  </div>
+</div>
+
 <div class="cad-ads-modal" id="cadAdsModal" hidden>
   <div class="cad-ads-bar">
     <strong>Visualização de programação</strong>
@@ -133,12 +171,14 @@
     <button type="button" id="cadAdsNovaAba">Abrir em nova aba</button>
     <button type="button" id="cadAdsFechar">Fechar</button>
   </div>
-  <iframe id="cadAdsFrame" title="Visualização de programação CAD"></iframe>
+  <div class="cad-ads-scroll">
+    <iframe id="cadAdsFrame" title="Visualização de programação CAD" scrolling="yes"></iframe>
+  </div>
 </div>
 
-<script src="../assets/js/frota-patio-data.js?v=20260821cad13"></script>
+<script src="../assets/js/frota-patio-data.js?v=20260821cad16"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="../assets/js/monitoramento.js?v=20260821cad13"></script>
-<script type="module" src="../assets/js/cad-ads-sessao.js?v=20260821cad13"></script>
+<script src="../assets/js/monitoramento.js?v=20260821cad16"></script>
+<script type="module" src="../assets/js/cad-ads-sessao.js?v=20260821cad16"></script>
 </body>
 </html>
