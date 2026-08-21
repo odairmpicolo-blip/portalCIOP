@@ -18,11 +18,30 @@ html:not(:has(#kiosk)) body:has(.header):not(.login-v2) .header,
 html:not(:has(#kiosk)) body:has(.header):not(.login-v2) .header.header-v2 {
   position: relative !important;
   isolation: isolate;
-  background: var(--lg-fill-header) !important;
   backdrop-filter: var(--lg-blur, blur(32px) saturate(190%)) !important;
   -webkit-backdrop-filter: var(--lg-blur, blur(32px) saturate(190%)) !important;
   border-bottom: 1px solid var(--lg-border, rgba(255, 255, 255, 0.42)) !important;
   box-shadow: var(--lg-shadow) !important;
+}
+html:not(.dk-dark):not(:has(#kiosk)) body:has(.header):not(.login-v2) .header,
+html:not(.dk-dark):not(:has(#kiosk)) body:has(.header):not(.login-v2) .header.header-v2 {
+  background-image:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), rgba(56, 189, 248, 0.22), transparent),
+    var(--ciop-light-grad-fx, var(--lg-fill-header)) !important;
+  background-size: 26% 100%, auto, auto !important;
+  background-repeat: no-repeat !important;
+  background-position: -28% 0, 0 0, 0 0 !important;
+  animation: ciop-header-scan 11s ease-in-out infinite;
+}
+html.dk-dark:not(:has(#kiosk)) body:has(.header):not(.login-v2) .header,
+html.dk-dark:not(:has(#kiosk)) body:has(.header):not(.login-v2) .header.header-v2 {
+  background-image:
+    linear-gradient(90deg, transparent, rgba(125, 211, 252, 0.42), transparent),
+    var(--lg-fill-header) !important;
+  background-size: 26% 100%, auto, auto !important;
+  background-repeat: no-repeat !important;
+  background-position: -28% 0, 0 0, 0 0 !important;
+  animation: ciop-header-scan 11s ease-in-out infinite;
 }
 
 html:not(:has(#kiosk)) body:has(.header):not(.login-v2) .ciop-command-inner,
@@ -167,4 +186,16 @@ html.dk-dark:not(:has(#kiosk)) body:has(#portalAbas) .hero-pro-panel {
     inset 5px 0 0 0 var(--hero-mes-cor, #38bdf8),
     inset 12px 0 22px -10px color-mix(in srgb, var(--hero-mes-cor, #38bdf8) 45%, transparent),
     0 14px 32px -16px rgba(0, 0, 0, 0.5) !important;
+}
+
+@keyframes ciop-header-scan {
+  0%, 18% { background-position: -28% 0, 0 0, 0 0; }
+  52% { background-position: 128% 0, 0 0, 0 0; }
+  53%, 100% { background-position: 128% 0, 0 0, 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html:not(:has(#kiosk)) body:has(.header):not(.login-v2) .header,
+  html:not(:has(#kiosk)) body:has(.header):not(.login-v2) .header.header-v2 {
+    animation: none !important;
+  }
 }
