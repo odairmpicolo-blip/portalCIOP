@@ -32,15 +32,44 @@ body.cad-page .header{flex:0 0 auto}
 .map-legenda{margin-left:auto;font-size:11px;font-weight:800;color:#475569;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .map-legenda i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
 .map-foot{margin:0;padding:4px 10px;font-size:11px;font-weight:700;color:#667085;background:#f8fafc}
-.cad-map-mk{display:flex;align-items:flex-start;gap:4px}
-.cad-map-pin{width:20px;height:20px;border:1px solid #111;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .cad-map-lab{background:#fff;border:1px solid #94a3b8;border-radius:4px;padding:3px 6px;font:11px/1.25 Tahoma,sans-serif;color:#111;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.cad-map-lab b{color:#334155;margin-right:4px}
-.leaflet-div-icon.cad-map-icon{background:none;border:none}
-.cad-map-tip.leaflet-tooltip{background:#fff;border:1px solid #94a3b8;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.2);padding:0}
-.cad-map-tip.leaflet-tooltip-right::before{border-right-color:#94a3b8}
-.cad-map-pop .leaflet-popup-content{margin:8px 10px}
-.cad-map-sit{margin:6px 0 0;font-size:11px;font-weight:800;color:#475569}
+.leaflet-div-icon.bus-marker-wrap,.bus-marker-wrap{background:transparent!important;border:0!important;overflow:visible!important}
+.veh-pin{
+  position:relative;width:96px;cursor:pointer;
+  filter:drop-shadow(0 6px 10px rgba(15,23,42,.5)) drop-shadow(0 2px 3px rgba(15,23,42,.35));
+  transition:transform .2s ease;
+}
+.veh-pin.highlight{transform:scale(1.15);z-index:900!important}
+.veh-pin svg{display:block;width:96px;height:96px}
+.veiculo-popup .leaflet-popup-content-wrapper{background:transparent;box-shadow:none;padding:0;border-radius:16px}
+.veiculo-popup .leaflet-popup-content{margin:0;width:auto!important}
+.veiculo-popup .leaflet-popup-tip-container{display:none}
+.veiculo-popup .leaflet-popup-close-button{color:#667085!important;font-size:18px!important;top:6px!important;right:8px!important}
+.veiculo-panel-inner{
+  position:relative;width:min(268px,80vw);border-radius:14px;padding:10px 11px;
+  background:rgba(255,255,255,.68);backdrop-filter:blur(20px) saturate(190%);
+  -webkit-backdrop-filter:blur(20px) saturate(190%);
+  border:2px solid var(--cor,#16a34a);
+  box-shadow:0 14px 34px -16px rgba(20,20,40,.4), inset 0 1px 0 rgba(255,255,255,.5)
+}
+.veiculo-panel-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-right:12px}
+.veiculo-panel-chip{width:34px;height:28px;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:11px;flex:0 0 auto}
+.veiculo-panel-title{font-size:13px;font-weight:800;color:#06245c;line-height:1.2}
+.veiculo-panel-status{display:inline-block;margin-top:3px;padding:1.5px 8px;border-radius:999px;font-size:9.5px;font-weight:800}
+.veiculo-panel-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.veiculo-panel-grid-3{grid-template-columns:1fr 1fr 1fr;margin-bottom:5px}
+.veiculo-panel-grid-via{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+.popup-item{padding:5px 7px;border-radius:10px;background:#f1f5f9;font-size:9.5px;color:#667085}
+.popup-item strong{display:block;font-size:11px;color:#101828;margin-top:1px}
+.veiculo-panel-telemetria-titulo{
+  margin:8px 0 5px;padding-top:7px;border-top:1px solid rgba(15,23,42,.12);
+  font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#667085
+}
+.veiculo-panel-telemetria-msg{font-size:10px;color:#667085;padding:2px 0}
+.veiculo-panel-falhas{margin-top:5px;display:grid;gap:4px}
+.veiculo-panel-falhas-titulo{font-size:9.5px;font-weight:800;color:#b91c1c}
+.veiculo-panel-falha{font-size:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:7px;padding:4px 7px}
+.veiculo-panel-falhas.ok{font-size:10px;color:#166534;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;padding:4px 7px}
 .cad-scroll{padding:16px 18px 28px;overflow:auto;flex:1}
 .st-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px 12px 0}
 @media (max-width:800px){.st-kpis{grid-template-columns:repeat(2,1fr)}}
@@ -66,6 +95,7 @@ body.cad-page .header{flex:0 0 auto}
 .st-table th{position:sticky;top:0;background:#eef3f9;padding:8px 10px;text-align:left;font-size:11px;letter-spacing:.03em;text-transform:uppercase;color:#667085;z-index:1}
 .st-table td{padding:7px 10px;border-bottom:1px solid #eef2f7}
 .st-table tr.st-g td{background:#e8f0fa;font-weight:800;cursor:pointer;color:#06245c}
+.st-table tr.st-row{cursor:pointer}
 .st-table tr.st-row:hover td{background:#f8fafc}
 .st-cor{display:inline-block;width:10px;height:10px;border-radius:99px;margin-right:6px;vertical-align:middle}
 .st-vazio{padding:28px;font-weight:700;color:#667085;text-align:center}
