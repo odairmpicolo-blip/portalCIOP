@@ -104,6 +104,22 @@
     return null;
   }
 
+  function hojeIsoLocal() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  function dataIncidenteIso(r) {
+    if (r?.data_iso) return String(r.data_iso).slice(0, 10);
+    const br = String(r?.data || "").trim();
+    const p = br.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (p) return `${p[3]}-${p[1].padStart(2, "0")}-${p[2].padStart(2, "0")}`;
+    return /^\d{4}-\d{2}-\d{2}/.test(br) ? br.slice(0, 10) : "";
+  }
+
   function mostrarProgramacao(cad, q) {
     const linhas = filtra(cad.programacao || [], q, ["codigo", "descricao"]);
     const vis = linhas.slice(0, LIMITE_LISTA);
@@ -182,22 +198,28 @@
   }
 
   function mostrarIncidentes(inc, q) {
-    const rows = Array.isArray(inc?.incidentes) ? inc.incidentes.slice() : [];
+    const hoje = hojeIsoLocal();
+    const rows = (Array.isArray(inc?.incidentes) ? inc.incidentes : [])
+      .filter((r) => dataIncidenteIso(r) === hoje);
     rows.sort((a, b) => Number(b.incidentId || b.id || 0) - Number(a.incidentId || a.id || 0));
     const lista = filtra(rows, q, ["id", "veiculo", "linha", "tipo", "estado", "criadoPor", "data"]);
-    $("mnIncMeta").textContent = `${lista.length} de ${rows.length} registros · atualizado ${fmtQuando(inc?.atualizadoEm)}`;
+    if ($("mnIncMeta")) {
+      $("mnIncMeta").textContent = `Total hoje: ${rows.length}` +
+        (q ? ` · ${lista.length} no filtro` : "") +
+        ` · atualizado ${fmtQuando(inc?.atualizadoEm)}`;
+    }
+    if (!$("mnInc")) return;
     $("mnInc").innerHTML = listaHtml(
-      lista.slice(0, 80).map((r) => `<li>
-        <strong>${r.id || r.incidentId}</strong>
-        <span>${r.data || ""} ${r.hora || ""} · ${r.veiculo || "—"} · ${r.linha || "—"}</span>
-        <em>${r.tipo || r.estado || ""}</em>
+      lista.slice(0, 200).map((r) => `<li>
+        <strong>${esc(r.id || r.incidentId)}</strong>
+        <span>${esc(r.data || "")} ${esc(r.hora || "")} · ${esc(r.veiculo || "—")} · ${esc(r.linha || "—")}</span>
+        <em>${esc(r.tipo || r.estado || "")}</em>
       </li>`),
-      "Nenhum incidente no JSON local."
+      "Nenhum incidente TCGL hoje."
     );
   }
 
   async function iniciar() {
-    $("mnStatus").textContent = "Carregando CAD…";
     let cad = null;
     let inc = null;
     try {
@@ -207,32 +229,9 @@
       ]);
       if (rCad.ok) cad = await rCad.json();
       if (rInc.ok) inc = await rInc.json();
-    } catch (err) {
-      $("mnStatus").textContent = "Não foi possível ler os JSON locais.";
-    }
-    if (!cad) {
-      $("mnStatus").textContent = "Ainda não há dump do CAD. A tabela de status usa a frota ao vivo.";
-    } else {
-      $("mnStatus").textContent = `Cadastros atualizados em ${fmtQuando(cad.atualizadoEm)}`;
-    }
-    let abaReg = "veiculos";
-    const atualizar = () => {
-      if (!cad) return;
-      mostrarProgramacao(cad, $("mnBuscaProg").value);
-      mostrarRegistros(cad, abaReg, $("mnBuscaReg").value);
-      mostrarIncidentes(inc, $("mnBuscaInc").value);
-    };
-
-    $("mnBuscaProg")?.addEventListener("input", atualizar);
-    $("mnBuscaReg")?.addEventListener("input", atualizar);
+    } catch (err) { /* JSON local opcional */ }
+    const atualizar = () => mostrarIncidentes(inc, $("mnBuscaInc")?.value || "");
     $("mnBuscaInc")?.addEventListener("input", atualizar);
-    document.querySelectorAll("[data-reg-aba]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        abaReg = btn.getAttribute("data-reg-aba");
-        document.querySelectorAll("[data-reg-aba]").forEach((b) => b.classList.toggle("ativo", b === btn));
-        atualizar();
-      });
-    });
     atualizar();
     ligarLinksProgramacaoCad();
     ligarShell();
@@ -240,12 +239,17 @@
   }
 
   function abrirPainel(nome) {
-    const id = "pane" + nome.charAt(0).toUpperCase() + nome.slice(1);
+    const mapaNome = nome === "sinotico" ? "mapa" : nome;
+    const id = "pane" + mapaNome.charAt(0).toUpperCase() + mapaNome.slice(1);
     document.querySelectorAll(".cad-pane").forEach((p) => p.classList.toggle("ativo", p.id === id));
     document.querySelectorAll(".cad-views [data-abrir]").forEach((b) => {
       b.classList.toggle("ativo", b.getAttribute("data-abrir") === nome);
     });
-    if (nome === "mapa") setTimeout(() => window.__cadMapInvalidate?.(), 80);
+    document.body.classList.toggle("cad-sinotico", nome === "sinotico");
+    if (mapaNome === "mapa") {
+      setTimeout(() => window.__cadMapInvalidate?.(), 80);
+      if (nome === "sinotico") window.__cadAbrirLinhas?.();
+    }
   }
 
   function ligarShell() {
@@ -260,6 +264,9 @@
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape") fecharPopupProgramacao();
     });
+    $("cadAdsModal")?.addEventListener("click", (ev) => {
+      if (ev.target.id === "cadAdsModal") fecharPopupProgramacao();
+    });
   }
 
   const CODIGOS_OCIOSO = new Set(["PI", "DH", "PO"]);
@@ -267,6 +274,18 @@
   const ADIANTADO_SEG = 120;
   const ATRASADO_SEG = 360;
   const SEM_COM_SEG = 180;
+  const STATUS_CORES = {
+    adiantado: "#D30000",
+    atrasado: "#FFFF00",
+    noHorario: "#8FD400",
+    ocioso: "#7DD3FC",
+    foraServico: "#3f4757",
+    reserva: "#7c3aed",
+    garagem: "#0f766e",
+    gpsInvalido: "#0b1f4d"
+  };
+  const ANCORA_GPS_INVALIDO_VID = "411";
+  const GARAGEM_TCGL_PONTO = { lat: -23.29298, lng: -51.16151 };
   const VIA_CORES = ["#2db4bf","#06245c","#ff6b00","#0b3a8a","#059669","#8b5cf6","#eab308","#ec4899","#38bdf8","#64748b"];
   const TERMINAIS = [
     { nome: "Central", lat: -23.3082945, lng: -51.1608587, raio: 300 },
@@ -281,11 +300,18 @@
   const PES_POR_METRO = 3.28084;
   const VEL_MINIMA_FANTASMA_KMH = 15;
 
+  function contrastHex(hex) {
+    const c = String(hex || "").replace("#", "");
+    if (c.length !== 6) return "#fff";
+    const r = parseInt(c.slice(0, 2), 16), g = parseInt(c.slice(2, 4), 16), b = parseInt(c.slice(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? "#06245c" : "#fff";
+  }
+
   function operadoraVid(vid) {
     const n = parseInt(vid, 10);
     if (!Number.isFinite(n)) return "";
     if (n >= 0 && n <= 5000) return "TCGL";
-    if (n >= 5001 && n <= 9999) return "CMTU";
+    if (n >= 5001 && n <= 9999) return "LondriSul";
     return "";
   }
 
@@ -309,23 +335,62 @@
     return Array.isArray(val) ? val : [val];
   }
 
-  function classificarVeiculo(v, agora) {
+  function distanciaMetros(lat1, lng1, lat2, lng2) {
+    const dLat = (lat1 - lat2) * 111320;
+    const dLng = (lng1 - lng2) * 111320 * Math.cos(lat1 * Math.PI / 180);
+    return Math.sqrt(dLat * dLat + dLng * dLng);
+  }
+
+  function dentroDaGaragem(lat, lng) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+    return distanciaMetros(lat, lng, GARAGEM_AREA.lat, GARAGEM_AREA.lng) <= GARAGEM_AREA.raio;
+  }
+
+  function terminalDoPonto(lat, lng) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    let achado = null, menor = Infinity;
+    for (const t of TERMINAIS) {
+      const d = distanciaMetros(lat, lng, t.lat, t.lng);
+      if (d <= t.raio && d < menor) {
+        menor = d;
+        achado = t;
+      }
+    }
+    return achado;
+  }
+
+  function rotuloStatus(chave, reservaNome) {
+    if (chave === "gpsInvalido") return "GPS inválido";
+    if (chave === "reserva") return "Reserva" + (reservaNome ? " · " + reservaNome : "");
+    if (chave === "garagem") return "Fora de serviço · Garagem";
+    if (chave === "foraServico") return "Fora de serviço";
+    if (chave === "noHorario") return "No horário";
+    if (chave === "adiantado") return "Adiantado";
+    if (chave === "atrasado") return "Atrasado";
+    if (chave === "ocioso") return "Ocioso";
+    return chave;
+  }
+
+  function classificarVeiculo(v, agora, extra) {
     const rt = String(v.rt || "").trim();
     const delay = v.delaySec == null ? null : Number(v.delaySec);
     const t = parseTmstmp(v.tmstmp);
     const idade = t ? (agora - t.getTime()) / 1000 : 9999;
     const comunicando = idade <= SEM_COM_SEG;
-    let veiculo = "No horário";
-    if (CODIGOS_FORA.has(rt) || rt === "") veiculo = "Fora de serviço";
-    else if (CODIGOS_OCIOSO.has(rt)) veiculo = "Ocioso";
-    else if (delay != null && delay < -ADIANTADO_SEG) veiculo = "Adiantado";
-    else if (delay != null && delay > ATRASADO_SEG) veiculo = "Atrasado";
-    const cor =
-      veiculo === "Adiantado" ? "#c81e1e" :
-      veiculo === "Atrasado" ? "#eab308" :
-      veiculo === "No horário" ? "#16a34a" :
-      veiculo === "Ocioso" ? "#38bdf8" :
-      "#94a3b8";
+    const gpsInvalido = Boolean(extra?.gpsInvalido);
+    const lat = extra?.lat != null ? extra.lat : Number(v.lat);
+    const lon = extra?.lon != null ? extra.lon : Number(v.lon);
+    let chave = "noHorario";
+    if (gpsInvalido) chave = "gpsInvalido";
+    else if (CODIGOS_OCIOSO.has(rt)) chave = "ocioso";
+    else if (CODIGOS_FORA.has(rt) || rt === "") chave = "foraServico";
+    else if (delay != null && delay < -ADIANTADO_SEG) chave = "adiantado";
+    else if (delay != null && delay > ATRASADO_SEG) chave = "atrasado";
+    const terminal = (!gpsInvalido && chave === "foraServico") ? terminalDoPonto(lat, lon) : null;
+    const naGaragem = !gpsInvalido && chave === "foraServico" && !terminal && dentroDaGaragem(lat, lon);
+    if (chave === "foraServico" && terminal) chave = "reserva";
+    else if (chave === "foraServico" && naGaragem) chave = "garagem";
+    const veiculo = rotuloStatus(chave, terminal?.nome);
     const wid = String(v.tablockid || v.rid || "").replace(/^N\/A$/i, "");
     const parsed = parseWorkId(wid) || parseWorkId(v.rid);
     return {
@@ -341,11 +406,17 @@
       tmstmp: v.tmstmp,
       comunicacao: comunicando ? "Comunicando" : "Não Comunicando",
       veiculo,
-      cor,
+      chave,
+      cor: STATUS_CORES[chave] || STATUS_CORES.foraServico,
       operadora: operadoraVid(v.vid),
       logon: Boolean(String(v.oid || "").trim()),
-      lat: Number(v.lat),
-      lon: Number(v.lon),
+      lat,
+      lon,
+      latOriginal: Number(v.lat),
+      lonOriginal: Number(v.lon),
+      gpsInvalido,
+      naGaragem,
+      terminalReserva: terminal?.nome || "",
       hdg: v.hdg != null ? Number(v.hdg) : (v.heading != null ? Number(v.heading) : 0),
       pid: v.pid != null ? String(v.pid) : "",
       pdist: v.pdist != null && v.pdist !== "" ? Number(v.pdist) : "",
@@ -560,6 +631,24 @@
     return dirs[Math.round(((Number(hdg) % 360) + 360) % 360 / 45) % 8];
   }
 
+  function fichaFrota(vid) {
+    const n = String(vid || "").replace(/\D/g, "").replace(/^0+/, "") || String(vid || "").trim();
+    const lista = Array.isArray(window.CIOP_FROTA_CONSULTA) ? window.CIOP_FROTA_CONSULTA : [];
+    const hit = lista.find((v) => {
+      const p = String(v.prefixo || "").replace(/\D/g, "").replace(/^0+/, "");
+      return p && p === n;
+    });
+    if (!hit) return { placa: "", modelo: "", tecnologia: "" };
+    const raw = String(hit.modelo || "").replace(/\s+/g, " ").replace(/\s*-\s*/g, " - ").trim();
+    const partes = raw.split(" - ").map((s) => s.trim()).filter(Boolean);
+    const modelo = partes.filter((p) => !/^(\d+(?:[.,]\d+)?)\s*M$/i.test(p)).join(" - ") || raw;
+    return {
+      placa: String(hit.placa || "").trim(),
+      modelo,
+      tecnologia: String(hit.tecnologia || "").trim()
+    };
+  }
+
   function tipoVeiculo(cad, vid) {
     const n = String(vid || "").trim();
     const cadV = (cad?.veiculos || []).find((v) => String(v.numero) === n);
@@ -598,30 +687,73 @@
   }
 
   function textoStatusQtd(r) {
-    if (r.delayMin === "" || r.veiculo === "Ocioso" || r.veiculo === "Fora de serviço") return r.veiculo;
+    if (r.chave === "ocioso" || r.chave === "foraServico" || r.chave === "reserva" || r.chave === "garagem" || r.chave === "gpsInvalido" || r.delayMin === "") return r.veiculo;
     const min = Math.abs(r.delayMin);
     return r.veiculo + (min ? " · " + min + " min" : "");
   }
 
+  function itemInfo(rotulo, valor) {
+    return '<div class="oa-vinfo-item"><span>' + esc(rotulo) + "</span><strong>" + esc(valor || "—") + "</strong></div>";
+  }
+
   function popupVeiculoHtml(cad, r, telemetria) {
     const p = fichaPessoa(cad, r.oid);
+    const frota = fichaFrota(r.vid);
     const patio = (window.FROTA_PATIO || []).find((f) => String(f.veiculo) === String(r.vid));
-    const tec = patio?.rotulo || patio?.tecnologia || tipoVeiculo(cad, r.vid);
-    const linha1 = itemPopup("Nome", p.op || "—") + itemPopup("Registro", p.nc || r.oid || "—") + itemPopup("Velocidade", r.spd === "" ? "—" : fmtNumBR(r.spd) + " km/h");
-    const linha2 = itemPopup("Linha", r.rt || "—") + itemPopup("Via", r.des || "—");
-    const linha3 = itemPopup("Bloco", r.tabela || "—") + itemPopup("Trabalho", r.servico || r.rid || "—") + itemPopup("Sentido", r.sentido || "—");
+    const tec = frota.tecnologia || patio?.rotulo || patio?.tecnologia || tipoVeiculo(cad, r.vid);
+    const fg = contrastHex(r.cor);
+    return '<div class="oa-vinfo-head">' +
+        '<span class="oa-vinfo-chip" style="background:' + esc(r.cor) + ";color:" + fg + '">' + esc(r.rt || r.vid) + "</span>" +
+        '<span class="oa-vinfo-status" style="background:' + esc(r.cor) + ";color:" + fg + '">' + esc(textoStatusQtd(r)) + "</span>" +
+      "</div>" +
+      (r.gpsInvalido
+        ? '<p class="veiculo-panel-aviso">Posição fora do Brasil — ícone ancorado na garagem.</p>'
+        : "") +
+      '<p class="oa-vinfo-sec">Operação</p>' +
+      '<div class="oa-vinfo-grid">' +
+        itemInfo("Motorista", p.op || "N/A") +
+        itemInfo("Trabalho", r.servico || r.rid || "—") +
+        itemInfo("Bloco", r.tabela || "N/A") +
+        itemInfo("Sentido", r.sentido || "—") +
+        itemInfo("Via", r.des || "—") +
+        itemInfo("Tecnologia", tec) +
+        itemInfo("Placa", frota.placa) +
+        itemInfo("Modelo", frota.modelo) +
+      "</div>" +
+      '<p class="oa-vinfo-sec">Posição</p>' +
+      '<div class="oa-vinfo-grid">' +
+        itemInfo("Velocidade", r.spd === "" ? "—" : fmtNumBR(r.spd) + " km/h") +
+        itemInfo("Atualizado", fmtTmstmp(r.tmstmp)) +
+        itemInfo("Latitude", Number.isFinite(r.lat) ? r.lat.toFixed(5) : "—") +
+        itemInfo("Longitude", Number.isFinite(r.lon) ? r.lon.toFixed(5) : "—") +
+      "</div>" +
+      '<p class="oa-vinfo-sec">Telemetria FleetBus</p>' +
+      telemetriaPopupHtml(telemetria);
+  }
+
+  function popupMapaHtml(cad, r, telemetria) {
+    const p = fichaPessoa(cad, r.oid);
+    const frota = fichaFrota(r.vid);
+    const patio = (window.FROTA_PATIO || []).find((f) => String(f.veiculo) === String(r.vid));
+    const tec = frota.tecnologia || patio?.rotulo || patio?.tecnologia || tipoVeiculo(cad, r.vid);
     return '<div class="veiculo-panel-inner" style="--cor:' + esc(r.cor) + '">' +
       '<div class="veiculo-panel-head">' +
-        '<span class="veiculo-panel-chip" style="background:' + esc(r.cor) + ';color:#fff">' + esc(r.vid) + "</span>" +
+        '<span class="veiculo-panel-chip" style="background:' + esc(r.cor) + ";color:" + contrastHex(r.cor) + '">' + esc(r.vid) + "</span>" +
         "<div>" +
-          '<div class="veiculo-panel-title">Veículo ' + esc(r.vid) + " · TCGL</div>" +
-          '<span class="veiculo-panel-status" style="background:' + esc(r.cor) + ';color:#fff">' + esc(textoStatusQtd(r)) + "</span>" +
+          '<div class="veiculo-panel-title">Veículo ' + esc(r.vid) + " · " + esc(r.operadora || "") + "</div>" +
+          '<span class="veiculo-panel-status" style="background:' + esc(r.cor) + ";color:" + contrastHex(r.cor) + '">' + esc(textoStatusQtd(r)) + "</span>" +
         "</div>" +
       "</div>" +
-      '<div class="veiculo-panel-grid veiculo-panel-grid-3">' + linha1 + "</div>" +
-      '<div class="veiculo-panel-grid veiculo-panel-grid-via">' + linha2 + "</div>" +
-      '<div class="veiculo-panel-grid veiculo-panel-grid-3">' + linha3 + "</div>" +
-      itemPopup("Tecnologia", tec) +
+      '<div class="veiculo-panel-grid veiculo-panel-grid-3">' +
+        itemPopup("Nome", p.op || "—") + itemPopup("Registro", p.nc || r.oid || "—") + itemPopup("Velocidade", r.spd === "" ? "—" : fmtNumBR(r.spd) + " km/h") +
+      "</div>" +
+      '<div class="veiculo-panel-grid veiculo-panel-grid-via">' + itemPopup("Linha", r.rt || "—") + itemPopup("Via", r.des || "—") + "</div>" +
+      '<div class="veiculo-panel-grid veiculo-panel-grid-3">' +
+        itemPopup("Bloco", r.tabela || "—") + itemPopup("Trabalho", r.servico || r.rid || "—") + itemPopup("Sentido", r.sentido || "—") +
+      "</div>" +
+      '<div class="veiculo-panel-grid veiculo-panel-grid-3">' +
+        itemPopup("Placa", frota.placa) + itemPopup("Modelo", frota.modelo) + itemPopup("Tecnologia", tec) +
+      "</div>" +
       telemetriaPopupHtml(telemetria) +
     "</div>";
   }
@@ -632,6 +764,7 @@
       aba: "todos",
       abertos: new Set(["Adiantado", "Atrasado"]),
       mapFiltro: "todos",
+      mapOp: "",
       linhaFiltro: null,
       buscaLinha: "",
       rotas: [],
@@ -639,6 +772,7 @@
       perfOficial: null,
       popupVid: null
     };
+    const janelaMapa = { leaflet: null, tiles: null, marcador: null };
 
     const mapa = {
       leaflet: null,
@@ -658,8 +792,8 @@
     }
 
     function htmlIcone(r, extraClass, corOverride) {
-      const cor = corOverride || r.cor || "#16a34a";
-      const cz = "#fff";
+      const cor = corOverride || r.cor || STATUS_CORES.noHorario;
+      const cz = contrastHex(cor);
       const rot = Number.isFinite(r.hdg) ? r.hdg : 0;
       const uid = "b" + String(r.vid || "x").replace(/\W/g, "") + (extraClass ? "g" : "");
       const numero = esc(r.vid || "—");
@@ -683,7 +817,7 @@
           '<rect x="17" y="15" width="26" height="21" rx="6" fill="' + cz + '"/>' +
           '<rect x="20" y="17.3" width="20" height="11.5" rx="2.8" fill="url(#chumboGlass' + uid + ')" stroke="rgba(0,0,0,.55)" stroke-width="1"/>' +
           '<rect x="20" y="17.3" width="20" height="11.5" rx="2.8" fill="url(#glassShine' + uid + ')"/>' +
-          '<text x="30" y="25.9" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="7.2" font-weight="800" fill="#fff">' + numero + '</text>' +
+          '<text x="30" y="25.9" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="7.2" font-weight="800" fill="' + cz + '">' + numero + '</text>' +
           '<circle cx="22.5" cy="33" r="2.1" fill="' + cz + '"/><circle cx="37.5" cy="33" r="2.1" fill="' + cz + '"/>' +
           '<rect x="20.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/><rect x="35.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
         '</svg></div>';
@@ -692,10 +826,15 @@
     function listaMapa() {
       const q = norm($("mapBusca")?.value || "");
       return estado.rows.filter((r) => {
-        if (!noBrasil(r.lat, r.lon)) return false;
-        if (estado.mapFiltro === "fora" && r.veiculo !== "Fora de serviço" && r.veiculo !== "Ocioso") return false;
+        if (r.gpsInvalido) {
+          /* entra no mapa ancorado */
+        } else if (!noBrasil(r.lat, r.lon)) return false;
+        if (estado.mapOp && r.operadora !== estado.mapOp) return false;
+        if (estado.mapFiltro === "fora" && r.chave !== "foraServico" && r.chave !== "ocioso" && r.chave !== "reserva" && r.chave !== "garagem") return false;
+        if (estado.mapFiltro === "reserva" && r.chave !== "reserva") return false;
+        if (estado.mapFiltro === "garagem" && r.chave !== "garagem") return false;
         if (estado.linhaFiltro && r.rt !== estado.linhaFiltro) return false;
-        if (q && !norm(r.vid).includes(q) && !norm(r.rt).includes(q) && !norm(r.servico).includes(q) && !norm(r.des).includes(q)) return false;
+        if (q && !norm(r.vid).includes(q) && !norm(r.rt).includes(q) && !norm(r.servico).includes(q) && !norm(r.des).includes(q) && !norm(nomeMotorista(cad, r.oid)).includes(q)) return false;
         return true;
       });
     }
@@ -704,13 +843,6 @@
       const hit = estado.rotas.find((x) => x.routeId === rt);
       if (hit?.color) return hit.color;
       return VIA_CORES[(i || 0) % VIA_CORES.length];
-    }
-
-    function contrastHex(hex) {
-      const c = String(hex || "").replace("#", "");
-      if (c.length !== 6) return "#fff";
-      const r = parseInt(c.slice(0, 2), 16), g = parseInt(c.slice(2, 4), 16), b = parseInt(c.slice(4, 6), 16);
-      return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? "#06245c" : "#fff";
     }
 
     function rotasVisiveis() {
@@ -751,7 +883,7 @@
     function atualizarContagemLinhas() {
       const por = new Map();
       for (const r of estado.rows) {
-        if (r.veiculo === "Ocioso" || r.veiculo === "Fora de serviço") continue;
+        if (r.chave === "ocioso" || r.chave === "foraServico" || r.chave === "reserva" || r.chave === "garagem" || r.chave === "gpsInvalido") continue;
         por.set(r.rt, (por.get(r.rt) || 0) + 1);
       }
       document.querySelectorAll("#listaLinhas .line-count").forEach((el) => {
@@ -866,7 +998,7 @@
         return;
       }
       if (!mapa.ghost) mapa.ghost = L.layerGroup().addTo(mapa.leaflet);
-      const alvos = listaMapa().filter((r) => r.pid && r.pdist !== "" && r.delaySec != null && r.veiculo !== "No horário" && r.veiculo !== "Ocioso" && r.veiculo !== "Fora de serviço");
+      const alvos = listaMapa().filter((r) => r.pid && r.pdist !== "" && r.delaySec != null && r.chave !== "noHorario" && r.chave !== "ocioso" && r.chave !== "foraServico" && r.chave !== "reserva" && r.chave !== "garagem" && r.chave !== "gpsInvalido");
       const resultados = await Promise.all(alvos.map(async (r) => ({ r, pontos: await obterPontosPadrao(r.pid) })));
       const vistos = new Set();
       for (const { r, pontos } of resultados) {
@@ -925,11 +1057,11 @@
       if (of?.indices && typeof of.indices.noHorario === "number" && !estado.linhaFiltro) {
         return { oficial: true, pct: of.indices.noHorario, atrasadoPct: of.indices.atrasado, adiantadoPct: of.indices.adiantado, geradoEm: of.geradoEm || of.atualizadoEm };
       }
-      const prod = estado.rows.filter((r) => r.veiculo === "Adiantado" || r.veiculo === "Atrasado" || r.veiculo === "No horário");
+      const prod = estado.rows.filter((r) => r.chave === "adiantado" || r.chave === "atrasado" || r.chave === "noHorario");
       const recorte = estado.linhaFiltro ? prod.filter((r) => r.rt === estado.linhaFiltro) : prod;
-      const nH = recorte.filter((r) => r.veiculo === "No horário").length;
-      const nAt = recorte.filter((r) => r.veiculo === "Atrasado").length;
-      const nAd = recorte.filter((r) => r.veiculo === "Adiantado").length;
+      const nH = recorte.filter((r) => r.chave === "noHorario").length;
+      const nAt = recorte.filter((r) => r.chave === "atrasado").length;
+      const nAd = recorte.filter((r) => r.chave === "adiantado").length;
       const t = recorte.length;
       return { oficial: false, pct: t ? (nH / t) * 100 : null, noHorario: nH, atrasado: nAt, adiantado: nAd, total: t, filtro: estado.linhaFiltro };
     }
@@ -946,16 +1078,16 @@
       if ($("oaIndicePerfSubtitulo")) {
         $("oaIndicePerfSubtitulo").textContent = d.oficial
           ? "Indicador oficial OTP/CAD · apurado " + (d.geradoEm ? new Date(d.geradoEm).toLocaleString("pt-BR") : "—")
-          : (d.filtro ? "Recorte da linha " + d.filtro + " · cálculo local pelo Clever" : "Estimativa local pelo Clever (TCGL agora)");
+          : (d.filtro ? "Recorte da linha " + d.filtro + " · cálculo local pelo Clever" : "Estimativa local pelo Clever");
       }
       const p = (v) => (d.total ? (v / d.total) * 100 : (d.oficial ? d : 0));
       const ad = d.oficial ? d.adiantadoPct : p(d.adiantado);
       const nh = d.oficial ? d.pct : p(d.noHorario);
       const at = d.oficial ? d.atrasadoPct : p(d.atrasado);
       const barras = [
-        { lab: "Adiantado", val: ad, cor: "#c81e1e" },
-        { lab: "No horário", val: nh, cor: "#16a34a" },
-        { lab: "Atrasado", val: at, cor: "#eab308" }
+        { lab: "Adiantado", val: ad, cor: STATUS_CORES.adiantado },
+        { lab: "No horário", val: nh, cor: STATUS_CORES.noHorario },
+        { lab: "Atrasado", val: at, cor: STATUS_CORES.atrasado }
       ];
       const alvo = $("oaIndicePerfBreakdown");
       if (!alvo) return;
@@ -992,6 +1124,29 @@
       } catch { /* ignore */ }
     }
 
+    function pintarMiniMapa(r, recentrar) {
+      const el = $("stVeicMapa");
+      if (!el || typeof L === "undefined" || !Number.isFinite(r.lat) || !Number.isFinite(r.lon)) return;
+      if (!janelaMapa.leaflet) {
+        janelaMapa.leaflet = L.map(el, { zoomControl: true, attributionControl: false }).setView([r.lat, r.lon], 16);
+        janelaMapa.tiles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(janelaMapa.leaflet);
+      }
+      const icon = L.divIcon({
+        className: "bus-marker-wrap",
+        html: htmlIcone(r, "highlight"),
+        iconSize: [96, 96],
+        iconAnchor: [48, 42]
+      });
+      if (!janelaMapa.marcador) {
+        janelaMapa.marcador = L.marker([r.lat, r.lon], { icon }).addTo(janelaMapa.leaflet);
+      } else {
+        janelaMapa.marcador.setLatLng([r.lat, r.lon]);
+        janelaMapa.marcador.setIcon(icon);
+      }
+      if (recentrar) janelaMapa.leaflet.setView([r.lat, r.lon], 16, { animate: false });
+      setTimeout(() => janelaMapa.leaflet.invalidateSize(), 80);
+    }
+
     async function abrirPopupStatus(vid) {
       const r = estado.rows.find((x) => x.vid === vid);
       if (!r) return;
@@ -999,12 +1154,18 @@
       const overlay = $("stVeicOverlay");
       const box = $("stVeicBox");
       if (!overlay || !box) return;
+      if ($("stVeicTitulo")) $("stVeicTitulo").textContent = "Veículo " + r.vid;
+      if ($("stVeicSubtitulo")) $("stVeicSubtitulo").textContent = [r.operadora, r.veiculo].filter(Boolean).join(" · ");
       box.innerHTML = popupVeiculoHtml(cad, r, FB.cache.get(vid)?.data || "carregando");
       overlay.hidden = false;
+      pintarMiniMapa(r, true);
       try {
         const base = await resolverProxy();
         const fb = await telemetriaFleetbus(base, vid);
-        if (estado.popupVid === vid) box.innerHTML = popupVeiculoHtml(cad, r, fb);
+        if (estado.popupVid === vid) {
+          const atual = estado.rows.find((x) => x.vid === vid) || r;
+          box.innerHTML = popupVeiculoHtml(cad, atual, fb);
+        }
       } catch { /* ignore */ }
     }
 
@@ -1034,10 +1195,20 @@
           mapa.tiles.addTo(mapa.leaflet);
         });
       });
+      document.querySelectorAll("[data-map-op]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          estado.mapOp = btn.getAttribute("data-map-op") || "";
+          document.querySelectorAll("[data-map-op]").forEach((b) => b.classList.toggle("ativo", b === btn));
+          pintarMapa();
+        });
+      });
       document.querySelectorAll("[data-map-filtro]").forEach((btn) => {
         btn.addEventListener("click", () => {
-          estado.mapFiltro = btn.getAttribute("data-map-filtro");
-          document.querySelectorAll("[data-map-filtro]").forEach((b) => b.classList.toggle("ativo", b === btn));
+          const f = btn.getAttribute("data-map-filtro");
+          estado.mapFiltro = estado.mapFiltro === f ? "todos" : f;
+          document.querySelectorAll("[data-map-filtro]").forEach((b) => {
+            b.classList.toggle("ativo", b.getAttribute("data-map-filtro") === estado.mapFiltro);
+          });
           pintarMapa();
         });
       });
@@ -1064,12 +1235,46 @@
         pintarListaLinhas();
         pintarMapa();
       });
+      function fecharPaineisMapa() {
+        const busca = $("oaBuscaPainel");
+        const linhas = $("oaLinhasPainel");
+        if (busca) busca.hidden = true;
+        if (linhas) linhas.hidden = true;
+        $("oaBtnLupa")?.classList.remove("aberto");
+        $("oaBtnLinhas")?.classList.remove("aberto");
+      }
+      function abrirPainelLinhas() {
+        const linhas = $("oaLinhasPainel");
+        const busca = $("oaBuscaPainel");
+        if (busca) busca.hidden = true;
+        $("oaBtnLupa")?.classList.remove("aberto");
+        if (linhas) linhas.hidden = false;
+        $("oaBtnLinhas")?.classList.add("aberto");
+        pintarListaLinhas();
+      }
+      window.__cadAbrirLinhas = abrirPainelLinhas;
+      $("oaBtnLupa")?.addEventListener("click", () => {
+        const painel = $("oaBuscaPainel");
+        const abrir = painel?.hidden;
+        fecharPaineisMapa();
+        if (abrir && painel) {
+          painel.hidden = false;
+          $("oaBtnLupa").classList.add("aberto");
+          $("mapBusca")?.focus();
+        }
+      });
+      $("oaBtnLinhas")?.addEventListener("click", () => {
+        const painel = $("oaLinhasPainel");
+        const abrir = painel?.hidden;
+        fecharPaineisMapa();
+        if (abrir) abrirPainelLinhas();
+      });
     }
 
     async function enriquecerPopup(vid, mk) {
       const r = estado.rows.find((x) => x.vid === vid);
       if (!r || !mk.isPopupOpen()) return;
-      mk.setPopupContent(popupVeiculoHtml(cad, r, FB.cache.get(vid)?.data || "carregando"));
+      mk.setPopupContent(popupMapaHtml(cad, r, FB.cache.get(vid)?.data || "carregando"));
       let fb = "erro";
       try {
         const base = await resolverProxy();
@@ -1077,7 +1282,7 @@
       } catch { /* ignore */ }
       const atual = estado.rows.find((x) => x.vid === vid);
       if (!atual || !mk.isPopupOpen()) return;
-      mk.setPopupContent(popupVeiculoHtml(cad, atual, fb));
+      mk.setPopupContent(popupMapaHtml(cad, atual, fb));
     }
 
     function abrirVeiculoNoMapa(vid) {
@@ -1108,13 +1313,13 @@
           iconAnchor: [48, 42],
           popupAnchor: [0, -42]
         });
-        const destaque = r.veiculo === "Adiantado" || r.veiculo === "Atrasado" ? 200 : 0;
+        const destaque = r.chave === "adiantado" || r.chave === "atrasado" ? 200 : 0;
         let mk = mapa.markers.get(r.vid);
         if (!mk) {
           mk = L.marker([r.lat, r.lon], { icon, zIndexOffset: destaque });
           mk.bindPopup(() => {
             const atual = estado.rows.find((x) => x.vid === r.vid) || r;
-            return popupVeiculoHtml(cad, atual, FB.cache.get(r.vid)?.data);
+            return popupMapaHtml(cad, atual, FB.cache.get(r.vid)?.data);
           }, { className: "veiculo-popup", offset: [0, -6], autoPanPadding: [30, 30] });
           mk.on("popupopen", () => enriquecerPopup(r.vid, mk));
           mk.addTo(mapa.camada);
@@ -1123,7 +1328,7 @@
           mk.setLatLng([r.lat, r.lon]);
           mk.setIcon(icon);
           mk.setZIndexOffset(destaque);
-          if (mk.isPopupOpen()) mk.setPopupContent(popupVeiculoHtml(cad, r, FB.cache.get(r.vid)?.data));
+          if (mk.isPopupOpen()) mk.setPopupContent(popupMapaHtml(cad, r, FB.cache.get(r.vid)?.data));
         }
       }
       for (const [vid, mk] of mapa.markers) {
@@ -1140,13 +1345,21 @@
       const ve = $("stFiltroVeic")?.value || "";
       const q = norm($("stBusca")?.value || "");
       return estado.rows.filter((r) => {
-        if (estado.aba === "semcom" && r.comunicacao !== "Não Comunicando") return false;
-        if (estado.aba === "fora" && r.veiculo !== "Fora de serviço" && r.veiculo !== "Ocioso") return false;
-        if (ve && r.veiculo !== ve) return false;
+        if (r.chave === "gpsInvalido") return false;
+        if (estado.aba === "fora" && r.chave !== "foraServico" && r.chave !== "ocioso" && r.chave !== "reserva" && r.chave !== "garagem") return false;
+        if (ve && r.chave !== "gpsInvalido") {
+          const ok =
+            !ve ||
+            r.veiculo === ve ||
+            (ve === "Reserva" && r.chave === "reserva") ||
+            (ve === "Garagem" && r.chave === "garagem") ||
+            (ve === "Fora de serviço" && r.chave === "foraServico");
+          if (!ok) return false;
+        }
         const linha = $("stFiltroLinha")?.value || "";
         if (linha && r.rt !== linha) return false;
         if (q) {
-          const blob = norm([r.vid, r.rt, r.servico, r.oid, r.des].join(" "));
+          const blob = norm([r.vid, r.rt, r.servico, r.oid, r.des, r.operadora, nomeMotorista(cad, r.oid)].join(" "));
           if (!blob.includes(q)) return false;
         }
         return true;
@@ -1154,27 +1367,46 @@
     }
 
     function pintarKpisStatus() {
-      const rows = estado.rows;
-      const nAd = rows.filter((r) => r.veiculo === "Adiantado").length;
-      const nAt = rows.filter((r) => r.veiculo === "Atrasado").length;
-      const nOff = rows.filter((r) => r.comunicacao !== "Comunicando").length;
-      $("stKpis").innerHTML = `
-        <div class="st-kpi"><b>${rows.length}</b><span>Na rua agora</span></div>
+      const naRua = estado.rows.filter((r) => r.chave !== "gpsInvalido" && r.chave !== "reserva" && r.chave !== "garagem");
+      const nAd = naRua.filter((r) => r.chave === "adiantado").length;
+      const nAt = naRua.filter((r) => r.chave === "atrasado").length;
+      const nRes = estado.rows.filter((r) => r.chave === "reserva").length;
+      const nGa = estado.rows.filter((r) => r.chave === "garagem").length;
+      if ($("statReserva")) $("statReserva").textContent = nRes;
+      if ($("statGaragem")) $("statGaragem").textContent = nGa;
+      if ($("stKpis")) {
+        $("stKpis").innerHTML = `
+        <div class="st-kpi"><b>${naRua.length}</b><span>Na rua agora</span></div>
         <div class="st-kpi adiantado"><b>${nAd}</b><span>Adiantados</span></div>
         <div class="st-kpi atrasado"><b>${nAt}</b><span>Atrasados</span></div>
-        <div class="st-kpi"><b>${nOff}</b><span>Sem comunicação</span></div>`;
+        <div class="st-kpi"><b>${nRes}</b><span>Reserva</span></div>
+        <div class="st-kpi"><b>${nGa}</b><span>Garagem TCGL</span></div>`;
+      }
+    }
+
+    function pintarErros() {
+      const gps = estado.rows.filter((r) => r.chave === "gpsInvalido");
+      const sem = estado.rows.filter((r) => r.comunicacao !== "Comunicando" && r.chave !== "gpsInvalido");
+      if ($("errosGpsTitulo")) $("errosGpsTitulo").textContent = `GPS inválido (${gps.length})`;
+      if ($("errosComTitulo")) $("errosComTitulo").textContent = `Sem comunicação (${sem.length})`;
+      if ($("errosMeta")) $("errosMeta").textContent = `${gps.length + sem.length} veículos com erro · ${gps.length} GPS · ${sem.length} sem comunicação`;
+      const li = (r) => `<li><strong>${esc(r.vid)}</strong> <span>${esc(r.operadora)} · ${esc(r.rt || "—")} · ${esc(fmtTmstmp(r.tmstmp))}</span></li>`;
+      if ($("errosGpsLista")) $("errosGpsLista").innerHTML = gps.length ? gps.map(li).join("") : "<li>Nenhum veículo com GPS inválido.</li>";
+      if ($("errosComLista")) $("errosComLista").innerHTML = sem.length ? sem.map(li).join("") : "<li>Todos comunicando.</li>";
     }
 
     function pintar() {
       const lista = listaFiltrada();
       pintarKpisStatus();
+      pintarErros();
 
       const grupos = new Map();
       for (const r of lista) {
-        if (!grupos.has(r.veiculo)) grupos.set(r.veiculo, []);
-        grupos.get(r.veiculo).push(r);
+        const g = r.chave === "reserva" ? "Reserva" : r.chave === "garagem" ? "Garagem" : r.chave === "foraServico" ? "Fora de serviço" : r.chave === "noHorario" ? "No horário" : r.chave === "adiantado" ? "Adiantado" : r.chave === "atrasado" ? "Atrasado" : r.chave === "ocioso" ? "Ocioso" : r.veiculo;
+        if (!grupos.has(g)) grupos.set(g, []);
+        grupos.get(g).push(r);
       }
-      const ordem = ["Adiantado", "Atrasado", "No horário", "Ocioso", "Fora de serviço"];
+      const ordem = ["Adiantado", "Atrasado", "No horário", "Ocioso", "Reserva", "Garagem", "Fora de serviço"];
       const cols = `<tr>
         <th>Veículo</th><th>Situação</th><th>Linha</th><th>Atraso</th>
         <th>Motorista</th><th>Serviço</th><th>Destino</th><th>Última comunicação</th>
@@ -1237,20 +1469,34 @@
     $("oaIndicePerfOverlay")?.addEventListener("click", (ev) => { if (ev.target.id === "oaIndicePerfOverlay") ev.currentTarget.hidden = true; });
     $("stVeicFechar")?.addEventListener("click", fecharPopupStatus);
     $("stVeicOverlay")?.addEventListener("click", (ev) => { if (ev.target.id === "stVeicOverlay") fecharPopupStatus(); });
-    $("stVeicNoMapa")?.addEventListener("click", () => {
-      const vid = estado.popupVid;
-      fecharPopupStatus();
-      if (vid) abrirVeiculoNoMapa(vid);
-    });
 
     async function puxar() {
       try {
         const base = await resolverProxy();
         const data = await fetch(base + "/getvehiclesdelay", { cache: "no-store" }).then((r) => r.json());
         const agora = Date.now();
-        estado.rows = extrairListaBustime(data, "vehicle")
-          .map((v) => classificarVeiculo(v, agora))
-          .filter((r) => r.operadora === "TCGL");
+        const bruto = extrairListaBustime(data, "vehicle");
+        const ancoraRef = bruto.find((x) => String(x.vid ?? "") === ANCORA_GPS_INVALIDO_VID);
+        let ancora = GARAGEM_TCGL_PONTO;
+        const alat = Number(ancoraRef?.lat), alng = Number(ancoraRef?.lon);
+        if (noBrasil(alat, alng)) ancora = { lat: alat, lng: alng };
+        let nGps = 0;
+        estado.rows = bruto.map((v) => {
+          const latB = Number(v.lat), lonB = Number(v.lon);
+          const op = operadoraVid(v.vid);
+          const coordOk = noBrasil(latB, lonB);
+          const gpsInvalido = !coordOk && op === "TCGL";
+          if (!coordOk && !gpsInvalido) return null;
+          let lat = latB, lon = lonB;
+          if (gpsInvalido) {
+            const ang = nGps * 2.39996;
+            const raio = 0.00030 + nGps * 0.00010;
+            lat = ancora.lat + raio * Math.cos(ang);
+            lon = ancora.lng + raio * Math.sin(ang);
+            nGps += 1;
+          }
+          return classificarVeiculo(v, agora, { lat, lon, gpsInvalido });
+        }).filter(Boolean);
         if ($("stLive")) $("stLive").textContent = `Atualizado ${new Date().toLocaleTimeString("pt-BR")}`;
         pintar();
         pintarMapa();
@@ -1263,6 +1509,7 @@
     hidratarFuncionariosCache();
     carregarPerformance();
     carregarRotas();
+    garantirMapa();
     puxar();
     setInterval(puxar, 30000);
     carregarFuncionariosFolha()

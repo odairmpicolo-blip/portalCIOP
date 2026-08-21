@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260821hud">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="../assets/css/cad-monitor.css?v=20260821cad16">
+<link rel="stylesheet" href="../assets/css/cad-monitor.css?v=20260821cad19">
 <script type="module" src="../assets/js/auth.js?v=20260820t21"></script>
 </head>
 <body class="cad-page" data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
@@ -22,7 +22,6 @@
   <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP"><img class="portal-brand-art" src="../assets/img/logomarca-portalciop-tcgl-claro.png?v=20260818logo6" alt="Portal CIOP"></a>
   <div class="title-wrap"><h1>Monitoramento</h1></div>
   <div class="header-actions">
-    <button type="button" class="btn-prog" id="btnAbrirProgramacao">Visualização de programação</button>
     <div class="ciop-session">
       <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
       <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
@@ -33,11 +32,13 @@
 
 <div class="cad-app">
   <nav class="cad-views" aria-label="Seções">
+    <a class="cad-nav-link" href="../index.html">Portal</a>
+    <button type="button" id="btnAbrirProgramacao">Visualização de programação</button>
     <button type="button" class="ativo" data-abrir="mapa">Mapa</button>
-    <button type="button" data-abrir="status">Frota agora</button>
-    <button type="button" data-abrir="programacao">Linhas</button>
+    <button type="button" data-abrir="status">Status</button>
+    <button type="button" data-abrir="sinotico">Sinótico</button>
     <button type="button" data-abrir="incidentes">Incidentes</button>
-    <button type="button" data-abrir="registros">Cadastros</button>
+    <button type="button" data-abrir="erros">Erros</button>
   </nav>
 
   <div class="cad-stage">
@@ -48,30 +49,49 @@
           <button type="button" data-tiles="hibrido">Híbrido</button>
         </div>
         <div class="st-subtabs">
-          <button type="button" class="ativo" data-map-filtro="todos">TCGL</button>
-          <button type="button" data-map-filtro="fora">Fora de serviço</button>
+          <button type="button" class="ativo" data-map-op="">Todos</button>
+          <button type="button" data-map-op="TCGL">TCGL</button>
+          <button type="button" data-map-op="LondriSul">LondriSul</button>
         </div>
-        <input id="mapBusca" type="search" placeholder="Buscar prefixo ou linha" aria-label="Buscar prefixo ou linha">
+        <button type="button" class="kpi-chip kpi-chip-btn kpi-reserva" id="kpiReserva" data-map-filtro="reserva" title="Fora de serviço na área de um terminal">
+          <b id="statReserva">0</b><span>Reserva</span>
+        </button>
+        <button type="button" class="kpi-chip kpi-chip-btn kpi-garagem" id="kpiGaragem" data-map-filtro="garagem" title="Fora de serviço na garagem da TCGL">
+          <b id="statGaragem">0</b><span>GA · TCGL</span>
+        </button>
         <button type="button" class="kpi-chip kpi-chip-performance" id="kpiIndicePerformance" title="Índice de performance">
           <b id="statIndicePerformance">—</b><span>Performance</span>
         </button>
         <span class="map-legenda">
-          <i style="background:#16a34a"></i>No horário
-          <i style="background:#eab308"></i>Atrasado
-          <i style="background:#c81e1e"></i>Adiantado
-          <i style="background:#94a3b8"></i>Fora / ocioso
+          <i style="background:#8FD400"></i>No horário
+          <i style="background:#FFFF00;border:1px solid #ca8a04"></i>Atrasado
+          <i style="background:#D30000"></i>Adiantado
+          <i style="background:#7DD3FC"></i>Ocioso
+          <i style="background:#7c3aed"></i>Reserva
+          <i style="background:#0f766e"></i>Garagem
+          <i style="background:#3f4757"></i>Fora
         </span>
       </div>
       <div class="map-body">
-        <aside class="map-linhas" aria-label="Linhas">
-          <h2>Linhas</h2>
-          <input id="buscaLinha" type="search" placeholder="Filtrar linha: 501, Vivi…" aria-label="Filtrar linhas">
-          <p class="map-linhas-dica">Clique na linha para o sinótico e o fantasminha.</p>
-          <div class="lines" id="listaLinhas"></div>
-          <button type="button" id="btnLimparLinha">Todas as linhas</button>
-        </aside>
         <div class="map-canvas-wrap">
           <div id="cadMap"></div>
+          <button type="button" class="oa-lupa" id="oaBtnLupa" aria-label="Buscar" aria-expanded="false" title="Buscar linha ou veículo">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+          </button>
+          <button type="button" class="oa-lupa oa-lupa--linhas" id="oaBtnLinhas" aria-label="Linhas" aria-expanded="false" title="Lista de linhas">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h11"/></svg>
+          </button>
+          <aside class="cad-map-side" id="oaBuscaPainel" hidden>
+            <h2>Buscar</h2>
+            <input id="mapBusca" type="search" placeholder="Prefixo, linha ou motorista" aria-label="Buscar prefixo ou linha">
+          </aside>
+          <aside class="cad-map-side cad-map-side--linhas" id="oaLinhasPainel" hidden>
+            <h2>Linhas</h2>
+            <input id="buscaLinha" type="search" placeholder="Filtrar linha: 501, Vivi…" aria-label="Filtrar linhas">
+            <p class="map-linhas-dica">Clique na linha para o sinótico e o fantasminha.</p>
+            <div class="lines" id="listaLinhas"></div>
+            <button type="button" id="btnLimparLinha">Todas as linhas</button>
+          </aside>
         </div>
       </div>
     </section>
@@ -81,7 +101,6 @@
       <div class="st-toolbar">
         <div class="st-subtabs">
           <button type="button" class="ativo" data-st-aba="todos">Todos</button>
-          <button type="button" data-st-aba="semcom">Sem comunicação</button>
           <button type="button" data-st-aba="fora">Fora de serviço</button>
         </div>
         <select id="stFiltroVeic" aria-label="Situação">
@@ -90,6 +109,8 @@
           <option>Atrasado</option>
           <option>No horário</option>
           <option>Ocioso</option>
+          <option>Reserva</option>
+          <option>Garagem</option>
           <option>Fora de serviço</option>
         </select>
         <input id="stBusca" type="search" placeholder="Buscar prefixo, linha, serviço ou motorista">
@@ -98,55 +119,51 @@
         </select>
         <span class="st-live" id="stLive">Atualizando…</span>
       </div>
-      <p class="st-dica">Somente TCGL · clique no veículo para abrir o popup</p>
+      <p class="st-dica">TCGL e LondriSul · clique no veículo para abrir o mapa e a ficha</p>
       <div class="st-grid-wrap" id="cadStatusLista"></div>
-    </section>
-
-    <section class="cad-pane cad-scroll" id="paneProgramacao">
-      <p class="mn-status" id="mnStatus">Carregando…</p>
-      <section class="mn-painel">
-        <h2>Linhas da programação</h2>
-        <p class="mn-meta" id="mnProgMeta"></p>
-        <input id="mnBuscaProg" type="search" placeholder="Buscar linha ou descrição" aria-label="Filtrar linhas">
-        <div id="mnProg"></div>
-        <div class="mn-detalhe" id="mnProgDetalhe" hidden>
-          <h3 id="mnProgDetalheTitulo"></h3>
-          <ul id="mnProgDetalheLista"></ul>
-        </div>
-      </section>
     </section>
 
     <section class="cad-pane cad-scroll" id="paneIncidentes">
       <section class="mn-painel">
-        <h2>Incidentes recentes</h2>
+        <h2>Incidentes TCGL de hoje</h2>
         <p class="mn-meta" id="mnIncMeta"></p>
         <input id="mnBuscaInc" type="search" placeholder="Buscar veículo, linha, tipo ou número" aria-label="Filtrar incidentes">
         <div id="mnInc"></div>
       </section>
     </section>
 
-    <section class="cad-pane cad-scroll" id="paneRegistros">
+    <section class="cad-pane cad-scroll" id="paneErros">
       <section class="mn-painel">
-        <h2>Cadastros do CAD</h2>
-        <div class="mn-abas">
-          <button type="button" class="ativo" data-reg-aba="veiculos">Veículos</button>
-          <button type="button" data-reg-aba="funcionarios">Pessoas</button>
-          <button type="button" data-reg-aba="garagens">Garagens</button>
-          <button type="button" data-reg-aba="tipos">Tipos de incidente</button>
+        <h2>Erros de rastreamento</h2>
+        <p class="mn-meta" id="errosMeta">GPS inválido e veículos sem comunicação</p>
+        <div class="erros-colunas">
+          <div>
+            <h3 id="errosGpsTitulo">GPS inválido</h3>
+            <ul class="mn-lista" id="errosGpsLista"></ul>
+          </div>
+          <div>
+            <h3 id="errosComTitulo">Sem comunicação</h3>
+            <ul class="mn-lista" id="errosComLista"></ul>
+          </div>
         </div>
-        <p class="mn-meta" id="mnRegsMeta"></p>
-        <input id="mnBuscaReg" type="search" placeholder="Filtrar cadastro" aria-label="Filtrar cadastros">
-        <div id="mnRegs"></div>
       </section>
     </section>
   </div>
 </div>
 
 <div class="cad-pop-overlay" id="stVeicOverlay" hidden>
-  <div class="cad-pop-box veiculo-popup">
-    <button type="button" class="cad-pop-fechar" id="stVeicFechar" aria-label="Fechar">×</button>
-    <div id="stVeicBox"></div>
-    <button type="button" class="cad-pop-mapa" id="stVeicNoMapa">Ver no mapa</button>
+  <div class="cad-pop-box oa-modal-veiculo" role="dialog" aria-modal="true">
+    <div class="oa-modal-head">
+      <div>
+        <h3 id="stVeicTitulo">Veículo</h3>
+        <p id="stVeicSubtitulo">—</p>
+      </div>
+      <button type="button" class="cad-pop-fechar" id="stVeicFechar" aria-label="Fechar">×</button>
+    </div>
+    <div class="oa-veiculo-split">
+      <div class="oa-veiculo-mapa" id="stVeicMapa"></div>
+      <div class="oa-veiculo-info" id="stVeicBox"></div>
+    </div>
   </div>
 </div>
 
@@ -176,9 +193,10 @@
   </div>
 </div>
 
-<script src="../assets/js/frota-patio-data.js?v=20260821cad16"></script>
+<script src="../assets/js/frota-patio-data.js?v=20260821cad19"></script>
+<script src="../assets/js/frota-consulta-data.js?v=20260821cad19"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="../assets/js/monitoramento.js?v=20260821cad16"></script>
-<script type="module" src="../assets/js/cad-ads-sessao.js?v=20260821cad16"></script>
+<script src="../assets/js/monitoramento.js?v=20260821cad19"></script>
+<script type="module" src="../assets/js/cad-ads-sessao.js?v=20260821cad19"></script>
 </body>
 </html>
