@@ -1,8 +1,11 @@
 /**
- * Telemetria — planilha Google (Apps Script) com fallback para JSON estático (GitHub Pages).
+ * Telemetria — planilha Google (CSV direto + Apps Script) com fallback para JSON estático.
  */
+import { normalizarColunaTelemetria } from "./telemetria-merge.js";
+
 export const TELEMETRIA_DATA_BASE = "../assets/data/telemetria";
 export const TELEMETRIA_DADOS_URL = `${TELEMETRIA_DATA_BASE}/dados.json`;
+export const TELEMETRIA_RECENTE_URL = `${TELEMETRIA_DATA_BASE}/recente.json`;
 export const TELEMETRIA_MANIFEST_URL = `${TELEMETRIA_DATA_BASE}/manifest.json`;
 
 const SNAPSHOT_CACHE_KEY = "portal_telemetria_snapshot_v1";
@@ -12,8 +15,8 @@ let telemetriaScriptUrlCache = "";
 
 const FONTES_PLANILHA = ["clever", "tcgl", "fleetbus"];
 const JSON_FETCH_TIMEOUT_MS = 90000;
-/** dados.json chega a ~23 MB; JSON.parse disso trava Safari/Chrome e vira "Erro no JSON". */
-const JSON_MAX_BYTES = 6 * 1024 * 1024;
+/** recente.json (45 dias) cabe no navegador; o dump completo ~23 MB não. */
+const JSON_MAX_BYTES = 8 * 1024 * 1024;
 
 function parseJsonSeguro(texto, rotulo = "JSON") {
   const t = String(texto || "").trim();
@@ -264,28 +267,34 @@ export async function carregarManifestTelemetria() {
 }
 
 export async function carregarSnapshotTelemetriaJson() {
-  const manifest = await carregarManifestTelemetria();
-  if (Number(manifest?.total || 0) > 15000) {
-    console.warn("Telemetria JSON: dump estático grande demais; a página usa a planilha.");
-    return null;
-  }
   let ultimoErro = "";
-  for (const base of urlsTelemetriaAsset(TELEMETRIA_DADOS_URL)) {
-    for (let tentativa = 1; tentativa <= 2; tentativa++) {
-      try {
-        const data = await fetchJsonComTimeout(`${base}?t=${Date.now()}`);
-        if (!Array.isArray(data?.dados) || !data.dados.length) {
-          ultimoErro = "JSON vazio ou sem registros";
-          break;
+  const candidatos = [TELEMETRIA_RECENTE_URL, TELEMETRIA_DADOS_URL];
+  for (const relative of candidatos) {
+    const isDumpCompleto = relative.endsWith("dados.json");
+    if (isDumpCompleto) {
+      const manifest = await carregarManifestTelemetria();
+      if (Number(manifest?.total || 0) > 15000) {
+        console.warn("Telemetria JSON: dump completo grande demais; usando recente/planilha.");
+        continue;
+      }
+    }
+    for (const base of urlsTelemetriaAsset(relative)) {
+      for (let tentativa = 1; tentativa <= 2; tentativa++) {
+        try {
+          const data = await fetchJsonComTimeout(`${base}?t=${Date.now()}`, isDumpCompleto ? JSON_FETCH_TIMEOUT_MS : 25000);
+          if (!Array.isArray(data?.dados) || !data.dados.length) {
+            ultimoErro = "JSON vazio ou sem registros";
+            break;
+          }
+          return {
+            ...data,
+            dados: normalizarFontesRegistros(data.dados),
+            origem_carregamento: "json"
+          };
+        } catch (err) {
+          ultimoErro = err?.name === "AbortError" ? "timeout ao baixar JSON" : (err?.message || String(err));
+          if (tentativa < 2) await new Promise((r) => setTimeout(r, 400));
         }
-        return {
-          ...data,
-          dados: normalizarFontesRegistros(data.dados),
-          origem_carregamento: "json"
-        };
-      } catch (err) {
-        ultimoErro = err?.name === "AbortError" ? "timeout ao baixar JSON" : (err?.message || String(err));
-        if (tentativa < 2) await new Promise((r) => setTimeout(r, 800));
       }
     }
   }
@@ -308,7 +317,109 @@ export async function carregarResumoTelemetriaPlanilha() {
 }
 
 const FLEETBUS_SHEET_ID = "1Z_rFA-1jz7-kq4juGp5uFG4WMpVBloML98hDgWcX9gQ";
-const FLEETBUS_GID = "1035972881";
+const ABAS_CSV = {
+  clever: "0",
+  tcgl: "1112924394",
+  fleetbus: "1035972881"
+};
+
+function parseCsvLinhaTelemetria(line) {
+  const cols = [];
+  let cell = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (inQuotes) {
+      if (c === '"' && line[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') inQuotes = false;
+      else cell += c;
+    } else if (c === '"') inQuotes = true;
+    else if (c === ",") { cols.push(cell.trim()); cell = ""; }
+    else cell += c;
+  }
+  cols.push(cell.trim());
+  return cols;
+}
+
+function payloadEssencialTelemetria(row, veiculo, dataIso) {
+  const keep = [
+    "Veiculo", "Data", "Inicio", "Fim", "Registros CAN",
+    "Km Inicial", "Km Final", "Km Percorrido", "Consumo Combustivel (L)"
+  ];
+  const payload = { Veiculo: veiculo, Data: dataIso, data_iso: dataIso, veiculo_norm: veiculo };
+  keep.forEach((k) => {
+    if (row[k] != null && String(row[k]).trim() !== "") payload[k] = row[k];
+  });
+  return payload;
+}
+
+async function carregarAbaCsvDireto(fonte, de, ate) {
+  const gid = ABAS_CSV[fonte];
+  if (!gid) return null;
+  const url = `https://docs.google.com/spreadsheets/d/${FLEETBUS_SHEET_ID}/export?format=csv&gid=${gid}`;
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return null;
+    const texto = await res.text();
+    if (!texto.trim() || texto.trimStart().startsWith("<!DOCTYPE")) return null;
+
+    const linhas = texto.replace(/^\uFEFF/, "").split(/\r?\n/);
+    if (linhas.length < 2) return null;
+
+    const headersBrutos = parseCsvLinhaTelemetria(linhas[0]);
+    const headers = headersBrutos.map((h) => normalizarColunaTelemetria(h) || h);
+    const iVeiculo = headers.findIndex((h) => {
+      const n = String(h || "").toLowerCase();
+      return n === "veiculo" || n === "prefixo" || n.includes("veiculo");
+    });
+    const iData = headers.findIndex((h) => {
+      const n = String(h || "").toLowerCase();
+      return n === "data" || n === "date" || n === "dia";
+    });
+    if (iVeiculo < 0 || iData < 0) return null;
+
+    const mapa = new Map();
+    for (let i = 1; i < linhas.length; i++) {
+      if (!linhas[i].trim()) continue;
+      const cols = parseCsvLinhaTelemetria(linhas[i]);
+      const veiculo = normalizarVeiculoLeitura(cols[iVeiculo]);
+      const dataIso = normalizarDataIsoLeitura(cols[iData]);
+      if (!veiculo || !dataIso) continue;
+      if (de && dataIso < de) continue;
+      if (ate && dataIso > ate) continue;
+      const row = {};
+      headers.forEach((h, idx) => {
+        if (!h) return;
+        row[h] = cols[idx] != null ? String(cols[idx]).trim() : "";
+      });
+      mapa.set(`${dataIso}|${veiculo}|${fonte}`, {
+        data_iso: dataIso,
+        veiculo,
+        fonte,
+        payload: payloadEssencialTelemetria(row, veiculo, dataIso),
+        origem_arquivo: `planilha-${fonte}`
+      });
+    }
+
+    const dados = [...mapa.values()];
+    if (!dados.length) return { ok: true, dados: [], total: 0, origem_carregamento: "planilha" };
+    const datas = dados.map((d) => d.data_iso).filter(Boolean).sort();
+    const campoTotal = `total_${fonte}`;
+    return {
+      ok: true,
+      atualizadoEm: new Date().toISOString(),
+      origem: "google-sheets-csv",
+      total: dados.length,
+      [campoTotal]: dados.length,
+      data_de: datas[0] || de || null,
+      data_ate: datas[datas.length - 1] || ate || null,
+      dados,
+      origem_carregamento: "planilha"
+    };
+  } catch (_) {
+    return null;
+  }
+}
 
 function normalizarDataIsoLeitura(val) {
   const s = String(val || "").trim();
@@ -327,90 +438,6 @@ function normalizarVeiculoLeitura(v) {
   return digits ? String(parseInt(digits, 10)) : s.toUpperCase();
 }
 
-async function carregarFleetbusDiretoDaPlanilha(de, ate) {
-  const url = `https://docs.google.com/spreadsheets/d/${FLEETBUS_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${FLEETBUS_GID}`;
-  try {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return null;
-    const texto = await res.text();
-    if (!texto.trim()) return null;
-
-    const linhas = texto.trim().split(/\r?\n/);
-    if (linhas.length < 2) return null;
-
-    const parseRow = (line) => {
-      const cols = [];
-      let cell = "";
-      let inQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        const c = line[i];
-        if (inQuotes) {
-          if (c === '"' && line[i + 1] === '"') { cell += '"'; i++; }
-          else if (c === '"') inQuotes = false;
-          else cell += c;
-        } else {
-          if (c === '"') inQuotes = true;
-          else if (c === ',') { cols.push(cell.trim()); cell = ""; }
-          else cell += c;
-        }
-      }
-      cols.push(cell.trim());
-      return cols;
-    };
-
-    const headers = parseRow(linhas[0]).map((h) => h.toLowerCase().trim());
-    const iVeiculo = headers.findIndex((h) => h === "veiculo" || h === "prefixo" || h.includes("veiculo"));
-    const iData = headers.findIndex((h) => h === "data" || h === "date" || h === "dia");
-    const iKm = headers.findIndex((h) => h.includes("km percorrido") || h.includes("distancia") || h.includes("distância"));
-    if (iVeiculo < 0 || iData < 0) return null;
-
-    const dados = [];
-    for (let i = 1; i < linhas.length; i++) {
-      if (!linhas[i].trim()) continue;
-      const cols = parseRow(linhas[i]);
-      const veiculo = normalizarVeiculoLeitura(cols[iVeiculo]);
-      const dataIso = normalizarDataIsoLeitura(cols[iData]);
-      if (!veiculo || !dataIso) continue;
-      if (de && dataIso < de) continue;
-      if (ate && dataIso > ate) continue;
-
-      const kmPercorrido = cols[iKm] != null ? String(cols[iKm]).replace(/\./g, "").replace(",", ".").trim() : "";
-
-      const payload = {
-        Veiculo: veiculo,
-        Data: dataIso,
-        "Km Percorrido": kmPercorrido,
-        data_iso: dataIso,
-        veiculo_norm: veiculo
-      };
-
-      dados.push({
-        data_iso: dataIso,
-        veiculo,
-        fonte: "fleetbus",
-        payload,
-        origem_arquivo: "planilha-fleetbus"
-      });
-    }
-
-    if (!dados.length) return null;
-    const datas = dados.map((d) => d.data_iso).filter(Boolean).sort();
-    return {
-      ok: true,
-      atualizadoEm: new Date().toISOString(),
-      origem: "google-sheets-direct",
-      total: dados.length,
-      total_fleetbus: dados.length,
-      data_de: datas[0] || de || null,
-      data_ate: datas[datas.length - 1] || ate || null,
-      dados,
-      origem_carregamento: "planilha"
-    };
-  } catch (_) {
-    return null;
-  }
-}
-
 async function carregarSnapshotTelemetriaPlanilhaFonte(fonte, de, ate, { skipCache = false } = {}) {
   const opcoes = { fonte, de, ate };
   if (!skipCache) {
@@ -418,12 +445,10 @@ async function carregarSnapshotTelemetriaPlanilhaFonte(fonte, de, ate, { skipCac
     if (cached) return cached;
   }
 
-  if (fonte === "fleetbus") {
-    const direct = await carregarFleetbusDiretoDaPlanilha(de, ate);
-    if (direct) {
-      gravarCacheSnapshot(direct, opcoes, "planilha");
-      return direct;
-    }
+  const direct = await carregarAbaCsvDireto(fonte, de, ate);
+  if (direct && Array.isArray(direct.dados)) {
+    if (direct.dados.length) gravarCacheSnapshot(direct, opcoes, "planilha");
+    return direct.dados.length ? direct : null;
   }
 
   const base = await obterUrlTelemetriaScript();

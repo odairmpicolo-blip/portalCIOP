@@ -137,9 +137,15 @@ export const MAP_COLUNAS_EN_PT = {
   "avg ambient temp": "Temperatura Ambiente Media",
   "avg air pressure": "Pressao Ar Media",
   "max air pressure": "Pressao Ar Maxima",
-  // Planilha TCGL usa a coluna "Km" para o km percorrido no dia — sem este alias,
-  // o valor nunca era reconhecido como "Km Percorrido" e a comparação TCGL ficava vazia.
-  "km": "Km Percorrido"
+  "km": "Km Percorrido",
+  "prefixo": "Veiculo",
+  "hod ini": "Km Inicial",
+  "hodometro inicial": "Km Inicial",
+  "hodometro ini": "Km Inicial",
+  "hod fin": "Km Final",
+  "hodometro final": "Km Final",
+  "hodometro fin": "Km Final",
+  "diesel": "Consumo Combustivel (L)"
 };
 
 export function colunaCleverExcluida(nome) {
@@ -165,9 +171,8 @@ export function normalizarColunaTelemetria(nome) {
   const chave = normChaveMerge(original);
   if (COLUNAS_EXCLUIDAS_CLEVER.has(chave)) return null;
   if (COLUNAS_OCULTAS_TELEMETRIA.has(chave)) return null;
-  const clever = MAP_COLUNAS_EN_PT[chave];
-  if (clever) return clever;
-  return original;
+  const chaveSemPonto = chave.replace(/\./g, " ").replace(/\s+/g, " ").trim();
+  return MAP_COLUNAS_EN_PT[chave] || MAP_COLUNAS_EN_PT[chaveSemPonto] || original;
 }
 
 export function normalizarLinhaTelemetria(row) {

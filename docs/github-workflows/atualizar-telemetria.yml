@@ -2,9 +2,11 @@ name: Atualizar telemetria JSON (Clever + TCGL + FleetBus)
 
 on:
   schedule:
-    # A cada 2 horas (UTC) — 05h, 07h, 09h … 23h BRT
+    # A cada 2 horas (UTC)
     - cron: "0 */2 * * *"
   workflow_dispatch:
+  repository_dispatch:
+    types: [telemetria]
 
 permissions:
   contents: write
@@ -12,7 +14,7 @@ permissions:
 jobs:
   atualizar:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Baixar portal
@@ -38,5 +40,5 @@ jobs:
           PORTAL_ROOT: ${{ github.workspace }}
         run: node scripts/importar-telemetria-planilha-google.mjs
 
-      - name: Publicar dados.json atualizado
-        run: bash scripts/ci-git-commit-push.sh "Atualiza telemetria JSON (Clever + TCGL + FleetBus)" assets/data/telemetria/dados.json assets/data/telemetria/manifest.json
+      - name: Publicar recente.json atualizado
+        run: bash scripts/ci-git-commit-push.sh "Atualiza telemetria JSON (Clever + TCGL + FleetBus)" assets/data/telemetria/recente.json assets/data/telemetria/manifest.json

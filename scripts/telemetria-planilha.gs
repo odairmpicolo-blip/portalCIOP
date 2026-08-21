@@ -20,7 +20,7 @@
  * GET ?resumo=1
  */
 
-const TELEMETRIA_VERSAO = "2026-07-04-planilha-clever-tcgl-fleetbus";
+const TELEMETRIA_VERSAO = "2026-08-21-tcgl-prefixo-csv";
 const ABA_CLEVER = "Clever";
 const ABA_TCGL = "TCGL";
 const ABA_FLEETBUS = "Fleetbus";
@@ -44,7 +44,16 @@ const MAP_COLUNAS_EN_PT = {
   "max engine temp": "Temperatura Motor Maxima",
   "avg ambient temp": "Temperatura Ambiente Media",
   "avg air pressure": "Pressao Ar Media",
-  "max air pressure": "Pressao Ar Maxima"
+  "max air pressure": "Pressao Ar Maxima",
+  "km": "Km Percorrido",
+  "prefixo": "Veiculo",
+  "hod ini": "Km Inicial",
+  "hodometro inicial": "Km Inicial",
+  "hodometro ini": "Km Inicial",
+  "hod fin": "Km Final",
+  "hodometro final": "Km Final",
+  "hodometro fin": "Km Final",
+  "diesel": "Consumo Combustivel (L)"
 };
 
 const COLUNAS_EXCLUIDAS = {
@@ -149,17 +158,22 @@ function debugAba_(sheet) {
 }
 
 function montarResumoTelemetria_() {
-  var snap = montarSnapshotTelemetria_({});
+  var clever = obterAbaPorNome_(ABA_CLEVER);
+  var tcgl = obterAbaPorNome_(ABA_TCGL);
+  var fleetbus = obterAbaPorNome_(ABA_FLEETBUS);
   return {
     ok: true,
     script_versao: TELEMETRIA_VERSAO,
-    atualizadoEm: snap.atualizadoEm,
-    total: snap.total,
-    total_clever: snap.total_clever,
-    total_tcgl: snap.total_tcgl,
-    total_fleetbus: snap.total_fleetbus,
-    data_de: snap.data_de,
-    data_ate: snap.data_ate
+    atualizadoEm: new Date().toISOString(),
+    total_clever: clever ? Math.max(0, clever.getLastRow() - 1) : 0,
+    total_tcgl: tcgl ? Math.max(0, tcgl.getLastRow() - 1) : 0,
+    total_fleetbus: fleetbus ? Math.max(0, fleetbus.getLastRow() - 1) : 0,
+    total: (clever ? Math.max(0, clever.getLastRow() - 1) : 0)
+      + (tcgl ? Math.max(0, tcgl.getLastRow() - 1) : 0)
+      + (fleetbus ? Math.max(0, fleetbus.getLastRow() - 1) : 0),
+    data_de: null,
+    data_ate: null,
+    nota: "resumo rápido (contagem de linhas); use fonte+de+ate para dados"
   };
 }
 
@@ -171,18 +185,10 @@ function montarSnapshotTelemetria_(params) {
   var cache = lerCacheTelemetria_(chave);
   if (cache) return cache;
 
-  var clever = (fonteParam === "tcgl" || fonteParam === "fleetbus") ? [] : lerRegistrosAba_(ABA_CLEVER, "clever");
-  var tcgl = (fonteParam === "clever" || fonteParam === "fleetbus") ? [] : lerRegistrosAba_(ABA_TCGL, "tcgl");
-  var fleetbus = (fonteParam === "clever" || fonteParam === "tcgl") ? [] : lerRegistrosFleetbus_();
+  var clever = (fonteParam === "tcgl" || fonteParam === "fleetbus") ? [] : lerRegistrosAba_(ABA_CLEVER, "clever", de, ate);
+  var tcgl = (fonteParam === "clever" || fonteParam === "fleetbus") ? [] : lerRegistrosAba_(ABA_TCGL, "tcgl", de, ate);
+  var fleetbus = (fonteParam === "clever" || fonteParam === "tcgl") ? [] : lerRegistrosFleetbus_(de, ate);
   var dados = clever.concat(tcgl).concat(fleetbus);
-
-  if (de || ate) {
-    dados = dados.filter(function (r) {
-      if (de && r.data_iso < de) return false;
-      if (ate && r.data_iso > ate) return false;
-      return true;
-    });
-  }
 
   dados.sort(function (a, b) {
     if (a.data_iso !== b.data_iso) return a.data_iso < b.data_iso ? -1 : 1;
@@ -210,7 +216,7 @@ function montarSnapshotTelemetria_(params) {
   return snap;
 }
 
-function lerRegistrosAba_(nomeAba, fonte) {
+function lerRegistrosAba_(nomeAba, fonte, de, ate) {
   var sheet = obterAbaPorNome_(nomeAba);
   if (!sheet) return [];
   var display = sheet.getDataRange().getDisplayValues();
@@ -234,9 +240,11 @@ function lerRegistrosAba_(nomeAba, fonte) {
       row[col] = String(linha[idx] != null ? linha[idx] : "").trim();
     });
 
-    var veiculo = normalizarVeiculo_(row[colVeiculo] || row.Veiculo || "");
-    var dataIso = normalizarDataIso_(row[colData] || row.Data || "");
+    var veiculo = normalizarVeiculo_(row.Veiculo || row[colVeiculo] || "");
+    var dataIso = normalizarDataIso_(row.Data || row[colData] || "");
     if (!veiculo || !dataIso) continue;
+    if (de && dataIso < de) continue;
+    if (ate && dataIso > ate) continue;
 
     row.Veiculo = veiculo;
     row.Data = dataIso;
@@ -333,7 +341,9 @@ function normalizarColunaTelemetria_(nome) {
   if (!original) return null;
   var chave = normChave_(original);
   if (COLUNAS_EXCLUIDAS[chave]) return null;
+  var chaveSemPonto = chave.replace(/\./g, " ").replace(/\s+/g, " ").trim();
   if (MAP_COLUNAS_EN_PT[chave]) return MAP_COLUNAS_EN_PT[chave];
+  if (MAP_COLUNAS_EN_PT[chaveSemPonto]) return MAP_COLUNAS_EN_PT[chaveSemPonto];
   return original;
 }
 
@@ -499,7 +509,7 @@ function dispararAtualizacaoGithub_(repo) {
   });
 }
 
-function lerRegistrosFleetbus_() {
+function lerRegistrosFleetbus_(de, ate) {
   var sheet = obterAbaPorNome_(ABA_FLEETBUS);
   if (!sheet) return [];
   var display = sheet.getDataRange().getDisplayValues();
@@ -523,9 +533,11 @@ function lerRegistrosFleetbus_() {
       row[col] = String(linha[idx] != null ? linha[idx] : "").trim();
     });
 
-    var veiculo = normalizarVeiculo_(row[colVeiculo] || row.Veiculo || "");
-    var dataIso = normalizarDataIso_(row[colData] || row.Data || "");
+    var veiculo = normalizarVeiculo_(row.Veiculo || row[colVeiculo] || "");
+    var dataIso = normalizarDataIso_(row.Data || row[colData] || "");
     if (!veiculo || !dataIso) continue;
+    if (de && dataIso < de) continue;
+    if (ate && dataIso > ate) continue;
 
     row.Veiculo = veiculo;
     row.Data = dataIso;

@@ -20,7 +20,7 @@ const FROTA = (window.FROTA_PATIO || []).slice().sort((a, b) =>
 
 const PLANILHA_TELEMETRIA_URL = "https://docs.google.com/spreadsheets/d/1Z_rFA-1jz7-kq4juGp5uFG4WMpVBloML98hDgWcX9gQ/edit";
 const CHAVE_PLANILHA_STORAGE = "telemetria_planilha_ao_vivo";
-const DIAS_CARREGAMENTO_INICIAL = 120;
+const DIAS_CARREGAMENTO_INICIAL = 60;
 let fonteAtiva = "comparacao";
 let planilhaAoVivo = false;
 let snapshotRaw = null;
@@ -848,29 +848,23 @@ async function carregarSnapshotInicial() {
   if ($("filtroDataDe")) $("filtroDataDe").value = de;
   if ($("filtroDataAte")) $("filtroDataAte").value = ate;
 
-  /* Planilha primeiro: o dump estático (~23 MB) quebra o parse no navegador. */
   const jsonP = carregarSnapshotTelemetriaJson();
-
-  if (planilhaAoVivo) {
-    try {
-      const ok = await atualizarDaPlanilha({ silencioso: false });
-      if (ok) {
-        await aguardar(0);
-        aplicarFonteAtiva();
-        atualizarStatusJson();
-      }
-    } catch (err) {
-      console.warn("Planilha ao vivo:", err);
-    }
-  }
+  const planilhaP = planilhaAoVivo
+    ? carregarSnapshotTelemetriaPlanilha({ fonte: "todos", de, ate, skipCache: true })
+    : Promise.resolve(null);
 
   const json = await jsonP;
   if (json?.dados?.length) {
-    if (snapshotRaw?.dados?.length) {
-      aplicarSnapshotMesclado(json, { fonte: "todos" });
-    } else {
-      aplicarSnapshotBruto(json);
-    }
+    aplicarSnapshotBruto(json);
+    await aguardar(0);
+    aplicarFonteAtiva();
+    atualizarStatusJson();
+  }
+
+  const planilha = await planilhaP;
+  if (planilha?.dados?.length) {
+    if (snapshotRaw?.dados?.length) aplicarSnapshotMesclado(planilha, { fonte: "todos" });
+    else aplicarSnapshotBruto(planilha);
     await aguardar(0);
     aplicarFonteAtiva();
     atualizarStatusJson();

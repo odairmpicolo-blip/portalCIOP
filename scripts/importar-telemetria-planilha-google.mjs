@@ -158,28 +158,70 @@ async function main() {
 
   const { kmPorMes, kmAno } = agregarKmTelemetria(dados);
 
+  const DIAS_RECENTE = 60;
+  const corte = new Date();
+  corte.setUTCDate(corte.getUTCDate() - DIAS_RECENTE);
+  const deRecente = corte.toISOString().slice(0, 10);
+  const keepPayload = [
+    "Inicio", "Fim", "Registros CAN",
+    "Km Inicial", "Km Final", "Km Percorrido", "Consumo Combustivel (L)"
+  ];
+  const dadosRecente = dados.filter((d) => d.data_iso >= deRecente).map((r) => {
+    const p = r.payload || {};
+    const payload = {
+      Veiculo: r.veiculo,
+      Data: r.data_iso,
+      data_iso: r.data_iso,
+      veiculo_norm: r.veiculo
+    };
+    keepPayload.forEach((k) => {
+      if (p[k] != null && String(p[k]).trim() !== "") payload[k] = p[k];
+    });
+    return { data_iso: r.data_iso, veiculo: r.veiculo, fonte: r.fonte, payload };
+  });
+  const datasRecente = [...new Set(dadosRecente.map((d) => d.data_iso))].sort();
+
+  const recente = {
+    atualizadoEm,
+    origem: snapshot.origem,
+    planilhaId: opts.sheetId,
+    fontes: ["clever", "tcgl", "fleetbus"],
+    recorte_dias: DIAS_RECENTE,
+    total: dadosRecente.length,
+    total_clever: dadosRecente.filter((d) => d.fonte === "clever").length,
+    total_tcgl: dadosRecente.filter((d) => d.fonte === "tcgl").length,
+    total_fleetbus: dadosRecente.filter((d) => d.fonte === "fleetbus").length,
+    data_de: datasRecente[0] || null,
+    data_ate: datasRecente[datasRecente.length - 1] || null,
+    dados: dadosRecente
+  };
+
   const manifest = {
     atualizadoEm,
-    arquivo: "dados.json",
+    arquivo: "recente.json",
+    arquivoCompleto: "dados.json",
     origem: snapshot.origem,
     total: dados.length,
+    total_recente: recente.total,
     total_clever: clever.length,
     total_tcgl: tcgl.length,
     total_fleetbus: fleetbus.length,
     data_de: snapshot.data_de,
     data_ate: snapshot.data_ate,
+    recente_de: recente.data_de,
+    recente_ate: recente.data_ate,
     kmPorMes,
     kmAno
   };
 
-  fs.writeFileSync(path.join(OUT_DIR, "dados.json"), JSON.stringify(snapshot) + "\n");
+  fs.writeFileSync(path.join(OUT_DIR, "recente.json"), JSON.stringify(recente) + "\n");
   fs.writeFileSync(path.join(OUT_DIR, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
 
   console.log(`Clever:   ${clever.length} registro(s)`);
   console.log(`TCGL:     ${tcgl.length} registro(s)`);
   console.log(`FleetBus: ${fleetbus.length} registro(s)`);
-  console.log(`Total:    ${dados.length} → ${OUT_DIR}/dados.json`);
-  if (datas.length) console.log(`Período: ${datas[0]} a ${datas[datas.length - 1]}`);
+  console.log(`Total:    ${dados.length}`);
+  console.log(`Recente:  ${recente.total} (${recente.data_de} a ${recente.data_ate}) → ${OUT_DIR}/recente.json`);
 }
 
 main().catch((err) => {
