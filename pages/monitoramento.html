@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitoramento | Portal CIOP</title>
+<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260821fx">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260821hud">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260821hud">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260820bar4">
+<script type="module" src="../assets/js/auth.js?v=20260820t21"></script>
+<style>
+body{margin:0;background:var(--fundo,#f5f7fb);color:#101828;font-family:var(--font,Inter,sans-serif);min-height:100vh}
+.title-wrap h1{margin:0;font-size:22px;font-weight:800;color:#06245c}
+.container{max-width:1180px;margin:20px auto 48px;padding:0 18px}
+.intro,.mn-status{margin:0 0 12px;color:#3f4757;font-weight:600;line-height:1.45}
+.mn-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin:0 0 18px}
+.mn-kpi{background:#fff;border:1px solid #dfe5ef;border-radius:12px;padding:10px 12px}
+.mn-kpi b{display:block;font-size:22px;color:#06245c}
+.mn-kpi span{font-size:11px;font-weight:800;color:#667085;text-transform:uppercase;letter-spacing:.04em}
+.mn-colunas{display:grid;grid-template-columns:1.15fr .95fr;gap:14px}
+@media (max-width:900px){.mn-colunas{grid-template-columns:1fr}}
+.mn-painel{background:#fff;border:1px solid #dfe5ef;border-radius:14px;padding:14px}
+.mn-painel h2{margin:0 0 8px;font-size:15px;color:#06245c}
+.mn-meta{margin:0 0 8px;font-size:12px;font-weight:700;color:#667085}
+.mn-painel input[type=search]{
+  width:100%;min-height:40px;border:1px solid #dfe5ef;border-radius:10px;padding:8px 12px;font-weight:700;margin-bottom:8px
+}
+.mn-abas{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.mn-abas button{
+  border:1px solid #dfe5ef;background:#f8fafc;border-radius:999px;padding:6px 10px;font-weight:800;font-size:12px;cursor:pointer;color:#06245c
+}
+.mn-abas button.ativo{background:#06245c;color:#fff;border-color:#06245c}
+.mn-lista{list-style:none;margin:0;padding:0;max-height:420px;overflow:auto;border:1px solid #eef2f7;border-radius:10px}
+.mn-lista li{border-bottom:1px solid #eef2f7;padding:8px 10px;font-size:13px;font-weight:600}
+.mn-lista li:last-child{border-bottom:0}
+.mn-row{display:grid;grid-template-columns:56px 1fr auto;gap:2px 10px;width:100%;text-align:left;border:0;background:transparent;font:inherit;cursor:pointer;padding:0}
+.mn-row strong{grid-row:1 / span 2;align-self:center;color:#06245c}
+.mn-row span{grid-column:2;color:#344054}
+.mn-row em{grid-column:3;grid-row:1 / span 2;align-self:center;font-style:normal;font-size:11px;color:#059669;font-weight:800}
+.mn-row small{grid-column:2;color:#667085;font-size:11px}
+.mn-vazio{margin:8px 0;color:#667085;font-weight:700}
+.mn-detalhe{margin-top:10px;padding-top:10px;border-top:1px dashed #dfe5ef}
+.mn-detalhe ul{max-height:180px;overflow:auto;columns:2;margin:0;padding-left:18px;font-size:12px;font-weight:700}
+.mn-sec{margin-top:22px}
+.mn-sec h2{margin:0 0 10px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#667085}
+.mn-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.mn-card{display:flex;flex-direction:column;gap:6px;min-height:96px;padding:12px;border-radius:12px;border:1px solid #dfe5ef;background:#fff;text-decoration:none;color:inherit}
+.mn-card strong{color:#06245c}
+.mn-card span{font-size:12px;font-weight:600;color:#3f4757;flex:1}
+.mn-card em{font-style:normal;font-size:10px;font-weight:800;text-transform:uppercase;color:#059669}
+@media (min-width:721px){
+  body{background:transparent !important}
+  .body-bg-wall{position:fixed;inset:0;z-index:-3;background-image:url('../assets/img/portal-bg-onibus.jpg?v=20260718j');background-size:cover;background-position:center}
+  .body-bg-stain{position:fixed;inset:0;z-index:-2;pointer-events:none;background:linear-gradient(180deg, rgba(6,20,50,.30) 0%, rgba(6,20,50,.55) 100%)}
+  html:not(.dk-dark) .mn-painel,html:not(.dk-dark) .mn-kpi,html:not(.dk-dark) .mn-card{background:rgba(255,255,255,.78);backdrop-filter:blur(16px)}
+  html.dk-dark .intro,html.dk-dark .mn-status,html.dk-dark .title-wrap h1,html.dk-dark .mn-painel h2,html.dk-dark .mn-kpi b,html.dk-dark .mn-card strong,html.dk-dark .mn-row strong{color:#f8fafc}
+  html.dk-dark .mn-painel,html.dk-dark .mn-kpi,html.dk-dark .mn-card{background:rgba(16,24,40,.82);border-color:rgba(186,210,230,.28)}
+  html.dk-dark .mn-painel input{background:rgba(255,255,255,.08);color:#f8fafc;border-color:rgba(186,210,230,.35)}
+}
+</style>
+</head>
+<body data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
+<div class="body-bg-wall" aria-hidden="true"></div>
+<div class="body-bg-stain" aria-hidden="true"></div>
+<header class="header">
+  <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP"><img class="portal-brand-art" src="../assets/img/logomarca-portalciop-tcgl-claro.png?v=20260818logo6" alt="Portal CIOP"></a>
+  <div class="title-wrap"><h1>Monitoramento</h1></div>
+  <div class="header-actions">
+    <div class="ciop-session">
+      <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+      <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+      <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+    </div>
+  </div>
+</header>
+<main class="container">
+  <a class="btn-portal" href="../index.html" style="display:inline-flex;margin-bottom:14px;background:#06245c;color:#fff;text-decoration:none;padding:8px 14px;border-radius:10px;font-weight:800">Portal</a>
+  <p class="intro">CAD plantado no portal: programação (linhas e tabelas) e registros (frota, gente, tipos). Só o seu usuário vê esta página.</p>
+  <p class="mn-status" id="mnStatus">Carregando…</p>
+  <div class="mn-kpis" id="mnKpis"></div>
+
+  <div class="mn-colunas">
+    <section class="mn-painel">
+      <h2>Programação</h2>
+      <p class="mn-meta" id="mnProgMeta"></p>
+      <input id="mnBuscaProg" type="search" placeholder="Filtrar linha, descrição ou tabela" aria-label="Filtrar programação">
+      <div id="mnProg"></div>
+      <div class="mn-detalhe" id="mnProgDetalhe" hidden>
+        <h3 id="mnProgDetalheTitulo" style="margin:0 0 6px;font-size:13px;color:#06245c"></h3>
+        <ul id="mnProgDetalheLista"></ul>
+      </div>
+    </section>
+    <div>
+      <section class="mn-painel">
+        <h2>Registros</h2>
+        <div class="mn-abas">
+          <button type="button" class="ativo" data-reg-aba="veiculos">Veículos</button>
+          <button type="button" data-reg-aba="funcionarios">Pessoas</button>
+          <button type="button" data-reg-aba="garagens">Garagens</button>
+          <button type="button" data-reg-aba="tipos">Tipos incidente</button>
+        </div>
+        <p class="mn-meta" id="mnRegsMeta"></p>
+        <input id="mnBuscaReg" type="search" placeholder="Filtrar registros" aria-label="Filtrar registros">
+        <div id="mnRegs"></div>
+      </section>
+      <section class="mn-painel" style="margin-top:14px">
+        <h2>Registros de incidente</h2>
+        <p class="mn-meta" id="mnIncMeta"></p>
+        <input id="mnBuscaInc" type="search" placeholder="Filtrar por veículo, linha, tipo, id" aria-label="Filtrar incidentes">
+        <div id="mnInc"></div>
+      </section>
+    </div>
+  </div>
+
+  <section class="mn-sec">
+    <h2>Ao vivo e CAD web</h2>
+    <div class="mn-cards">
+      <a class="mn-card" href="onibus-agora-clever.html"><strong>Mapa Clever</strong><span>Posição ao vivo (BusTime).</span><em>Portal</em></a>
+      <a class="mn-card" href="fleetbus-agora.html"><strong>FleetBus</strong><span>CAN e mapa on-demand.</span><em>Portal</em></a>
+      <a class="mn-card" href="https://cioplondrina.com.br/CADIncidentManagement/" target="_blank" rel="noopener"><strong>Incident Management</strong><span>Abrir o CAD web.</span><em>Link</em></a>
+      <a class="mn-card" href="incidentes-dashboard.html"><strong>Dashboard incidentes</strong><span>Lista completa no portal.</span><em>Portal</em></a>
+      <a class="mn-card" href="dados-telemetria.html"><strong>Telemetria</strong><span>Clever / TCGL / FleetBus.</span><em>Portal</em></a>
+      <a class="mn-card" href="consulta-veiculo.html"><strong>Consulta de veículo</strong><span>Frota com foto/tecnologia.</span><em>Portal</em></a>
+    </div>
+  </section>
+</main>
+<script src="../assets/js/monitoramento.js?v=20260821cad1"></script>
+</body>
+</html>

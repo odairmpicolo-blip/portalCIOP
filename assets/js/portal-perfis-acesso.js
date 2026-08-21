@@ -27,6 +27,7 @@ export const MODULOS_PORTAL = [
   { id: "terminais-agora", label: "Terminais Agora", grupo: "Operação" },
   { id: "itinerarios", label: "Itinerários", grupo: "Operação" },
   { id: "onibus-agora", label: "Horários", grupo: "Operação" },
+  { id: "monitoramento", label: "Monitoramento", grupo: "Operação" },
   { id: "onibus-agora-clever", label: "Monitoramento Ao Vivo", grupo: "Operação" },
   { id: "fleetbus-agora", label: "FleetBus Agora", grupo: "Operação" },
   { id: "criar-relatorio", label: "Criar Relatório", grupo: "Operação" },
