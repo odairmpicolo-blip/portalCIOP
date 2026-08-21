@@ -1,11 +1,5 @@
 (function () {
   const FOTOS = "../assets/img/frota/";
-  const MODELO_ESPECIAL = "Mercedes Benz 13,20m OF 1726L";
-  const PLACA_EXTRA = {
-    "1042": "ATR 8J28",
-    "1044": "ETQ 2G42",
-    "1052": "ARY 1611"
-  };
 
   function norm(s) {
     return String(s || "")
@@ -20,66 +14,42 @@
     return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   }
 
-  function ehEspecial(v) {
-    return norm(v.tecnologia).includes("especial");
-  }
-
-  function fotoPorTecnologia(v) {
-    if (ehEspecial(v)) return "";
-    const t = norm(v.tecnologia);
-    const cor = norm(v.cor);
-    const ar = norm(v.climatizacao).includes("com ar");
-    const p = String(v.veiculo || "");
-
+  function fotoPorTecnologia(tecnologia, modelo) {
+    const t = norm(tecnologia);
+    const m = norm(modelo);
+    if (!t || t === "especial") return "";
     if (t.includes("articulado")) return "superbus-articulado.png";
-    if (t.includes("brt")) return "superbus-padron.png";
-    if (t.includes("minionibus") || t.includes("low entry")) {
-      if (cor === "azul" && ar) return "low-entry.png";
-      if (cor === "azul") return "micro-azul.png";
-      return "micro-amarelo.png";
+    if (t.includes("padron")) return "superbus-padron.png";
+    if (t.includes("low entry")) return "low-entry.png";
+    if (t.includes("microonibus azul")) return "micro-azul.png";
+    if (t.includes("microonibus amarelo")) return "micro-amarelo.png";
+    if (t.includes("leve azul")) return "leve-azul.png";
+    if (t.includes("leve amarelo")) return "leve-amarelo.png";
+    if (t.includes("pesado azul") && t.includes("ar")) {
+      return m.includes("o500") ? "pesado-azul-o500.png" : "pesado-azul-ar.png";
     }
-    if (t.includes("leve")) return cor === "azul" ? "leve-azul.png" : "leve-amarelo.png";
-    if (t.includes("pesado")) {
-      if (cor === "azul" && ar) return p.startsWith("45") ? "pesado-azul-o500.png" : "pesado-azul-ar.png";
-      if (cor === "azul") return "pesado-azul.png";
-      if (cor === "amarelo" && ar) return "pesado-amarelo-ar.png";
-      return "pesado-amarelo.png";
-    }
-    return "pesado-amarelo.png";
-  }
-
-  function modeloPorFoto(arquivo, v) {
-    if (ehEspecial(v)) return MODELO_ESPECIAL;
-    if (arquivo === "superbus-articulado.png") return "Marcopolo Viale BRT";
-    if (arquivo === "superbus-padron.png") return "Marcopolo Superbus";
-    if (arquivo === "low-entry.png") return "Agrale Marcopolo Volare";
-    if (arquivo.indexOf("micro-") === 0) return "Marcopolo Senior";
-    if (arquivo === "pesado-azul-o500.png") return "Mercedes-Benz O 500 / Marcopolo Torino";
-    return "Marcopolo Torino";
-  }
-
-  function placaDo(prefixo) {
-    const extra = PLACA_EXTRA[String(prefixo)];
-    if (extra) return extra;
-    const mapa = window.CIOP_VEICULOS_PLACA || {};
-    return mapa[String(prefixo)] || "";
+    if (t.includes("pesado azul")) return "pesado-azul.png";
+    if (t.includes("pesado amarelo") && t.includes("ar")) return "pesado-amarelo-ar.png";
+    if (t.includes("pesado amarelo")) return "pesado-amarelo.png";
+    return "";
   }
 
   function catalogo() {
-    const patio = Array.isArray(window.FROTA_PATIO) ? window.FROTA_PATIO : [];
-    return patio.map((v) => {
-      const fotoArq = fotoPorTecnologia(v);
-      const placa = placaDo(v.veiculo);
-      const modelo = modeloPorFoto(fotoArq, v);
-      const tecnologia = v.rotulo || [v.cor, v.tecnologia, v.climatizacao].filter(Boolean).join(" · ");
+    const lista = Array.isArray(window.CIOP_FROTA_CONSULTA) ? window.CIOP_FROTA_CONSULTA : [];
+    return lista.map((v) => {
+      const prefixo = String(v.prefixo || "").trim();
+      const placa = String(v.placa || "").trim();
+      const tecnologia = String(v.tecnologia || "").trim();
+      const modelo = String(v.modelo || "").trim();
+      const fotoArq = fotoPorTecnologia(tecnologia, modelo);
       return {
-        prefixo: String(v.veiculo || ""),
+        prefixo,
         placa,
         placaKey: placaLimpa(placa),
         tecnologia,
         modelo,
         foto: fotoArq ? FOTOS + fotoArq : "",
-        busca: norm([v.veiculo, placa, tecnologia, modelo, v.cor, v.tecnologia, v.climatizacao].join(" "))
+        busca: norm([prefixo, placa, tecnologia, modelo].join(" "))
       };
     });
   }
