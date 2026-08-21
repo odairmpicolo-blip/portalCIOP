@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260821hud">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="../assets/css/cad-monitor.css?v=20260821cad19">
+<link rel="stylesheet" href="../assets/css/cad-monitor.css?v=20260821cad23">
 <script type="module" src="../assets/js/auth.js?v=20260820t21"></script>
 </head>
 <body class="cad-page" data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
@@ -70,6 +70,7 @@
           <i style="background:#7c3aed"></i>Reserva
           <i style="background:#0f766e"></i>Garagem
           <i style="background:#3f4757"></i>Fora
+          <i style="background:#374151"></i>Sem previsão
         </span>
       </div>
       <div class="map-body">
@@ -88,9 +89,9 @@
           <aside class="cad-map-side cad-map-side--linhas" id="oaLinhasPainel" hidden>
             <h2>Linhas</h2>
             <input id="buscaLinha" type="search" placeholder="Filtrar linha: 501, Vivi…" aria-label="Filtrar linhas">
-            <p class="map-linhas-dica">Clique na linha para o sinótico e o fantasminha.</p>
+            <p class="map-linhas-dica">Marque uma ou mais linhas. Só elas aparecem, com o fantasminha.</p>
             <div class="lines" id="listaLinhas"></div>
-            <button type="button" id="btnLimparLinha">Todas as linhas</button>
+            <button type="button" id="btnLimparLinha">Limpar seleção</button>
           </aside>
         </div>
       </div>
@@ -99,6 +100,11 @@
     <section class="cad-pane" id="paneStatus">
       <div class="st-kpis" id="stKpis"></div>
       <div class="st-toolbar">
+        <div class="st-subtabs st-ops" aria-label="Operadora">
+          <button type="button" class="ativo" data-st-op="">Todos</button>
+          <button type="button" data-st-op="TCGL">TCGL</button>
+          <button type="button" data-st-op="LondriSul">LondriSul</button>
+        </div>
         <div class="st-subtabs">
           <button type="button" class="ativo" data-st-aba="todos">Todos</button>
           <button type="button" data-st-aba="fora">Fora de serviço</button>
@@ -113,13 +119,12 @@
           <option>Garagem</option>
           <option>Fora de serviço</option>
         </select>
-        <input id="stBusca" type="search" placeholder="Buscar prefixo, linha, serviço ou motorista">
+        <input id="stBusca" type="search" placeholder="Prefixo, linha, serviço ou motorista">
         <select id="stFiltroLinha" aria-label="Filtrar por linha">
           <option value="">Todas as linhas</option>
         </select>
         <span class="st-live" id="stLive">Atualizando…</span>
       </div>
-      <p class="st-dica">TCGL e LondriSul · clique no veículo para abrir o mapa e a ficha</p>
       <div class="st-grid-wrap" id="cadStatusLista"></div>
     </section>
 
@@ -181,6 +186,16 @@
   </div>
 </div>
 
+<div class="oa-paleta-overlay" id="oaPaletaOverlay">
+  <div class="oa-paleta" role="dialog" aria-modal="true" aria-label="Buscar veículo">
+    <div class="oa-paleta-campo">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+      <input id="oaPaletaInput" type="search" autocomplete="off" placeholder="Veículo, linha, placa, serviço, tecnologia ou registro…">
+    </div>
+    <ul class="oa-paleta-lista" id="oaPaletaLista"></ul>
+  </div>
+</div>
+
 <div class="cad-ads-modal" id="cadAdsModal" hidden>
   <div class="cad-ads-bar">
     <strong>Visualização de programação</strong>
@@ -193,10 +208,10 @@
   </div>
 </div>
 
-<script src="../assets/js/frota-patio-data.js?v=20260821cad19"></script>
-<script src="../assets/js/frota-consulta-data.js?v=20260821cad19"></script>
+<script src="../assets/js/frota-patio-data.js?v=20260821cad23"></script>
+<script src="../assets/js/frota-consulta-data.js?v=20260821cad23"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="../assets/js/monitoramento.js?v=20260821cad19"></script>
-<script type="module" src="../assets/js/cad-ads-sessao.js?v=20260821cad19"></script>
+<script src="../assets/js/monitoramento.js?v=20260821cad23"></script>
+<script type="module" src="../assets/js/cad-ads-sessao.js?v=20260821cad23"></script>
 </body>
 </html>

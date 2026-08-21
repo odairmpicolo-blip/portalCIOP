@@ -241,15 +241,15 @@
   function abrirPainel(nome) {
     const mapaNome = nome === "sinotico" ? "mapa" : nome;
     const id = "pane" + mapaNome.charAt(0).toUpperCase() + mapaNome.slice(1);
+    const eraSinotico = document.body.classList.contains("cad-sinotico");
     document.querySelectorAll(".cad-pane").forEach((p) => p.classList.toggle("ativo", p.id === id));
     document.querySelectorAll(".cad-views [data-abrir]").forEach((b) => {
       b.classList.toggle("ativo", b.getAttribute("data-abrir") === nome);
     });
     document.body.classList.toggle("cad-sinotico", nome === "sinotico");
-    if (mapaNome === "mapa") {
-      setTimeout(() => window.__cadMapInvalidate?.(), 80);
-      if (nome === "sinotico") window.__cadAbrirLinhas?.();
-    }
+    if (nome === "sinotico") window.__cadEntrarSinotico?.();
+    else if (eraSinotico) window.__cadSairSinotico?.();
+    if (mapaNome === "mapa") setTimeout(() => window.__cadMapInvalidate?.(), 80);
   }
 
   function ligarShell() {
@@ -278,6 +278,7 @@
     adiantado: "#D30000",
     atrasado: "#FFFF00",
     noHorario: "#8FD400",
+    semPrevisao: "#374151",
     ocioso: "#7DD3FC",
     foraServico: "#3f4757",
     reserva: "#7c3aed",
@@ -367,8 +368,16 @@
     if (chave === "noHorario") return "No horário";
     if (chave === "adiantado") return "Adiantado";
     if (chave === "atrasado") return "Atrasado";
+    if (chave === "semPrevisao") return "Sem previsão";
     if (chave === "ocioso") return "Ocioso";
     return chave;
+  }
+
+  function categoriaOperacional(rt) {
+    const n = parseInt(String(rt || ""), 10);
+    if (Number.isFinite(n) && n >= 80 && n <= 999) return "produtivo";
+    if (CODIGOS_OCIOSO.has(rt)) return "ocioso";
+    return "foraServico";
   }
 
   function classificarVeiculo(v, agora, extra) {
@@ -380,12 +389,15 @@
     const gpsInvalido = Boolean(extra?.gpsInvalido);
     const lat = extra?.lat != null ? extra.lat : Number(v.lat);
     const lon = extra?.lon != null ? extra.lon : Number(v.lon);
+    const cat = categoriaOperacional(rt);
     let chave = "noHorario";
     if (gpsInvalido) chave = "gpsInvalido";
-    else if (CODIGOS_OCIOSO.has(rt)) chave = "ocioso";
-    else if (CODIGOS_FORA.has(rt) || rt === "") chave = "foraServico";
-    else if (delay != null && delay < -ADIANTADO_SEG) chave = "adiantado";
-    else if (delay != null && delay > ATRASADO_SEG) chave = "atrasado";
+    else if (cat === "ocioso") chave = "ocioso";
+    else if (cat === "foraServico") chave = "foraServico";
+    else if (delay == null || !Number.isFinite(delay)) chave = "semPrevisao";
+    else if (delay < -ADIANTADO_SEG) chave = "adiantado";
+    else if (delay > ATRASADO_SEG) chave = "atrasado";
+    else chave = "noHorario";
     const terminal = (!gpsInvalido && chave === "foraServico") ? terminalDoPonto(lat, lon) : null;
     const naGaragem = !gpsInvalido && chave === "foraServico" && !terminal && dentroDaGaragem(lat, lon);
     if (chave === "foraServico" && terminal) chave = "reserva";
@@ -537,8 +549,8 @@
 
   function nomeMotorista(cad, oid) {
     const p = fichaPessoa(cad, oid);
-    if (p.op && p.nc) return `${p.op} · ${p.nc}`;
-    return p.op || p.nc;
+    if (p.nc && p.op) return `${p.nc} · ${p.op}`;
+    return p.nc || p.op;
   }
 
   const FB = {
@@ -687,7 +699,7 @@
   }
 
   function textoStatusQtd(r) {
-    if (r.chave === "ocioso" || r.chave === "foraServico" || r.chave === "reserva" || r.chave === "garagem" || r.chave === "gpsInvalido" || r.delayMin === "") return r.veiculo;
+    if (r.chave === "ocioso" || r.chave === "foraServico" || r.chave === "reserva" || r.chave === "garagem" || r.chave === "gpsInvalido" || r.chave === "semPrevisao" || r.delayMin === "") return r.veiculo;
     const min = Math.abs(r.delayMin);
     return r.veiculo + (min ? " · " + min + " min" : "");
   }
@@ -697,7 +709,6 @@
   }
 
   function popupVeiculoHtml(cad, r, telemetria) {
-    const p = fichaPessoa(cad, r.oid);
     const frota = fichaFrota(r.vid);
     const patio = (window.FROTA_PATIO || []).find((f) => String(f.veiculo) === String(r.vid));
     const tec = frota.tecnologia || patio?.rotulo || patio?.tecnologia || tipoVeiculo(cad, r.vid);
@@ -711,7 +722,7 @@
         : "") +
       '<p class="oa-vinfo-sec">Operação</p>' +
       '<div class="oa-vinfo-grid">' +
-        itemInfo("Motorista", p.op || "N/A") +
+        itemInfo("Motorista", nomeMotorista(cad, r.oid) || "N/A") +
         itemInfo("Trabalho", r.servico || r.rid || "—") +
         itemInfo("Bloco", r.tabela || "N/A") +
         itemInfo("Sentido", r.sentido || "—") +
@@ -745,7 +756,7 @@
         "</div>" +
       "</div>" +
       '<div class="veiculo-panel-grid veiculo-panel-grid-3">' +
-        itemPopup("Nome", p.op || "—") + itemPopup("Registro", p.nc || r.oid || "—") + itemPopup("Velocidade", r.spd === "" ? "—" : fmtNumBR(r.spd) + " km/h") +
+        itemPopup("Registro", p.nc || r.oid || "—") + itemPopup("Nome", p.op || "—") + itemPopup("Velocidade", r.spd === "" ? "—" : fmtNumBR(r.spd) + " km/h") +
       "</div>" +
       '<div class="veiculo-panel-grid veiculo-panel-grid-via">' + itemPopup("Linha", r.rt || "—") + itemPopup("Via", r.des || "—") + "</div>" +
       '<div class="veiculo-panel-grid veiculo-panel-grid-3">' +
@@ -765,7 +776,8 @@
       abertos: new Set(["Adiantado", "Atrasado"]),
       mapFiltro: "todos",
       mapOp: "",
-      linhaFiltro: null,
+      stOp: "",
+      linhasSel: new Set(),
       buscaLinha: "",
       rotas: [],
       patternsCache: new Map(),
@@ -793,7 +805,7 @@
 
     function htmlIcone(r, extraClass, corOverride) {
       const cor = corOverride || r.cor || STATUS_CORES.noHorario;
-      const cz = contrastHex(cor);
+      const cz = "#fff";
       const rot = Number.isFinite(r.hdg) ? r.hdg : 0;
       const uid = "b" + String(r.vid || "x").replace(/\W/g, "") + (extraClass ? "g" : "");
       const numero = esc(r.vid || "—");
@@ -817,23 +829,30 @@
           '<rect x="17" y="15" width="26" height="21" rx="6" fill="' + cz + '"/>' +
           '<rect x="20" y="17.3" width="20" height="11.5" rx="2.8" fill="url(#chumboGlass' + uid + ')" stroke="rgba(0,0,0,.55)" stroke-width="1"/>' +
           '<rect x="20" y="17.3" width="20" height="11.5" rx="2.8" fill="url(#glassShine' + uid + ')"/>' +
-          '<text x="30" y="25.9" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="7.2" font-weight="800" fill="' + cz + '">' + numero + '</text>' +
+          '<text x="30" y="25.9" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="7.2" font-weight="800" letter-spacing=".2" fill="#fff">' + numero + '</text>' +
           '<circle cx="22.5" cy="33" r="2.1" fill="' + cz + '"/><circle cx="37.5" cy="33" r="2.1" fill="' + cz + '"/>' +
           '<rect x="20.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/><rect x="35.3" y="35" width="4.4" height="3.4" rx="1" fill="' + cz + '"/>' +
         '</svg></div>';
     }
 
+    function modoSinotico() {
+      return document.body.classList.contains("cad-sinotico");
+    }
+
     function listaMapa() {
       const q = norm($("mapBusca")?.value || "");
+      const sel = estado.linhasSel;
       return estado.rows.filter((r) => {
         if (r.gpsInvalido) {
           /* entra no mapa ancorado */
         } else if (!noBrasil(r.lat, r.lon)) return false;
+        if (modoSinotico()) {
+          if (!sel.size || !sel.has(r.rt)) return false;
+        } else if (sel.size && !sel.has(r.rt)) return false;
         if (estado.mapOp && r.operadora !== estado.mapOp) return false;
         if (estado.mapFiltro === "fora" && r.chave !== "foraServico" && r.chave !== "ocioso" && r.chave !== "reserva" && r.chave !== "garagem") return false;
         if (estado.mapFiltro === "reserva" && r.chave !== "reserva") return false;
         if (estado.mapFiltro === "garagem" && r.chave !== "garagem") return false;
-        if (estado.linhaFiltro && r.rt !== estado.linhaFiltro) return false;
         if (q && !norm(r.vid).includes(q) && !norm(r.rt).includes(q) && !norm(r.servico).includes(q) && !norm(r.des).includes(q) && !norm(nomeMotorista(cad, r.oid)).includes(q)) return false;
         return true;
       });
@@ -861,7 +880,7 @@
       const lista = rotasVisiveis();
       box.innerHTML = lista.map((r, i) => {
         const cor = corRota(r.routeId, i);
-        const ativo = estado.linhaFiltro === r.routeId;
+        const ativo = estado.linhasSel.has(r.routeId);
         return `<button type="button" class="line-btn${ativo ? " active" : ""}" data-id="${esc(r.routeId)}">
           <span class="line-count zero" data-contagem="${esc(r.routeId)}">0</span>
           <span class="line-chip" style="background:${esc(cor)};color:${contrastHex(cor)}">${esc(r.shortName)}</span>
@@ -958,30 +977,33 @@
       return { lat: last.lat, lon: last.lon };
     }
 
-    async function desenharTracoRota(routeId) {
+    async function desenharTracosSelecionados() {
       limparTraco();
-      if (!routeId || !mapa.leaflet) return;
+      const ids = [...estado.linhasSel];
+      if (!ids.length || !mapa.leaflet) return;
       try {
         const base = await resolverProxy();
-        const data = await fetch(base + "/getpatterns?rt=" + encodeURIComponent(routeId), { cache: "no-store" }).then((r) => r.json());
-        const patterns = extrairListaBustime(data, "ptr");
-        const cor = corRota(routeId, 0);
         const linhas = [];
         const paradas = [];
         let todos = [];
-        for (const pat of patterns) {
-          if (!Array.isArray(pat.pt)) continue;
-          const latlngs = pat.pt.map((p) => [Number(p.lat), Number(p.lon)]).filter(([la, lo]) => Number.isFinite(la) && Number.isFinite(lo));
-          if (latlngs.length) {
-            linhas.push(L.polyline(latlngs, { color: "#fff", weight: 10, opacity: 0.65, lineCap: "round", lineJoin: "round" }));
-            linhas.push(L.polyline(latlngs, { color: cor, weight: 5.5, opacity: 1, lineCap: "round", lineJoin: "round" }));
-            todos = todos.concat(latlngs);
-          }
-          for (const p of pat.pt) {
-            if (p.typ !== "S" || !Number.isFinite(Number(p.lat))) continue;
-            paradas.push(L.circleMarker([Number(p.lat), Number(p.lon)], {
-              radius: 5, weight: 2.5, color: "#fff", fillColor: cor, fillOpacity: 1
-            }).bindTooltip(esc(p.stpnm || "Parada"), { direction: "top" }));
+        for (const routeId of ids) {
+          const data = await fetch(base + "/getpatterns?rt=" + encodeURIComponent(routeId), { cache: "no-store" }).then((r) => r.json());
+          const patterns = extrairListaBustime(data, "ptr");
+          const cor = corRota(routeId, 0);
+          for (const pat of patterns) {
+            if (!Array.isArray(pat.pt)) continue;
+            const latlngs = pat.pt.map((p) => [Number(p.lat), Number(p.lon)]).filter(([la, lo]) => Number.isFinite(la) && Number.isFinite(lo));
+            if (latlngs.length) {
+              linhas.push(L.polyline(latlngs, { color: "#fff", weight: 10, opacity: 0.65, lineCap: "round", lineJoin: "round" }));
+              linhas.push(L.polyline(latlngs, { color: cor, weight: 5.5, opacity: 1, lineCap: "round", lineJoin: "round" }));
+              todos = todos.concat(latlngs);
+            }
+            for (const p of pat.pt) {
+              if (p.typ !== "S" || !Number.isFinite(Number(p.lat))) continue;
+              paradas.push(L.circleMarker([Number(p.lat), Number(p.lon)], {
+                radius: 5, weight: 2.5, color: "#fff", fillColor: cor, fillOpacity: 1
+              }).bindTooltip(esc(p.stpnm || "Parada"), { direction: "top" }));
+            }
           }
         }
         if (!linhas.length) return;
@@ -993,7 +1015,7 @@
 
     async function atualizarFantasmas() {
       if (!mapa.leaflet) return;
-      if (!estado.linhaFiltro) {
+      if (!estado.linhasSel.size) {
         limparFantasmas();
         return;
       }
@@ -1035,11 +1057,13 @@
     }
 
     async function selecionarLinha(rt) {
-      estado.linhaFiltro = estado.linhaFiltro === rt ? null : rt;
+      if (!rt) return;
+      if (estado.linhasSel.has(rt)) estado.linhasSel.delete(rt);
+      else estado.linhasSel.add(rt);
       pintarListaLinhas();
       pintarMapa();
-      if (estado.linhaFiltro) {
-        await desenharTracoRota(estado.linhaFiltro);
+      if (estado.linhasSel.size) {
+        await desenharTracosSelecionados();
         await atualizarFantasmas();
       } else {
         limparTraco();
@@ -1054,16 +1078,16 @@
 
     function dadosPerformance() {
       const of = estado.perfOficial;
-      if (of?.indices && typeof of.indices.noHorario === "number" && !estado.linhaFiltro) {
+      if (of?.indices && typeof of.indices.noHorario === "number" && !estado.linhasSel.size) {
         return { oficial: true, pct: of.indices.noHorario, atrasadoPct: of.indices.atrasado, adiantadoPct: of.indices.adiantado, geradoEm: of.geradoEm || of.atualizadoEm };
       }
       const prod = estado.rows.filter((r) => r.chave === "adiantado" || r.chave === "atrasado" || r.chave === "noHorario");
-      const recorte = estado.linhaFiltro ? prod.filter((r) => r.rt === estado.linhaFiltro) : prod;
+      const recorte = estado.linhasSel.size ? prod.filter((r) => estado.linhasSel.has(r.rt)) : prod;
       const nH = recorte.filter((r) => r.chave === "noHorario").length;
       const nAt = recorte.filter((r) => r.chave === "atrasado").length;
       const nAd = recorte.filter((r) => r.chave === "adiantado").length;
       const t = recorte.length;
-      return { oficial: false, pct: t ? (nH / t) * 100 : null, noHorario: nH, atrasado: nAt, adiantado: nAd, total: t, filtro: estado.linhaFiltro };
+      return { oficial: false, pct: t ? (nH / t) * 100 : null, noHorario: nH, atrasado: nAt, adiantado: nAd, total: t, filtro: estado.linhasSel.size ? [...estado.linhasSel].join(", ") : null };
     }
 
     function atualizarChipPerformance() {
@@ -1175,6 +1199,79 @@
       if (overlay) overlay.hidden = true;
     }
 
+    function blobPaleta(r) {
+      const p = fichaPessoa(cad, r.oid);
+      const frota = fichaFrota(r.vid);
+      return norm([
+        r.vid, r.rt, r.des, r.servico, r.tabela, r.rid, r.operadora, r.veiculo,
+        r.oid, p.nc, p.op, frota.placa, frota.modelo, frota.tecnologia
+      ].join(" "));
+    }
+
+    function buscarNaPaleta(termo) {
+      const q = norm(termo);
+      if (!q) return [];
+      const placaQ = String(termo || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      return estado.rows.filter((r) => {
+        if (blobPaleta(r).includes(q)) return true;
+        if (placaQ.length >= 4) {
+          const pl = fichaFrota(r.vid).placa.toUpperCase().replace(/[^A-Z0-9]/g, "");
+          if (pl && pl.includes(placaQ)) return true;
+        }
+        return false;
+      }).sort((a, b) => a.vid.localeCompare(b.vid, "pt", { numeric: true })).slice(0, 40);
+    }
+
+    function renderPaleta(termo) {
+      const lista = $("oaPaletaLista");
+      if (!lista) return;
+      if (!String(termo || "").trim()) {
+        lista.innerHTML = '<li class="oa-paleta-vazio">Digite veículo, linha, placa, serviço, tecnologia ou registro.</li>';
+        return;
+      }
+      const achados = buscarNaPaleta(termo);
+      if (!achados.length) {
+        lista.innerHTML = '<li class="oa-paleta-vazio">Nenhum veículo com esse termo.</li>';
+        return;
+      }
+      lista.innerHTML = achados.map((r, i) => {
+        const frota = fichaFrota(r.vid);
+        const p = fichaPessoa(cad, r.oid);
+        const linha = r.rt ? ("Linha " + r.rt) : r.veiculo;
+        return '<li class="oa-paleta-item' + (i === 0 ? " ativo" : "") + '" data-vid="' + esc(r.vid) + '">' +
+          '<span class="oa-paleta-vid" style="background:' + esc(r.cor) + ';color:' + contrastHex(r.cor) + '">' + esc(r.vid) + "</span>" +
+          '<span class="oa-paleta-txt"><b>' + esc([r.operadora, linha, frota.placa].filter(Boolean).join(" · ")) + "</b>" +
+          "<span>" + esc([p.nc && p.op ? p.nc + " · " + p.op : (p.nc || p.op || "—"), r.servico || "", frota.tecnologia || frota.modelo || "", r.veiculo].filter(Boolean).join(" · ")) + "</span></span></li>";
+      }).join("");
+      lista.querySelectorAll(".oa-paleta-item").forEach((el) => {
+        el.addEventListener("click", () => escolherNaPaleta(el.getAttribute("data-vid")));
+      });
+    }
+
+    function paletaAberta() {
+      return $("oaPaletaOverlay")?.classList.contains("open");
+    }
+
+    function abrirPaleta() {
+      $("oaPaletaOverlay")?.classList.add("open");
+      const campo = $("oaPaletaInput");
+      if (campo) {
+        campo.value = "";
+        setTimeout(() => campo.focus(), 40);
+      }
+      renderPaleta("");
+    }
+
+    function fecharPaleta() {
+      $("oaPaletaOverlay")?.classList.remove("open");
+    }
+
+    function escolherNaPaleta(vid) {
+      if (!vid) return;
+      fecharPaleta();
+      abrirPopupStatus(vid);
+    }
+
     function garantirMapa() {
       if (mapa.leaflet || typeof L === "undefined" || !$("cadMap")) return;
       mapa.leaflet = L.map("cadMap", { zoomControl: true }).setView([-23.31, -51.17], 13);
@@ -1229,7 +1326,7 @@
         pintarListaLinhas();
       });
       $("btnLimparLinha")?.addEventListener("click", () => {
-        estado.linhaFiltro = null;
+        estado.linhasSel.clear();
         limparTraco();
         limparFantasmas();
         pintarListaLinhas();
@@ -1250,9 +1347,29 @@
         $("oaBtnLupa")?.classList.remove("aberto");
         if (linhas) linhas.hidden = false;
         $("oaBtnLinhas")?.classList.add("aberto");
+        const dica = document.querySelector(".map-linhas-dica");
+        const limpar = $("btnLimparLinha");
+        if (dica) dica.textContent = modoSinotico()
+          ? "Marque uma ou mais linhas. Só elas aparecem, com o fantasminha."
+          : "Clique na linha para filtrar. Pode marcar várias.";
+        if (limpar) limpar.textContent = modoSinotico() ? "Limpar seleção" : "Todas as linhas";
         pintarListaLinhas();
       }
       window.__cadAbrirLinhas = abrirPainelLinhas;
+      window.__cadEntrarSinotico = () => {
+        estado.linhasSel.clear();
+        limparTraco();
+        limparFantasmas();
+        abrirPainelLinhas();
+        pintarMapa();
+      };
+      window.__cadSairSinotico = () => {
+        estado.linhasSel.clear();
+        limparTraco();
+        limparFantasmas();
+        pintarListaLinhas();
+        pintarMapa();
+      };
       $("oaBtnLupa")?.addEventListener("click", () => {
         const painel = $("oaBuscaPainel");
         const abrir = painel?.hidden;
@@ -1346,6 +1463,7 @@
       const q = norm($("stBusca")?.value || "");
       return estado.rows.filter((r) => {
         if (r.chave === "gpsInvalido") return false;
+        if (estado.stOp && r.operadora !== estado.stOp) return false;
         if (estado.aba === "fora" && r.chave !== "foraServico" && r.chave !== "ocioso" && r.chave !== "reserva" && r.chave !== "garagem") return false;
         if (ve && r.chave !== "gpsInvalido") {
           const ok =
@@ -1367,12 +1485,13 @@
     }
 
     function pintarKpisStatus() {
-      const naRua = estado.rows.filter((r) => r.chave !== "gpsInvalido" && r.chave !== "reserva" && r.chave !== "garagem");
+      const base = estado.stOp ? estado.rows.filter((r) => r.operadora === estado.stOp) : estado.rows;
+      const naRua = base.filter((r) => r.chave !== "gpsInvalido" && r.chave !== "reserva" && r.chave !== "garagem");
       const nAd = naRua.filter((r) => r.chave === "adiantado").length;
       const nAt = naRua.filter((r) => r.chave === "atrasado").length;
-      const nRes = estado.rows.filter((r) => r.chave === "reserva").length;
+      const nRes = base.filter((r) => r.chave === "reserva").length;
       const nGa = estado.rows.filter((r) => r.chave === "garagem").length;
-      if ($("statReserva")) $("statReserva").textContent = nRes;
+      if ($("statReserva")) $("statReserva").textContent = estado.rows.filter((r) => r.chave === "reserva").length;
       if ($("statGaragem")) $("statGaragem").textContent = nGa;
       if ($("stKpis")) {
         $("stKpis").innerHTML = `
@@ -1402,13 +1521,13 @@
 
       const grupos = new Map();
       for (const r of lista) {
-        const g = r.chave === "reserva" ? "Reserva" : r.chave === "garagem" ? "Garagem" : r.chave === "foraServico" ? "Fora de serviço" : r.chave === "noHorario" ? "No horário" : r.chave === "adiantado" ? "Adiantado" : r.chave === "atrasado" ? "Atrasado" : r.chave === "ocioso" ? "Ocioso" : r.veiculo;
+        const g = r.chave === "reserva" ? "Reserva" : r.chave === "garagem" ? "Garagem" : r.chave === "foraServico" ? "Fora de serviço" : r.chave === "noHorario" ? "No horário" : r.chave === "adiantado" ? "Adiantado" : r.chave === "atrasado" ? "Atrasado" : r.chave === "semPrevisao" ? "Sem previsão" : r.chave === "ocioso" ? "Ocioso" : r.veiculo;
         if (!grupos.has(g)) grupos.set(g, []);
         grupos.get(g).push(r);
       }
-      const ordem = ["Adiantado", "Atrasado", "No horário", "Ocioso", "Reserva", "Garagem", "Fora de serviço"];
+      const ordem = ["Adiantado", "Atrasado", "No horário", "Sem previsão", "Ocioso", "Reserva", "Garagem", "Fora de serviço"];
       const cols = `<tr>
-        <th>Veículo</th><th>Situação</th><th>Linha</th><th>Atraso</th>
+        <th>Veículo</th><th>Empresa</th><th>Situação</th><th>Linha</th><th>Atraso</th>
         <th>Motorista</th><th>Serviço</th><th>Destino</th><th>Última comunicação</th>
       </tr>`;
       let body = "";
@@ -1416,13 +1535,15 @@
         if (!grupos.has(st)) continue;
         const arr = grupos.get(st);
         const aberto = estado.abertos.has(st);
-        body += `<tr class="st-g" data-g="${st}"><td colspan="8">${st} (${arr.length}) ${aberto ? "▾" : "▸"}</td></tr>`;
+        body += `<tr class="st-g" data-g="${st}"><td colspan="9">${st} (${arr.length}) ${aberto ? "▾" : "▸"}</td></tr>`;
         if (!aberto) continue;
         arr.sort((a, b) => a.vid.localeCompare(b.vid, "pt", { numeric: true }));
         for (const r of arr) {
           const atraso = r.delayMin === "" ? "—" : (r.delayMin > 0 ? "+" + r.delayMin + " min" : r.delayMin + " min");
+          const opCls = r.operadora === "LondriSul" ? "lsul" : "tcgl";
           body += `<tr class="st-row" data-vid="${esc(r.vid)}">
             <td>${esc(r.vid)}</td>
+            <td><span class="st-op ${opCls}">${esc(r.operadora || "—")}</span></td>
             <td><i class="st-cor" style="background:${esc(r.cor)}"></i>${esc(r.veiculo)}</td>
             <td>${esc(r.rt || "—")}</td>
             <td>${esc(atraso)}</td>
@@ -1451,6 +1572,13 @@
 
     window.__cadPintarStatus = pintar;
 
+    document.querySelectorAll("[data-st-op]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        estado.stOp = btn.getAttribute("data-st-op") || "";
+        document.querySelectorAll("[data-st-op]").forEach((b) => b.classList.toggle("ativo", b === btn));
+        pintar();
+      });
+    });
     document.querySelectorAll("[data-st-aba]").forEach((btn) => {
       btn.addEventListener("click", () => {
         estado.aba = btn.getAttribute("data-st-aba");
@@ -1469,6 +1597,29 @@
     $("oaIndicePerfOverlay")?.addEventListener("click", (ev) => { if (ev.target.id === "oaIndicePerfOverlay") ev.currentTarget.hidden = true; });
     $("stVeicFechar")?.addEventListener("click", fecharPopupStatus);
     $("stVeicOverlay")?.addEventListener("click", (ev) => { if (ev.target.id === "stVeicOverlay") fecharPopupStatus(); });
+    $("oaPaletaInput")?.addEventListener("input", (e) => renderPaleta(e.target.value));
+    $("oaPaletaInput")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        escolherNaPaleta($("oaPaletaLista")?.querySelector(".oa-paleta-item")?.getAttribute("data-vid"));
+      }
+    });
+    $("oaPaletaOverlay")?.addEventListener("click", (e) => {
+      if (e.target.id === "oaPaletaOverlay") fecharPaleta();
+    });
+    document.addEventListener("keydown", (e) => {
+      const mod = e.ctrlKey || e.metaKey;
+      const digitando = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName || "");
+      if ((mod && (e.key === "t" || e.key === "T" || e.key === "k" || e.key === "K"))
+        || (e.key === "/" && !digitando && !mod)) {
+        e.preventDefault();
+        abrirPaleta();
+        return;
+      }
+      if (e.key === "Escape" && paletaAberta()) {
+        fecharPaleta();
+      }
+    });
 
     async function puxar() {
       try {
