@@ -151,7 +151,7 @@ Detalhes: `docs/fase-15-testes.md`
 
 - [x] `npm test` (API + resumo de km)
 - [x] Deploy da Lambda bloqueado se o teste falhar
-- [x] YAML de CI em `docs/github-workflows/testes.yml` e `.github/workflows/testes.yml` no teste
+- [x] YAML de CI em `docs/github-workflows/testes.yml` (PAT sem `workflow` não sobe `.github/workflows/`)
 - [ ] E2E no navegador — não inventado
 
 ## Fase 16 — Publicação
