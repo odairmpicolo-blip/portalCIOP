@@ -197,41 +197,91 @@
     );
   }
 
+  function tipoIncidente(row) {
+    const original = String(row?.tipoOriginal || "").trim();
+    const tipo = original && original.toUpperCase() !== "VAZIO" ? original : String(row?.tipo || "").trim();
+    if (tipo.toUpperCase() === "AE") return "AE (Botão de Emergência)";
+    return tipo || "Sem informação";
+  }
+
   function mostrarIncidentes(inc, q) {
     const hoje = hojeIsoLocal();
+    const dataBr = new Date(`${hoje}T00:00:00`).toLocaleDateString("pt-BR");
     const rows = (Array.isArray(inc?.incidentes) ? inc.incidentes : [])
+      .filter((r) => String(r.empresa || "TCGL").toUpperCase() === "TCGL")
       .filter((r) => dataIncidenteIso(r) === hoje);
     rows.sort((a, b) => Number(b.incidentId || b.id || 0) - Number(a.incidentId || a.id || 0));
-    const lista = filtra(rows, q, ["id", "veiculo", "linha", "tipo", "estado", "criadoPor", "data"]);
+    const lista = filtra(rows, q, [
+      "id", "incidentId", "veiculo", "linha", "tipo", "tipoOriginal", "estado",
+      "criadoPor", "data", "hora", "motorista", "motoristaNr", "proprietario",
+      "departamento", "natureOfProblem", "instructions"
+    ]);
+    const btnInc = $("btnAbaIncidentes");
+    if (btnInc) {
+      btnInc.innerHTML = `Incidentes<span class="cad-nav-count">${rows.length}</span>`;
+    }
+    if ($("mnIncTitulo")) $("mnIncTitulo").textContent = `Incidentes TCGL · ${dataBr}`;
     if ($("mnIncMeta")) {
-      $("mnIncMeta").textContent = `Total hoje: ${rows.length}` +
+      $("mnIncMeta").textContent = `${rows.length} incidente${rows.length === 1 ? "" : "s"} hoje` +
         (q ? ` · ${lista.length} no filtro` : "") +
         ` · atualizado ${fmtQuando(inc?.atualizadoEm)}`;
     }
-    if (!$("mnInc")) return;
-    $("mnInc").innerHTML = listaHtml(
-      lista.slice(0, 200).map((r) => `<li>
-        <strong>${esc(r.id || r.incidentId)}</strong>
-        <span>${esc(r.data || "")} ${esc(r.hora || "")} · ${esc(r.veiculo || "—")} · ${esc(r.linha || "—")}</span>
-        <em>${esc(r.tipo || r.estado || "")}</em>
-      </li>`),
-      "Nenhum incidente TCGL hoje."
-    );
+    const tbody = $("mnInc");
+    const vazio = $("mnIncVazio");
+    if (!tbody) return;
+    tbody.innerHTML = lista.map((r) => {
+      const id = r.id || r.incidentId || "";
+      return `<tr>
+        <td><a class="pill" href="https://cioplondrina.com.br/CADIncidentManagement/" target="_blank" rel="noopener" data-incidente-id="${esc(id)}">${esc(id)}</a></td>
+        <td>${esc(r.data || "")}</td>
+        <td>${esc(r.hora || "")}</td>
+        <td>${esc(r.departamento || "")}</td>
+        <td title="${esc(r.veiculoDescricao || r.veiculo || "")}">${esc(r.veiculo || "")}</td>
+        <td>${esc(r.linha || "")}</td>
+        <td>${esc(r.criadoPor || "")}</td>
+        <td>${esc(r.motoristaNr || "")}</td>
+        <td>${esc(r.motorista || "")}</td>
+        <td>${esc(tipoIncidente(r))}</td>
+        <td>${esc(r.proprietario || "")}</td>
+        <td>${esc(r.estado || "")}</td>
+        <td>${esc(r.natureOfProblem || "")}</td>
+        <td>${esc(r.instructions || "")}</td>
+      </tr>`;
+    }).join("");
+    if (vazio) vazio.hidden = lista.length > 0;
+  }
+
+  async function carregarPayloadIncidentes() {
+    try {
+      const mod = await import("../assets/js/incidentes-dados-leitura.js?v=20260821cad24");
+      const res = await mod.carregarDadosIncidentes();
+      if (res?.payload) return res.payload;
+    } catch (err) { /* fallback JSON estático */ }
+    try {
+      const rInc = await fetch(INC_JSON, { cache: "no-store" });
+      if (rInc.ok) return await rInc.json();
+    } catch (err) { /* opcional */ }
+    return null;
   }
 
   async function iniciar() {
     let cad = null;
     let inc = null;
     try {
-      const [rCad, rInc] = await Promise.all([
+      const [rCad, payloadInc] = await Promise.all([
         fetch(CAD_JSON, { cache: "no-store" }),
-        fetch(INC_JSON, { cache: "no-store" })
+        carregarPayloadIncidentes()
       ]);
       if (rCad.ok) cad = await rCad.json();
-      if (rInc.ok) inc = await rInc.json();
+      inc = payloadInc;
     } catch (err) { /* JSON local opcional */ }
     const atualizar = () => mostrarIncidentes(inc, $("mnBuscaInc")?.value || "");
     $("mnBuscaInc")?.addEventListener("input", atualizar);
+    $("mnInc")?.addEventListener("click", (ev) => {
+      const link = ev.target.closest("a[data-incidente-id]");
+      const id = link?.getAttribute("data-incidente-id");
+      if (id && navigator.clipboard?.writeText) navigator.clipboard.writeText(id).catch(() => {});
+    });
     atualizar();
     ligarLinksProgramacaoCad();
     ligarShell();
