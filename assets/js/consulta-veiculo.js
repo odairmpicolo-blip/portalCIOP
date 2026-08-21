@@ -14,6 +14,32 @@
     return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   }
 
+  function formatarTamanho(num) {
+    const n = String(num || "").replace(".", ",");
+    return n + "M = " + n + " Metros";
+  }
+
+  function separarModelo(bruto) {
+    const raw = String(bruto || "")
+      .replace(/\s+/g, " ")
+      .replace(/\s*-\s*/g, " - ")
+      .trim();
+    if (!raw) return { modelo: "", tamanho: "" };
+    const partes = raw.split(" - ").map((p) => p.trim()).filter(Boolean);
+    const reTam = /^(\d+(?:[.,]\d+)?)\s*M$/i;
+    let tamNum = "";
+    const resto = [];
+    for (const p of partes) {
+      const m = p.match(reTam);
+      if (m && !tamNum) tamNum = m[1];
+      else resto.push(p);
+    }
+    return {
+      modelo: resto.join(" - ") || raw,
+      tamanho: tamNum ? formatarTamanho(tamNum) : ""
+    };
+  }
+
   function fotoPorTecnologia(tecnologia, modelo) {
     const t = norm(tecnologia);
     const m = norm(modelo);
@@ -40,16 +66,18 @@
       const prefixo = String(v.prefixo || "").trim();
       const placa = String(v.placa || "").trim();
       const tecnologia = String(v.tecnologia || "").trim();
-      const modelo = String(v.modelo || "").trim();
-      const fotoArq = fotoPorTecnologia(tecnologia, modelo);
+      const modeloBruto = String(v.modelo || "").trim();
+      const partes = separarModelo(modeloBruto);
+      const fotoArq = fotoPorTecnologia(tecnologia, modeloBruto);
       return {
         prefixo,
         placa,
         placaKey: placaLimpa(placa),
         tecnologia,
-        modelo,
+        modelo: partes.modelo,
+        tamanho: partes.tamanho,
         foto: fotoArq ? FOTOS + fotoArq : "",
-        busca: norm([prefixo, placa, tecnologia, modelo].join(" "))
+        busca: norm([prefixo, placa, tecnologia, modeloBruto, partes.modelo, partes.tamanho].join(" "))
       };
     });
   }
@@ -99,6 +127,17 @@
     document.getElementById("cvPlaca").textContent = v.placa || "—";
     document.getElementById("cvTec").textContent = v.tecnologia || "—";
     document.getElementById("cvModelo").textContent = v.modelo || "—";
+    const tamDt = document.getElementById("cvTamDt");
+    const tamDd = document.getElementById("cvTamanho");
+    if (v.tamanho) {
+      tamDt.hidden = false;
+      tamDd.hidden = false;
+      tamDd.textContent = v.tamanho;
+    } else {
+      tamDt.hidden = true;
+      tamDd.hidden = true;
+      tamDd.textContent = "—";
+    }
     if (typeof dlg.showModal === "function") dlg.showModal();
     else dlg.setAttribute("open", "");
   }
