@@ -11,15 +11,18 @@
 <link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
 <link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
 <link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260821hud">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="../assets/css/cad-monitor.css?v=20260821cad4">
+<link rel="stylesheet" href="../assets/css/cad-monitor.css?v=20260821cad10">
 <script type="module" src="../assets/js/auth.js?v=20260820t21"></script>
 </head>
 <body class="cad-page" data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
+<div class="body-bg-wall" aria-hidden="true"></div>
 <header class="header">
   <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP"><img class="portal-brand-art" src="../assets/img/logomarca-portalciop-tcgl-claro.png?v=20260818logo6" alt="Portal CIOP"></a>
-  <div class="title-wrap"><h1>CleverCAD · Monitoramento</h1></div>
+  <div class="title-wrap"><h1>Monitoramento</h1></div>
   <div class="header-actions">
+    <button type="button" class="btn-prog" id="btnAbrirProgramacao">Visualização de programação</button>
     <div class="ciop-session">
       <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
       <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
@@ -29,249 +32,114 @@
 </header>
 
 <div class="cad-app">
-  <div class="cad-top">
-    <form class="cad-cmd" id="cadCmdForm">
-      <input id="cadCmd" type="search" placeholder="NV, NP ou linha" aria-label="Localizar veículo">
-      <button type="submit" title="Localizar">▶</button>
-    </form>
-    <button type="button" class="cad-badge" data-abrir="status"><span>Status</span> <b id="cadNStatus">—</b></button>
-    <button type="button" class="cad-badge" data-abrir="programacao"><span>Jornada</span> <b id="cadNJornada">—</b></button>
-    <button type="button" class="cad-badge" data-abrir="incidentes"><span>Eventos</span> <b id="cadNEventos">—</b></button>
-    <button type="button" class="cad-badge" data-abrir="incidentes"><span>Incidentes</span> <b id="cadNInc">—</b></button>
-    <button type="button" class="cad-badge notas" data-abrir="registros"><span>Notas</span> <b>0</b></button>
-    <button type="button" class="cad-badge" data-abrir="mapa"><span>Alarmes</span> <b id="cadNAlarmes">0</b></button>
-    <span class="cad-user" id="cadUserBar"></span>
-  </div>
-
-  <nav class="cad-tabs" aria-label="Menus CAD">
-    <button type="button" class="ativo" data-ribbon="inicio">Início</button>
-    <button type="button" data-ribbon="comunicacao">Comunicação</button>
-    <button type="button" data-ribbon="mapa">Mapa</button>
-    <button type="button" data-ribbon="veiculos">Veículos</button>
-    <button type="button" data-ribbon="rota">Modificação de Rota/Linha</button>
-    <button type="button" data-ribbon="ferramentas">Ferramentas</button>
-    <button type="button" data-ribbon="config">Configuração</button>
-    <button type="button" data-ribbon="ajuda">Ajuda</button>
+  <nav class="cad-views" aria-label="Seções">
+    <button type="button" class="ativo" data-abrir="mapa">Mapa</button>
+    <button type="button" data-abrir="status">Frota agora</button>
+    <button type="button" data-abrir="programacao">Linhas</button>
+    <button type="button" data-abrir="incidentes">Incidentes</button>
+    <button type="button" data-abrir="registros">Cadastros</button>
   </nav>
 
-  <div class="cad-ribbon" data-ribbon-pane="inicio">
-    <div class="cad-grupo">
-      <button class="cad-tool" type="button" data-abrir="mapa"><i>🖨</i>Imprimir</button>
-      <button class="cad-tool" type="button" id="cadTelaCheia"><i>⛶</i>Tela cheia</button>
-      <a class="cad-tool" href="../index.html"><i>✕</i>Portal</a>
-      <span>Arquivo</span>
-    </div>
-    <div class="cad-grupo">
-      <button class="cad-tool" type="button" data-abrir="status"><i>▦</i>Tabela de status</button>
-      <button class="cad-tool" type="button" data-abrir="programacao"><i>📅</i>Tabela de serviço</button>
-      <a class="cad-tool" data-cad-ads href="https://cioplondrina.com.br:8891/CADAdvancedDynamicScheduling/App/"><i>📋</i>Visualização CAD</a>
-      <button class="cad-tool" type="button" data-abrir="incidentes"><i>🚩</i>Tabela de eventos</button>
-      <a class="cad-tool" href="incidentes-dashboard.html"><i>📄</i>Incidentes</a>
-      <button class="cad-tool" type="button" data-abrir="registros"><i>🗒</i>Registros</button>
-      <span>Grades</span>
-    </div>
-  </div>
-  <div class="cad-ribbon" data-ribbon-pane="comunicacao" hidden>
-    <div class="cad-grupo">
-      <a class="cad-tool" href="https://cioplondrina.com.br/CADIncidentManagement/" target="_blank" rel="noopener"><i>✉</i>Incidentes CAD</a>
-      <button class="cad-tool" type="button" data-cad-so><i>📢</i>Anúncio público</button>
-      <button class="cad-tool" type="button" data-cad-so><i>💬</i>Bate-papo</button>
-      <button class="cad-tool" type="button" data-cad-so><i>🚌</i>Alerta do operador</button>
-      <span>Comunicação</span>
-    </div>
-  </div>
-  <div class="cad-ribbon" data-ribbon-pane="mapa" hidden>
-    <div class="cad-grupo">
-      <button class="cad-tool" type="button" data-map="hibrido"><i>🗺</i>Híbrido</button>
-      <button class="cad-tool ativo" type="button" data-map="rotulos"><i>🏷</i>Rótulos NV/NP</button>
-      <button class="cad-tool" type="button" data-map="encaixar"><i>🌍</i>Exibição completa</button>
-      <span>Visualizar</span>
-    </div>
-  </div>
-  <div class="cad-ribbon" data-ribbon-pane="veiculos" hidden>
-    <div class="cad-grupo">
-      <button class="cad-tool" type="button" id="cadLocalizarBtn"><i>🔍</i>Localizar veículo</button>
-      <a class="cad-tool" href="consulta-veiculo.html"><i>ℹ</i>Detalhes do veículo</a>
-      <span>Localizar</span>
-    </div>
-  </div>
-  <div class="cad-ribbon" data-ribbon-pane="rota" hidden>
-    <div class="cad-grupo">
-      <a class="cad-tool" href="desvios.html"><i>⚠</i>Modificação de rota</a>
-      <button class="cad-tool" type="button" data-abrir="programacao"><i>📅</i>Alterações no dia de serviço</button>
-      <span>Modificação de Rota/Linha</span>
-    </div>
-  </div>
-  <div class="cad-ribbon" data-ribbon-pane="ferramentas" hidden>
-    <div class="cad-grupo">
-      <a class="cad-tool" data-cad-ads href="https://cioplondrina.com.br:8891/CADAdvancedDynamicScheduling/App/"><i>📋</i>Exibir programação</a>
-      <button class="cad-tool" type="button" data-abrir="programacao"><i>📅</i>Espelho no portal</button>
-      <a class="cad-tool" href="pontualidade.html"><i>⏱</i>Desempenho pontual</a>
-      <a class="cad-tool" href="onibus-agora-clever.html"><i>▶</i>Mapa Clever completo</a>
-      <a class="cad-tool" href="http://10.235.142.105:8888/" target="_blank" rel="noopener"><i>📊</i>Relatórios</a>
-      <span>Administrador</span>
-    </div>
-  </div>
-  <div class="cad-ribbon" data-ribbon-pane="config" hidden>
-    <div class="cad-grupo">
-      <button class="cad-tool ativo" type="button" data-map="coords"><i>🌐</i>Coordenadas do mapa</button>
-      <span>Opções</span>
-    </div>
-  </div>
-  <div class="cad-ribbon" data-ribbon-pane="ajuda" hidden>
-    <div class="cad-grupo">
-      <button class="cad-tool" type="button" data-abrir="ajuda"><i>?</i>Esta tela</button>
-      <span>Ajuda</span>
-    </div>
-  </div>
-
-  <div class="cad-views">
-    <button type="button" data-abrir="mapa">TCGL [Filtered: (Veículo)]</button>
-    <button type="button" data-abrir="fora">Fora de serviço</button>
-    <button type="button" data-abrir="programacao">Programação</button>
-    <button type="button" class="ativo" data-abrir="status">Status</button>
-    <button type="button" data-abrir="incidentes">Incidentes</button>
-    <button type="button" data-abrir="registros">Registros</button>
-  </div>
-
   <div class="cad-stage">
-    <section class="cad-pane" id="paneMapa">
-      <div class="cad-map-ctrl">
-        <button type="button" class="ativo" data-tiles="mapa">Mapa</button>
-        <button type="button" data-tiles="hibrido">Híbrido</button>
+    <section class="cad-pane ativo" id="paneMapa">
+      <div class="map-bar">
+        <div class="cad-map-ctrl">
+          <button type="button" class="ativo" data-tiles="mapa">Mapa</button>
+          <button type="button" data-tiles="hibrido">Híbrido</button>
+        </div>
+        <div class="st-subtabs">
+          <button type="button" class="ativo" data-map-filtro="todos">Todos</button>
+          <button type="button" data-map-filtro="tcgl">TCGL</button>
+          <button type="button" data-map-filtro="fora">Fora de serviço</button>
+        </div>
+        <input id="mapBusca" type="search" placeholder="Localizar prefixo" aria-label="Localizar no mapa">
+        <span class="map-legenda">
+          <i style="background:#16a34a"></i>No horário
+          <i style="background:#eab308"></i>Atrasado
+          <i style="background:#c81e1e"></i>Adiantado
+          <i style="background:#94a3b8"></i>Fora / ocioso
+        </span>
       </div>
       <div id="cadMap"></div>
+      <p class="map-foot">Passe o mouse ou clique no carro para ver NV, NP, DT, RT, NC e OP.</p>
+    </section>
+
+    <section class="cad-pane" id="paneStatus">
+      <div class="st-kpis" id="stKpis"></div>
+      <div class="st-toolbar">
+        <div class="st-subtabs">
+          <button type="button" class="ativo" data-st-aba="todos">Todos</button>
+          <button type="button" data-st-aba="tcgl">TCGL</button>
+          <button type="button" data-st-aba="cmtu">LondriSul</button>
+          <button type="button" data-st-aba="semcom">Sem comunicação</button>
+        </div>
+        <select id="stFiltroVeic" aria-label="Situação">
+          <option value="">Todas as situações</option>
+          <option>Adiantado</option>
+          <option>Atrasado</option>
+          <option>No horário</option>
+          <option>Ocioso</option>
+          <option>Fora de serviço</option>
+        </select>
+        <input id="stBusca" type="search" placeholder="Buscar prefixo, linha, serviço ou motorista">
+        <span class="st-live" id="stLive">Atualizando…</span>
+      </div>
+      <p class="st-dica">Adiantado: mais de 2 min cedo · Atrasado: mais de 6 min · Clique no grupo para abrir</p>
+      <div class="st-grid-wrap" id="cadStatusLista"></div>
     </section>
 
     <section class="cad-pane cad-scroll" id="paneProgramacao">
       <p class="mn-status" id="mnStatus">Carregando…</p>
-      <section class="cad-viz" id="cadViz" aria-label="Visualização de programação">
-        <div class="cad-viz-head">Visualização de programação
-          <a data-cad-ads href="https://cioplondrina.com.br:8891/CADAdvancedDynamicScheduling/App/" style="float:right;color:#fff;font-size:12px;font-weight:800">Abrir no CAD</a>
-        </div>
-        <form class="cad-viz-filtros" id="cadVizForm">
-          <label>Data <input id="cadVizData" type="date" required></label>
-          <label>Filtro
-            <select id="cadVizTipo">
-              <option value="bloco" selected>Bloco</option>
-              <option value="rota">Rota</option>
-            </select>
-          </label>
-          <input id="cadVizBloco" type="search" value="3030101" placeholder="Work-ID" aria-label="Work-ID ou rota" autocomplete="off">
-          <button class="cad-enviar" type="submit">Enviar</button>
-          <span class="cad-info" id="cadVizInfo"></span>
-          <div class="cad-viz-toggles" role="group" aria-label="Tipo de dia">
-            <button type="button" data-modo-dia="calendario">Dia do calendário</button>
-            <button type="button" class="ativo" data-modo-dia="servico">Dia de serviço</button>
-          </div>
-        </form>
-        <div class="cad-timeline">
-          <div class="cad-timeline-horas" id="cadVizHoras"></div>
-          <div class="cad-timeline-faixa" id="cadVizFaixa"></div>
-        </div>
-        <div class="cad-legend">
-          <span><i style="background:#f5e54a"></i>Atual</span>
-          <span><i style="background:#8ec8f0"></i>Compensação</span>
-          <span><i style="background:#fff;border:2px solid #f59e0b"></i>Compensação não programada</span>
-          <span><i style="background:#cbd5e1"></i>Cancelado</span>
-          <span>● Atraso</span>
-          <span style="color:#c81e1e">● Adiantado</span>
-        </div>
-        <div class="cad-viagens" id="cadVizViagens"></div>
-      </section>
       <section class="mn-painel">
-        <h2>Programação</h2>
+        <h2>Linhas da programação</h2>
         <p class="mn-meta" id="mnProgMeta"></p>
-        <input id="mnBuscaProg" type="search" placeholder="Filtrar linha, descrição ou tabela" aria-label="Filtrar programação">
+        <input id="mnBuscaProg" type="search" placeholder="Buscar linha ou descrição" aria-label="Filtrar linhas">
         <div id="mnProg"></div>
         <div class="mn-detalhe" id="mnProgDetalhe" hidden>
-          <h3 id="mnProgDetalheTitulo" style="margin:0 0 6px;font-size:13px;color:#06245c"></h3>
+          <h3 id="mnProgDetalheTitulo"></h3>
           <ul id="mnProgDetalheLista"></ul>
         </div>
       </section>
     </section>
 
-    <section class="cad-pane ativo" id="paneStatus">
-      <div class="st-bar">
-        <span>Fez Logon <b id="stLogon">—</b></span>
-        <span>Fez Logoff <b id="stLogoff">—</b></span>
-        <span>Limite Adiantado <b>-2 min</b></span>
-        <span>Atrasado <b>6 min</b></span>
-        <span>Fora de Rota <b>91 m</b></span>
-        <span class="st-live" id="stLive">BusTime…</span>
-      </div>
-      <div class="st-subtabs">
-        <button type="button" class="ativo" data-st-aba="tcgl">TCGL - Total</button>
-        <button type="button" data-st-aba="cmtu">CMTU - TOTAL</button>
-        <button type="button" data-st-aba="soft">SoftLogoff</button>
-        <button type="button" data-st-aba="semcom">Sem Comunicação</button>
-      </div>
-      <div class="st-filtros">
-        <label>Status da Comunicação
-          <select id="stFiltroCom">
-            <option value="">(todos)</option>
-            <option value="Comunicando">Comunicando</option>
-            <option value="Não Comunicando">Não Comunicando</option>
-          </select>
-        </label>
-        <label>Status do veículo
-          <select id="stFiltroVeic">
-            <option value="">(todos)</option>
-            <option>Horário Adiantado</option>
-            <option>Horário Atrasado</option>
-            <option>Normal</option>
-            <option>Fora de serviço</option>
-            <option>Escala</option>
-            <option>Fora de rota</option>
-            <option>Desligado</option>
-          </select>
-        </label>
-        <input id="stBusca" type="search" placeholder="Filtrar veículo, linha, serviço, motorista">
-      </div>
-      <div class="st-grid-wrap" id="cadStatusLista"></div>
-      <div class="mn-kpis" id="mnKpis" hidden></div>
-    </section>
-
     <section class="cad-pane cad-scroll" id="paneIncidentes">
-      <h2>Registros de incidente</h2>
-      <p class="mn-meta" id="mnIncMeta"></p>
-      <input id="mnBuscaInc" type="search" placeholder="Filtrar por veículo, linha, tipo, id" aria-label="Filtrar incidentes">
-      <div id="mnInc"></div>
+      <section class="mn-painel">
+        <h2>Incidentes recentes</h2>
+        <p class="mn-meta" id="mnIncMeta"></p>
+        <input id="mnBuscaInc" type="search" placeholder="Buscar veículo, linha, tipo ou número" aria-label="Filtrar incidentes">
+        <div id="mnInc"></div>
+      </section>
     </section>
 
     <section class="cad-pane cad-scroll" id="paneRegistros">
-      <h2>Registros</h2>
-      <div class="mn-abas">
-        <button type="button" class="ativo" data-reg-aba="veiculos">Veículos</button>
-        <button type="button" data-reg-aba="funcionarios">Pessoas</button>
-        <button type="button" data-reg-aba="garagens">Garagens</button>
-        <button type="button" data-reg-aba="tipos">Tipos incidente</button>
-      </div>
-      <p class="mn-meta" id="mnRegsMeta"></p>
-      <input id="mnBuscaReg" type="search" placeholder="Filtrar registros" aria-label="Filtrar registros">
-      <div id="mnRegs"></div>
+      <section class="mn-painel">
+        <h2>Cadastros do CAD</h2>
+        <div class="mn-abas">
+          <button type="button" class="ativo" data-reg-aba="veiculos">Veículos</button>
+          <button type="button" data-reg-aba="funcionarios">Pessoas</button>
+          <button type="button" data-reg-aba="garagens">Garagens</button>
+          <button type="button" data-reg-aba="tipos">Tipos de incidente</button>
+        </div>
+        <p class="mn-meta" id="mnRegsMeta"></p>
+        <input id="mnBuscaReg" type="search" placeholder="Filtrar cadastro" aria-label="Filtrar cadastros">
+        <div id="mnRegs"></div>
+      </section>
     </section>
-
-    <section class="cad-pane cad-scroll" id="paneAjuda">
-      <div class="mn-painel">
-        <h2>O que esta tela faz</h2>
-        <p>Espelho da estação do Clever CAD no portal: mapa ao vivo (BusTime), Work-IDs e cadastros extraídos do Incident Management.</p>
-        <p>A visualização de programação do CAD (paradas e horários do veículo) abre em <a data-cad-ads href="https://cioplondrina.com.br:8891/CADAdvancedDynamicScheduling/App/">CAD Advanced Dynamic Scheduling</a> na porta 8891. O atalho do portal não grava usuário/senha — o login continua no CAD.</p>
-        <p>Útil: Work-ID com 7 dígitos (3030101). Sábado começa com 2 (23030101). Domingo começa com 3 (33030101).</p>
-        <p>Rádio, bate-papo, logon de veículo e anúncio público continuam só no cliente desktop.</p>
-      </div>
-    </section>
-  </div>
-
-  <div class="cad-foot">
-    <span>Portal CIOP · mapa BusTime</span>
-    <span id="cadCoords">Latitude — Longitude —</span>
-    <span id="cadRelogio">—</span>
   </div>
 </div>
 
+<div class="cad-ads-modal" id="cadAdsModal" hidden>
+  <div class="cad-ads-bar">
+    <strong>Visualização de programação</strong>
+    <span>Work-ID útil: 7 dígitos · sábado começa com 2 · domingo com 3</span>
+    <button type="button" id="cadAdsNovaAba">Abrir em nova aba</button>
+    <button type="button" id="cadAdsFechar">Fechar</button>
+  </div>
+  <iframe id="cadAdsFrame" title="Visualização de programação CAD"></iframe>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="../assets/js/monitoramento.js?v=20260821cad7"></script>
-<script type="module" src="../assets/js/cad-ads-sessao.js?v=20260821cad7"></script>
+<script src="../assets/js/monitoramento.js?v=20260821cad10"></script>
+<script type="module" src="../assets/js/cad-ads-sessao.js?v=20260821cad10"></script>
 </body>
 </html>

@@ -21,11 +21,21 @@
 
   function ligarLinksProgramacaoCad() {
     const href = urlVisualizacaoProgramacao();
-    document.querySelectorAll("[data-cad-ads]").forEach((a) => {
-      a.href = href;
-      a.target = "_blank";
-      a.rel = "noopener";
-    });
+    const frame = $("cadAdsFrame");
+    if (frame && cadAdsSessao && cadAdsSessao.Username && frame.src !== href) frame.src = href;
+  }
+
+  function abrirPopupProgramacao() {
+    const href = urlVisualizacaoProgramacao();
+    const modal = $("cadAdsModal");
+    const frame = $("cadAdsFrame");
+    if (frame && (!frame.src || frame.src === "about:blank")) frame.src = href;
+    if (modal) modal.hidden = false;
+  }
+
+  function fecharPopupProgramacao() {
+    const modal = $("cadAdsModal");
+    if (modal) modal.hidden = true;
   }
 
   window.__cadAplicarSessaoAds = function (sessao) {
@@ -68,32 +78,13 @@
     });
   }
 
-  function pintarKpis(totais) {
-    const box = $("mnKpis");
-    const itens = [
-      ["Veículos", totais.veiculos],
-      ["Linhas", totais.linhas],
-      ["Tabelas", totais.tabelas],
-      ["Blocos", totais.blocos],
-      ["Registros de gente", totais.funcionarios],
-      ["Tipos de incidente", totais.tiposIncidente]
-    ];
-    box.innerHTML = itens
-      .map(([rotulo, n]) => `<div class="mn-kpi"><b>${n ?? "—"}</b><span>${rotulo}</span></div>`)
-      .join("");
+  function unicos(lista) {
+    return [...new Set(lista.map((x) => String(x)))];
   }
 
   function listaHtml(linhas, vazio) {
     if (!linhas.length) return `<p class="mn-vazio">${vazio}</p>`;
     return `<ul class="mn-lista">${linhas.join("")}</ul>`;
-  }
-
-  function isoHoje() {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
   }
 
   function parseWorkId(raw) {
@@ -113,95 +104,13 @@
     return null;
   }
 
-  function workIdsUnicos(cad) {
-    const map = new Map();
-    for (const t of cad.tabelas || []) {
-      const w = parseWorkId(t);
-      if (!w) continue;
-      if (!map.has(w.id)) map.set(w.id, w);
-    }
-    return [...map.values()];
-  }
-
-  function descricaoLinha(cad, codigo) {
-    const l = (cad.linhas || []).find((x) => x.codigo === codigo);
-    return l?.descricao || l?.nome || "";
-  }
-
-  function pintarViz(cad, modoDia) {
-    const tipo = $("cadVizTipo").value;
-    const q = String($("cadVizBloco").value || "").trim();
-    const data = $("cadVizData").value;
-    const todos = workIdsUnicos(cad);
-    const parsedQ = parseWorkId(q);
-    let lista = [];
-
-    if (tipo === "rota") {
-      const rota = q.replace(/\D/g, "").slice(0, 4);
-      lista = todos.filter((w) => w.rota === rota || w.rota === rota.padStart(3, "0"));
-    } else if (parsedQ) {
-      lista = todos.filter((w) => w.id === parsedQ.id || w.util === parsedQ.util);
-    } else if (q) {
-      const n = norm(q);
-      lista = todos.filter((w) => w.id.includes(n) || w.util.includes(n));
-    }
-
-    if (modoDia === "servico" && parsedQ) {
-      const alvo = parsedQ.dia;
-      const doDia = lista.filter((w) => w.dia === alvo);
-      if (doDia.length) lista = doDia;
-    }
-
-    const principal = lista.find((w) => parsedQ && w.id === parsedQ.id) || lista[0];
-    const dataBr = data ? data.split("-").reverse().join("/") : "—";
-    if (principal) {
-      $("cadVizInfo").textContent = `Dia de serviço: ${principal.rotuloDia} · Work-ID ${principal.id} · ${dataBr}`;
-    } else {
-      $("cadVizInfo").textContent = q
-        ? "Nenhum Work-ID com esse filtro no dump do CAD."
-        : "Informe o bloco (7 dígitos no útil; sábado começa com 2; domingo com 3).";
-    }
-
-    const horas = ["00:00", "03:00", "06:00", "09:00", "12:00", "15:00", "18:00", "21:00", "24:00"];
-    $("cadVizHoras").innerHTML = horas.map((h) => `<span>${h}</span>`).join("");
-    if (principal) {
-      $("cadVizFaixa").innerHTML = `<div class="cad-timeline-bloco" style="left:8%;width:55%">Rota: ${principal.rota} · ${principal.id}</div>`;
-    } else {
-      $("cadVizFaixa").innerHTML = "";
-    }
-
-    const box = $("cadVizViagens");
-    if (!lista.length) {
-      box.innerHTML = `<p class="cad-vazio-viz">Sem viagens para este filtro. Os horários registrados pelo veículo entram quando a extração de paradas estiver ligada — mande as próximas imagens da tela.</p>`;
-      return;
-    }
-    box.innerHTML = lista
-      .slice(0, 40)
-      .map((w) => {
-        const nome = descricaoLinha(cad, w.rota);
-        return `<article class="cad-viagem">
-          <div class="cad-viagem-meta">
-            <span>Rota: ${w.rota}${nome ? " · " + nome : ""}</span>
-            <span>Serviço: ${w.util}</span>
-            <span>WorkID1: ${w.id}</span>
-            <span>${w.rotuloDia}</span>
-          </div>
-          <div class="cad-viagem-paradas">
-            <div class="cad-parada"><strong>Garagem</strong><em>— —</em></div>
-            <div class="cad-parada"><strong>Pontos da viagem</strong><em>aguardando dump de paradas</em></div>
-          </div>
-        </article>`;
-      })
-      .join("");
-  }
-
   function mostrarProgramacao(cad, q) {
     const linhas = filtra(cad.programacao || [], q, ["codigo", "descricao"]);
     const vis = linhas.slice(0, LIMITE_LISTA);
     $("mnProgMeta").textContent = `${linhas.length} linhas na programação · ${cad.totais?.tabelas ?? 0} tabelas`;
     $("mnProg").innerHTML = listaHtml(
       vis.map((p) => {
-        const amostra = (p.amostra || []).slice(0, 8).join(", ");
+        const amostra = unicos(p.amostra || []).slice(0, 6).join(", ");
         return `<li><button type="button" class="mn-row" data-linha="${p.codigo}">
           <strong>${p.codigo}</strong>
           <span>${p.descricao || "—"}</span>
@@ -214,25 +123,21 @@
     $("mnProg").querySelectorAll("[data-linha]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const codigo = btn.getAttribute("data-linha");
-        const tabs = (cad.tabelas || []).filter((t) => String(t).startsWith(codigo));
+        const tabs = unicos((cad.tabelas || []).filter((t) => {
+          const w = parseWorkId(t);
+          if (w) return w.rota === codigo;
+          return String(t).startsWith(codigo);
+        }));
         $("mnProgDetalhe").hidden = false;
-        $("mnProgDetalheTitulo").textContent = `Tabelas da linha ${codigo} (${tabs.length})`;
+        $("mnProgDetalheTitulo").textContent = `Serviços da linha ${codigo} (${tabs.length})`;
         $("mnProgDetalheLista").innerHTML = tabs
-          .slice(0, 800)
+          .slice(0, 400)
           .map((t) => {
             const w = parseWorkId(t);
-            const extra = w ? ` · ${w.rotuloDia}` : "";
-            return `<li><button type="button" class="mn-row" data-work="${t}" style="display:block;width:100%;text-align:left;cursor:pointer;background:none;border:0;font:inherit;font-weight:700">${t}${extra}</button></li>`;
+            const extra = w ? `<span class="mn-chip">${w.rotuloDia}</span>` : "";
+            return `<li>${esc(t)}${extra}</li>`;
           })
           .join("");
-        $("mnProgDetalheLista").querySelectorAll("[data-work]").forEach((b) => {
-          b.addEventListener("click", () => {
-            $("cadVizBloco").value = b.getAttribute("data-work");
-            $("cadVizTipo").value = "bloco";
-            pintarViz(cad, document.querySelector("[data-modo-dia].ativo")?.getAttribute("data-modo-dia") || "servico");
-            $("cadViz").scrollIntoView({ behavior: "smooth", block: "start" });
-          });
-        });
         $("mnProgDetalhe").scrollIntoView({ behavior: "smooth", block: "nearest" });
       });
     });
@@ -308,29 +213,9 @@
     if (!cad) {
       $("mnStatus").textContent = "Ainda não há dump do CAD. A tabela de status usa a frota ao vivo.";
     } else {
-      $("mnStatus").textContent = `CAD ${fmtQuando(cad.atualizadoEm)} · ${cad.fonte || ""}`;
-      pintarKpis(cad.totais || {});
+      $("mnStatus").textContent = `Cadastros atualizados em ${fmtQuando(cad.atualizadoEm)}`;
     }
     let abaReg = "veiculos";
-    let modoDia = "servico";
-    if ($("cadVizData")) $("cadVizData").value = isoHoje();
-    if (cad && $("cadVizForm")) {
-      pintarViz(cad, modoDia);
-      $("cadVizForm").addEventListener("submit", (ev) => {
-        ev.preventDefault();
-        pintarViz(cad, modoDia);
-      });
-      $("cadVizBloco").addEventListener("input", () => pintarViz(cad, modoDia));
-      $("cadVizTipo").addEventListener("change", () => pintarViz(cad, modoDia));
-      document.querySelectorAll("[data-modo-dia]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          modoDia = btn.getAttribute("data-modo-dia");
-          document.querySelectorAll("[data-modo-dia]").forEach((b) => b.classList.toggle("ativo", b === btn));
-          pintarViz(cad, modoDia);
-        });
-      });
-    }
-
     const atualizar = () => {
       if (!cad) return;
       mostrarProgramacao(cad, $("mnBuscaProg").value);
@@ -350,67 +235,31 @@
     });
     atualizar();
     ligarLinksProgramacaoCad();
-    ligarShell(cad, inc);
+    ligarShell();
     iniciarStatusAoVivo(cad);
   }
 
-  function toast(msg) {
-    const el = document.createElement("div");
-    el.className = "cad-toast";
-    el.textContent = msg;
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 2800);
-  }
-
   function abrirPainel(nome) {
-    const alvo = nome === "fora" ? "mapa" : nome;
-    const id = "pane" + alvo.charAt(0).toUpperCase() + alvo.slice(1);
+    const id = "pane" + nome.charAt(0).toUpperCase() + nome.slice(1);
     document.querySelectorAll(".cad-pane").forEach((p) => p.classList.toggle("ativo", p.id === id));
     document.querySelectorAll(".cad-views [data-abrir]").forEach((b) => {
-      const v = b.getAttribute("data-abrir");
-      b.classList.toggle("ativo", v === nome || (alvo === "mapa" && nome !== "fora" && v === "mapa"));
+      b.classList.toggle("ativo", b.getAttribute("data-abrir") === nome);
     });
+    if (nome === "mapa") setTimeout(() => window.__cadMapInvalidate?.(), 80);
   }
 
-  function ligarShell(cad, inc) {
-    const nInc = Array.isArray(inc?.incidentes) ? inc.incidentes.length : 0;
-    if ($("cadNInc")) $("cadNInc").textContent = nInc;
-    if ($("cadNEventos")) $("cadNEventos").textContent = nInc;
-    if ($("cadNJornada")) $("cadNJornada").textContent = cad?.totais?.tabelas ?? "—";
-    const user = $("usuarioLogado")?.textContent;
-    if ($("cadUserBar") && user) $("cadUserBar").textContent = "Logado como " + user;
-
-    document.querySelectorAll(".cad-tabs [data-ribbon]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const rid = btn.getAttribute("data-ribbon");
-        document.querySelectorAll(".cad-tabs [data-ribbon]").forEach((b) => b.classList.toggle("ativo", b === btn));
-        document.querySelectorAll("[data-ribbon-pane]").forEach((p) => {
-          p.hidden = p.getAttribute("data-ribbon-pane") !== rid;
-        });
-      });
-    });
-    document.querySelectorAll("[data-abrir]").forEach((el) => {
+  function ligarShell() {
+    document.querySelectorAll(".cad-views [data-abrir]").forEach((el) => {
       el.addEventListener("click", () => abrirPainel(el.getAttribute("data-abrir")));
     });
-    document.querySelectorAll("[data-cad-so]").forEach((el) => {
-      el.addEventListener("click", () => toast("Isso fica no Clever CAD desktop."));
+    $("btnAbrirProgramacao")?.addEventListener("click", abrirPopupProgramacao);
+    $("cadAdsFechar")?.addEventListener("click", fecharPopupProgramacao);
+    $("cadAdsNovaAba")?.addEventListener("click", () => {
+      window.open(urlVisualizacaoProgramacao(), "cadAdsProg", "noopener");
     });
-    $("cadTelaCheia")?.addEventListener("click", () => {
-      if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
-      else document.exitFullscreen?.();
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape") fecharPopupProgramacao();
     });
-    setInterval(() => {
-      if ($("cadRelogio")) $("cadRelogio").textContent = new Date().toLocaleTimeString("pt-BR");
-    }, 1000);
-    $("cadCmdForm")?.addEventListener("submit", (ev) => {
-      ev.preventDefault();
-      const q = $("cadCmd").value.trim();
-      if (!q) return;
-      $("stBusca").value = q;
-      abrirPainel("status");
-      window.__cadPintarStatus?.();
-    });
-    $("cadLocalizarBtn")?.addEventListener("click", () => $("cadCmd").focus());
   }
 
   const CODIGOS_OCIOSO = new Set(["PI", "DH", "PO"]);
@@ -453,18 +302,17 @@
     const t = parseTmstmp(v.tmstmp);
     const idade = t ? (agora - t.getTime()) / 1000 : 9999;
     const comunicando = idade <= SEM_COM_SEG;
-    let veiculo = "Normal";
+    let veiculo = "No horário";
     if (CODIGOS_FORA.has(rt) || rt === "") veiculo = "Fora de serviço";
-    else if (CODIGOS_OCIOSO.has(rt)) veiculo = "Escala";
-    else if (delay != null && delay < -ADIANTADO_SEG) veiculo = "Horário Adiantado";
-    else if (delay != null && delay > ATRASADO_SEG) veiculo = "Horário Atrasado";
-    if (!comunicando && !t) veiculo = "Desligado";
+    else if (CODIGOS_OCIOSO.has(rt)) veiculo = "Ocioso";
+    else if (delay != null && delay < -ADIANTADO_SEG) veiculo = "Adiantado";
+    else if (delay != null && delay > ATRASADO_SEG) veiculo = "Atrasado";
     const cor =
-      veiculo === "Horário Adiantado" ? "#c81e1e" :
-      veiculo === "Horário Atrasado" ? "#eab308" :
-      veiculo === "Normal" ? "#8FD400" :
-      veiculo === "Escala" ? "#38bdf8" :
-      "#9ca3af";
+      veiculo === "Adiantado" ? "#c81e1e" :
+      veiculo === "Atrasado" ? "#eab308" :
+      veiculo === "No horário" ? "#16a34a" :
+      veiculo === "Ocioso" ? "#38bdf8" :
+      "#94a3b8";
     const wid = String(v.tablockid || v.rid || "").replace(/^N\/A$/i, "");
     const parsed = parseWorkId(wid) || parseWorkId(v.rid);
     return {
@@ -482,7 +330,9 @@
       veiculo,
       cor,
       operadora: operadoraVid(v.vid),
-      logon: Boolean(String(v.oid || "").trim())
+      logon: Boolean(String(v.oid || "").trim()),
+      lat: Number(v.lat),
+      lon: Number(v.lon)
     };
   }
 
@@ -509,87 +359,178 @@
   function iniciarStatusAoVivo(cad) {
     const estado = {
       rows: [],
-      aba: "tcgl",
-      abertos: new Set(["Comunicando", "Comunicando|Horário Adiantado"])
+      aba: "todos",
+      abertos: new Set(["Adiantado", "Atrasado"]),
+      mapFiltro: "todos"
     };
 
+    const mapa = {
+      leaflet: null,
+      tiles: null,
+      modo: "mapa",
+      camada: null,
+      markers: new Map()
+    };
+
+    function noBrasil(lat, lon) {
+      return Number.isFinite(lat) && Number.isFinite(lon) && lat < -10 && lat > -34 && lon < -34 && lon > -74;
+    }
+
+    function htmlFicha(r) {
+      const op = nomeMotorista(cad, r.oid);
+      return `<div class="cad-map-lab"><b>NV</b> ${esc(r.vid)}<br><b>NP</b> ${esc(r.servico || "—")}<br><b>DT</b> ${esc(r.des || "—")}<br><b>RT</b> ${esc(r.rt || "—")}<br><b>NC</b> ${esc(r.oid || "—")}<br><b>OP</b> ${esc(op || "—")}</div>`;
+    }
+
+    function htmlIcone(r) {
+      return `<div class="cad-map-mk"><span class="cad-map-pin" style="background:${esc(r.cor)}" title="${esc(r.vid)}"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="3" y="7" width="18" height="9" rx="1.5" fill="#fff"/><circle cx="8" cy="17" r="1.6" fill="#111"/><circle cx="16" cy="17" r="1.6" fill="#111"/></svg></span></div>`;
+    }
+
+    function listaMapa() {
+      const q = norm($("mapBusca")?.value || "");
+      return estado.rows.filter((r) => {
+        if (!noBrasil(r.lat, r.lon)) return false;
+        if (estado.mapFiltro === "tcgl" && r.operadora !== "TCGL") return false;
+        if (estado.mapFiltro === "fora" && r.veiculo !== "Fora de serviço" && r.veiculo !== "Ocioso") return false;
+        if (q && !norm(r.vid).includes(q) && !norm(r.rt).includes(q) && !norm(r.servico).includes(q)) return false;
+        return true;
+      });
+    }
+
+    function garantirMapa() {
+      if (mapa.leaflet || typeof L === "undefined" || !$("cadMap")) return;
+      mapa.leaflet = L.map("cadMap", { zoomControl: true }).setView([-23.31, -51.17], 13);
+      mapa.tiles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap"
+      }).addTo(mapa.leaflet);
+      mapa.camada = L.layerGroup().addTo(mapa.leaflet);
+      window.__cadMapInvalidate = () => mapa.leaflet.invalidateSize();
+      document.querySelectorAll("[data-tiles]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          mapa.modo = btn.getAttribute("data-tiles");
+          document.querySelectorAll("[data-tiles]").forEach((b) => b.classList.toggle("ativo", b === btn));
+          mapa.leaflet.removeLayer(mapa.tiles);
+          mapa.tiles = mapa.modo === "hibrido"
+            ? L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { attribution: "Esri" })
+            : L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" });
+          mapa.tiles.addTo(mapa.leaflet);
+        });
+      });
+      document.querySelectorAll("[data-map-filtro]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          estado.mapFiltro = btn.getAttribute("data-map-filtro");
+          document.querySelectorAll("[data-map-filtro]").forEach((b) => b.classList.toggle("ativo", b === btn));
+          pintarMapa();
+        });
+      });
+      $("mapBusca")?.addEventListener("input", pintarMapa);
+      $("mapBusca")?.addEventListener("keydown", (ev) => {
+        if (ev.key !== "Enter") return;
+        const q = norm($("mapBusca").value);
+        const hit = estado.rows.find((r) => noBrasil(r.lat, r.lon) && (norm(r.vid) === q || norm(r.vid).includes(q)));
+        if (!hit) return;
+        mapa.leaflet.setView([hit.lat, hit.lon], 17);
+        requestAnimationFrame(() => mapa.markers.get(hit.vid)?.openPopup());
+      });
+    }
+
+    function pintarMapa() {
+      garantirMapa();
+      if (!mapa.leaflet) return;
+      const lista = listaMapa();
+      const vistos = new Set();
+      for (const r of lista) {
+        vistos.add(r.vid);
+        const icon = L.divIcon({
+          className: "cad-map-icon",
+          html: htmlIcone(r),
+          iconSize: [22, 22],
+          iconAnchor: [11, 11]
+        });
+        const destaque = r.veiculo === "Adiantado" || r.veiculo === "Atrasado" ? 200 : 0;
+        let mk = mapa.markers.get(r.vid);
+        if (!mk) {
+          mk = L.marker([r.lat, r.lon], { icon, zIndexOffset: destaque });
+          mk.bindTooltip("", { direction: "right", offset: [12, 0], className: "cad-map-tip", opacity: 1 });
+          mk.bindPopup("", { className: "cad-map-pop", offset: [0, -8] });
+          mk.addTo(mapa.camada);
+          mapa.markers.set(r.vid, mk);
+        } else {
+          mk.setLatLng([r.lat, r.lon]);
+          mk.setIcon(icon);
+          mk.setZIndexOffset(destaque);
+        }
+        mk.setTooltipContent(htmlFicha(r));
+        mk.setPopupContent(htmlFicha(r) + `<p class="cad-map-sit">${esc(r.veiculo)} · ${esc(r.operadora)}</p>`);
+      }
+      for (const [vid, mk] of mapa.markers) {
+        if (vistos.has(vid)) continue;
+        mapa.camada.removeLayer(mk);
+        mapa.markers.delete(vid);
+      }
+    }
+
     function listaFiltrada() {
-      const com = $("stFiltroCom")?.value || "";
       const ve = $("stFiltroVeic")?.value || "";
       const q = norm($("stBusca")?.value || "");
       return estado.rows.filter((r) => {
         if (estado.aba === "tcgl" && r.operadora !== "TCGL") return false;
         if (estado.aba === "cmtu" && r.operadora !== "CMTU") return false;
         if (estado.aba === "semcom" && r.comunicacao !== "Não Comunicando") return false;
-        if (estado.aba === "soft" && r.logon) return false;
-        if (com && r.comunicacao !== com) return false;
         if (ve && r.veiculo !== ve) return false;
         if (q) {
-          const blob = norm([r.vid, r.rt, r.servico, r.tabela, r.oid, r.des].join(" "));
+          const blob = norm([r.vid, r.rt, r.servico, r.oid, r.des].join(" "));
           if (!blob.includes(q)) return false;
         }
         return true;
       });
     }
 
+    function pintarKpisStatus() {
+      const rows = estado.rows;
+      const nAd = rows.filter((r) => r.veiculo === "Adiantado").length;
+      const nAt = rows.filter((r) => r.veiculo === "Atrasado").length;
+      const nOff = rows.filter((r) => r.comunicacao !== "Comunicando").length;
+      $("stKpis").innerHTML = `
+        <div class="st-kpi"><b>${rows.length}</b><span>Na rua agora</span></div>
+        <div class="st-kpi adiantado"><b>${nAd}</b><span>Adiantados</span></div>
+        <div class="st-kpi atrasado"><b>${nAt}</b><span>Atrasados</span></div>
+        <div class="st-kpi"><b>${nOff}</b><span>Sem comunicação</span></div>`;
+    }
+
     function pintar() {
       const lista = listaFiltrada();
-      const logon = estado.rows.filter((r) => r.logon).length;
-      if ($("stLogon")) $("stLogon").textContent = String(logon);
-      if ($("stLogoff")) $("stLogoff").textContent = String(estado.rows.length - logon);
-      if ($("cadNStatus")) $("cadNStatus").textContent = String(estado.rows.length);
+      pintarKpisStatus();
 
       const grupos = new Map();
       for (const r of lista) {
-        if (!grupos.has(r.comunicacao)) grupos.set(r.comunicacao, new Map());
-        const sub = grupos.get(r.comunicacao);
-        if (!sub.has(r.veiculo)) sub.set(r.veiculo, []);
-        sub.get(r.veiculo).push(r);
+        if (!grupos.has(r.veiculo)) grupos.set(r.veiculo, []);
+        grupos.get(r.veiculo).push(r);
       }
-
-      const ordemCom = ["Não Comunicando", "Comunicando"];
-      const ordemVeic = ["Desligado", "Fora de serviço", "Escala", "Fora de rota", "Horário Adiantado", "Horário Atrasado", "Normal"];
+      const ordem = ["Adiantado", "Atrasado", "No horário", "Ocioso", "Fora de serviço"];
       const cols = `<tr>
-        <th>Veículo</th><th></th><th>Status do veículo</th><th>Linha</th><th>Atraso</th>
-        <th>ID</th><th>Motorista</th><th>Serviço</th><th>Vel.</th><th>Destino</th>
-        <th>Sentido</th><th>Tabela</th><th>Última com.</th><th>Status da comunicação</th><th>Garagem</th>
+        <th>Veículo</th><th>Situação</th><th>Linha</th><th>Atraso</th>
+        <th>Motorista</th><th>Serviço</th><th>Destino</th><th>Última comunicação</th>
       </tr>`;
       let body = "";
-      for (const com of ordemCom) {
-        if (!grupos.has(com)) continue;
-        const sub = grupos.get(com);
-        let nCom = 0;
-        sub.forEach((arr) => { nCom += arr.length; });
-        const abertoCom = estado.abertos.has(com);
-        body += `<tr class="st-g" data-g="${com}"><td colspan="15">Status da Comunicação: ${com} (${nCom})</td></tr>`;
-        if (!abertoCom) continue;
-        const keys = [...sub.keys()].sort((a, b) => ordemVeic.indexOf(a) - ordemVeic.indexOf(b));
-        for (const st of keys) {
-          const arr = sub.get(st);
-          const key = com + "|" + st;
-          const aberto = estado.abertos.has(key);
-          body += `<tr class="st-s" data-g="${key}"><td colspan="15">Status do veículo: ${st} (${arr.length})</td></tr>`;
-          if (!aberto) continue;
-          arr.sort((a, b) => a.vid.localeCompare(b.vid, "pt", { numeric: true }));
-          for (const r of arr) {
-            body += `<tr class="st-row">
-              <td>${esc(r.vid)}</td>
-              <td><i class="st-cor" style="background:${esc(r.cor)}"></i></td>
-              <td>${esc(r.veiculo)}</td>
-              <td>${esc(r.rt)}</td>
-              <td>${esc(r.delayMin)}</td>
-              <td>${esc(r.oid)}</td>
-              <td>${esc(nomeMotorista(cad, r.oid))}</td>
-              <td>${esc(r.servico)}</td>
-              <td>${esc(r.spd)}</td>
-              <td>${esc(r.des)}</td>
-              <td>${esc(r.sentido)}</td>
-              <td>${esc(r.tabela)}</td>
-              <td>${esc(fmtTmstmp(r.tmstmp))}</td>
-              <td>${esc(r.comunicacao)}</td>
-              <td>${esc(r.operadora || "—")}</td>
-            </tr>`;
-          }
+      for (const st of ordem) {
+        if (!grupos.has(st)) continue;
+        const arr = grupos.get(st);
+        const aberto = estado.abertos.has(st);
+        body += `<tr class="st-g" data-g="${st}"><td colspan="8">${st} (${arr.length}) ${aberto ? "▾" : "▸"}</td></tr>`;
+        if (!aberto) continue;
+        arr.sort((a, b) => a.vid.localeCompare(b.vid, "pt", { numeric: true }));
+        for (const r of arr) {
+          const atraso = r.delayMin === "" ? "—" : (r.delayMin > 0 ? "+" + r.delayMin + " min" : r.delayMin + " min");
+          body += `<tr class="st-row">
+            <td>${esc(r.vid)}</td>
+            <td><i class="st-cor" style="background:${esc(r.cor)}"></i>${esc(r.veiculo)}</td>
+            <td>${esc(r.rt || "—")}</td>
+            <td>${esc(atraso)}</td>
+            <td>${esc(nomeMotorista(cad, r.oid) || "—")}</td>
+            <td>${esc(r.servico || "—")}</td>
+            <td>${esc(r.des || "—")}</td>
+            <td>${esc(fmtTmstmp(r.tmstmp))}</td>
+          </tr>`;
         }
       }
       $("cadStatusLista").innerHTML = lista.length
@@ -614,7 +555,6 @@
         pintar();
       });
     });
-    $("stFiltroCom")?.addEventListener("change", pintar);
     $("stFiltroVeic")?.addEventListener("change", pintar);
     $("stBusca")?.addEventListener("input", pintar);
 
@@ -624,8 +564,9 @@
         const data = await fetch(base + "/getvehiclesdelay", { cache: "no-store" }).then((r) => r.json());
         const agora = Date.now();
         estado.rows = extrairListaBustime(data, "vehicle").map((v) => classificarVeiculo(v, agora));
-        if ($("stLive")) $("stLive").textContent = `Ao vivo ${new Date().toLocaleTimeString("pt-BR")} · ${estado.rows.length} veículos`;
+        if ($("stLive")) $("stLive").textContent = `Atualizado ${new Date().toLocaleTimeString("pt-BR")}`;
         pintar();
+        pintarMapa();
       } catch {
         if ($("stLive")) $("stLive").textContent = "BusTime indisponível";
         $("cadStatusLista").innerHTML = `<p class="st-vazio">Não foi possível ler a frota ao vivo.</p>`;
