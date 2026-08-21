@@ -113,10 +113,12 @@
   }
 
   function dataIncidenteIso(r) {
+    const parts = String(r?.data || "").split("/");
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+    }
     if (r?.data_iso) return String(r.data_iso).slice(0, 10);
     const br = String(r?.data || "").trim();
-    const p = br.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (p) return `${p[3]}-${p[1].padStart(2, "0")}-${p[2].padStart(2, "0")}`;
     return /^\d{4}-\d{2}-\d{2}/.test(br) ? br.slice(0, 10) : "";
   }
 
@@ -197,34 +199,64 @@
     );
   }
 
-  function tipoIncidente(row) {
+  function tipoOriginalIncidente(row) {
     const original = String(row?.tipoOriginal || "").trim();
-    const tipo = original && original.toUpperCase() !== "VAZIO" ? original : String(row?.tipo || "").trim();
+    if (original && original.toUpperCase() !== "VAZIO") return original;
+    const tipo = String(row?.tipo || "").trim();
+    if (tipo && tipo.toUpperCase() !== "VAZIO") return tipo;
+    return tipo || "Sem informação";
+  }
+
+  function tipoIncidente(row) {
+    const tipo = tipoOriginalIncidente(row);
     if (tipo.toUpperCase() === "AE") return "AE (Botão de Emergência)";
     return tipo || "Sem informação";
+  }
+
+  const CACHE_INCIDENTES_KEY = "portal_incidentes_v4";
+  const CACHE_INCIDENTES_TTL_MS = 15 * 60 * 1000;
+
+  function lerCacheIncidentesDashboard() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(CACHE_INCIDENTES_KEY) || "");
+      if (!parsed?.payload || !parsed?.ts) return null;
+      if (Date.now() - parsed.ts > CACHE_INCIDENTES_TTL_MS) return null;
+      return parsed.payload;
+    } catch {
+      return null;
+    }
+  }
+
+  function salvarCacheIncidentesDashboard(payload) {
+    try {
+      localStorage.setItem(CACHE_INCIDENTES_KEY, JSON.stringify({ ts: Date.now(), payload }));
+    } catch { /* quota */ }
+  }
+
+  function linhasTcglHoje(payload) {
+    const hoje = hojeIsoLocal();
+    return (Array.isArray(payload?.incidentes) ? payload.incidentes : [])
+      .filter((r) => String(r.empresa || "").toUpperCase() === "TCGL")
+      .filter((r) => dataIncidenteIso(r) === hoje)
+      .sort((a, b) => Number(b.id || b.incidentId || 0) - Number(a.id || a.incidentId || 0));
   }
 
   function mostrarIncidentes(inc, q) {
     const hoje = hojeIsoLocal();
     const dataBr = new Date(`${hoje}T00:00:00`).toLocaleDateString("pt-BR");
-    const rows = (Array.isArray(inc?.incidentes) ? inc.incidentes : [])
-      .filter((r) => String(r.empresa || "TCGL").toUpperCase() === "TCGL")
-      .filter((r) => dataIncidenteIso(r) === hoje);
-    rows.sort((a, b) => Number(b.incidentId || b.id || 0) - Number(a.incidentId || a.id || 0));
+    const rows = linhasTcglHoje(inc);
     const lista = filtra(rows, q, [
       "id", "incidentId", "veiculo", "linha", "tipo", "tipoOriginal", "estado",
       "criadoPor", "data", "hora", "motorista", "motoristaNr", "proprietario",
       "departamento", "natureOfProblem", "instructions"
     ]);
     const btnInc = $("btnAbaIncidentes");
-    if (btnInc) {
-      btnInc.innerHTML = `Incidentes<span class="cad-nav-count">${rows.length}</span>`;
-    }
-    if ($("mnIncTitulo")) $("mnIncTitulo").textContent = `Incidentes TCGL · ${dataBr}`;
+    if (btnInc) btnInc.innerHTML = `Incidentes<span class="cad-nav-count">${rows.length}</span>`;
+    if ($("mnIncTitulo")) $("mnIncTitulo").textContent = `Incidentes TCGL de hoje · ${dataBr}`;
+    if ($("mnIncTotal")) $("mnIncTotal").textContent = `Total: ${rows.length}`;
     if ($("mnIncMeta")) {
-      $("mnIncMeta").textContent = `${rows.length} incidente${rows.length === 1 ? "" : "s"} hoje` +
-        (q ? ` · ${lista.length} no filtro` : "") +
-        ` · atualizado ${fmtQuando(inc?.atualizadoEm)}`;
+      $("mnIncMeta").textContent = (q ? `${lista.length} no filtro · ` : "") +
+        `mesma fonte de incidentes-dashboard.html · atualizado ${fmtQuando(inc?.atualizadoEm)}`;
     }
     const tbody = $("mnInc");
     const vazio = $("mnIncVazio");
@@ -252,29 +284,26 @@
   }
 
   async function carregarPayloadIncidentes() {
+    const cache = lerCacheIncidentesDashboard();
     try {
-      const mod = await import("../assets/js/incidentes-dados-leitura.js?v=20260821cad24");
+      const mod = await import("../assets/js/incidentes-dados-leitura.js?v=20260817n");
       const res = await mod.carregarDadosIncidentes();
-      if (res?.payload) return res.payload;
-    } catch (err) { /* fallback JSON estático */ }
+      if (res?.payload?.incidentes?.length) {
+        salvarCacheIncidentesDashboard(res.payload);
+        return res.payload;
+      }
+    } catch (err) { /* usa cache / JSON */ }
+    if (cache) return cache;
     try {
-      const rInc = await fetch(INC_JSON, { cache: "no-store" });
+      const rInc = await fetch(INC_JSON + "?t=" + Date.now(), { cache: "no-store" });
       if (rInc.ok) return await rInc.json();
     } catch (err) { /* opcional */ }
-    return null;
+    return cache;
   }
 
   async function iniciar() {
     let cad = null;
-    let inc = null;
-    try {
-      const [rCad, payloadInc] = await Promise.all([
-        fetch(CAD_JSON, { cache: "no-store" }),
-        carregarPayloadIncidentes()
-      ]);
-      if (rCad.ok) cad = await rCad.json();
-      inc = payloadInc;
-    } catch (err) { /* JSON local opcional */ }
+    let inc = lerCacheIncidentesDashboard();
     const atualizar = () => mostrarIncidentes(inc, $("mnBuscaInc")?.value || "");
     $("mnBuscaInc")?.addEventListener("input", atualizar);
     $("mnInc")?.addEventListener("click", (ev) => {
@@ -282,6 +311,15 @@
       const id = link?.getAttribute("data-incidente-id");
       if (id && navigator.clipboard?.writeText) navigator.clipboard.writeText(id).catch(() => {});
     });
+    if (inc) atualizar();
+    try {
+      const [rCad, payloadInc] = await Promise.all([
+        fetch(CAD_JSON, { cache: "no-store" }),
+        carregarPayloadIncidentes()
+      ]);
+      if (rCad.ok) cad = await rCad.json();
+      if (payloadInc) inc = payloadInc;
+    } catch (err) { /* JSON local opcional */ }
     atualizar();
     ligarLinksProgramacaoCad();
     ligarShell();
