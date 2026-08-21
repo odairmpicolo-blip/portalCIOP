@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consulta de veículo | Portal CIOP</title>
+<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260818p">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260820r9">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
+<script type="module" src="../assets/js/auth.js?v=20260820t20"></script>
+<style>
+body{margin:0;background:var(--bg,#f5f7fb);color:#101828;font-family:var(--font,Inter,sans-serif)}
+.container{max-width:920px;margin:20px auto 48px;padding:0 18px}
+.intro{margin:0 0 16px;color:#3f4757;font-weight:600;line-height:1.45}
+.cv-busca-wrap{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+.cv-busca-wrap input{
+  flex:1;min-height:48px;border:1px solid #dfe5ef;border-radius:12px;padding:12px 16px;
+  font-size:16px;font-weight:700;color:#06245c;background:#fff;
+}
+.cv-busca-wrap input:focus{outline:2px solid #06245c;outline-offset:1px}
+.cv-contagem{font-size:12px;font-weight:800;color:#667085;white-space:nowrap}
+.cv-lista{display:flex;flex-direction:column;gap:8px}
+.cv-row{
+  display:grid;grid-template-columns:96px 1fr minmax(140px,1.2fr);gap:12px;align-items:center;
+  text-align:left;width:100%;border:1px solid #dfe5ef;border-radius:14px;background:#fff;
+  padding:8px 12px;cursor:pointer;font:inherit;color:inherit;
+}
+.cv-row:hover,.cv-row:focus{border-color:#06245c;box-shadow:0 0 0 2px rgba(6,36,92,.12)}
+.cv-row img{width:96px;height:56px;object-fit:cover;border-radius:8px;background:#eef2f7}
+.cv-row-main{display:flex;flex-direction:column;gap:2px}
+.cv-row-main strong{font-size:18px;color:#06245c}
+.cv-row-main em{font-style:normal;font-size:13px;font-weight:700;color:#3f4757}
+.cv-row-meta{font-size:12px;font-weight:600;color:#667085;line-height:1.35}
+.cv-vazio{padding:20px;border:1px dashed #dfe5ef;border-radius:12px;background:#fff;color:#667085;font-weight:700}
+dialog.cv-popup{
+  border:0;padding:0;border-radius:18px;max-width:min(560px,94vw);width:100%;
+  box-shadow:0 24px 64px rgba(16,24,40,.28);
+}
+dialog.cv-popup::backdrop{background:rgba(16,24,40,.45)}
+.cv-popup-inner{background:#fff}
+.cv-popup-inner img{display:block;width:100%;height:auto;max-height:280px;object-fit:cover;background:#0b1f44}
+.cv-popup-body{padding:16px 18px 18px}
+.cv-popup-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+.cv-popup-head h2{margin:0;font-size:22px;color:#06245c}
+.cv-fechar{
+  border:0;background:#f2f4f7;border-radius:10px;min-height:36px;padding:0 12px;
+  font-weight:800;color:#06245c;cursor:pointer;
+}
+.cv-dl{display:grid;grid-template-columns:110px 1fr;gap:8px 12px;margin:0;font-size:14px}
+.cv-dl dt{margin:0;color:#667085;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding-top:4px}
+.cv-dl dd{margin:0;font-weight:800;color:#101828}
+@media (max-width:640px){
+  .cv-row{grid-template-columns:72px 1fr}
+  .cv-row img{width:72px;height:44px}
+  .cv-row-meta{grid-column:1 / -1}
+}
+</style>
+</head>
+<body>
+<header class="header">
+  <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP"><img class="portal-brand-art" src="../assets/img/logomarca-portalciop-tcgl-claro.png?v=20260818logo6" alt="Portal CIOP"></a>
+  <div class="title-wrap"><h1 style="margin:0;color:#06245c;font-size:22px">Consulta de veículo</h1></div>
+  <div class="header-actions">
+    <div class="ciop-session">
+      <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+      <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+      <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+    </div>
+  </div>
+</header>
+<main class="container">
+  <a class="btn-portal" href="../index.html" style="display:inline-flex;margin-bottom:14px;background:#06245c;color:#fff;text-decoration:none;padding:8px 14px;border-radius:10px;font-weight:800">Portal</a>
+  <p class="intro">Busque por prefixo, placa, tecnologia ou modelo. A foto segue a tecnologia da frota (cor, tipo e ar).</p>
+  <div class="cv-busca-wrap">
+    <input id="cvBusca" type="search" autocomplete="off" placeholder="Ex.: 1167, BCI 2334, pesado azul, Torino" aria-label="Buscar veículo">
+    <span class="cv-contagem" id="cvContagem"></span>
+  </div>
+  <p class="cv-vazio" id="cvVazio" hidden></p>
+  <div class="cv-lista" id="cvLista"></div>
+</main>
+
+<dialog class="cv-popup" id="cvPopup" aria-labelledby="cvPrefixo">
+  <div class="cv-popup-inner">
+    <img id="cvFoto" alt="">
+    <div class="cv-popup-body">
+      <div class="cv-popup-head">
+        <h2 id="cvPrefixo">—</h2>
+        <button type="button" class="cv-fechar" id="cvFechar">Fechar</button>
+      </div>
+      <dl class="cv-dl">
+        <dt>Placa</dt><dd id="cvPlaca">—</dd>
+        <dt>Tecnologia</dt><dd id="cvTec">—</dd>
+        <dt>Modelo</dt><dd id="cvModelo">—</dd>
+      </dl>
+    </div>
+  </div>
+</dialog>
+
+<script src="../assets/js/frota-patio-data.js"></script>
+<script src="../assets/js/veiculos-placa-data.js"></script>
+<script src="../assets/js/consulta-veiculo.js"></script>
+</body>
+</html>

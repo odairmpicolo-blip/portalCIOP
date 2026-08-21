@@ -44,6 +44,7 @@ export const MODULOS_PORTAL = [
   { id: "escala-saida-carros", label: "Saída de carros (escala)", grupo: "Operação" },
   { id: "relatorios", label: "Relatórios", grupo: "Operação" },
   { id: "consulta-decreto", label: "Consulta do Decreto", grupo: "Operação" },
+  { id: "consulta-veiculo", label: "Consulta de veículo", grupo: "Operação" },
   { id: "dashboard-servico", label: "Dashboard de Serviço", grupo: "Indicadores" },
   { id: "ipv", label: "IPV", grupo: "Indicadores" },
   { id: "icv", label: "ICV", grupo: "Indicadores" },
