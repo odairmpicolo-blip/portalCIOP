@@ -3,31 +3,40 @@ description: Fluxo de commit e publicação nos repositórios portal-teste e por
 alwaysApply: true
 ---
 
-# Publicação — teste primeiro, produção sob confirmação
+# Publicação — teste primeiro, produção no clone live
 
 Repositórios:
 - **portal-teste** (`~/portal-teste`) — desenvolvimento / validação
-- **portalCIOP** (`~/portalCIOP`) — código de produção (GitHub)
+- **portalCIOP** (GitHub `odairmpicolo-blip/portalCIOP`, `main`) — produção → **www.portalciop.com.br**
 
-## Hospedagem do portal
+## Clone de produção (obrigatório)
 
-- O portal estático é publicado **somente no GitHub Pages** (workflow `deploy-github-pages.yml`).
-- Produção: **www.portalciop.com.br** (via `hosting/CNAME`).
-- **Firebase** é usado apenas para **Auth** e **Firestore** — não há Firebase Hosting.
+**Não** usar `~/portalCIOP` para commit/push: costuma estar atrasado e sujo.
 
-Ordem recomendada:
-1. Desenvolver e validar em **portal-teste**
-2. Publicar no GitHub (**portalCIOP**) — o workflow de Pages faz o deploy automático no push em `main`
+Para publicar em produção, sempre:
 
-Quando o usuário pedir commit, push, publicar ou implantar:
+1. Clone fresco (ou atualizar) em `/tmp/portalciop-live`:
+   `git clone https://github.com/odairmpicolo-blip/portalCIOP.git /tmp/portalciop-live`  
+   Se o diretório já existir: `cd /tmp/portalciop-live && git fetch origin && git checkout main && git pull --rebase origin main`
+2. Copiar **os mesmos arquivos** do commit de teste (não rsync o working tree inteiro).
+3. Commit só esses arquivos. Não incluir brand/auth/login sujos do clone.
+4. Autor: `odairmpicolo-blip` / `224998610+odairmpicolo-blip@users.noreply.github.com` (`git -c user.name=... -c user.email=...`, sem `git config`).
+5. `git pull --rebase origin main` e `git push origin main`. Sem force-push em `main`.
+6. PAT sem escopo `workflow` não sobe `.github/workflows/*` — deixar YAML em `docs/` e avisar.
 
-1. Aplicar **somente em portal-teste** por padrão (commit + push).
-2. **Perguntar explicitamente** se também deve publicar em **portalCIOP** (produção) antes de commitar ou dar push lá.
-3. Não publicar em produção sem confirmação do usuário, mesmo que as alterações já estejam no teste.
+## Hospedagem
 
-Apps Script (`.gs`): lembrar que reimplantar o Web App no Google é manual, independente do git.
+- Portal estático: só GitHub Pages (`deploy-github-pages.yml`). Firebase = Auth + Firestore.
 
-Regras Firestore (se alteradas):
+Quando pedir commit/push/publicar:
+
+1. Só **portal-teste** por padrão (commit + push).
+2. Se confirmar produção: **o mesmo** no clone `/tmp/portalciop-live`, no mesmo turno.
+3. Sem confirmação, não publicar em CIOP.
+
+Apps Script (`.gs`): reimplantar Web App no Google é manual.
+
+Firestore rules:
 ```bash
-cd ~/portalCIOP && npx firebase deploy --only firestore:rules --project portal-ciop
+cd /tmp/portalciop-live && npx firebase deploy --only firestore:rules --project portal-ciop
 ```
