@@ -16,7 +16,7 @@
 
   function formatarTamanho(num) {
     const n = String(num || "").replace(".", ",");
-    return n + "M = " + n + " Metros";
+    return n + " metros";
   }
 
   function separarModelo(bruto) {
