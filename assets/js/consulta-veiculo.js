@@ -109,6 +109,50 @@
     el.dataset.tipo = tipo || "";
   }
 
+  function limparLista() {
+    const lista = document.getElementById("cvLista");
+    const qtd = document.getElementById("cvQtd");
+    lista.innerHTML = "";
+    lista.hidden = true;
+    qtd.hidden = true;
+    qtd.textContent = "";
+  }
+
+  function pintarLista(hit) {
+    const lista = document.getElementById("cvLista");
+    const qtd = document.getElementById("cvQtd");
+    lista.innerHTML = "";
+    const n = hit.length;
+    if (!n) {
+      qtd.hidden = true;
+      qtd.textContent = "";
+      lista.hidden = true;
+      return;
+    }
+    qtd.hidden = false;
+    qtd.textContent = n === 1 ? "1 veículo" : n + " veículos";
+    const frag = document.createDocumentFragment();
+    hit.forEach((v) => {
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cv-item";
+      btn.setAttribute("aria-label", "Abrir " + v.prefixo);
+      const strong = document.createElement("strong");
+      strong.textContent = v.prefixo;
+      const placa = document.createElement("span");
+      placa.textContent = v.placa || "—";
+      const tec = document.createElement("em");
+      tec.textContent = v.tecnologia || v.modelo || "—";
+      btn.append(strong, placa, tec);
+      btn.addEventListener("click", () => abrir(v));
+      li.appendChild(btn);
+      frag.appendChild(li);
+    });
+    lista.appendChild(frag);
+    lista.hidden = false;
+  }
+
   function abrir(v) {
     const dlg = document.getElementById("cvPopup");
     const foto = document.getElementById("cvFoto");
@@ -142,31 +186,31 @@
     else dlg.setAttribute("open", "");
   }
 
-  function consultar() {
+  function atualizarResultados(abrirUnico) {
     const q = document.getElementById("cvBusca").value;
-    const hit = buscar(q);
-    if (!String(q || "").trim()) {
+    const bruto = String(q || "").trim();
+    if (!bruto) {
       setStatus("Digite o prefixo, a placa, a tecnologia ou o modelo.", "info");
+      limparLista();
       return;
     }
+    const hit = buscar(q);
     if (!hit.length) {
       setStatus("Nenhum veículo com esse prefixo, placa, tecnologia ou modelo.", "erro");
+      pintarLista([]);
       return;
     }
-    const bruto = String(q).trim();
+    setStatus("");
+    pintarLista(hit);
+    if (!abrirUnico) return;
     const p = placaLimpa(bruto);
     const unico = hit.find((v) => v.prefixo === bruto) || (p.length >= 5 && hit.find((v) => v.placaKey === p));
-    if (unico) {
-      setStatus("");
-      abrir(unico);
-      return;
-    }
-    if (hit.length === 1) {
-      setStatus("");
-      abrir(hit[0]);
-      return;
-    }
-    setStatus(hit.length + " veículos. Informe o prefixo ou a placa completa.", "info");
+    if (unico) abrir(unico);
+    else if (hit.length === 1) abrir(hit[0]);
+  }
+
+  function consultar() {
+    atualizarResultados(true);
   }
 
   function iniciar() {
@@ -176,6 +220,7 @@
     const q0 = params.get("q") || "";
     busca.value = q0;
     document.getElementById("cvConsultar").addEventListener("click", consultar);
+    busca.addEventListener("input", () => atualizarResultados(false));
     busca.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") {
         ev.preventDefault();
