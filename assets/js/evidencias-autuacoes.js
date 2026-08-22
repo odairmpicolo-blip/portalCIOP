@@ -285,10 +285,27 @@ function blankAuto(extra = {}) {
     imagens: [],
     paginaAuto: "",
     paginaNotif: "",
+    ordemPdf: 0,
+    loteEm: "",
     criadoEm: new Date().toISOString(),
     atualizadoEm: new Date().toISOString(),
     ...extra
   };
+}
+
+function compareOrdemPdf(a, b) {
+  const loteA = String(a.lote || "");
+  const loteB = String(b.lote || "");
+  if (loteA !== loteB) {
+    const tA = a.loteEm || a.criadoEm || "";
+    const tB = b.loteEm || b.criadoEm || "";
+    if (tA !== tB) return String(tB).localeCompare(String(tA));
+    return loteA.localeCompare(loteB, "pt");
+  }
+  const oa = Number(a.ordemPdf) || 0;
+  const ob = Number(b.ordemPdf) || 0;
+  if (oa !== ob) return oa - ob;
+  return String(a.criadoEm || "").localeCompare(String(b.criadoEm || ""));
 }
 
 function parseEvidenceFilename(name) {
@@ -505,6 +522,7 @@ async function importNotificationPdf(file, onProgress) {
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
   const total = pdf.numPages;
   const lote = file.name.replace(/\.pdf$/i, "");
+  const loteEm = new Date().toISOString();
   const created = [];
 
   for (let i = 1; i <= total; i += 2) {
@@ -522,6 +540,8 @@ async function importNotificationPdf(file, onProgress) {
     const item = enriquecerComCatalogos(
       blankAuto({
         lote,
+        loteEm,
+        ordemPdf: created.length + 1,
         origem: "notificacao-cmtu",
         autoNumero: hints.autoNumero,
         notificacao: hints.notificacao,
@@ -624,7 +644,6 @@ function readFormInto(auto) {
   auto.carro = $("fCarro").value.trim();
   auto.placa = $("fPlaca").value.trim();
   auto.linha = $("fLinha").value.trim();
-  auto.local = $("fLocal").value.trim();
   auto.matricula = $("fMatricula").value.trim();
   auto.motorista = $("fMotorista").value.trim();
   auto.autuador = $("fAutuador") ? $("fAutuador").value.trim() : auto.autuador;
@@ -646,7 +665,6 @@ function fillForm(auto) {
   $("fCarro").value = auto.carro || "";
   $("fPlaca").value = auto.placa || "";
   $("fLinha").value = auto.linha || "";
-  $("fLocal").value = auto.local || "";
   $("fMatricula").value = auto.matricula || "";
   $("fMotorista").value = auto.motorista || "";
   if ($("fAutuador")) $("fAutuador").value = auto.autuador || "";
@@ -721,7 +739,7 @@ function renderList() {
   const list = $("listaAutos");
   const filtered = autos
     .slice()
-    .sort((a, b) => String(b.atualizadoEm).localeCompare(String(a.atualizadoEm)))
+    .sort(compareOrdemPdf)
     .filter((a) => {
       if (!q) return true;
       return [a.carro, a.linha, a.autoNumero, a.protocolo, a.notificacao, a.motivo, a.motorista, a.autuador, a.data, a.lote]
@@ -819,7 +837,6 @@ function payloadPlanilha(auto) {
     autuador: auto.autuador || "",
     agente: auto.autuador || "",
     matricula: auto.matricula || "",
-    local: auto.local || "",
     usuario: usuario.email || usuario.nome || ""
   };
 }
@@ -926,7 +943,6 @@ function buildSheetHtml(auto) {
         <div><span>Horário</span><b>${escapeHtml(auto.horario)}</b></div>
         <div><span>Linha</span><b>${escapeHtml(auto.linha)}</b></div>
         <div class="span-2"><span>Protocolo</span><b>${escapeHtml(auto.protocolo || auto.notificacao)}</b></div>
-        <div class="span-2"><span>Local</span><b>${escapeHtml(auto.local)}</b></div>
         <div><span>Matrícula</span><b>${escapeHtml(auto.matricula)}</b></div>
         <div class="span-2"><span>Motorista</span><b>${escapeHtml(auto.motorista)}</b></div>
         <div class="span-2"><span>Autuador</span><b>${escapeHtml(auto.autuador)}</b></div>
@@ -1022,9 +1038,21 @@ function montarOffscreenFicha(auto) {
   }
   host.innerHTML = buildSheetHtml(auto);
   const art = host.querySelector(".sheet-a4");
+  art.classList.add("is-pdf-fit");
   art.style.width = "794px";
   art.style.background = "#fff";
   art.style.overflow = "visible";
+  const nEv = evidenciasSomente(auto).length;
+  const docsMax = nEv > 4 ? 132 : nEv > 0 ? 168 : 210;
+  const galMax = nEv > 6 ? 58 : nEv > 3 ? 72 : 86;
+  art.querySelectorAll(".sheet-docs-pane img").forEach((img) => {
+    img.style.maxHeight = `${docsMax}px`;
+    img.style.objectFit = "contain";
+  });
+  art.querySelectorAll(".sheet-gallery img").forEach((img) => {
+    img.style.maxHeight = `${galMax}px`;
+    img.style.objectFit = "contain";
+  });
   art.querySelectorAll(".sheet-brand, .sheet-brand-logo, .sheet-brand-logo img").forEach((el) => {
     el.style.background = "#fff";
     el.style.overflow = "visible";
@@ -1059,25 +1087,18 @@ async function pdfBlobDoAuto(auto) {
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
-  const imgW = pageW;
-  const imgH = (canvas.height * pageW) / canvas.width;
-  const imgData = canvas.toDataURL("image/jpeg", 0.78);
-  const sliceHpx = (pageH / imgH) * canvas.height;
-  let offset = 0;
-  let pagina = 0;
-  while (offset < canvas.height - 2) {
-    const h = Math.min(sliceHpx, canvas.height - offset);
-    const slice = document.createElement("canvas");
-    slice.width = canvas.width;
-    slice.height = Math.max(1, Math.round(h));
-    slice.getContext("2d").drawImage(canvas, 0, offset, canvas.width, h, 0, 0, canvas.width, h);
-    const sliceHmm = (slice.height * pageW) / canvas.width;
-    if (pagina > 0) pdf.addPage();
-    pdf.addImage(slice.toDataURL("image/jpeg", 0.78), "JPEG", 0, 0, imgW, sliceHmm, undefined, "FAST");
-    offset += h;
-    pagina += 1;
-    if (pagina > 20) break;
+  const margin = 5;
+  const maxW = pageW - margin * 2;
+  const maxH = pageH - margin * 2;
+  let w = maxW;
+  let h = (canvas.height * w) / canvas.width;
+  if (h > maxH) {
+    h = maxH;
+    w = (canvas.width * h) / canvas.height;
   }
+  const x = (pageW - w) / 2;
+  const y = margin;
+  pdf.addImage(canvas.toDataURL("image/jpeg", 0.82), "JPEG", x, y, w, h, undefined, "FAST");
   return pdf.output("blob");
 }
 
@@ -1098,9 +1119,9 @@ async function baixarPdfAuto(auto) {
 
 function autosDoLote(auto) {
   const lote = String(auto?.lote || "").trim();
-  if (!lote) return autos.slice();
-  const doLote = autos.filter((a) => a.lote === lote);
-  return doLote.length ? doLote : autos.slice();
+  const lista = lote ? autos.filter((a) => a.lote === lote) : autos.slice();
+  const grupo = lista.length ? lista : autos.slice();
+  return grupo.slice().sort(compareOrdemPdf);
 }
 
 function loteTodoFinalizado(auto) {
@@ -1149,40 +1170,40 @@ function printPreview() {
   }
   win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Evidência ${auto.carro || ""}</title>
     <style>
-      @page{size:A4;margin:10mm}
+      @page{size:A4;margin:6mm}
       body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;background:#fff}
       .sheet-a4{border:1px solid #d5deee;background:#fff;overflow:visible}
-      .sheet-brand{display:grid;grid-template-columns:minmax(148px,22%) minmax(0,1fr) minmax(108px,18%);gap:16px;align-items:center;padding:16px 18px 14px;background:#fff;position:relative;overflow:visible}
+      .sheet-brand{display:grid;grid-template-columns:minmax(120px,20%) minmax(0,1fr) minmax(90px,16%);gap:10px;align-items:center;padding:8px 12px 7px;background:#fff;position:relative;overflow:visible}
       .sheet-brand::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#06245c,#0b3a8a 52%,#ff6b00)}
-      .sheet-brand-logo{display:flex;align-items:center;height:58px;padding:4px 8px;background:#fff;overflow:visible}
-      .sheet-brand-logo img{display:block;height:50px;width:auto;max-width:100%;object-fit:contain;object-position:left center;background:#fff}
+      .sheet-brand-logo{display:flex;align-items:center;height:40px;padding:2px 4px;background:#fff;overflow:visible}
+      .sheet-brand-logo img{display:block;height:34px;width:auto;max-width:100%;object-fit:contain;object-position:left center;background:#fff}
       .sheet-brand-logo.is-tcgl{justify-content:flex-end}
-      .sheet-brand-logo.is-tcgl img{object-position:right center;height:52px}
+      .sheet-brand-logo.is-tcgl img{object-position:right center;height:36px}
       .sheet-org{text-align:center;color:#06245c}
-      .sheet-org-kicker{margin:0 0 4px;font-size:9px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#ff6b00}
-      .sheet-org-title{margin:0;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.35}
-      .sheet-capa{display:grid;grid-template-columns:26% 1fr;border-bottom:2px solid #1a1a1a;min-height:48px}
-      .sheet-capa-title{display:flex;align-items:center;justify-content:center;border-right:2px solid #1a1a1a;background:#f7f8fa;font-size:15px;font-weight:900;text-transform:uppercase;color:#0b1b3f;padding:8px}
-      .sheet-capa-numero{display:flex;align-items:center;padding:8px 12px}
-      .sheet-capa-numero-text{font-size:15px;font-weight:800;color:#06245c}
+      .sheet-org-kicker{margin:0 0 2px;font-size:8px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#ff6b00}
+      .sheet-org-title{margin:0;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.25}
+      .sheet-capa{display:grid;grid-template-columns:26% 1fr;border-bottom:2px solid #1a1a1a;min-height:32px}
+      .sheet-capa-title{display:flex;align-items:center;justify-content:center;border-right:2px solid #1a1a1a;background:#f7f8fa;font-size:12px;font-weight:900;text-transform:uppercase;color:#0b1b3f;padding:4px 8px}
+      .sheet-capa-numero{display:flex;align-items:center;padding:4px 10px}
+      .sheet-capa-numero-text{font-size:11px;font-weight:800;color:#06245c}
       .sheet-docs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #ddd;background:#f3f5f8}
-      .sheet-docs-pane{padding:6px;border-right:1px solid #d5deee}
+      .sheet-docs-pane{padding:4px;border-right:1px solid #d5deee}
       .sheet-docs-pane:last-child{border-right:0}
-      .sheet-docs-pane label{display:block;font-size:9px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:4px}
-      .sheet-docs-pane img{width:100%;border:1px solid #c9d0dc;background:#fff}
-      .sheet-docs-empty{min-height:180px;display:grid;place-items:center;border:1px dashed #c9d4e5;background:#fff;color:#94a3b8;font-size:11px;font-weight:700}
-      .sheet-gallery{margin:10px 12px;min-height:160px;border:1px dashed #c9d4e5;padding:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;background:#fff}
-      .sheet-gallery.is-empty{min-height:0;border:0;padding:0;margin:6px 12px}
-      .sheet-gallery img{width:100%;border:1px solid #dfe5ef}
+      .sheet-docs-pane label{display:block;font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:2px}
+      .sheet-docs-pane img{width:100%;max-height:168px;object-fit:contain;border:1px solid #c9d0dc;background:#fff}
+      .sheet-docs-empty{min-height:72px;display:grid;place-items:center;border:1px dashed #c9d4e5;background:#fff;color:#94a3b8;font-size:10px;font-weight:700}
+      .sheet-gallery{margin:4px 8px;min-height:0;border:1px dashed #c9d4e5;padding:4px;display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:4px;background:#fff}
+      .sheet-gallery.is-empty{min-height:0;border:0;padding:0;margin:4px 8px}
+      .sheet-gallery img{width:100%;max-height:78px;object-fit:contain;border:1px solid #dfe5ef}
       .sheet-gallery-empty{display:none}
-      .sheet-text{padding:0 14px}
-      .sheet-text p{margin:0 0 8px;font-size:13px;line-height:1.45}
-      .sheet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px 14px}
-      .sheet-grid div{border:1px solid #dfe5ef;padding:6px 8px}
+      .sheet-text{padding:2px 10px 0}
+      .sheet-text p{margin:0 0 3px;font-size:10px;line-height:1.28}
+      .sheet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px 10px 6px}
+      .sheet-grid div{border:1px solid #dfe5ef;padding:3px 5px}
       .sheet-grid .span-2{grid-column:span 2}
-      .sheet-grid span{display:block;font-size:10px;color:#667085;font-weight:700;text-transform:uppercase}
-      .sheet-grid b{font-size:13px}
-      .sheet-obs{padding:0 14px 16px;font-size:12px;font-weight:700}
+      .sheet-grid span{display:block;font-size:8px;color:#667085;font-weight:700;text-transform:uppercase}
+      .sheet-grid b{font-size:11px}
+      .sheet-obs{padding:0 10px 8px;font-size:10px;font-weight:700}
     </style></head><body>${buildSheetHtml(auto)}</body></html>`);
   win.document.close();
   win.focus();
@@ -1365,7 +1386,6 @@ function bindFormDirty() {
     "fCarro",
     "fPlaca",
     "fLinha",
-    "fLocal",
     "fMatricula",
     "fMotorista",
     "fAutuador",
@@ -1409,6 +1429,7 @@ async function boot() {
   wireDropZone($("dropImages"), $("fileImages"), addImages);
 
   autos = (await dbGetAll()).map((a) => enriquecerComCatalogos(a));
+  autos.sort(compareOrdemPdf);
   renderList();
   if (autos[0]) selectAuto(autos[0].id);
   else {
