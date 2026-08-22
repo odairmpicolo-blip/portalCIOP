@@ -16,6 +16,10 @@ const FILE_RE =
 const SHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
 const GID_FUNCIONARIOS = "1931884858";
 const FUNC_CACHE_KEY = "ciop_evidencias_funcionarios_v1";
+const AUTUACOES_PLANILHA_API =
+  "https://script.google.com/macros/s/AKfycbylz8scwboPQLeOKWUpw9YqKxomjts1aa8KUwodAuq5IE3T9s7RXd6GJcfMnS9qu6DI/exec";
+const AUTUACOES_PLANILHA_URL =
+  "https://docs.google.com/spreadsheets/d/1kkohM1xJMbQvyyJKayOBpgtL0qFWKQGSa1U8lhwwbes/edit?gid=150506325";
 
 let db;
 let autos = [];
@@ -768,7 +772,69 @@ async function saveCurrent() {
   await dbPut(auto);
   dirty = false;
   renderList();
-  setStatus("Rascunho salvo neste computador.");
+  setStatus("Salvo neste computador. Registrando na planilha...");
+  try {
+    const planilha = await registrarNaPlanilha(auto);
+    auto.planilhaLinha = planilha.linha;
+    auto.planilhaAcao = planilha.acao;
+    await dbPut(auto);
+    const acao = planilha.acao === "update" ? "atualizado" : "incluído";
+    setStatus(`Salvo. Auto ${acao} na planilha (linha ${planilha.linha}).`);
+  } catch (err) {
+    console.warn(err);
+    setStatus(
+      `Salvo neste computador, mas a planilha não gravou: ${err.message || err}. Reimplante o Apps Script de Autuações.`,
+      true
+    );
+  }
+}
+
+function payloadPlanilha(auto) {
+  const usuario = window.portalUsuario || {};
+  return {
+    evidencias: "1",
+    action: "upsert",
+    notificacao: auto.protocolo || auto.notificacao || "",
+    protocolo: auto.protocolo || auto.notificacao || "",
+    auto: String(auto.autoId || "").replace(/^0+/, ""),
+    autoId: String(auto.autoId || "").replace(/^0+/, ""),
+    data: auto.data || "",
+    motivo: auto.motivo || "",
+    carro: auto.carro || "",
+    linha: auto.linha || "",
+    placa: auto.placa || "",
+    horario: auto.horario || "",
+    motorista: auto.motorista || "",
+    matricula: auto.matricula || "",
+    local: auto.local || "",
+    usuario: usuario.email || usuario.nome || ""
+  };
+}
+
+async function registrarNaPlanilha(auto) {
+  const dados = payloadPlanilha(auto);
+  if (!dados.notificacao && !dados.auto) {
+    throw new Error("preencha o protocolo/notificação ou o número do auto");
+  }
+  let payload = null;
+  try {
+    const res = await fetch(AUTUACOES_PLANILHA_API, {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(dados)
+    });
+    const texto = await res.text();
+    payload = JSON.parse(texto);
+  } catch (_) {
+    const qs = new URLSearchParams(dados);
+    const res = await fetch(`${AUTUACOES_PLANILHA_API}?${qs}`, { cache: "no-store" });
+    payload = await res.json();
+  }
+  if (!payload || payload.status === "error" || payload.ok === false || !payload.linha) {
+    throw new Error(payload?.message || payload?.erro || "Apps Script ainda sem gravação (reimplante o Web App)");
+  }
+  return payload;
 }
 
 async function addImages(files) {

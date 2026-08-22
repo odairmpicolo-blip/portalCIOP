@@ -1,20 +1,34 @@
 /**
- * Dashboard de Autuações TCGL — Web App (leitura)
+ * Dashboard de Autuações TCGL — Web App (leitura + gravação de evidências)
  *
- * Colunas esperadas na planilha base:
- * Ordem, Data, Notificação, Auto, Motivo, Agente,
- * Grupo, Artigo, valor do auto em tarifas, valor em R$
+ * Planilha: https://docs.google.com/spreadsheets/d/1kkohM1xJMbQvyyJKayOBpgtL0qFWKQGSa1U8lhwwbes/edit?gid=150506325
  *
- * Publicar como Web App (Executar como: eu / Acesso: qualquer pessoa).
- * Teste de diagnóstico: ?debug=1
+ * GET  leitura do dashboard (como antes)
+ * GET  ?evidencias=1&...   upsert da ficha
+ * POST JSON { evidencias:"1", notificacao, auto, data, motivo, carro, linha, ... }
+ *
+ * Reimplantar o Web App após alterar este arquivo (Executar como: eu / Quem acessa: qualquer pessoa).
  */
 
 const ABA_NOME = "AUTUAÇÕES";
-const SCRIPT_VERSAO = "2026-06-23-historico-completo";
+const SCRIPT_VERSAO = "2026-08-21-evidencias-upsert";
 const AUTUACOES_DIAS_JANELA = 365;
 const AUTUACOES_DATA_INICIO = "2015-01-01";
 const AUTUACOES_CHUNK_LINHAS = 800;
 const AUTUACOES_CACHE_TTL = 900;
+const EVIDENCIAS_SHEET_ID = "1kkohM1xJMbQvyyJKayOBpgtL0qFWKQGSa1U8lhwwbes";
+const EVIDENCIAS_GID = 150506325;
+const COLUNAS_EVIDENCIA = [
+  "Carro",
+  "Linha",
+  "Placa",
+  "Horário",
+  "Motorista",
+  "Matrícula",
+  "Local",
+  "Evidenciado em",
+  "Usuário"
+];
 
 const MAPA_COLUNAS = {
   ordem: ["ordem", "Ordem", "ORDEM"],
@@ -54,7 +68,33 @@ function doGet(e) {
     if (String(params.debug || "") === "1") {
       return respostaJson_(montarDebugAutuacoes_());
     }
+    if (String(params.evidencias || "") === "1") {
+      return respostaJson_(upsertEvidenciaAuto_(params));
+    }
     return respostaJson_(montarPayloadAutuacoes_(params));
+  } catch (error) {
+    return respostaJson_({
+      status: "error",
+      message: String(error && error.message ? error.message : error),
+      script_versao: SCRIPT_VERSAO
+    });
+  }
+}
+
+function doPost(e) {
+  try {
+    var params = e && e.parameter ? e.parameter : {};
+    var body = {};
+    if (e && e.postData && e.postData.contents) {
+      try {
+        body = JSON.parse(e.postData.contents) || {};
+      } catch (ignore) {}
+    }
+    var dados = Object.assign({}, params, body);
+    if (String(dados.evidencias || "") === "1" || String(dados.action || "").toLowerCase() === "upsert") {
+      return respostaJson_(upsertEvidenciaAuto_(dados));
+    }
+    return respostaJson_({ status: "error", message: "POST sem evidencias=1" });
   } catch (error) {
     return respostaJson_({
       status: "error",
@@ -248,13 +288,20 @@ function textoCelulaBruto_(linha, idx) {
 }
 
 function obterAbaAutuacoes_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss) throw new Error("Abra o Apps Script a partir da planilha de autuações.");
-  var sheet = ss.getSheetByName(ABA_NOME);
-  if (!sheet) {
-    var sheets = ss.getSheets();
-    sheet = sheets.length ? sheets[0] : null;
+  var ss = null;
+  try {
+    ss = SpreadsheetApp.openById(EVIDENCIAS_SHEET_ID);
+  } catch (err) {
+    ss = SpreadsheetApp.getActiveSpreadsheet();
   }
+  if (!ss) throw new Error("Abra o Apps Script a partir da planilha de autuações.");
+  var sheets = ss.getSheets();
+  var i;
+  for (i = 0; i < sheets.length; i++) {
+    if (String(sheets[i].getSheetId()) === String(EVIDENCIAS_GID)) return sheets[i];
+  }
+  var sheet = ss.getSheetByName(ABA_NOME);
+  if (!sheet) sheet = sheets.length ? sheets[0] : null;
   if (!sheet) throw new Error("Nenhuma aba encontrada na planilha de autuações.");
   return sheet;
 }
@@ -392,4 +439,150 @@ function respostaJson_(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function normalizarChaveEv_(valor) {
+  return String(valor || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/n[oº°.]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function autoIdEv_(valor) {
+  return String(valor || "").replace(/^0+/, "").trim();
+}
+
+function hojeBrEv_() {
+  return Utilities.formatDate(new Date(), Session.getScriptTimeZone() || "America/Sao_Paulo", "dd/MM/yyyy");
+}
+
+function garantirColunasEvidencia_(sheet, headers) {
+  var existentes = headers.map(normalizarChaveEv_);
+  var mudou = false;
+  COLUNAS_EVIDENCIA.forEach(function (titulo) {
+    if (existentes.indexOf(normalizarChaveEv_(titulo)) < 0) {
+      headers.push(titulo);
+      existentes.push(normalizarChaveEv_(titulo));
+      mudou = true;
+    }
+  });
+  if (mudou) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  }
+  return headers;
+}
+
+function indiceHeaderEv_(headers, aliases) {
+  var norms = headers.map(normalizarChaveEv_);
+  for (var i = 0; i < aliases.length; i++) {
+    var idx = norms.indexOf(normalizarChaveEv_(aliases[i]));
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+function upsertEvidenciaAuto_(dados) {
+  dados = dados || {};
+  var notificacao = String(dados.notificacao || dados.protocolo || "").trim();
+  var autoId = autoIdEv_(dados.auto || dados.autoId || "");
+  if (!notificacao && !autoId) {
+    return { status: "error", ok: false, message: "Informe notificação/protocolo ou número do auto." };
+  }
+
+  var sheet = obterAbaAutuacoes_();
+  var lastCol = Math.max(sheet.getLastColumn(), 1);
+  var headers = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0].map(function (h) {
+    return String(h || "").trim();
+  });
+  headers = garantirColunasEvidencia_(sheet, headers);
+  lastCol = headers.length;
+
+  var idxNotif = indiceHeaderEv_(headers, ["Notificação Nº", "Notificacao", "notificacao"]);
+  var idxAuto = indiceHeaderEv_(headers, ["Auto de Infração Nº", "Auto", "auto"]);
+  var idxOrdem = indiceHeaderEv_(headers, ["Ordem"]);
+  var idxRecebido = indiceHeaderEv_(headers, ["Recebido"]);
+  var idxData = indiceHeaderEv_(headers, ["Data"]);
+  var idxMotivo = indiceHeaderEv_(headers, ["Motivo"]);
+  var idxCarro = indiceHeaderEv_(headers, ["Carro"]);
+  var idxLinha = indiceHeaderEv_(headers, ["Linha"]);
+  var idxPlaca = indiceHeaderEv_(headers, ["Placa"]);
+  var idxHorario = indiceHeaderEv_(headers, ["Horário", "Horario"]);
+  var idxMotorista = indiceHeaderEv_(headers, ["Motorista"]);
+  var idxMatricula = indiceHeaderEv_(headers, ["Matrícula", "Matricula"]);
+  var idxLocal = indiceHeaderEv_(headers, ["Local"]);
+  var idxEvid = indiceHeaderEv_(headers, ["Evidenciado em"]);
+  var idxUser = indiceHeaderEv_(headers, ["Usuário", "Usuario"]);
+
+  var lastRow = sheet.getLastRow();
+  var linhaAlvo = 0;
+  var maxOrdem = 0;
+  if (lastRow >= 2) {
+    var valores = sheet.getRange(2, 1, lastRow - 1, lastCol).getDisplayValues();
+    for (var r = 0; r < valores.length; r++) {
+      var row = valores[r];
+      if (idxOrdem >= 0) {
+        var nOrd = Number(String(row[idxOrdem] || "").replace(/\D/g, ""));
+        if (nOrd > maxOrdem) maxOrdem = nOrd;
+      }
+      var nNotif = idxNotif >= 0 ? String(row[idxNotif] || "").trim() : "";
+      var nAuto = idxAuto >= 0 ? autoIdEv_(row[idxAuto]) : "";
+      var bateNotif = !notificacao || nNotif === notificacao;
+      var bateAuto = !autoId || nAuto === autoId;
+      if (notificacao && autoId) {
+        if (nNotif === notificacao && nAuto === autoId) linhaAlvo = r + 2;
+      } else if (bateNotif && bateAuto && (notificacao || autoId)) {
+        linhaAlvo = r + 2;
+      }
+    }
+  }
+
+  var acao = linhaAlvo ? "update" : "create";
+  var linha;
+  if (linhaAlvo) {
+    linha = sheet.getRange(linhaAlvo, 1, 1, lastCol).getValues()[0];
+  } else {
+    linhaAlvo = lastRow + 1;
+    if (linhaAlvo < 2) linhaAlvo = 2;
+    linha = headers.map(function () { return ""; });
+    if (idxOrdem >= 0) linha[idxOrdem] = maxOrdem + 1;
+    if (idxRecebido >= 0) linha[idxRecebido] = hojeBrEv_();
+  }
+
+  function preencher(idx, valor, soVazio) {
+    if (idx < 0) return;
+    var v = valor == null ? "" : String(valor).trim();
+    if (!v) return;
+    if (soVazio && String(linha[idx] || "").trim()) return;
+    linha[idx] = v;
+  }
+
+  preencher(idxNotif, notificacao, true);
+  preencher(idxAuto, autoId, true);
+  preencher(idxData, dados.data, true);
+  preencher(idxMotivo, dados.motivo, true);
+  preencher(idxRecebido, dados.recebido || hojeBrEv_(), true);
+  preencher(idxCarro, dados.carro, false);
+  preencher(idxLinha, dados.linha, false);
+  preencher(idxPlaca, dados.placa, false);
+  preencher(idxHorario, dados.horario, false);
+  preencher(idxMotorista, dados.motorista, false);
+  preencher(idxMatricula, dados.matricula, false);
+  preencher(idxLocal, dados.local, false);
+  preencher(idxEvid, hojeBrEv_(), false);
+  preencher(idxUser, dados.usuario, false);
+
+  sheet.getRange(linhaAlvo, 1, 1, lastCol).setValues([linha]);
+
+  return {
+    status: "ok",
+    ok: true,
+    acao: acao,
+    linha: linhaAlvo,
+    notificacao: notificacao,
+    auto: autoId,
+    script_versao: SCRIPT_VERSAO
+  };
 }
