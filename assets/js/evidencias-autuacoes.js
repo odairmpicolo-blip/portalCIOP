@@ -1038,21 +1038,16 @@ function montarOffscreenFicha(auto) {
   }
   host.innerHTML = buildSheetHtml(auto);
   const art = host.querySelector(".sheet-a4");
-  art.classList.add("is-pdf-fit");
-  art.style.width = "794px";
-  art.style.background = "#fff";
-  art.style.overflow = "visible";
   const nEv = evidenciasSomente(auto).length;
-  const docsMax = nEv > 4 ? 132 : nEv > 0 ? 168 : 210;
-  const galMax = nEv > 6 ? 58 : nEv > 3 ? 72 : 86;
-  art.querySelectorAll(".sheet-docs-pane img").forEach((img) => {
-    img.style.maxHeight = `${docsMax}px`;
-    img.style.objectFit = "contain";
-  });
-  art.querySelectorAll(".sheet-gallery img").forEach((img) => {
-    img.style.maxHeight = `${galMax}px`;
-    img.style.objectFit = "contain";
-  });
+  art.classList.add("is-pdf-fit");
+  art.classList.toggle("has-gallery", nEv > 0);
+  art.classList.toggle("gallery-n1", nEv === 1);
+  art.classList.toggle("gallery-n2", nEv === 2);
+  art.classList.toggle("gallery-n3", nEv >= 3);
+  art.style.width = "794px";
+  art.style.height = "1123px";
+  art.style.background = "#fff";
+  art.style.overflow = "hidden";
   art.querySelectorAll(".sheet-brand, .sheet-brand-logo, .sheet-brand-logo img").forEach((el) => {
     el.style.background = "#fff";
     el.style.overflow = "visible";
@@ -1070,15 +1065,22 @@ async function pdfBlobDoAuto(auto) {
     backgroundColor: "#ffffff",
     logging: false,
     useCORS: true,
-    windowWidth: art.scrollWidth,
-    windowHeight: art.scrollHeight,
+    width: 794,
+    height: 1123,
+    windowWidth: 794,
+    windowHeight: 1123,
     onclone(doc) {
       const clone = doc.getElementById("pdfOffscreen");
       if (!clone) return;
       clone.style.background = "#fff";
+      const ficha = clone.querySelector(".sheet-a4");
+      if (ficha) {
+        ficha.style.width = "794px";
+        ficha.style.height = "1123px";
+        ficha.style.background = "#fff";
+      }
       clone.querySelectorAll(".sheet-a4, .sheet-brand, .sheet-brand-logo, img").forEach((el) => {
         el.style.background = "#ffffff";
-        el.style.overflow = "visible";
       });
     }
   });
@@ -1087,18 +1089,7 @@ async function pdfBlobDoAuto(auto) {
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
-  const margin = 5;
-  const maxW = pageW - margin * 2;
-  const maxH = pageH - margin * 2;
-  let w = maxW;
-  let h = (canvas.height * w) / canvas.width;
-  if (h > maxH) {
-    h = maxH;
-    w = (canvas.width * h) / canvas.height;
-  }
-  const x = (pageW - w) / 2;
-  const y = margin;
-  pdf.addImage(canvas.toDataURL("image/jpeg", 0.82), "JPEG", x, y, w, h, undefined, "FAST");
+  pdf.addImage(canvas.toDataURL("image/jpeg", 0.84), "JPEG", 0, 0, pageW, pageH, undefined, "FAST");
   return pdf.output("blob");
 }
 
@@ -1170,40 +1161,40 @@ function printPreview() {
   }
   win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Evidência ${auto.carro || ""}</title>
     <style>
-      @page{size:A4;margin:6mm}
-      body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;background:#fff}
-      .sheet-a4{border:1px solid #d5deee;background:#fff;overflow:visible}
-      .sheet-brand{display:grid;grid-template-columns:minmax(120px,20%) minmax(0,1fr) minmax(90px,16%);gap:10px;align-items:center;padding:8px 12px 7px;background:#fff;position:relative;overflow:visible}
+      @page{size:A4 portrait;margin:0}
+      html,body{width:210mm;height:297mm;margin:0;background:#fff;font-family:Arial,Helvetica,sans-serif;color:#111}
+      .sheet-a4{width:210mm;height:297mm;display:flex;flex-direction:column;overflow:hidden;border:0;background:#fff}
+      .sheet-brand{display:grid;grid-template-columns:minmax(120px,20%) minmax(0,1fr) minmax(90px,16%);gap:10px;align-items:center;padding:8px 12px 7px;background:#fff;position:relative;flex:0 0 auto}
       .sheet-brand::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#06245c,#0b3a8a 52%,#ff6b00)}
-      .sheet-brand-logo{display:flex;align-items:center;height:40px;padding:2px 4px;background:#fff;overflow:visible}
+      .sheet-brand-logo{display:flex;align-items:center;height:40px;padding:2px 4px;background:#fff}
       .sheet-brand-logo img{display:block;height:34px;width:auto;max-width:100%;object-fit:contain;object-position:left center;background:#fff}
       .sheet-brand-logo.is-tcgl{justify-content:flex-end}
       .sheet-brand-logo.is-tcgl img{object-position:right center;height:36px}
       .sheet-org{text-align:center;color:#06245c}
       .sheet-org-kicker{margin:0 0 2px;font-size:8px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#ff6b00}
       .sheet-org-title{margin:0;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.25}
-      .sheet-capa{display:grid;grid-template-columns:26% 1fr;border-bottom:2px solid #1a1a1a;min-height:32px}
+      .sheet-capa{display:grid;grid-template-columns:26% 1fr;border-bottom:2px solid #1a1a1a;min-height:32px;flex:0 0 auto}
       .sheet-capa-title{display:flex;align-items:center;justify-content:center;border-right:2px solid #1a1a1a;background:#f7f8fa;font-size:12px;font-weight:900;text-transform:uppercase;color:#0b1b3f;padding:4px 8px}
       .sheet-capa-numero{display:flex;align-items:center;padding:4px 10px}
       .sheet-capa-numero-text{font-size:11px;font-weight:800;color:#06245c}
-      .sheet-docs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #ddd;background:#f3f5f8}
-      .sheet-docs-pane{padding:4px;border-right:1px solid #d5deee}
+      .sheet-docs{flex:1.65 1 0;min-height:0;display:grid;grid-template-columns:1fr 1fr;align-items:stretch;background:#f3f5f8}
+      .sheet-docs-pane{min-height:0;padding:6px;border-right:1px solid #d5deee;display:flex;flex-direction:column;gap:4px}
       .sheet-docs-pane:last-child{border-right:0}
-      .sheet-docs-pane label{display:block;font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:2px}
-      .sheet-docs-pane img{width:100%;max-height:168px;object-fit:contain;border:1px solid #c9d0dc;background:#fff}
-      .sheet-docs-empty{min-height:72px;display:grid;place-items:center;border:1px dashed #c9d4e5;background:#fff;color:#94a3b8;font-size:10px;font-weight:700}
-      .sheet-gallery{margin:4px 8px;min-height:0;border:1px dashed #c9d4e5;padding:4px;display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:4px;background:#fff}
-      .sheet-gallery.is-empty{min-height:0;border:0;padding:0;margin:4px 8px}
-      .sheet-gallery img{width:100%;max-height:78px;object-fit:contain;border:1px solid #dfe5ef}
+      .sheet-docs-pane label{display:block;font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;flex:0 0 auto}
+      .sheet-docs-pane img{flex:1;min-height:0;width:100%;height:100%;max-height:none;object-fit:contain;object-position:center top;border:1px solid #c9d0dc;background:#fff}
+      .sheet-docs-empty{flex:1;display:grid;place-items:center;border:1px dashed #c9d4e5;background:#fff;color:#94a3b8;font-size:10px;font-weight:700}
+      .sheet-gallery{flex:1.15 1 0;min-height:0;margin:6px 8px;padding:6px;display:grid;grid-template-columns:1fr;gap:6px;background:#fff}
+      .sheet-gallery.is-empty{flex:0 0 0;min-height:0;border:0;padding:0;margin:0}
+      .sheet-gallery img{width:100%;height:100%;max-height:none;object-fit:contain;border:1px solid #dfe5ef}
       .sheet-gallery-empty{display:none}
-      .sheet-text{padding:2px 10px 0}
+      .sheet-text{padding:4px 12px 0;flex:0 0 auto}
       .sheet-text p{margin:0 0 3px;font-size:10px;line-height:1.28}
-      .sheet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px 10px 6px}
+      .sheet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px 10px 6px;flex:0 0 auto}
       .sheet-grid div{border:1px solid #dfe5ef;padding:3px 5px}
       .sheet-grid .span-2{grid-column:span 2}
       .sheet-grid span{display:block;font-size:8px;color:#667085;font-weight:700;text-transform:uppercase}
       .sheet-grid b{font-size:11px}
-      .sheet-obs{padding:0 10px 8px;font-size:10px;font-weight:700}
+      .sheet-obs{padding:0 10px 8px;font-size:10px;font-weight:700;flex:0 0 auto}
     </style></head><body>${buildSheetHtml(auto)}</body></html>`);
   win.document.close();
   win.focus();
