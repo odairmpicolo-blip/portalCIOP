@@ -28,6 +28,7 @@ let dirty = false;
 let funcionarios = [];
 let autuacoesIndex = new Map();
 let autuacoesPorAuto = new Map();
+let agentesCmtu = [];
 
 const $ = (id) => document.getElementById(id);
 
@@ -120,6 +121,18 @@ function preencherDatalistFuncionarios() {
   }
 }
 
+function preencherSelectAutuador(valorAtual) {
+  const sel = $("fAutuador");
+  if (!sel) return;
+  const atual = String(valorAtual != null ? valorAtual : sel.value || "").trim();
+  const nomes = agentesCmtu.slice();
+  if (atual && !nomes.includes(atual)) nomes.unshift(atual);
+  sel.innerHTML =
+    `<option value="">Selecione o agente</option>` +
+    nomes.map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
+  sel.value = atual;
+}
+
 async function carregarAutuacoes() {
   try {
     const res = await fetch("../assets/data/autuacoes/dados.json", { cache: "no-store" });
@@ -128,6 +141,7 @@ async function carregarAutuacoes() {
     const arr = Array.isArray(payload?.data) ? payload.data : [];
     autuacoesIndex = new Map();
     autuacoesPorAuto = new Map();
+    const agentes = new Set();
     arr.forEach((item) => {
       const notif = String(item.notificacao || "").trim();
       if (notif) autuacoesIndex.set(notif, item);
@@ -138,7 +152,11 @@ async function carregarAutuacoes() {
         autuacoesPorAuto.set(auto, lista);
       }
       if (notif && auto) autuacoesIndex.set(`${notif}#${auto}`, item);
+      const agente = String(item.agente || "").trim();
+      if (agente) agentes.add(agente);
     });
+    agentesCmtu = [...agentes].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    preencherSelectAutuador();
   } catch (err) {
     console.warn("Autuações não carregadas:", err);
   }
@@ -667,7 +685,7 @@ function fillForm(auto) {
   $("fLinha").value = auto.linha || "";
   $("fMatricula").value = auto.matricula || "";
   $("fMotorista").value = auto.motorista || "";
-  if ($("fAutuador")) $("fAutuador").value = auto.autuador || "";
+  preencherSelectAutuador(auto.autuador || "");
   $("fMotivo").value = auto.motivo || "";
   $("fTexto1").value = auto.texto1 || "";
   $("fTexto2").value = auto.texto2 || "";
@@ -894,31 +912,9 @@ function readFileAsDataUrl(file) {
   });
 }
 
-function rodapePdfLinhas(auto) {
-  const textos = [auto.texto1, auto.texto2, auto.texto3]
-    .map((s) => String(s || "").trim())
-    .filter(Boolean)
-    .join(" ");
-  const dados = [
-    auto.carro && `Carro ${auto.carro}`,
-    auto.placa && `Placa ${auto.placa}`,
-    auto.data && `Data ${auto.data}`,
-    auto.horario && `Horário ${auto.horario}`,
-    auto.linha && `Linha ${auto.linha}`,
-    (auto.protocolo || auto.notificacao) && `Prot. ${auto.protocolo || auto.notificacao}`,
-    auto.motivo && auto.motivo
-  ]
-    .filter(Boolean)
-    .join(" · ");
-  const pessoas = [
-    auto.motorista && `Motorista ${auto.motorista}`,
-    auto.matricula && `Matr. ${auto.matricula}`,
-    auto.autuador && `Autuador ${auto.autuador}`,
-    auto.obs && auto.obs
-  ]
-    .filter(Boolean)
-    .join(" · ");
-  return [textos, dados, pessoas].filter(Boolean).slice(0, 3);
+function celulaPdf(rotulo, valor, span) {
+  const cls = span ? ` class="span-${span}"` : "";
+  return `<div${cls}><span>${escapeHtml(rotulo)}</span><b>${escapeHtml(valor || "—")}</b></div>`;
 }
 
 function buildSheetHtml(auto) {
@@ -931,7 +927,10 @@ function buildSheetHtml(auto) {
   const autoPage = auto.paginaAuto
     ? `<img src="${auto.paginaAuto}" alt="Auto">`
     : `<div class="sheet-docs-empty">Sem auto</div>`;
-  const rodape = rodapePdfLinhas(auto)
+  const linhasTexto = [auto.texto1, auto.texto2, auto.texto3]
+    .map((s) => String(s || "").trim())
+    .filter(Boolean)
+    .slice(0, 3)
     .map((ln) => `<p>${escapeHtml(ln)}</p>`)
     .join("");
   return `
@@ -961,7 +960,19 @@ function buildSheetHtml(auto) {
       <section class="sheet-gallery ${imgs ? "" : "is-empty"}">
         ${imgs || "<div class='sheet-gallery-empty'>Área de evidências (imagens)</div>"}
       </section>
-      <footer class="sheet-rodape">${rodape}</footer>
+      <section class="sheet-text">${linhasTexto}</section>
+      <section class="sheet-grid">
+        ${celulaPdf("Carro", auto.carro)}
+        ${celulaPdf("Placa", auto.placa)}
+        ${celulaPdf("Data", auto.data)}
+        ${celulaPdf("Horário", auto.horario)}
+        ${celulaPdf("Linha", auto.linha)}
+        ${celulaPdf("Protocolo", auto.protocolo || auto.notificacao, 2)}
+        ${celulaPdf("Matrícula", auto.matricula)}
+        ${celulaPdf("Motorista", auto.motorista, 2)}
+        ${celulaPdf("Autuador", auto.autuador, 2)}
+        ${celulaPdf("Motivo", auto.motivo, 2)}
+      </section>
     </article>
   `;
 }
@@ -1059,7 +1070,9 @@ function montarOffscreenFicha(auto) {
   art.classList.toggle("gallery-n3", nEv >= 3);
   art.style.width = "794px";
   art.style.height = "1123px";
+  art.style.display = "grid";
   art.style.background = "#fff";
+  art.style.color = "#111";
   art.style.overflow = "hidden";
   art.querySelectorAll(".sheet-brand, .sheet-brand-logo, .sheet-brand-logo img").forEach((el) => {
     el.style.background = "#fff";
@@ -1091,9 +1104,14 @@ async function pdfBlobDoAuto(auto) {
         ficha.style.width = "794px";
         ficha.style.height = "1123px";
         ficha.style.background = "#fff";
+        ficha.style.color = "#111";
+        ficha.style.display = "grid";
       }
-      clone.querySelectorAll(".sheet-a4, .sheet-brand, .sheet-brand-logo, img").forEach((el) => {
+      clone.querySelectorAll(".sheet-a4, .sheet-brand, .sheet-brand-logo, .sheet-text, .sheet-grid, .sheet-grid div, img").forEach((el) => {
         el.style.background = "#ffffff";
+      });
+      clone.querySelectorAll(".sheet-text, .sheet-text p, .sheet-grid b").forEach((el) => {
+        el.style.color = "#111";
       });
     }
   });
@@ -1116,6 +1134,7 @@ function baixarBlob(blob, nome) {
 }
 
 async function baixarPdfAuto(auto) {
+  if (selected()?.id === auto.id) readFormInto(auto);
   const blob = await pdfBlobDoAuto(auto);
   baixarBlob(blob, nomeArquivoPdf(auto));
   return blob;
@@ -1176,7 +1195,7 @@ function printPreview() {
     <style>
       @page{size:A4 portrait;margin:0}
       html,body{width:210mm;height:297mm;margin:0;background:#fff;font-family:Arial,Helvetica,sans-serif;color:#111}
-      .sheet-a4{width:210mm;height:297mm;display:flex;flex-direction:column;overflow:hidden;border:0;background:#fff}
+      .sheet-a4{width:210mm;height:297mm;display:grid;grid-template-rows:auto auto minmax(0,1.45fr) minmax(0,1.25fr) auto auto;overflow:hidden;border:0;background:#fff;color:#111}
       .sheet-brand{display:grid;grid-template-columns:minmax(120px,20%) minmax(0,1fr) minmax(90px,16%);gap:10px;align-items:center;padding:8px 12px 7px;background:#fff;position:relative;flex:0 0 auto}
       .sheet-brand::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#06245c,#0b3a8a 52%,#ff6b00)}
       .sheet-brand-logo{display:flex;align-items:center;height:40px;padding:2px 4px;background:#fff}
@@ -1190,18 +1209,23 @@ function printPreview() {
       .sheet-capa-title{display:flex;align-items:center;justify-content:center;border-right:2px solid #1a1a1a;background:#f7f8fa;font-size:12px;font-weight:900;text-transform:uppercase;color:#0b1b3f;padding:4px 8px}
       .sheet-capa-numero{display:flex;align-items:center;padding:4px 10px}
       .sheet-capa-numero-text{font-size:11px;font-weight:800;color:#06245c}
-      .sheet-docs{flex:1.65 1 0;min-height:0;display:grid;grid-template-columns:1fr 1fr;align-items:stretch;background:#f3f5f8}
+      .sheet-docs{min-height:0;display:grid;grid-template-columns:1fr 1fr;align-items:stretch;background:#f3f5f8}
       .sheet-docs-pane{min-height:0;padding:6px;border-right:1px solid #d5deee;display:flex;flex-direction:column;gap:4px}
       .sheet-docs-pane:last-child{border-right:0}
       .sheet-docs-pane label{display:block;font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;flex:0 0 auto}
       .sheet-docs-pane img{flex:1;min-height:0;width:100%;height:100%;max-height:none;object-fit:contain;object-position:center top;border:1px solid #c9d0dc;background:#fff}
       .sheet-docs-empty{flex:1;display:grid;place-items:center;border:1px dashed #c9d4e5;background:#fff;color:#94a3b8;font-size:10px;font-weight:700}
-      .sheet-gallery{flex:1.15 1 0;min-height:0;margin:6px 8px;padding:6px;display:grid;grid-template-columns:1fr;gap:6px;background:#fff}
+      .sheet-gallery{min-height:0;margin:6px 8px;padding:6px;display:grid;grid-template-columns:1fr;gap:6px;background:#fff}
       .sheet-gallery.is-empty{flex:0 0 0;min-height:0;border:0;padding:0;margin:0}
       .sheet-gallery img{width:100%;height:100%;max-height:none;object-fit:contain;border:1px solid #dfe5ef}
       .sheet-gallery-empty{display:none}
-      .sheet-rodape{flex:0 0 auto;padding:6px 12px 10px;border-top:1px solid #d5deee;background:#fff}
-      .sheet-rodape p{margin:0;font-size:9px;line-height:1.28;font-weight:700;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .sheet-text{padding:6px 12px 2px;background:#fff;color:#111}
+      .sheet-text p{margin:0 0 2px;font-size:11px;line-height:1.3;font-weight:700;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .sheet-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:1px solid #c9d0dc;background:#fff}
+      .sheet-grid div{border:1px solid #dfe5ef;padding:5px 8px;background:#fff;color:#111}
+      .sheet-grid .span-2{grid-column:span 2}
+      .sheet-grid span{display:block;font-size:8px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#64748b}
+      .sheet-grid b{font-size:12px;font-weight:800;color:#111}
     </style></head><body>${buildSheetHtml(auto)}</body></html>`);
   win.document.close();
   win.focus();
@@ -1396,6 +1420,9 @@ function bindFormDirty() {
     const el = $(id);
     if (!el) return;
     el.addEventListener("input", () => {
+      dirty = true;
+    });
+    el.addEventListener("change", () => {
       dirty = true;
     });
   });

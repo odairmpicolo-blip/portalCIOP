@@ -247,9 +247,10 @@ body{
 .row-excel{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;align-items:end}
 .field{min-width:0}
 .field label{display:block;font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:3px}
-.field input{
+.field input,.field select{
   width:100%;border:1px solid #d5deee;border-radius:2px;padding:8px 9px;font:inherit;font-size:13px;background:#fff;
 }
+.field select{cursor:pointer}
 .field.span-2{grid-column:span 2}
 .field.span-3{grid-column:span 3}
 .field.span-4{grid-column:span 4}
@@ -261,8 +262,12 @@ body{
 }
 #pdfOffscreen .sheet-a4{box-shadow:none;width:794px}
 #pdfOffscreen .sheet-a4.is-pdf-fit{
-  width:794px;height:1123px;display:flex;flex-direction:column;
-  overflow:hidden;background:#fff;
+  width:794px;height:1123px;display:grid;
+  grid-template-rows:auto auto minmax(0,1.45fr) minmax(0,1.25fr) auto auto;
+  overflow:hidden;background:#fff;color:#111;
+}
+#pdfOffscreen .is-pdf-fit:not(.has-gallery){
+  grid-template-rows:auto auto minmax(0,1fr) auto auto;
 }
 #pdfOffscreen .is-pdf-fit .sheet-brand{padding:8px 12px 7px;gap:10px;flex:0 0 auto}
 #pdfOffscreen .is-pdf-fit .sheet-brand-logo{height:40px;padding:2px 4px}
@@ -275,7 +280,7 @@ body{
 #pdfOffscreen .is-pdf-fit .sheet-capa-numero{padding:4px 10px}
 #pdfOffscreen .is-pdf-fit .sheet-capa-numero-text{font-size:11px;font-weight:800;color:#06245c}
 #pdfOffscreen .is-pdf-fit .sheet-docs{
-  flex:1.65 1 0;min-height:0;display:grid;grid-template-columns:1fr 1fr;align-items:stretch;
+  min-height:0;display:grid;grid-template-columns:1fr 1fr;align-items:stretch;
 }
 #pdfOffscreen .is-pdf-fit .sheet-docs-pane{
   min-height:0;padding:6px;gap:4px;display:flex;flex-direction:column;
@@ -287,7 +292,7 @@ body{
 }
 #pdfOffscreen .is-pdf-fit .sheet-docs-empty{flex:1;min-height:0;font-size:10px;padding:6px}
 #pdfOffscreen .is-pdf-fit .sheet-gallery{
-  flex:1.15 1 0;min-height:0;margin:6px 8px;padding:6px;gap:6px;
+  min-height:0;margin:6px 8px;padding:6px;gap:6px;
   display:grid;grid-template-columns:1fr;align-items:stretch;
 }
 #pdfOffscreen .is-pdf-fit.gallery-n2 .sheet-gallery,
@@ -296,15 +301,33 @@ body{
   width:100%;height:100%;max-height:none;min-height:0;
   object-fit:contain;object-position:center;border:1px solid #dfe5ef;background:#fff;
 }
-#pdfOffscreen .is-pdf-fit .sheet-gallery.is-empty{flex:0 0 0;min-height:0;margin:0;padding:0;border:0}
-#pdfOffscreen .is-pdf-fit:not(.has-gallery) .sheet-docs{flex:1 1 auto}
-#pdfOffscreen .is-pdf-fit .sheet-rodape{
-  flex:0 0 auto;padding:6px 12px 10px;border-top:1px solid #d5deee;background:#fff;
+#pdfOffscreen .is-pdf-fit .sheet-gallery.is-empty{display:none}
+#pdfOffscreen .is-pdf-fit .sheet-text,
+#pdfOffscreen .is-pdf-fit .sheet-grid,
+#pdfOffscreen .is-pdf-fit .sheet-text p,
+#pdfOffscreen .is-pdf-fit .sheet-grid span,
+#pdfOffscreen .is-pdf-fit .sheet-grid b{
+  color:#111 !important;
+  background:#fff !important;
 }
-#pdfOffscreen .is-pdf-fit .sheet-rodape p{
-  margin:0;font-size:9px;line-height:1.28;font-weight:700;color:#111;
+#pdfOffscreen .is-pdf-fit .sheet-text{padding:6px 12px 2px}
+#pdfOffscreen .is-pdf-fit .sheet-text p{
+  margin:0 0 2px;font-size:11px;line-height:1.3;font-weight:700;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
+#pdfOffscreen .is-pdf-fit .sheet-grid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;
+  border-top:1px solid #c9d0dc;padding:0;
+}
+#pdfOffscreen .is-pdf-fit .sheet-grid div{
+  border:1px solid #dfe5ef;padding:5px 8px;background:#fff;
+}
+#pdfOffscreen .is-pdf-fit .sheet-grid .span-2{grid-column:span 2}
+#pdfOffscreen .is-pdf-fit .sheet-grid span{
+  display:block;font-size:8px;font-weight:800;letter-spacing:.04em;
+  text-transform:uppercase;color:#64748b !important;
+}
+#pdfOffscreen .is-pdf-fit .sheet-grid b{font-size:12px;font-weight:800}
 .sheet-gallery.is-empty{min-height:0;border:0;margin:0;padding:0}
 .sheet-gallery.is-empty .sheet-gallery-empty{display:none}
 html.dk-dark .sheet-a4,
@@ -538,7 +561,11 @@ footer.portal-site-footer .footer-text{color:#3f4757;font-size:11px}
                 <div class="field span-3"><label>Motorista</label><input id="fMotorista" placeholder="Nome completo"></div>
               </div>
               <div class="row-excel">
-                <div class="field span-8"><label>Autuador (agente CMTU)</label><input id="fAutuador" placeholder="Nome do autuador"></div>
+                <div class="field span-8"><label>Autuador (agente CMTU)</label>
+                  <select id="fAutuador">
+                    <option value="">Selecione o agente</option>
+                  </select>
+                </div>
               </div>
             </div>
             <datalist id="listaCarros"></datalist>
@@ -581,7 +608,7 @@ footer.portal-site-footer .footer-text{color:#3f4757;font-size:11px}
 
     <div id="pdfOffscreen" aria-hidden="true"></div>
 <script src="../assets/js/veiculos-placa-data.js?v=20260717e"></script>
-<script type="module" src="../assets/js/evidencias-autuacoes.js?v=20260821pdf7"></script>
+<script type="module" src="../assets/js/evidencias-autuacoes.js?v=20260821aut1"></script>
 <script src="../assets/js/theme-toggle.js?v=20260818logo6"></script>
 <script src="../assets/js/portal-futuristic.js?v=20260718am" defer></script>
 </body>
