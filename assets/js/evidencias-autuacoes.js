@@ -174,6 +174,7 @@ function enriquecerComCatalogos(auto) {
 
   const hit = catalogoDoAuto(auto);
   if (hit) {
+    if (!auto.autuador) auto.autuador = hit.agente || "";
     if (!auto.motivo) auto.motivo = hit.motivo || "";
     if (!auto.data) auto.data = hit.data_br || "";
     if (!auto.notificacao) auto.notificacao = hit.notificacao || "";
@@ -275,6 +276,7 @@ function blankAuto(extra = {}) {
     local: "",
     matricula: "",
     motorista: "",
+    autuador: "",
     motivo: "",
     texto1: "",
     texto2: "",
@@ -625,6 +627,7 @@ function readFormInto(auto) {
   auto.local = $("fLocal").value.trim();
   auto.matricula = $("fMatricula").value.trim();
   auto.motorista = $("fMotorista").value.trim();
+  auto.autuador = $("fAutuador") ? $("fAutuador").value.trim() : auto.autuador;
   auto.motivo = $("fMotivo").value.trim();
   auto.texto1 = $("fTexto1").value.trim();
   auto.texto2 = $("fTexto2").value.trim();
@@ -646,6 +649,7 @@ function fillForm(auto) {
   $("fLocal").value = auto.local || "";
   $("fMatricula").value = auto.matricula || "";
   $("fMotorista").value = auto.motorista || "";
+  if ($("fAutuador")) $("fAutuador").value = auto.autuador || "";
   $("fMotivo").value = auto.motivo || "";
   $("fTexto1").value = auto.texto1 || "";
   $("fTexto2").value = auto.texto2 || "";
@@ -720,7 +724,7 @@ function renderList() {
     .sort((a, b) => String(b.atualizadoEm).localeCompare(String(a.atualizadoEm)))
     .filter((a) => {
       if (!q) return true;
-      return [a.carro, a.linha, a.autoNumero, a.protocolo, a.notificacao, a.motivo, a.motorista, a.data, a.lote]
+      return [a.carro, a.linha, a.autoNumero, a.protocolo, a.notificacao, a.motivo, a.motorista, a.autuador, a.data, a.lote]
         .join(" ")
         .toLowerCase()
         .includes(q);
@@ -779,13 +783,20 @@ async function saveCurrent() {
     auto.planilhaAcao = planilha.acao;
     await dbPut(auto);
     const acao = planilha.acao === "update" ? "atualizado" : "incluído";
-    setStatus(`Salvo. Auto ${acao} na planilha (linha ${planilha.linha}).`);
+    setStatus(`Salvo na planilha (linha ${planilha.linha}, ${acao}). Gerando PDF...`);
   } catch (err) {
     console.warn(err);
     setStatus(
-      `Salvo neste computador, mas a planilha não gravou: ${err.message || err}. Reimplante o Apps Script de Autuações.`,
+      `Salvo neste computador, mas a planilha não gravou: ${err.message || err}. Gerando PDF...`,
       true
     );
+  }
+  try {
+    await baixarPdfAuto(auto);
+    setStatus(`PDF baixado: ${nomeArquivoPdf(auto)}`);
+  } catch (err) {
+    console.warn(err);
+    setStatus(`Salvo, mas o PDF não saiu: ${err.message || err}`, true);
   }
 }
 
@@ -805,6 +816,8 @@ function payloadPlanilha(auto) {
     placa: auto.placa || "",
     horario: auto.horario || "",
     motorista: auto.motorista || "",
+    autuador: auto.autuador || "",
+    agente: auto.autuador || "",
     matricula: auto.matricula || "",
     local: auto.local || "",
     usuario: usuario.email || usuario.nome || ""
@@ -877,9 +890,16 @@ function buildSheetHtml(auto) {
   return `
     <article class="sheet-a4">
       <div class="sheet-brand">
-        <img src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
-        <div class="sheet-org">Centro de Inteligência Operacional de Londrina - PR</div>
-        <img src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+        <div class="sheet-brand-logo">
+          <img src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
+        </div>
+        <div class="sheet-org">
+          <p class="sheet-org-kicker">Portal CIOP · TCGL Operações</p>
+          <p class="sheet-org-title">Centro de Inteligência Operacional<br>Londrina — PR</p>
+        </div>
+        <div class="sheet-brand-logo is-tcgl">
+          <img src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+        </div>
       </div>
       <div class="sheet-capa">
         <div class="sheet-capa-title">Auto de Infração</div>
@@ -909,6 +929,7 @@ function buildSheetHtml(auto) {
         <div class="span-2"><span>Local</span><b>${escapeHtml(auto.local)}</b></div>
         <div><span>Matrícula</span><b>${escapeHtml(auto.matricula)}</b></div>
         <div class="span-2"><span>Motorista</span><b>${escapeHtml(auto.motorista)}</b></div>
+        <div class="span-2"><span>Autuador</span><b>${escapeHtml(auto.autuador)}</b></div>
         <div class="span-2"><span>Motivo</span><b>${escapeHtml(auto.motivo)}</b></div>
       </section>
       <p class="sheet-obs">${escapeHtml(auto.obs)}</p>
@@ -922,6 +943,187 @@ function escapeHtml(value) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function nomeArquivoPdf(auto) {
+  const data = String(auto.data || "sem-data").replace(/\//g, ".");
+  const mot = String(auto.motivo || "evidencia").replace(/[\\/:*?"<>|]/g, " ").trim();
+  const carro = auto.carro || "s-carro";
+  const linha = auto.linha || "s-linha";
+  const autoN = auto.autoId || auto.protocolo || auto.id;
+  return `${data} - ${mot} - Carro ${carro} - Linha ${linha} - Auto ${autoN}.pdf`.replace(/\s+/g, " ");
+}
+
+function sanitizarNome(valor) {
+  return String(valor || "lote")
+    .replace(/[\\/:*?"<>|]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
+}
+
+function carregarScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    const ja = document.querySelector(`script[data-portal-src="${src}"]`);
+    if (ja) {
+      if (ja.dataset.loaded === "1") return resolve();
+      ja.addEventListener("load", () => resolve());
+      ja.addEventListener("error", () => reject(new Error("Falha ao carregar " + src)));
+      return;
+    }
+    const s = document.createElement("script");
+    s.src = src;
+    s.dataset.portalSrc = src;
+    s.onload = () => {
+      s.dataset.loaded = "1";
+      resolve();
+    };
+    s.onerror = () => reject(new Error("Falha ao carregar " + src));
+    document.head.appendChild(s);
+  });
+}
+
+async function garantirLibsPdf(comZip = false) {
+  if (!window.jspdf?.jsPDF) {
+    await carregarScriptOnce("https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js");
+  }
+  if (!window.html2canvas) {
+    await carregarScriptOnce("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
+  }
+  if (comZip && !window.JSZip) {
+    await carregarScriptOnce("https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js");
+  }
+  if (!window.jspdf?.jsPDF || !window.html2canvas) {
+    throw new Error("Bibliotecas de PDF não carregaram.");
+  }
+  if (comZip && !window.JSZip) throw new Error("JSZip não carregou.");
+}
+
+function aguardarImagens(raiz) {
+  const imgs = [...raiz.querySelectorAll("img")];
+  return Promise.all(
+    imgs.map(
+      (img) =>
+        new Promise((resolve) => {
+          if (img.complete) return resolve();
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+        })
+    )
+  );
+}
+
+function montarOffscreenFicha(auto) {
+  let host = $("pdfOffscreen");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "pdfOffscreen";
+    document.body.appendChild(host);
+  }
+  host.innerHTML = buildSheetHtml(auto);
+  const art = host.querySelector(".sheet-a4");
+  art.style.width = "794px";
+  art.style.background = "#fff";
+  art.style.overflow = "visible";
+  art.querySelectorAll(".sheet-brand, .sheet-brand-logo, .sheet-brand-logo img").forEach((el) => {
+    el.style.background = "#fff";
+    el.style.overflow = "visible";
+  });
+  return { host, art };
+}
+
+async function pdfBlobDoAuto(auto) {
+  await garantirLibsPdf(false);
+  const { host, art } = montarOffscreenFicha(auto);
+  await aguardarImagens(art);
+  await new Promise((r) => requestAnimationFrame(() => r()));
+  const canvas = await window.html2canvas(art, {
+    scale: 2,
+    backgroundColor: "#ffffff",
+    logging: false,
+    useCORS: true,
+    windowWidth: art.scrollWidth,
+    windowHeight: art.scrollHeight,
+    onclone(doc) {
+      const clone = doc.getElementById("pdfOffscreen");
+      if (!clone) return;
+      clone.style.background = "#fff";
+      clone.querySelectorAll(".sheet-a4, .sheet-brand, .sheet-brand-logo, img").forEach((el) => {
+        el.style.background = "#ffffff";
+        el.style.overflow = "visible";
+      });
+    }
+  });
+  host.innerHTML = "";
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const imgW = pageW;
+  const imgH = (canvas.height * pageW) / canvas.width;
+  const imgData = canvas.toDataURL("image/jpeg", 0.78);
+  const sliceHpx = (pageH / imgH) * canvas.height;
+  let offset = 0;
+  let pagina = 0;
+  while (offset < canvas.height - 2) {
+    const h = Math.min(sliceHpx, canvas.height - offset);
+    const slice = document.createElement("canvas");
+    slice.width = canvas.width;
+    slice.height = Math.max(1, Math.round(h));
+    slice.getContext("2d").drawImage(canvas, 0, offset, canvas.width, h, 0, 0, canvas.width, h);
+    const sliceHmm = (slice.height * pageW) / canvas.width;
+    if (pagina > 0) pdf.addPage();
+    pdf.addImage(slice.toDataURL("image/jpeg", 0.78), "JPEG", 0, 0, imgW, sliceHmm, undefined, "FAST");
+    offset += h;
+    pagina += 1;
+    if (pagina > 20) break;
+  }
+  return pdf.output("blob");
+}
+
+function baixarBlob(blob, nome) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nome;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+async function baixarPdfAuto(auto) {
+  const blob = await pdfBlobDoAuto(auto);
+  baixarBlob(blob, nomeArquivoPdf(auto));
+  return blob;
+}
+
+function autosDoLote(auto) {
+  const lote = String(auto?.lote || "").trim();
+  if (!lote) return autos.slice();
+  const doLote = autos.filter((a) => a.lote === lote);
+  return doLote.length ? doLote : autos.slice();
+}
+
+function loteTodoFinalizado(auto) {
+  const grupo = autosDoLote(auto);
+  return grupo.length > 0 && grupo.every((a) => a.status === "finalizado");
+}
+
+async function baixarPastaPdfs(lista) {
+  const grupo = lista && lista.length ? lista : autos.slice();
+  if (!grupo.length) throw new Error("Não há evidências para exportar.");
+  await garantirLibsPdf(true);
+  const zip = new window.JSZip();
+  const pasta = zip.folder(sanitizarNome(grupo[0].lote || "Evidencias-CMTU")) || zip;
+  for (let i = 0; i < grupo.length; i++) {
+    const item = grupo[i];
+    setStatus(`Gerando PDF ${i + 1}/${grupo.length}: ${item.carro || item.autoId || item.id}...`);
+    const blob = await pdfBlobDoAuto(item);
+    pasta.file(nomeArquivoPdf(item), blob);
+  }
+  const zipBlob = await zip.generateAsync({ type: "blob" });
+  const nomeZip = `${sanitizarNome(grupo[0].lote || "Evidencias-CMTU")}.zip`;
+  baixarBlob(zipBlob, nomeZip);
+  setStatus(`Pasta baixada: ${nomeZip} (${grupo.length} PDFs, uma folha por página).`);
 }
 
 function openPreview() {
@@ -948,11 +1150,17 @@ function printPreview() {
   win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Evidência ${auto.carro || ""}</title>
     <style>
       @page{size:A4;margin:10mm}
-      body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0}
-      .sheet-a4{border:1px solid #c9d0dc}
-      .sheet-brand{display:grid;grid-template-columns:90px 1fr 90px;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid #ddd}
-      .sheet-brand img{height:48px;object-fit:contain;justify-self:center}
-      .sheet-org{text-align:center;font-weight:800;color:#06245c;font-size:13px;text-transform:uppercase}
+      body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;background:#fff}
+      .sheet-a4{border:1px solid #d5deee;background:#fff;overflow:visible}
+      .sheet-brand{display:grid;grid-template-columns:minmax(148px,22%) minmax(0,1fr) minmax(108px,18%);gap:16px;align-items:center;padding:16px 18px 14px;background:#fff;position:relative;overflow:visible}
+      .sheet-brand::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#06245c,#0b3a8a 52%,#ff6b00)}
+      .sheet-brand-logo{display:flex;align-items:center;height:58px;padding:4px 8px;background:#fff;overflow:visible}
+      .sheet-brand-logo img{display:block;height:50px;width:auto;max-width:100%;object-fit:contain;object-position:left center;background:#fff}
+      .sheet-brand-logo.is-tcgl{justify-content:flex-end}
+      .sheet-brand-logo.is-tcgl img{object-position:right center;height:52px}
+      .sheet-org{text-align:center;color:#06245c}
+      .sheet-org-kicker{margin:0 0 4px;font-size:9px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#ff6b00}
+      .sheet-org-title{margin:0;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.35}
       .sheet-capa{display:grid;grid-template-columns:26% 1fr;border-bottom:2px solid #1a1a1a;min-height:48px}
       .sheet-capa-title{display:flex;align-items:center;justify-content:center;border-right:2px solid #1a1a1a;background:#f7f8fa;font-size:15px;font-weight:900;text-transform:uppercase;color:#0b1b3f;padding:8px}
       .sheet-capa-numero{display:flex;align-items:center;padding:8px 12px}
@@ -963,12 +1171,19 @@ function printPreview() {
       .sheet-docs-pane label{display:block;font-size:9px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:4px}
       .sheet-docs-pane img{width:100%;border:1px solid #c9d0dc;background:#fff}
       .sheet-docs-empty{min-height:180px;display:grid;place-items:center;border:1px dashed #c9d4e5;background:#fff;color:#94a3b8;font-size:11px;font-weight:700}
-      .sheet-gallery{margin:10px 12px;min-height:160px;border:1px dashed #c9d4e5;padding:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+      .sheet-gallery{margin:10px 12px;min-height:160px;border:1px dashed #c9d4e5;padding:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;background:#fff}
+      .sheet-gallery.is-empty{min-height:0;border:0;padding:0;margin:6px 12px}
       .sheet-gallery img{width:100%;border:1px solid #dfe5ef}
-      .sheet-gallery-empty{display:grid;place-items:center;color:#667085;min-height:120px}
+      .sheet-gallery-empty{display:none}
       .sheet-text{padding:0 14px}
       .sheet-text p{margin:0 0 8px;font-size:13px;line-height:1.45}
       .sheet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px 14px}
+      .sheet-grid div{border:1px solid #dfe5ef;padding:6px 8px}
+      .sheet-grid .span-2{grid-column:span 2}
+      .sheet-grid span{display:block;font-size:10px;color:#667085;font-weight:700;text-transform:uppercase}
+      .sheet-grid b{font-size:13px}
+      .sheet-obs{padding:0 14px 16px;font-size:12px;font-weight:700}
+    </style></head><body>${buildSheetHtml(auto)}</body></html>`);
       .sheet-grid div{border:1px solid #dfe5ef;padding:6px 8px}
       .sheet-grid .span-2{grid-column:span 2}
       .sheet-grid span{display:block;font-size:10px;color:#667085;font-weight:700;text-transform:uppercase}
@@ -988,7 +1203,19 @@ async function finalizeCurrent() {
   await dbPut(auto);
   dirty = false;
   renderList();
-  setStatus("Evidência marcada como finalizada (local).");
+  if (loteTodoFinalizado(auto)) {
+    setStatus("Lote concluído. Montando pasta com todos os PDFs...");
+    try {
+      await baixarPastaPdfs(autosDoLote(auto));
+    } catch (err) {
+      console.warn(err);
+      setStatus(`Lote finalizado, mas a pasta não saiu: ${err.message || err}`, true);
+    }
+  } else {
+    const grupo = autosDoLote(auto);
+    const falta = grupo.filter((a) => a.status !== "finalizado").length;
+    setStatus(`Evidência finalizada. Faltam ${falta} neste lote. Ao terminar todas, a pasta de PDFs é baixada.`);
+  }
 }
 
 async function deleteCurrent() {
@@ -1147,6 +1374,7 @@ function bindFormDirty() {
     "fLocal",
     "fMatricula",
     "fMotorista",
+    "fAutuador",
     "fMotivo",
     "fTexto1",
     "fTexto2",
@@ -1206,6 +1434,14 @@ async function boot() {
   $("btnSalvar").addEventListener("click", saveCurrent);
   $("btnPreview").addEventListener("click", openPreview);
   $("btnPrint").addEventListener("click", printPreview);
+  $("btnPastaPdfs")?.addEventListener("click", async () => {
+    const atual = selected();
+    try {
+      await baixarPastaPdfs(autosDoLote(atual));
+    } catch (err) {
+      setStatus(`Não foi possível montar a pasta: ${err.message || err}`, true);
+    }
+  });
   $("btnFinalizar").addEventListener("click", finalizeCurrent);
   $("btnExcluir").addEventListener("click", deleteCurrent);
   $("btnClosePreview").addEventListener("click", closePreview);

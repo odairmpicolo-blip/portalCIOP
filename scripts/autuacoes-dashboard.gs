@@ -506,6 +506,7 @@ function upsertEvidenciaAuto_(dados) {
   var idxRecebido = indiceHeaderEv_(headers, ["Recebido"]);
   var idxData = indiceHeaderEv_(headers, ["Data"]);
   var idxMotivo = indiceHeaderEv_(headers, ["Motivo"]);
+  var idxAgente = indiceHeaderEv_(headers, ["Agente", "Autuador"]);
   var idxCarro = indiceHeaderEv_(headers, ["Carro"]);
   var idxLinha = indiceHeaderEv_(headers, ["Linha"]);
   var idxPlaca = indiceHeaderEv_(headers, ["Placa"]);
@@ -563,6 +564,7 @@ function upsertEvidenciaAuto_(dados) {
   preencher(idxAuto, autoId, true);
   preencher(idxData, dados.data, true);
   preencher(idxMotivo, dados.motivo, true);
+  preencher(idxAgente, dados.agente || dados.autuador, true);
   preencher(idxRecebido, dados.recebido || hojeBrEv_(), true);
   preencher(idxCarro, dados.carro, false);
   preencher(idxLinha, dados.linha, false);
