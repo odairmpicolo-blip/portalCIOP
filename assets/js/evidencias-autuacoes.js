@@ -23,6 +23,7 @@ let selectedId = null;
 let dirty = false;
 let funcionarios = [];
 let autuacoesIndex = new Map();
+let autuacoesPorAuto = new Map();
 
 const $ = (id) => document.getElementById(id);
 
@@ -122,15 +123,40 @@ async function carregarAutuacoes() {
     const payload = await res.json();
     const arr = Array.isArray(payload?.data) ? payload.data : [];
     autuacoesIndex = new Map();
+    autuacoesPorAuto = new Map();
     arr.forEach((item) => {
       const notif = String(item.notificacao || "").trim();
       if (notif) autuacoesIndex.set(notif, item);
       const auto = String(item.auto || "").replace(/^0+/, "");
+      if (auto) {
+        const lista = autuacoesPorAuto.get(auto) || [];
+        lista.push(item);
+        autuacoesPorAuto.set(auto, lista);
+      }
       if (notif && auto) autuacoesIndex.set(`${notif}#${auto}`, item);
     });
   } catch (err) {
     console.warn("Autuações não carregadas:", err);
   }
+}
+
+function catalogoDoAuto(auto) {
+  const notif = String(auto.notificacao || auto.protocolo || "").trim();
+  const autoId = String(auto.autoId || "").replace(/^0+/, "");
+  if (notif && autoId) {
+    const hit = autuacoesIndex.get(`${notif}#${autoId}`);
+    if (hit) return hit;
+  }
+  if (notif && autuacoesIndex.has(notif)) return autuacoesIndex.get(notif);
+  if (autoId) {
+    const lista = autuacoesPorAuto.get(autoId) || [];
+    if (auto.data) {
+      const porData = lista.find((h) => h.data_br === auto.data);
+      if (porData) return porData;
+    }
+    if (lista.length === 1) return lista[0];
+  }
+  return null;
 }
 
 function enriquecerComCatalogos(auto) {
@@ -142,20 +168,26 @@ function enriquecerComCatalogos(auto) {
     if (func) auto.motorista = func.nome;
   }
 
-  const notif = String(auto.notificacao || "").trim();
-  const autoId = String(auto.autoId || "").replace(/^0+/, "");
-  let hit = null;
-  if (notif && autoId) hit = autuacoesIndex.get(`${notif}#${autoId}`);
-  if (!hit && notif) hit = autuacoesIndex.get(notif);
+  const hit = catalogoDoAuto(auto);
   if (hit) {
     if (!auto.motivo) auto.motivo = hit.motivo || "";
     if (!auto.data) auto.data = hit.data_br || "";
-    if (!auto.autoNumero || /^\d{2,6}$/.test(auto.autoNumero) || /^-?M\d+$/.test(auto.autoNumero) || /^\d{4,5}\/\d{4}-M\d+$/.test(auto.autoNumero)) {
-      const mPart = String(hit.auto || "").padStart(7, "0");
-      auto.autoNumero = `${hit.notificacao}-M${mPart}`;
-      auto.notificacao = hit.notificacao;
-    }
+    if (!auto.notificacao) auto.notificacao = hit.notificacao || "";
+    if (!auto.protocolo) auto.protocolo = hit.notificacao || "";
+    if (!auto.autoId) auto.autoId = String(hit.auto || "").replace(/^0+/, "");
+    const mPart = String(hit.auto || auto.autoId || "").padStart(7, "0");
+    const artigo = String(hit.artigo || "").replace(/^Infração\s*n[ºo°.]?\s*/i, "").trim();
+    auto.autoNumero = artigo
+      ? `${hit.notificacao}-M${mPart} · ${hit.motivo || ""} · ${artigo}`
+      : `${hit.notificacao}-M${mPart}`;
+  } else if (auto.notificacao && auto.autoId) {
+    auto.protocolo = auto.protocolo || auto.notificacao;
+    auto.autoNumero =
+      auto.autoNumero || `${auto.notificacao}-M${String(auto.autoId).padStart(7, "0")}`;
+  } else if (auto.autoId && !auto.autoNumero) {
+    auto.autoNumero = String(auto.autoId).padStart(4, "0");
   }
+  if (!auto.protocolo && auto.notificacao) auto.protocolo = auto.notificacao;
   return auto;
 }
 
@@ -229,6 +261,7 @@ function blankAuto(extra = {}) {
     origem: "manual",
     autoNumero: "",
     notificacao: "",
+    protocolo: "",
     autoId: "",
     data: "",
     horario: "",
@@ -266,20 +299,138 @@ function parseEvidenceFilename(name) {
 }
 
 function extractPageText(page) {
-  return page.getTextContent().then((tc) => tc.items.map((it) => it.str).join(" "));
+  return page.getTextContent().then((tc) => {
+    const lines = [];
+    let lastY = null;
+    let buf = "";
+    for (const it of tc.items) {
+      const y = Math.round((it.transform && it.transform[5]) || 0);
+      const str = String(it.str || "");
+      if (lastY != null && Math.abs(y - lastY) > 5) {
+        if (buf.trim()) lines.push(buf.trim());
+        buf = str;
+      } else {
+        buf += (buf && str ? " " : "") + str;
+      }
+      lastY = y;
+    }
+    if (buf.trim()) lines.push(buf.trim());
+    return lines.join("\n");
+  });
+}
+
+function normalizarDigitosOcr(valor) {
+  return String(valor || "")
+    .toUpperCase()
+    .replace(/[LÍÌÎI|!T]/g, "1")
+    .replace(/[OQD]/g, "0")
+    .replace(/[S]/g, "5")
+    .replace(/[Z]/g, "2")
+    .replace(/[B]/g, "8")
+    .replace(/[G]/g, "6")
+    .replace(/[A]/g, "4")
+    .replace(/[^0-9/]/g, "");
+}
+
+function extrairNotificacao(text) {
+  const linhas = String(text || "").split("\n").slice(0, 22);
+  for (const ln of linhas) {
+    if (!/norr|notif|uorr|horrr|n["oº°]/i.test(ln) && !/\d{4,5}\s*\/\s*20/.test(ln)) continue;
+    const apos = ln.split(/n["oº°.]{0,4}\s*/i).pop() || ln;
+    const bruto = normalizarDigitosOcr(apos);
+    const m = bruto.match(/(\d{4,5}\/20\d{2})/);
+    if (m && autuacoesIndex.has(m[1])) return m[1];
+    if (m && Number(m[1].slice(0, 4)) >= 3000) return m[1];
+  }
+  const all = normalizarDigitosOcr(String(text || "").slice(0, 900));
+  const m = all.match(/(\d{5}\/20\d{2})/);
+  return m && autuacoesIndex.has(m[1]) ? m[1] : "";
+}
+
+function extrairProtocoloRequerimento(text) {
+  const m = String(text || "").match(/protocolado\s+sob\s+n[oº°.]?\s*([0-9A-Za-z]{8,})/i);
+  return m ? m[1].replace(/[^0-9A-Za-z]/g, "") : "";
+}
+
+function extrairAutoId(textNotif, textAuto) {
+  const notif = String(textNotif || "");
+  const auto = String(textAuto || "");
+  const cands = [];
+  const infraRe = /[IiÍl1]nfra[cçãa][\s\S]{0,90}?(?:n[oº°a."]+\s*|no\s+)0*(\d{2,6})/gi;
+  let m;
+  while ((m = infraRe.exec(notif))) cands.push(String(m[1]).replace(/^0+/, ""));
+  const stampRe = /\b0{3,}(\d{2,4})\b/g;
+  while ((m = stampRe.exec(auto))) {
+    const n = String(m[1]).replace(/^0+/, "");
+    if (n && n !== "1") cands.push(n);
+  }
+  const seen = [];
+  for (const c of cands) {
+    if (c && !seen.includes(c)) seen.push(c);
+  }
+  for (const c of seen) {
+    const lista = autuacoesPorAuto.get(c) || [];
+    if (lista.length === 1) return c;
+  }
+  for (const c of seen) {
+    if (autuacoesPorAuto.has(c)) return c;
+  }
+  return seen.find((c) => Number(c) >= 40 && Number(c) < 20000) || seen[0] || "";
+}
+
+function extrairDataLavratura(text) {
+  const m = String(text || "").match(/Que em\s+(\d{1,2})[/.](\d{1,2})[/.](\d{4})/i);
+  if (!m) {
+    const d = String(text || "").match(/\b(\d{2})\/(\d{2})\/(20\d{2})\b/);
+    return d ? `${d[1]}/${d[2]}/${d[3]}` : "";
+  }
+  let dia = Number(m[1]);
+  const mes = Number(m[2]);
+  const ano = m[3];
+  if (dia > 31) dia = Number(String(m[1]).replace(/^7/, "1"));
+  if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return "";
+  return `${String(dia).padStart(2, "0")}/${String(mes).padStart(2, "0")}/${ano}`;
+}
+
+function extrairCarroLinha(text) {
+  const t = String(text || "");
+  const linhaMatch =
+    t.match(/\bLinha\s*[:.\-]?\s*(\d{2,4})\b/i) ||
+    t.match(/\bL\.?\s*(\d{2,4})\b/);
+  const carroMatch = t.match(/\b(?:Carro|Ve[ií]culo|Prefixo)\s*[:.\-]?\s*(\d{3,4})\b/i);
+  let carro = carroMatch ? carroMatch[1] : "";
+  let linha = linhaMatch ? linhaMatch[1] : "";
+  if (!carro) {
+    const frota = window.CIOP_VEICULOS_PLACA || {};
+    const nums = [...t.matchAll(/\b(\d{4})\b/g)].map((x) => x[1]);
+    carro =
+      nums.find((n) => frota[n] && !["1213", "3379", "7900", "1082", "2024", "2026"].includes(n)) ||
+      "";
+  }
+  if (linha === "1213" || linha === "2026" || linha === "1082") linha = "";
+  return { carro, linha };
 }
 
 function extractAutoHints(textNotif, textAuto = "") {
   const t = `${textNotif || ""}\n${textAuto || ""}`;
-  const dates = [...t.matchAll(/\b(\d{2}\/\d{2}\/\d{4})\b/g)].map((m) => m[1]);
-  const notif =
-    (t.match(/Notifica[cç][aã]o\s*(?:n[oº°.]?\s*)?(\d{4,5}\/\d{4})/i) || [])[1] ||
-    (t.match(/\b(\d{5}\/\d{4})\b/) || [])[1] ||
-    "";
-  const autoMatch =
-    t.match(/Auto\s+de\s+Infra[cç][aã]o\s+de\s+n[oº°.]?\s*0*(\d{2,6})/i) ||
-    t.match(/\bn[oº°.]?\s*0*(\d{2,6})\b/i);
-  const autoId = autoMatch ? String(autoMatch[1]) : "";
+  let notificacao = extrairNotificacao(textNotif) || extrairNotificacao(t);
+  let autoId = extrairAutoId(textNotif, textAuto);
+  const protocoloReq = extrairProtocoloRequerimento(t);
+  let data = extrairDataLavratura(textNotif);
+
+  if (notificacao && autuacoesIndex.has(notificacao)) {
+    const hit = autuacoesIndex.get(notificacao);
+    if (!autoId) autoId = String(hit.auto || "").replace(/^0+/, "");
+    if (!data) data = hit.data_br || "";
+  }
+  if (autoId && autuacoesPorAuto.has(autoId)) {
+    const lista = autuacoesPorAuto.get(autoId);
+    const hit = (data && lista.find((h) => h.data_br === data)) || (lista.length === 1 ? lista[0] : null);
+    if (hit) {
+      notificacao = notificacao || hit.notificacao;
+      data = data || hit.data_br;
+    }
+  }
 
   const hourMatch =
     t.match(/\b(?:[àa]s\s*)?(\d{1,2})[h:](\d{2})\b/i) ||
@@ -288,16 +439,13 @@ function extractAutoHints(textNotif, textAuto = "") {
     ? `${String(hourMatch[1]).padStart(2, "0")}:${hourMatch[2]}`
     : "";
 
-  const linhaMatch =
-    t.match(/\bLinha\s*[:\-]?\s*(\d{2,4})\b/i) ||
-    t.match(/\bL\.?\s*(\d{2,4})\b/);
-  const carroMatch = t.match(/\b(?:Carro|Ve[ií]culo|Prefixo)\s*[:\-]?\s*(\d{3,4})\b/i);
+  const { carro, linha } = extrairCarroLinha(t);
 
   const motivoKeys = [
     ["ATRASO", /atraso/i],
     ["SUPRESSÃO", /supress/i],
     ["PERMANÊNCIA", /perman/i],
-    ["NÃO REALIZOU LOGIN", /login|n[aã]o\s+realizou/i],
+    ["NÃO REALIZOU LOGIN", /login|autentica|n[aã]o\s+realizou/i],
     ["ELEVADOR DEFEITUOSO", /elevador/i],
     ["ADIANTADO", /adiantad/i]
   ];
@@ -314,21 +462,23 @@ function extractAutoHints(textNotif, textAuto = "") {
     t.match(/\b(?:Terminal|Garagem|Av\.|Avenida|Rua)\s+[^\n,]{3,60}/i);
   const local = localMatch ? String(localMatch[1] || localMatch[0] || "").trim() : "";
 
+  const protocolo = notificacao || protocoloReq || "";
   let autoNumero = "";
-  if (notif && autoId) {
-    autoNumero = `${notif}-M${String(autoId).padStart(7, "0")}`;
+  if (notificacao && autoId) {
+    autoNumero = `${notificacao}-M${String(autoId).padStart(7, "0")}`;
   } else if (autoId) {
     autoNumero = String(autoId).padStart(4, "0");
   }
 
   return {
-    data: dates.find((d) => !d.startsWith("01/01")) || dates[0] || "",
+    data,
     horario,
-    linha: linhaMatch ? linhaMatch[1] : "",
-    carro: carroMatch ? carroMatch[1] : "",
+    linha,
+    carro,
     motivo,
     local,
-    notificacao: notif,
+    notificacao,
+    protocolo,
     autoId,
     autoNumero
   };
@@ -369,6 +519,7 @@ async function importNotificationPdf(file, onProgress) {
         origem: "notificacao-cmtu",
         autoNumero: hints.autoNumero,
         notificacao: hints.notificacao,
+        protocolo: hints.protocolo,
         autoId: hints.autoId,
         data: hints.data,
         horario: hints.horario,
@@ -398,15 +549,24 @@ async function importEvidencePdf(file) {
   const buffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
   const first = await renderPdfPage(pdf, 1, 1.2);
+  let hints = {};
+  try {
+    const page = await pdf.getPage(1);
+    hints = extractAutoHints(await extractPageText(page), "");
+  } catch (_) {}
   const item = enriquecerComCatalogos(
     blankAuto({
       lote: file.name,
       origem: "evidencia-pdf",
-      data: parsed.data || "",
-      motivo: parsed.motivo || "",
-      carro: parsed.carro || "",
-      linha: parsed.linha || "",
+      data: parsed.data || hints.data || "",
+      motivo: parsed.motivo || hints.motivo || "",
+      carro: parsed.carro || hints.carro || "",
+      linha: parsed.linha || hints.linha || "",
       matricula: parsed.matricula || "",
+      autoNumero: hints.autoNumero || "",
+      notificacao: hints.notificacao || "",
+      protocolo: hints.protocolo || "",
+      autoId: hints.autoId || "",
       paginaAuto: first,
       imagens: []
     })
@@ -451,6 +611,8 @@ function selected() {
 
 function readFormInto(auto) {
   auto.autoNumero = $("fAutoNumero").value.trim();
+  auto.protocolo = $("fProtocolo") ? $("fProtocolo").value.trim() : auto.protocolo;
+  if (auto.protocolo && !auto.notificacao) auto.notificacao = auto.protocolo;
   auto.data = $("fData").value.trim();
   auto.horario = $("fHorario").value.trim();
   auto.carro = $("fCarro").value.trim();
@@ -471,6 +633,7 @@ function readFormInto(auto) {
 
 function fillForm(auto) {
   $("fAutoNumero").value = auto.autoNumero || "";
+  if ($("fProtocolo")) $("fProtocolo").value = auto.protocolo || auto.notificacao || "";
   $("fData").value = auto.data || "";
   $("fHorario").value = auto.horario || "";
   $("fCarro").value = auto.carro || "";
@@ -553,7 +716,7 @@ function renderList() {
     .sort((a, b) => String(b.atualizadoEm).localeCompare(String(a.atualizadoEm)))
     .filter((a) => {
       if (!q) return true;
-      return [a.carro, a.linha, a.autoNumero, a.motivo, a.motorista, a.data, a.lote]
+      return [a.carro, a.linha, a.autoNumero, a.protocolo, a.notificacao, a.motivo, a.motorista, a.data, a.lote]
         .join(" ")
         .toLowerCase()
         .includes(q);
@@ -570,11 +733,11 @@ function renderList() {
     el.className = `auto-item${a.id === selectedId ? " is-active" : ""} status-${a.status}`;
     el.innerHTML = `
       <div class="auto-item-top">
-        <strong>${a.carro || "—"}</strong>
+        <strong>${a.carro || (a.autoId ? `Auto ${a.autoId}` : "—")}</strong>
         <span class="pill">${statusLabel(a.status)}</span>
       </div>
-      <div class="auto-item-meta">${a.data || "sem data"} · Linha ${a.linha || "—"} · Mot ${a.matricula || "—"}</div>
-      <div class="auto-item-sub">${a.autoNumero ? `Auto ${a.autoNumero}` : a.motivo || a.lote || "Sem número"}</div>
+      <div class="auto-item-meta">${a.data || "sem data"} · Carro ${a.carro || "—"} · Linha ${a.linha || "—"}</div>
+      <div class="auto-item-sub">${a.protocolo || a.notificacao ? `Prot. ${a.protocolo || a.notificacao}` : ""} ${a.autoId ? `· Auto ${a.autoId}` : a.autoNumero ? `· ${a.autoNumero}` : a.motivo || a.lote || "Sem número"}</div>
     `;
     el.addEventListener("click", () => selectAuto(a.id));
     list.appendChild(el);
@@ -676,6 +839,7 @@ function buildSheetHtml(auto) {
         <div><span>Data</span><b>${escapeHtml(auto.data)}</b></div>
         <div><span>Horário</span><b>${escapeHtml(auto.horario)}</b></div>
         <div><span>Linha</span><b>${escapeHtml(auto.linha)}</b></div>
+        <div class="span-2"><span>Protocolo</span><b>${escapeHtml(auto.protocolo || auto.notificacao)}</b></div>
         <div class="span-2"><span>Local</span><b>${escapeHtml(auto.local)}</b></div>
         <div><span>Matrícula</span><b>${escapeHtml(auto.matricula)}</b></div>
         <div class="span-2"><span>Motorista</span><b>${escapeHtml(auto.motorista)}</b></div>
@@ -778,10 +942,39 @@ async function deleteCurrent() {
   setStatus("Evidência excluída.");
 }
 
+function dataChave(valor) {
+  const m = String(valor || "").match(/(\d{2})[./](\d{2})[./](\d{4})/);
+  return m ? `${m[1]}/${m[2]}/${m[3]}` : "";
+}
+
+function acharAutoDoLote(lote, parsed) {
+  if (!parsed || !lote.length) return null;
+  const data = dataChave(parsed.data);
+  const mot = String(parsed.motivo || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .slice(0, 6);
+  const doDia = lote.filter((a) => data && dataChave(a.data) === data);
+  const base = doDia.length ? doDia : lote;
+  const porMotivo = mot
+    ? base.filter((a) =>
+        String(a.motivo || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .includes(mot)
+      )
+    : base;
+  const lista = (porMotivo.length ? porMotivo : base).filter((a) => !a.carro);
+  return lista[0] || null;
+}
+
 async function handleFiles(fileList) {
   const files = [...fileList];
   if (!files.length) return;
   setStatus("Processando arquivos...");
+  const loteCriado = [];
   try {
     for (const file of files) {
       const lower = file.name.toLowerCase();
@@ -814,16 +1007,38 @@ async function handleFiles(fileList) {
         const created = await importNotificationPdf(file, (cur, total) => {
           setStatus(`Replicando autos ${Math.min(cur + 1, total)}/${total}...`);
         });
+        loteCriado.push(...created);
         autos = created.concat(autos);
         selectedId = created[0]?.id || selectedId;
         if (selectedId) fillForm(selected());
         setStatus(`${created.length} autos criados a partir da notificação.`);
       } else {
-        const item = await importEvidencePdf(file);
-        autos.unshift(item);
-        selectedId = item.id;
-        fillForm(item);
-        setStatus(`Evidência importada: ${file.name}`);
+        const parsed = parseEvidenceFilename(file.name);
+        const alvo = acharAutoDoLote(loteCriado, parsed);
+        if (alvo && parsed) {
+          alvo.carro = parsed.carro || alvo.carro;
+          alvo.linha = parsed.linha || alvo.linha;
+          alvo.matricula = parsed.matricula || alvo.matricula;
+          alvo.motivo = parsed.motivo || alvo.motivo;
+          alvo.data = parsed.data || alvo.data;
+          alvo.placa = placaDoCarro(alvo.carro) || alvo.placa;
+          const func = funcionarioPorMatricula(alvo.matricula);
+          if (func) alvo.motorista = func.nome;
+          const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+          const shot = await renderPdfPage(pdf, 1, 1.15);
+          alvo.imagens.push({ id: uid(), dataUrl: shot, tipo: "evidencia" });
+          alvo.status = computeStatus(alvo);
+          await dbPut(alvo);
+          selectedId = alvo.id;
+          fillForm(alvo);
+          setStatus(`Evidência ligada ao auto ${alvo.autoId || alvo.protocolo}: carro ${alvo.carro}, linha ${alvo.linha}.`);
+        } else {
+          const item = await importEvidencePdf(file);
+          autos.unshift(item);
+          selectedId = item.id;
+          fillForm(item);
+          setStatus(`Evidência importada: ${file.name}`);
+        }
       }
     }
     renderList();
@@ -857,6 +1072,7 @@ function wireDropZone(zone, input, handler) {
 function bindFormDirty() {
   [
     "fAutoNumero",
+    "fProtocolo",
     "fData",
     "fHorario",
     "fCarro",
@@ -871,7 +1087,9 @@ function bindFormDirty() {
     "fTexto3",
     "fObs"
   ].forEach((id) => {
-    $(id).addEventListener("input", () => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener("input", () => {
       dirty = true;
     });
   });
