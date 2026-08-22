@@ -894,6 +894,33 @@ function readFileAsDataUrl(file) {
   });
 }
 
+function rodapePdfLinhas(auto) {
+  const textos = [auto.texto1, auto.texto2, auto.texto3]
+    .map((s) => String(s || "").trim())
+    .filter(Boolean)
+    .join(" ");
+  const dados = [
+    auto.carro && `Carro ${auto.carro}`,
+    auto.placa && `Placa ${auto.placa}`,
+    auto.data && `Data ${auto.data}`,
+    auto.horario && `Horário ${auto.horario}`,
+    auto.linha && `Linha ${auto.linha}`,
+    (auto.protocolo || auto.notificacao) && `Prot. ${auto.protocolo || auto.notificacao}`,
+    auto.motivo && auto.motivo
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const pessoas = [
+    auto.motorista && `Motorista ${auto.motorista}`,
+    auto.matricula && `Matr. ${auto.matricula}`,
+    auto.autuador && `Autuador ${auto.autuador}`,
+    auto.obs && auto.obs
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return [textos, dados, pessoas].filter(Boolean).slice(0, 3);
+}
+
 function buildSheetHtml(auto) {
   const imgs = evidenciasSomente(auto)
     .map((img) => `<img src="${img.dataUrl}" alt="Evidência">`)
@@ -904,6 +931,9 @@ function buildSheetHtml(auto) {
   const autoPage = auto.paginaAuto
     ? `<img src="${auto.paginaAuto}" alt="Auto">`
     : `<div class="sheet-docs-empty">Sem auto</div>`;
+  const rodape = rodapePdfLinhas(auto)
+    .map((ln) => `<p>${escapeHtml(ln)}</p>`)
+    .join("");
   return `
     <article class="sheet-a4">
       <div class="sheet-brand">
@@ -931,24 +961,7 @@ function buildSheetHtml(auto) {
       <section class="sheet-gallery ${imgs ? "" : "is-empty"}">
         ${imgs || "<div class='sheet-gallery-empty'>Área de evidências (imagens)</div>"}
       </section>
-      <section class="sheet-text">
-        <p>${escapeHtml(auto.texto1)}</p>
-        <p>${escapeHtml(auto.texto2)}</p>
-        <p>${escapeHtml(auto.texto3)}</p>
-      </section>
-      <section class="sheet-grid">
-        <div><span>Carro</span><b>${escapeHtml(auto.carro)}</b></div>
-        <div><span>Placa</span><b>${escapeHtml(auto.placa)}</b></div>
-        <div><span>Data</span><b>${escapeHtml(auto.data)}</b></div>
-        <div><span>Horário</span><b>${escapeHtml(auto.horario)}</b></div>
-        <div><span>Linha</span><b>${escapeHtml(auto.linha)}</b></div>
-        <div class="span-2"><span>Protocolo</span><b>${escapeHtml(auto.protocolo || auto.notificacao)}</b></div>
-        <div><span>Matrícula</span><b>${escapeHtml(auto.matricula)}</b></div>
-        <div class="span-2"><span>Motorista</span><b>${escapeHtml(auto.motorista)}</b></div>
-        <div class="span-2"><span>Autuador</span><b>${escapeHtml(auto.autuador)}</b></div>
-        <div class="span-2"><span>Motivo</span><b>${escapeHtml(auto.motivo)}</b></div>
-      </section>
-      <p class="sheet-obs">${escapeHtml(auto.obs)}</p>
+      <footer class="sheet-rodape">${rodape}</footer>
     </article>
   `;
 }
@@ -1187,14 +1200,8 @@ function printPreview() {
       .sheet-gallery.is-empty{flex:0 0 0;min-height:0;border:0;padding:0;margin:0}
       .sheet-gallery img{width:100%;height:100%;max-height:none;object-fit:contain;border:1px solid #dfe5ef}
       .sheet-gallery-empty{display:none}
-      .sheet-text{padding:4px 12px 0;flex:0 0 auto}
-      .sheet-text p{margin:0 0 3px;font-size:10px;line-height:1.28}
-      .sheet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px 10px 6px;flex:0 0 auto}
-      .sheet-grid div{border:1px solid #dfe5ef;padding:3px 5px}
-      .sheet-grid .span-2{grid-column:span 2}
-      .sheet-grid span{display:block;font-size:8px;color:#667085;font-weight:700;text-transform:uppercase}
-      .sheet-grid b{font-size:11px}
-      .sheet-obs{padding:0 10px 8px;font-size:10px;font-weight:700;flex:0 0 auto}
+      .sheet-rodape{flex:0 0 auto;padding:6px 12px 10px;border-top:1px solid #d5deee;background:#fff}
+      .sheet-rodape p{margin:0;font-size:9px;line-height:1.28;font-weight:700;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     </style></head><body>${buildSheetHtml(auto)}</body></html>`);
   win.document.close();
   win.focus();
