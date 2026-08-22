@@ -203,6 +203,7 @@ function negarAcessoPagina() {
 }
 
 function modernizarSessaoUsuario() {
+  garantirSessaoPadrao();
   const session = document.querySelector(".ciop-session");
   if (!session) return;
 
@@ -242,30 +243,78 @@ function paginaEhHomePortal() {
   return file === "" || file === "index.html" || file === "login.html";
 }
 
+function garantirSessaoPadrao() {
+  if (paginaEhHomePortal()) return;
+  let session = document.querySelector(".ciop-session");
+  if (!session) {
+    const header = document.querySelector("header.header, .header");
+    const actions = header?.querySelector(".header-actions") || header;
+    if (!actions) return;
+    session = document.createElement("div");
+    session.className = "ciop-session";
+    session.setAttribute("aria-label", "Sessão do usuário");
+    session.innerHTML = '<span id="usuarioLogado" class="ciop-session-user">Usuário</span>'
+      + '<span id="perfilUsuario" class="ciop-session-cargo" hidden></span>'
+      + '<button type="button" class="btn-logout" onclick="logout()">Sair</button>';
+    actions.appendChild(session);
+  }
+  if (!session.querySelector(".btn-logout, button[onclick*='logout']")) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "btn-logout";
+    b.textContent = "Sair";
+    b.addEventListener("click", () => window.logout?.());
+    session.appendChild(b);
+  }
+}
+
+const PORTAL_BTN_ICON = '<span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>';
+
+function linkEPortalHome(a) {
+  if (!a || a.classList.contains("portal-brand-mark")) return false;
+  const href = a.getAttribute("href") || "";
+  if (!/index\.html/i.test(href)) return false;
+  if (a.classList.contains("btn-portal") || a.classList.contains("portal-voltar-auto") || a.dataset.portalVoltar) return true;
+  const rotulo = `${a.textContent || ""} ${a.getAttribute("aria-label") || ""}`;
+  return /\bportal\b/i.test(rotulo);
+}
+
+function aplicarEstiloBotaoPortal(a) {
+  a.classList.add("btn-portal");
+  a.classList.remove("portal-voltar-auto");
+  a.dataset.portalVoltar = "1";
+  if (!a.querySelector(".btn-icon")) {
+    a.insertAdjacentHTML("afterbegin", PORTAL_BTN_ICON);
+  }
+}
+
+function padronizarBotoesPortal() {
+  if (paginaEhHomePortal()) return;
+  document.querySelectorAll("a[href]").forEach((a) => {
+    if (linkEPortalHome(a)) aplicarEstiloBotaoPortal(a);
+  });
+}
+
 function jaTemVoltarAoPortal() {
   if (document.querySelector(".portal-return, [data-portal-voltar], a.btn-portal[href*='index.html']")) {
     return true;
   }
-  return [...document.querySelectorAll("a[href]")].some((a) => {
-    if (a.classList.contains("portal-brand-mark")) return false;
-    const href = a.getAttribute("href") || "";
-    if (!/index\.html(\?|$|#)/.test(href)) return false;
-    const rotulo = `${a.textContent || ""} ${a.getAttribute("aria-label") || ""}`;
-    return /voltar/i.test(rotulo);
-  });
+  return [...document.querySelectorAll("a[href]")].some((a) => linkEPortalHome(a));
 }
 
 function garantirVoltarAoPortal() {
-  if (PORTAL_NATIVE_EMBEDDED || paginaEhHomePortal() || jaTemVoltarAoPortal()) return;
+  if (PORTAL_NATIVE_EMBEDDED || paginaEhHomePortal()) return;
+  padronizarBotoesPortal();
+  if (jaTemVoltarAoPortal()) return;
   const header = document.querySelector(".header");
   if (!header) return;
   const alvo = header.querySelector(".header-actions") || header;
   const a = document.createElement("a");
   a.href = portalPath("index.html");
-  a.className = "portal-voltar-auto";
+  a.className = "btn-portal";
   a.dataset.portalVoltar = "1";
   a.setAttribute("aria-label", "Voltar ao portal");
-  a.textContent = "Portal";
+  a.innerHTML = `${PORTAL_BTN_ICON}Portal`;
   alvo.insertBefore(a, alvo.firstChild);
 }
 
@@ -415,10 +464,20 @@ function garantirNavRelatorios() {
   document.head.appendChild(script);
 }
 
+function garantirCssUi() {
+  if (document.querySelector("link[data-portal-ui]")) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = portalPath("assets/css/portal-ui.css?v=20260821ui1");
+  link.dataset.portalUi = "1";
+  document.head.appendChild(link);
+}
+
 garantirCssSessao();
 garantirCssMarca();
 garantirCssHeader();
 garantirCssLiquidGlass();
+garantirCssUi();
 garantirThemeToggle();
 garantirMarcaPortal();
 garantirNavIncidentes();
@@ -654,6 +713,7 @@ function aplicarPermissoes(cadastro) {
   atualizarSaudacaoHero(cadastro);
   modernizarSessaoUsuario();
   garantirVoltarAoPortal();
+  padronizarBotoesPortal();
 
   document.querySelectorAll("[data-admin-only]").forEach((el) => {
     el.style.display = admin ? "flex" : "none";
