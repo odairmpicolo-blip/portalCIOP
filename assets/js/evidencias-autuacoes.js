@@ -1184,12 +1184,6 @@ function printPreview() {
       .sheet-grid b{font-size:13px}
       .sheet-obs{padding:0 14px 16px;font-size:12px;font-weight:700}
     </style></head><body>${buildSheetHtml(auto)}</body></html>`);
-      .sheet-grid div{border:1px solid #dfe5ef;padding:6px 8px}
-      .sheet-grid .span-2{grid-column:span 2}
-      .sheet-grid span{display:block;font-size:10px;color:#667085;font-weight:700;text-transform:uppercase}
-      .sheet-grid b{font-size:13px}
-      .sheet-obs{padding:0 14px 16px;font-size:12px;font-weight:700}
-    </style></head><body>${buildSheetHtml(auto)}</body></html>`);
   win.document.close();
   win.focus();
   setTimeout(() => win.print(), 350);
@@ -1411,6 +1405,9 @@ async function boot() {
       setStatus("Funcionários indisponíveis no momento — preencha a matrícula manualmente.", true);
     })
   ]);
+  wireDropZone($("dropImport"), $("fileImport"), handleFiles);
+  wireDropZone($("dropImages"), $("fileImages"), addImages);
+
   autos = (await dbGetAll()).map((a) => enriquecerComCatalogos(a));
   renderList();
   if (autos[0]) selectAuto(autos[0].id);
@@ -1419,9 +1416,6 @@ async function boot() {
     $("editorPanel").hidden = true;
     if ($("actionsBar")) $("actionsBar").hidden = true;
   }
-
-  wireDropZone($("dropImport"), $("fileImport"), handleFiles);
-  wireDropZone($("dropImages"), $("fileImages"), addImages);
 
   $("buscaLista").addEventListener("input", renderList);
   $("btnNovo").addEventListener("click", async () => {
