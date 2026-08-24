@@ -109,7 +109,7 @@
 
   async function modLeituraIncidentes() {
     if (!leituraIncidentes) {
-      leituraIncidentes = await import("../assets/js/incidentes-dados-leitura.js?v=20260824inc5");
+      leituraIncidentes = await import("../assets/js/incidentes-dados-leitura.js?v=20260824inc6");
     }
     return leituraIncidentes;
   }
@@ -213,6 +213,96 @@
     return tipo || "Sem informação";
   }
 
+  const CAMPOS_INCIDENTE = [
+    ["id", "ID"],
+    ["data", "Data"],
+    ["hora", "Hora"],
+    ["empresa", "Empresa"],
+    ["departamento", "Departamento"],
+    ["veiculo", "Veículo"],
+    ["veiculoDescricao", "Descrição do veículo"],
+    ["linha", "Linha"],
+    ["criadoPor", "Analista"],
+    ["motoristaNr", "Nr. Motorista"],
+    ["motorista", "Motorista"],
+    ["tipo", "Tipo do incidente"],
+    ["tipoOriginal", "Tipo original"],
+    ["proprietario", "Agente"],
+    ["estado", "Status"],
+    ["natureOfProblem", "Natureza do problema"],
+    ["instructions", "Instruções"],
+    ["registroVazio", "Registro vazio"]
+  ];
+
+  function rotuloCampoIncidente(chave) {
+    const conhecido = CAMPOS_INCIDENTE.find(([k]) => k === chave);
+    if (conhecido) return conhecido[1];
+    return String(chave)
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/_/g, " ")
+      .replace(/^\w/, (c) => c.toUpperCase());
+  }
+
+  function textoCampoIncidente(valor) {
+    if (valor == null || valor === "") return "—";
+    if (typeof valor === "boolean") return valor ? "Sim" : "Não";
+    if (typeof valor === "object") {
+      try { return JSON.stringify(valor, null, 2); } catch { return String(valor); }
+    }
+    return String(valor);
+  }
+
+  function camposIncidente(row) {
+    if (!row || typeof row !== "object") return [];
+    const vistos = new Set();
+    const lista = [];
+    CAMPOS_INCIDENTE.forEach(([chave]) => {
+      if (!(chave in row) && chave !== "tipo" && chave !== "id") return;
+      vistos.add(chave);
+      let valor = row[chave];
+      if (chave === "id") valor = row.id || row.incidentId || "";
+      if (chave === "tipo") valor = tipoIncidente(row);
+      const amplo = chave === "natureOfProblem" || chave === "instructions" || chave === "veiculoDescricao";
+      lista.push({ chave, rotulo: rotuloCampoIncidente(chave), valor: textoCampoIncidente(valor), amplo });
+    });
+    Object.keys(row).forEach((chave) => {
+      if (vistos.has(chave)) return;
+      if (chave === "incidentId" && String(row.incidentId) === String(row.id || "")) return;
+      const valor = textoCampoIncidente(row[chave]);
+      lista.push({
+        chave,
+        rotulo: rotuloCampoIncidente(chave),
+        valor,
+        amplo: valor.length > 80 || valor.includes("\n")
+      });
+    });
+    return lista;
+  }
+
+  function fecharPopupIncidente() {
+    const overlay = $("mnIncOverlay");
+    if (overlay) overlay.hidden = true;
+  }
+
+  function abrirPopupIncidente(row) {
+    const overlay = $("mnIncOverlay");
+    const grid = $("mnIncPopGrid");
+    if (!overlay || !grid || !row) return;
+    const id = row.id || row.incidentId || "";
+    if ($("mnIncPopTitulo")) $("mnIncPopTitulo").textContent = id ? `Incidente ${id}` : "Incidente";
+    if ($("mnIncPopSub")) {
+      $("mnIncPopSub").textContent = [row.data, row.hora, row.veiculo, row.linha].filter(Boolean).join(" · ") || "Todos os campos do registro";
+    }
+    grid.innerHTML = camposIncidente(row).map((c) =>
+      `<div class="mn-inc-pop-item${c.amplo ? " amplo" : ""}"><span>${esc(c.rotulo)}</span><strong>${esc(c.valor)}</strong></div>`
+    ).join("");
+    const cad = $("mnIncPopCad");
+    if (cad) cad.href = "https://cioplondrina.com.br/CADIncidentManagement/";
+    overlay.hidden = false;
+    $("mnIncPopFechar")?.focus();
+    if (id && navigator.clipboard?.writeText) navigator.clipboard.writeText(id).catch(() => {});
+  }
+
   const CACHE_INCIDENTES_KEY = "portal_incidentes_hoje_v1";
   const CACHE_INCIDENTES_TTL_MS = 15 * 60 * 1000;
 
@@ -292,8 +382,8 @@
     if (!tbody) return;
     tbody.innerHTML = lista.map((r) => {
       const id = r.id || r.incidentId || "";
-      return `<tr>
-        <td><a class="pill" href="https://cioplondrina.com.br/CADIncidentManagement/" target="_blank" rel="noopener" data-incidente-id="${esc(id)}">${esc(id)}</a></td>
+      return `<tr data-incidente-id="${esc(id)}" title="Abrir todos os campos">
+        <td><a class="pill" href="#incidente-${esc(id)}" data-incidente-id="${esc(id)}">${esc(id)}</a></td>
         <td>${esc(r.data || "")}</td>
         <td>${esc(r.hora || "")}</td>
         <td>${esc(r.departamento || "")}</td>
@@ -363,9 +453,19 @@
       carregarPayloadIncidentes().then((payload) => atualizar(payload)).catch(() => atualizar());
     });
     $("mnInc")?.addEventListener("click", (ev) => {
-      const link = ev.target.closest("a[data-incidente-id]");
-      const id = link?.getAttribute("data-incidente-id");
-      if (id && navigator.clipboard?.writeText) navigator.clipboard.writeText(id).catch(() => {});
+      const alvo = ev.target.closest("tr[data-incidente-id], a[data-incidente-id]");
+      const id = alvo?.getAttribute("data-incidente-id");
+      if (!id) return;
+      ev.preventDefault();
+      const rec = (inc?.incidentes || []).find((r) => String(r.id || r.incidentId || "") === id);
+      if (rec) abrirPopupIncidente(rec);
+    });
+    $("mnIncPopFechar")?.addEventListener("click", fecharPopupIncidente);
+    $("mnIncOverlay")?.addEventListener("click", (ev) => {
+      if (ev.target === $("mnIncOverlay")) fecharPopupIncidente();
+    });
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape" && $("mnIncOverlay") && !$("mnIncOverlay").hidden) fecharPopupIncidente();
     });
     if (inc && linhasTcglHoje(inc).length) atualizar();
     try {
