@@ -2,12 +2,41 @@ import { carregarSnapshotAws } from "./portal-aws-config.js";
 
 export const INCIDENTES_JSON_URL = "../assets/data/incidentes-tcgl.json";
 
+export function hojeIsoLocal() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** Mesma regra do dashboard: `data` em DD/MM/AAAA (hora depois do espaço é ignorada). */
+export function dataIsoIncidente(row) {
+  const bruto = String(row?.data || row?.dataHora || row?.createdAt || "").trim();
+  const datePart = bruto.split(/\s+/)[0] || "";
+  const br = datePart.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (br) return `${br[3]}-${br[2].padStart(2, "0")}-${br[1].padStart(2, "0")}`;
+  if (/^\d{4}-\d{2}-\d{2}/.test(datePart)) return datePart.slice(0, 10);
+  const iso = String(row?.data_iso || "").slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso) && Number(iso.slice(5, 7)) >= 1 && Number(iso.slice(5, 7)) <= 12) {
+    return iso;
+  }
+  return "";
+}
+
 export function normalizarDataIsoIncidente(row) {
-  if (row?.data_iso) return row.data_iso;
-  const br = String(row?.data || "").trim();
-  const p = br.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (p) return `${p[3]}-${p[1].padStart(2, "0")}-${p[2].padStart(2, "0")}`;
-  return /^\d{4}-\d{2}-\d{2}/.test(br) ? br.slice(0, 10) : "";
+  return dataIsoIncidente(row);
+}
+
+export function incidentesTcglDoDia(payload, diaIso) {
+  const dia = diaIso || hojeIsoLocal();
+  const empresaPadrao = String(payload?.empresa || "TCGL").toUpperCase();
+  return (Array.isArray(payload?.incidentes) ? payload.incidentes : [])
+    .filter((r) => {
+      const emp = String(r?.empresa || empresaPadrao || "TCGL").toUpperCase();
+      return emp === "TCGL" && dataIsoIncidente(r) === dia;
+    })
+    .sort((a, b) => Number(b.id || b.incidentId || 0) - Number(a.id || a.incidentId || 0));
 }
 
 export function idIncidente(row) {
@@ -79,8 +108,8 @@ async function carregarAws() {
   return { payload: snap.payload, incidentes, atualizadoEm };
 }
 
-/** Fluxo de leitura: AWS → JSON (planilha). */
-export async function carregarDadosIncidentes({ onProgress } = {}) {
+/** Fluxo de leitura: AWS → JSON. `preferirAws` usa só o snapshot se ele tiver linhas (visão ao vivo / hoje). */
+export async function carregarDadosIncidentes({ onProgress, preferirAws = false } = {}) {
   onProgress?.("Consultando AWS e JSON...");
   const [awsRes, jsonRes] = await Promise.allSettled([
     withTimeout(carregarAws(), 30000),
@@ -95,13 +124,14 @@ export async function carregarDadosIncidentes({ onProgress } = {}) {
   const tentativas = [`AWS: ${aws.length}`, `JSON: ${json.length}`];
   const origens = [];
   if (aws.length) origens.push("AWS");
-  if (json.length) origens.push("JSON");
+  if (json.length && !(preferirAws && aws.length)) origens.push("JSON");
 
-  const incidentes = mesclarIncidentes([json, aws]);
-  const payload = montarPayload(
-    [jsonPack.payload, awsPack.payload].filter(Boolean),
-    incidentes
-  );
+  const incidentes = preferirAws && aws.length ? aws : mesclarIncidentes([json, aws]);
+  const bases = preferirAws && awsPack.payload
+    ? [awsPack.payload]
+    : [jsonPack.payload, awsPack.payload].filter(Boolean);
+  const payload = montarPayload(bases, incidentes);
+  payload.origem = origens.join(" · ") || "";
 
   return {
     payload,

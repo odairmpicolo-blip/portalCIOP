@@ -485,7 +485,7 @@
 
   async function carregarBanco() {
     if (!window.Fonte || typeof Fonte.cad !== "function") return null;
-    return Fonte.cad({ todos: "1", limite: 800 });
+    return Fonte.cad({ de: state.mesDe, ate: state.mesAte, limite: 400 });
   }
 
   async function iniciar() {
@@ -512,7 +512,7 @@
     }
     await esperarAuth();
     if (!state.all.length) window.portalMostrarCarregando?.("Carregando registros do CAD…");
-    setStatus("Buscando todos os registros de cr_0002…", "load");
+    setStatus("Buscando o CAD do mês atual…", "load");
     try {
       var banco = await carregarBanco();
       if (banco && banco.ok === false && !linhasDe(banco).length) {

@@ -442,16 +442,17 @@ async function cad(p) {
     const cfg = await import("./portal-aws-config.js");
     if (typeof cfg.initPortalAwsRuntime === "function") await cfg.initPortalAwsRuntime();
     if (!cfg.awsApiEnabled()) return { ok: false, erro: "API AWS não configurada", itens: [] };
-    const limite = Number(p?.limite) || 800;
-    const base = { todos: "1", ...(p || {}) };
-    delete base.pagina;
-    delete base.limite;
+    const mes = mesAtualCad();
+    const limite = Math.min(Number(p?.limite) || 400, 500);
+    const de = p?.de || mes.de;
+    const ate = p?.ate || mes.ate;
+    const base = { de, ate };
     let pagina = 1;
     let itens = [];
     let colunas = [];
     let meta = {};
     let prevSig = "";
-    while (pagina <= 200) {
+    while (pagina <= 20) {
       const r = await chamar("/cad", { ...base, pagina, limite });
       if (!r) return { ok: false, erro: "resposta vazia da API", itens };
       if (r.ok === false) return itens.length ? { ok: true, origem: "dsql", tabela: "cr_0002", itens, colunas, meta } : r;
@@ -474,7 +475,7 @@ async function cad(p) {
       origem: "dsql",
       tabela: "cr_0002",
       colunas,
-      meta: { ...meta, total: Number(meta.totalTabela || meta.total || itens.length), carregados: itens.length, janela: "tabela" },
+      meta: { ...meta, total: Number(meta.totalTabela || meta.total || itens.length), carregados: itens.length, janela: "mes", de, ate },
       itens
     };
   } catch (err) {

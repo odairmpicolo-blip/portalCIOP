@@ -51,7 +51,7 @@ export async function awsFetch(path, { method = "GET", body, token, apiKey } = {
     }
   }
   if (!res.ok) {
-    if (res.status === 504 || res.status === 502) {
+    if (res.status === 504 || res.status === 502 || res.status === 503) {
       const timeout = new Error("A API demorou demais. Tente de novo; envios grandes seguem em lotes menores.");
       timeout.status = res.status;
       timeout.codigo = "TIMEOUT";

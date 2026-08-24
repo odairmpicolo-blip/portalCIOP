@@ -1,8 +1,5 @@
 import { Router } from "express";
 import { query } from "../db.js";
-import { intervaloDatas } from "../lib/validar.js";
-import { HttpError, asyncHandler } from "../lib/http.js";
-import { ipvAjustadoDia, ipvAjustadoPeriodo, chaveLinha, numeroCampo, pontosOficiaisDaLinha, pontosRecuperadosDoIncidente, agregarExtras } from "../lib/ipv-ajustado.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
 
 /**
@@ -47,6 +44,8 @@ const AGG = `
   coalesce(sum(m), 0)                                   AS "somaDif",
   count(*) FILTER (WHERE m IS NULL)                     AS "semDif"`;
 
+const ISO = /^\d{4}-\d{2}-\d{2}$/;
+
 /** 0=domingo … 6=sábado (calendário da data_ref, sem fuso). */
 function condTipoDia(req) {
   const t = String(req.query.tipoDia || "").trim().toLowerCase()
@@ -68,8 +67,9 @@ const iso = (d) => d.toISOString().slice(0, 10);
 
 /** Quebra [de, ate] em pedaços de no máximo FAIXA_DIAS. Um só pedaço = período curto. */
 function faixas(req) {
-  const { de, ate } = intervaloDatas(req.query.de, req.query.ate, { obrigatorio: false });
-  if (!de || !ate) return [{}];           // sem recorte: uma consulta só
+  const de = String(req.query.de || "");
+  const ate = String(req.query.ate || "");
+  if (!ISO.test(de) || !ISO.test(ate)) return [{}];           // sem recorte: uma consulta só
   const fim = dia(ate);
   const pedacos = [];
   let ini = dia(de);
@@ -123,7 +123,10 @@ function base(req, colunas = []) {
   const par = [];
   const add = (sql, valor) => { par.push(valor); cond.push(sql.replace("?", `$${par.length}`)); };
 
-  pushDatas(req, add);
+  const de = String(req.query.de || "");
+  const ate = String(req.query.ate || "");
+  if (ISO.test(de)) add("data_ref >= ?::date", de);
+  if (ISO.test(ate)) add("data_ref <= ?::date", ate);
   if (req.query.linha) add("linha = ?", String(req.query.linha));
   if (req.query.sentido) add("direcao = ?", String(req.query.sentido));
   if (req.query.garagem) add("garagem = ?", String(req.query.garagem));
@@ -180,7 +183,10 @@ function filtroAgregado(req, comLinha) {
   const par = [];
   const add = (sql, valor) => { par.push(valor); cond.push(sql.replace("?", `$${par.length}`)); };
 
-  pushDatas(req, add);
+  const de = String(req.query.de || "");
+  const ate = String(req.query.ate || "");
+  if (ISO.test(de)) add("data_ref >= ?::date", de);
+  if (ISO.test(ate)) add("data_ref <= ?::date", ate);
   if (comLinha && req.query.linha) add("linha = ?", String(req.query.linha));
   if (comLinha && req.query.sentido) add("direcao = ?", String(req.query.sentido));
   const tipoDia = condTipoDia(req);
@@ -189,17 +195,7 @@ function filtroAgregado(req, comLinha) {
   return { where: cond.length ? `WHERE ${cond.join(" AND ")}` : "", par };
 }
 
-function pushDatas(req, add) {
-  const { de, ate } = intervaloDatas(req.query.de, req.query.ate, { obrigatorio: false });
-  if (de) add("data_ref >= ?::date", de);
-  if (ate) add("data_ref <= ?::date", ate);
-}
-
 function erro(res, err) {
-  if (err instanceof HttpError) {
-    res.status(err.status).json({ ok: false, erro: err.message, codigo: err.codigo });
-    return;
-  }
   console.error("cr0108:", err);
   res.status(500).json({ ok: false, erro: err.message });
 }
@@ -405,8 +401,10 @@ router.get("/icv", requireFirebaseUser, async (req, res) => {
   try {
     const cond = [];
     const par = [];
-    const add = (sql, valor) => { par.push(valor); cond.push(sql.replace("?", `$${par.length}`)); };
-    pushDatas(req, add);
+    for (const [campo, sql] of [["de", "data_ref >= ?::date"], ["ate", "data_ref <= ?::date"]]) {
+      const v = String(req.query[campo] || "");
+      if (ISO.test(v)) { par.push(v); cond.push(sql.replace("?", `$${par.length}`)); }
+    }
     const tipoDia = condTipoDia(req);
     if (tipoDia) cond.push(tipoDia);
     const r = await query(
@@ -455,8 +453,10 @@ router.get("/ipv", requireFirebaseUser, async (req, res) => {
   try {
     const cond = [];
     const par = [];
-    const add = (sql, valor) => { par.push(valor); cond.push(sql.replace("?", `$${par.length}`)); };
-    pushDatas(req, add);
+    for (const [campo, sql] of [["de", "data_ref >= ?::date"], ["ate", "data_ref <= ?::date"]]) {
+      const v = String(req.query[campo] || "");
+      if (ISO.test(v)) { par.push(v); cond.push(sql.replace("?", `$${par.length}`)); }
+    }
     const tipoDia = condTipoDia(req);
     if (tipoDia) cond.push(tipoDia);
     const r = await query(
@@ -473,203 +473,23 @@ router.get("/ipv", requireFirebaseUser, async (req, res) => {
   } catch (err) { erro(res, err); }
 });
 
-async function catalogoPontosPorLinha(de, ate) {
-  const ateD = new Date(`${ate}T00:00:00Z`);
-  const deD = new Date(`${de}T00:00:00Z`);
-  const deCat = (ateD - deD) / 86400000 > 14
-    ? new Date(ateD.getTime() - 13 * 86400000).toISOString().slice(0, 10)
-    : de;
-  return query(
-    `SELECT btrim(linha) AS linha, btrim(ponto_de_controle) AS ponto
-     FROM cr_0108
-     WHERE data_ref >= $1::date AND data_ref <= $2::date
-       AND btrim(coalesce(linha, '')) <> ''
-       AND btrim(coalesce(ponto_de_controle, '')) <> ''
-     GROUP BY 1, 2`,
-    [deCat < de ? de : deCat, ate]
-  );
-}
-
-async function passagensDosIncidentes(de, ate) {
-  return query(
-    `SELECT c.id::text AS id,
-            c.data_ref::date::text AS dia,
-            btrim(c.linha) AS linha,
-            c.instrucao,
-            c.natureza_do_ploblema AS natureza,
-            c.duracao_de_abertura_total_hh_mm AS duracao,
-            btrim(p.ponto_de_controle) AS ponto,
-            btrim(p.programado) AS programado,
-            btrim(p.hora_realizada) AS realizado,
-            ${MIN} AS desvio
-     FROM cr_0002 c
-     LEFT JOIN cr_0108 p
-       ON p.data_ref = c.data_ref
-      AND btrim(coalesce(c.veiculo, '')) <> ''
-      AND btrim(p.veiculo) = btrim(c.veiculo)
-      AND regexp_replace(btrim(p.linha), '[^0-9]', '', 'g')
-          = regexp_replace(btrim(c.linha), '[^0-9]', '', 'g')
-      AND (btrim(coalesce(c.direcao, '')) = ''
-           OR btrim(p.direcao) = btrim(c.direcao))
-     WHERE c.data_ref >= $1::date AND c.data_ref <= $2::date`,
-    [de, ate]
-  );
-}
-
-function montarCatalogoOficial(rows) {
-  const nomes = new Map();
-  for (const r of rows || []) {
-    const k = chaveLinha(r.linha);
-    if (!k) continue;
-    const arr = nomes.get(k) || [];
-    arr.push(r.ponto);
-    nomes.set(k, arr);
-  }
-  const catalogo = new Map();
-  for (const [k, lista] of nomes) {
-    const oficiais = pontosOficiaisDaLinha(lista);
-    catalogo.set(k, { pontos: oficiais.length, nomes: oficiais });
-  }
-  return catalogo;
-}
-
-function incidentesLigados(rows) {
-  const porId = new Map();
-  for (const r of rows || []) {
-    const id = String(r.id || "");
-    if (!id) continue;
-    const cur = porId.get(id) || {
-      id,
-      data: isoCad(r.dia),
-      linha: chaveLinha(r.linha),
-      instrucao: r.instrucao,
-      natureza: r.natureza,
-      duracao: r.duracao,
-      passagens: []
-    };
-    if (r.ponto) {
-      cur.passagens.push({
-        ponto: r.ponto,
-        programado: r.programado,
-        realizado: r.realizado,
-        desvio: r.desvio == null ? null : Number(r.desvio)
-      });
-    }
-    porId.set(id, cur);
-  }
-  return [...porId.values()].map((inc) => {
-    const rec = pontosRecuperadosDoIncidente(inc.passagens, inc);
-    return {
-      data: inc.data,
-      linha: inc.linha,
-      extra: rec.extra,
-      pontos: rec.pontos,
-      motivos: rec.motivos
-    };
-  });
-}
-
-/** IPV Custom ponderado por pontos. Recupera só ponto com conexão de horário/veículo/linha. */
-router.get("/ipv-ajustado", requireFirebaseUser, asyncHandler(async (req, res) => {
-  const hoje = new Date().toISOString().slice(0, 10);
-  const { de, ate } = intervaloDatas(req.query.de || hoje, req.query.ate || req.query.de || hoje);
-  const ontime = await query(
-    `SELECT data_ref::text AS data,
-            ${numero("ipv_actual")} AS ipv,
-            ${numero("pontos_de_controle_processados")} AS pontos
-     FROM cr_custom_ontime
-     WHERE data_ref >= $1::date AND data_ref <= $2::date
-     ORDER BY data_ref`,
-    [de, ate]
-  );
-
-  let avisoJoin = null;
-  let ligados = [];
-  let catalogo = new Map();
-  try {
-    const [pass, cat] = await Promise.all([
-      passagensDosIncidentes(de, ate),
-      catalogoPontosPorLinha(de, ate).catch(() => ({ rows: [] }))
-    ]);
-    ligados = incidentesLigados(pass.rows);
-    catalogo = montarCatalogoOficial(cat.rows);
-  } catch (err) {
-    avisoJoin = "Não foi possível cruzar 002 × CR-0108 neste recorte";
-    console.warn("ipv-ajustado join:", err?.message || err);
-  }
-
-  const tot = agregarExtras(ligados);
-  const dias = ontime.rows.map((r) => {
-    const data = String(r.data).slice(0, 10);
-    const extraDia = tot.extraPorDia.get(data) || { extra: 0, incidentes: 0, semConexao: 0 };
-    const base = {
-      data,
-      ipv: numeroCampo(r.ipv),
-      pontos: numeroCampo(r.pontos),
-      extraPontos: extraDia.extra,
-      incidentes: extraDia.incidentes
-    };
-    return { ...base, ...ipvAjustadoDia(base), semConexao: extraDia.semConexao };
-  });
-
-  for (const [data, extraDia] of tot.extraPorDia) {
-    if (dias.some((d) => d.data === data)) continue;
-    const base = { data, ipv: 0, pontos: 0, extraPontos: extraDia.extra, incidentes: extraDia.incidentes };
-    dias.push({ ...base, ...ipvAjustadoDia(base), customPendente: true, semConexao: extraDia.semConexao });
-  }
-  dias.sort((a, b) => a.data.localeCompare(b.data));
-
-  const periodo = ipvAjustadoPeriodo(dias.filter((d) => !d.customPendente));
-  const linhas = tot.porLinha.map((l) => {
-    const catL = catalogo.get(l.linha);
-    return {
-      ...l,
-      pontosControle: catL?.pontos || l.pontos.length,
-      nomes: catL?.nomes || l.pontos
-    };
-  });
-  const aviso = [
-    avisoJoin,
-    tot.semConexao ? `${tot.semConexao} incidente(s) sem ponto ligado no horário` : null
-  ].filter(Boolean).join(" · ") || null;
-
-  res.json({
-    ok: true,
-    origem: "dsql",
-    regra: "Recupera o ponto só se o incidente (veículo, linha, sentido e horário) ligar à passagem do CR-0108. Na 407 os pontos oficiais são Terminal Central, Terminal Milton Gavetti e Bairro.",
-    exemplo: "407: Central, Milton Gavetti e bairro (3). 904: Acapulco, Catuai, Oeste e Vivi Xavier (4).",
-    de,
-    ate,
-    ipv: periodo.ipv,
-    ipvAjustado: periodo.ipvAjustado,
-    ganhoPp: periodo.ganhoPp,
-    incidentes: tot.incidentes,
-    extraPontos: tot.extra,
-    semConexao: tot.semConexao,
-    volume: periodo.volume,
-    linhasCatalogo: catalogo.size,
-    aviso,
-    linhas,
-    dias
-  });
-}));
-
 /* Histograma compacto para o diagnóstico de ajustes: um bin por
    (linha, sentido, ponto, programado, desvio). Só para janelas de até 90 dias —
    o histórico inteiro estoura o gateway. A página pinta o JSON e só pede isto
    quando o recorte cabe. */
 router.get("/histograma", requireFirebaseUser, async (req, res) => {
+  const de = String(req.query.de || "");
+  const ate = String(req.query.ate || "");
+  if (!ISO.test(de) || !ISO.test(ate)) {
+    res.json({ ok: true, periodoLongo: true, itens: [] });
+    return;
+  }
+  const nDias = (dia(ate) - dia(de)) / 86400000 + 1;
+  if (nDias > 90) {
+    res.json({ ok: true, periodoLongo: true, itens: [] });
+    return;
+  }
   try {
-    const { de, ate } = intervaloDatas(req.query.de, req.query.ate, { obrigatorio: false });
-    if (!de || !ate) {
-      res.json({ ok: true, periodoLongo: true, itens: [] });
-      return;
-    }
-    const nDias = (dia(ate) - dia(de)) / 86400000 + 1;
-    if (nDias > 90) {
-      res.json({ ok: true, periodoLongo: true, itens: [] });
-      return;
-    }
     const itens = await consultar(
       req,
       ["linha", "direcao", "ponto_de_controle", "btrim(programado) AS programado"],
@@ -726,6 +546,21 @@ function citarColuna(nome) {
   return `"${n.replace(/"/g, "")}"`;
 }
 
+function mesCorrenteSP() {
+  const br = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(new Date());
+  const [y, m] = br.split("-");
+  const ultimo = new Date(Number(y), Number(m), 0).getDate();
+  return {
+    de: `${y}-${m}-01`,
+    ate: `${y}-${m}-${String(ultimo).padStart(2, "0")}`
+  };
+}
+
 function isoCad(v) {
   if (v == null || v === "") return "";
   if (v instanceof Date && !Number.isNaN(v.getTime())) return v.toISOString().slice(0, 10);
@@ -752,62 +587,46 @@ function dataDaLinhaCad(row, dataCol) {
   return "";
 }
 
-/* Relatório Clever 002 — cr_0002 em páginas (OFFSET). Sem teto de 5000.
-   O cliente junta as páginas até count(*). */
+/* Relatório Clever 002 — cr_0002 do mês (ou de/ate). Sem count(*) da tabela inteira. */
 router.get("/cad", requireFirebaseUser, async (req, res) => {
   try {
     const pagina = Math.max(1, Number(req.query.pagina) || 1);
-    const limite = Math.min(Math.max(Number(req.query.limite) || 800, 50), 2000);
+    const limite = Math.min(Math.max(Number(req.query.limite) || 400, 50), 800);
     const offset = (pagina - 1) * limite;
+    let { de, ate } = intervaloDatas(req.query.de, req.query.ate, { obrigatorio: false });
+    if (!de || !ate) {
+      const mes = mesCorrenteSP();
+      de = mes.de;
+      ate = mes.ate;
+    }
 
-    let colunas = [];
-    try {
-      const c = await query(
-        `SELECT column_name, data_type
-         FROM information_schema.columns
-         WHERE table_schema = 'public' AND table_name = 'cr_0002'
-         ORDER BY ordinal_position`
-      );
-      colunas = c.rows
-        .filter((r) => !/bytea|xml/i.test(r.data_type || "") && !/html|foto|image|blob/i.test(r.column_name))
-        .map((r) => r.column_name);
-    } catch (_) { /* SELECT * */ }
+    const params = [de, ate];
+    const sqlBase = `SELECT * FROM cr_0002
+       WHERE data_ref >= $1::date AND data_ref <= $2::date`;
+    const sqlPagina = `${sqlBase} ORDER BY id LIMIT ${limite} OFFSET ${offset}`;
+    const sqlSemOrdem = `${sqlBase} LIMIT ${limite} OFFSET ${offset}`;
 
-    const dataCol = colunas.find((n) => /^(data_ref|data|dt|date)$/i.test(n))
-      || colunas.find((n) => /data|date|dia/i.test(n));
-    const idCol = colunas.find((n) => /^(id|id_incidente|pk)$/i.test(n));
-    const lista = colunas.length ? colunas.map(citarColuna).join(", ") : "*";
-    const ordem = idCol
-      ? ` ORDER BY ${citarColuna(idCol)}`
-      : (dataCol ? ` ORDER BY ${citarColuna(dataCol)} DESC` : " ORDER BY 1");
-
-    let totalTabela = 0;
-    try {
-      const c = await query(`SELECT count(*)::int AS n FROM cr_0002`);
-      totalTabela = Number(c.rows?.[0]?.n || 0);
-    } catch (_) { /* segue no SELECT */ }
+    const cargasP = pagina === 1
+      ? query(
+          `SELECT min(data_ref)::text AS "primeiroDia",
+                  max(data_ref)::text AS "ultimoDia",
+                  count(*)::int AS dias,
+                  coalesce(sum(linhas), 0) AS registros
+           FROM cr_0002_cargas`
+        ).catch(() => ({ rows: [{}] }))
+      : Promise.resolve({ rows: [{}] });
 
     let r;
     try {
-      r = await query(`SELECT ${lista} FROM cr_0002${ordem} LIMIT ${limite} OFFSET ${offset}`);
+      [r] = await Promise.all([query(sqlPagina, params), cargasP]);
     } catch (_) {
-      r = await query(`SELECT ${lista} FROM cr_0002 LIMIT ${limite} OFFSET ${offset}`);
+      r = await query(sqlSemOrdem, params);
     }
+    const cargas = (await cargasP).rows?.[0] || {};
     const itens = (r.rows || []).map(cadLinha);
-    if (!colunas.length && itens[0]) colunas = Object.keys(itens[0]);
-    if (!totalTabela) totalTabela = offset + itens.length + (itens.length === limite ? 1 : 0);
-
-    let cargas = {};
-    try {
-      const c = await query(
-        `SELECT min(data_ref)::text AS "primeiroDia",
-                max(data_ref)::text AS "ultimoDia",
-                count(*)::int AS dias,
-                coalesce(sum(linhas), 0) AS registros
-         FROM cr_0002_cargas`
-      );
-      cargas = c.rows[0] || {};
-    } catch (_) { /* cargas pode ter outro desenho */ }
+    const colunas = itens[0] ? Object.keys(itens[0]) : [];
+    const temMais = itens.length === limite;
+    const totalTabela = offset + itens.length + (temMais ? 1 : 0);
 
     res.json({
       ok: true,
@@ -820,8 +639,10 @@ router.get("/cad", requireFirebaseUser, async (req, res) => {
         pagina,
         limite,
         recorte: itens.length,
-        temMais: offset + itens.length < totalTabela,
-        janela: "tabela",
+        temMais,
+        janela: "mes",
+        de,
+        ate,
         ...cargas
       },
       itens

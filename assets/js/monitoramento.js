@@ -104,24 +104,21 @@
     return null;
   }
 
+  let leituraIncidentes = null;
+
+  async function modLeituraIncidentes() {
+    if (!leituraIncidentes) {
+      leituraIncidentes = await import("../assets/js/incidentes-dados-leitura.js?v=20260824inc2");
+    }
+    return leituraIncidentes;
+  }
+
   function hojeIsoLocal() {
     const d = new Date();
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     return `${y}-${m}-${day}`;
-  }
-
-  function dataIncidenteIso(r) {
-    if (r?.data_iso) return String(r.data_iso).slice(0, 10);
-    const raw = String(r?.data || r?.createdAt || r?.dataHora || "").trim();
-    const iso = raw.match(/^(\d{4}-\d{2}-\d{2})/);
-    if (iso) return iso[1];
-    const br = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-    if (br) return `${br[3]}-${br[2].padStart(2, "0")}-${br[1].padStart(2, "0")}`;
-    const dmy = raw.match(/^(\d{1,2})-(\d{1,2})-(\d{4})/);
-    if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
-    return "";
   }
 
   function mostrarProgramacao(cad, q) {
@@ -215,7 +212,7 @@
     return tipo || "Sem informação";
   }
 
-  const CACHE_INCIDENTES_KEY = "portal_incidentes_v4";
+  const CACHE_INCIDENTES_KEY = "portal_incidentes_v5";
   const CACHE_INCIDENTES_TTL_MS = 15 * 60 * 1000;
 
   function aguardarUsuarioPortal() {
@@ -246,10 +243,21 @@
   }
 
   function linhasTcglHoje(payload) {
+    if (leituraIncidentes?.incidentesTcglDoDia) {
+      return leituraIncidentes.incidentesTcglDoDia(payload, hojeIsoLocal());
+    }
     const hoje = hojeIsoLocal();
+    const empresaPadrao = String(payload?.empresa || "TCGL").toUpperCase();
     return (Array.isArray(payload?.incidentes) ? payload.incidentes : [])
-      .filter((r) => String(r.empresa || "").toUpperCase() === "TCGL")
-      .filter((r) => dataIncidenteIso(r) === hoje)
+      .filter((r) => String(r?.empresa || empresaPadrao).toUpperCase() === "TCGL")
+      .filter((r) => {
+        const bruto = String(r?.data || "").trim().split(/\s+/)[0] || "";
+        const br = bruto.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        const iso = br
+          ? `${br[3]}-${br[2].padStart(2, "0")}-${br[1].padStart(2, "0")}`
+          : (bruto.slice(0, 10));
+        return iso === hoje;
+      })
       .sort((a, b) => Number(b.id || b.incidentId || 0) - Number(a.id || a.incidentId || 0));
   }
 
@@ -271,8 +279,12 @@
       const origem = inc?.origem || inc?.fonte || "";
       $("mnIncMeta").textContent = (q ? `${lista.length} no filtro · ` : "") +
         (qtdHoje
-          ? `mesma fonte de incidentes-dashboard.html · atualizado ${fmtQuando(inc?.atualizadoEm)}${origem ? ` · ${origem}` : ""}`
-          : `Nenhum TCGL com data de hoje (${dataBr}). A página Incidentes lista o histórico completo se o JSON/AWS não tiver o dia.`);
+          ? `mesma fonte de incidentes-dashboard.html · ${dataBr} · atualizado ${fmtQuando(inc?.atualizadoEm)}${origem ? ` · ${origem}` : ""}`
+          : `Nenhum incidente TCGL em ${dataBr} na fonte do dashboard (AWS). Abra a página Incidentes e filtre o dia de hoje.`);
+    }
+    const dash = $("mnIncAbrirDash");
+    if (dash) {
+      dash.href = `incidentes-dashboard.html?hoje=1&dataInicio=${hoje}&dataFim=${hoje}`;
     }
     const tbody = $("mnInc");
     const vazio = $("mnIncVazio");
@@ -302,14 +314,16 @@
   async function carregarPayloadIncidentes() {
     const cache = lerCacheIncidentesDashboard();
     try {
-      const mod = await import("../assets/js/incidentes-dados-leitura.js?v=20260824inc1");
-      const res = await mod.carregarDadosIncidentes();
+      const mod = await modLeituraIncidentes();
+      const res = await mod.carregarDadosIncidentes({ preferirAws: true });
       const payload = res?.payload;
+      if (payload) payload.origem = payload.origem || res?.origem || "";
       if (payload?.incidentes?.length) {
         salvarCacheIncidentesDashboard(payload);
         return payload;
       }
     } catch (err) { /* usa cache / JSON */ }
+    if (cache && linhasTcglHoje(cache).length) return cache;
     if (cache) return cache;
     try {
       const rInc = await fetch(INC_JSON + "?t=" + Date.now(), { cache: "no-store" });
@@ -336,6 +350,11 @@
       mostrarIncidentes(inc, $("mnBuscaInc")?.value || "");
     };
     $("mnBuscaInc")?.addEventListener("input", () => atualizar());
+    $("mnIncAtualizar")?.addEventListener("click", () => {
+      try { localStorage.removeItem(CACHE_INCIDENTES_KEY); } catch (_) { /* quota */ }
+      if ($("mnIncMeta")) $("mnIncMeta").textContent = "Atualizando incidentes de hoje…";
+      carregarPayloadIncidentes().then((payload) => atualizar(payload)).catch(() => atualizar());
+    });
     $("mnInc")?.addEventListener("click", (ev) => {
       const link = ev.target.closest("a[data-incidente-id]");
       const id = link?.getAttribute("data-incidente-id");

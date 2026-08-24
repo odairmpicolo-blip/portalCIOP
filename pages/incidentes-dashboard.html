@@ -702,8 +702,11 @@ return String(value || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(
 }
 
 function dateToIso(value) {
-const parts = String(value || "").split("/");
-if (parts.length !== 3) return "";
+const datePart = String(value || "").trim().split(/\s+/)[0] || "";
+const parts = datePart.split("/");
+if (parts.length !== 3) {
+  return /^\d{4}-\d{2}-\d{2}/.test(datePart) ? datePart.slice(0, 10) : "";
+}
 return parts[2] + "-" + parts[1].padStart(2, "0") + "-" + parts[0].padStart(2, "0");
 }
 
@@ -1102,11 +1105,27 @@ if (idParam) {
 filtroIdExato = idParam;
 fields.busca.value = idParam;
 }
+const hoje = (() => {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+})();
+if (params.get("hoje") === "1") {
+  fields.dataInicio.value = hoje;
+  fields.dataFim.value = hoje;
+} else {
+  const di = (params.get("dataInicio") || params.get("de") || "").slice(0, 10);
+  const df = (params.get("dataFim") || params.get("ate") || "").slice(0, 10);
+  if (di) fields.dataInicio.value = di;
+  if (df) fields.dataFim.value = df;
+}
 filtrosUrlAplicados = true;
 }
 
 function aplicarPayloadIncidentes(payload) {
-state.all = (payload.incidentes || []).filter((row) => String(row.empresa || "").toUpperCase() === "TCGL");
+state.all = (payload.incidentes || []).filter((row) => {
+  const emp = String(row.empresa || payload.empresa || "TCGL").toUpperCase();
+  return emp === "TCGL";
+});
 populateSelect(fields.estado, state.all, "estado");
 populateSelectTipo(fields.tipo, state.all);
 populateSelect(fields.linha, state.all, "linha");
@@ -1149,7 +1168,7 @@ return;
 status.textContent = forcar ? "Atualizando tabela..." : "Carregando incidentes...";
 
 try {
-const mod = await import("../assets/js/incidentes-dados-leitura.js?v=20260817n");
+const mod = await import("../assets/js/incidentes-dados-leitura.js?v=20260824inc2");
 const res = await mod.carregarDadosIncidentes({
 onProgress: (msg) => {
 if (!cacheLocal || forcar) status.textContent = msg;
