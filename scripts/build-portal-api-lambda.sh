@@ -28,10 +28,25 @@ if [[ -n "$SA_SRC" ]]; then
 fi
 
 echo "==> npm install (handler + backend)"
-cd "$BUILD"
-npm ci --omit=dev 2>/dev/null || npm ci
-cd "$BUILD/backend"
-npm ci --omit=dev 2>/dev/null || npm ci
+if command -v npm >/dev/null 2>&1; then
+  cd "$BUILD"
+  npm ci --omit=dev 2>/dev/null || npm ci
+  cd "$BUILD/backend"
+  npm ci --omit=dev 2>/dev/null || npm ci
+else
+  echo "npm não está no PATH; reutiliza node_modules do backend local"
+  mkdir -p "$BUILD/node_modules"
+  for pkg in "@vendia" "@codegenie"; do
+    if [ -d "$ROOT/backend/node_modules/$pkg" ]; then
+      cp -R "$ROOT/backend/node_modules/$pkg" "$BUILD/node_modules/"
+    fi
+  done
+  if [ -d "$ROOT/backend/node_modules" ]; then
+    mkdir -p "$BUILD/backend"
+    rm -rf "$BUILD/backend/node_modules"
+    cp -R "$ROOT/backend/node_modules" "$BUILD/backend/node_modules"
+  fi
+fi
 
 ZIP="$AWS_DIR/portal-api.zip"
 rm -f "$ZIP"
