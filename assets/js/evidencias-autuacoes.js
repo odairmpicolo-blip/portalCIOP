@@ -1003,26 +1003,31 @@ function buildSheetHtml(auto) {
     .slice(0, 3)
     .map((ln) => `<p>${escapeHtml(ln)}</p>`)
     .join("");
+  const obs = String(auto.obs || "").trim();
   return `
     <article class="sheet-a4">
       <div class="sheet-brand">
-        <div class="sheet-brand-logo">
-          <img src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
-        </div>
-        <div class="sheet-org">
-          <p class="sheet-org-kicker">Portal CIOP · TCGL Operações</p>
-          <p class="sheet-org-title">Centro de Inteligência Operacional<br>Londrina — PR</p>
-        </div>
         <div class="sheet-brand-logo is-tcgl">
           <img src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
         </div>
+        <div class="sheet-org">
+          <p class="sheet-org-title">Transportes Coletivos Grande Londrina</p>
+          <p class="sheet-org-kicker">Centro de Inteligência Operacional de Londrina</p>
+        </div>
+        <div class="sheet-brand-logo">
+          <img src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
+        </div>
       </div>
-      <div class="sheet-capa">
-        <div class="sheet-capa-title">Auto de Infração</div>
-        <div class="sheet-capa-numero">
+      <div class="sheet-accent" aria-hidden="true"></div>
+      <div class="sheet-title-row">
+        <div class="sheet-title-spacer" aria-hidden="true"></div>
+        <h2 class="sheet-capa-title">Auto de Infração</h2>
+        <div class="sheet-protocolo">
+          <span>Auto</span>
           <div class="sheet-capa-numero-text">${escapeHtml(auto.autoNumero) || "—"}</div>
         </div>
       </div>
+      <div class="sheet-rule" aria-hidden="true"><i></i></div>
       <section class="sheet-docs">
         <div class="sheet-docs-pane"><label>Capa / Notificação</label>${notif}</div>
         <div class="sheet-docs-pane"><label>Auto</label>${autoPage}</div>
@@ -1030,19 +1035,25 @@ function buildSheetHtml(auto) {
       <section class="sheet-gallery ${imgs ? "" : "is-empty"}">
         ${imgs || "<div class='sheet-gallery-empty'>Área de evidências (imagens)</div>"}
       </section>
-      <section class="sheet-text">${linhasTexto}</section>
-      <section class="sheet-grid">
-        ${celulaPdf("Carro", auto.carro)}
-        ${celulaPdf("Placa", auto.placa)}
-        ${celulaPdf("Data", auto.data)}
-        ${celulaPdf("Horário", auto.horario)}
-        ${celulaPdf("Linha", auto.linhaNome ? `${auto.linha} — ${auto.linhaNome}` : auto.linha)}
-        ${celulaPdf("Protocolo", auto.protocolo || auto.notificacao, 2)}
-        ${celulaPdf("Matrícula", auto.matricula)}
-        ${celulaPdf("Motorista", auto.motorista, 2)}
-        ${celulaPdf("Autuador", auto.autuador, 2)}
-        ${celulaPdf("Motivo", auto.motivo, 2)}
+      <div class="sheet-rule soft" aria-hidden="true"><i></i></div>
+      <section class="sheet-text">
+        <div class="sheet-text-label">Referência</div>
+        ${linhasTexto || "<p>—</p>"}
       </section>
+      <section class="sheet-grid">
+        ${celulaPdf("Data", auto.data, 2)}
+        ${celulaPdf("Horário", auto.horario, 2)}
+        ${celulaPdf("Protocolo", auto.protocolo || auto.notificacao, 2)}
+        ${celulaPdf("Linha", auto.linhaNome ? `${auto.linha} — ${auto.linhaNome}` : auto.linha, 2)}
+        ${celulaPdf("Carro", auto.carro, 2)}
+        ${celulaPdf("Placa", auto.placa, 2)}
+        ${celulaPdf("Matrícula", auto.matricula, 2)}
+        ${celulaPdf("Motorista", auto.motorista, 4)}
+        ${celulaPdf("Autuador", auto.autuador, 3)}
+        ${celulaPdf("Motivo", auto.motivo, 3)}
+        ${celulaPdf("OBS", obs, 6)}
+      </section>
+      <div class="sheet-foot">Documento interno · CIOP / TCGL Operações</div>
     </article>
   `;
 }
@@ -1142,10 +1153,9 @@ function montarOffscreenFicha(auto) {
   art.style.height = "1123px";
   art.style.display = "grid";
   art.style.background = "#fff";
-  art.style.color = "#111";
+  art.style.color = "#06245c";
   art.style.overflow = "hidden";
-  art.querySelectorAll(".sheet-brand, .sheet-brand-logo, .sheet-brand-logo img").forEach((el) => {
-    el.style.background = "#fff";
+  art.querySelectorAll(".sheet-brand-logo img").forEach((el) => {
     el.style.overflow = "visible";
   });
   return { host, art };
@@ -1174,14 +1184,11 @@ async function pdfBlobDoAuto(auto) {
         ficha.style.width = "794px";
         ficha.style.height = "1123px";
         ficha.style.background = "#fff";
-        ficha.style.color = "#111";
+        ficha.style.color = "#06245c";
         ficha.style.display = "grid";
       }
-      clone.querySelectorAll(".sheet-a4, .sheet-brand, .sheet-brand-logo, .sheet-text, .sheet-grid, .sheet-grid div, img").forEach((el) => {
+      clone.querySelectorAll("img").forEach((el) => {
         el.style.background = "#ffffff";
-      });
-      clone.querySelectorAll(".sheet-text, .sheet-text p, .sheet-grid b").forEach((el) => {
-        el.style.color = "#111";
       });
     }
   });
@@ -1264,38 +1271,51 @@ function printPreview() {
   win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Evidência ${auto.carro || ""}</title>
     <style>
       @page{size:A4 portrait;margin:0}
-      html,body{width:210mm;height:297mm;margin:0;background:#fff;font-family:Arial,Helvetica,sans-serif;color:#111}
-      .sheet-a4{width:210mm;height:297mm;display:grid;grid-template-rows:auto auto minmax(0,1.45fr) minmax(0,1.25fr) auto auto;overflow:hidden;border:0;background:#fff;color:#111}
-      .sheet-brand{display:grid;grid-template-columns:minmax(120px,20%) minmax(0,1fr) minmax(90px,16%);gap:10px;align-items:center;padding:8px 12px 7px;background:#fff;position:relative;flex:0 0 auto}
-      .sheet-brand::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#06245c,#0b3a8a 52%,#ff6b00)}
-      .sheet-brand-logo{display:flex;align-items:center;height:40px;padding:2px 4px;background:#fff}
-      .sheet-brand-logo img{display:block;height:34px;width:auto;max-width:100%;object-fit:contain;object-position:left center;background:#fff}
-      .sheet-brand-logo.is-tcgl{justify-content:flex-end}
-      .sheet-brand-logo.is-tcgl img{object-position:right center;height:36px}
+      html,body{width:210mm;height:297mm;margin:0;background:#fff;font-family:Arial,Helvetica,sans-serif;color:#06245c}
+      .sheet-a4{width:210mm;height:297mm;display:grid;grid-template-rows:auto auto auto auto minmax(0,1.35fr) minmax(0,1.1fr) auto auto auto auto;overflow:hidden;border:0;background:#fff;color:#06245c}
+      .sheet-brand{display:grid;grid-template-columns:88px 1fr 88px;gap:10px;align-items:center;padding:8px 12px 6px;background:linear-gradient(180deg,#f4f7fb 0%,#fff 100%)}
+      .sheet-brand-logo{display:flex;align-items:center;height:40px}
+      .sheet-brand-logo img{display:block;height:34px;width:auto;max-width:100%;object-fit:contain}
+      .sheet-brand-logo.is-tcgl img{height:36px}
+      .sheet-brand-logo:last-child{justify-content:flex-end}
       .sheet-org{text-align:center;color:#06245c}
-      .sheet-org-kicker{margin:0 0 2px;font-size:8px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#ff6b00}
-      .sheet-org-title{margin:0;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.25}
-      .sheet-capa{display:grid;grid-template-columns:26% 1fr;border-bottom:2px solid #1a1a1a;min-height:32px;flex:0 0 auto}
-      .sheet-capa-title{display:flex;align-items:center;justify-content:center;border-right:2px solid #1a1a1a;background:#f7f8fa;font-size:12px;font-weight:900;text-transform:uppercase;color:#0b1b3f;padding:4px 8px}
-      .sheet-capa-numero{display:flex;align-items:center;padding:4px 10px}
-      .sheet-capa-numero-text{font-size:11px;font-weight:800;color:#06245c}
-      .sheet-docs{min-height:0;display:grid;grid-template-columns:1fr 1fr;align-items:stretch;background:#f3f5f8}
+      .sheet-org-kicker{margin:2px 0 0;font-size:8px;font-weight:700;color:#3f4757}
+      .sheet-org-title{margin:0;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;line-height:1.25}
+      .sheet-accent{height:4px;background:linear-gradient(90deg,#06245c 0 70%,#ff6b00 70% 100%)}
+      .sheet-title-row{display:grid;grid-template-columns:minmax(120px,1fr) auto minmax(120px,1fr);align-items:center;gap:8px;padding:6px 12px 2px}
+      .sheet-capa-title{grid-column:2;margin:0;text-align:center;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#06245c}
+      .sheet-protocolo{grid-column:3;justify-self:end;text-align:center;border:1.5px solid #e11d48;background:#fff5f5;border-radius:4px;padding:4px 8px 5px;min-width:118px}
+      .sheet-protocolo span{display:block;font-size:8px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#9f1239}
+      .sheet-capa-numero-text{font-size:11px;font-weight:800;color:#be123c;text-align:center}
+      .sheet-rule{display:flex;align-items:center;gap:8px;margin:0 12px 6px}
+      .sheet-rule::before,.sheet-rule::after{content:"";flex:1;height:1.5px;background:#06245c}
+      .sheet-rule i{flex:0 0 36px;height:4px;background:#ff6b00;border-radius:2px}
+      .sheet-rule.soft{margin:4px 12px}
+      .sheet-rule.soft::before,.sheet-rule.soft::after{height:1px;background:#9aa8bc}
+      .sheet-rule.soft i{height:3px;flex-basis:24px}
+      .sheet-docs{min-height:0;display:grid;grid-template-columns:1fr 1fr;align-items:stretch;background:#fff}
       .sheet-docs-pane{min-height:0;padding:6px;border-right:1px solid #d5deee;display:flex;flex-direction:column;gap:4px}
       .sheet-docs-pane:last-child{border-right:0}
-      .sheet-docs-pane label{display:block;font-size:8px;font-weight:800;color:#64748b;text-transform:uppercase;flex:0 0 auto}
+      .sheet-docs-pane label{display:block;font-size:8px;font-weight:800;color:#344054;text-transform:uppercase;letter-spacing:.1em;flex:0 0 auto}
       .sheet-docs-pane img{flex:1;min-height:0;width:100%;height:100%;max-height:none;object-fit:contain;object-position:center top;border:1px solid #c9d0dc;background:#fff}
       .sheet-docs-empty{flex:1;display:grid;place-items:center;border:1px dashed #c9d4e5;background:#fff;color:#94a3b8;font-size:10px;font-weight:700}
       .sheet-gallery{min-height:0;margin:6px 8px;padding:6px;display:grid;grid-template-columns:1fr;gap:6px;background:#fff}
-      .sheet-gallery.is-empty{flex:0 0 0;min-height:0;border:0;padding:0;margin:0}
+      .sheet-gallery.is-empty{display:none}
       .sheet-gallery img{width:100%;height:100%;max-height:none;object-fit:contain;border:1px solid #dfe5ef}
       .sheet-gallery-empty{display:none}
-      .sheet-text{padding:6px 12px 2px;background:#fff;color:#111}
-      .sheet-text p{margin:0 0 2px;font-size:11px;line-height:1.3;font-weight:700;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .sheet-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:1px solid #c9d0dc;background:#fff}
-      .sheet-grid div{border:1px solid #dfe5ef;padding:5px 8px;background:#fff;color:#111}
+      .sheet-text{padding:4px 12px 4px 14px;margin:0 12px 6px;border-left:2px solid #06245c;box-shadow:inset 4px 0 0 #ff6b00}
+      .sheet-text-label{font-size:8px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#06245c;margin:0 0 4px}
+      .sheet-text p{margin:0 0 4px;font-size:11px;line-height:1.45;font-weight:600;color:#1f2937;font-family:Georgia,"Times New Roman",Times,serif}
+      .sheet-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0 12px;padding:0 12px 6px}
+      .sheet-grid div{border:0;border-bottom:1.5px solid #06245c;border-left:3px solid #06245c;padding:5px 0 5px 8px;background:linear-gradient(90deg,#f4f7fb 0 6px,transparent 6px)}
       .sheet-grid .span-2{grid-column:span 2}
-      .sheet-grid span{display:block;font-size:8px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#64748b}
-      .sheet-grid b{font-size:12px;font-weight:800;color:#111}
+      .sheet-grid .span-3{grid-column:span 3}
+      .sheet-grid .span-4{grid-column:span 4}
+      .sheet-grid .span-6{grid-column:1/-1}
+      .sheet-grid span{display:block;font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#344054}
+      .sheet-grid b{font-size:12px;font-weight:800;color:#06245c}
+      .sheet-obs{margin:0 12px 4px;font-size:10px;font-weight:700}
+      .sheet-foot{margin:4px 12px 8px;padding-top:8px;border-top:2px solid #06245c;box-shadow:inset 0 4px 0 #ff6b00;font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#475467;text-align:center}
     </style></head><body>${buildSheetHtml(auto)}</body></html>`);
   win.document.close();
   win.focus();
