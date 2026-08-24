@@ -29,6 +29,8 @@ let funcionarios = [];
 let autuacoesIndex = new Map();
 let autuacoesPorAuto = new Map();
 let agentesCmtu = [];
+let motivosCmtu = [];
+let linhasPorCodigo = new Map();
 
 const $ = (id) => document.getElementById(id);
 
@@ -42,6 +44,32 @@ function funcionarioPorMatricula(matricula) {
   const reg = String(matricula || "").trim();
   if (!reg) return null;
   return funcionarios.find((f) => f.registro === reg) || null;
+}
+
+function chavesLinha(codigo) {
+  const s = String(codigo || "").trim();
+  if (!s) return [];
+  const n = s.replace(/^0+/, "") || s;
+  const out = new Set([s, n]);
+  if (/^\d+$/.test(n)) {
+    out.add(n.padStart(3, "0"));
+    out.add(n.padStart(2, "0"));
+  }
+  return [...out];
+}
+
+function nomeDaLinha(codigo) {
+  for (const k of chavesLinha(codigo)) {
+    const nome = linhasPorCodigo.get(k);
+    if (nome) return nome;
+  }
+  return "";
+}
+
+function aplicarNomeLinhaNoFormulario() {
+  const el = $("fLinhaNome");
+  if (!el) return;
+  el.value = nomeDaLinha($("fLinha")?.value);
 }
 
 function parseCsv(text) {
@@ -121,16 +149,46 @@ function preencherDatalistFuncionarios() {
   }
 }
 
-function preencherSelectAutuador(valorAtual) {
-  const sel = $("fAutuador");
+function preencherSelectCatalogo(id, lista, placeholder, valorAtual) {
+  const sel = $(id);
   if (!sel) return;
-  const atual = String(valorAtual != null ? valorAtual : sel.value || "").trim();
-  const nomes = agentesCmtu.slice();
+  const atualBruto = String(valorAtual != null ? valorAtual : sel.value || "").trim();
+  const atual =
+    lista.find((n) => n.toLowerCase() === atualBruto.toLowerCase()) || atualBruto;
+  const nomes = lista.slice();
   if (atual && !nomes.includes(atual)) nomes.unshift(atual);
   sel.innerHTML =
-    `<option value="">Selecione o agente</option>` +
+    `<option value="">${escapeHtml(placeholder)}</option>` +
     nomes.map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("");
   sel.value = atual;
+}
+
+function preencherSelectAutuador(valorAtual) {
+  preencherSelectCatalogo("fAutuador", agentesCmtu, "Selecione o agente", valorAtual);
+}
+
+function preencherSelectMotivo(valorAtual) {
+  preencherSelectCatalogo("fMotivo", motivosCmtu, "Selecione o motivo", valorAtual);
+}
+
+async function carregarLinhas() {
+  try {
+    const res = await fetch("../assets/data/bus2/routes.json", { cache: "no-store" });
+    if (!res.ok) return;
+    const arr = await res.json();
+    linhasPorCodigo = new Map();
+    (Array.isArray(arr) ? arr : []).forEach((r) => {
+      const codigo = String(r.shortName || r.linha || "").trim();
+      const nome = String(r.longName || r.nome || "").trim();
+      if (!codigo || !nome) return;
+      chavesLinha(codigo).forEach((k) => {
+        if (!linhasPorCodigo.has(k)) linhasPorCodigo.set(k, nome);
+      });
+    });
+    aplicarNomeLinhaNoFormulario();
+  } catch (err) {
+    console.warn("Linhas não carregadas:", err);
+  }
 }
 
 async function carregarAutuacoes() {
@@ -142,6 +200,7 @@ async function carregarAutuacoes() {
     autuacoesIndex = new Map();
     autuacoesPorAuto = new Map();
     const agentes = new Set();
+    const motivos = new Set();
     arr.forEach((item) => {
       const notif = String(item.notificacao || "").trim();
       if (notif) autuacoesIndex.set(notif, item);
@@ -154,9 +213,13 @@ async function carregarAutuacoes() {
       if (notif && auto) autuacoesIndex.set(`${notif}#${auto}`, item);
       const agente = String(item.agente || "").trim();
       if (agente) agentes.add(agente);
+      const motivo = String(item.motivo || "").trim();
+      if (motivo) motivos.add(motivo);
     });
     agentesCmtu = [...agentes].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    motivosCmtu = [...motivos].sort((a, b) => a.localeCompare(b, "pt-BR"));
     preencherSelectAutuador();
+    preencherSelectMotivo();
   } catch (err) {
     console.warn("Autuações não carregadas:", err);
   }
@@ -184,6 +247,9 @@ function catalogoDoAuto(auto) {
 function enriquecerComCatalogos(auto) {
   if (auto.carro && !auto.placa) {
     auto.placa = placaDoCarro(auto.carro);
+  }
+  if (auto.linha) {
+    auto.linhaNome = nomeDaLinha(auto.linha) || auto.linhaNome || "";
   }
   if (auto.matricula && !auto.motorista) {
     const func = funcionarioPorMatricula(auto.matricula);
@@ -223,6 +289,7 @@ function aplicarLookupFormulario() {
     const placa = placaDoCarro(carro);
     if (placa) $("fPlaca").value = placa;
   }
+  aplicarNomeLinhaNoFormulario();
   if (matricula) {
     const func = funcionarioPorMatricula(matricula);
     if (func) $("fMotorista").value = func.nome;
@@ -291,6 +358,7 @@ function blankAuto(extra = {}) {
     carro: "",
     placa: "",
     linha: "",
+    linhaNome: "",
     local: "",
     matricula: "",
     motorista: "",
@@ -662,6 +730,7 @@ function readFormInto(auto) {
   auto.carro = $("fCarro").value.trim();
   auto.placa = $("fPlaca").value.trim();
   auto.linha = $("fLinha").value.trim();
+  auto.linhaNome = nomeDaLinha(auto.linha) || ($("fLinhaNome") ? $("fLinhaNome").value.trim() : "");
   auto.matricula = $("fMatricula").value.trim();
   auto.motorista = $("fMotorista").value.trim();
   auto.autuador = $("fAutuador") ? $("fAutuador").value.trim() : auto.autuador;
@@ -683,10 +752,11 @@ function fillForm(auto) {
   $("fCarro").value = auto.carro || "";
   $("fPlaca").value = auto.placa || "";
   $("fLinha").value = auto.linha || "";
+  if ($("fLinhaNome")) $("fLinhaNome").value = auto.linhaNome || nomeDaLinha(auto.linha) || "";
   $("fMatricula").value = auto.matricula || "";
   $("fMotorista").value = auto.motorista || "";
   preencherSelectAutuador(auto.autuador || "");
-  $("fMotivo").value = auto.motivo || "";
+  preencherSelectMotivo(auto.motivo || "");
   $("fTexto1").value = auto.texto1 || "";
   $("fTexto2").value = auto.texto2 || "";
   $("fTexto3").value = auto.texto3 || "";
@@ -760,7 +830,7 @@ function renderList() {
     .sort(compareOrdemPdf)
     .filter((a) => {
       if (!q) return true;
-      return [a.carro, a.linha, a.autoNumero, a.protocolo, a.notificacao, a.motivo, a.motorista, a.autuador, a.data, a.lote]
+      return [a.carro, a.linha, a.linhaNome, a.autoNumero, a.protocolo, a.notificacao, a.motivo, a.motorista, a.autuador, a.data, a.lote]
         .join(" ")
         .toLowerCase()
         .includes(q);
@@ -780,7 +850,7 @@ function renderList() {
         <strong>${a.carro || (a.autoId ? `Auto ${a.autoId}` : "—")}</strong>
         <span class="pill">${statusLabel(a.status)}</span>
       </div>
-      <div class="auto-item-meta">${a.data || "sem data"} · Carro ${a.carro || "—"} · Linha ${a.linha || "—"}</div>
+      <div class="auto-item-meta">${a.data || "sem data"} · Carro ${a.carro || "—"} · Linha ${a.linha || "—"}${a.linhaNome ? ` ${a.linhaNome}` : ""}</div>
       <div class="auto-item-sub">${a.protocolo || a.notificacao ? `Prot. ${a.protocolo || a.notificacao}` : ""} ${a.autoId ? `· Auto ${a.autoId}` : a.autoNumero ? `· ${a.autoNumero}` : a.motivo || a.lote || "Sem número"}</div>
     `;
     el.addEventListener("click", () => selectAuto(a.id));
@@ -966,7 +1036,7 @@ function buildSheetHtml(auto) {
         ${celulaPdf("Placa", auto.placa)}
         ${celulaPdf("Data", auto.data)}
         ${celulaPdf("Horário", auto.horario)}
-        ${celulaPdf("Linha", auto.linha)}
+        ${celulaPdf("Linha", auto.linhaNome ? `${auto.linha} — ${auto.linhaNome}` : auto.linha)}
         ${celulaPdf("Protocolo", auto.protocolo || auto.notificacao, 2)}
         ${celulaPdf("Matrícula", auto.matricula)}
         ${celulaPdf("Motorista", auto.motorista, 2)}
@@ -1348,6 +1418,7 @@ async function handleFiles(fileList) {
         if (alvo && parsed) {
           alvo.carro = parsed.carro || alvo.carro;
           alvo.linha = parsed.linha || alvo.linha;
+          if (alvo.linha) alvo.linhaNome = nomeDaLinha(alvo.linha) || alvo.linhaNome;
           alvo.matricula = parsed.matricula || alvo.matricula;
           alvo.motivo = parsed.motivo || alvo.motivo;
           alvo.data = parsed.data || alvo.data;
@@ -1427,7 +1498,7 @@ function bindFormDirty() {
     });
   });
 
-  ["fCarro", "fMatricula"].forEach((id) => {
+  ["fCarro", "fMatricula", "fLinha"].forEach((id) => {
     $(id).addEventListener("change", aplicarLookupFormulario);
     $(id).addEventListener("blur", aplicarLookupFormulario);
   });
@@ -1435,6 +1506,7 @@ function bindFormDirty() {
     const placa = placaDoCarro($("fCarro").value);
     if (placa) $("fPlaca").value = placa;
   });
+  $("fLinha").addEventListener("input", aplicarNomeLinhaNoFormulario);
   $("fMatricula").addEventListener("input", () => {
     const func = funcionarioPorMatricula($("fMatricula").value);
     if (func) $("fMotorista").value = func.nome;
@@ -1445,6 +1517,7 @@ async function boot() {
   db = await openDb();
   await Promise.all([
     carregarAutuacoes().catch((err) => console.warn(err)),
+    carregarLinhas().catch((err) => console.warn(err)),
     carregarFuncionarios().catch((err) => {
       console.warn(err);
       setStatus("Funcionários indisponíveis no momento — preencha a matrícula manualmente.", true);
@@ -1491,7 +1564,7 @@ async function boot() {
   });
   bindFormDirty();
   setStatus(
-    `${autos.length} evidência(s) · ${funcionarios.length} funcionários · ${Object.keys(window.CIOP_VEICULOS_PLACA || {}).length} placas.`
+    `${autos.length} evidência(s) · ${funcionarios.length} funcionários · ${motivosCmtu.length} motivos · ${linhasPorCodigo.size} linhas.`
   );
 }
 
