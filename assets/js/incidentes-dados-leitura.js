@@ -1,6 +1,7 @@
 import { carregarSnapshotAws } from "./portal-aws-config.js";
 
 export const INCIDENTES_JSON_URL = "../assets/data/incidentes-tcgl.json";
+export const INCIDENTES_HOJE_JSON_URL = "../assets/data/incidentes-tcgl-hoje.json";
 
 export function hojeIsoLocal() {
   const d = new Date();
@@ -72,6 +73,18 @@ function withTimeout(promise, ms) {
   ]);
 }
 
+async function carregarJsonHoje() {
+  try {
+    const res = await fetch(`${INCIDENTES_HOJE_JSON_URL}?t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) return { payload: null, incidentes: [] };
+    const payload = await res.json();
+    const incidentes = Array.isArray(payload?.incidentes) ? payload.incidentes : [];
+    return { payload, incidentes };
+  } catch (_) {
+    return { payload: null, incidentes: [] };
+  }
+}
+
 async function carregarJsonSnapshot() {
   try {
     const res = await fetch(`${INCIDENTES_JSON_URL}?t=${Date.now()}`, { cache: "no-store" });
@@ -82,6 +95,17 @@ async function carregarJsonSnapshot() {
   } catch (_) {
     return { payload: null, incidentes: [] };
   }
+}
+
+function filtrarPorPeriodo(incidentes, de, ate) {
+  if (!de && !ate) return incidentes;
+  return (incidentes || []).filter((row) => {
+    const iso = dataIsoIncidente(row);
+    if (!iso) return false;
+    if (de && iso < de) return false;
+    if (ate && iso > ate) return false;
+    return true;
+  });
 }
 
 function montarPayload(fontes, incidentes) {
@@ -115,25 +139,38 @@ async function carregarAws({ de, ate } = {}) {
 /** Fluxo de leitura: AWS → JSON. `preferirAws` usa só o snapshot se ele tiver linhas (visão ao vivo / hoje). */
 export async function carregarDadosIncidentes({ onProgress, preferirAws = false, de, ate } = {}) {
   onProgress?.("Consultando AWS e JSON...");
-  const [awsRes, jsonRes] = await Promise.allSettled([
-    withTimeout(carregarAws({ de, ate }), 30000),
-    withTimeout(carregarJsonSnapshot(), 20000)
-  ]);
+  const soHoje = Boolean(preferirAws && de && ate && de === ate);
+  const jobs = [
+    withTimeout(carregarAws({ de, ate }), soHoje ? 8000 : 12000),
+    withTimeout(carregarJsonHoje(), 8000)
+  ];
+  if (!soHoje) jobs.push(withTimeout(carregarJsonSnapshot(), 12000));
+  const [awsRes, jsonHojeRes, jsonRes] = await Promise.allSettled(jobs);
 
   const awsPack = awsRes.status === "fulfilled" ? awsRes.value : { payload: null, incidentes: [] };
   const aws = awsPack.incidentes || [];
-  const jsonPack = jsonRes.status === "fulfilled" ? jsonRes.value : { payload: null, incidentes: [] };
-  const json = jsonPack.incidentes || [];
+  const hojePack = jsonHojeRes.status === "fulfilled" ? jsonHojeRes.value : { payload: null, incidentes: [] };
+  const hoje = filtrarPorPeriodo(hojePack.incidentes || [], de, ate);
+  const jsonPack = jsonRes?.status === "fulfilled" ? jsonRes.value : { payload: null, incidentes: [] };
+  const json = filtrarPorPeriodo(jsonPack.incidentes || [], de, ate);
 
-  const tentativas = [`AWS: ${aws.length}`, `JSON: ${json.length}`];
+  const tentativas = [`AWS: ${aws.length}`, `hoje: ${hoje.length}`, `JSON: ${json.length}`];
   const origens = [];
   if (aws.length) origens.push("AWS");
-  if (json.length && !(preferirAws && aws.length)) origens.push("JSON");
+  if (hoje.length && !aws.length) origens.push("JSON hoje");
+  if (json.length && !(preferirAws && (aws.length || hoje.length))) origens.push("JSON");
 
-  const incidentes = preferirAws && aws.length ? aws : mesclarIncidentes([json, aws]);
-  const bases = preferirAws && awsPack.payload
-    ? [awsPack.payload]
-    : [jsonPack.payload, awsPack.payload].filter(Boolean);
+  const incidentes = preferirAws && aws.length
+    ? aws
+    : preferirAws && hoje.length
+      ? hoje
+      : mesclarIncidentes([json, hoje, aws]);
+  const bases = [
+    preferirAws && awsPack.payload ? awsPack.payload : null,
+    hojePack.payload,
+    jsonPack.payload,
+    awsPack.payload
+  ].filter(Boolean);
   const payload = montarPayload(bases, incidentes);
   payload.origem = origens.join(" · ") || "";
 

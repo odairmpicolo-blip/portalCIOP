@@ -11,7 +11,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { baixarEstadoIncidentesS3, enviarEstadoIncidentesS3 } from "./lib/incidentes-state-s3.mjs";
+import { baixarEstadoIncidentesS3, enviarEstadoIncidentesS3, enviarRecorteHojeIncidentesS3 } from "./lib/incidentes-state-s3.mjs";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const portalRoot = process.env.PORTAL_ROOT || path.resolve(scriptDir, "..");
@@ -125,6 +125,11 @@ export async function syncIncidentes() {
   }
 
   steps.s3Push = await enviarEstadoIncidentesS3(jsonPath);
+  try {
+    await enviarRecorteHojeIncidentesS3(jsonPath);
+  } catch (err) {
+    warnings.push(`S3 hoje: ${err.message}`);
+  }
 
   if (publishGit) {
     const gitRes = runOpcional("git", () => {

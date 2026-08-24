@@ -1,6 +1,7 @@
 (function () {
   const CAD_JSON = "../assets/data/cad/monitoramento.json";
   const INC_JSON = "../assets/data/incidentes-tcgl.json";
+  const INC_HOJE_JSON = "../assets/data/incidentes-tcgl-hoje.json";
   const LIMITE_LISTA = 400;
   const CAD_ADS_APP = "https://cioplondrina.com.br:8891/CADAdvancedDynamicScheduling/App/";
   const CAD_ADS_REST = "https://cioplondrina.com.br:8891/CADAdvancedDynamicSchedulingREST/service.svc";
@@ -108,7 +109,7 @@
 
   async function modLeituraIncidentes() {
     if (!leituraIncidentes) {
-      leituraIncidentes = await import("../assets/js/incidentes-dados-leitura.js?v=20260824inc4");
+      leituraIncidentes = await import("../assets/js/incidentes-dados-leitura.js?v=20260824inc5");
     }
     return leituraIncidentes;
   }
@@ -280,7 +281,7 @@
       $("mnIncMeta").textContent = (q ? `${lista.length} no filtro · ` : "") +
         (qtdHoje
           ? `mesma fonte de incidentes-dashboard.html · ${dataBr} · atualizado ${fmtQuando(inc?.atualizadoEm)}${origem ? ` · ${origem}` : ""}`
-          : `Nenhum incidente TCGL em ${dataBr} na fonte do dashboard (AWS). Abra a página Incidentes e filtre o dia de hoje.`);
+          : `Nenhum incidente TCGL em ${dataBr}. ${(inc?.tentativas || []).join(" · ") || "A fonte de hoje ainda não chegou (JSON/AWS)."}`);
     }
     const dash = $("mnIncAbrirDash");
     if (dash) {
@@ -318,17 +319,22 @@
       const hoje = hojeIsoLocal();
       const res = await mod.carregarDadosIncidentes({ preferirAws: true, de: hoje, ate: hoje });
       const payload = res?.payload;
-      if (payload) payload.origem = payload.origem || res?.origem || "";
-      if (payload?.incidentes?.length) {
+      if (payload) {
+        payload.origem = payload.origem || res?.origem || "";
+        payload.tentativas = res?.tentativas || [];
+      }
+      if (linhasTcglHoje(payload).length) {
         salvarCacheIncidentesDashboard(payload);
         return payload;
       }
-    } catch (err) { /* usa cache / JSON */ }
+    } catch (err) { /* usa cache / JSON hoje */ }
     if (cache && linhasTcglHoje(cache).length) return cache;
-    if (cache) return cache;
     try {
-      const rInc = await fetch(INC_JSON + "?t=" + Date.now(), { cache: "no-store" });
-      if (rInc.ok) return await rInc.json();
+      const rHoje = await fetch(INC_HOJE_JSON + "?t=" + Date.now(), { cache: "no-store" });
+      if (rHoje.ok) {
+        const payloadHoje = await rHoje.json();
+        if (linhasTcglHoje(payloadHoje).length) return payloadHoje;
+      }
     } catch (err) { /* opcional */ }
     return cache;
   }
@@ -362,6 +368,13 @@
       if (id && navigator.clipboard?.writeText) navigator.clipboard.writeText(id).catch(() => {});
     });
     if (inc && linhasTcglHoje(inc).length) atualizar();
+    try {
+      const rHoje = await fetch(INC_HOJE_JSON + "?t=" + Date.now(), { cache: "no-store" });
+      if (rHoje.ok) {
+        const payloadHoje = await rHoje.json();
+        if (linhasTcglHoje(payloadHoje).length) atualizar(payloadHoje);
+      }
+    } catch (err) { /* API ainda tenta */ }
     try {
       const rCad = await fetch(CAD_JSON, { cache: "no-store" });
       if (rCad.ok) cad = await rCad.json();

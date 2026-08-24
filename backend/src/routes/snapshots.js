@@ -55,22 +55,46 @@ function enviarSnapshot(req, res, body) {
 
 let cacheIncidentesS3 = { ts: 0, value: null };
 
-async function lerIncidentesS3() {
-  if (cacheIncidentesS3.value && Date.now() - cacheIncidentesS3.ts < 45000) {
-    return cacheIncidentesS3.value;
-  }
+async function lerObjetoIncidentes(key) {
   const bucket = String(config.incidentesS3Bucket || "").trim();
-  if (!bucket) return null;
+  if (!bucket || !key) return null;
   const out = await getIncidentesS3().send(
-    new GetObjectCommand({ Bucket: bucket, Key: config.incidentesS3Key })
+    new GetObjectCommand({ Bucket: bucket, Key: key })
   );
   const texto = await out.Body?.transformToString();
   if (!texto) return null;
   const payload = payloadParaPortal(JSON.parse(texto));
   const atualizadoEm = payload?.atualizadoEm || (out.LastModified ? out.LastModified.toISOString() : null);
-  const value = { payload, atualizadoEm, origem: "s3" };
-  cacheIncidentesS3 = { ts: Date.now(), value };
+  return { payload, atualizadoEm, origem: "s3" };
+}
+
+function hojeSP() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(new Date());
+}
+
+async function lerIncidentesS3() {
+  if (cacheIncidentesS3.value && Date.now() - cacheIncidentesS3.ts < 45000) {
+    return cacheIncidentesS3.value;
+  }
+  const key = String(config.incidentesS3Key || "").trim();
+  const value = await lerObjetoIncidentes(key);
+  if (value) cacheIncidentesS3 = { ts: Date.now(), value };
   return value;
+}
+
+async function lerIncidentesS3Dia(de, ate) {
+  if (de && ate && de === ate && de === hojeSP()) {
+    try {
+      const hoje = await lerObjetoIncidentes("incidentes-hoje.json");
+      if (hoje?.payload) return hoje;
+    } catch (_) { /* cai no arquivo completo */ }
+  }
+  return lerIncidentesS3();
 }
 
 function queryDoPedido(req) {
@@ -93,7 +117,7 @@ function queryDoPedido(req) {
 
 async function responderIncidentes(req, res, de, ate) {
   try {
-    const s3 = await lerIncidentesS3();
+    const s3 = await lerIncidentesS3Dia(de, ate);
     if (s3?.payload) {
       enviarSnapshot(req, res, {
         ok: true,
