@@ -422,7 +422,7 @@ body{
 
 <script src="../assets/js/theme-toggle.js?v=20260818logo6"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="../assets/js/loading.js?v=20260718d"></script>
@@ -544,7 +544,24 @@ async function lerJsonOpcional(res){
 function idGrafico(chave){ return String(chave).replace(/\|/g, "-"); }
 function escapeHtml(v){ return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function formatNumber(v){ return Number(v||0).toLocaleString("pt-BR"); }
-function brDate(iso){ if(!iso) return "—"; const p=iso.split("-"); return p.length===3 ? p[2]+"/"+p[1]+"/"+p[0] : iso; }
+function dataLocalIso(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + day;
+}
+
+function datasIniciaisDashboard(){
+  const hoje = dataLocalIso();
+  const g = liberacaoManifest?.graficos || {};
+  if (g.hoje?.data_de === hoje && g.hoje?.data_ate === hoje) return { de: hoje, ate: hoje };
+  if (g.hoje?.data_de && g.hoje?.data_ate) return { de: g.hoje.data_de, ate: g.hoje.data_ate };
+  const dias = Object.keys(liberacaoManifest?.dias || {}).sort();
+  const last = dias[dias.length - 1];
+  if (last) return { de: last, ate: last };
+  return { de: hoje, ate: hoje };
+}
 function val(row,key){
 if(row[key]!=null&&row[key]!=="") return row[key];
 if(key==="saida_atrasado_adiantado") return row.saida_atrasado_adiantado||"";
@@ -766,7 +783,7 @@ anchor: "end",
 align: "end",
 offset: 6,
 clamp: true,
-color: isDarkTheme() ? "#ffffff" : "#fff",
+color: isDarkTheme() ? "#ffffff" : "#06245c",
 font: { size: 10, weight: "800" },
 formatter(v){ return formatNumber(v); }
 }
@@ -815,6 +832,18 @@ return LIBERACAO_DATA_BASE + "/" + preset.arquivo;
 return null;
 }
 
+async function carregarSnapshotComDados(dataDe, dataAte) {
+const direto = await carregarSnapshotGraficos(dataDe, dataAte);
+if (direto && ((direto.total_linhas || 0) > 0 || direto.categorias)) return { payload: direto, de: dataDe, ate: dataAte };
+for (const key of ["hoje", "7d", "30d"]) {
+const p = liberacaoManifest?.graficos?.[key];
+if (!p?.arquivo || (p.data_de === dataDe && p.data_ate === dataAte)) continue;
+const payload = await carregarSnapshotGraficos(p.data_de, p.data_ate);
+if (payload && (payload.total_linhas || 0) > 0) return { payload, de: p.data_de, ate: p.data_ate, rotulo: key };
+}
+return direto ? { payload: direto, de: dataDe, ate: dataAte } : null;
+}
+
 async function carregarSnapshotGraficos(dataDe, dataAte) {
 const url = resolverSnapshotGraficos(dataDe, dataAte);
 if (!url) return null;
@@ -846,20 +875,24 @@ let mostrouCache = false;
 let mostrouSnapshot = false;
 
 if (!liberacaoManifest) liberacaoManifest = await carregarManifestLiberacao();
-const snapshot = await carregarSnapshotGraficos(dataDe, dataAte);
-if (snapshot) {
-state.mapaGraficos = snapshot.categorias || {};
-state.totalLinhas = snapshot.total_linhas || 0;
-state.cacheChave = chave;
+const snap = await carregarSnapshotComDados(dataDe, dataAte);
+if (snap?.payload) {
+if (snap.de && snap.ate && (snap.de !== dataDe || snap.ate !== dataAte)) {
+$("dataDe").value = snap.de;
+$("dataAte").value = snap.ate;
+}
+state.mapaGraficos = snap.payload.categorias || {};
+state.totalLinhas = snap.payload.total_linhas || 0;
+state.cacheChave = (snap.de || dataDe) + "|" + (snap.ate || dataAte);
 renderGraficos();
 const extra = liberacaoManifest?.atualizadoEm
 ? " · snapshot: " + new Date(liberacaoManifest.atualizadoEm).toLocaleString("pt-BR")
 : "";
-const vazioHoje = (snapshot.total_linhas || 0) === 0;
+const vazioHoje = (snap.payload.total_linhas || 0) === 0;
 setStatus(
   vazioHoje
     ? "Ainda não há lançamentos neste período no JSON. Consultando a planilha…"
-    : formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · arquivo JSON" + extra,
+    : formatNumber(state.totalLinhas) + " registro(s) · " + brDate(snap.de || dataDe) + " a " + brDate(snap.ate || dataAte) + " · arquivo JSON" + extra,
   vazioHoje ? "load" : "ok"
 );
 mostrouSnapshot = true;
@@ -872,6 +905,10 @@ state.cacheChave = chave;
 renderGraficos();
 setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · cache local", "ok");
 mostrouCache = true;
+}
+
+if (mostrouSnapshot && (state.totalLinhas || 0) > 0) {
+return;
 }
 
 if (!mostrouCache && !mostrouSnapshot) {
@@ -896,19 +933,16 @@ setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) 
 } catch (e) {
 if (mostrouCache || mostrouSnapshot) {
 if (!state.totalLinhas) {
-const g7 = liberacaoManifest?.graficos?.["7d"];
-if (g7?.arquivo) {
-const s7 = await carregarSnapshotGraficos(g7.data_de, g7.data_ate);
-if (s7 && (s7.total_linhas || 0) > 0) {
-$("dataDe").value = g7.data_de;
-$("dataAte").value = g7.data_ate;
-state.mapaGraficos = s7.categorias || {};
-state.totalLinhas = s7.total_linhas || 0;
-state.cacheChave = g7.data_de + "|" + g7.data_ate;
+const extra = await carregarSnapshotComDados("", "");
+if (extra?.payload && (extra.payload.total_linhas || 0) > 0) {
+$("dataDe").value = extra.de;
+$("dataAte").value = extra.ate;
+state.mapaGraficos = extra.payload.categorias || {};
+state.totalLinhas = extra.payload.total_linhas || 0;
+state.cacheChave = extra.de + "|" + extra.ate;
 renderGraficos();
-setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(g7.data_de) + " a " + brDate(g7.data_ate) + " · 7 dias (hoje ainda sem lançamento)", "ok");
+setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(extra.de) + " a " + brDate(extra.ate) + " · JSON de fallback", "ok");
 return;
-}
 }
 }
 } else {
@@ -970,12 +1004,19 @@ window.portalOcultarCarregando?.();
 }
 }
 
-function iniciar(){
-if(window.ChartDataLabels) Chart.register(ChartDataLabels);
+async function iniciar(){
+if (window.Chart && window.ChartDataLabels) {
+try { Chart.register(ChartDataLabels); } catch (_) {}
+}
 montarHtmlGraficos();
-const hoje=new Date().toISOString().slice(0,10);
-$("dataDe").value=hoje;
-$("dataAte").value=hoje;
+if (!window.Chart) {
+setStatus("Não foi possível carregar os gráficos. Recarregue a página.", "erro");
+return;
+}
+if (!liberacaoManifest) liberacaoManifest = await carregarManifestLiberacao();
+const padrao = datasIniciaisDashboard();
+$("dataDe").value = padrao.de;
+$("dataAte").value = padrao.ate;
 $("dataDe").addEventListener("change", agendarRecarga);
 $("dataAte").addEventListener("change", agendarRecarga);
 $("btnPdf").addEventListener("click", () => gerarPdf().catch(e => setStatus(e.message,"erro")));
