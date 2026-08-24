@@ -108,7 +108,7 @@
 
   async function modLeituraIncidentes() {
     if (!leituraIncidentes) {
-      leituraIncidentes = await import("../assets/js/incidentes-dados-leitura.js?v=20260824inc2");
+      leituraIncidentes = await import("../assets/js/incidentes-dados-leitura.js?v=20260824inc3");
     }
     return leituraIncidentes;
   }
@@ -212,7 +212,7 @@
     return tipo || "Sem informação";
   }
 
-  const CACHE_INCIDENTES_KEY = "portal_incidentes_v5";
+  const CACHE_INCIDENTES_KEY = "portal_incidentes_hoje_v1";
   const CACHE_INCIDENTES_TTL_MS = 15 * 60 * 1000;
 
   function aguardarUsuarioPortal() {
@@ -315,7 +315,8 @@
     const cache = lerCacheIncidentesDashboard();
     try {
       const mod = await modLeituraIncidentes();
-      const res = await mod.carregarDadosIncidentes({ preferirAws: true });
+      const hoje = hojeIsoLocal();
+      const res = await mod.carregarDadosIncidentes({ preferirAws: true, de: hoje, ate: hoje });
       const payload = res?.payload;
       if (payload) payload.origem = payload.origem || res?.origem || "";
       if (payload?.incidentes?.length) {

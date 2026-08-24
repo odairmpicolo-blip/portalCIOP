@@ -100,8 +100,12 @@ function montarPayload(fontes, incidentes) {
   return payload;
 }
 
-async function carregarAws() {
-  const snap = await carregarSnapshotAws("/snapshots/incidentes", { timeoutMs: 25000 });
+async function carregarAws({ de, ate } = {}) {
+  const q = new URLSearchParams();
+  if (de) q.set("de", de);
+  if (ate) q.set("ate", ate);
+  const path = `/snapshots/incidentes${q.toString() ? `?${q}` : ""}`;
+  const snap = await carregarSnapshotAws(path, { timeoutMs: 25000 });
   if (!snap?.payload) return { payload: null, incidentes: [], atualizadoEm: null };
   const incidentes = Array.isArray(snap.payload?.incidentes) ? snap.payload.incidentes : [];
   const atualizadoEm = snap.atualizadoEm || snap.payload?.atualizadoEm || null;
@@ -109,10 +113,10 @@ async function carregarAws() {
 }
 
 /** Fluxo de leitura: AWS → JSON. `preferirAws` usa só o snapshot se ele tiver linhas (visão ao vivo / hoje). */
-export async function carregarDadosIncidentes({ onProgress, preferirAws = false } = {}) {
+export async function carregarDadosIncidentes({ onProgress, preferirAws = false, de, ate } = {}) {
   onProgress?.("Consultando AWS e JSON...");
   const [awsRes, jsonRes] = await Promise.allSettled([
-    withTimeout(carregarAws(), 30000),
+    withTimeout(carregarAws({ de, ate }), 30000),
     withTimeout(carregarJsonSnapshot(), 20000)
   ]);
 
