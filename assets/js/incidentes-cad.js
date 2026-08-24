@@ -413,14 +413,7 @@
 
   function abrirDetalhe(idx) {
     var r = state.filtrados[idx];
-    var box = $("cadDetalhe");
-    var body = $("cadDetalheBody");
-    if (!r || !box || !body) return;
-    var keys = Object.keys(r).filter(function (k) { return !OCULTAS[normKey(k)]; });
-    body.innerHTML = keys.map(function (k) {
-      return '<div class="det-row"><dt>' + esc(rotulo(k)) + '</dt><dd>' + esc(textoCelula(r[k])) + "</dd></div>";
-    }).join("") || "<p>Sem campos.</p>";
-    box.hidden = false;
+    if (r) window.PortalIncidentePopup.abrir(r);
   }
 
   function pintar() {
@@ -588,10 +581,6 @@
       if (!tr) return;
       abrirDetalhe(Number(tr.getAttribute("data-idx")));
     });
-    var fechar = $("cadDetalheFechar");
-    var fundo = $("cadDetalhe");
-    if (fechar) fechar.addEventListener("click", function () { fundo.hidden = true; });
-    if (fundo) fundo.addEventListener("click", function (ev) { if (ev.target === fundo) fundo.hidden = true; });
   }
 
   window.IncidentesCad = { iniciar: iniciar, ligar: ligar };

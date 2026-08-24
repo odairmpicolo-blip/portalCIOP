@@ -213,94 +213,12 @@
     return tipo || "Sem informação";
   }
 
-  const CAMPOS_INCIDENTE = [
-    ["id", "ID"],
-    ["data", "Data"],
-    ["hora", "Hora"],
-    ["empresa", "Empresa"],
-    ["departamento", "Departamento"],
-    ["veiculo", "Veículo"],
-    ["veiculoDescricao", "Descrição do veículo"],
-    ["linha", "Linha"],
-    ["criadoPor", "Analista"],
-    ["motoristaNr", "Nr. Motorista"],
-    ["motorista", "Motorista"],
-    ["tipo", "Tipo do incidente"],
-    ["tipoOriginal", "Tipo original"],
-    ["proprietario", "Agente"],
-    ["estado", "Status"],
-    ["natureOfProblem", "Natureza do problema"],
-    ["instructions", "Instruções"],
-    ["registroVazio", "Registro vazio"]
-  ];
-
-  function rotuloCampoIncidente(chave) {
-    const conhecido = CAMPOS_INCIDENTE.find(([k]) => k === chave);
-    if (conhecido) return conhecido[1];
-    return String(chave)
-      .replace(/([a-z])([A-Z])/g, "$1 $2")
-      .replace(/_/g, " ")
-      .replace(/^\w/, (c) => c.toUpperCase());
-  }
-
-  function textoCampoIncidente(valor) {
-    if (valor == null || valor === "") return "—";
-    if (typeof valor === "boolean") return valor ? "Sim" : "Não";
-    if (typeof valor === "object") {
-      try { return JSON.stringify(valor, null, 2); } catch { return String(valor); }
-    }
-    return String(valor);
-  }
-
-  function camposIncidente(row) {
-    if (!row || typeof row !== "object") return [];
-    const vistos = new Set();
-    const lista = [];
-    CAMPOS_INCIDENTE.forEach(([chave]) => {
-      if (!(chave in row) && chave !== "tipo" && chave !== "id") return;
-      vistos.add(chave);
-      let valor = row[chave];
-      if (chave === "id") valor = row.id || row.incidentId || "";
-      if (chave === "tipo") valor = tipoIncidente(row);
-      const amplo = chave === "natureOfProblem" || chave === "instructions" || chave === "veiculoDescricao";
-      lista.push({ chave, rotulo: rotuloCampoIncidente(chave), valor: textoCampoIncidente(valor), amplo });
-    });
-    Object.keys(row).forEach((chave) => {
-      if (vistos.has(chave)) return;
-      if (chave === "incidentId" && String(row.incidentId) === String(row.id || "")) return;
-      const valor = textoCampoIncidente(row[chave]);
-      lista.push({
-        chave,
-        rotulo: rotuloCampoIncidente(chave),
-        valor,
-        amplo: valor.length > 80 || valor.includes("\n")
-      });
-    });
-    return lista;
-  }
-
   function fecharPopupIncidente() {
-    const overlay = $("mnIncOverlay");
-    if (overlay) overlay.hidden = true;
+    window.PortalIncidentePopup?.fechar();
   }
 
   function abrirPopupIncidente(row) {
-    const overlay = $("mnIncOverlay");
-    const grid = $("mnIncPopGrid");
-    if (!overlay || !grid || !row) return;
-    const id = row.id || row.incidentId || "";
-    if ($("mnIncPopTitulo")) $("mnIncPopTitulo").textContent = id ? `Incidente ${id}` : "Incidente";
-    if ($("mnIncPopSub")) {
-      $("mnIncPopSub").textContent = [row.data, row.hora, row.veiculo, row.linha].filter(Boolean).join(" · ") || "Todos os campos do registro";
-    }
-    grid.innerHTML = camposIncidente(row).map((c) =>
-      `<div class="mn-inc-pop-item${c.amplo ? " amplo" : ""}"><span>${esc(c.rotulo)}</span><strong>${esc(c.valor)}</strong></div>`
-    ).join("");
-    const cad = $("mnIncPopCad");
-    if (cad) cad.href = "https://cioplondrina.com.br/CADIncidentManagement/";
-    overlay.hidden = false;
-    $("mnIncPopFechar")?.focus();
-    if (id && navigator.clipboard?.writeText) navigator.clipboard.writeText(id).catch(() => {});
+    window.PortalIncidentePopup?.abrir(row);
   }
 
   const CACHE_INCIDENTES_KEY = "portal_incidentes_hoje_v1";
