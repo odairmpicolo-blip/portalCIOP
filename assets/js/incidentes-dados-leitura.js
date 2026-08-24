@@ -101,11 +101,11 @@ function montarPayload(fontes, incidentes) {
 }
 
 async function carregarAws({ de, ate } = {}) {
-  const q = new URLSearchParams();
-  if (de) q.set("de", de);
-  if (ate) q.set("ate", ate);
-  const path = `/snapshots/incidentes${q.toString() ? `?${q}` : ""}`;
-  const snap = await carregarSnapshotAws(path, { timeoutMs: 25000 });
+  const dia = de && ate && de === ate ? de : "";
+  const path = dia
+    ? `/snapshots/incidentes/dia/${dia}`
+    : `/snapshots/incidentes${de || ate ? `?${new URLSearchParams({ ...(de ? { de } : {}), ...(ate ? { ate } : {}) })}` : ""}`;
+  const snap = await carregarSnapshotAws(path, { timeoutMs: 28000 });
   if (!snap?.payload) return { payload: null, incidentes: [], atualizadoEm: null };
   const incidentes = Array.isArray(snap.payload?.incidentes) ? snap.payload.incidentes : [];
   const atualizadoEm = snap.atualizadoEm || snap.payload?.atualizadoEm || null;

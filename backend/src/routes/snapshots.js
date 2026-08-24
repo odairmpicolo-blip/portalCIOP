@@ -53,7 +53,12 @@ function enviarSnapshot(req, res, body) {
   res.json(body);
 }
 
+let cacheIncidentesS3 = { ts: 0, value: null };
+
 async function lerIncidentesS3() {
+  if (cacheIncidentesS3.value && Date.now() - cacheIncidentesS3.ts < 45000) {
+    return cacheIncidentesS3.value;
+  }
   const bucket = String(config.incidentesS3Bucket || "").trim();
   if (!bucket) return null;
   const out = await getIncidentesS3().send(
@@ -63,7 +68,58 @@ async function lerIncidentesS3() {
   if (!texto) return null;
   const payload = payloadParaPortal(JSON.parse(texto));
   const atualizadoEm = payload?.atualizadoEm || (out.LastModified ? out.LastModified.toISOString() : null);
-  return { payload, atualizadoEm, origem: "s3" };
+  const value = { payload, atualizadoEm, origem: "s3" };
+  cacheIncidentesS3 = { ts: Date.now(), value };
+  return value;
+}
+
+function queryDoPedido(req) {
+  const q = { ...(req.query || {}) };
+  const ev = req.apiGateway?.event;
+  const params = ev?.queryStringParameters;
+  if (params && typeof params === "object") {
+    for (const [k, v] of Object.entries(params)) {
+      if (q[k] == null || q[k] === "") q[k] = v;
+    }
+  }
+  if (typeof ev?.rawQueryString === "string" && ev.rawQueryString) {
+    const sp = new URLSearchParams(ev.rawQueryString);
+    for (const [k, v] of sp.entries()) {
+      if (q[k] == null || q[k] === "") q[k] = v;
+    }
+  }
+  return q;
+}
+
+async function responderIncidentes(req, res, de, ate) {
+  try {
+    const s3 = await lerIncidentesS3();
+    if (s3?.payload) {
+      enviarSnapshot(req, res, {
+        ok: true,
+        payload: recortarIncidentes(s3.payload, de, ate),
+        atualizadoEm: s3.atualizadoEm,
+        origem: "aws"
+      });
+      return;
+    }
+  } catch (errS3) {
+    console.warn("[snapshots/incidentes] S3 indisponível, tentando DSQL:", errS3.message);
+  }
+  const result = await query(
+    `SELECT payload, atualizado_em FROM incidentes_snapshot WHERE id = 'atual' LIMIT 1`
+  );
+  if (!result.rows.length) {
+    res.json({ ok: true, payload: null, origem: "aws" });
+    return;
+  }
+  const row = result.rows[0];
+  enviarSnapshot(req, res, {
+    ok: true,
+    payload: recortarIncidentes(row.payload, de, ate),
+    atualizadoEm: row.atualizado_em,
+    origem: "aws"
+  });
 }
 
 /** Tabelas de snapshot com chave fixa `atual`. */
@@ -73,6 +129,19 @@ const SINGLE_SNAPSHOTS = {
   folha: "folha_snapshot"
 };
 
+router.get("/incidentes/dia/:dia", requireFirebaseUser, async (req, res) => {
+  const dia = isoQuery(req.params.dia);
+  if (!dia) {
+    res.status(400).json({ ok: false, erro: "Dia inválido (YYYY-MM-DD)" });
+    return;
+  }
+  try {
+    await responderIncidentes(req, res, dia, dia);
+  } catch (err) {
+    res.status(500).json({ ok: false, erro: err.message });
+  }
+});
+
 router.get("/:nome", requireFirebaseUser, async (req, res) => {
   const nome = String(req.params.nome || "").trim().toLowerCase();
   const table = SINGLE_SNAPSHOTS[nome];
@@ -80,24 +149,13 @@ router.get("/:nome", requireFirebaseUser, async (req, res) => {
     res.status(404).json({ ok: false, erro: "Snapshot não encontrado" });
     return;
   }
-  const de = nome === "incidentes" ? isoQuery(req.query.de) : "";
-  const ate = nome === "incidentes" ? isoQuery(req.query.ate) : "";
+  const q = queryDoPedido(req);
+  const de = nome === "incidentes" ? isoQuery(q.de) : "";
+  const ate = nome === "incidentes" ? isoQuery(q.ate) : "";
   try {
     if (nome === "incidentes") {
-      try {
-        const s3 = await lerIncidentesS3();
-        if (s3?.payload) {
-          enviarSnapshot(req, res, {
-            ok: true,
-            payload: recortarIncidentes(s3.payload, de, ate),
-            atualizadoEm: s3.atualizadoEm,
-            origem: "aws"
-          });
-          return;
-        }
-      } catch (errS3) {
-        console.warn("[snapshots/incidentes] S3 indisponível, tentando DSQL:", errS3.message);
-      }
+      await responderIncidentes(req, res, de, ate);
+      return;
     }
     const result = await query(
       `SELECT payload, atualizado_em FROM ${table} WHERE id = 'atual' LIMIT 1`

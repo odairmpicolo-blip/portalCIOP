@@ -108,7 +108,7 @@
 
   async function modLeituraIncidentes() {
     if (!leituraIncidentes) {
-      leituraIncidentes = await import("../assets/js/incidentes-dados-leitura.js?v=20260824inc3");
+      leituraIncidentes = await import("../assets/js/incidentes-dados-leitura.js?v=20260824inc4");
     }
     return leituraIncidentes;
   }
