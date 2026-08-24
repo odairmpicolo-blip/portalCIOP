@@ -1080,8 +1080,15 @@ async function moduloLiberacaoAws(){
     }
 }
 
+function erroSalvarPlanilhaRetentavel(err){
+    const msg=String(err?.message||err||"");
+    return /timeout|falha de rede|failed to fetch|resposta inválida|doctype|ocupada|demorou demais/i.test(msg);
+}
+
 async function salvarPlanilhaLinha(payload,tentativa=1){
-    // Preferência: proxy AWS (evita POST quebrado no redirect do Google). Fallback: GET na planilha.
+    // Uma escrita por vez na planilha: várias em paralelo estouram o Apps Script
+    // (página HTML do Google) e a tela mostra "Erro ao salvar".
+    let ultimoErr=null;
     try{
         const mod=await moduloLiberacaoAws();
         if(mod&&await mod.liberacaoAwsDisponivel()){
@@ -1089,18 +1096,57 @@ async function salvarPlanilhaLinha(payload,tentativa=1){
             return;
         }
     }catch(err){
+        ultimoErr=err;
+        if(tentativa<3&&erroSalvarPlanilhaRetentavel(err)){
+            await new Promise(r=>setTimeout(r,1800*tentativa));
+            return salvarPlanilhaLinha(payload,tentativa+1);
+        }
         console.warn("Salvar via AWS falhou, tentando planilha direta:", err?.message||err);
     }
 
     try{
         await apiPost(payload);
     }catch(err){
-        if(tentativa<3&&(err.message.includes("Timeout")||err.message.includes("Falha de rede")||err.message.includes("Failed to fetch"))){
-            await new Promise(r=>setTimeout(r,1500*tentativa));
+        if(tentativa<3&&erroSalvarPlanilhaRetentavel(err)){
+            await new Promise(r=>setTimeout(r,1800*tentativa));
             return salvarPlanilhaLinha(payload,tentativa+1);
         }
         throw err;
     }
+}
+
+const filaEscritaPlanilha=[];
+let filaEscritaRodando=false;
+
+function enfileirarEscritaPlanilha(payload){
+    const rowId=String(payload?._row||"");
+    return new Promise((resolve,reject)=>{
+        const pendente=filaEscritaPlanilha.find(item=>!item.iniciado&&item.rowId===rowId);
+        if(pendente){
+            pendente.payload=payload;
+            pendente.esperas.push({resolve,reject});
+        }else{
+            filaEscritaPlanilha.push({rowId,payload,iniciado:false,esperas:[{resolve,reject}]});
+        }
+        void processarFilaEscritaPlanilha();
+    });
+}
+
+async function processarFilaEscritaPlanilha(){
+    if(filaEscritaRodando) return;
+    filaEscritaRodando=true;
+    while(filaEscritaPlanilha.length){
+        const item=filaEscritaPlanilha.shift();
+        item.iniciado=true;
+        try{
+            await salvarPlanilhaLinha(item.payload);
+            item.esperas.forEach(e=>e.resolve());
+        }catch(err){
+            item.esperas.forEach(e=>e.reject(err));
+        }
+    }
+    filaEscritaRodando=false;
+    if(filaEscritaPlanilha.length) void processarFilaEscritaPlanilha();
 }
 
 function aplicarFiltroMaquina(){
@@ -1434,7 +1480,7 @@ function syncLinhaFromDom(i){
 
 function agendarSalvarLinha(i){
     clearTimeout(state.saveTimers[i]);
-    state.saveTimers[i]=setTimeout(()=>salvarLinha(i),800);
+    state.saveTimers[i]=setTimeout(()=>salvarLinha(i),1200);
 }
 
 function flushSalvarLinha(i){
@@ -1537,24 +1583,24 @@ async function salvarLinha(i){
     }
     aplicarFormulasLinha(row);
     state.saving[i]=true;
-    document.querySelector(".sync-"+i).innerHTML=syncBadge(row,i);
+    const syncElInicio=document.querySelector(".sync-"+i);
+    if(syncElInicio) syncElInicio.innerHTML=syncBadge(row,i);
     const payload={action:"update",_row:String(row._row)};
     CAMPOS_EDITAVEIS.forEach(chave=>{
         payload[chave]=val(row,chave)||"";
     });
-    CAMPOS_FORMULA_PLANILHA.forEach(k=>{
-        payload[k]=val(row,k)||"";
-    });
     try{
-        await salvarPlanilhaLinha(payload);
-        row._dirty=false;
+        await enfileirarEscritaPlanilha(payload);
+        const aindaMudou=[...CAMPOS_EDITAVEIS].some(chave=>String(val(row,chave)||"")!==String(payload[chave]||""));
+        row._dirty=aindaMudou;
         row._syncErro=false;
         const idxSem=state.semana.findIndex(r=>r._row===row._row);
         if(idxSem>=0) state.semana[idxSem]=row;
         if(state.semana.length) salvarCacheLiberacao(state.semana,{data_de:state.semanaDataDe,data_ate:state.semanaDataAte});
         atualizarLinhaPosSalvar(i);
         sincronizarLinhaAws_(row);
-        if(ehDiaAtual($("dataFiltro").value)) setTimeout(()=>sincronizarJsonHoje(),1500);
+        if(aindaMudou) agendarSalvarLinha(i);
+        else if(ehDiaAtual($("dataFiltro").value)) setTimeout(()=>sincronizarJsonHoje(),1500);
     }catch(err){
         row._syncErro=true;
         document.querySelectorAll('[data-i="'+i+'"]').forEach(el=>{el.classList.remove("saving");el.classList.add("erro");});

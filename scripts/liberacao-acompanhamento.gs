@@ -15,7 +15,7 @@
  * POST ?liberacao=1  action=create|update|upsert  (+ campos da aba acompanhamento)
  */
 
-const LIBERACAO_VERSAO = "2026-07-27-liberacao-scan-cap2";
+const LIBERACAO_VERSAO = "2026-08-24-liberacao-save-lock";
 const LIBERACAO_DIAS_JANELA = 7;
 const LIBERACAO_CHUNK_LINHAS = 800;
 const LIBERACAO_CACHE_TTL = 600;
@@ -44,6 +44,11 @@ function invalidarCacheLiberacao_() {
 
 function solicitarAtualizacaoJsonLiberacaoHoje_(origem) {
   origem = origem || "liberacao";
+  try {
+    var cacheDispatch = CacheService.getScriptCache();
+    if (cacheDispatch.get("lib_json_dispatch")) return;
+    cacheDispatch.put("lib_json_dispatch", "1", 120);
+  } catch (errCache) {}
   try {
     if (typeof solicitarAtualizacaoJsonPortal_ === "function") {
       solicitarAtualizacaoJsonPortal_(origem);
@@ -208,10 +213,18 @@ function montarRespostaLiberacaoGet_(params) {
 }
 
 function montarRespostaLiberacaoPost_(params) {
-  const action = String(params.action || "create").toLowerCase();
-  if (action === "update") return atualizarAcompanhamentoLiberacao_(params);
-  if (action === "upsert") return upsertAcompanhamentoLiberacao_(params);
-  return criarAcompanhamentoLiberacao_(params);
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(25000)) {
+    throw new Error("Planilha ocupada. Tente de novo em instantes.");
+  }
+  try {
+    const action = String(params.action || "create").toLowerCase();
+    if (action === "update") return atualizarAcompanhamentoLiberacao_(params);
+    if (action === "upsert") return upsertAcompanhamentoLiberacao_(params);
+    return criarAcompanhamentoLiberacao_(params);
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function abrirAbaPorGid_(spreadsheetId, gid) {
@@ -865,10 +878,15 @@ function atualizarAcompanhamentoLiberacao_(params) {
   const cabecalho = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
   const chaves = cabecalho.map(normalizarChaveLiberacao_);
   const valoresParams = expandirParamsColunasPlanilha_(params, chaves);
+  const atuais = sheet.getRange(row, 1, 1, lastCol).getValues()[0];
   chaves.forEach(function (chave, idx) {
     if (!chave || valoresParams[chave] == null) return;
+    const atual = atuais[idx] == null ? "" : String(atuais[idx]).trim();
+    const novo = String(valoresParams[chave]).trim();
+    if (atual === novo) return;
     sheet.getRange(row, idx + 1).setValue(valoresParams[chave]);
   });
+  SpreadsheetApp.flush();
   invalidarCacheLiberacao_();
   try { solicitarAtualizacaoJsonLiberacaoHoje_("liberacao-update"); } catch (_) {}
   return { ok: true, linha: row, acao: "update" };

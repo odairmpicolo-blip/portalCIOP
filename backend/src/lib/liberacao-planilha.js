@@ -82,17 +82,24 @@ export function montarPayloadUpdatePlanilha(rowId, row) {
   CAMPOS_EDITAVEIS.forEach((chave) => {
     payload[chave] = String(row?.[chave] ?? "");
   });
-  CAMPOS_FORMULA_PLANILHA.forEach((chave) => {
-    payload[chave] = String(row?.[chave] ?? "");
-  });
   return payload;
 }
 
-export async function enviarLinhaPlanilha(payload) {
+function respostaPlanilhaInvalida(texto) {
+  const trecho = String(texto || "").replace(/\s+/g, " ").slice(0, 120);
+  return new Error(
+    trecho
+      ? `Resposta inválida da planilha ao salvar (${trecho})`
+      : "Resposta inválida da planilha ao salvar"
+  );
+}
+
+async function enviarLinhaPlanilhaUma(payload) {
   // GET com query string: POST do Apps Script perde o body no redirect 302 do Google.
   const flat = { liberacao: "1", _: String(Date.now()) };
   Object.entries(payload || {}).forEach(([chave, valor]) => {
     if (valor == null) return;
+    if (CAMPOS_FORMULA_PLANILHA.includes(chave)) return;
     flat[chave] = String(valor);
   });
   const url = `${config.liberacaoApiUrl}?${new URLSearchParams(flat)}`;
@@ -104,14 +111,12 @@ export async function enviarLinhaPlanilha(payload) {
   const texto = await res.text();
   let data;
   try {
-    data = JSON.parse(texto);
-  } catch {
-    const trecho = String(texto || "").replace(/\s+/g, " ").slice(0, 120);
-    throw new Error(
-      trecho
-        ? `Resposta inválida da planilha ao salvar (${trecho})`
-        : "Resposta inválida da planilha ao salvar"
-    );
+    const t = String(texto || "").trim();
+    if (!t || t.charAt(0) === "<") throw respostaPlanilhaInvalida(texto);
+    data = JSON.parse(t);
+  } catch (err) {
+    if (err?.message?.includes("Resposta inválida")) throw err;
+    throw respostaPlanilhaInvalida(texto);
   }
   if (!data.ok) throw new Error(data.erro || "Erro ao salvar na planilha");
   const acaoEsperada = String(payload?.action || "").toLowerCase();
@@ -119,6 +124,25 @@ export async function enviarLinhaPlanilha(payload) {
     throw new Error("Planilha não confirmou a atualização. Reimplante o Web App no Google.");
   }
   return data;
+}
+
+function erroPlanilhaRetentavel(err) {
+  const msg = String(err?.message || err || "");
+  return /resposta inválida|doctype|timeout|ocupada|fetch|network/i.test(msg);
+}
+
+export async function enviarLinhaPlanilha(payload) {
+  let ultimo = null;
+  for (let tentativa = 1; tentativa <= 3; tentativa++) {
+    try {
+      return await enviarLinhaPlanilhaUma(payload);
+    } catch (err) {
+      ultimo = err;
+      if (!erroPlanilhaRetentavel(err) || tentativa === 3) throw err;
+      await new Promise((r) => setTimeout(r, 1500 * tentativa));
+    }
+  }
+  throw ultimo;
 }
 
 export { listarDatasIso };
