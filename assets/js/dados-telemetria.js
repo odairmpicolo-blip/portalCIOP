@@ -21,6 +21,7 @@ const FROTA = (window.FROTA_PATIO || []).slice().sort((a, b) =>
 const PLANILHA_TELEMETRIA_URL = "https://docs.google.com/spreadsheets/d/1Z_rFA-1jz7-kq4juGp5uFG4WMpVBloML98hDgWcX9gQ/edit";
 const CHAVE_PLANILHA_STORAGE = "telemetria_planilha_ao_vivo";
 const DIAS_CARREGAMENTO_INICIAL = 60;
+const KM_DIARIO_MAX = 1000;
 let fonteAtiva = "comparacao";
 let planilhaAoVivo = false;
 let snapshotRaw = null;
@@ -30,6 +31,11 @@ let veiculosAtencao = [];
 let veiculosAtencaoDetalhe = [];
 let veiculosOk = [];
 let filtroAtencaoAtivo = false;
+let paginaTabela = 0;
+let debounceRenderLeveTimer = null;
+let statsCacheChave = "";
+let statsCacheValor = null;
+const LINHAS_POR_PAGINA = 120;
 
 const CHAVES_VEICULO = [
   "veiculo", "veículo", "vehicle id", "vehicle_id", "prefixo", "carro", "numero", "número", "n°", "nº",
@@ -484,7 +490,7 @@ function filtrarRowsPorData(rows, colData, dataDe, dataAte) {
   const de = dataDe ? String(dataDe).slice(0, 10) : "";
   const ate = dataAte ? String(dataAte).slice(0, 10) : "";
   return rows.filter((row) => {
-    const iso = parseDataCsv(row[colData]);
+    const iso = row.data_iso || parseDataCsv(row[colData]);
     if (!iso) return false;
     if (de && iso < de) return false;
     if (ate && iso > ate) return false;
@@ -492,7 +498,42 @@ function filtrarRowsPorData(rows, colData, dataDe, dataAte) {
   });
 }
 
-function calcularStats(rows, colVeiculo, colunasKpi) {
+function kmDePayload(payload) {
+  if (!payload) return NaN;
+  return parseNumero(payload["Km Percorrido"] ?? payload["daily distance"] ?? payload["Km"]);
+}
+
+function kmMapaRapido(regs) {
+  const mapa = new Map();
+  (regs || []).forEach((reg) => {
+    let payload = reg.payload || reg;
+    if (typeof payload === "string") {
+      try { payload = JSON.parse(payload); } catch (_) { payload = {}; }
+    }
+    const km = kmDePayload(payload);
+    if (!Number.isFinite(km) || km <= 0 || km > KM_DIARIO_MAX) return;
+    const key = `${reg.data_iso}|${normVeiculo(reg.veiculo)}`;
+    mapa.set(key, (mapa.get(key) || 0) + km);
+  });
+  return mapa;
+}
+
+function calcularStats(rows, colVeiculo) {
+  const veicFiltroAtencao = $("filtroVeiculo")?.value || "";
+  const chave = [
+    $("filtroDataDe")?.value || "",
+    $("filtroDataAte")?.value || "",
+    veicFiltroAtencao,
+    snapshotRaw?.total || 0,
+    snapshotRaw?.atualizadoEm || ""
+  ].join("|");
+  if (statsCacheChave === chave && statsCacheValor) {
+    veiculosAtencao = statsCacheValor._atencao || veiculosAtencao;
+    veiculosAtencaoDetalhe = statsCacheValor._detalhe || veiculosAtencaoDetalhe;
+    veiculosOk = statsCacheValor._ok || veiculosOk;
+    return statsCacheValor;
+  }
+
   const frotaIds = new Set(FROTA.map((f) => normVeiculo(f.veiculo)));
   const noArquivo = new Set();
 
@@ -503,33 +544,22 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
     noArquivo.add(id);
   });
 
-  const KM_DIARIO_MAX = 1000;
-  // "Atenção" (veículos com problema) deve refletir o período/veículo filtrados na tela.
-  // Antes, essa lista era sempre calculada em cima de snapshotRaw.dados sem filtro nenhum
-  // (todo o histórico) — mudar a data ou o veículo no filtro não alterava quem aparecia
-  // como "com problema". Aplicamos aqui o mesmo filtro de data usado no resto da página
-  // (e o de veículo, se houver um selecionado) antes de calcular tudo.
-  const veicFiltroAtencao = $("filtroVeiculo")?.value || "";
   let registrosBase = filtrarRegistrosPorPeriodo(snapshotRaw?.dados || []);
   if (veicFiltroAtencao) registrosBase = registrosBase.filter((d) => normVeiculo(d.veiculo) === veicFiltroAtencao);
 
-  const kmPorFonte = (regs) => {
-    const mapa = new Map();
-    regs.forEach((reg) => {
-      let payload = reg.payload || reg;
-      if (typeof payload === "string") try { payload = JSON.parse(payload); } catch (_) { payload = {}; }
-      const row = normalizarLinhaTelemetria({ ...payload });
-      const km = parseNumero(row["Km Percorrido"]);
-      if (!Number.isFinite(km) || km <= 0 || km > KM_DIARIO_MAX) return;
-      const key = `${reg.data_iso}|${normVeiculo(reg.veiculo)}`;
-      mapa.set(key, (mapa.get(key) || 0) + km);
-    });
-    return mapa;
-  };
+  const cleverRegs = [];
+  const tcglRegs = [];
+  const fleetRegs = [];
+  registrosBase.forEach((d) => {
+    const f = d.fonte || inferirFonteRegistro(d);
+    if (f === "clever") cleverRegs.push(d);
+    else if (f === "tcgl") tcglRegs.push(d);
+    else if (f === "fleetbus") fleetRegs.push(d);
+  });
 
-  const cleverMap = kmPorFonte(registrosBase.filter((d) => inferirFonteRegistro(d) === "clever"));
-  const tcglMap = kmPorFonte(registrosBase.filter((d) => inferirFonteRegistro(d) === "tcgl"));
-  const fleetbusMap = kmPorFonte(registrosBase.filter((d) => inferirFonteRegistro(d) === "fleetbus"));
+  const cleverMap = kmMapaRapido(cleverRegs);
+  const tcglMap = kmMapaRapido(tcglRegs);
+  const fleetbusMap = kmMapaRapido(fleetRegs);
 
   const somaPar = (mapA, mapB) => {
     let somaA = 0, somaB = 0;
@@ -559,8 +589,6 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
     if (!atencaoMap.has(v)) atencaoMap.set(v, { veiculo: v, diasTcgl: 0, diasClever: 0, diasFaltando: 0, datasFaltando: [], kmIrreal: [] });
     return atencaoMap.get(v);
   };
-
-  const cleverRaw = registrosBase.filter((d) => inferirFonteRegistro(d) === "clever");
 
   const todasDatasClever = new Set();
   const datasTcglPorVeiculo = new Map();
@@ -593,11 +621,10 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
     }
   });
 
-  cleverRaw.forEach((reg) => {
+  cleverRegs.forEach((reg) => {
     let payload = reg.payload || reg;
     if (typeof payload === "string") try { payload = JSON.parse(payload); } catch (_) { payload = {}; }
-    const row = normalizarLinhaTelemetria({ ...payload });
-    const km = parseNumero(row["Km Percorrido"]);
+    const km = kmDePayload(payload);
     if (Number.isFinite(km) && km > KM_DIARIO_MAX) {
       const v = normVeiculo(reg.veiculo);
       const info = obterAtencao(v);
@@ -607,15 +634,30 @@ function calcularStats(rows, colVeiculo, colunasKpi) {
 
   veiculosAtencaoDetalhe = [...atencaoMap.values()].sort((a, b) => a.veiculo.localeCompare(b.veiculo, "pt-BR", { numeric: true }));
   veiculosAtencao = veiculosAtencaoDetalhe.map((d) => d.veiculo);
+  const atencaoSet = new Set(veiculosAtencao);
+  const okSet = new Set();
+  cleverMap.forEach((_km, key) => {
+    if (tcglMap.has(key)) {
+      const v = key.split("|")[1];
+      if (v && !atencaoSet.has(v)) okSet.add(v);
+    }
+  });
+  veiculosOk = [...okSet];
 
-  return {
+  const resultado = {
     frota: FROTA.length,
     noArquivo: noArquivo.size,
     pctCleverTcgl: pctStr(parCleverTcgl.somaA, parCleverTcgl.somaB),
     pctFleetbusTcgl: pctStr(parFleetbusTcgl.somaA, parFleetbusTcgl.somaB),
     pctFleetbusClever: pctStr(parFleetbusClever.somaA, parFleetbusClever.somaB),
-    atencao: veiculosAtencao.length
+    atencao: veiculosAtencao.length,
+    _atencao: veiculosAtencao,
+    _detalhe: veiculosAtencaoDetalhe,
+    _ok: veiculosOk
   };
+  statsCacheChave = chave;
+  statsCacheValor = resultado;
+  return resultado;
 }
 
 function classeLinhaDado(row, colunasKpi) {
@@ -725,6 +767,8 @@ function aplicarSnapshotBruto(snap, { mesclar = false } = {}) {
     ...snap,
     dados
   };
+  statsCacheChave = "";
+  statsCacheValor = null;
   const clever = snapshotRaw.dados.filter((d) => d.fonte === "clever").length;
   const tcgl = snapshotRaw.dados.filter((d) => d.fonte === "tcgl").length;
   const fleetbus = snapshotRaw.dados.filter((d) => d.fonte === "fleetbus").length;
@@ -989,7 +1033,6 @@ function pctAggStr(num, den) {
 }
 
 function kmMapaPorFonte(regs) {
-  const KM_DIARIO_MAX = 1000;
   const mapa = new Map();
   regs.forEach((reg) => {
     let payload = reg.payload || reg;
@@ -1201,14 +1244,15 @@ function aplicarFonteAtiva() {
       colunasKpi: detectarColunasKpi(headers),
       arquivos: [`planilha-${fonteAtiva}`],
       modo: fonteAtiva
-    }, { resetarAba: false });
+    }, { resetarAba: false, preservarDatas: true, persistir: false });
     return dadosBrutos.rows.length;
   }
 
   colunasMarcadas = new Set(colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo));
   montarFiltroVeiculos();
-  montarFiltroDatas(true);
+  montarFiltroDatas(false);
   montarPainelColunas();
+  paginaTabela = 0;
   renderizar();
   return dadosBrutos.rows.length;
 }
@@ -1314,17 +1358,22 @@ function limparCacheTelemetriaLegado() {
 
 function persistirCacheTelemetria() {
   if (!dadosBrutos?.rows?.length) return;
-  try {
-    localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify({
-      headers: dadosBrutos.headers,
-      rows: dadosBrutos.rows,
-      colVeiculo: dadosBrutos.colVeiculo,
-      colData: dadosBrutos.colData,
-      colunasKpi: dadosBrutos.colunasKpi,
-      arquivos: dadosBrutos.arquivos,
-      salvoEm: new Date().toISOString()
-    }));
-  } catch (_) { /* quota */ }
+  const snapshot = {
+    headers: dadosBrutos.headers,
+    rows: dadosBrutos.rows,
+    colVeiculo: dadosBrutos.colVeiculo,
+    colData: dadosBrutos.colData,
+    colunasKpi: dadosBrutos.colunasKpi,
+    arquivos: dadosBrutos.arquivos,
+    salvoEm: new Date().toISOString()
+  };
+  const gravar = () => {
+    try {
+      localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(snapshot));
+    } catch (_) { /* quota */ }
+  };
+  if (typeof requestIdleCallback === "function") requestIdleCallback(gravar, { timeout: 2500 });
+  else setTimeout(gravar, 0);
 }
 
 function restaurarCacheTelemetria() {
@@ -1373,13 +1422,14 @@ function aplicarDadosBrutos(src, opcoes = {}) {
   };
   colunasMarcadas = new Set(colunasExibiveis(dadosBrutos.headers, colVeiculo));
   montarFiltroVeiculos();
-  montarFiltroDatas(true);
+  montarFiltroDatas(opcoes.preservarDatas ? false : true);
   montarPainelColunas();
   if (primeiraCarga && opcoes.resetarAba !== false) {
     primeiraCarga = false;
   }
+  paginaTabela = 0;
   renderizar();
-  persistirCacheTelemetria();
+  if (opcoes.persistir !== false) persistirCacheTelemetria();
   return dadosBrutos.rows.length;
 }
 
@@ -1535,7 +1585,7 @@ function montarPainelColunas() {
       if (cb.checked) colunasMarcadas.add(cb.value);
       else colunasMarcadas.delete(cb.value);
       atualizarRotuloColunas();
-      renderizar();
+      agendarRenderLeve();
     });
   });
   panel.querySelectorAll("[data-col-acao]").forEach((btn) => {
@@ -1548,7 +1598,7 @@ function montarPainelColunas() {
         cb.checked = colunasMarcadas.has(cb.value);
       });
       atualizarRotuloColunas();
-      renderizar();
+      agendarRenderLeve();
     });
   });
   atualizarRotuloColunas();
@@ -1615,7 +1665,6 @@ function hintFiltrosAtivos() {
 
 /* ===== Km percorrido — cards, gráfico e destaques (foco do painel) ===== */
 
-const KM_DIARIO_MAX = 1000;
 const CORES_FONTE_KM = { TCGL: "#0b3a8a", Clever: "#0891b2", FleetBus: "#ff6b00" };
 
 function ehColunaKm(col) {
@@ -1717,6 +1766,14 @@ function renderKmStats(rows, cols) {
   return totais;
 }
 
+function reduzirDatasGrafico(datas, maxPontos) {
+  if (!datas.length || datas.length <= maxPontos) return datas;
+  const out = [];
+  const passo = (datas.length - 1) / (maxPontos - 1);
+  for (let i = 0; i < maxPontos; i++) out.push(datas[Math.round(i * passo)]);
+  return [...new Set(out)];
+}
+
 function agruparKmPorData(rows, kmCols) {
   const porData = new Map();
   (rows || []).forEach((row) => {
@@ -1742,7 +1799,8 @@ function renderGraficoKm(rows, totais) {
   if (!kmCols.length) { wrap.innerHTML = ""; return; }
 
   const porData = agruparKmPorData(rows, kmCols);
-  const datas = [...porData.keys()].sort();
+  const datasBrutas = [...porData.keys()].sort();
+  const datas = reduzirDatasGrafico(datasBrutas, 48);
   if (datas.length < 2) {
     wrap.innerHTML = `<p class="km-chart-vazio">Selecione um período com mais de um dia para ver a evolução do km.</p>`;
     return;
@@ -1755,17 +1813,18 @@ function renderGraficoKm(rows, totais) {
   const stepX = datas.length > 1 ? areaW / (datas.length - 1) : 0;
   const escalaY = (v) => H - PAD_B - (v / maxVal) * areaH;
   const escalaX = (i) => PAD_L + i * stepX;
+  const desenharPontos = datas.length <= 24;
 
   const linhas = kmCols.map((col, idx) => {
     const fonte = totais[idx]?.fonte || col;
     const cor = CORES_FONTE_KM[fonte] || "#0891b2";
     const pontos = datas.map((d, i) => `${escalaX(i).toFixed(1)},${escalaY(porData.get(d)[col] || 0).toFixed(1)}`).join(" ");
-    const circles = datas.map((d, i) => {
+    const circles = desenharPontos ? datas.map((d, i) => {
       const v = porData.get(d)[col] || 0;
       const x = escalaX(i).toFixed(1);
       const y = escalaY(v).toFixed(1);
       return `<circle cx="${x}" cy="${y}" r="2.6" fill="${cor}"><title>${escapeHtml(fonte)} · ${formatarDataBr(d)} · ${formatarInteiro(v)} km</title></circle>`;
-    }).join("");
+    }).join("") : "";
     return { fonte, cor, svg: `<polyline points="${pontos}" fill="none" stroke="${cor}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" />${circles}` };
   });
 
@@ -1832,13 +1891,17 @@ function renderTabelaDados(rows, cols) {
 
   if (!rows.length) {
     corpo.innerHTML = `<tr><td colspan="${colsVisiveis.length + 1}">Nenhum registro no período selecionado.</td></tr>`;
+    atualizarBotaoMaisLinhas(0, 0);
     return;
   }
 
   const sorted = ordenarRows(rows, sortCol, sortDir);
   const extremosKm = calcularExtremosKm(rows, colsVisiveis);
+  const limite = Math.max(LINHAS_POR_PAGINA, (paginaTabela + 1) * LINHAS_POR_PAGINA);
+  const visiveis = sorted.slice(0, limite);
+  atualizarBotaoMaisLinhas(visiveis.length, sorted.length);
 
-  corpo.innerHTML = sorted.map((row) => {
+  corpo.innerHTML = visiveis.map((row) => {
     const rowCls = classeLinhaDado(row, colunasKpi);
     const cells = colsVisiveis.map((col) => {
       const val = formatarCelula(col, row[col] ?? "", row);
@@ -1860,7 +1923,32 @@ function renderTabelaDados(rows, cols) {
   }).join("");
 }
 
-function renderizar() {
+function atualizarBotaoMaisLinhas(mostradas, total) {
+  const btn = $("btnMaisLinhas");
+  if (!btn) return;
+  const resto = Math.max(0, total - mostradas);
+  if (!resto) {
+    btn.hidden = true;
+    return;
+  }
+  btn.hidden = false;
+  const proximo = Math.min(LINHAS_POR_PAGINA, resto);
+  btn.textContent = `Mostrar mais ${proximo} · ${mostradas} de ${total}`;
+}
+
+function resetPaginaTabela() {
+  paginaTabela = 0;
+}
+
+function agendarRenderLeve() {
+  clearTimeout(debounceRenderLeveTimer);
+  debounceRenderLeveTimer = setTimeout(() => {
+    requestAnimationFrame(() => renderizar({ leve: true }));
+  }, 80);
+}
+
+function renderizar(opcoes = {}) {
+  const leve = opcoes.leve === true;
   $("painelResultado").hidden = false;
   if (!dadosBrutos?.rows?.length) {
     renderResumoVazio();
@@ -1873,21 +1961,18 @@ function renderizar() {
       ? "Sem dados no JSON para esta fonte. Ative Planilha ao vivo para buscar na planilha Google."
       : "Nenhum registro no período. Ative Planilha ao vivo ou ajuste as datas.";
     renderTabelaVazia(msg);
+    atualizarBotaoMaisLinhas(0, 0);
     return;
   }
   const cols = colunasSelecionadas();
-  let rowsDados = rowsFiltradasDados();
-  const stats = calcularStats(rowsDados, dadosBrutos.colVeiculo, dadosBrutos.colunasKpi);
-  const ok = montarLinhasOk();
-  if (fonteAtiva === "ok") {
-    dadosBrutos.rows = ok.rows;
-    dadosBrutos.headers = ok.headers;
-    rowsDados = rowsFiltradasDados();
+  const rowsDados = rowsFiltradasDados();
+  if (!leve) {
+    const stats = calcularStats(rowsDados, dadosBrutos.colVeiculo);
+    renderAbasFonte();
+    renderResumo(stats);
   }
-  const rows = (fonteAtiva === "atencao" || fonteAtiva === "ok") ? rowsDados : expandirFrotaSemDados(rowsDados);
-  renderAbasFonte();
   hintFiltrosAtivos();
-  renderResumo(stats);
+  const rows = (fonteAtiva === "atencao" || fonteAtiva === "ok") ? rowsDados : expandirFrotaSemDados(rowsDados);
   const totaisKm = renderKmStats(rows, cols);
   renderGraficoKm(rows, totaisKm);
   renderTabelaDados(rows, cols);
@@ -1904,6 +1989,7 @@ function limparFiltros() {
   const cardAt = $("cardAtencao");
   if (cardAt) cardAt.classList.remove("filtro-ativo");
   $("filtroVeiculo").value = "";
+  resetPaginaTabela();
   montarFiltroDatas(true);
   const cols = colunasExibiveis(dadosBrutos.headers, dadosBrutos.colVeiculo);
   colunasMarcadas = new Set(cols);
@@ -1959,6 +2045,7 @@ function aplicarRegistrosAws(res) {
 async function recarregarComFiltroDatas() {
   clearTimeout(debounceFiltroTimer);
   debounceFiltroTimer = setTimeout(async () => {
+    resetPaginaTabela();
     const de = $("filtroDataDe")?.value || "";
     const ate = $("filtroDataAte")?.value || "";
     if (precisaRecarregarSnapshot(de, ate) && planilhaAoVivo) {
@@ -1975,16 +2062,7 @@ async function recarregarComFiltroDatas() {
       atualizarStatusJson();
     }
     aplicarFonteAtiva();
-    // aplicarFonteAtiva() chama montarFiltroDatas(true) internamente, que força os campos
-    // de data de volta para o intervalo padrão (min do histórico ... hoje) — isso
-    // sobrescrevia exatamente a data que o usuário acabou de escolher (selecionar "Data
-    // Inicial" fazia o campo "voltar" sozinho). Restauramos aqui a escolha do usuário.
-    const deEl = $("filtroDataDe");
-    const ateEl = $("filtroDataAte");
-    if (deEl && de) deEl.value = de;
-    if (ateEl && ate) ateEl.value = ate;
-    if (de || ate) renderizar();
-  }, 350);
+  }, 220);
 }
 
 async function carregarAws(opcoes = {}) {
@@ -2240,7 +2318,14 @@ async function iniciar() {
     if (el) el.addEventListener("change", () => { recarregarComFiltroDatas(); });
   });
   const filtroVeic = $("filtroVeiculo");
-  if (filtroVeic) filtroVeic.addEventListener("change", () => renderizar());
+  if (filtroVeic) filtroVeic.addEventListener("change", () => {
+    resetPaginaTabela();
+    agendarRenderLeve();
+  });
+  $("btnMaisLinhas")?.addEventListener("click", () => {
+    paginaTabela += 1;
+    renderizar({ leve: true });
+  });
 
   const btnCol = $("filtroColunasBtn");
   const panelCol = $("filtroColunasPanel");

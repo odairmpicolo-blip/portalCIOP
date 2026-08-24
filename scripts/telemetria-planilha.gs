@@ -18,6 +18,10 @@
  * GET ?debug=1
  * GET ?fonte=clever|tcgl|todos&de=YYYY-MM-DD&ate=YYYY-MM-DD
  * GET ?resumo=1
+ *
+ * CSV Hitachi (e-mail → aba Clever): arquivo irmão
+ *   scripts/telemetria-gmail-clever.gs
+ * Colar no mesmo projeto Apps Script (arquivo separado). Não duplicar onOpen.
  */
 
 const TELEMETRIA_VERSAO = "2026-08-21-tcgl-prefixo-csv";
@@ -65,12 +69,17 @@ const COLUNAS_EXCLUIDAS = {
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu("Portal CIOP")
+    .addItem("Importar CSV do e-mail agora", "menuImportarGmailTelemetria_")
+    .addItem("Diagnosticar e-mails Hitachi", "menuDebugGmailTelemetria_")
+    .addItem("Colar CSV e importar", "menuColarCsvTelemetria_")
+    .addItem("Instalar importação diária (Gmail)", "menuInstalarTriggerGmailTelemetria_")
+    .addSeparator()
     .addItem("Resumo Clever / TCGL", "menuResumoTelemetria_")
     .addItem("Invalidar cache", "menuInvalidarCacheTelemetria_")
     .addItem("Copiar URL do JSON", "menuCopiarUrlJson_")
     .addSeparator()
     .addItem("Disparar atualização no GitHub (teste)", "menuDispararGithubTeste_")
-  .addToUi();
+    .addToUi();
 }
 
 function doGet(e) {
