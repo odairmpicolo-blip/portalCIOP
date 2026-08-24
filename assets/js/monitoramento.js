@@ -113,13 +113,15 @@
   }
 
   function dataIncidenteIso(r) {
-    const parts = String(r?.data || "").split("/");
-    if (parts.length === 3) {
-      return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
-    }
     if (r?.data_iso) return String(r.data_iso).slice(0, 10);
-    const br = String(r?.data || "").trim();
-    return /^\d{4}-\d{2}-\d{2}/.test(br) ? br.slice(0, 10) : "";
+    const raw = String(r?.data || r?.createdAt || r?.dataHora || "").trim();
+    const iso = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (iso) return iso[1];
+    const br = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (br) return `${br[3]}-${br[2].padStart(2, "0")}-${br[1].padStart(2, "0")}`;
+    const dmy = raw.match(/^(\d{1,2})-(\d{1,2})-(\d{4})/);
+    if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
+    return "";
   }
 
   function mostrarProgramacao(cad, q) {
@@ -216,6 +218,16 @@
   const CACHE_INCIDENTES_KEY = "portal_incidentes_v4";
   const CACHE_INCIDENTES_TTL_MS = 15 * 60 * 1000;
 
+  function aguardarUsuarioPortal() {
+    return new Promise((resolve) => {
+      if (window.portalUsuarioValidado) {
+        resolve();
+        return;
+      }
+      window.addEventListener("portal:usuario-validado", () => resolve(), { once: true });
+    });
+  }
+
   function lerCacheIncidentesDashboard() {
     try {
       const parsed = JSON.parse(localStorage.getItem(CACHE_INCIDENTES_KEY) || "");
@@ -255,8 +267,12 @@
     if ($("mnIncTitulo")) $("mnIncTitulo").textContent = `Incidentes TCGL de hoje · ${dataBr}`;
     if ($("mnIncTotal")) $("mnIncTotal").textContent = `Total: ${rows.length}`;
     if ($("mnIncMeta")) {
+      const qtdHoje = rows.length;
+      const origem = inc?.origem || inc?.fonte || "";
       $("mnIncMeta").textContent = (q ? `${lista.length} no filtro · ` : "") +
-        `mesma fonte de incidentes-dashboard.html · atualizado ${fmtQuando(inc?.atualizadoEm)}`;
+        (qtdHoje
+          ? `mesma fonte de incidentes-dashboard.html · atualizado ${fmtQuando(inc?.atualizadoEm)}${origem ? ` · ${origem}` : ""}`
+          : `Nenhum TCGL com data de hoje (${dataBr}). A página Incidentes lista o histórico completo se o JSON/AWS não tiver o dia.`);
     }
     const tbody = $("mnInc");
     const vazio = $("mnIncVazio");
@@ -286,11 +302,12 @@
   async function carregarPayloadIncidentes() {
     const cache = lerCacheIncidentesDashboard();
     try {
-      const mod = await import("../assets/js/incidentes-dados-leitura.js?v=20260817n");
+      const mod = await import("../assets/js/incidentes-dados-leitura.js?v=20260824inc1");
       const res = await mod.carregarDadosIncidentes();
-      if (res?.payload?.incidentes?.length) {
-        salvarCacheIncidentesDashboard(res.payload);
-        return res.payload;
+      const payload = res?.payload;
+      if (payload?.incidentes?.length) {
+        salvarCacheIncidentesDashboard(payload);
+        return payload;
       }
     } catch (err) { /* usa cache / JSON */ }
     if (cache) return cache;
@@ -301,29 +318,44 @@
     return cache;
   }
 
+  async function carregarIncidentesAposLogin(atualizar) {
+    if ($("mnIncMeta") && !linhasTcglHoje(lerCacheIncidentesDashboard() || {}).length) {
+      $("mnIncMeta").textContent = "Aguardando sessão para buscar os incidentes de hoje…";
+    }
+    await aguardarUsuarioPortal();
+    if ($("mnIncMeta")) $("mnIncMeta").textContent = "Buscando incidentes de hoje (mesma fonte da página Incidentes)…";
+    const payloadInc = await carregarPayloadIncidentes();
+    if (payloadInc) atualizar(payloadInc);
+  }
+
   async function iniciar() {
     let cad = null;
     let inc = lerCacheIncidentesDashboard();
-    const atualizar = () => mostrarIncidentes(inc, $("mnBuscaInc")?.value || "");
-    $("mnBuscaInc")?.addEventListener("input", atualizar);
+    const atualizar = (payload) => {
+      if (payload) inc = payload;
+      mostrarIncidentes(inc, $("mnBuscaInc")?.value || "");
+    };
+    $("mnBuscaInc")?.addEventListener("input", () => atualizar());
     $("mnInc")?.addEventListener("click", (ev) => {
       const link = ev.target.closest("a[data-incidente-id]");
       const id = link?.getAttribute("data-incidente-id");
       if (id && navigator.clipboard?.writeText) navigator.clipboard.writeText(id).catch(() => {});
     });
-    if (inc) atualizar();
+    if (inc && linhasTcglHoje(inc).length) atualizar();
     try {
-      const [rCad, payloadInc] = await Promise.all([
-        fetch(CAD_JSON, { cache: "no-store" }),
-        carregarPayloadIncidentes()
-      ]);
+      const rCad = await fetch(CAD_JSON, { cache: "no-store" });
       if (rCad.ok) cad = await rCad.json();
-      if (payloadInc) inc = payloadInc;
     } catch (err) { /* JSON local opcional */ }
-    atualizar();
     ligarLinksProgramacaoCad();
     ligarShell();
     iniciarStatusAoVivo(cad);
+    carregarIncidentesAposLogin(atualizar).catch(() => atualizar());
+    setInterval(() => {
+      if (!window.portalUsuarioValidado) return;
+      carregarPayloadIncidentes().then((payload) => {
+        if (payload) atualizar(payload);
+      }).catch(() => {});
+    }, 180000);
   }
 
   function abrirPainel(nome) {
