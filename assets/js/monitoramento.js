@@ -1035,7 +1035,9 @@
       rotas: [],
       patternsCache: new Map(),
       perfOficial: null,
-      popupVid: null
+      popupVid: null,
+      sortKey: "vid",
+      sortDir: "asc"
     };
     const janelaMapa = { leaflet: null, tiles: null, marcador: null };
 
@@ -1767,6 +1769,36 @@
       if ($("errosComLista")) $("errosComLista").innerHTML = sem.length ? sem.map(li).join("") : "<li>Todos comunicando.</li>";
     }
 
+    function valorSortStatus(r, key) {
+      if (key === "vid") return r.vid || "";
+      if (key === "operadora") return r.operadora || "";
+      if (key === "situacao") return r.veiculo || "";
+      if (key === "rt") return r.rt || "";
+      if (key === "atraso") return r.delayMin === "" || r.delayMin == null ? Number.POSITIVE_INFINITY : Number(r.delayMin);
+      if (key === "motorista") return nomeMotorista(cad, r.oid) || "";
+      if (key === "servico") return String(r.servico || "");
+      if (key === "des") return r.des || "";
+      if (key === "tmstmp") return Number(r.tmstmp) || 0;
+      return r.vid || "";
+    }
+
+    function compararNoGrupo(a, b) {
+      const key = estado.sortKey || "vid";
+      const dir = estado.sortDir === "desc" ? -1 : 1;
+      const va = valorSortStatus(a, key);
+      const vb = valorSortStatus(b, key);
+      let cmp = 0;
+      if (typeof va === "number" && typeof vb === "number") cmp = va - vb;
+      else cmp = String(va).localeCompare(String(vb), "pt", { numeric: true, sensitivity: "base" });
+      if (cmp) return cmp * dir;
+      return String(a.vid || "").localeCompare(String(b.vid || ""), "pt", { numeric: true });
+    }
+
+    function iconeSort(key) {
+      if (estado.sortKey !== key) return "↕";
+      return estado.sortDir === "desc" ? "↓" : "↑";
+    }
+
     function pintar() {
       const lista = listaFiltrada();
       pintarKpisStatus();
@@ -1780,8 +1812,15 @@
       }
       const ordem = ["Adiantado", "Atrasado", "No horário", "Sem previsão", "Ocioso", "Reserva", "Garagem", "Fora de serviço"];
       const cols = `<tr>
-        <th>Veículo</th><th>Empresa</th><th>Situação</th><th>Linha</th><th>Atraso</th>
-        <th>Motorista</th><th>Serviço</th><th>Destino</th><th>Última comunicação</th>
+        <th data-st-sort="vid">Veículo <span class="st-sort">${iconeSort("vid")}</span></th>
+        <th data-st-sort="operadora">Empresa <span class="st-sort">${iconeSort("operadora")}</span></th>
+        <th data-st-sort="situacao">Situação <span class="st-sort">${iconeSort("situacao")}</span></th>
+        <th data-st-sort="rt">Linha <span class="st-sort">${iconeSort("rt")}</span></th>
+        <th data-st-sort="atraso">Atraso <span class="st-sort">${iconeSort("atraso")}</span></th>
+        <th data-st-sort="motorista">Motorista <span class="st-sort">${iconeSort("motorista")}</span></th>
+        <th data-st-sort="servico">Serviço <span class="st-sort">${iconeSort("servico")}</span></th>
+        <th data-st-sort="des">Destino <span class="st-sort">${iconeSort("des")}</span></th>
+        <th data-st-sort="tmstmp">Última comunicação <span class="st-sort">${iconeSort("tmstmp")}</span></th>
       </tr>`;
       let body = "";
       for (const st of ordem) {
@@ -1790,7 +1829,7 @@
         const aberto = estado.abertos.has(st);
         body += `<tr class="st-g" data-g="${st}"><td colspan="9">${st} (${arr.length}) ${aberto ? "▾" : "▸"}</td></tr>`;
         if (!aberto) continue;
-        arr.sort((a, b) => a.vid.localeCompare(b.vid, "pt", { numeric: true }));
+        arr.sort(compararNoGrupo);
         for (const r of arr) {
           const atraso = r.delayMin === "" ? "—" : (r.delayMin > 0 ? "+" + r.delayMin + " min" : r.delayMin + " min");
           const opCls = r.operadora === "LondriSul" ? "lsul" : "tcgl";
@@ -1810,6 +1849,18 @@
       $("cadStatusLista").innerHTML = lista.length
         ? `<table class="st-table"><thead>${cols}</thead><tbody>${body}</tbody></table>`
         : `<p class="st-vazio">Nenhum veículo neste filtro.</p>`;
+      $("cadStatusLista").querySelectorAll("th[data-st-sort]").forEach((th) => {
+        th.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          const k = th.getAttribute("data-st-sort");
+          if (estado.sortKey === k) estado.sortDir = estado.sortDir === "asc" ? "desc" : "asc";
+          else {
+            estado.sortKey = k;
+            estado.sortDir = "asc";
+          }
+          pintar();
+        });
+      });
       $("cadStatusLista").querySelectorAll("[data-g]").forEach((tr) => {
         tr.addEventListener("click", () => {
           const k = tr.getAttribute("data-g");
