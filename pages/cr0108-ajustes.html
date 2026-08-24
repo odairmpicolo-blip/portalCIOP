@@ -276,7 +276,7 @@ table.mini td{padding:4px 9px;border:1px solid var(--border);text-align:center;b
 <footer class="page-footer">Portal CIOP · TCGL — diagnóstico gerado a partir dos relatórios diários CR-0108</footer>
 
 <script src="../assets/js/cr0108-serie.js?v=20260817q"></script>
-<script src="../assets/js/cr0108-fonte.js?v=20260817q"></script>
+<script src="../assets/js/cr0108-fonte.js?v=20260824db1"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
@@ -667,7 +667,7 @@ async function aplicarPeriodo(){
 /* JSON pinta na hora; o banco recalcula o recorte em 2º plano quando a janela cabe. */
 function tentarBanco(){
     const seq = ++renderSeq;
-    const de = $("fDe").value, ate = $("fAte").value;
+    let de = $("fDe").value, ate = $("fAte").value;
     const nomes = {};
     (DADOS.itens || []).forEach(i => { if (i.linha && i.linhaNome) nomes[i.linha] = i.linhaNome; });
     (async () => {
@@ -675,11 +675,18 @@ function tentarBanco(){
             if (!(await Fonte.disponivel())) return;
             const metaBanco = await Fonte.meta();
             if (metaBanco && DADOS.meta) {
+                const cobriaTudo = de === DADOS.meta.primeiroDia && ate === DADOS.meta.ultimoDia;
                 const { linhas: _ignorar, ...doBanco } = metaBanco;
                 Object.assign(DADOS.meta, doBanco, { arquivos: doBanco.dias, gerado: new Date().toISOString() });
                 $("fDe").min = $("fAte").min = DADOS.meta.primeiroDia;
                 $("fDe").max = $("fAte").max = DADOS.meta.ultimoDia;
                 selarAtualizacao(new Date().toISOString(), DADOS.meta);
+                if (cobriaTudo && DADOS.meta.ultimoDia !== ate) {
+                    $("fDe").value = DADOS.meta.primeiroDia;
+                    $("fAte").value = DADOS.meta.ultimoDia;
+                    de = $("fDe").value;
+                    ate = $("fAte").value;
+                }
             }
             const hist = await Fonte.histograma({ de, ate, linha: $("fLinha").value, tipoDia: $("fTipoDia").value, nomes });
             if (seq !== renderSeq) return;

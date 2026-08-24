@@ -311,7 +311,7 @@ tr.det-ponto.aberta>td,tr.det-horario.aberta>td{background:rgba(31,111,235,.12)}
      do cache antes do download do fonte.js, retomava com Fonte ainda indefinida.
      Uma corrida que so aparecia quando o script nao estava em cache. -->
 <script src="../assets/js/cr0108-serie.js?v=20260817q"></script>
-<script src="../assets/js/cr0108-fonte.js?v=20260817q"></script>
+<script src="../assets/js/cr0108-fonte.js?v=20260824db1"></script>
 
 <script>
 "use strict";
@@ -911,14 +911,14 @@ function selarAtualizacao(meta){
         ligarEventos();
         /* O await nao espera o banco: renderTudo() so aguarda a primeira pintura, feita com os arquivos ja carregados. Ele existe por causa de usarSoArquivo(): renderTudo() liga esse modo de forma sincrona e so devolve o controle no primeiro await, entao sem esperar aqui o bloco de 2o plano abaixo rodava com SO_ARQUIVO ligado e disponivel() desistia na primeira linha (if SO_ARQUIVO return false). O selo ficava congelado na data do meta.json em 100% dos carregamentos. */ await renderTudo();
 
-        /* 2º plano: confirma o banco e corrige cabeçalho, selo e limites de data.
-           `linhas` fica de fora de propósito: no banco vem sem os nomes, e o arquivo
-           os tem. Falhando, a tela permanece com o que ja esta desenhado. */
+        /* 2º plano: confirma o banco, solta o filtro se houver dias novos e redesenha. */
         (async () => {
             try {
                 if (!(await Fonte.disponivel())) return;
                 const metaBanco = await Fonte.meta();
                 if (!metaBanco) return;
+                const ateArquivo = meta.ultimoDia;
+                const atalho = $("fAtalho").value;
                 const { linhas: _ignorar, ...doBanco } = metaBanco;
                 Object.assign(meta, doBanco, { arquivos: doBanco.dias, gerado: new Date().toISOString() });
                 $("subCabecalho").textContent =
@@ -926,6 +926,10 @@ function selarAtualizacao(meta){
                 selarAtualizacao(meta);
                 $("fDe").min = meta.primeiroDia; $("fDe").max = meta.ultimoDia;
                 $("fAte").min = meta.primeiroDia; $("fAte").max = meta.ultimoDia;
+                if (meta.ultimoDia && meta.ultimoDia !== ateArquivo && atalho !== "custom") {
+                    aplicarAtalho();
+                    await renderTudo();
+                }
             } catch (err){
                 console.info("CR-0108: meta do banco nao veio; seguimos com o arquivo.", err && err.message);
             }

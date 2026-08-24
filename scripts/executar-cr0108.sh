@@ -120,6 +120,9 @@ if [[ -n "${DSQL_CLUSTER_ID:-}" && -n "${AWS_ACCESS_KEY_ID:-}" && -n "${AWS_SECR
       printf 'CIOP_CR0108_DSQL_DESDE=%s\n' "$ULTIMO" >> "$ENV_FILE"
     fi
     log "     banco atualizado até $ULTIMO"
+    log "  -> JSON do portal a partir do DSQL"
+    "$NODE_BIN" "$PORTAL_ROOT/scripts/exportar-cr0108-json.mjs" >>"$LOG_FILE" 2>&1 \
+      || falhar "exportar JSON CR-0108 do DSQL falhou"
   fi
 else
   log "  -> banco AWS: credenciais ausentes em $ENV_FILE, etapa pulada"
