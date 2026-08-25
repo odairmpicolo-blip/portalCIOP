@@ -109,7 +109,7 @@
 
   async function modLeituraIncidentes() {
     if (!leituraIncidentes) {
-      leituraIncidentes = await import("../assets/js/incidentes-dados-leitura.js?v=20260824inc6");
+      leituraIncidentes = await import("../assets/js/incidentes-dados-leitura.js?v=20260825hoje1");
     }
     return leituraIncidentes;
   }
@@ -221,7 +221,7 @@
     window.PortalIncidentePopup?.abrir(row);
   }
 
-  const CACHE_INCIDENTES_KEY = "portal_incidentes_hoje_v1";
+  const CACHE_INCIDENTES_KEY = "portal_incidentes_hoje_v2";
   const CACHE_INCIDENTES_TTL_MS = 15 * 60 * 1000;
 
   function aguardarUsuarioPortal() {
@@ -322,6 +322,7 @@
 
   async function carregarPayloadIncidentes() {
     const cache = lerCacheIncidentesDashboard();
+    let vazioComTentativas = null;
     try {
       const mod = await modLeituraIncidentes();
       const hoje = hojeIsoLocal();
@@ -335,6 +336,7 @@
         salvarCacheIncidentesDashboard(payload);
         return payload;
       }
+      if (payload) vazioComTentativas = payload;
     } catch (err) { /* usa cache / JSON hoje */ }
     if (cache && linhasTcglHoje(cache).length) return cache;
     try {
@@ -344,7 +346,7 @@
         if (linhasTcglHoje(payloadHoje).length) return payloadHoje;
       }
     } catch (err) { /* opcional */ }
-    return cache;
+    return vazioComTentativas || cache || { incidentes: [], tentativas: [] };
   }
 
   async function carregarIncidentesAposLogin(atualizar) {

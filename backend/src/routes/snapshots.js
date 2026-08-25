@@ -91,7 +91,10 @@ async function lerIncidentesS3Dia(de, ate) {
   if (de && ate && de === ate && de === hojeSP()) {
     try {
       const hoje = await lerObjetoIncidentes("incidentes-hoje.json");
-      if (hoje?.payload) return hoje;
+      const recorte = hoje?.payload ? recortarIncidentes(hoje.payload, de, ate) : null;
+      if (Array.isArray(recorte?.incidentes) && recorte.incidentes.length) {
+        return { ...hoje, payload: recorte };
+      }
     } catch (_) { /* cai no arquivo completo */ }
   }
   return lerIncidentesS3();

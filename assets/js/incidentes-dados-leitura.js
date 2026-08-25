@@ -141,7 +141,7 @@ export async function carregarDadosIncidentes({ onProgress, preferirAws = false,
   onProgress?.("Consultando AWS e JSON...");
   const soHoje = Boolean(preferirAws && de && ate && de === ate);
   const jobs = [
-    withTimeout(carregarAws({ de, ate }), soHoje ? 8000 : 12000),
+    withTimeout(carregarAws({ de, ate }), soHoje ? 20000 : 12000),
     withTimeout(carregarJsonHoje(), 8000)
   ];
   if (!soHoje) jobs.push(withTimeout(carregarJsonSnapshot(), 12000));
