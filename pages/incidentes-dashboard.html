@@ -153,6 +153,7 @@ border-radius:8px;
 box-shadow:0 10px 28px rgba(16,24,40,.07);
 }
 .chart-card{padding:12px;min-height:300px}
+#chartCriado{max-height:min(70vh,560px);overflow:auto;padding-right:4px}
 .charts .card-title{font-size:13px;line-height:1.25}
 .charts .bar-label{font-size:11px}
 .charts .bar-count{font-size:11px}
@@ -885,9 +886,10 @@ document.getElementById(valueId).textContent = counter.label;
 document.getElementById(subId).textContent = formatNumber(counter.total) + " incidentes";
 }
 
-function renderChart(targetId, key, rows) {
+function renderChart(targetId, key, rows, limite = 10) {
 const target = document.getElementById(targetId);
-const data = countBy(rows, key).slice(0, 10);
+const ranked = countBy(rows, key);
+const data = limite > 0 ? ranked.slice(0, limite) : ranked;
 const max = data[0]?.total || 1;
 target.innerHTML = data.map((item) => {
 const width = Math.max(4, Math.round((item.total / max) * 100));
@@ -946,7 +948,7 @@ function render() {
 const statsRows = rowsParaEstatistica(state.filtered);
 const vazioRows = state.filtered.filter(isRegistroVazio);
 renderKpis();
-renderChart("chartCriado", "criadoPor", statsRows);
+renderChart("chartCriado", "criadoPor", statsRows, 0);
 renderChart("chartProprietario", "proprietario", statsRows);
 renderChart("chartEstado", "estado", statsRows);
 renderChart("chartLinha", "linha", statsRows);
