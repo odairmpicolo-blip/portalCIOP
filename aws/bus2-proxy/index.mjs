@@ -621,37 +621,46 @@ async function proxyRelatorioIa(event) {
     };
   }
 
-  // Auth keys (AQ.*) do AI Studio: x-goog-api-key. Modelos 2.0/2.5 foram
-  // descontinuados para chaves novas — a API pede gemini-3.6-flash.
-  const modelos = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"];
+  const buscaWeb = body.buscaWeb === true || body.buscaWeb === "true" || body.buscaWeb === 1;
+  const modelos = buscaWeb
+    ? ["gemini-3.6-flash", "gemini-flash-latest"]
+    : ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"];
   let ultimoErro = "Falha ao consultar Gemini.";
 
   for (const model of modelos) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": key
-      },
-      body: JSON.stringify({
+    const modos = buscaWeb ? [true, false] : [false];
+    for (const comBusca of modos) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+      const payload = {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.35, maxOutputTokens: 2048 }
-      }),
-      signal: AbortSignal.timeout(28000)
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      ultimoErro = data?.error?.message || `Gemini HTTP ${res.status}`;
-      continue;
-    }
-    const texto = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("").trim();
-    if (texto) {
-      return {
-        statusCode: 200,
-        headers: corsHeaders(),
-        body: JSON.stringify({ ok: true, texto, modelo: model })
+        generationConfig: { temperature: comBusca ? 0.2 : 0.35, maxOutputTokens: comBusca ? 4096 : 2048 }
       };
+      if (comBusca) payload.tools = [{ google_search: {} }];
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": key
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(28000)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        ultimoErro = data?.error?.message || `Gemini HTTP ${res.status}`;
+        continue;
+      }
+      const cand = (data.candidates || [])[0] || {};
+      const texto = (cand.content?.parts || []).map((p) => p.text || "").join("").trim();
+      if (texto) {
+        const chunks = cand.groundingMetadata?.groundingChunks || [];
+        const fontes = [...new Set(chunks.map((c) => c.web?.uri || c.web?.title).filter(Boolean))].slice(0, 8);
+        return {
+          statusCode: 200,
+          headers: corsHeaders(),
+          body: JSON.stringify({ ok: true, texto, modelo: model, buscaWeb: comBusca, fontes })
+        };
+      }
     }
   }
 

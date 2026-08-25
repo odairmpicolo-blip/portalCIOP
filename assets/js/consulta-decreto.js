@@ -1,5 +1,5 @@
 (function () {
-  var DECRETO_URL = "../assets/data/decreto_context.txt?v=20260824d1";
+  var DECRETO_URL = "../assets/data/decreto_context.txt?v=20260824d2";
   var API_FALLBACK = "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com";
   var STOP = {
     a: 1, ao: 1, aos: 1, as: 1, ate: 1, com: 1, como: 1, da: 1, das: 1, de: 1, do: 1, dos: 1,
@@ -243,19 +243,29 @@
   }
 
   function consultarGemini(pergunta, trechos) {
-    if (!trechos) return Promise.resolve(null);
     var prompt = [
-      "Você é o assistente de consulta normativa do Portal CIOP (TCGL, transporte coletivo de Londrina).",
-      "Responda em português do Brasil, de forma direta, como um assistente — não como uma lista crua de busca.",
-      "Use SOMENTE os trechos oficiais abaixo (Decreto 1082/2008 e Decreto 1666/2024).",
-      "Cite o artigo (Art. N) quando o trecho tiver. Se o texto não tratar do assunto, diga isso claramente.",
-      "Não invente artigos, prazos, valores nem obrigações.",
+      "Você é o assistente do Portal CIOP (TCGL, transporte coletivo urbano de Londrina/PR).",
+      "Responda em português do Brasil, de forma direta, como um assistente.",
+      "",
+      "Estruture SEMPRE a resposta em duas partes, nesta ordem:",
+      "",
+      "**No decreto (texto oficial)**",
+      "Use os trechos oficiais abaixo (Decreto municipal 1082/2008 e Decreto 1666/2024).",
+      "Cite o artigo (Art. N) quando o trecho tiver. Não invente artigos, prazos, valores nem obrigações desses decretos.",
+      "Se os trechos não cobrirem a pergunta, diga isso em uma frase.",
+      "",
+      "**Além do decreto (busca atual)**",
+      "Use a busca do Google (ferramenta google_search) para informação vigente em Londrina/PR: valor da tarifa, gratuidade, CMTU, leis municipais, notícias oficiais.",
+      "Para preço de passagem, procure a tarifa atual da CMTU/Prefeitura de Londrina e cite a fonte e a data se aparecer.",
+      "Deixe claro que este bloco NÃO é transcrição do decreto. Não invente Art. N do 1082/2008 ou 1666/2024.",
+      "Se a busca não trouxer o valor, diga que não encontrou tabela vigente — não chute um R$.",
       "",
       "Pergunta do operador:",
       pergunta,
       "",
-      "Trechos oficiais:",
       trechos
+        ? ("Trechos oficiais encontrados:\n" + trechos)
+        : "Não há trecho do decreto indexado para esta pergunta. Responda mesmo assim: no primeiro bloco diga que não há trecho local; no segundo, complemente com o que souber, com a ressalva."
     ].join("\n");
 
     var ctrl = typeof AbortController === "function" ? new AbortController() : null;
@@ -265,14 +275,19 @@
         return fetch(api + "/relatorio-ia", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: prompt }),
+          body: JSON.stringify({ prompt: prompt, buscaWeb: true }),
           signal: ctrl ? ctrl.signal : undefined
         });
       })
       .then(lerJson)
       .then(function (data) {
-        if (data && data.ok && data.texto) return String(data.texto).trim();
-        return null;
+        if (!(data && data.ok && data.texto)) return null;
+        var texto = String(data.texto).trim();
+        var fontes = Array.isArray(data.fontes) ? data.fontes.filter(Boolean) : [];
+        if (fontes.length) {
+          texto += "\n\n**Fontes da busca**\n" + fontes.map(function (u) { return "- " + u; }).join("\n");
+        }
+        return texto;
       })
       .catch(function () { return null; })
       .finally(function () { clearTimeout(timer); });
