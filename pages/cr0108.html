@@ -311,7 +311,7 @@ tr.det-ponto.aberta>td,tr.det-horario.aberta>td{background:rgba(31,111,235,.12)}
      do cache antes do download do fonte.js, retomava com Fonte ainda indefinida.
      Uma corrida que so aparecia quando o script nao estava em cache. -->
 <script src="../assets/js/cr0108-serie.js?v=20260817q"></script>
-<script src="../assets/js/cr0108-fonte.js?v=20260824db1"></script>
+<script src="../assets/js/cr0108-fonte.js?v=20260824lin110"></script>
 
 <script>
 "use strict";
@@ -753,24 +753,37 @@ let renderSeq = 0;
 
 async function buscarTudo(filtro, p){
     const dados = { serie: null, hora: null, serieAnterior: null };
-    dados.serie = await Fonte.serie(filtro);
-    dados.hora  = await Fonte.hora(filtro);
+    dados.serie = await Fonte.serie(filtro).catch((err) => {
+        console.info("CR-0108: série indisponível.", err && err.message);
+        return null;
+    });
+    dados.hora  = await Fonte.hora(filtro).catch((err) => {
+        console.info("CR-0108: faixa horária indisponível.", err && err.message);
+        return null;
+    });
     dados.serieAnterior = $("fComparar").value === "anterior"
-        ? await Fonte.serie({ ...filtro, ...periodoAnterior(p) })
+        ? await Fonte.serie({ ...filtro, ...periodoAnterior(p) }).catch(() => null)
         : null;
     return dados;
 }
 
-function pintar(dados){
-    /* Se uma fonte devolver vazio, mantemos o que ja esta na tela em vez de apagar.
-       Some dado bom por dado nenhum era o que fazia a tela "piscar" em branco. */
-    if (dados.serie) estado.serie = dados.serie;
-    if (dados.hora) estado.hora = dados.hora;
-    estado.serieAnterior = dados.serieAnterior;
+function temDados(lista){
+    return Array.isArray(lista) && lista.length > 0;
+}
+
+async function pintar(dados, origem){
+    /* A 1ª passada (arquivo) aplica o recorte novo, mesmo vazio.
+       A 2ª (banco) só substitui se veio dado: [] é truthy em JS e apagava a tela. */
+    const doBanco = origem === "banco";
+    if (!doBanco || temDados(dados.serie)) estado.serie = dados.serie;
+    if (!doBanco || temDados(dados.hora)) estado.hora = dados.hora;
+    if (!doBanco || dados.serieAnterior === null || temDados(dados.serieAnterior)) {
+        estado.serieAnterior = dados.serieAnterior;
+    }
     renderKpis();
     renderEvolucao();
     renderHora();
-    renderRanking();
+    await renderRanking();
 }
 
 /* Duas passadas: o arquivo pinta na hora, o banco corrige depois.
@@ -783,7 +796,7 @@ async function renderTudo(){
 
     Fonte.usarSoArquivo(true);
     try {
-        pintar(await buscarTudo(filtro, p));
+        await pintar(await buscarTudo(filtro, p), "arquivo");
     } catch (err){
         console.error("CR-0108: falha ao ler os arquivos.", err);
     } finally {
@@ -796,7 +809,7 @@ async function renderTudo(){
             if (!(await Fonte.disponivel())) return;
             const dados = await buscarTudo(filtro, p);
             if (seq !== renderSeq) return;          // os filtros mudaram no meio do caminho
-            if (dados.serie) pintar(dados);
+            if (temDados(dados.serie) || temDados(dados.hora)) await pintar(dados, "banco");
         } catch (err){
             console.info("CR-0108: banco nao respondeu; a tela segue com os arquivos.", err && err.message);
         }

@@ -37,12 +37,23 @@ async function token() {
   return valor;
 }
 
+function mesmaLinha(a, b) {
+  return String(a || "").trim() === String(b || "").trim();
+}
+
 async function chamar(caminho, params = {}) {
   const { awsFetch } = await import("./portal-aws-config.js");
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v) qs.set(k, v);
   const sufixo = qs.toString() ? `?${qs}` : "";
   return awsFetch(`/cr0108${caminho}${sufixo}`, { token: await token() });
+}
+
+/** Banco só vale se veio com linhas. Lista vazia ou erro cai no JSON publicado. */
+function itensDoBanco(r) {
+  if (!r || r.ok === false || r.periodoLongo) return null;
+  if (!Array.isArray(r.itens) || !r.itens.length) return null;
+  return r.itens;
 }
 
 /** Testa uma vez se o banco responde. Qualquer erro derruba para o arquivo. */
@@ -113,12 +124,17 @@ function acumular(acc, r) {
 
 async function serie(p) {
   if (await disponivel()) {
-    const r = await chamar("/serie", p);
-    /* periodoLongo = a janela passa do limite do banco (o SQL levaria mais que os
-       30 s do gateway). Nao retornamos nada aqui: o codigo do arquivo, logo abaixo,
-       responde com os agregados publicados - que sao identicos, so menos recentes. */
-    if (!r.periodoLongo) return r.itens.map(x => ({ ...x, total: +x.total, noHorario: +x.noHorario, adiantado: +x.adiantado,
-      atrasado: +x.atrasado, divergente: +x.divergente, somaDif: +x.somaDif, semDif: +x.semDif }));
+    try {
+      const r = await chamar("/serie", p);
+      /* periodoLongo = a janela passa do limite do banco (o SQL levaria mais que os
+         30 s do gateway). Nao retornamos nada aqui: o codigo do arquivo, logo abaixo,
+         responde com os agregados publicados - que sao identicos, so menos recentes. */
+      const itens = itensDoBanco(r);
+      if (itens) return itens.map(x => ({ ...x, total: +x.total, noHorario: +x.noHorario, adiantado: +x.adiantado,
+        atrasado: +x.atrasado, divergente: +x.divergente, somaDif: +x.somaDif, semDif: +x.semDif }));
+    } catch (err) {
+      console.info("CR-0108: série do banco falhou, usando arquivo.", err && err.message);
+    }
   }
   /* No arquivo não existe série diária cruzada com sentido — o agregado que tem
      sentido é mensal. Devolver null avisa a página, que mostra a explicação.
@@ -128,7 +144,7 @@ async function serie(p) {
   const mapa = new Map();
   base.forEach(r => {
     if (!noRecorte(r.data, p)) return;
-    if (p.linha && r.linha !== p.linha) return;
+    if (p.linha && !mesmaLinha(r.linha, p.linha)) return;
     if (!mapa.has(r.data)) mapa.set(r.data, { data: r.data, ...zero() });
     acumular(mapa.get(r.data), r);
   });
@@ -146,15 +162,20 @@ const ESTATICA_POR_DIM = {
 
 async function ranking(dim, p) {
   if (await disponivel()) {
-    const r = await chamar("/ranking", { ...p, dim });
-    if (!r.periodoLongo) return {
-      exato: true,
-      itens: r.itens.map(x => ({
-        chave: x.chave, rotulo: x.chave, extra: x.nome || "",
-        total: +x.total, noHorario: +x.noHorario, adiantado: +x.adiantado,
-        atrasado: +x.atrasado, divergente: +x.divergente, somaDif: +x.somaDif, semDif: +x.semDif
-      }))
-    };
+    try {
+      const r = await chamar("/ranking", { ...p, dim });
+      const itens = itensDoBanco(r);
+      if (itens) return {
+        exato: true,
+        itens: itens.map(x => ({
+          chave: x.chave, rotulo: x.chave, extra: x.nome || "",
+          total: +x.total, noHorario: +x.noHorario, adiantado: +x.adiantado,
+          atrasado: +x.atrasado, divergente: +x.divergente, somaDif: +x.somaDif, semDif: +x.semDif
+        }))
+      };
+    } catch (err) {
+      console.info("CR-0108: ranking do banco falhou, usando arquivo.", err && err.message);
+    }
   }
 
   const cfg = ESTATICA_POR_DIM[dim];
@@ -164,7 +185,7 @@ async function ranking(dim, p) {
   if (cfg.diario) {
     ESTATICO[cfg.base].forEach(r => {
       if (!noRecorte(r.data, p)) return;
-      if (p.linha && r.linha !== p.linha) return;
+      if (p.linha && !mesmaLinha(r.linha, p.linha)) return;
       const k = r[cfg.campo];
       if (!mapa.has(k)) mapa.set(k, { chave: k, rotulo: k, extra: ESTATICO.meta.linhas[k] || "", ...zero() });
       acumular(mapa.get(k), r);
@@ -187,10 +208,15 @@ async function ranking(dim, p) {
 
 async function hora(p) {
   if (await disponivel()) {
-    const r = await chamar("/hora", p);
-    if (!r.periodoLongo) return r.itens.map(x => ({ hora: x.hora, total: +x.total, noHorario: +x.noHorario,
-      adiantado: +x.adiantado, atrasado: +x.atrasado, divergente: +x.divergente,
-      somaDif: +x.somaDif, semDif: +x.semDif }));
+    try {
+      const r = await chamar("/hora", p);
+      const itens = itensDoBanco(r);
+      if (itens) return itens.map(x => ({ hora: x.hora, total: +x.total, noHorario: +x.noHorario,
+        adiantado: +x.adiantado, atrasado: +x.atrasado, divergente: +x.divergente,
+        somaDif: +x.somaDif, semDif: +x.semDif }));
+    } catch (err) {
+      console.info("CR-0108: faixa horária do banco falhou, usando arquivo.", err && err.message);
+    }
   }
   const mapa = new Map();
   if (!p.linha && !p.sentido) {
@@ -200,12 +226,11 @@ async function hora(p) {
       acumular(mapa.get(r.hora), r);
     });
   } else {
-    if (p.tipoDia) return [];
     const meses = mesesDoPeriodo(p);
     ESTATICO.porMesHoraLinha.forEach(r => {
       if (!meses.has(r.m)) return;
-      if (p.linha && r.l !== p.linha) return;
-      if (p.sentido && r.s !== p.sentido) return;
+      if (p.linha && !mesmaLinha(r.l, p.linha)) return;
+      if (p.sentido && String(r.s || "").trim() !== String(p.sentido || "").trim()) return;
       if (!mapa.has(r.h)) mapa.set(r.h, { hora: r.h, ...zero() });
       acumular(mapa.get(r.h), { noHorario: r.n, adiantado: r.a, atrasado: r.t, divergente: r.d, total: r.T, somaDif: 0 });
     });
@@ -217,10 +242,15 @@ async function hora(p) {
 
 async function pontosDaLinha(linha, p) {
   if (await disponivel()) {
-    const r = await chamar("/pontos", { ...p, linha });
-    if (!r.periodoLongo) return r.itens.map(x => ({ ponto: x.ponto, sentido: x.sentido, total: +x.total,
-      noHorario: +x.noHorario, adiantado: +x.adiantado, atrasado: +x.atrasado,
-      divergente: +x.divergente, somaDif: +x.somaDif }));
+    try {
+      const r = await chamar("/pontos", { ...p, linha });
+      const itens = itensDoBanco(r);
+      if (itens) return itens.map(x => ({ ponto: x.ponto, sentido: x.sentido, total: +x.total,
+        noHorario: +x.noHorario, adiantado: +x.adiantado, atrasado: +x.atrasado,
+        divergente: +x.divergente, somaDif: +x.somaDif }));
+    } catch (err) {
+      console.info("CR-0108: pontos do banco falharam, usando arquivo.", err && err.message);
+    }
   }
   const ctx = await serieDiariaLocal();
   return window.CR0108Serie.pontosDaLinha(ctx, linha, p.sentido || "", p.de, p.ate, p.tipoDia);
@@ -228,8 +258,13 @@ async function pontosDaLinha(linha, p) {
 
 async function horariosDoPonto(linha, sentido, ponto, p) {
   if (await disponivel()) {
-    const r = await chamar("/horarios", { ...p, linha, ponto, sentido });
-    if (!r.periodoLongo) return r.itens.map(x => avaliarNoNavegador(x));
+    try {
+      const r = await chamar("/horarios", { ...p, linha, ponto, sentido });
+      const itens = itensDoBanco(r);
+      if (itens) return itens.map(x => avaliarNoNavegador(x));
+    } catch (err) {
+      console.info("CR-0108: horários do banco falharam, usando arquivo.", err && err.message);
+    }
   }
   const ctx = await serieDiariaLocal();
   return window.CR0108Serie.horariosDoPonto(ctx, linha, sentido, ponto, p.de, p.ate, 20, p.tipoDia);

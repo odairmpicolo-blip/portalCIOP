@@ -127,8 +127,9 @@ function base(req, colunas = []) {
   const ate = String(req.query.ate || "");
   if (ISO.test(de)) add("data_ref >= ?::date", de);
   if (ISO.test(ate)) add("data_ref <= ?::date", ate);
-  if (req.query.linha) add("linha = ?", String(req.query.linha));
-  if (req.query.sentido) add("direcao = ?", String(req.query.sentido));
+  /* TEXT no DSQL vem com espaço; sem btrim o filtro "110" zera a série. */
+  if (req.query.linha) add("btrim(linha) = btrim(?)", String(req.query.linha).trim());
+  if (req.query.sentido) add("btrim(direcao) = btrim(?)", String(req.query.sentido).trim());
   if (req.query.garagem) add("garagem = ?", String(req.query.garagem));
   if (req.query.ponto) add("ponto_de_controle = ?", String(req.query.ponto));
   const tipoDia = condTipoDia(req);
@@ -187,8 +188,8 @@ function filtroAgregado(req, comLinha) {
   const ate = String(req.query.ate || "");
   if (ISO.test(de)) add("data_ref >= ?::date", de);
   if (ISO.test(ate)) add("data_ref <= ?::date", ate);
-  if (comLinha && req.query.linha) add("linha = ?", String(req.query.linha));
-  if (comLinha && req.query.sentido) add("direcao = ?", String(req.query.sentido));
+  if (comLinha && req.query.linha) add("btrim(linha) = btrim(?)", String(req.query.linha).trim());
+  if (comLinha && req.query.sentido) add("btrim(direcao) = btrim(?)", String(req.query.sentido).trim());
   const tipoDia = condTipoDia(req);
   if (tipoDia) cond.push(tipoDia);
 
@@ -284,6 +285,13 @@ router.get("/ranking", requireFirebaseUser, async (req, res) => {
 });
 
 /* ------------------------------------------------------------------ faixa horária */
+function nDiasReq(req) {
+  const de = String(req.query.de || "");
+  const ate = String(req.query.ate || "");
+  if (!ISO.test(de) || !ISO.test(ate)) return Infinity;
+  return (dia(ate) - dia(de)) / 86400000 + 1;
+}
+
 router.get("/hora", requireFirebaseUser, async (req, res) => {
   /* O programado vem com espaco a esquerda (" 5:55") e as vezes com hora de um
      digito. left(...,2) pegava " 0" / " 1" / " 2": agrupava pelo primeiro digito da
@@ -291,6 +299,12 @@ router.get("/hora", requireFirebaseUser, async (req, res) => {
      O agregado cr0108_dia_hora ja guarda a hora normalizada assim, com dois digitos. */
   const HORA = "lpad(split_part(btrim(programado), ':', 1), 2, '0')";
   try {
+    /* Com linha/sentido o atalho cr0108_dia_hora nao serve. Varredura crua em janela
+       longa estoura os 30 s do gateway e a tela apagava os dados do arquivo. */
+    if (temRecortePorLinha(req) && nDiasReq(req) > FAIXA_DIAS) {
+      res.json({ ok: true, periodoLongo: true, itens: [] });
+      return;
+    }
     let itens;
     let origem = "agregado";
     /* cr0108_dia_hora nao tem linha nem sentido, alem de nao ter garagem e ponto. */
