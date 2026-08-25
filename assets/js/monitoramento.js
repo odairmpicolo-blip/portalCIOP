@@ -1,7 +1,5 @@
 (function () {
   const CAD_JSON = "../assets/data/cad/monitoramento.json";
-  const INC_JSON = "../assets/data/incidentes-tcgl.json";
-  const INC_HOJE_JSON = "../assets/data/incidentes-tcgl-hoje.json";
   const LIMITE_LISTA = 400;
   const CAD_ADS_APP = "https://cioplondrina.com.br:8891/CADAdvancedDynamicScheduling/App/";
   const CAD_ADS_REST = "https://cioplondrina.com.br:8891/CADAdvancedDynamicSchedulingREST/service.svc";
@@ -109,7 +107,7 @@
 
   async function modLeituraIncidentes() {
     if (!leituraIncidentes) {
-      leituraIncidentes = await import("../assets/js/incidentes-dados-leitura.js?v=20260825cmtu4");
+      leituraIncidentes = await import("../assets/js/incidentes-dados-leitura.js?v=20260825cmtu5");
     }
     return leituraIncidentes;
   }
@@ -233,7 +231,7 @@
     window.PortalIncidentePopup?.abrir(row);
   }
 
-  const CACHE_INCIDENTES_KEY = "portal_incidentes_hoje_v3";
+  const CACHE_INCIDENTES_KEY = "portal_incidentes_v6";
   const CACHE_INCIDENTES_TTL_MS = 15 * 60 * 1000;
 
   function aguardarUsuarioPortal() {
@@ -342,31 +340,18 @@
 
   async function carregarPayloadIncidentes() {
     const cache = lerCacheIncidentesDashboard();
-    let vazioComTentativas = null;
     try {
       const mod = await modLeituraIncidentes();
-      const hoje = hojeIsoLocal();
-      const res = await mod.carregarDadosIncidentes({ preferirAws: true, de: hoje, ate: hoje });
+      const res = await mod.carregarDadosIncidentes();
       const payload = res?.payload;
       if (payload) {
         payload.origem = payload.origem || res?.origem || "";
         payload.tentativas = res?.tentativas || [];
-      }
-      if (linhasTcglHoje(payload).length) {
         salvarCacheIncidentesDashboard(payload);
         return payload;
       }
-      if (payload) vazioComTentativas = payload;
-    } catch (err) { /* usa cache / JSON hoje */ }
-    if (cache && linhasTcglHoje(cache).length) return cache;
-    try {
-      const rHoje = await fetch(INC_HOJE_JSON + "?t=" + Date.now(), { cache: "no-store" });
-      if (rHoje.ok) {
-        const payloadHoje = await rHoje.json();
-        if (linhasTcglHoje(payloadHoje).length) return payloadHoje;
-      }
-    } catch (err) { /* opcional */ }
-    return vazioComTentativas || cache || { incidentes: [], tentativas: [] };
+    } catch (err) { /* usa o mesmo cache da página Incidentes */ }
+    return cache || { incidentes: [], tentativas: [] };
   }
 
   async function carregarIncidentesAposLogin(atualizar) {
@@ -408,13 +393,6 @@
       if (ev.key === "Escape" && $("mnIncOverlay") && !$("mnIncOverlay").hidden) fecharPopupIncidente();
     });
     if (inc && linhasTcglHoje(inc).length) atualizar();
-    try {
-      const rHoje = await fetch(INC_HOJE_JSON + "?t=" + Date.now(), { cache: "no-store" });
-      if (rHoje.ok) {
-        const payloadHoje = await rHoje.json();
-        if (linhasTcglHoje(payloadHoje).length) atualizar(payloadHoje);
-      }
-    } catch (err) { /* API ainda tenta */ }
     try {
       const rCad = await fetch(CAD_JSON, { cache: "no-store" });
       if (rCad.ok) cad = await rCad.json();

@@ -136,45 +136,26 @@ async function carregarAws({ de, ate } = {}) {
   return { payload: snap.payload, incidentes, atualizadoEm };
 }
 
-/** Fluxo de leitura: AWS (base desde DATA_MIN, hora a hora). JSON só se a AWS falhar.
- *  `preferirAws` + mesmo dia: recorte de hoje (monitoramento). */
-export async function carregarDadosIncidentes({ onProgress, preferirAws = false, de, ate } = {}) {
+/** Mesma leitura da página Incidentes: AWS (base desde DATA_MIN, hora a hora). JSON só se a AWS falhar. */
+export async function carregarDadosIncidentes({ onProgress, de, ate } = {}) {
   onProgress?.("Consultando AWS e JSON...");
-  const soHoje = Boolean(preferirAws && de && ate && de === ate);
   const jobs = [
-    withTimeout(carregarAws({ de, ate }), soHoje ? 28000 : 28000),
-    withTimeout(carregarJsonHoje(), 8000)
+    withTimeout(carregarAws({ de, ate }), 28000),
+    withTimeout(carregarJsonSnapshot(), 20000)
   ];
-  if (!soHoje) jobs.push(withTimeout(carregarJsonSnapshot(), 20000));
-  const [awsRes, jsonHojeRes, jsonRes] = await Promise.allSettled(jobs);
+  const [awsRes, jsonRes] = await Promise.allSettled(jobs);
 
   const awsPack = awsRes.status === "fulfilled" ? awsRes.value : { payload: null, incidentes: [] };
   const aws = awsPack.incidentes || [];
-  const hojePack = jsonHojeRes.status === "fulfilled" ? jsonHojeRes.value : { payload: null, incidentes: [] };
-  const hoje = filtrarPorPeriodo(hojePack.incidentes || [], de, ate);
-  const jsonPack = jsonRes?.status === "fulfilled" ? jsonRes.value : { payload: null, incidentes: [] };
+  const jsonPack = jsonRes.status === "fulfilled" ? jsonRes.value : { payload: null, incidentes: [] };
   const json = filtrarPorPeriodo(jsonPack.incidentes || [], de, ate);
 
-  const tentativas = [`AWS: ${aws.length}`, `hoje: ${hoje.length}`, `JSON: ${json.length}`];
-  let incidentes;
-  let origem;
-  let base;
+  const tentativas = [`AWS: ${aws.length}`, `JSON: ${json.length}`];
+  const incidentes = aws.length ? aws : json;
+  const origem = aws.length ? "AWS" : (json.length ? "JSON" : "");
+  const base = aws.length ? awsPack.payload : jsonPack.payload;
 
-  if (soHoje) {
-    incidentes = aws.length ? aws : (hoje.length ? hoje : json);
-    origem = aws.length ? "AWS" : (hoje.length ? "JSON hoje" : "JSON");
-    base = aws.length ? awsPack.payload : (hoje.length ? hojePack.payload : jsonPack.payload);
-  } else if (aws.length) {
-    incidentes = aws;
-    origem = "AWS";
-    base = awsPack.payload;
-  } else {
-    incidentes = mesclarIncidentes([json, hoje]);
-    origem = [json.length && "JSON", hoje.length && "JSON hoje"].filter(Boolean).join(" · ");
-    base = (json.length ? jsonPack.payload : null) || hojePack.payload;
-  }
-
-  const payload = montarPayload([base, awsPack.payload, jsonPack.payload, hojePack.payload], incidentes);
+  const payload = montarPayload([base, awsPack.payload, jsonPack.payload], incidentes);
   if (base?.atualizadoEm) payload.atualizadoEm = base.atualizadoEm;
   payload.origem = origem || "";
   payload.tentativas = tentativas;
