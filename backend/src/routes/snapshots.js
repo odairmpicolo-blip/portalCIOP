@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { config } from "../config.js";
 import { query } from "../db.js";
 import { requireApiKey, requireFirebaseUser } from "../middleware/auth.js";
@@ -118,15 +119,38 @@ function queryDoPedido(req) {
   return q;
 }
 
+async function assinarObjetoIncidentes(key) {
+  const bucket = String(config.incidentesS3Bucket || "").trim();
+  if (!bucket || !key) return null;
+  const client = getIncidentesS3();
+  const url = await getSignedUrl(
+    client,
+    new GetObjectCommand({ Bucket: bucket, Key: key }),
+    { expiresIn: 300 }
+  );
+  let atualizadoEm = null;
+  let bytes = 0;
+  try {
+    const head = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+    atualizadoEm = head.LastModified ? head.LastModified.toISOString() : null;
+    bytes = Number(head.ContentLength || 0);
+  } catch (_) { /* GetObject basta para assinar */ }
+  return { url, atualizadoEm, bytes };
+}
+
 async function responderIncidentes(req, res, de, ate) {
   try {
-    const s3 = await lerIncidentesS3Dia(de, ate);
-    if (s3?.payload) {
+    const key = String(config.incidentesS3Key || "incidentes-tcgl.json").trim();
+    const signed = await assinarObjetoIncidentes(key);
+    if (signed?.url) {
       enviarSnapshot(req, res, {
         ok: true,
-        payload: recortarIncidentes(s3.payload, de, ate),
-        atualizadoEm: s3.atualizadoEm,
-        origem: "aws"
+        origem: "aws",
+        url: signed.url,
+        atualizadoEm: signed.atualizadoEm,
+        bytes: signed.bytes,
+        de: de || "",
+        ate: ate || ""
       });
       return;
     }

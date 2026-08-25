@@ -156,6 +156,14 @@ export async function carregarSnapshotAws(path, { timeoutMs = 15000 } = {}) {
       window.setTimeout(() => reject(new Error("timeout")), timeoutMs);
     })
   ]);
+  if (result?.url) {
+    return {
+      url: result.url,
+      payload: result.payload || null,
+      atualizadoEm: result.atualizadoEm || null,
+      origem: "AWS"
+    };
+  }
   if (!result?.payload) return null;
   return {
     payload: result.payload,

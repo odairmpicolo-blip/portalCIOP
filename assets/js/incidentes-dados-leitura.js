@@ -125,44 +125,52 @@ function montarPayload(fontes, incidentes) {
 }
 
 async function carregarAws({ de, ate } = {}) {
-  const dia = de && ate && de === ate ? de : "";
-  const path = dia
-    ? `/snapshots/incidentes/dia/${dia}`
-    : `/snapshots/incidentes${de || ate ? `?${new URLSearchParams({ ...(de ? { de } : {}), ...(ate ? { ate } : {}) })}` : ""}`;
-  const snap = await carregarSnapshotAws(path, { timeoutMs: 28000 });
+  const path = `/snapshots/incidentes${de || ate ? `?${new URLSearchParams({ ...(de ? { de } : {}), ...(ate ? { ate } : {}) })}` : ""}`;
+  const snap = await carregarSnapshotAws(path, { timeoutMs: 20000 });
+  if (snap?.url) {
+    const res = await fetch(snap.url, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status} no JSON de incidentes no S3`);
+    const payload = await res.json();
+    const lista = Array.isArray(payload?.incidentes) ? payload.incidentes : [];
+    const incidentes = filtrarPorPeriodo(lista, de, ate);
+    return {
+      payload: { ...payload, incidentes, totalExtraido: incidentes.length },
+      incidentes,
+      atualizadoEm: snap.atualizadoEm || payload?.atualizadoEm || null
+    };
+  }
   if (!snap?.payload) return { payload: null, incidentes: [], atualizadoEm: null };
   const incidentes = Array.isArray(snap.payload?.incidentes) ? snap.payload.incidentes : [];
   const atualizadoEm = snap.atualizadoEm || snap.payload?.atualizadoEm || null;
   return { payload: snap.payload, incidentes, atualizadoEm };
 }
 
-/** Mesma leitura da página Incidentes: AWS (base desde DATA_MIN, hora a hora). JSON só se a AWS falhar. */
+/** Mesma leitura da página Incidentes: AWS (S3 horário). JSON do GitHub só se a AWS falhar. */
 export async function carregarDadosIncidentes({ onProgress, de, ate } = {}) {
-  onProgress?.("Consultando AWS e JSON...");
-  const jobs = [
-    withTimeout(carregarAws({ de, ate }), 28000),
-    withTimeout(carregarJsonSnapshot(), 20000)
-  ];
-  const [awsRes, jsonRes] = await Promise.allSettled(jobs);
+  onProgress?.("Consultando AWS...");
+  try {
+    const awsPack = await carregarAws({ de, ate });
+    const aws = awsPack.incidentes || [];
+    if (aws.length) {
+      const payload = montarPayload([awsPack.payload], aws);
+      if (awsPack.atualizadoEm) payload.atualizadoEm = awsPack.atualizadoEm;
+      payload.origem = "AWS";
+      payload.tentativas = [`AWS: ${aws.length}`];
+      return { payload, origem: "AWS", tentativas: payload.tentativas };
+    }
+  } catch (err) {
+    console.warn("[incidentes] AWS:", err?.message || err);
+  }
 
-  const awsPack = awsRes.status === "fulfilled" ? awsRes.value : { payload: null, incidentes: [] };
-  const aws = awsPack.incidentes || [];
-  const jsonPack = jsonRes.status === "fulfilled" ? jsonRes.value : { payload: null, incidentes: [] };
+  onProgress?.("AWS indisponível, consultando JSON...");
+  const jsonPack = await carregarJsonSnapshot();
   const json = filtrarPorPeriodo(jsonPack.incidentes || [], de, ate);
-
-  const tentativas = [`AWS: ${aws.length}`, `JSON: ${json.length}`];
-  const incidentes = aws.length ? aws : json;
-  const origem = aws.length ? "AWS" : (json.length ? "JSON" : "");
-  const base = aws.length ? awsPack.payload : jsonPack.payload;
-
-  const payload = montarPayload([base, awsPack.payload, jsonPack.payload], incidentes);
-  if (base?.atualizadoEm) payload.atualizadoEm = base.atualizadoEm;
-  payload.origem = origem || "";
-  payload.tentativas = tentativas;
-
+  const payload = montarPayload([jsonPack.payload], json);
+  payload.origem = json.length ? "JSON" : "";
+  payload.tentativas = [`AWS: 0`, `JSON: ${json.length}`];
   return {
     payload,
-    origem: origem || "",
-    tentativas
+    origem: payload.origem,
+    tentativas: payload.tentativas
   };
 }

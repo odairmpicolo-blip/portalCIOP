@@ -122,6 +122,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - s3:GetObject
+                  - s3:HeadObject
                 Resource: !Sub "arn:aws:s3:::${IncidentesStateBucket}/*"
 
   PortalApiFunction:
@@ -261,13 +262,6 @@ Resources:
     Properties:
       ApiId: !Ref Bus2ProxyApiId
       RouteKey: ANY /performance
-      Target: !Sub integrations/${PortalApiIntegration}
-
-  PortalApiRouteAudit:
-    Type: AWS::ApiGatewayV2::Route
-    Properties:
-      ApiId: !Ref Bus2ProxyApiId
-      RouteKey: ANY /audit
       Target: !Sub integrations/${PortalApiIntegration}
 
   PortalApiPermission:

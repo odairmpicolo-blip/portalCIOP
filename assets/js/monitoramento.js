@@ -107,7 +107,7 @@
 
   async function modLeituraIncidentes() {
     if (!leituraIncidentes) {
-      leituraIncidentes = await import("../assets/js/incidentes-dados-leitura.js?v=20260825cmtu5");
+      leituraIncidentes = await import("../assets/js/incidentes-dados-leitura.js?v=20260825cmtu6");
     }
     return leituraIncidentes;
   }
@@ -231,7 +231,7 @@
     window.PortalIncidentePopup?.abrir(row);
   }
 
-  const CACHE_INCIDENTES_KEY = "portal_incidentes_v6";
+  const CACHE_INCIDENTES_KEY = "portal_incidentes_v7";
   const CACHE_INCIDENTES_TTL_MS = 15 * 60 * 1000;
 
   function aguardarUsuarioPortal() {
