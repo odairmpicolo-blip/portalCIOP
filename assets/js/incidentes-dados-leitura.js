@@ -136,7 +136,8 @@ async function carregarAws({ de, ate } = {}) {
   return { payload: snap.payload, incidentes, atualizadoEm };
 }
 
-/** Fluxo de leitura: AWS → JSON. `preferirAws` usa só o snapshot se ele tiver linhas (visão ao vivo / hoje). */
+/** Fluxo de leitura: AWS (base desde DATA_MIN, hora a hora). JSON só se a AWS falhar.
+ *  `preferirAws` + mesmo dia: recorte de hoje (monitoramento). */
 export async function carregarDadosIncidentes({ onProgress, preferirAws = false, de, ate } = {}) {
   onProgress?.("Consultando AWS e JSON...");
   const soHoje = Boolean(preferirAws && de && ate && de === ate);
@@ -144,7 +145,7 @@ export async function carregarDadosIncidentes({ onProgress, preferirAws = false,
     withTimeout(carregarAws({ de, ate }), soHoje ? 28000 : 28000),
     withTimeout(carregarJsonHoje(), 8000)
   ];
-  if (!soHoje) jobs.push(withTimeout(carregarJsonSnapshot(), 12000));
+  if (!soHoje) jobs.push(withTimeout(carregarJsonSnapshot(), 20000));
   const [awsRes, jsonHojeRes, jsonRes] = await Promise.allSettled(jobs);
 
   const awsPack = awsRes.status === "fulfilled" ? awsRes.value : { payload: null, incidentes: [] };
@@ -155,27 +156,32 @@ export async function carregarDadosIncidentes({ onProgress, preferirAws = false,
   const json = filtrarPorPeriodo(jsonPack.incidentes || [], de, ate);
 
   const tentativas = [`AWS: ${aws.length}`, `hoje: ${hoje.length}`, `JSON: ${json.length}`];
-  const origens = [];
-  if (aws.length) origens.push("AWS");
-  if (hoje.length && !aws.length) origens.push("JSON hoje");
-  if (json.length && !aws.length && !hoje.length) origens.push("JSON");
+  let incidentes;
+  let origem;
+  let base;
 
-  const incidentes = aws.length
-    ? aws
-    : hoje.length
-      ? hoje
-      : json;
-  const bases = [
-    awsPack.payload,
-    hojePack.payload,
-    jsonPack.payload
-  ].filter(Boolean);
-  const payload = montarPayload(bases, incidentes);
-  payload.origem = origens.join(" · ") || "";
+  if (soHoje) {
+    incidentes = aws.length ? aws : (hoje.length ? hoje : json);
+    origem = aws.length ? "AWS" : (hoje.length ? "JSON hoje" : "JSON");
+    base = aws.length ? awsPack.payload : (hoje.length ? hojePack.payload : jsonPack.payload);
+  } else if (aws.length) {
+    incidentes = aws;
+    origem = "AWS";
+    base = awsPack.payload;
+  } else {
+    incidentes = mesclarIncidentes([json, hoje]);
+    origem = [json.length && "JSON", hoje.length && "JSON hoje"].filter(Boolean).join(" · ");
+    base = (json.length ? jsonPack.payload : null) || hojePack.payload;
+  }
+
+  const payload = montarPayload([base, awsPack.payload, jsonPack.payload, hojePack.payload], incidentes);
+  if (base?.atualizadoEm) payload.atualizadoEm = base.atualizadoEm;
+  payload.origem = origem || "";
+  payload.tentativas = tentativas;
 
   return {
     payload,
-    origem: origens.join(" · ") || "",
+    origem: origem || "",
     tentativas
   };
 }
