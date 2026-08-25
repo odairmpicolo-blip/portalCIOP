@@ -141,7 +141,7 @@ export async function carregarDadosIncidentes({ onProgress, preferirAws = false,
   onProgress?.("Consultando AWS e JSON...");
   const soHoje = Boolean(preferirAws && de && ate && de === ate);
   const jobs = [
-    withTimeout(carregarAws({ de, ate }), soHoje ? 20000 : 12000),
+    withTimeout(carregarAws({ de, ate }), soHoje ? 28000 : 28000),
     withTimeout(carregarJsonHoje(), 8000)
   ];
   if (!soHoje) jobs.push(withTimeout(carregarJsonSnapshot(), 12000));
@@ -158,18 +158,17 @@ export async function carregarDadosIncidentes({ onProgress, preferirAws = false,
   const origens = [];
   if (aws.length) origens.push("AWS");
   if (hoje.length && !aws.length) origens.push("JSON hoje");
-  if (json.length && !(preferirAws && (aws.length || hoje.length))) origens.push("JSON");
+  if (json.length && !aws.length && !hoje.length) origens.push("JSON");
 
-  const incidentes = preferirAws && aws.length
+  const incidentes = aws.length
     ? aws
-    : preferirAws && hoje.length
+    : hoje.length
       ? hoje
-      : mesclarIncidentes([json, hoje, aws]);
+      : json;
   const bases = [
-    preferirAws && awsPack.payload ? awsPack.payload : null,
+    awsPack.payload,
     hojePack.payload,
-    jsonPack.payload,
-    awsPack.payload
+    jsonPack.payload
   ].filter(Boolean);
   const payload = montarPayload(bases, incidentes);
   payload.origem = origens.join(" · ") || "";

@@ -624,10 +624,10 @@ h1{font-size:20px}
 <th data-sort="motorista"><span class="sort-label">Motorista <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="tipo"><span class="sort-label">Tipo do incidente <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="proprietario"><span class="sort-label">Agente <span class="sort-icon" aria-hidden="true">↕</span></span></th>
-<th data-sort="estado"><span class="sort-label">Status <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+<th data-sort="estado"><span class="sort-label">Estado <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="natureOfProblem"><span class="sort-label">Natureza do Problema <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="instructions"><span class="sort-label">Instruções <span class="sort-icon" aria-hidden="true">↕</span></span></th>
-<th data-sort="cmtuStatus"><span class="sort-label">Status da justificativa <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+<th data-sort="cmtuStatus"><span class="sort-label">Status <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="cmtuPor"><span class="sort-label">Por <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="cmtuJustificativa"><span class="sort-label">Justificativa <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 </tr>
@@ -666,7 +666,7 @@ h1{font-size:20px}
 
 
 <script src="../assets/js/theme-toggle.js?v=20260818logo6"></script>
-<script src="../assets/js/incidente-popup.js?v=20260825cmtu2"></script>
+<script src="../assets/js/incidente-popup.js?v=20260825cmtu3"></script>
 <script>
 const state = {
 all: [],
@@ -962,7 +962,7 @@ return '"' + String(value || "").replace(/"/g, '""') + '"';
 }
 
 function exportCsv() {
-const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções","Status da justificativa","Por","Justificativa"];
+const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções","Status","Por","Justificativa"];
 const lines = [header.map(csvValue).join(";")].concat(state.filtered.map((row) => [
 row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,tipoExibicaoIncidente(row),row.proprietario,row.estado,row.natureOfProblem,row.instructions,statusJustificativaCmtu(row),porJustificativaCmtu(row),textoJustificativaCmtu(row)
 ].map(csvValue).join(";")));
@@ -1038,7 +1038,7 @@ return new Blob(chunks, { type: "application/vnd.openxmlformats-officedocument.s
 }
 
 function exportExcel() {
-const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções","Status da justificativa","Por","Justificativa"];
+const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções","Status","Por","Justificativa"];
 const rows = [header].concat(state.filtered.map((row) => [row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,tipoExibicaoIncidente(row),row.proprietario,row.estado,row.natureOfProblem,row.instructions,statusJustificativaCmtu(row),porJustificativaCmtu(row),textoJustificativaCmtu(row)]));
 const widths = [10,12,9,12,13,22,28,24,16,46,52,18,24,52];
 const cols = widths.map((width, index) => '<col min="' + (index + 1) + '" max="' + (index + 1) + '" width="' + width + '" customWidth="1"/>').join("");
@@ -1086,7 +1086,7 @@ URL.revokeObjectURL(url);
 }
 
 let carregandoIncidentes = false;
-const CACHE_INCIDENTES_KEY = "portal_incidentes_v4";
+const CACHE_INCIDENTES_KEY = "portal_incidentes_v5";
 const CACHE_INCIDENTES_TTL_MS = 15 * 60 * 1000;
 
 function lerCacheIncidentes() {
@@ -1193,7 +1193,7 @@ return;
 status.textContent = forcar ? "Atualizando tabela..." : "Carregando incidentes...";
 
 try {
-const mod = await import("../assets/js/incidentes-dados-leitura.js?v=20260825hoje1");
+const mod = await import("../assets/js/incidentes-dados-leitura.js?v=20260825cmtu3");
 const res = await mod.carregarDadosIncidentes({
 onProgress: (msg) => {
 if (!cacheLocal || forcar) status.textContent = msg;

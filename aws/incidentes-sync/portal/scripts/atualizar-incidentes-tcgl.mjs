@@ -622,7 +622,7 @@ try {
   }
 
   const { merged: mergedRows, countNovos, countEstado, countDados, novosIds, atualizadosIds } = mergeRows(rows, existingPayload);
-  const cmtuBackfillLimite = Number(process.env.CIOP_INCIDENTES_CMTU_BACKFILL || 400);
+  const cmtuBackfillLimite = Number(process.env.CIOP_INCIDENTES_CMTU_BACKFILL || 8000);
   let cmtuPendentes = 0;
   const novosParaDetalhe = mergedRows.filter((row) => {
     const key = rowKey(row);
