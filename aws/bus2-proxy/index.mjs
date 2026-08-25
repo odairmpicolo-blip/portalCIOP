@@ -621,9 +621,9 @@ async function proxyRelatorioIa(event) {
     };
   }
 
-  // Auth keys (AQ.*) do AI Studio falham com ?key= na URL; o cabeçalho é o
-  // canal que o Gemini aceita para esse formato. Modelos novos primeiro.
-  const modelos = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
+  // Auth keys (AQ.*) do AI Studio: x-goog-api-key. Modelos 2.0/2.5 foram
+  // descontinuados para chaves novas — a API pede gemini-3.6-flash.
+  const modelos = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"];
   let ultimoErro = "Falha ao consultar Gemini.";
 
   for (const model of modelos) {
