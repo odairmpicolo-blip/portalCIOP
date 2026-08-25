@@ -3,13 +3,17 @@ name: Atualizar JSON liberação (D-3 + hoje + amanhã)
 on:
   schedule:
     # A cada 5 minutos — JSON (3 dias antes + hoje + amanhã) + DSQL para leitura ao vivo rápida no portal
-    - cron: "*/5 * * * *" # Runs every 5 minutes
+    - cron: "*/5 * * * *"
   workflow_dispatch:
   repository_dispatch:
     types: [folha-servico, liberacao]
 
 permissions:
   contents: write
+
+concurrency:
+  group: portalciop-json-push
+  cancel-in-progress: false
 
 jobs:
   atualizar:
@@ -27,8 +31,10 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Sincronizar com origin
-        run: git pull --rebase --autostash origin main
+      - name: Configurar git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Gerar JSON de liberação (3 dias antes + hoje + amanhã)
         env:
@@ -39,14 +45,8 @@ jobs:
           LIBERACAO_DIAS_HOJE: "3"
         run: node scripts/atualizar-portais-json.mjs --liberacao-hoje
 
-      - name: Sincronizar antes do commit
-        run: git pull --rebase --autostash origin main
-
       - name: Publicar JSON de liberação (D-3 + hoje + amanhã)
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Atualiza JSON liberação (3 dias antes + hoje + amanhã)"
-          file_pattern: assets/data/liberacao/*.json
+        run: bash scripts/ci-git-commit-push.sh "Atualiza JSON liberação (3 dias antes + hoje + amanhã)" assets/data/liberacao/*.json
 
       - name: Importar liberação (D-3 + hoje + amanhã) no DSQL (planilha → JSON → AWS)
         env:

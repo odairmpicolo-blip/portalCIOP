@@ -73,7 +73,7 @@ sincronizar_e_push() {
   return 0
 }
 
-for attempt in 1 2 3 4 5; do
+for attempt in 1 2 3 4 5 6 7 8; do
   if rebase_em_andamento; then
     git rebase --abort 2>/dev/null || true
   fi
@@ -83,9 +83,9 @@ for attempt in 1 2 3 4 5; do
     exit 0
   fi
 
-  echo "Push falhou (tentativa $attempt/5), aguardando..."
-  sleep "$((attempt * 2))"
+  echo "Push falhou (tentativa $attempt/8), aguardando..."
+  sleep "$((attempt * 3))"
 done
 
-echo "Não foi possível fazer push após 5 tentativas." >&2
+echo "Não foi possível fazer push após 8 tentativas." >&2
 exit 1
