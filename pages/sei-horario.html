@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>SEI · Alteração de horário | Portal CIOP</title>
+<style>
+:root{--blue:#06245c;--orange:#ff6b00;--ink:#18182a;--muted:#3f4757}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:#f2effa}
+.header{
+  display:grid;grid-template-columns:minmax(140px,1fr) auto minmax(220px,1fr);
+  gap:10px;align-items:center;padding:8px 16px;flex:0 0 auto;
+  background:rgba(255,255,255,.62);border-bottom:1px solid rgba(30,20,70,.1);
+}
+.title-wrap{justify-self:center;text-align:center}
+.page-kicker{margin:0;color:var(--orange);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.page-title{margin:0;font-size:20px;font-weight:900;color:var(--blue)}
+.header-actions{justify-self:end}
+.wrap{flex:1;padding:16px;max-width:1180px;width:100%;margin:0 auto}
+.panel{background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.65);border-radius:16px;padding:16px;margin-bottom:14px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:12px}
+label{display:block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#64748b;margin-bottom:4px}
+input,button{font:inherit}
+input[type="date"]{border:1px solid #d5deee;border-radius:8px;padding:8px 10px}
+.btn{border:0;border-radius:10px;padding:9px 14px;font-weight:800;cursor:pointer}
+.btn-primary{background:linear-gradient(135deg,#7a5cff,#c04fd6);color:#fff}
+.btn-ghost{background:#fff;border:1px solid #d5deee;color:#1e293b}
+.copy-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 12px}
+.btn-x{width:32px;height:32px;border:0;border-radius:8px;background:#fee2e2;color:#991b1b;font-weight:900;cursor:pointer}
+table.edit{width:100%;border-collapse:collapse;font-size:13px}
+table.edit th{text-align:left;font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:6px;color:#344054}
+table.edit td{padding:4px;border-bottom:1px solid #edf1f7}
+table.edit input{width:100%;border:1px solid #d5deee;border-radius:6px;padding:7px 8px}
+.meta{font-size:12px;color:var(--muted);margin:0 0 8px}
+.meta b{color:var(--blue)}
+.status{font-size:13px;font-weight:700;min-height:1.2em}
+.status.is-error{color:#b91c1c}
+.status.is-ok{color:#166534}
+.preview{
+  background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px 18px;
+  color:#222;font-size:14px;line-height:1.45;
+}
+.preview table{border-collapse:collapse;font-size:13px}
+.body-bg-wall{display:none}
+@media (min-width:721px){
+  body{background:transparent!important}
+  .body-bg-wall{
+    display:block;position:fixed;inset:0;z-index:-3;
+    background-image:url('../assets/img/portal-bg-onibus.jpg?v=20260718j');
+    background-size:cover;background-position:center;
+  }
+  .body-bg-stain{
+    display:block;position:fixed;inset:0;z-index:-2;
+    background:linear-gradient(180deg,rgba(6,20,50,.30),rgba(6,20,50,.55));
+  }
+}
+@media (max-width:800px){
+  .header{grid-template-columns:1fr;text-align:center}
+  .header-actions{justify-self:center}
+}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
+<link rel="stylesheet" href="../assets/css/portal-footer.css?v=20260720y">
+<script src="../assets/js/loading.js?v=20260718d"></script>
+<script type="module" src="../assets/js/auth.js?v=20260825sei"></script>
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260821hud">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260820bar4">
+<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260821fx">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260821hud">
+</head>
+<body>
+<style>#senhaPanel,.password-panel,.btn-senha-portal,[data-portal-senha-btn]{display:none!important}</style>
+<div class="body-bg-wall" aria-hidden="true"></div>
+<div class="body-bg-stain" aria-hidden="true"></div>
+<header class="header">
+  <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações">
+    <img class="portal-brand-art" src="../assets/img/logomarca-portalciop-tcgl-claro.png?v=20260818logo6" alt="Portal CIOP">
+    <span class="portal-brand-meta">TCGL · Operações</span>
+  </a>
+  <div class="title-wrap">
+    <p class="page-kicker">SEI · e-mail</p>
+    <h1 class="page-title">Alteração de horário de trabalho</h1>
+  </div>
+  <div class="header-actions">
+    <div class="ciop-session" aria-label="Sessão do usuário">
+      <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+      <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <section class="panel">
+    <div class="row">
+      <div>
+        <label for="seiData">Data do comunicado</label>
+        <input id="seiData" type="date">
+      </div>
+      <button class="btn btn-ghost" type="button" id="seiAdd">+ Colaborador</button>
+      <button class="btn btn-primary" type="button" id="seiCopiarCorpo">Copiar corpo</button>
+    </div>
+    <p class="meta">De (sua caixa): <b id="seiDe">—</b></p>
+    <p class="meta">Para: <span id="seiPara">—</span></p>
+    <div class="copy-row">
+      <button class="btn btn-ghost" type="button" id="seiCopiarPara">Copiar destinatários</button>
+      <button class="btn btn-ghost" type="button" id="seiCopiarAssunto">Copiar assunto</button>
+    </div>
+    <p class="meta">Monte a tabela aqui, copie e cole no e-mail da sua conta. A assinatura segue quem está logado.</p>
+    <p class="status" id="seiStatus"></p>
+    <table class="edit">
+      <thead>
+        <tr>
+          <th>FUNC</th><th>NOME</th>
+          <th>INÍCIO 1</th><th>FIM 1</th>
+          <th>INÍCIO 2</th><th>FIM 2</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="seiLinhas"></tbody>
+    </table>
+    <datalist id="listaFuncionarios"></datalist>
+    <datalist id="listaNomes"></datalist>
+  </section>
+  <section class="panel">
+    <p class="meta">Assunto: <b id="seiAssuntoPrev">—</b></p>
+    <div class="preview" id="seiPreview"></div>
+  </section>
+</main>
+<footer class="portal-site-footer">
+  <div class="footer-inner"><div class="footer-text">Portal CIOP · SEI de alteração de horário</div></div>
+</footer>
+<script type="module" src="../assets/js/sei-horario.js?v=20260825sei3"></script>
+<script src="../assets/js/theme-toggle.js?v=20260818logo6"></script>
+<script src="../assets/js/portal-futuristic.js?v=20260718am" defer></script>
+</body>
+</html>
