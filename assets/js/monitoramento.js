@@ -213,6 +213,18 @@
     return tipo || "Sem informação";
   }
 
+  function statusJustificativaCmtu(row) {
+    if (row?.cmtuReprovado === true || String(row?.cmtuReprovado || "").toLowerCase() === "true") return "Reprovado";
+    if (row?.cmtuAprovado === true || String(row?.cmtuAprovado || "").toLowerCase() === "true") return "Aprovado";
+    if (String(row?.cmtuReprovadoPor || "").trim()) return "Reprovado";
+    if (String(row?.cmtuAprovadoPor || "").trim()) return "Aprovado";
+    return "";
+  }
+
+  function porJustificativaCmtu(row) {
+    return String(row?.cmtuReprovadoPor || row?.cmtuAprovadoPor || "").trim();
+  }
+
   function fecharPopupIncidente() {
     window.PortalIncidentePopup?.fechar();
   }
@@ -274,11 +286,16 @@
     const hoje = hojeIsoLocal();
     const dataBr = new Date(`${hoje}T00:00:00`).toLocaleDateString("pt-BR");
     const rows = linhasTcglHoje(inc);
-    const lista = filtra(rows, q, [
+    const camposInc = [
       "id", "incidentId", "veiculo", "linha", "tipo", "tipoOriginal", "estado",
       "criadoPor", "data", "hora", "motorista", "motoristaNr", "proprietario",
       "departamento", "natureOfProblem", "instructions", "cmtuJustificativa", "cmtuReprovadoPor", "cmtuAprovadoPor"
-    ]);
+    ];
+    const lista = !q ? rows : rows.filter((r) =>
+      filtra([r], q, camposInc).length > 0
+      || norm(statusJustificativaCmtu(r)).includes(norm(q))
+      || norm(porJustificativaCmtu(r)).includes(norm(q))
+    );
     const btnInc = $("btnAbaIncidentes");
     if (btnInc) btnInc.innerHTML = `Incidentes<span class="cad-nav-count">${rows.length}</span>`;
     if ($("mnIncTitulo")) $("mnIncTitulo").textContent = `Incidentes TCGL de hoje · ${dataBr}`;
@@ -315,7 +332,9 @@
         <td>${esc(r.estado || "")}</td>
         <td>${esc(r.natureOfProblem || "")}</td>
         <td>${esc(r.instructions || "")}</td>
-        <td>${esc(r.cmtuJustificativa || r.cmtuReprovadoPor || r.cmtuAprovadoPor || "")}</td>
+        <td>${esc(statusJustificativaCmtu(r))}</td>
+        <td>${esc(porJustificativaCmtu(r))}</td>
+        <td>${esc(r.cmtuJustificativa || "")}</td>
       </tr>`;
     }).join("");
     if (vazio) vazio.hidden = lista.length > 0;

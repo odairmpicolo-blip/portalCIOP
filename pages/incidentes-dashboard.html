@@ -627,8 +627,9 @@ h1{font-size:20px}
 <th data-sort="estado"><span class="sort-label">Status <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="natureOfProblem"><span class="sort-label">Natureza do Problema <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="instructions"><span class="sort-label">Instruções <span class="sort-icon" aria-hidden="true">↕</span></span></th>
-<th data-sort="cmtuReprovadoPor"><span class="sort-label">CMTU reprovado por <span class="sort-icon" aria-hidden="true">↕</span></span></th>
-<th data-sort="cmtuJustificativa"><span class="sort-label">Justificativa CMTU <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+<th data-sort="cmtuStatus"><span class="sort-label">Status da justificativa <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+<th data-sort="cmtuPor"><span class="sort-label">Por <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+<th data-sort="cmtuJustificativa"><span class="sort-label">Justificativa <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 </tr>
 </thead>
 <tbody id="tabelaIncidentes"></tbody>
@@ -665,7 +666,7 @@ h1{font-size:20px}
 
 
 <script src="../assets/js/theme-toggle.js?v=20260818logo6"></script>
-<script src="../assets/js/incidente-popup.js?v=20260825cmtu1"></script>
+<script src="../assets/js/incidente-popup.js?v=20260825cmtu2"></script>
 <script>
 const state = {
 all: [],
@@ -761,6 +762,22 @@ function tipoExibicaoIncidente(row) {
 return rotuloTipoIncidente(tipoOriginalIncidente(row));
 }
 
+function statusJustificativaCmtu(row) {
+if (row?.cmtuReprovado === true || String(row?.cmtuReprovado || "").toLowerCase() === "true") return "Reprovado";
+if (row?.cmtuAprovado === true || String(row?.cmtuAprovado || "").toLowerCase() === "true") return "Aprovado";
+if (String(row?.cmtuReprovadoPor || "").trim()) return "Reprovado";
+if (String(row?.cmtuAprovadoPor || "").trim()) return "Aprovado";
+return "";
+}
+
+function porJustificativaCmtu(row) {
+return String(row?.cmtuReprovadoPor || row?.cmtuAprovadoPor || "").trim();
+}
+
+function textoJustificativaCmtu(row) {
+return String(row?.cmtuJustificativa || "").trim();
+}
+
 function populateSelectTipo(select, rows) {
 const previous = select.value;
 const values = Array.from(new Set(rows.map(tipoOriginalIncidente).filter(Boolean)))
@@ -811,7 +828,7 @@ if (!String(row.natureOfProblem || "").trim()) return false;
 if (!String(row.instructions || "").trim()) return false;
 }
 if (!search) return true;
-return normalizeText([row.id, row.data, row.hora, row.veiculo, row.linha, row.criadoPor, tipoOriginalIncidente(row), tipoExibicaoIncidente(row), row.proprietario, row.estado, row.natureOfProblem, row.instructions, row.cmtuJustificativa, row.cmtuReprovadoPor, row.cmtuAprovadoPor].join(" ")).includes(search);
+return normalizeText([row.id, row.data, row.hora, row.veiculo, row.linha, row.criadoPor, tipoOriginalIncidente(row), tipoExibicaoIncidente(row), row.proprietario, row.estado, row.natureOfProblem, row.instructions, statusJustificativaCmtu(row), porJustificativaCmtu(row), textoJustificativaCmtu(row)].join(" ")).includes(search);
 });
 
 sortRows();
@@ -826,6 +843,8 @@ state.filtered.sort((a, b) => {
 if (key === "id") return (Number(a.id) - Number(b.id)) * dir;
 if (key === "data") return (dateToIso(a.data) + " " + a.hora).localeCompare(dateToIso(b.data) + " " + b.hora) * dir;
 if (key === "tipo") return tipoOriginalIncidente(a).localeCompare(tipoOriginalIncidente(b), "pt-BR", { numeric: true }) * dir;
+if (key === "cmtuStatus") return statusJustificativaCmtu(a).localeCompare(statusJustificativaCmtu(b), "pt-BR") * dir;
+if (key === "cmtuPor") return porJustificativaCmtu(a).localeCompare(porJustificativaCmtu(b), "pt-BR") * dir;
 return String(a[key] || "").localeCompare(String(b[key] || ""), "pt-BR", { numeric: true }) * dir;
 });
 }
@@ -915,7 +934,7 @@ tbody.innerHTML = pageRows.map((row) => '<tr data-incidente-id="' + escapeHtml(r
 '<td>' + escapeHtml(tipoExibicaoIncidente(row)) + '</td>' +
 '<td>' + escapeHtml(row.proprietario) + '</td>' +
 '<td>' + escapeHtml(row.estado) + '</td><td>' + escapeHtml(row.natureOfProblem || "") + '</td><td>' + escapeHtml(row.instructions || "") + '</td>' +
-'<td>' + escapeHtml(row.cmtuReprovadoPor || row.cmtuAprovadoPor || "") + '</td><td>' + escapeHtml(row.cmtuJustificativa || "") + '</td>' +
+'<td>' + escapeHtml(statusJustificativaCmtu(row)) + '</td><td>' + escapeHtml(porJustificativaCmtu(row)) + '</td><td>' + escapeHtml(textoJustificativaCmtu(row)) + '</td>' +
 '</tr>').join("");
 empty.hidden = pageRows.length > 0;
 document.getElementById("pageInfo").textContent = formatNumber(state.filtered.length) + " registros, página " + state.page + " de " + totalPages;
@@ -943,9 +962,9 @@ return '"' + String(value || "").replace(/"/g, '""') + '"';
 }
 
 function exportCsv() {
-const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções","CMTU reprovado por","Justificativa CMTU"];
+const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções","Status da justificativa","Por","Justificativa"];
 const lines = [header.map(csvValue).join(";")].concat(state.filtered.map((row) => [
-row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,tipoExibicaoIncidente(row),row.proprietario,row.estado,row.natureOfProblem,row.instructions,row.cmtuReprovadoPor || row.cmtuAprovadoPor,row.cmtuJustificativa
+row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,tipoExibicaoIncidente(row),row.proprietario,row.estado,row.natureOfProblem,row.instructions,statusJustificativaCmtu(row),porJustificativaCmtu(row),textoJustificativaCmtu(row)
 ].map(csvValue).join(";")));
 downloadBlob(new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" }), "incidentes-tcgl.csv");
 }
@@ -1019,9 +1038,9 @@ return new Blob(chunks, { type: "application/vnd.openxmlformats-officedocument.s
 }
 
 function exportExcel() {
-const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções","CMTU reprovado por","Justificativa CMTU"];
-const rows = [header].concat(state.filtered.map((row) => [row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,tipoExibicaoIncidente(row),row.proprietario,row.estado,row.natureOfProblem,row.instructions,row.cmtuReprovadoPor || row.cmtuAprovadoPor,row.cmtuJustificativa]));
-const widths = [10,12,9,12,13,22,28,24,16,46,52,28,52];
+const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções","Status da justificativa","Por","Justificativa"];
+const rows = [header].concat(state.filtered.map((row) => [row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,tipoExibicaoIncidente(row),row.proprietario,row.estado,row.natureOfProblem,row.instructions,statusJustificativaCmtu(row),porJustificativaCmtu(row),textoJustificativaCmtu(row)]));
+const widths = [10,12,9,12,13,22,28,24,16,46,52,18,24,52];
 const cols = widths.map((width, index) => '<col min="' + (index + 1) + '" max="' + (index + 1) + '" width="' + width + '" customWidth="1"/>').join("");
 const sheetRows = rows.map((row, rowIndex) => '<row r="' + (rowIndex + 1) + '" ht="' + (rowIndex === 0 ? 28 : 24) + '" customHeight="1">' +
 row.map((cell, columnIndex) => {

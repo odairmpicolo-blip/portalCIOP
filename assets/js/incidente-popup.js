@@ -27,11 +27,9 @@
     ["natureza_do_ploblema", "Natureza do problema"],
     ["instructions", "Instruções"],
     ["instrucao", "Instrução"],
-    ["cmtuAprovado", "CMTU aprovado"],
-    ["cmtuReprovado", "CMTU reprovado"],
-    ["cmtuAprovadoPor", "CMTU aprovado por"],
-    ["cmtuReprovadoPor", "CMTU reprovado por"],
-    ["cmtuJustificativa", "Justificativa da CMTU"],
+    ["cmtuStatus", "Status da justificativa"],
+    ["cmtuPor", "Por"],
+    ["cmtuJustificativa", "Justificativa"],
     ["registroVazio", "Registro vazio"]
   ];
 
@@ -76,6 +74,24 @@
     return tipo || "Sem informação";
   }
 
+  function temJustificativaCmtu(row) {
+    if (!row) return false;
+    return !!(row.cmtuReprovado || row.cmtuAprovado || String(row.cmtuJustificativa || "").trim()
+      || String(row.cmtuReprovadoPor || "").trim() || String(row.cmtuAprovadoPor || "").trim());
+  }
+
+  function statusJustificativaCmtu(row) {
+    if (row && (row.cmtuReprovado === true || String(row.cmtuReprovado || "").toLowerCase() === "true")) return "Reprovado";
+    if (row && (row.cmtuAprovado === true || String(row.cmtuAprovado || "").toLowerCase() === "true")) return "Aprovado";
+    if (String(row && row.cmtuReprovadoPor || "").trim()) return "Reprovado";
+    if (String(row && row.cmtuAprovadoPor || "").trim()) return "Aprovado";
+    return "";
+  }
+
+  function porJustificativaCmtu(row) {
+    return String((row && (row.cmtuReprovadoPor || row.cmtuAprovadoPor)) || "").trim();
+  }
+
   function campos(row) {
     if (!row || typeof row !== "object") return [];
     var vistos = {};
@@ -83,14 +99,22 @@
     CAMPOS.forEach(function (par) {
       var chave = par[0];
       var temTipo = "tipo" in row || "tipoOriginal" in row || "tipo_de_incidente" in row;
-      if (!(chave in row) && chave !== "id" && !(chave === "tipo" && temTipo)) return;
+      if (chave === "cmtuStatus" || chave === "cmtuPor" || chave === "cmtuJustificativa") {
+        if (!temJustificativaCmtu(row)) return;
+      } else if (!(chave in row) && chave !== "id" && !(chave === "tipo" && temTipo)) return;
       vistos[chave] = 1;
       var valor = row[chave];
       if (chave === "id") valor = pick(row, ["id", "incidentId", "registro"]);
       if (chave === "tipo" || chave === "tipo_de_incidente") valor = tipoIncidente(row);
-      var amplo = /nature|instru|descricao|observ/i.test(chave);
+      if (chave === "cmtuStatus") valor = statusJustificativaCmtu(row);
+      if (chave === "cmtuPor") valor = porJustificativaCmtu(row);
+      var amplo = /nature|instru|descricao|observ|justificativa/i.test(chave);
       lista.push({ chave: chave, rotulo: rotulo(chave), valor: texto(valor), amplo: amplo });
     });
+    vistos.cmtuAprovado = 1;
+    vistos.cmtuReprovado = 1;
+    vistos.cmtuAprovadoPor = 1;
+    vistos.cmtuReprovadoPor = 1;
     Object.keys(row).forEach(function (chave) {
       if (vistos[chave]) return;
       if (OCULTAS[String(chave).toLowerCase()]) return;
