@@ -21,25 +21,30 @@ async function loadSecrets() {
 }
 
 export async function handler(event = {}) {
-  const mode = event.mode || process.env.SYNC_MODE || "incremental";
   process.env.PORTAL_ROOT = process.env.PORTAL_ROOT || "/var/task/portal";
   process.env.PORTAL_DATA_DIR = process.env.PORTAL_DATA_DIR || "/tmp/portal-data";
   process.env.SYNC_INCIDENTES_SKIP_GIT = process.env.SYNC_INCIDENTES_SKIP_GIT || "1";
   process.env.CIOP_INCIDENTES_JANELA_ATUALIZACAO_DIAS =
     process.env.CIOP_INCIDENTES_JANELA_ATUALIZACAO_DIAS || "180";
+
+  await loadSecrets();
+
+  const mode = event.mode || process.env.SYNC_MODE || "incremental";
+  if (mode === "probeCmtu") {
+    const { probeCmtu } = await import("./portal/scripts/atualizar-incidentes-tcgl.mjs");
+    return await probeCmtu(event.incidentId || "61907");
+  }
   if (mode === "full") {
     process.env.CIOP_INCIDENTES_FULL = "1";
     process.env.SYNC_INCIDENTES_SKIP_DSQL = process.env.SYNC_INCIDENTES_SKIP_DSQL || "1";
     console.log("[sync] modo COMPLETO: relê toda a base desde CIOP_INCIDENTES_DATA_MIN");
   } else {
     console.log(
-      "[sync] modo incremental: lista desde DATA_MIN e detalhes dos últimos",
+      "[sync] modo incremental: lista desde DATA_MIN, detalhes dos últimos",
       process.env.CIOP_INCIDENTES_JANELA_ATUALIZACAO_DIAS,
-      "dias"
+      "dias e justificativa CMTU desde DATA_MIN"
     );
   }
-
-  await loadSecrets();
 
   if (mode === "probe") {
     const { spawnSync } = await import("node:child_process");

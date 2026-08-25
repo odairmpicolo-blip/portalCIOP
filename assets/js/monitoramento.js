@@ -277,7 +277,7 @@
     const lista = filtra(rows, q, [
       "id", "incidentId", "veiculo", "linha", "tipo", "tipoOriginal", "estado",
       "criadoPor", "data", "hora", "motorista", "motoristaNr", "proprietario",
-      "departamento", "natureOfProblem", "instructions"
+      "departamento", "natureOfProblem", "instructions", "cmtuJustificativa", "cmtuReprovadoPor", "cmtuAprovadoPor"
     ]);
     const btnInc = $("btnAbaIncidentes");
     if (btnInc) btnInc.innerHTML = `Incidentes<span class="cad-nav-count">${rows.length}</span>`;
@@ -315,6 +315,7 @@
         <td>${esc(r.estado || "")}</td>
         <td>${esc(r.natureOfProblem || "")}</td>
         <td>${esc(r.instructions || "")}</td>
+        <td>${esc(r.cmtuJustificativa || r.cmtuReprovadoPor || r.cmtuAprovadoPor || "")}</td>
       </tr>`;
     }).join("");
     if (vazio) vazio.hidden = lista.length > 0;

@@ -27,6 +27,11 @@
     ["natureza_do_ploblema", "Natureza do problema"],
     ["instructions", "Instruções"],
     ["instrucao", "Instrução"],
+    ["cmtuAprovado", "CMTU aprovado"],
+    ["cmtuReprovado", "CMTU reprovado"],
+    ["cmtuAprovadoPor", "CMTU aprovado por"],
+    ["cmtuReprovadoPor", "CMTU reprovado por"],
+    ["cmtuJustificativa", "Justificativa da CMTU"],
     ["registroVazio", "Registro vazio"]
   ];
 

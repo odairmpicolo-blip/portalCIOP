@@ -7,6 +7,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const portalRoot = process.env.PORTAL_ROOT || process.cwd();
 const outputDir = process.env.PORTAL_DATA_DIR || path.join(portalRoot, 'assets', 'data');
@@ -16,8 +17,8 @@ const cookieFile = '/tmp/incidentes-cookie.txt';
 const baseUrl = 'https://cioplondrina.com.br/CADIncidentManagement';
 const loginUrl = `${baseUrl}/?ReturnUrl=%2fCADIncidentManagement%2fg%2f6ac2842af62b497aa5b0e515ef4b2ce9`;
 const browserUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
-const usuario = process.env.CIOP_INCIDENTES_USUARIO;
-const senha = process.env.CIOP_INCIDENTES_SENHA;
+let usuario = process.env.CIOP_INCIDENTES_USUARIO;
+let senha = process.env.CIOP_INCIDENTES_SENHA;
 let endpoint = '';
 const requestTimeoutMs = Number(process.env.CIOP_INCIDENTES_TIMEOUT_MS || 60000);
 const requestRetries = Number(process.env.CIOP_INCIDENTES_RETRIES || 20);
@@ -28,8 +29,13 @@ const pageLength = Number(process.env.CIOP_INCIDENTES_LOTE || 2000);
 const DATA_MINIMA_ISO = String(process.env.CIOP_INCIDENTES_DATA_MIN || "2026-01-01").trim();
 const JANELA_ATUALIZACAO_DIAS = Number(process.env.CIOP_INCIDENTES_JANELA_ATUALIZACAO_DIAS || 180);
 const FORCE_FULL = process.env.CIOP_INCIDENTES_FULL === "1";
-if (!usuario || !senha) {
-  throw new Error('Configure CIOP_INCIDENTES_USUARIO e CIOP_INCIDENTES_SENHA antes de atualizar os incidentes.');
+
+function exigirCredenciais() {
+  usuario = process.env.CIOP_INCIDENTES_USUARIO;
+  senha = process.env.CIOP_INCIDENTES_SENHA;
+  if (!usuario || !senha) {
+    throw new Error('Configure CIOP_INCIDENTES_USUARIO e CIOP_INCIDENTES_SENHA antes de atualizar os incidentes.');
+  }
 }
 
 function parseIsoDate(iso) {
@@ -95,6 +101,20 @@ function applyBrowserHeaders(headers) {
 function copyJar(from, to) {
   to.clear();
   for (const [name, value] of from.entries()) to.set(name, value);
+}
+
+async function requestOnce(jar, url, options = {}, timeoutMs = 12000) {
+  const headers = new Headers(options.headers || {});
+  applyBrowserHeaders(headers);
+  if (jar.size) headers.set('Cookie', cookieHeader(jar));
+  const response = await fetch(url, {
+    ...options,
+    headers,
+    redirect: 'manual',
+    signal: AbortSignal.timeout(timeoutMs)
+  });
+  storeCookies(jar, response);
+  return response;
 }
 
 async function request(jar, url, options = {}) {
@@ -196,6 +216,7 @@ async function verifySession(jar, activeGuid) {
 }
 
 async function login() {
+  exigirCredenciais();
   const jar = new Map();
   const first = await request(jar, loginUrl);
   const loginHtml = await first.text();
@@ -378,6 +399,11 @@ function normalize(row) {
     estado: String(row.StateName || ''),
     natureOfProblem: '',
     instructions: '',
+    cmtuAprovado: false,
+    cmtuReprovado: false,
+    cmtuAprovadoPor: '',
+    cmtuReprovadoPor: '',
+    cmtuJustificativa: '',
     empresa: String(row.DivisionShortName || ''),
     veiculoDescricao: String(row.VehicleDescription || ''),
   };
@@ -453,10 +479,15 @@ function readExistingPayload() {
       existing.rows.push(row);
       existing.rowMap.set(key, row);
       existing.processedIds.add(key);
-      if (row.natureOfProblem || row.instructions) {
+      if (row.natureOfProblem || row.instructions || row.cmtuJustificativa || row.cmtuReprovadoPor || row.cmtuAprovadoPor) {
         existing.details.set(key, {
           natureOfProblem: String(row.natureOfProblem || ''),
           instructions: String(row.instructions || ''),
+          cmtuAprovado: !!row.cmtuAprovado,
+          cmtuReprovado: !!row.cmtuReprovado,
+          cmtuAprovadoPor: String(row.cmtuAprovadoPor || ''),
+          cmtuReprovadoPor: String(row.cmtuReprovadoPor || ''),
+          cmtuJustificativa: String(row.cmtuJustificativa || '')
         });
         existing.checkedDetailIds.add(key);
       }
@@ -467,30 +498,264 @@ function readExistingPayload() {
   }
 }
 
-async function loadIncidentDetail(jar, incidentId) {
+const DETAIL_COLS_BASE = ['IncidentID', 'NatureOfProblem', 'Instructions'];
+/** Campos do formulário "Justificativa da CMTU" (GetModel Frm1a794d3e… / IncidentForm). */
+const CMTU_FLDS = {
+  aprovado: 'Fld399db56cedb24ee780e6b87e71874555',
+  aprovadoPor: 'Fld6631eda4a45d406aaf78431411577d79',
+  justificativa: 'Fldb514e1beb9804c82b69ee4bd8e66ff88',
+  reprovado: 'Fldd405c26ca6e04803bd19b704de79aca3',
+  reprovadoPor: 'Fld3eed174a78904cd3ae1f8d4d171a4556'
+};
+const DETAIL_COLS_CMTU = Object.values(CMTU_FLDS);
+
+function valorCampo(row, nomes) {
+  if (!row || typeof row !== 'object') return '';
+  const lower = {};
+  for (const [k, v] of Object.entries(row)) lower[String(k).toLowerCase()] = v;
+  for (const nome of nomes) {
+    const v = lower[String(nome).toLowerCase()];
+    if (v == null) continue;
+    const s = String(v).trim();
+    if (s) return s;
+  }
+  return '';
+}
+
+function flagSim(value) {
+  const s = String(value ?? '').trim().toLowerCase();
+  return s === '1' || s === 'true' || s === 'sim' || s === 'yes' || s === 'on' || s === 'checked';
+}
+
+function parseCmtuDeObjeto(row) {
+  if (!row || typeof row !== 'object') {
+    return {
+      cmtuAprovado: false,
+      cmtuReprovado: false,
+      cmtuAprovadoPor: '',
+      cmtuReprovadoPor: '',
+      cmtuJustificativa: ''
+    };
+  }
+  const justificativa = valorCampo(row, [CMTU_FLDS.justificativa, 'cmtuJustificativa', 'Justificativa']);
+  const aprovadoPor = valorCampo(row, [CMTU_FLDS.aprovadoPor, 'cmtuAprovadoPor']);
+  const reprovadoPor = valorCampo(row, [CMTU_FLDS.reprovadoPor, 'cmtuReprovadoPor']);
+  const aprovado = valorCampo(row, [CMTU_FLDS.aprovado, 'cmtuAprovado']);
+  const reprovado = valorCampo(row, [CMTU_FLDS.reprovado, 'cmtuReprovado']);
+  return {
+    cmtuAprovado: flagSim(aprovado),
+    cmtuReprovado: flagSim(reprovado),
+    cmtuAprovadoPor: aprovadoPor,
+    cmtuReprovadoPor: reprovadoPor,
+    cmtuJustificativa: justificativa
+  };
+}
+
+function parseCmtuDoHtml(html) {
+  const bruto = String(html || '');
+  if (!/justificativa|aprovado por|reprovado por/i.test(bruto)) return null;
+  const pick = (label) => {
+    const re = new RegExp(
+      String(label).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') +
+        '[\\s\\S]{0,280}?(?:value\\s*=\\s*"([^"]*)"|<textarea[^>]*>([\\s\\S]*?)</textarea>|<td[^>]*>([\\s\\S]*?)</td>)',
+      'i'
+    );
+    const m = bruto.match(re);
+    if (!m) return '';
+    return String(m[1] || m[2] || m[3] || '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+  const checkedPerto = (labelExato) => {
+    const re = new RegExp(`(>|\\s)${labelExato}(\\s|<)`, 'i');
+    const idx = bruto.search(re);
+    if (idx < 0) return false;
+    const slice = bruto.slice(Math.max(0, idx - 450), idx + 120);
+    return /type=["']checkbox["'][^>]*checked|checked[^>]*type=["']checkbox["']/i.test(slice);
+  };
+  return {
+    cmtuAprovado: checkedPerto('Aprovado'),
+    cmtuReprovado: checkedPerto('Reprovado'),
+    cmtuAprovadoPor: pick('Aprovado por'),
+    cmtuReprovadoPor: pick('Reprovado por'),
+    cmtuJustificativa: pick('Justificativa')
+  };
+}
+
+function htmlTemJustificativaCmtu(html) {
+  return /FALTOU MAIS INFORMACOES|Justificativa da CMTU|Reprovado por/i.test(String(html || ''));
+}
+
+async function postDictionary(jar, cols, extra = {}) {
   const body = new URLSearchParams();
-  body.set('DataSourceKey', 'CADIncidentManagement.Sql.Unified');
-  ['IncidentID', 'NatureOfProblem', 'Instructions'].forEach((column) => body.append('Columns[]', column));
-  body.set('SortColumn', 'IncidentID');
+  body.set('DataSourceKey', extra.dataSource || 'CADIncidentManagement.Sql.Unified');
+  cols.forEach((column) => body.append('Columns[]', column));
+  body.set('SortColumn', extra.sort || 'IncidentID');
   body.set('ResultType', '1');
   body.set('SortDirection', '1');
   body.set('DisplayStart', '0');
-  body.set('DisplayLength', '1');
-  body.set('ColumnsSearch[IncidentID]', String(incidentId));
+  body.set('DisplayLength', extra.length || '1');
+  if (extra.incidentId) body.set('ColumnsSearch[IncidentID]', String(extra.incidentId));
   body.set('timezoneOffset', '180');
-
   const response = await fetchWithRetry(endpoint, {
     method: 'POST',
     headers: apiHeaders(jar, endpoint.replace(/\/Json\/GetDataDictionary$/, '')),
-    body,
+    body
   });
-  if (!response.ok) throw new Error(`HTTP ${response.status} no detalhe do incidente ${incidentId}`);
-  const json = JSON.parse(await response.text());
-  const row = Array.isArray(json) ? json[0] : null;
+  const text = await response.text();
+  return { ok: response.ok, status: response.status, text };
+}
+
+async function loadUnifiedRow(jar, incidentId, cols) {
+  const res = await postDictionary(jar, cols, { incidentId });
+  if (!res.ok) throw new Error(`HTTP ${res.status} no detalhe do incidente ${incidentId}: ${res.text.slice(0, 160)}`);
+  const json = JSON.parse(res.text);
+  return Array.isArray(json) ? json[0] : null;
+}
+
+function guidAtivo() {
+  return String(endpoint || '').match(/\/g\/([a-f0-9]{32})\//i)?.[1] || '';
+}
+
+let usarColunasCmtu = process.env.CIOP_INCIDENTES_CMTU_COLS !== '0';
+let cmtuHtmlHabilitado = process.env.CIOP_INCIDENTES_CMTU_HTML === '1';
+let cmtuHtmlPathOk = '';
+let cmtuHtmlFalhasSeguidas = 0;
+
+async function tentarHtmlIncidente(jar, incidentId) {
+  if (!cmtuHtmlHabilitado) return { html: '', hits: [], parsed: null };
+  const guid = guidAtivo();
+  const paths = cmtuHtmlPathOk
+    ? [cmtuHtmlPathOk]
+    : [
+        `/g/${guid}/Incidents/View/${incidentId}`,
+        `/g/${guid}/Incidents/Edit/${incidentId}`,
+        `/g/${guid}/Incidents/Details/${incidentId}`,
+        `/g/${guid}/Incidents/Incident/${incidentId}`,
+        `/g/${guid}/Incident/View/${incidentId}`
+      ];
+  const hits = [];
+  for (const p of paths) {
+    const url = p.startsWith('http') ? p : `${baseUrl}${p}`;
+    try {
+      const response = await requestOnce(jar, url, {
+        headers: { Referer: endpoint.replace(/\/Json\/GetDataDictionary$/, '') }
+      }, 12000);
+      const html = await response.text();
+      const snippetHit = htmlTemJustificativaCmtu(html) || /Justificativa/i.test(html);
+      hits.push({
+        url,
+        status: response.status,
+        bytes: html.length,
+        hit: snippetHit,
+        parsed: snippetHit ? parseCmtuDoHtml(html) : null
+      });
+      if (snippetHit) {
+        cmtuHtmlPathOk = p;
+        cmtuHtmlFalhasSeguidas = 0;
+        return { html, hits, parsed: parseCmtuDoHtml(html) };
+      }
+    } catch (err) {
+      hits.push({ url, erro: err.message });
+    }
+  }
+  if (!cmtuHtmlPathOk) {
+    cmtuHtmlHabilitado = false;
+  }
+  return { html: '', hits, parsed: null };
+}
+
+export async function probeCmtu(incidentId = '61907') {
+  const jar = await login();
+  const id = String(incidentId);
+  const tentativas = [];
+
+  const soId = await postDictionary(jar, ['IncidentID'], { incidentId: id });
+  tentativas.push({
+    nome: 'unified-so-id',
+    status: soId.status,
+    preview: soId.text.slice(0, 500),
+    keys: (() => {
+      try {
+        const row = JSON.parse(soId.text)?.[0];
+        return row ? Object.keys(row) : [];
+      } catch {
+        return [];
+      }
+    })()
+  });
+
+  const extra = await postDictionary(jar, [...DETAIL_COLS_BASE, ...DETAIL_COLS_CMTU], { incidentId: id });
+  tentativas.push({
+    nome: 'unified-cmtu-cols',
+    status: extra.status,
+    preview: extra.text.slice(0, 800)
+  });
+
+  for (const ds of [
+    'CADIncidentManagement.Sql.IncidentForm',
+    'CADIncidentManagement.Sql.Forms',
+    'CADIncidentManagement.Sql.CustomFields',
+    'Incidents.Sql.IncidentGridView'
+  ]) {
+    const res = await postDictionary(jar, ['IncidentID'], { incidentId: id, dataSource: ds });
+    tentativas.push({
+      nome: ds,
+      status: res.status,
+      preview: res.text.slice(0, 280)
+    });
+  }
+
+  const htmlTry = await tentarHtmlIncidente(jar, id);
+  return {
+    ok: true,
+    incidentId: id,
+    endpoint,
+    tentativas,
+    htmlHits: htmlTry.hits,
+    htmlParsed: htmlTry.parsed
+  };
+}
+
+async function loadIncidentDetail(jar, incidentId) {
+  let row = null;
+  try {
+    row = await loadUnifiedRow(
+      jar,
+      incidentId,
+      usarColunasCmtu ? [...DETAIL_COLS_BASE, ...DETAIL_COLS_CMTU] : DETAIL_COLS_BASE
+    );
+  } catch (err) {
+    if (usarColunasCmtu) {
+      usarColunasCmtu = false;
+      console.log(`Colunas CMTU falharam (${err.message}). Seguindo só com Natureza/Instruções.`);
+    }
+    row = await loadUnifiedRow(jar, incidentId, DETAIL_COLS_BASE);
+  }
   return {
     natureOfProblem: String(row?.NatureOfProblem || ''),
     instructions: String(row?.Instructions || ''),
+    ...parseCmtuDeObjeto(row)
   };
+}
+
+function aplicarDetalhe(row, detail) {
+  if (!detail) return;
+  row.natureOfProblem = detail.natureOfProblem || '';
+  row.instructions = detail.instructions || '';
+  row.cmtuAprovado = !!detail.cmtuAprovado;
+  row.cmtuReprovado = !!detail.cmtuReprovado;
+  row.cmtuAprovadoPor = String(detail.cmtuAprovadoPor || '');
+  row.cmtuReprovadoPor = String(detail.cmtuReprovadoPor || '');
+  row.cmtuJustificativa = String(detail.cmtuJustificativa || '');
+}
+
+function semCmtu(row) {
+  return !String(row?.cmtuJustificativa || '').trim()
+    && !String(row?.cmtuReprovadoPor || '').trim()
+    && !String(row?.cmtuAprovadoPor || '').trim();
 }
 
 async function enrichDetails(jar, rows, candidateRows = rows) {
@@ -498,13 +763,10 @@ async function enrichDetails(jar, rows, candidateRows = rows) {
   const details = existingPayload.details;
   rows.forEach((row) => {
     const cached = details.get(row.incidentId) || details.get(row.id);
-    if (cached) {
-      row.natureOfProblem = cached.natureOfProblem;
-      row.instructions = cached.instructions;
-    }
+    if (cached) aplicarDetalhe(row, cached);
   });
 
-let pending = candidateRows.filter((row) => {
+  let pending = candidateRows.filter((row) => {
     const key = rowKey(row);
     if (!key) return false;
     if (isDentroJanelaAtualizacao(row)) return true;
@@ -516,7 +778,7 @@ let pending = candidateRows.filter((row) => {
     return rows;
   }
 
-  console.log(`Detalhes: buscando ${pending.length} incidentes sem cache.`);
+  console.log(`Detalhes: buscando ${pending.length} incidentes (natureza, instruções e justificativa CMTU).`);
   let index = 0;
   let done = 0;
   async function worker() {
@@ -524,8 +786,8 @@ let pending = candidateRows.filter((row) => {
       const row = pending[index++];
       try {
         const detail = await loadIncidentDetail(jar, row.incidentId);
-        row.natureOfProblem = detail.natureOfProblem;
-        row.instructions = detail.instructions;
+        aplicarDetalhe(row, detail);
+        existingPayload.details.set(rowKey(row), detail);
         existingPayload.checkedDetailIds.add(rowKey(row));
       } catch (error) {
         console.log(`Detalhes: falha no incidente ${row.incidentId}: ${error.message}`);
@@ -588,84 +850,111 @@ function mergeRows(newRows, existing) {
   return { merged, countNovos, countEstado, countDados, novosIds, atualizadosIds };
 }
 
-const existingPayload = readExistingPayload();
-const jar = await login();
-fs.mkdirSync(outputDir, { recursive: true });
+let existingPayload = {
+  rows: [],
+  rowMap: new Map(),
+  details: new Map(),
+  processedIds: new Set(),
+  checkedDetailIds: new Set()
+};
 
-let start = 0;
-let total = null;
-const rows = [];
+export async function executarAtualizacaoIncidentes() {
+  existingPayload = readExistingPayload();
+  const jar = await login();
+  fs.mkdirSync(outputDir, { recursive: true });
 
-if (FORCE_FULL) {
-  console.log(`Atualização COMPLETA: toda a base TCGL desde ${DATA_MINIMA_ISO.split("-").reverse().join("/")}.`);
-} else {
-  console.log(`Atualização: lista completa desde ${DATA_MINIMA_ISO.split("-").reverse().join("/")} e detalhes dos últimos ${JANELA_ATUALIZACAO_DIAS} dias.`);
-}
+  let start = 0;
+  let total = null;
+  const rows = [];
 
-while (total === null || start < total) {
-  const chunk = await loadChunk(jar, start, pageLength);
-  if (chunk.length === 0) break;
-  total = Number(chunk[0].QueryRowCount || chunk.length);
-  const chunkNormalizedAll = chunk.map(normalize);
-  if (chunkNormalizedAll.length > 0 && chunkNormalizedAll.every(isBeforeMinDate)) {
-    console.log(`Atualização: lote anterior a ${DATA_MINIMA_ISO}. Encerrando paginação.`);
-    break;
+  if (FORCE_FULL) {
+    console.log(`Atualização COMPLETA: toda a base TCGL desde ${DATA_MINIMA_ISO.split("-").reverse().join("/")}.`);
+  } else {
+    console.log(`Atualização: lista completa desde ${DATA_MINIMA_ISO.split("-").reverse().join("/")} e detalhes dos últimos ${JANELA_ATUALIZACAO_DIAS} dias + justificativa CMTU desde ${DATA_MINIMA_ISO}.`);
   }
-  const normalized = chunkNormalizedAll.filter((row) => isOnOrAfterMinDate(row));
-  rows.push(...normalized);
-  const snapshot = {
-    atualizadoEm: new Date().toISOString(),
-    fonte: 'Gerenciamento de Incidentes',
-    empresa: 'TCGL',
-    dataMinima: DATA_MINIMA_ISO,
-    totalServidor: total,
-    totalExtraido: rows.length,
-    incidentes: rows,
-  };
-  fs.writeFileSync(partialFile, JSON.stringify(snapshot));
-  console.log(`Baixados ${rows.length}/${total} (desde ${DATA_MINIMA_ISO})`);
-  start += pageLength;
-}
 
-const { merged: mergedRows, countNovos, countEstado, countDados, novosIds, atualizadosIds } = mergeRows(rows, existingPayload);
-const novosParaDetalhe = mergedRows.filter((row) => {
+  while (total === null || start < total) {
+    const chunk = await loadChunk(jar, start, pageLength);
+    if (chunk.length === 0) break;
+    total = Number(chunk[0].QueryRowCount || chunk.length);
+    const chunkNormalizedAll = chunk.map(normalize);
+    if (chunkNormalizedAll.length > 0 && chunkNormalizedAll.every(isBeforeMinDate)) {
+      console.log(`Atualização: lote anterior a ${DATA_MINIMA_ISO}. Encerrando paginação.`);
+      break;
+    }
+    const normalized = chunkNormalizedAll.filter((row) => isOnOrAfterMinDate(row));
+    rows.push(...normalized);
+    const snapshot = {
+      atualizadoEm: new Date().toISOString(),
+      fonte: 'Gerenciamento de Incidentes',
+      empresa: 'TCGL',
+      dataMinima: DATA_MINIMA_ISO,
+      totalServidor: total,
+      totalExtraido: rows.length,
+      incidentes: rows,
+    };
+    fs.writeFileSync(partialFile, JSON.stringify(snapshot));
+    console.log(`Baixados ${rows.length}/${total} (desde ${DATA_MINIMA_ISO})`);
+    start += pageLength;
+  }
+
+  const { merged: mergedRows, countNovos, countEstado, countDados, novosIds, atualizadosIds } = mergeRows(rows, existingPayload);
+  const cmtuBackfillLimite = Number(process.env.CIOP_INCIDENTES_CMTU_BACKFILL || 4000);
+  let cmtuPendentes = 0;
+  const novosParaDetalhe = mergedRows.filter((row) => {
     const key = rowKey(row);
     if (!key) return false;
-    const semDetalhe = !String(row.natureOfProblem || "").trim() && !String(row.instructions || "").trim();
-    if (novosIds.has(key) && semDetalhe) return true;
+    if (novosIds.has(key) || atualizadosIds.has(key)) return true;
     if (isDentroJanelaAtualizacao(row)) return true;
+    if (semCmtu(row) && cmtuPendentes < cmtuBackfillLimite) {
+      cmtuPendentes += 1;
+      return true;
+    }
     return false;
   });
   await enrichDetails(jar, mergedRows, novosParaDetalhe);
   mergedRows.forEach((row) => {
-  ensureTipoOriginal(row);
-  applyTipoVazio(row);
-});
-const finalRows = mergedRows.filter(isOnOrAfterMinDate);
-const processedIds = Array.from(new Set(finalRows.map(rowKey).filter(Boolean)));
-const checkedDetailIds = Array.from(existingPayload.checkedDetailIds);
-console.log(`Incidentes desde ${DATA_MINIMA_ISO}: ${finalRows.length} (registroVazio quando sem natureza/instruções; tipo TCGL preservado).`);
+    ensureTipoOriginal(row);
+    applyTipoVazio(row);
+  });
+  const finalRows = mergedRows.filter(isOnOrAfterMinDate);
+  const processedIds = Array.from(new Set(finalRows.map(rowKey).filter(Boolean)));
+  const checkedDetailIds = Array.from(existingPayload.checkedDetailIds);
+  const comCmtu = finalRows.filter((row) => !semCmtu(row)).length;
+  console.log(`Incidentes desde ${DATA_MINIMA_ISO}: ${finalRows.length} (${comCmtu} com justificativa/parecer CMTU).`);
 
-const payload = {
-  atualizadoEm: new Date().toISOString(),
-  fonte: 'Gerenciamento de Incidentes',
-  empresa: 'TCGL',
-  dataMinima: DATA_MINIMA_ISO,
-  totalServidor: total ?? rows.length,
-  totalExtraido: finalRows.length,
-  totalComEmpresa: mergedRows.length,
-  ultimaMudanca: {
-    novos: countNovos,
-    estadosAtualizados: countEstado,
-    dadosAtualizados: countDados,
-    idsNovos: Array.from(novosIds),
-    idsAtualizados: Array.from(atualizadosIds),
-  },
-  idsProcessados: processedIds,
-  idsDetalhesConsultados: checkedDetailIds,
-  incidentes: finalRows,
-};
+  const payload = {
+    atualizadoEm: new Date().toISOString(),
+    fonte: 'Gerenciamento de Incidentes',
+    empresa: 'TCGL',
+    dataMinima: DATA_MINIMA_ISO,
+    totalServidor: total ?? rows.length,
+    totalExtraido: finalRows.length,
+    totalComEmpresa: mergedRows.length,
+    ultimaMudanca: {
+      novos: countNovos,
+      estadosAtualizados: countEstado,
+      dadosAtualizados: countDados,
+      idsNovos: Array.from(novosIds),
+      idsAtualizados: Array.from(atualizadosIds),
+    },
+    idsProcessados: processedIds,
+    idsDetalhesConsultados: checkedDetailIds,
+    incidentes: finalRows,
+  };
 
-fs.writeFileSync(outputFile, JSON.stringify(payload));
-fs.rmSync(partialFile, { force: true });
-console.log(`Arquivo gerado: ${outputFile}`);
+  fs.writeFileSync(outputFile, JSON.stringify(payload));
+  fs.rmSync(partialFile, { force: true });
+  console.log(`Arquivo gerado: ${outputFile}`);
+  return payload;
+}
+
+const esteArquivo = fileURLToPath(import.meta.url);
+const chamadoDireto = Boolean(process.argv[1] && path.resolve(process.argv[1]) === esteArquivo);
+if (chamadoDireto) {
+  if (process.env.CIOP_INCIDENTES_PROBE_ID) {
+    console.log(JSON.stringify(await probeCmtu(process.env.CIOP_INCIDENTES_PROBE_ID), null, 2));
+  } else {
+    await executarAtualizacaoIncidentes();
+  }
+}
