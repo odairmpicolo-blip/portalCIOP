@@ -31,7 +31,6 @@ export const MODULOS_PORTAL = [
   { id: "onibus-agora-clever", label: "Monitoramento Ao Vivo", grupo: "Operação" },
   { id: "fleetbus-agora", label: "FleetBus Agora", grupo: "Operação" },
   { id: "criar-relatorio", label: "Criar Relatório", grupo: "Operação" },
-  { id: "sei-horario", label: "SEI · Alteração de horário", grupo: "Operação" },
   { id: "saida-carros-drive", label: "Saída de carros (Drive)", grupo: "Operação" },
   { id: "diarios-bordo", label: "Diários de bordo", grupo: "Operação" },
   { id: "desvios", label: "Desvios", grupo: "Operação" },
