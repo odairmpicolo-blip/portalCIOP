@@ -40,6 +40,10 @@
     };
   }
 
+  function temArCondicionado(t) {
+    return t.includes("ar condicionado");
+  }
+
   function fotoPorTecnologia(tecnologia, modelo) {
     const t = norm(tecnologia);
     const m = norm(modelo);
@@ -51,11 +55,11 @@
     if (t.includes("microonibus amarelo")) return "micro-amarelo.png";
     if (t.includes("leve azul")) return "leve-azul.png";
     if (t.includes("leve amarelo")) return "leve-amarelo.png";
-    if (t.includes("pesado azul") && t.includes("ar")) {
+    if (t.includes("pesado azul") && temArCondicionado(t)) {
       return m.includes("o500") ? "pesado-azul-o500.png" : "pesado-azul-ar.png";
     }
     if (t.includes("pesado azul")) return "pesado-azul.png";
-    if (t.includes("pesado amarelo") && t.includes("ar")) return "pesado-amarelo-ar.png";
+    if (t.includes("pesado amarelo") && temArCondicionado(t)) return "pesado-amarelo-ar.png";
     if (t.includes("pesado amarelo")) return "pesado-amarelo.png";
     return "";
   }
@@ -76,7 +80,7 @@
         tecnologia,
         modelo: partes.modelo,
         tamanho: partes.tamanho,
-        foto: fotoArq ? FOTOS + fotoArq : "",
+        foto: fotoArq ? new URL(FOTOS + fotoArq, document.baseURI).href : "",
         busca: norm([prefixo, placa, tecnologia, modeloBruto, partes.modelo, partes.tamanho].join(" "))
       };
     });
@@ -157,11 +161,18 @@
     const dlg = document.getElementById("cvPopup");
     const foto = document.getElementById("cvFoto");
     const sem = document.getElementById("cvSemFoto");
+    foto.onerror = null;
     if (v.foto) {
-      foto.hidden = false;
       sem.hidden = true;
-      foto.src = v.foto;
+      foto.hidden = false;
       foto.alt = "Ônibus " + v.prefixo + " — " + v.tecnologia;
+      foto.onerror = () => {
+        foto.onerror = null;
+        foto.removeAttribute("src");
+        foto.hidden = true;
+        sem.hidden = false;
+      };
+      foto.src = v.foto;
     } else {
       foto.removeAttribute("src");
       foto.hidden = true;
