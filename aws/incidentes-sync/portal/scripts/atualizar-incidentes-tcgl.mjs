@@ -65,10 +65,18 @@ const columns = [
 ];
 
 const SUBSTITUTO_CANDIDATOS = [
+  'ReplacementVehicleID',
   'ReplacementVehicleDescription',
   'ReplacementVehicle',
+  'ReplacementVehicleName',
+];
+const SUBSTITUTO_SOURCES = [
+  'Incidents.Sql.IncidentGridView',
+  'CADIncidentManagement.Sql.Unified',
+  'CADIncidentManagement.Sql.IncidentForm',
 ];
 let colunaSubstitutoGrid = '';
+let colunaSubstitutoFonte = '';
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -265,52 +273,122 @@ function vehicleNumber(value) {
 
 function descricaoSubstituto(row) {
   if (!row || typeof row !== 'object') return '';
-  const nomes = colunaSubstitutoGrid
-    ? [colunaSubstitutoGrid, ...SUBSTITUTO_CANDIDATOS]
-    : SUBSTITUTO_CANDIDATOS;
-  for (const nome of nomes) {
-    const v = String(row[nome] || '').trim();
-    if (v) return v;
+  const nomes = [];
+  if (colunaSubstitutoGrid) nomes.push(colunaSubstitutoGrid);
+  nomes.push(...SUBSTITUTO_CANDIDATOS);
+  return valorCampo(row, nomes);
+}
+
+function acharCampoSubstitutoNoModelo(node, found = []) {
+  if (!node || found.length) return found;
+  if (Array.isArray(node)) {
+    for (const item of node) acharCampoSubstitutoNoModelo(item, found);
+    return found;
   }
-  return '';
+  if (typeof node !== 'object') return found;
+  const rotulo = [node.Caption, node.caption, node.Label, node.label, node.Name, node.name, node.Text, node.text]
+    .map((v) => String(v || '')).join(' ');
+  if (/replacement\s*vehicle/i.test(rotulo)) {
+    const id = String(node.ID || node.Id || node.id || node.Key || node.key || node.FieldKey || '').trim();
+    const valor = node.Value ?? node.value ?? node.Text ?? node.text ?? '';
+    found.push({ id, valor: String(valor ?? '').trim(), rotulo: rotulo.slice(0, 80) });
+    return found;
+  }
+  for (const v of Object.values(node)) acharCampoSubstitutoNoModelo(v, found);
+  return found;
+}
+
+async function detectarFldSubstitutoGetModel() {
+  const idAmostra = String(process.env.CIOP_INCIDENTES_PROBE_ID || '59881');
+  const base = String(session.refererUrl || '').replace(/\/$/, '');
+  if (!base) return { col: '', ds: '' };
+  const url = `${base}/Default/GetModel?modelKey=Frm1a794d3e1c4e455bac85655e19e55b67&beginEdit=false&defaultModelKey=IncidentForm&parameters%5BIncidentID%5D=${encodeURIComponent(idAmostra)}&parameters%5BIncidentTypeID%5D=-1`;
+  try {
+    const resp = await session.context.request.get(url, {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        Referer: session.refererUrl,
+        Origin: 'https://cioplondrina.com.br',
+        Accept: 'application/json, text/javascript, */*; q=0.01',
+      },
+      timeout: 20000,
+    });
+    const text = await resp.text();
+    console.log(`Substituto GetModel HTTP ${resp.status()} bytes=${text.length}`);
+    let modelo = null;
+    try { modelo = JSON.parse(text); } catch {
+      const idx = text.search(/Replacement\s*Vehicle/i);
+      if (idx >= 0) {
+        const snippet = text.slice(Math.max(0, idx - 180), idx + 420).replace(/\s+/g, ' ');
+        const fld = snippet.match(/Fld[0-9a-f]{32}/i);
+        console.log(`Substituto GetModel texto ${snippet.slice(0, 280)}`);
+        if (fld) return { col: fld[0], ds: 'GetModel' };
+      }
+      return { col: '', ds: '' };
+    }
+    const hits = acharCampoSubstitutoNoModelo(modelo);
+    if (hits.length) {
+      const hit = hits[0];
+      console.log(`Substituto GetModel campo ${JSON.stringify(hit)}`);
+      if (hit.id) return { col: hit.id, ds: 'GetModel' };
+    }
+    const idx = text.search(/Replacement\s*Vehicle/i);
+    if (idx >= 0) {
+      const snippet = text.slice(Math.max(0, idx - 180), idx + 420).replace(/\s+/g, ' ');
+      console.log(`Substituto GetModel snippet ${snippet.slice(0, 280)}`);
+      const fld = snippet.match(/Fld[0-9a-f]{32}/i);
+      if (fld) return { col: fld[0], ds: 'GetModel' };
+    } else {
+      console.log('Substituto GetModel sem texto Replacement Vehicle');
+    }
+  } catch (err) {
+    console.log(`Substituto GetModel falhou (${err.message})`);
+  }
+  return { col: '', ds: '' };
 }
 
 async function detectarColunaSubstituto() {
-  for (const col of SUBSTITUTO_CANDIDATOS) {
-    const body = new URLSearchParams();
-    body.set('DataSourceKey', 'Incidents.Sql.IncidentGridView');
-    body.append('Columns[]', 'IncidentID');
-    body.append('Columns[]', col);
-    body.set('SortColumn', 'AddDTS');
-    body.set('ResultType', '1');
-    body.set('SortDirection', '1');
-    body.set('DisplayStart', '0');
-    body.set('DisplayLength', '1');
-    body.set('ColumnsSearch[DivisionShortName]', 'TCGL');
-    body.set('timezoneOffset', '180');
-    try {
-      const resp = await session.context.request.post(session.endpoint, {
-        headers: apiHeaders(session.refererUrl),
-        data: body.toString(),
-        timeout: Math.min(requestTimeoutMs, 15000),
-      });
-      if (resp.status() !== 200) {
-        console.log(`Substituto: ${col} HTTP ${resp.status()}`);
-        continue;
+  const idAmostra = String(process.env.CIOP_INCIDENTES_PROBE_ID || '59881');
+  for (const ds of SUBSTITUTO_SOURCES) {
+    for (const col of SUBSTITUTO_CANDIDATOS) {
+      const body = new URLSearchParams();
+      body.set('DataSourceKey', ds);
+      body.append('Columns[]', 'IncidentID');
+      body.append('Columns[]', col);
+      body.set('SortColumn', 'IncidentID');
+      body.set('ResultType', '1');
+      body.set('SortDirection', '1');
+      body.set('DisplayStart', '0');
+      body.set('DisplayLength', '1');
+      if (ds.includes('GridView')) body.set('ColumnsSearch[DivisionShortName]', 'TCGL');
+      else body.set('ColumnsSearch[IncidentID]', idAmostra);
+      body.set('timezoneOffset', '180');
+      try {
+        const resp = await session.context.request.post(session.endpoint, {
+          headers: apiHeaders(session.refererUrl),
+          data: body.toString(),
+          timeout: 15000,
+        });
+        const status = resp.status();
+        if (status !== 200) {
+          console.log(`Substituto: ${ds} ${col} HTTP ${status}`);
+          continue;
+        }
+        const json = JSON.parse(await resp.text());
+        if (!Array.isArray(json)) {
+          console.log(`Substituto: ${ds} ${col} resposta inesperada`);
+          continue;
+        }
+        const amostra = String(json[0]?.[col] || '').trim().slice(0, 80);
+        console.log(`Substituto: usando ${ds} · ${col}${amostra ? ` · ex=${amostra}` : ''}`);
+        if (amostra) return { col, ds };
+      } catch (err) {
+        console.log(`Substituto: ${ds} ${col} falhou (${err.message})`);
       }
-      const json = JSON.parse(await resp.text());
-      if (!Array.isArray(json)) {
-        console.log(`Substituto: ${col} resposta inesperada`);
-        continue;
-      }
-      console.log(`Substituto: usando coluna ${col}`);
-      return col;
-    } catch (err) {
-      console.log(`Substituto: ${col} falhou (${err.message})`);
     }
   }
-  console.log('Substituto: Replacement Vehicle não está no grid do CAD.');
-  return '';
+  console.log('Substituto: Replacement Vehicle não encontrado no CAD (GetModel/grid/unified/form).');
+  return { col: '', ds: '' };
 }
 
 async function loadChunk(start, length, allowRelogin = true) {
@@ -444,6 +522,8 @@ function readExistingPayload() {
           cmtuAprovadoPor: String(row.cmtuAprovadoPor || ''),
           cmtuReprovadoPor: String(row.cmtuReprovadoPor || ''),
           cmtuJustificativa: String(row.cmtuJustificativa || ''),
+          veiculoSubstituto: String(row.veiculoSubstituto || ''),
+          veiculoSubstitutoDescricao: String(row.veiculoSubstitutoDescricao || ''),
         });
         existing.checkedDetailIds.add(key);
       }
@@ -454,7 +534,7 @@ function readExistingPayload() {
   }
 }
 
-const DETAIL_COLS_BASE = ['IncidentID', 'NatureOfProblem', 'Instructions'];
+let DETAIL_COLS_BASE = ['IncidentID', 'NatureOfProblem', 'Instructions'];
 const CMTU_FLDS = {
   aprovado: 'Fld399db56cedb24ee780e6b87e71874555',
   aprovadoPor: 'Fld6631eda4a45d406aaf78431411577d79',
@@ -493,6 +573,10 @@ function parseCmtuDeObjeto(row) {
   };
 }
 
+function semSubstituto(row) {
+  return !String(row?.veiculoSubstituto || '').trim() && !String(row?.veiculoSubstitutoDescricao || '').trim();
+}
+
 function semCmtu(row) {
   return !String(row?.cmtuJustificativa || '').trim()
     && !String(row?.cmtuReprovadoPor || '').trim()
@@ -508,6 +592,11 @@ function aplicarDetalhe(row, detail) {
   row.cmtuAprovadoPor = String(detail.cmtuAprovadoPor || '');
   row.cmtuReprovadoPor = String(detail.cmtuReprovadoPor || '');
   row.cmtuJustificativa = String(detail.cmtuJustificativa || '');
+  if (detail.veiculoSubstitutoDescricao || detail.veiculoSubstituto) {
+    const desc = String(detail.veiculoSubstitutoDescricao || detail.veiculoSubstituto || '');
+    row.veiculoSubstitutoDescricao = desc;
+    row.veiculoSubstituto = vehicleNumber(desc);
+  }
 }
 
 async function postUnified(incidentId, cols) {
@@ -541,10 +630,13 @@ async function loadIncidentDetail(incidentId) {
     }
     row = await postUnified(incidentId, DETAIL_COLS_BASE);
   }
+  const substitutoDesc = descricaoSubstituto(row);
   return {
     natureOfProblem: String(row?.NatureOfProblem || ''),
     instructions: String(row?.Instructions || ''),
     ...parseCmtuDeObjeto(row),
+    veiculoSubstitutoDescricao: substitutoDesc,
+    veiculoSubstituto: vehicleNumber(substitutoDesc),
   };
 }
 
@@ -645,9 +737,14 @@ const existingPayload = readExistingPayload();
 
 try {
   await login();
-  colunaSubstitutoGrid = await detectarColunaSubstituto();
-  if (colunaSubstitutoGrid && !columns.includes(colunaSubstitutoGrid)) {
+  const substituto = await detectarColunaSubstituto();
+  colunaSubstitutoGrid = substituto.col;
+  colunaSubstitutoFonte = substituto.ds;
+  if (colunaSubstitutoGrid && colunaSubstitutoFonte.includes('GridView') && !columns.includes(colunaSubstitutoGrid)) {
     columns.push(colunaSubstitutoGrid);
+  }
+  if (colunaSubstitutoGrid && !DETAIL_COLS_BASE.includes(colunaSubstitutoGrid)) {
+    DETAIL_COLS_BASE = [...DETAIL_COLS_BASE, colunaSubstitutoGrid];
   }
   fs.mkdirSync(outputDir, { recursive: true });
 
@@ -688,13 +785,19 @@ try {
 
   const { merged: mergedRows, countNovos, countEstado, countDados, novosIds, atualizadosIds } = mergeRows(rows, existingPayload);
   const cmtuBackfillLimite = Number(process.env.CIOP_INCIDENTES_CMTU_BACKFILL || 8000);
+  const substitutoBackfillLimite = Number(process.env.CIOP_INCIDENTES_SUBSTITUTO_BACKFILL || 2500);
   let cmtuPendentes = 0;
+  let substitutoPendentes = 0;
   const novosParaDetalhe = mergedRows.filter((row) => {
     const key = rowKey(row);
     if (!key) return false;
     if (novosIds.has(key) || atualizadosIds.has(key)) return true;
     if (semCmtu(row) && cmtuPendentes < cmtuBackfillLimite) {
       cmtuPendentes += 1;
+      return true;
+    }
+    if (colunaSubstitutoGrid && semSubstituto(row) && substitutoPendentes < substitutoBackfillLimite) {
+      substitutoPendentes += 1;
       return true;
     }
     return false;
