@@ -20,9 +20,9 @@ const browserUserAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleW
 let usuario = process.env.CIOP_INCIDENTES_USUARIO;
 let senha = process.env.CIOP_INCIDENTES_SENHA;
 let endpoint = '';
-const requestTimeoutMs = Number(process.env.CIOP_INCIDENTES_TIMEOUT_MS || 60000);
-const requestRetries = Number(process.env.CIOP_INCIDENTES_RETRIES || 20);
-const detailConcurrency = Number(process.env.CIOP_INCIDENTES_DETALHES_CONCURRENCY || 8);
+const requestTimeoutMs = Number(process.env.CIOP_INCIDENTES_TIMEOUT_MS || 25000);
+const requestRetries = Number(process.env.CIOP_INCIDENTES_RETRIES || 4);
+const detailConcurrency = Number(process.env.CIOP_INCIDENTES_DETALHES_CONCURRENCY || 3);
 const detailLimit = Number(process.env.CIOP_INCIDENTES_DETALHES_LIMITE || 0);
 const loadDetails = process.env.CIOP_INCIDENTES_DETALHES !== '0';
 const pageLength = Number(process.env.CIOP_INCIDENTES_LOTE || 2000);
@@ -67,6 +67,12 @@ const columns = [
   'DriverNr',
   'DriverName',
 ];
+
+const SUBSTITUTO_CANDIDATOS = [
+  'ReplacementVehicleDescription',
+  'ReplacementVehicle',
+];
+let colunaSubstitutoGrid = '';
 
 function cookieHeader(jar) {
   return Array.from(jar.entries()).map(([name, value]) => `${name}=${value}`).join('; ');
@@ -352,6 +358,58 @@ function vehicleNumber(value) {
   return match ? match[1] : text;
 }
 
+function descricaoSubstituto(row) {
+  if (!row || typeof row !== 'object') return '';
+  const nomes = colunaSubstitutoGrid
+    ? [colunaSubstitutoGrid, ...SUBSTITUTO_CANDIDATOS]
+    : SUBSTITUTO_CANDIDATOS;
+  for (const nome of nomes) {
+    const v = String(row[nome] || '').trim();
+    if (v) return v;
+  }
+  return '';
+}
+
+async function detectarColunaSubstituto(jar) {
+  const refererUrl = endpoint.replace(/\/Json\/GetDataDictionary$/, '');
+  for (const col of SUBSTITUTO_CANDIDATOS) {
+    const body = new URLSearchParams();
+    body.set('DataSourceKey', 'Incidents.Sql.IncidentGridView');
+    body.append('Columns[]', 'IncidentID');
+    body.append('Columns[]', col);
+    body.set('SortColumn', 'AddDTS');
+    body.set('ResultType', '1');
+    body.set('SortDirection', '1');
+    body.set('DisplayStart', '0');
+    body.set('DisplayLength', '1');
+    body.set('ColumnsSearch[DivisionShortName]', 'TCGL');
+    body.set('timezoneOffset', '180');
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: apiHeaders(jar, refererUrl),
+        body,
+        signal: AbortSignal.timeout(Math.min(requestTimeoutMs, 15000)),
+      });
+      if (!response.ok) {
+        console.log(`Substituto: ${col} HTTP ${response.status}`);
+        continue;
+      }
+      const json = JSON.parse(await response.text());
+      if (!Array.isArray(json)) {
+        console.log(`Substituto: ${col} resposta inesperada`);
+        continue;
+      }
+      console.log(`Substituto: usando coluna ${col}`);
+      return col;
+    } catch (err) {
+      console.log(`Substituto: ${col} falhou (${err.message})`);
+    }
+  }
+  console.log('Substituto: Replacement Vehicle não está no grid do CAD.');
+  return '';
+}
+
 async function loadChunk(jar, start, length, allowRelogin = true) {
   const refererUrl = endpoint.replace(/\/Json\/GetDataDictionary$/, '');
   const response = await fetchWithRetry(endpoint, {
@@ -382,6 +440,7 @@ async function loadChunk(jar, start, length, allowRelogin = true) {
 function normalize(row) {
   const dateTime = splitDateTime(row.AddDTS);
   const tipoOriginal = String(row.IncidentTypeName || '').trim();
+  const substitutoDesc = descricaoSubstituto(row);
   return {
     incidentId: String(row.IncidentID || row.IncidentNr || ''),
     id: String(row.IncidentNr || ''),
@@ -389,6 +448,7 @@ function normalize(row) {
     hora: dateTime.hora,
     departamento: String(row.DepartmentName || ''),
     veiculo: vehicleNumber(row.VehicleDescription),
+    veiculoSubstituto: vehicleNumber(substitutoDesc),
     linha: String(row.routename || ''),
     criadoPor: String(row.CreatedBy || ''),
     motoristaNr: String(row.DriverNr || ''),
@@ -406,6 +466,7 @@ function normalize(row) {
     cmtuJustificativa: '',
     empresa: String(row.DivisionShortName || ''),
     veiculoDescricao: String(row.VehicleDescription || ''),
+    veiculoSubstitutoDescricao: substitutoDesc,
   };
 }
 
@@ -419,6 +480,7 @@ const summaryFields = [
   'hora',
   'departamento',
   'veiculo',
+  'veiculoSubstituto',
   'linha',
   'criadoPor',
   'motoristaNr',
@@ -429,6 +491,7 @@ const summaryFields = [
   'estado',
   'empresa',
   'veiculoDescricao',
+  'veiculoSubstitutoDescricao',
 ];
 
 function applySummaryUpdates(oldRow, newRow) {
@@ -861,6 +924,10 @@ let existingPayload = {
 export async function executarAtualizacaoIncidentes() {
   existingPayload = readExistingPayload();
   const jar = await login();
+  colunaSubstitutoGrid = await detectarColunaSubstituto(jar);
+  if (colunaSubstitutoGrid && !columns.includes(colunaSubstitutoGrid)) {
+    columns.push(colunaSubstitutoGrid);
+  }
   fs.mkdirSync(outputDir, { recursive: true });
 
   let start = 0;
@@ -899,7 +966,7 @@ export async function executarAtualizacaoIncidentes() {
   }
 
   const { merged: mergedRows, countNovos, countEstado, countDados, novosIds, atualizadosIds } = mergeRows(rows, existingPayload);
-  const cmtuBackfillLimite = Number(process.env.CIOP_INCIDENTES_CMTU_BACKFILL || 4000);
+  const cmtuBackfillLimite = Number(process.env.CIOP_INCIDENTES_CMTU_BACKFILL || 600);
   let cmtuPendentes = 0;
   const novosParaDetalhe = mergedRows.filter((row) => {
     const key = rowKey(row);

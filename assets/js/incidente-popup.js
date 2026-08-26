@@ -11,6 +11,9 @@
     ["veiculo", "Veículo"],
     ["prefixo", "Prefixo"],
     ["veiculoDescricao", "Descrição do veículo"],
+    ["veiculoSubstituto", "Veículo substituto"],
+    ["veiculoSubstitutoDescricao", "Descrição do substituto"],
+    ["veiculo_substituto", "Veículo substituto"],
     ["linha", "Linha"],
     ["criadoPor", "Analista"],
     ["aberto_por", "Aberto por"],
@@ -108,7 +111,7 @@
       if (chave === "tipo" || chave === "tipo_de_incidente") valor = tipoIncidente(row);
       if (chave === "cmtuStatus") valor = statusJustificativaCmtu(row);
       if (chave === "cmtuPor") valor = porJustificativaCmtu(row);
-      var amplo = /nature|instru|descricao|observ|justificativa/i.test(chave);
+      var amplo = /nature|instru|descricao|observ|justificativa|substitut/i.test(chave);
       lista.push({ chave: chave, rotulo: rotulo(chave), valor: texto(valor), amplo: amplo });
     });
     vistos.cmtuAprovado = 1;

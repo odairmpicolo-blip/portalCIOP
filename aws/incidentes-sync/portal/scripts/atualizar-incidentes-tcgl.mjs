@@ -64,6 +64,12 @@ const columns = [
   'Operator',
 ];
 
+const SUBSTITUTO_CANDIDATOS = [
+  'ReplacementVehicleDescription',
+  'ReplacementVehicle',
+];
+let colunaSubstitutoGrid = '';
+
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -257,6 +263,56 @@ function vehicleNumber(value) {
   return match ? match[1] : text;
 }
 
+function descricaoSubstituto(row) {
+  if (!row || typeof row !== 'object') return '';
+  const nomes = colunaSubstitutoGrid
+    ? [colunaSubstitutoGrid, ...SUBSTITUTO_CANDIDATOS]
+    : SUBSTITUTO_CANDIDATOS;
+  for (const nome of nomes) {
+    const v = String(row[nome] || '').trim();
+    if (v) return v;
+  }
+  return '';
+}
+
+async function detectarColunaSubstituto() {
+  for (const col of SUBSTITUTO_CANDIDATOS) {
+    const body = new URLSearchParams();
+    body.set('DataSourceKey', 'Incidents.Sql.IncidentGridView');
+    body.append('Columns[]', 'IncidentID');
+    body.append('Columns[]', col);
+    body.set('SortColumn', 'AddDTS');
+    body.set('ResultType', '1');
+    body.set('SortDirection', '1');
+    body.set('DisplayStart', '0');
+    body.set('DisplayLength', '1');
+    body.set('ColumnsSearch[DivisionShortName]', 'TCGL');
+    body.set('timezoneOffset', '180');
+    try {
+      const resp = await session.context.request.post(session.endpoint, {
+        headers: apiHeaders(session.refererUrl),
+        data: body.toString(),
+        timeout: Math.min(requestTimeoutMs, 15000),
+      });
+      if (resp.status() !== 200) {
+        console.log(`Substituto: ${col} HTTP ${resp.status()}`);
+        continue;
+      }
+      const json = JSON.parse(await resp.text());
+      if (!Array.isArray(json)) {
+        console.log(`Substituto: ${col} resposta inesperada`);
+        continue;
+      }
+      console.log(`Substituto: usando coluna ${col}`);
+      return col;
+    } catch (err) {
+      console.log(`Substituto: ${col} falhou (${err.message})`);
+    }
+  }
+  console.log('Substituto: Replacement Vehicle não está no grid do CAD.');
+  return '';
+}
+
 async function loadChunk(start, length, allowRelogin = true) {
   const resp = await postComRetry(session.endpoint, bodyFor(start, length).toString());
 
@@ -282,12 +338,14 @@ async function loadChunk(start, length, allowRelogin = true) {
 function normalize(row) {
   const dateTime = splitDateTime(row.AddDTS);
   const tipoOriginal = String(row.IncidentTypeName || '').trim();
+  const substitutoDesc = descricaoSubstituto(row);
   return {
     incidentId: String(row.IncidentID || row.IncidentNr || ''),
     id: String(row.IncidentNr || ''),
     data: dateTime.data,
     hora: dateTime.hora,
     veiculo: vehicleNumber(row.VehicleDescription),
+    veiculoSubstituto: vehicleNumber(substitutoDesc),
     linha: String(row.routename || ''),
     criadoPor: String(row.CreatedBy || ''),
     tipo: tipoOriginal,
@@ -301,6 +359,7 @@ function normalize(row) {
     motoristaNr: String(row.OperatorBadgeNumber || ''),
     motorista: String(row.Operator || ''),
     veiculoDescricao: String(row.VehicleDescription || ''),
+    veiculoSubstitutoDescricao: substitutoDesc,
   };
 }
 
@@ -313,6 +372,7 @@ const summaryFields = [
   'data',
   'hora',
   'veiculo',
+  'veiculoSubstituto',
   'linha',
   'criadoPor',
   'tipo',
@@ -324,6 +384,7 @@ const summaryFields = [
   'motoristaNr',
   'motorista',
   'veiculoDescricao',
+  'veiculoSubstitutoDescricao',
 ];
 
 function applySummaryUpdates(oldRow, newRow) {
@@ -584,6 +645,10 @@ const existingPayload = readExistingPayload();
 
 try {
   await login();
+  colunaSubstitutoGrid = await detectarColunaSubstituto();
+  if (colunaSubstitutoGrid && !columns.includes(colunaSubstitutoGrid)) {
+    columns.push(colunaSubstitutoGrid);
+  }
   fs.mkdirSync(outputDir, { recursive: true });
 
   let start = 0;

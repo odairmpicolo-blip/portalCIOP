@@ -287,7 +287,8 @@
     const camposInc = [
       "id", "incidentId", "veiculo", "linha", "tipo", "tipoOriginal", "estado",
       "criadoPor", "data", "hora", "motorista", "motoristaNr", "proprietario",
-      "departamento", "natureOfProblem", "instructions", "cmtuJustificativa", "cmtuReprovadoPor", "cmtuAprovadoPor"
+      "departamento", "natureOfProblem", "instructions", "cmtuJustificativa", "cmtuReprovadoPor", "cmtuAprovadoPor",
+      "veiculoSubstituto", "veiculoSubstitutoDescricao"
     ];
     const lista = !q ? rows : rows.filter((r) =>
       filtra([r], q, camposInc).length > 0
@@ -321,6 +322,7 @@
         <td>${esc(r.hora || "")}</td>
         <td>${esc(r.departamento || "")}</td>
         <td title="${esc(r.veiculoDescricao || r.veiculo || "")}">${esc(r.veiculo || "")}</td>
+        <td title="${esc(r.veiculoSubstitutoDescricao || r.veiculoSubstituto || "")}">${esc(r.veiculoSubstituto || "")}</td>
         <td>${esc(r.linha || "")}</td>
         <td>${esc(r.criadoPor || "")}</td>
         <td>${esc(r.motoristaNr || "")}</td>

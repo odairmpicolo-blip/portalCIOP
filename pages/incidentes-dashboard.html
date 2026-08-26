@@ -618,6 +618,7 @@ h1{font-size:20px}
 <th data-sort="hora"><span class="sort-label">Hora <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="departamento"><span class="sort-label">Departamento <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="veiculo"><span class="sort-label">Veículo <span class="sort-icon" aria-hidden="true">↕</span></span></th>
+<th data-sort="veiculoSubstituto"><span class="sort-label">Substituto <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="linha"><span class="sort-label">Linha <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="criadoPor"><span class="sort-label">Analista <span class="sort-icon" aria-hidden="true">↕</span></span></th>
 <th data-sort="motoristaNr"><span class="sort-label">Nr. Motorista <span class="sort-icon" aria-hidden="true">↕</span></span></th>
@@ -666,7 +667,7 @@ h1{font-size:20px}
 
 
 <script src="../assets/js/theme-toggle.js?v=20260818logo6"></script>
-<script src="../assets/js/incidente-popup.js?v=20260825cmtu3"></script>
+<script src="../assets/js/incidente-popup.js?v=20260826sub1"></script>
 <script>
 const state = {
 all: [],
@@ -828,7 +829,7 @@ if (!String(row.natureOfProblem || "").trim()) return false;
 if (!String(row.instructions || "").trim()) return false;
 }
 if (!search) return true;
-return normalizeText([row.id, row.data, row.hora, row.veiculo, row.linha, row.criadoPor, tipoOriginalIncidente(row), tipoExibicaoIncidente(row), row.proprietario, row.estado, row.natureOfProblem, row.instructions, statusJustificativaCmtu(row), porJustificativaCmtu(row), textoJustificativaCmtu(row)].join(" ")).includes(search);
+return normalizeText([row.id, row.data, row.hora, row.veiculo, row.veiculoSubstituto, row.veiculoSubstitutoDescricao, row.linha, row.criadoPor, tipoOriginalIncidente(row), tipoExibicaoIncidente(row), row.proprietario, row.estado, row.natureOfProblem, row.instructions, statusJustificativaCmtu(row), porJustificativaCmtu(row), textoJustificativaCmtu(row)].join(" ")).includes(search);
 });
 
 sortRows();
@@ -929,6 +930,7 @@ tbody.innerHTML = pageRows.map((row) => '<tr data-incidente-id="' + escapeHtml(r
 '<td>' + escapeHtml(row.hora) + '</td>' +
 '<td>' + escapeHtml(row.departamento) + '</td>' +
 '<td title="' + escapeHtml(row.veiculoDescricao || row.veiculo) + '">' + escapeHtml(row.veiculo) + '</td>' +
+'<td title="' + escapeHtml(row.veiculoSubstitutoDescricao || row.veiculoSubstituto || "") + '">' + escapeHtml(row.veiculoSubstituto || "") + '</td>' +
 '<td>' + escapeHtml(row.linha) + '</td>' +
 '<td>' + escapeHtml(row.criadoPor) + '</td>' +
 '<td>' + escapeHtml(row.motoristaNr) + '</td>' +
@@ -964,9 +966,9 @@ return '"' + String(value || "").replace(/"/g, '""') + '"';
 }
 
 function exportCsv() {
-const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções","Status","Por","Justificativa"];
+const header = ["ID","data","hora","veiculo","substituto","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções","Status","Por","Justificativa"];
 const lines = [header.map(csvValue).join(";")].concat(state.filtered.map((row) => [
-row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,tipoExibicaoIncidente(row),row.proprietario,row.estado,row.natureOfProblem,row.instructions,statusJustificativaCmtu(row),porJustificativaCmtu(row),textoJustificativaCmtu(row)
+row.id,row.data,row.hora,row.veiculo,row.veiculoSubstituto,row.linha,row.criadoPor,tipoExibicaoIncidente(row),row.proprietario,row.estado,row.natureOfProblem,row.instructions,statusJustificativaCmtu(row),porJustificativaCmtu(row),textoJustificativaCmtu(row)
 ].map(csvValue).join(";")));
 downloadBlob(new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" }), "incidentes-tcgl.csv");
 }
@@ -1040,9 +1042,9 @@ return new Blob(chunks, { type: "application/vnd.openxmlformats-officedocument.s
 }
 
 function exportExcel() {
-const header = ["ID","data","hora","veiculo","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções","Status","Por","Justificativa"];
-const rows = [header].concat(state.filtered.map((row) => [row.id,row.data,row.hora,row.veiculo,row.linha,row.criadoPor,tipoExibicaoIncidente(row),row.proprietario,row.estado,row.natureOfProblem,row.instructions,statusJustificativaCmtu(row),porJustificativaCmtu(row),textoJustificativaCmtu(row)]));
-const widths = [10,12,9,12,13,22,28,24,16,46,52,18,24,52];
+const header = ["ID","data","hora","veiculo","substituto","linha","criado por","tipo do incidente","proprietario","estado","Natureza do Problema","Instruções","Status","Por","Justificativa"];
+const rows = [header].concat(state.filtered.map((row) => [row.id,row.data,row.hora,row.veiculo,row.veiculoSubstituto,row.linha,row.criadoPor,tipoExibicaoIncidente(row),row.proprietario,row.estado,row.natureOfProblem,row.instructions,statusJustificativaCmtu(row),porJustificativaCmtu(row),textoJustificativaCmtu(row)]));
+const widths = [10,12,9,12,12,13,22,28,24,16,46,52,18,24,52];
 const cols = widths.map((width, index) => '<col min="' + (index + 1) + '" max="' + (index + 1) + '" width="' + width + '" customWidth="1"/>').join("");
 const sheetRows = rows.map((row, rowIndex) => '<row r="' + (rowIndex + 1) + '" ht="' + (rowIndex === 0 ? 28 : 24) + '" customHeight="1">' +
 row.map((cell, columnIndex) => {
