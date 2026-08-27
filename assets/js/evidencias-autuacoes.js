@@ -987,15 +987,39 @@ function celulaPdf(rotulo, valor, span) {
   return `<div${cls}><span>${escapeHtml(rotulo)}</span><b>${escapeHtml(valor || "—")}</b></div>`;
 }
 
+function quadroImagem(src, alt) {
+  return `<div class="sheet-img-frame"><img src="${src}" alt="${escapeHtml(alt)}"></div>`;
+}
+
+function ajustarImagensNoQuadro(raiz) {
+  raiz.querySelectorAll(".sheet-img-frame").forEach((frame) => {
+    const img = frame.querySelector("img");
+    if (!img) return;
+    const fw = frame.clientWidth;
+    const fh = frame.clientHeight;
+    const nw = img.naturalWidth;
+    const nh = img.naturalHeight;
+    if (fw < 8 || fh < 8 || nw < 2 || nh < 2) return;
+    const scale = Math.min(fw / nw, fh / nh);
+    img.style.width = `${Math.max(1, Math.round(nw * scale))}px`;
+    img.style.height = `${Math.max(1, Math.round(nh * scale))}px`;
+    img.style.maxWidth = "none";
+    img.style.maxHeight = "none";
+    img.style.objectFit = "fill";
+    img.style.flex = "none";
+    frame.style.background = "#fff";
+  });
+}
+
 function buildSheetHtml(auto) {
   const imgs = evidenciasSomente(auto)
-    .map((img) => `<img src="${img.dataUrl}" alt="Evidência">`)
+    .map((img) => quadroImagem(img.dataUrl, "Evidência"))
     .join("");
   const notif = auto.paginaNotif
-    ? `<img src="${auto.paginaNotif}" alt="Capa">`
+    ? quadroImagem(auto.paginaNotif, "Capa")
     : `<div class="sheet-docs-empty">Sem capa</div>`;
   const autoPage = auto.paginaAuto
-    ? `<img src="${auto.paginaAuto}" alt="Auto">`
+    ? quadroImagem(auto.paginaAuto, "Auto")
     : `<div class="sheet-docs-empty">Sem auto</div>`;
   const linhasTexto = [auto.texto1, auto.texto2, auto.texto3]
     .map((s) => String(s || "").trim())
@@ -1037,8 +1061,11 @@ function buildSheetHtml(auto) {
       </section>
       <div class="sheet-rule soft" aria-hidden="true"><i></i></div>
       <section class="sheet-text">
-        <div class="sheet-text-label">Referência</div>
-        ${linhasTexto || "<p>—</p>"}
+        <div class="sheet-text-accent" aria-hidden="true"></div>
+        <div class="sheet-text-body">
+          <div class="sheet-text-label">Comentários</div>
+          ${linhasTexto || "<p class=\"sheet-text-blank\"></p>"}
+        </div>
       </section>
       <section class="sheet-grid">
         ${celulaPdf("Data", auto.data, 2)}
@@ -1049,11 +1076,10 @@ function buildSheetHtml(auto) {
         ${celulaPdf("Placa", auto.placa, 2)}
         ${celulaPdf("Matrícula", auto.matricula, 2)}
         ${celulaPdf("Motorista", auto.motorista, 4)}
-        ${celulaPdf("Autuador", auto.autuador, 3)}
+        ${celulaPdf("Agente CMTU", auto.autuador, 3)}
         ${celulaPdf("Motivo", auto.motivo, 3)}
-        ${celulaPdf("OBS", obs, 6)}
+        ${obs ? celulaPdf("OBS", obs, 6) : ""}
       </section>
-      <div class="sheet-foot">Documento interno · CIOP / TCGL Operações</div>
     </article>
   `;
 }
@@ -1158,6 +1184,7 @@ function montarOffscreenFicha(auto) {
   art.querySelectorAll(".sheet-brand-logo img").forEach((el) => {
     el.style.overflow = "visible";
   });
+  ajustarImagensNoQuadro(art);
   return { host, art };
 }
 
@@ -1166,6 +1193,7 @@ async function pdfBlobDoAuto(auto) {
   const { host, art } = montarOffscreenFicha(auto);
   await aguardarImagens(art);
   await new Promise((r) => requestAnimationFrame(() => r()));
+  ajustarImagensNoQuadro(art);
   const canvas = await window.html2canvas(art, {
     scale: 2,
     backgroundColor: "#ffffff",
@@ -1187,9 +1215,14 @@ async function pdfBlobDoAuto(auto) {
         ficha.style.color = "#06245c";
         ficha.style.display = "grid";
       }
+      clone.querySelectorAll(".sheet-text, .sheet-text-body, .sheet-foot, .sheet-grid div").forEach((el) => {
+        el.style.boxShadow = "none";
+        el.style.background = "#fff";
+      });
       clone.querySelectorAll("img").forEach((el) => {
         el.style.background = "#ffffff";
       });
+      ajustarImagensNoQuadro(ficha || clone);
     }
   });
   host.innerHTML = "";
@@ -1297,13 +1330,15 @@ function printPreview() {
       .sheet-docs-pane{min-height:0;padding:6px;border-right:1px solid #d5deee;display:flex;flex-direction:column;gap:4px}
       .sheet-docs-pane:last-child{border-right:0}
       .sheet-docs-pane label{display:block;font-size:8px;font-weight:800;color:#344054;text-transform:uppercase;letter-spacing:.1em;flex:0 0 auto}
-      .sheet-docs-pane img{flex:1;min-height:0;width:100%;height:100%;max-height:none;object-fit:contain;object-position:center top;border:1px solid #c9d0dc;background:#fff}
+      .sheet-img-frame{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff;border:1px solid #d5deee}
+      .sheet-img-frame img{display:block;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain;background:#fff;border:0}
       .sheet-docs-empty{flex:1;display:grid;place-items:center;border:1px dashed #c9d4e5;background:#fff;color:#94a3b8;font-size:10px;font-weight:700}
-      .sheet-gallery{min-height:0;margin:6px 8px;padding:6px;display:grid;grid-template-columns:1fr;gap:6px;background:#fff}
+      .sheet-gallery{min-height:0;margin:2px 4px;padding:2px;display:grid;grid-template-columns:1fr;gap:4px;background:#fff}
       .sheet-gallery.is-empty{display:none}
-      .sheet-gallery img{width:100%;height:100%;max-height:none;object-fit:contain;border:1px solid #dfe5ef}
       .sheet-gallery-empty{display:none}
-      .sheet-text{padding:4px 12px 4px 14px;margin:0 12px 6px;border-left:2px solid #06245c;box-shadow:inset 4px 0 0 #ff6b00}
+      .sheet-text{display:flex;align-items:stretch;margin:0 12px 6px;min-height:52px;background:#fff;border:1px solid #d7dee8;box-shadow:none}
+      .sheet-text-accent{flex:0 0 4px;background:#06245c}
+      .sheet-text-body{flex:1;padding:6px 12px;background:#fff}
       .sheet-text-label{font-size:8px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#06245c;margin:0 0 4px}
       .sheet-text p{margin:0 0 4px;font-size:11px;line-height:1.45;font-weight:600;color:#1f2937;font-family:Georgia,"Times New Roman",Times,serif}
       .sheet-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0 12px;padding:0 12px 6px}
@@ -1315,7 +1350,6 @@ function printPreview() {
       .sheet-grid span{display:block;font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#344054}
       .sheet-grid b{font-size:12px;font-weight:800;color:#06245c}
       .sheet-obs{margin:0 12px 4px;font-size:10px;font-weight:700}
-      .sheet-foot{margin:4px 12px 8px;padding-top:8px;border-top:2px solid #06245c;box-shadow:inset 0 4px 0 #ff6b00;font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#475467;text-align:center}
     </style></head><body>${buildSheetHtml(auto)}</body></html>`);
   win.document.close();
   win.focus();
