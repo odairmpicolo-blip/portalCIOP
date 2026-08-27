@@ -1404,6 +1404,11 @@ async function finalizeCurrent() {
   auto.status = "finalizado";
   await dbPut(auto);
   dirty = false;
+  try {
+    await registrarNaPlanilha(auto);
+  } catch (err) {
+    console.warn(err);
+  }
   renderList();
   if (loteTodoFinalizado(auto)) {
     setStatus("Lote concluído. Montando pasta com todos os PDFs...");
