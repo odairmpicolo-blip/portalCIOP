@@ -5,30 +5,19 @@
  *
  * GET  leitura do dashboard (como antes)
  * GET  ?evidencias=1&...   upsert da ficha
- * POST JSON { evidencias:"1", notificacao, auto, data, motivo, carro, linha, ... }
+ * POST JSON { evidencias:"1", notificacao, auto, data, motivo, agente, recebido }
  *
  * Reimplantar o Web App após alterar este arquivo (Executar como: eu / Quem acessa: qualquer pessoa).
  */
 
 const ABA_NOME = "AUTUAÇÕES";
-const SCRIPT_VERSAO = "2026-08-21-evidencias-upsert";
+const SCRIPT_VERSAO = "2026-08-27-evidencias-campos";
 const AUTUACOES_DIAS_JANELA = 365;
 const AUTUACOES_DATA_INICIO = "2015-01-01";
 const AUTUACOES_CHUNK_LINHAS = 800;
 const AUTUACOES_CACHE_TTL = 900;
 const EVIDENCIAS_SHEET_ID = "1kkohM1xJMbQvyyJKayOBpgtL0qFWKQGSa1U8lhwwbes";
 const EVIDENCIAS_GID = 150506325;
-const COLUNAS_EVIDENCIA = [
-  "Carro",
-  "Linha",
-  "Placa",
-  "Horário",
-  "Motorista",
-  "Matrícula",
-  "Local",
-  "Evidenciado em",
-  "Usuário"
-];
 
 const MAPA_COLUNAS = {
   ordem: ["ordem", "Ordem", "ORDEM"],
@@ -452,27 +441,17 @@ function normalizarChaveEv_(valor) {
 }
 
 function autoIdEv_(valor) {
-  return String(valor || "").replace(/^0+/, "").trim();
+  return String(valor || "").replace(/\D/g, "").replace(/^0+/, "").trim();
+}
+
+function autoPlanilhaEv_(valor) {
+  var n = autoIdEv_(valor);
+  if (!n) return "";
+  return ("000000" + n).slice(-6);
 }
 
 function hojeBrEv_() {
   return Utilities.formatDate(new Date(), Session.getScriptTimeZone() || "America/Sao_Paulo", "dd/MM/yyyy");
-}
-
-function garantirColunasEvidencia_(sheet, headers) {
-  var existentes = headers.map(normalizarChaveEv_);
-  var mudou = false;
-  COLUNAS_EVIDENCIA.forEach(function (titulo) {
-    if (existentes.indexOf(normalizarChaveEv_(titulo)) < 0) {
-      headers.push(titulo);
-      existentes.push(normalizarChaveEv_(titulo));
-      mudou = true;
-    }
-  });
-  if (mudou) {
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-  }
-  return headers;
 }
 
 function indiceHeaderEv_(headers, aliases) {
@@ -488,6 +467,7 @@ function upsertEvidenciaAuto_(dados) {
   dados = dados || {};
   var notificacao = String(dados.notificacao || dados.protocolo || "").trim();
   var autoId = autoIdEv_(dados.auto || dados.autoId || "");
+  var autoPlanilha = autoPlanilhaEv_(autoId);
   if (!notificacao && !autoId) {
     return { status: "error", ok: false, message: "Informe notificação/protocolo ou número do auto." };
   }
@@ -497,7 +477,6 @@ function upsertEvidenciaAuto_(dados) {
   var headers = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0].map(function (h) {
     return String(h || "").trim();
   });
-  headers = garantirColunasEvidencia_(sheet, headers);
   lastCol = headers.length;
 
   var idxNotif = indiceHeaderEv_(headers, ["Notificação Nº", "Notificacao", "notificacao"]);
@@ -507,15 +486,6 @@ function upsertEvidenciaAuto_(dados) {
   var idxData = indiceHeaderEv_(headers, ["Data"]);
   var idxMotivo = indiceHeaderEv_(headers, ["Motivo"]);
   var idxAgente = indiceHeaderEv_(headers, ["Agente", "Autuador"]);
-  var idxCarro = indiceHeaderEv_(headers, ["Carro"]);
-  var idxLinha = indiceHeaderEv_(headers, ["Linha"]);
-  var idxPlaca = indiceHeaderEv_(headers, ["Placa"]);
-  var idxHorario = indiceHeaderEv_(headers, ["Horário", "Horario"]);
-  var idxMotorista = indiceHeaderEv_(headers, ["Motorista"]);
-  var idxMatricula = indiceHeaderEv_(headers, ["Matrícula", "Matricula"]);
-  var idxLocal = indiceHeaderEv_(headers, ["Local"]);
-  var idxEvid = indiceHeaderEv_(headers, ["Evidenciado em"]);
-  var idxUser = indiceHeaderEv_(headers, ["Usuário", "Usuario"]);
 
   var lastRow = sheet.getLastRow();
   var linhaAlvo = 0;
@@ -530,11 +500,11 @@ function upsertEvidenciaAuto_(dados) {
       }
       var nNotif = idxNotif >= 0 ? String(row[idxNotif] || "").trim() : "";
       var nAuto = idxAuto >= 0 ? autoIdEv_(row[idxAuto]) : "";
-      var bateNotif = !notificacao || nNotif === notificacao;
-      var bateAuto = !autoId || nAuto === autoId;
       if (notificacao && autoId) {
         if (nNotif === notificacao && nAuto === autoId) linhaAlvo = r + 2;
-      } else if (bateNotif && bateAuto && (notificacao || autoId)) {
+      } else if (notificacao && nNotif === notificacao) {
+        linhaAlvo = r + 2;
+      } else if (autoId && nAuto === autoId) {
         linhaAlvo = r + 2;
       }
     }
@@ -549,7 +519,6 @@ function upsertEvidenciaAuto_(dados) {
     if (linhaAlvo < 2) linhaAlvo = 2;
     linha = headers.map(function () { return ""; });
     if (idxOrdem >= 0) linha[idxOrdem] = maxOrdem + 1;
-    if (idxRecebido >= 0) linha[idxRecebido] = hojeBrEv_();
   }
 
   function preencher(idx, valor, soVazio) {
@@ -560,21 +529,12 @@ function upsertEvidenciaAuto_(dados) {
     linha[idx] = v;
   }
 
-  preencher(idxNotif, notificacao, true);
-  preencher(idxAuto, autoId, true);
-  preencher(idxData, dados.data, true);
-  preencher(idxMotivo, dados.motivo, true);
-  preencher(idxAgente, dados.agente || dados.autuador, true);
+  preencher(idxNotif, notificacao, false);
+  preencher(idxAuto, autoPlanilha, false);
+  preencher(idxData, dados.data, false);
+  preencher(idxMotivo, dados.motivo, false);
+  preencher(idxAgente, dados.agente || dados.autuador, false);
   preencher(idxRecebido, dados.recebido || hojeBrEv_(), true);
-  preencher(idxCarro, dados.carro, false);
-  preencher(idxLinha, dados.linha, false);
-  preencher(idxPlaca, dados.placa, false);
-  preencher(idxHorario, dados.horario, false);
-  preencher(idxMotorista, dados.motorista, false);
-  preencher(idxMatricula, dados.matricula, false);
-  preencher(idxLocal, dados.local, false);
-  preencher(idxEvid, hojeBrEv_(), false);
-  preencher(idxUser, dados.usuario, false);
 
   sheet.getRange(linhaAlvo, 1, 1, lastCol).setValues([linha]);
 
@@ -584,7 +544,7 @@ function upsertEvidenciaAuto_(dados) {
     acao: acao,
     linha: linhaAlvo,
     notificacao: notificacao,
-    auto: autoId,
+    auto: autoPlanilha,
     script_versao: SCRIPT_VERSAO
   };
 }

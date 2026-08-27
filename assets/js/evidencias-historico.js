@@ -74,7 +74,10 @@ function pareceData(valor) {
 function ehEvidenciaPlanilha(row) {
   const carro = String(row.Carro || "").trim();
   const evid = String(row["Evidenciado em"] || "").trim();
-  return Boolean(carro) || pareceData(evid);
+  const recebido = String(row.Recebido || "").trim();
+  const notif = String(row["Notificação Nº"] || "").trim();
+  const auto = String(row["Auto de Infração Nº"] || "").trim();
+  return Boolean(carro) || pareceData(evid) || pareceData(recebido) || Boolean(notif && auto);
 }
 
 function chaveRegistro(row) {
@@ -99,7 +102,11 @@ function normalizarPlanilha(row) {
     horario: row.Horário || "",
     motorista: row.Motorista || "",
     matricula: row.Matrícula || "",
-    evidenciadoEm: pareceData(row["Evidenciado em"]) ? row["Evidenciado em"] : "",
+    evidenciadoEm: pareceData(row["Evidenciado em"])
+      ? row["Evidenciado em"]
+      : pareceData(row.Recebido)
+        ? row.Recebido
+        : "",
     usuario: row.Usuário || "",
     local: row.Local || "",
     status: "planilha"

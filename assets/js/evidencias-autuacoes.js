@@ -987,26 +987,31 @@ async function saveCurrent() {
   }
 }
 
+function dataBrHoje() {
+  return new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+}
+
+function dataBrDeIso(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+}
+
 function payloadPlanilha(auto) {
-  const usuario = window.portalUsuario || {};
+  const nAuto = numeroAutoId(auto.autoId || auto.autoNumero);
+  const autoPad = nAuto ? nAuto.padStart(6, "0") : "";
   return {
     evidencias: "1",
     action: "upsert",
     notificacao: auto.protocolo || auto.notificacao || "",
     protocolo: auto.protocolo || auto.notificacao || "",
-    auto: String(auto.autoId || "").replace(/^0+/, ""),
-    autoId: String(auto.autoId || "").replace(/^0+/, ""),
+    auto: autoPad,
+    autoId: autoPad,
     data: auto.data || "",
-    motivo: auto.motivo || "",
-    carro: auto.carro || "",
-    linha: auto.linha || "",
-    placa: auto.placa || "",
-    horario: auto.horario || "",
-    motorista: auto.motorista || "",
-    autuador: auto.autuador || "",
-    agente: auto.autuador || "",
-    matricula: auto.matricula || "",
-    usuario: usuario.email || usuario.nome || ""
+    motivo: String(auto.motivo || "").trim().toLocaleUpperCase("pt-BR"),
+    agente: String(auto.autuador || "").trim().toLocaleUpperCase("pt-BR"),
+    recebido: dataBrDeIso(auto.loteEm || auto.criadoEm) || dataBrHoje()
   };
 }
 
