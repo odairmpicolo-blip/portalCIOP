@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { config } from "../config.js";
 
@@ -73,7 +73,7 @@ export async function enviarPdfRelatorioS3({ key, buffer, contentType = "applica
   };
 }
 
-export async function urlPresignPutRelatorioS3(key, expiresIn = 60 * 15) {
+export async function urlPresignPutS3(key, contentType = "application/octet-stream", expiresIn = 60 * 15) {
   const bucket = String(config.relatoriosS3Bucket || "").trim();
   if (!bucket) throw new Error("RELATORIOS_S3_BUCKET não configurado");
   if (!key) throw new Error("Chave S3 inválida");
@@ -82,10 +82,63 @@ export async function urlPresignPutRelatorioS3(key, expiresIn = 60 * 15) {
     new PutObjectCommand({
       Bucket: bucket,
       Key: key,
-      ContentType: "application/pdf"
+      ContentType: contentType
     }),
     { expiresIn }
   );
+}
+
+export async function urlPresignPutRelatorioS3(key, expiresIn = 60 * 15) {
+  return urlPresignPutS3(key, "application/pdf", expiresIn);
+}
+
+function emailChaveS3(userEmail) {
+  return String(userEmail || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9.@_+-]+/g, "-");
+}
+
+export function montarChaveEvidencia({ userEmail, autoId, slot }) {
+  const email = emailChaveS3(userEmail);
+  const id = String(autoId || "")
+    .replace(/[^a-zA-Z0-9_-]+/g, "")
+    .slice(0, 80);
+  const nome = String(slot || "arquivo")
+    .replace(/[^a-zA-Z0-9_-]+/g, "")
+    .slice(0, 80);
+  if (!email || !id || !nome) throw new Error("Chave de evidência inválida");
+  return `evidencias/${email}/${id}/${nome}.jpg`;
+}
+
+export function chaveEvidenciaDoUsuario(key, userEmail) {
+  const prefixo = `evidencias/${emailChaveS3(userEmail)}/`;
+  return String(key || "").startsWith(prefixo);
+}
+
+export async function apagarPrefixoS3(prefix) {
+  const bucket = String(config.relatoriosS3Bucket || "").trim();
+  if (!bucket || !prefix) return;
+  let token;
+  do {
+    const res = await getClient().send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        ContinuationToken: token
+      })
+    );
+    const objetos = (res.Contents || []).map((obj) => ({ Key: obj.Key })).filter((o) => o.Key);
+    if (objetos.length) {
+      await getClient().send(
+        new DeleteObjectsCommand({
+          Bucket: bucket,
+          Delete: { Objects: objetos, Quiet: true }
+        })
+      );
+    }
+    token = res.IsTruncated ? res.NextContinuationToken : undefined;
+  } while (token);
 }
 
 export async function relatorioExisteNoS3(key) {

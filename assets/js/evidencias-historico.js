@@ -1,3 +1,5 @@
+import { listarEvidenciasNuvem } from "./evidencias-nuvem.js";
+
 const PLANILHA_CSV =
   "https://docs.google.com/spreadsheets/d/1kkohM1xJMbQvyyJKayOBpgtL0qFWKQGSa1U8lhwwbes/export?format=csv&gid=150506325";
 const DB_NAME = "ciop-evidencias-autuacoes";
@@ -104,6 +106,29 @@ function normalizarPlanilha(row) {
   };
 }
 
+function normalizarNuvem(meta) {
+  return {
+    origem: "nuvem",
+    id: meta.id,
+    data: meta.data || "",
+    dataIso: dataIso(meta.data),
+    protocolo: meta.protocolo || meta.notificacao || "",
+    autoId: String(meta.autoId || "").replace(/\D/g, ""),
+    motivo: meta.motivo || "",
+    agente: meta.autuador || "",
+    carro: meta.carro || "",
+    linha: meta.linha || "",
+    placa: meta.placa || "",
+    horario: meta.horario || "",
+    motorista: meta.motorista || "",
+    matricula: meta.matricula || "",
+    evidenciadoEm: "",
+    usuario: meta.atualizadoPor || "",
+    local: meta.local || "",
+    status: meta.status || "nuvem"
+  };
+}
+
 function normalizarLocal(auto) {
   return {
     origem: "local",
@@ -149,25 +174,29 @@ function lerAutosLocais() {
     .catch(() => []);
 }
 
-function mesclar(planilha, locais) {
+function mesclar(planilha, locais, nuvem) {
   const mapa = new Map();
   planilha.forEach((row) => mapa.set(chaveRegistro(row), row));
-  locais.forEach((row) => {
+  const extra = [...(nuvem || []), ...(locais || [])];
+  extra.forEach((row) => {
     const k = chaveRegistro(row);
     if (!k || k === "#") {
-      mapa.set(`local:${row.id}`, row);
+      mapa.set(`${row.origem}:${row.id}`, row);
       return;
     }
     if (!mapa.has(k)) mapa.set(k, row);
-    else if (row.origem === "local") {
+    else {
       const atual = mapa.get(k);
-      mapa.set(k, { ...atual, ...row, origem: atual.origem === "planilha" ? "ambos" : row.origem });
+      const origens = new Set([atual.origem, row.origem].filter(Boolean));
+      let origem = row.origem;
+      if (origens.has("planilha") && (origens.has("nuvem") || origens.has("local"))) origem = "ambos";
+      mapa.set(k, { ...atual, ...row, id: row.id || atual.id, origem });
     }
   });
   return [...mapa.values()].sort((a, b) => {
     const da = a.evidenciadoEm ? dataIso(a.evidenciadoEm) : a.dataIso;
-    const db = b.evidenciadoEm ? dataIso(b.evidenciadoEm) : b.dataIso;
-    return String(db || "").localeCompare(String(da || "")) || String(b.protocolo).localeCompare(String(a.protocolo));
+    const dbv = b.evidenciadoEm ? dataIso(b.evidenciadoEm) : b.dataIso;
+    return String(dbv || "").localeCompare(String(da || "")) || String(b.protocolo).localeCompare(String(a.protocolo));
   });
 }
 
@@ -212,7 +241,8 @@ function aplicarFiltros(lista) {
 }
 
 function badgeOrigem(row) {
-  if (row.origem === "ambos") return '<span class="tag tag-ok">Planilha + local</span>';
+  if (row.origem === "ambos") return '<span class="tag tag-ok">Planilha + AWS</span>';
+  if (row.origem === "nuvem") return '<span class="tag tag-ok">AWS</span>';
   if (row.origem === "local") return '<span class="tag">Rascunho neste computador</span>';
   return '<span class="tag tag-sheet">Planilha</span>';
 }
@@ -227,7 +257,7 @@ function renderTabela(lista) {
     .map((row) => {
       const notif = padNotificacao(row.autoId) || "—";
       const abrir = row.id
-        ? `<a class="btn-link" href="evidencias-autuacoes.html">Abrir editor</a>`
+        ? `<a class="btn-link" href="evidencias-autuacoes.html?id=${encodeURIComponent(row.id)}">Abrir editor</a>`
         : "";
       return `<tr>
         <td>${row.data || "—"}</td>
@@ -298,11 +328,17 @@ async function carregar() {
     setStatus(`Planilha indisponível: ${err.message || err}`, true);
   }
   const locais = (await lerAutosLocais()).map(normalizarLocal);
-  cache = mesclar(planilha, locais);
+  let nuvem = [];
+  try {
+    nuvem = (await listarEvidenciasNuvem()).map(normalizarNuvem);
+  } catch (err) {
+    console.warn(err);
+  }
+  cache = mesclar(planilha, locais, nuvem);
   const filtrada = aplicarFiltros(cache);
   renderTabela(filtrada);
   setStatus(
-    `${filtrada.length} evidência(s) · ${planilha.length} na planilha · ${locais.length} neste computador.`
+    `${filtrada.length} evidência(s) · ${planilha.length} na planilha · ${nuvem.length} na AWS · ${locais.length} neste computador.`
   );
 }
 

@@ -2,20 +2,17 @@ import express from "express";
 import cors from "cors";
 import { config } from "./config.js";
 import { query, isDsqlMode } from "./db.js";
-import { errorHandler } from "./lib/http.js";
-import { requestLog } from "./middleware/request-log.js";
 import liberacaoRouter from "./routes/liberacao.js";
 import terminaisRouter from "./routes/terminais.js";
 import snapshotsRouter from "./routes/snapshots.js";
 import telemetriaRouter from "./routes/telemetria.js";
 import relatoriosRouter from "./routes/relatorios.js";
 import performanceRouter from "./routes/performance.js";
-import auditRouter from "./routes/audit.js";
 import cr0108Router from "./routes/cr0108.js";
+import evidenciasRouter from "./routes/evidencias.js";
 
 const app = express();
 app.use(express.json({ limit: "20mb" }));
-app.use(requestLog);
 
 // Em producao (Lambda) ou com NODE_ENV=production, se CORS_ORIGINS nao estiver
 // configurada, bloqueamos por padrao (fail-closed) em vez de liberar geral.
@@ -89,14 +86,12 @@ app.use("/snapshots", snapshotsRouter);
 app.use("/telemetria", telemetriaRouter);
 app.use("/relatorios", relatoriosRouter);
 app.use("/performance", performanceRouter);
-app.use("/audit", auditRouter);
 app.use("/cr0108", cr0108Router);
+app.use("/evidencias", evidenciasRouter);
 
 app.use((_req, res) => {
-    res.status(404).json({ ok: false, erro: "Rota não encontrada", codigo: "NAO_ENCONTRADA" });
+    res.status(404).json({ ok: false, erro: "Rota não encontrada" });
 });
-
-app.use(errorHandler);
 
 export { app };
 

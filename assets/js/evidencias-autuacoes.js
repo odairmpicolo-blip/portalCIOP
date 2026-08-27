@@ -1,5 +1,14 @@
-/* Evidências de Autuações — rascunhos locais (IndexedDB) + import PDF CMTU */
+/* Evidências de Autuações — IndexedDB + AWS (DSQL/S3) + import PDF CMTU */
 import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.min.mjs";
+import {
+  excluirEvidenciaNuvem,
+  hidratarEvidenciaNuvem,
+  listarEvidenciasNuvem,
+  mesclarLocalComNuvem,
+  pendenteNuvem,
+  precisaMidiaNuvem,
+  salvarEvidenciaNuvem
+} from "./evidencias-nuvem.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/build/pdf.worker.min.mjs";
@@ -901,6 +910,30 @@ function renderList() {
   $("kpiRascunhos").textContent = String(autos.filter((a) => a.status === "rascunho").length);
 }
 
+async function garantirMidiaLocal(auto) {
+  if (!auto || !precisaMidiaNuvem(auto)) return auto;
+  setStatus("Baixando fotos da nuvem...");
+  await hidratarEvidenciaNuvem(auto);
+  await dbPut(auto);
+  return auto;
+}
+
+async function gravarNaNuvem(auto, { silencioso = false } = {}) {
+  if (!auto?.id) return;
+  if (!silencioso) setStatus("Enviando ficha para a nuvem...");
+  try {
+    await salvarEvidenciaNuvem(auto);
+    await dbPut(auto);
+    return true;
+  } catch (err) {
+    console.warn(err);
+    if (!silencioso) {
+      setStatus(`Salvo neste computador, mas a nuvem falhou: ${err.message || err}`, true);
+    }
+    return false;
+  }
+}
+
 async function selectAuto(id) {
   if (dirty && selected()) {
     readFormInto(selected());
@@ -909,6 +942,12 @@ async function selectAuto(id) {
   selectedId = id;
   const auto = selected();
   if (!auto) return;
+  try {
+    await garantirMidiaLocal(auto);
+  } catch (err) {
+    console.warn(err);
+    setStatus(`Não deu para baixar as fotos da nuvem: ${err.message || err}`, true);
+  }
   enriquecerComCatalogos(auto);
   fillForm(auto);
   renderList();
@@ -921,18 +960,21 @@ async function saveCurrent() {
   await dbPut(auto);
   dirty = false;
   renderList();
-  setStatus("Salvo neste computador. Registrando na planilha...");
+  const nuvemOk = await gravarNaNuvem(auto);
+  setStatus(nuvemOk ? "Salvo na nuvem. Registrando na planilha..." : "Registrando na planilha...");
   try {
     const planilha = await registrarNaPlanilha(auto);
     auto.planilhaLinha = planilha.linha;
     auto.planilhaAcao = planilha.acao;
     await dbPut(auto);
     const acao = planilha.acao === "update" ? "atualizado" : "incluído";
-    setStatus(`Salvo na planilha (linha ${planilha.linha}, ${acao}). Gerando PDF...`);
+    setStatus(
+      `${nuvemOk ? "Nuvem + " : ""}planilha (linha ${planilha.linha}, ${acao}). Gerando PDF...`
+    );
   } catch (err) {
     console.warn(err);
     setStatus(
-      `Salvo neste computador, mas a planilha não gravou: ${err.message || err}. Gerando PDF...`,
+      `${nuvemOk ? "Nuvem ok. " : "Salvo neste computador. "}Planilha não gravou: ${err.message || err}. Gerando PDF...`,
       true
     );
   }
@@ -1006,10 +1048,12 @@ async function addImages(files) {
     auto.imagens.push({ id: uid(), dataUrl, tipo: "evidencia" });
   }
   auto.status = computeStatus(auto);
+  auto.atualizadoEm = new Date().toISOString();
   await dbPut(auto);
   renderImageGrid(auto);
   renderList();
-  setStatus(`${files.length} imagem(ns) anexada(s).`);
+  setStatus(`${files.length} imagem(ns) anexada(s). Enviando à nuvem...`);
+  await gravarNaNuvem(auto, { silencioso: true });
 }
 
 function readFileAsDataUrl(file) {
@@ -1402,8 +1446,10 @@ async function finalizeCurrent() {
   if (!auto) return;
   readFormInto(auto);
   auto.status = "finalizado";
+  auto.atualizadoEm = new Date().toISOString();
   await dbPut(auto);
   dirty = false;
+  await gravarNaNuvem(auto);
   try {
     await registrarNaPlanilha(auto);
   } catch (err) {
@@ -1429,6 +1475,11 @@ async function deleteCurrent() {
   const auto = selected();
   if (!auto) return;
   if (!confirm(`Excluir evidência do carro ${auto.carro || "—"}?`)) return;
+  try {
+    await excluirEvidenciaNuvem(auto.id);
+  } catch (err) {
+    console.warn(err);
+  }
   await dbDelete(auto.id);
   autos = autos.filter((a) => a.id !== auto.id);
   selectedId = autos[0]?.id || null;
@@ -1543,6 +1594,10 @@ async function handleFiles(fileList) {
       }
     }
     renderList();
+    const paraNuvem = loteCriado.length ? loteCriado : selected() ? [selected()] : [];
+    for (const item of paraNuvem) {
+      await gravarNaNuvem(item, { silencioso: true });
+    }
   } catch (err) {
     console.error(err);
     setStatus(`Falha ao importar: ${err.message || err}`, true);
@@ -1627,9 +1682,22 @@ async function boot() {
   wireDropZone($("dropImages"), $("fileImages"), addImages);
 
   autos = (await dbGetAll()).map((a) => enriquecerComCatalogos(a));
+  try {
+    const nuvem = await listarEvidenciasNuvem();
+    autos = mesclarLocalComNuvem(autos, nuvem).map((a) => enriquecerComCatalogos(a));
+    const pendentes = autos.filter(pendenteNuvem).slice(0, 12);
+    pendentes.forEach((item) => {
+      gravarNaNuvem(item, { silencioso: true }).catch((err) => console.warn(err));
+    });
+  } catch (err) {
+    console.warn(err);
+    setStatus(`Lista da AWS indisponível: ${err.message || err}. Usando este computador.`, true);
+  }
   autos.sort(compareOrdemPdf);
   renderList();
-  if (autos[0]) selectAuto(autos[0].id);
+  const idUrl = new URLSearchParams(window.location.search).get("id");
+  const inicial = (idUrl && autos.find((a) => a.id === idUrl)) || autos[0];
+  if (inicial) selectAuto(inicial.id);
   else {
     $("editorEmpty").hidden = false;
     $("editorPanel").hidden = true;

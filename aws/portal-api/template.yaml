@@ -264,6 +264,20 @@ Resources:
       RouteKey: ANY /performance
       Target: !Sub integrations/${PortalApiIntegration}
 
+  PortalApiRouteEvidencias:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApiId
+      RouteKey: ANY /evidencias
+      Target: !Sub integrations/${PortalApiIntegration}
+
+  PortalApiRouteEvidenciasProxy:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Bus2ProxyApiId
+      RouteKey: "ANY /evidencias/{proxy+}"
+      Target: !Sub integrations/${PortalApiIntegration}
+
   PortalApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
