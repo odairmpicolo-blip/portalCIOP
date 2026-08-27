@@ -367,7 +367,7 @@ function blankAuto(extra = {}) {
     texto1: "",
     texto2: "",
     texto3: "",
-    obs: OBS_PADRAO,
+    obs: "",
     imagens: [],
     paginaAuto: "",
     paginaNotif: "",
@@ -721,8 +721,14 @@ function selected() {
   return autos.find((a) => a.id === selectedId) || null;
 }
 
+function atualizarCapaAutoNumero(valor) {
+  const capa = $("capaAutoNumero");
+  if (capa) capa.textContent = String(valor || "").trim() || "—";
+}
+
 function readFormInto(auto) {
   auto.autoNumero = $("fAutoNumero").value.trim();
+  atualizarCapaAutoNumero(auto.autoNumero);
   auto.protocolo = $("fProtocolo") ? $("fProtocolo").value.trim() : auto.protocolo;
   if (auto.protocolo && !auto.notificacao) auto.notificacao = auto.protocolo;
   auto.data = $("fData").value.trim();
@@ -746,6 +752,7 @@ function readFormInto(auto) {
 
 function fillForm(auto) {
   $("fAutoNumero").value = auto.autoNumero || "";
+  atualizarCapaAutoNumero(auto.autoNumero);
   if ($("fProtocolo")) $("fProtocolo").value = auto.protocolo || auto.notificacao || "";
   $("fData").value = auto.data || "";
   $("fHorario").value = auto.horario || "";
@@ -760,7 +767,7 @@ function fillForm(auto) {
   $("fTexto1").value = auto.texto1 || "";
   $("fTexto2").value = auto.texto2 || "";
   $("fTexto3").value = auto.texto3 || "";
-  $("fObs").value = auto.obs || OBS_PADRAO;
+  $("fObs").value = auto.obs && auto.obs !== OBS_PADRAO ? auto.obs : "";
   dirty = false;
   renderDocsPanes(auto);
   renderImageGrid(auto);
@@ -1027,7 +1034,8 @@ function buildSheetHtml(auto) {
     .slice(0, 3)
     .map((ln) => `<p>${escapeHtml(ln)}</p>`)
     .join("");
-  const obs = String(auto.obs || "").trim();
+  const obsBruta = String(auto.obs || "").trim();
+  const obs = obsBruta && obsBruta !== OBS_PADRAO ? obsBruta : "";
   return `
     <article class="sheet-a4">
       <div class="sheet-brand">
@@ -1070,7 +1078,8 @@ function buildSheetHtml(auto) {
       <section class="sheet-grid">
         ${celulaPdf("Data", auto.data, 2)}
         ${celulaPdf("Horário", auto.horario, 2)}
-        ${celulaPdf("Protocolo", auto.protocolo || auto.notificacao, 2)}
+        ${celulaPdf("Protocolo", auto.protocolo || auto.notificacao, 3)}
+        ${celulaPdf("Auto", auto.autoNumero || auto.autoId, 3)}
         ${celulaPdf("Linha", auto.linhaNome ? `${auto.linha} — ${auto.linhaNome}` : auto.linha, 2)}
         ${celulaPdf("Carro", auto.carro, 2)}
         ${celulaPdf("Placa", auto.placa, 2)}
