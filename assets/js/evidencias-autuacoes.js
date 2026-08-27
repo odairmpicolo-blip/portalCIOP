@@ -10,6 +10,36 @@ const STORE = "autos";
 const OBS_PADRAO =
   "OBS: Existe uma solicitação de alteração da tabela horária para o próximo cenário.";
 
+function numeroAutoId(valor) {
+  const s = String(valor || "").trim();
+  if (!s) return "";
+  const m = s.match(/M(\d{3,})/i) || s.match(/N[ºo°.]?\s*(\d+)/i);
+  if (m) return String(parseInt(m[1], 10));
+  if (s.includes("/")) return "";
+  const digits = s.replace(/\D/g, "");
+  if (!digits) return "";
+  return String(parseInt(digits, 10));
+}
+
+function padNotificacao(autoId) {
+  const n = numeroAutoId(autoId);
+  return n ? String(n).padStart(6, "0") : "";
+}
+
+function formatarNotificacaoCampo(autoId) {
+  const pad = padNotificacao(autoId);
+  return pad ? `Nº ${pad}` : "";
+}
+
+function rotuloAutoCapa(auto) {
+  const prot = String(auto?.protocolo || auto?.notificacao || "").trim();
+  const pad = padNotificacao(auto?.autoId || auto?.autoNumero);
+  if (prot && pad) return `${prot} - Nº${pad}`;
+  if (prot) return prot;
+  if (pad) return `Nº${pad}`;
+  return "—";
+}
+
 const FILE_RE =
   /^(\d{2}\.\d{2}\.\d{4})\s*-\s*(.+?)\s*-\s*Carro\s+(\S+)\s*-\s*Linha\s+(\S+)\s*-\s*Mot\s+(\S+)/i;
 
@@ -264,17 +294,12 @@ function enriquecerComCatalogos(auto) {
     if (!auto.notificacao) auto.notificacao = hit.notificacao || "";
     if (!auto.protocolo) auto.protocolo = hit.notificacao || "";
     if (!auto.autoId) auto.autoId = String(hit.auto || "").replace(/^0+/, "");
-    const mPart = String(hit.auto || auto.autoId || "").padStart(7, "0");
-    const artigo = String(hit.artigo || "").replace(/^Infração\s*n[ºo°.]?\s*/i, "").trim();
-    auto.autoNumero = artigo
-      ? `${hit.notificacao}-M${mPart} · ${hit.motivo || ""} · ${artigo}`
-      : `${hit.notificacao}-M${mPart}`;
+    auto.autoNumero = rotuloAutoCapa(auto);
   } else if (auto.notificacao && auto.autoId) {
     auto.protocolo = auto.protocolo || auto.notificacao;
-    auto.autoNumero =
-      auto.autoNumero || `${auto.notificacao}-M${String(auto.autoId).padStart(7, "0")}`;
+    auto.autoNumero = rotuloAutoCapa(auto);
   } else if (auto.autoId && !auto.autoNumero) {
-    auto.autoNumero = String(auto.autoId).padStart(4, "0");
+    auto.autoNumero = rotuloAutoCapa(auto);
   }
   if (!auto.protocolo && auto.notificacao) auto.protocolo = auto.notificacao;
   return auto;
@@ -721,16 +746,23 @@ function selected() {
   return autos.find((a) => a.id === selectedId) || null;
 }
 
-function atualizarCapaAutoNumero(valor) {
+function atualizarCapaAutoNumero(autoOuTexto) {
   const capa = $("capaAutoNumero");
-  if (capa) capa.textContent = String(valor || "").trim() || "—";
+  if (!capa) return;
+  const texto =
+    autoOuTexto && typeof autoOuTexto === "object"
+      ? rotuloAutoCapa(autoOuTexto)
+      : String(autoOuTexto || "").trim();
+  capa.textContent = texto || "—";
 }
 
 function readFormInto(auto) {
-  auto.autoNumero = $("fAutoNumero").value.trim();
-  atualizarCapaAutoNumero(auto.autoNumero);
   auto.protocolo = $("fProtocolo") ? $("fProtocolo").value.trim() : auto.protocolo;
-  if (auto.protocolo && !auto.notificacao) auto.notificacao = auto.protocolo;
+  if (auto.protocolo) auto.notificacao = auto.protocolo;
+  const nAuto = numeroAutoId($("fAutoNumero").value);
+  if (nAuto) auto.autoId = nAuto;
+  auto.autoNumero = rotuloAutoCapa(auto);
+  atualizarCapaAutoNumero(auto);
   auto.data = $("fData").value.trim();
   auto.horario = $("fHorario").value.trim();
   auto.carro = $("fCarro").value.trim();
@@ -751,8 +783,8 @@ function readFormInto(auto) {
 }
 
 function fillForm(auto) {
-  $("fAutoNumero").value = auto.autoNumero || "";
-  atualizarCapaAutoNumero(auto.autoNumero);
+  $("fAutoNumero").value = formatarNotificacaoCampo(auto.autoId || auto.autoNumero);
+  atualizarCapaAutoNumero(auto);
   if ($("fProtocolo")) $("fProtocolo").value = auto.protocolo || auto.notificacao || "";
   $("fData").value = auto.data || "";
   $("fHorario").value = auto.horario || "";
@@ -1056,7 +1088,7 @@ function buildSheetHtml(auto) {
         <h2 class="sheet-capa-title">Auto de Infração</h2>
         <div class="sheet-protocolo">
           <span>Auto</span>
-          <div class="sheet-capa-numero-text">${escapeHtml(auto.autoNumero) || "—"}</div>
+          <div class="sheet-capa-numero-text">${escapeHtml(rotuloAutoCapa(auto))}</div>
         </div>
       </div>
       <div class="sheet-rule" aria-hidden="true"><i></i></div>
@@ -1079,7 +1111,7 @@ function buildSheetHtml(auto) {
         ${celulaPdf("Data", auto.data, 2)}
         ${celulaPdf("Horário", auto.horario, 2)}
         ${celulaPdf("Protocolo", auto.protocolo || auto.notificacao, 3)}
-        ${celulaPdf("Auto", auto.autoNumero || auto.autoId, 3)}
+        ${celulaPdf("Notificação", formatarNotificacaoCampo(auto.autoId || auto.autoNumero), 3)}
         ${celulaPdf("Linha", auto.linhaNome ? `${auto.linha} — ${auto.linhaNome}` : auto.linha, 2)}
         ${celulaPdf("Carro", auto.carro, 2)}
         ${celulaPdf("Placa", auto.placa, 2)}
