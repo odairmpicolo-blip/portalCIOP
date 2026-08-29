@@ -22,11 +22,20 @@ export async function lerJsonResposta(res, rotulo = "JSON") {
 }
 
 export function normalizarDataIsoRow(row) {
-  if (row?.data_iso) return row.data_iso;
-  const br = String(row?.data || "").trim();
-  const p = br.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (p) return `${p[3]}-${p[1].padStart(2, "0")}-${p[2].padStart(2, "0")}`;
-  return /^\d{4}-\d{2}-\d{2}$/.test(br) ? br : "";
+  if (row?.data_iso && /^\d{4}-\d{2}-\d{2}$/.test(String(row.data_iso))) return row.data_iso;
+  const direto = String(row?.data || "").trim();
+  const brMatch = direto.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (brMatch) return `${brMatch[3]}-${brMatch[1].padStart(2, "0")}-${brMatch[2].padStart(2, "0")}`;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(direto)) return direto;
+  const keys = Object.keys(row || {});
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i];
+    if (k === "_row" || k === "data_iso") continue;
+    const v = String(row[k] || "").trim();
+    const m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) return `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`;
+  }
+  return "";
 }
 
 function listarDatasIsoJanela(dataDe, dataAte) {

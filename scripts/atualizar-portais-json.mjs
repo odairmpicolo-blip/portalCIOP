@@ -73,6 +73,36 @@ function isoDiasAtras(dias) {
   return isoDataLocal(-dias);
 }
 
+function isoDeLinhaLiberacao(row) {
+  if (row?.data_iso && /^\d{4}-\d{2}-\d{2}$/.test(String(row.data_iso))) return row.data_iso;
+  const direto = String(row?.data || "").trim();
+  const brDireto = direto.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (brDireto) {
+    return `${brDireto[3]}-${brDireto[1].padStart(2, "0")}-${brDireto[2].padStart(2, "0")}`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(direto)) return direto;
+  const keys = Object.keys(row || {});
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i];
+    if (k === "_row" || k === "data_iso") continue;
+    const m = String(row[k] || "").trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) return `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`;
+  }
+  return "";
+}
+
+function hidratarLinhaLiberacaoJson(row) {
+  if (!row || typeof row !== "object") return row;
+  const iso = isoDeLinhaLiberacao(row);
+  if (!iso) return row;
+  row.data_iso = iso;
+  if (!String(row.data || "").trim()) {
+    const p = iso.split("-");
+    row.data = `${p[2]}/${p[1]}/${p[0]}`;
+  }
+  return row;
+}
+
 async function fetchJson(url, timeoutMs = TIMEOUT_MS, retries = FETCH_RETRIES) {
   let lastError;
   for (let tentativa = 1; tentativa <= retries; tentativa++) {
@@ -320,6 +350,10 @@ async function atualizarLiberacaoSomenteHoje() {
       return;
     }
     const payload = resultado.value;
+    if (!Array.isArray(payload.dados) || !payload.dados.length) {
+      console.warn(`  aviso: dia ${dia} veio vazio — JSON anterior preservado`);
+      return;
+    }
     const arquivo = `acompanhamento-dia-${dia}.json`;
     escreverJson(path.join(dir, arquivo), {
       ...payload,
@@ -369,6 +403,7 @@ async function atualizarLiberacao() {
   const amanha = isoAmanha();
   console.log(`Baixando liberação lançamento (${dataDeSemana} a ${amanha})...`);
   const acompanhamento = await buscarLiberacaoAcompanhamento(dataDeSemana, amanha, timeoutGraficos);
+  (acompanhamento.dados || []).forEach(hidratarLinhaLiberacaoJson);
   escreverJson(path.join(dir, "acompanhamento-semana.json"), {
     ...acompanhamento,
     data_ate: amanha,
@@ -378,11 +413,7 @@ async function atualizarLiberacao() {
   const diasManifest = {};
   const porDia = {};
   (acompanhamento.dados || []).forEach((row) => {
-    let iso = row.data_iso || "";
-    if (!iso) {
-      const br = String(row.data || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-      if (br) iso = `${br[3]}-${br[2]}-${br[1]}`;
-    }
+    const iso = isoDeLinhaLiberacao(row);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
     if (!porDia[iso]) porDia[iso] = [];
     porDia[iso].push(row);

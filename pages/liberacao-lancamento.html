@@ -460,7 +460,7 @@ tbody td.col-maquina .cell-readonly{background:transparent;color:inherit;padding
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260821hud">
 <link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260820bar4">
 <link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260821fx">
-<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260821hud">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260828darklib">
 </head>
 <body data-require-perfis="Administrador,Supervisor,Analista">
 <div class="body-bg-wall" aria-hidden="true"></div>
@@ -650,11 +650,39 @@ function definirDataFiltroHoje(){
     $("dataFiltro").value=isoHoje();
 }
 function normalizarDataIsoRow(row){
-    if(row?.data_iso) return row.data_iso;
-    const br=String(row?.data||"").trim();
-    const p=br.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(row?.data_iso && /^\d{4}-\d{2}-\d{2}$/.test(String(row.data_iso))) return row.data_iso;
+    const br=dataBrDaLinhaLiberacao(row);
+    const p=String(br||"").trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if(p) return p[3]+"-"+p[1].padStart(2,"0")+"-"+p[2].padStart(2,"0");
     return /^\d{4}-\d{2}-\d{2}$/.test(br)?br:"";
+}
+function dataBrDaLinhaLiberacao(row){
+    if(!row) return "";
+    const direto=String(row.data||"").trim();
+    if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(direto)) return direto;
+    if(/^\d{4}-\d{2}-\d{2}$/.test(direto)){
+        const p=direto.split("-");
+        return p[2]+"/"+p[1]+"/"+p[0];
+    }
+    const keys=Object.keys(row);
+    for(let i=0;i<keys.length;i++){
+        const k=keys[i];
+        if(k==="_row"||k==="data_iso") continue;
+        const v=String(row[k]||"").trim();
+        if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v)) return v;
+    }
+    return "";
+}
+function hidratarDataLinhaLiberacao(row){
+    if(!row) return row;
+    const iso=normalizarDataIsoRow(row);
+    if(!iso) return row;
+    row.data_iso=iso;
+    if(!String(row.data||"").trim()){
+        const p=iso.split("-");
+        row.data=p[2]+"/"+p[1]+"/"+p[0];
+    }
+    return row;
 }
 function lerCacheLiberacao(){
     try{
@@ -737,10 +765,11 @@ function complementarSemanaCarregada(fonte,data){
     const {dataDe,amanha}=intervaloJanela();
     const metaDe=fonte.dataDe||state.semanaDataDe||dataDe;
     const metaAte=fonte.dataAte||state.semanaDataAte||amanha;
+    const hidratados=fonte.dados.map(r=>hidratarDataLinhaLiberacao(Object.assign({},r)));
     if(state.semana.length){
-        state.semana=mesclarSemana(state.semana,fonte.dados);
+        state.semana=mesclarSemana(state.semana,hidratados);
     }else{
-        state.semana=fonte.dados.slice();
+        state.semana=hidratados;
     }
     state.semanaDataDe=metaDe;
     state.semanaDataAte=metaAte;
@@ -1621,7 +1650,7 @@ function popularMaquinas(lista){
 }
 
 function aplicarSemanaCarregada(dados,dataDe,dataAte){
-    state.semana=dados;
+    state.semana=(dados||[]).map(r=>hidratarDataLinhaLiberacao(Object.assign({},r)));
     state.semanaDataDe=dataDe;
     state.semanaDataAte=dataAte;
 }
@@ -1752,12 +1781,13 @@ function mesclarLinhaLiberacao(base,novo){
 }
 function mesclarSemana(base, novos){
     const mapa=new Map();
-    (base||[]).forEach(r=>mapa.set(chaveLinhaLiberacao(r),Object.assign({},r)));
+    (base||[]).forEach(r=>mapa.set(chaveLinhaLiberacao(r),hidratarDataLinhaLiberacao(Object.assign({},r))));
     (novos||[]).forEach(r=>{
-        const k=chaveLinhaLiberacao(r);
+        const item=hidratarDataLinhaLiberacao(Object.assign({},r));
+        const k=chaveLinhaLiberacao(item);
         const existente=mapa.get(k);
         if(existente&&existente._dirty) return;
-        mapa.set(k,existente?mesclarLinhaLiberacao(existente,r):Object.assign({},r));
+        mapa.set(k,existente?mesclarLinhaLiberacao(existente,item):item);
     });
     return [...mapa.values()];
 }
@@ -1774,7 +1804,7 @@ function snapshotCobreData(payload,data){
     if(!payload?.dados?.length||!data) return false;
     const {data_de,data_ate}=metaSnapshot(payload);
     if(data_de&&data_ate&&data>=data_de&&data<=data_ate) return true;
-    return payload.dados.some(r=>normalizarDataIsoRow(r)===data);
+    return payload.dados.some(r=>normalizarDataIsoRow(hidratarDataLinhaLiberacao(Object.assign({},r)))===data);
 }
 
 function urlSnapshotDia(data){

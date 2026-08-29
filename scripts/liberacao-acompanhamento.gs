@@ -15,7 +15,7 @@
  * POST ?liberacao=1  action=create|update|upsert  (+ campos da aba acompanhamento)
  */
 
-const LIBERACAO_VERSAO = "2026-08-24-liberacao-save-lock";
+const LIBERACAO_VERSAO = "2026-08-28-liberacao-data-cabecalho";
 const LIBERACAO_DIAS_JANELA = 7;
 const LIBERACAO_CHUNK_LINHAS = 800;
 const LIBERACAO_CACHE_TTL = 600;
@@ -331,10 +331,13 @@ function lerColunasAcompanhamento_() {
   if (lastCol < 1) return [];
   const cabecalho = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
   const colunas = [];
-  cabecalho.forEach(function (titulo) {
-    const chave = normalizarChaveLiberacao_(titulo);
+  cabecalho.forEach(function (titulo, idx) {
+    const chave = chaveCabecalhoLiberacao_(titulo, idx);
     if (!chave) return;
-    colunas.push({ chave: chave, rotulo: String(titulo || "").trim() });
+    colunas.push({
+      chave: chave,
+      rotulo: chave === "data" ? "Data" : (String(titulo || "").trim() || chave)
+    });
   });
   return colunas;
 }
@@ -462,7 +465,7 @@ function lerAcompanhamentoDiaCompleto_(dataIso, limit, maquinaFiltro) {
   const lastCol = sheet.getLastColumn();
   if (lastRow < 2) return [];
 
-  const cabecalho = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(normalizarChaveLiberacao_);
+  const cabecalho = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(chaveCabecalhoLiberacao_);
   const dados = [];
   var endRow = lastRow;
   var chunksLidos = 0;
@@ -521,7 +524,7 @@ function lerAcompanhamentoLiberacao_(dataFiltro, limit, maquinaFiltro, janelaOpt
   const lastCol = sheet.getLastColumn();
   if (lastRow < 2) return [];
 
-  const cabecalho = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(normalizarChaveLiberacao_);
+  const cabecalho = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(chaveCabecalhoLiberacao_);
   const dados = [];
   var endRow = lastRow;
   var chunksLidos = 0;
@@ -859,7 +862,7 @@ function encontrarLinhaAcompanhamento_(dataIso, workId) {
 function criarAcompanhamentoLiberacao_(params) {
   const sheet = abrirAbaPorGid_(LIBERACAO_SPREADSHEET_ID, LIBERACAO_ACOMPANHAMENTO_GID);
   const cabecalho = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const chaves = cabecalho.map(normalizarChaveLiberacao_);
+  const chaves = cabecalho.map(chaveCabecalhoLiberacao_);
   const valoresParams = expandirParamsColunasPlanilha_(params, chaves);
   const linha = chaves.map(function (chave) {
     return valoresParams[chave] != null ? String(valoresParams[chave]) : "";
@@ -876,7 +879,7 @@ function atualizarAcompanhamentoLiberacao_(params) {
   const sheet = abrirAbaPorGid_(LIBERACAO_SPREADSHEET_ID, LIBERACAO_ACOMPANHAMENTO_GID);
   const lastCol = sheet.getLastColumn();
   const cabecalho = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-  const chaves = cabecalho.map(normalizarChaveLiberacao_);
+  const chaves = cabecalho.map(chaveCabecalhoLiberacao_);
   const valoresParams = expandirParamsColunasPlanilha_(params, chaves);
   const atuais = sheet.getRange(row, 1, 1, lastCol).getValues()[0];
   chaves.forEach(function (chave, idx) {
@@ -892,13 +895,48 @@ function atualizarAcompanhamentoLiberacao_(params) {
   return { ok: true, linha: row, acao: "update" };
 }
 
+function chaveCabecalhoLiberacao_(titulo, idx) {
+  if (Object.prototype.toString.call(titulo) === "[object Date]" && !isNaN(titulo.getTime())) {
+    return idx === 0 ? "data" : normalizarChaveLiberacao_(
+      Utilities.formatDate(titulo, Session.getScriptTimeZone() || "America/Sao_Paulo", "dd/MM/yyyy")
+    );
+  }
+  if (typeof titulo === "number" && idx === 0) return "data";
+  const chave = normalizarChaveLiberacao_(titulo);
+  if (idx === 0 && (!chave || /^\d+$/.test(chave))) return "data";
+  if (chave === "data_da_liberacao" || chave === "data_liberacao" || chave === "dt") return "data";
+  return chave;
+}
+
+function recuperarDataLinhaLiberacao_(item) {
+  if (item.data) return item;
+  const keys = Object.keys(item);
+  for (var i = 0; i < keys.length; i++) {
+    const k = keys[i];
+    if (k === "_row" || k === "data_iso") continue;
+    const v = item[k];
+    if (Object.prototype.toString.call(v) === "[object Date]" && !isNaN(v.getTime())) {
+      item.data = valorCelulaLiberacao_(v);
+      break;
+    }
+    const texto = String(v || "").trim();
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(texto) || /^\d{4}-\d{2}-\d{2}/.test(texto)) {
+      item.data = texto;
+      break;
+    }
+  }
+  return item;
+}
+
 function linhaAcompanhamentoParaObjeto_(cabecalho, valores, rowNumber) {
   const item = { _row: rowNumber };
-  cabecalho.forEach(function (chave, idx) {
+  cabecalho.forEach(function (titulo, idx) {
+    const chave = chaveCabecalhoLiberacao_(titulo, idx);
     if (!chave) return;
     item[chave] = valorCelulaLiberacao_(valores[idx]);
   });
   aplicarAliasesCamposLiberacao_(item);
+  recuperarDataLinhaLiberacao_(item);
   if (item.data) item.data_iso = normalizarDataIsoLiberacao_(item.data);
   return item;
 }

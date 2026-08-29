@@ -431,7 +431,7 @@ body{
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260821hud">
 <link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260820bar4">
 <link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260821fx">
-<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260821hud">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260828darklib">
 </head>
 <body>
 <div class="body-bg-wall" aria-hidden="true"></div>
@@ -575,7 +575,17 @@ if(/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0,10);
 const m=t.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
 return m ? m[3]+"-"+m[2]+"-"+m[1] : "";
 }
-function dataIso(row){ return row.data_iso || normalizarDataIso(val(row,"data")); }
+function dataIso(row){
+  if (row?.data_iso && /^\d{4}-\d{2}-\d{2}$/.test(String(row.data_iso))) return row.data_iso;
+  const direto = normalizarDataIso(val(row,"data"));
+  if (direto) return direto;
+  const keys = Object.keys(row || {});
+  for (let i = 0; i < keys.length; i++) {
+    const iso = normalizarDataIso(row[keys[i]]);
+    if (iso) return iso;
+  }
+  return "";
+}
 function normalizarSituacao(v){
 const t=String(v||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase();
 if(!t) return "";
