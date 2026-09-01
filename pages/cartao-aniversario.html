@@ -13,7 +13,7 @@ document.documentElement.classList.add("portal-auth-pending");
 <title>Cartão de Aniversário — Portal CIOP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
   --blue:#06245c;
@@ -49,106 +49,170 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 .btn{border:0;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:13px}
 .btn-primary{background:var(--orange);color:#fff}
 .btn-secondary{background:var(--blue);color:#fff}
-.btn-secondary:disabled{opacity:.55;cursor:not-allowed}
+.btn-outline{background:#fff;color:var(--blue);border:2px solid var(--blue)}
+.btn-secondary:disabled,.btn-primary:disabled,.btn-outline:disabled{opacity:.55;cursor:not-allowed}
 .hint{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.45}
 .preview-wrap{display:flex;justify-content:center;padding:12px 0 24px;overflow:auto}
 .preview-scale{transform-origin:top center}
 @media(max-width:900px){.preview-scale{transform:scale(.72)}}
 @media(max-width:640px){.preview-scale{transform:scale(.52)}}
 
-/* —— Cartão A4 (estilo v2) —— */
+/* —— Cartão A4 —— */
 .cartao{
   width:794px;height:1123px;position:relative;overflow:hidden;
-  background:#fff;color:#24324b;
-  font-family:"DM Sans",Arial,"Segoe UI",sans-serif;
-  box-shadow:0 10px 35px rgba(0,0,0,.08);
-  border:1px solid #d7dee8;
-  padding:42px 48px 36px;
+  color:#24324b;font-family:"DM Sans",Arial,"Segoe UI",sans-serif;
+  box-shadow:0 24px 60px rgba(23,43,89,.12);
+  border:1px solid #e2e8f0;
+  padding:0;
+  background:linear-gradient(168deg,#f7faff 0%,#fff 42%,#fafbfc 100%);
 }
 .cartao-top{
-  position:absolute;top:0;left:0;right:0;height:19px;
-  background:linear-gradient(90deg,#172b59 0 45%,#2fb4c2 45% 75%,#f2b52b 75% 100%);
+  position:absolute;top:0;left:0;right:0;height:5px;z-index:5;
+  background:linear-gradient(90deg,#c41e3a 0 12%,#06245c 12% 28%,#33b1cc 28% 44%,#f9b434 44% 60%,#8cc63f 60% 76%,#e31e24 76% 88%,#ff6b00 88% 100%);
+}
+.cartao-bg-fx{
+  position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 90% 55% at 12% 8%,rgba(51,177,204,.14),transparent 58%),
+    radial-gradient(ellipse 70% 45% at 92% 12%,rgba(255,107,0,.1),transparent 55%),
+    radial-gradient(ellipse 55% 40% at 88% 78%,rgba(140,198,63,.1),transparent 50%),
+    radial-gradient(ellipse 50% 35% at 8% 85%,rgba(196,30,58,.08),transparent 48%);
+}
+.cartao-grid{
+  position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.45;
+  background-image:
+    linear-gradient(rgba(23,43,89,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(23,43,89,.04) 1px,transparent 1px);
+  background-size:36px 36px;
+  mask-image:radial-gradient(ellipse 68% 58% at 50% 38%,#000 15%,transparent 72%);
 }
 
-.balloons{position:absolute;inset:0;pointer-events:none;z-index:0}
+/* Balões — cores das marcas, só nas bordas */
+.balloons{position:absolute;inset:0;pointer-events:none;z-index:1}
 .balloon{
-  position:absolute;width:56px;height:72px;border-radius:50%;
-  opacity:.88;box-shadow:inset -12px -12px 20px rgba(0,0,0,.06);
+  position:absolute;border-radius:50% 50% 48% 48%;
+  box-shadow:
+    inset -10px -14px 22px rgba(0,0,0,.09),
+    inset 8px 8px 18px rgba(255,255,255,.35),
+    0 10px 22px rgba(23,43,89,.08);
+}
+.balloon::before{
+  content:"";position:absolute;top:14%;left:22%;width:28%;height:20%;
+  background:rgba(255,255,255,.45);border-radius:50%;filter:blur(1px);
 }
 .balloon::after{
-  content:"";position:absolute;left:50%;top:70px;width:2px;height:90px;
-  background:#98a4b4;transform:translateX(-50%) rotate(6deg);transform-origin:top;
+  content:"";position:absolute;left:50%;bottom:-42px;width:1.5px;height:42px;
+  background:linear-gradient(180deg,rgba(120,130,150,.55),transparent);
+  transform-origin:top;
 }
-.b1{background:#32b6c3;left:14px;top:220px;transform:rotate(-10deg)}
-.b2{background:#f4b52d;left:48px;top:276px;transform:rotate(8deg);width:46px;height:58px}
-.b3{background:#e34d28;right:16px;top:248px;transform:rotate(9deg)}
-.b4{background:#32b6c3;right:58px;top:302px;transform:rotate(-7deg);width:48px;height:62px}
+/* TCGL vermelho, CMTU azul/verde/amarelo, MOV teal/gold, CIOP navy/laranja, Londrisul grafite */
+.b1{width:48px;height:60px;background:linear-gradient(145deg,#e84c55,#c41e3a);left:18px;top:72px;transform:rotate(-14deg)}
+.b2{width:36px;height:46px;background:linear-gradient(145deg,#3d9be8,#0070bb);left:52px;top:148px;transform:rotate(10deg)}
+.b3{width:32px;height:40px;background:linear-gradient(145deg,#a8e063,#8cc63f);left:24px;top:218px;transform:rotate(-8deg)}
+.b4{width:40px;height:52px;background:linear-gradient(145deg,#4ec9e0,#33b1cc);left:8px;top:290px;transform:rotate(12deg)}
+.b5{width:44px;height:56px;background:linear-gradient(145deg,#ffd56a,#f9b434);right:22px;top:88px;transform:rotate(11deg)}
+.b6{width:34px;height:44px;background:linear-gradient(145deg,#ff8c42,#ff6b00);right:56px;top:162px;transform:rotate(-9deg)}
+.b7{width:38px;height:48px;background:linear-gradient(145deg,#1a3d7a,#06245c);right:14px;top:232px;transform:rotate(8deg)}
+.b8{width:30px;height:38px;background:linear-gradient(145deg,#fcbf14,#e8a800);right:48px;top:298px;transform:rotate(-12deg)}
+.b9{width:28px;height:36px;background:linear-gradient(145deg,#5a6578,#3d4550);left:100px;top:36px;transform:rotate(6deg);opacity:.75}
+.b10{width:26px;height:34px;background:linear-gradient(145deg,#e84c55,#c41e3a);right:108px;top:42px;transform:rotate(-5deg);opacity:.75}
+.b11{width:24px;height:30px;background:linear-gradient(145deg,#4ec9e0,#33b1cc);left:120px;bottom:318px;transform:rotate(-6deg);opacity:.7}
+.b12{width:24px;height:30px;background:linear-gradient(145deg,#ffd56a,#f9b434);right:118px;bottom:312px;transform:rotate(7deg);opacity:.7}
 
-.cartao-content{position:relative;z-index:1;display:flex;flex-direction:column;min-height:100%}
+.cartao-content{
+  position:relative;z-index:2;display:flex;flex-direction:column;
+  min-height:100%;padding:36px 72px 28px;
+}
+
+.text-panel{
+  position:relative;
+  max-width:520px;width:100%;margin:0 auto;
+  padding:22px 28px 20px;
+  background:rgba(255,255,255,.88);
+  border:1px solid rgba(23,43,89,.07);
+  border-radius:20px;
+  box-shadow:
+    0 4px 6px rgba(23,43,89,.03),
+    0 20px 48px rgba(23,43,89,.07),
+    inset 0 1px 0 rgba(255,255,255,.9);
+  backdrop-filter:blur(10px);
+}
+.text-panel::before{
+  content:"";position:absolute;left:50%;top:0;transform:translateX(-50%);
+  width:80px;height:3px;border-radius:0 0 4px 4px;
+  background:linear-gradient(90deg,#33b1cc,#f9b434,#ff6b00);
+}
 
 .eyebrow{
-  margin-top:8px;text-align:center;font-size:11px;letter-spacing:.22em;
-  text-transform:uppercase;color:#718097;font-weight:800
+  margin:6px 0 0;text-align:center;font-size:10px;letter-spacing:.24em;
+  text-transform:uppercase;color:#7a8699;font-weight:800
 }
 .cartao-h1{
-  margin:10px 0 0;text-align:center;font-size:52px;line-height:1;
-  color:#172b59;letter-spacing:-.02em;font-weight:800
+  margin:10px 0 0;text-align:center;font-family:"Outfit",sans-serif;
+  font-size:46px;line-height:1.05;font-weight:800;letter-spacing:-.02em;
+  background:linear-gradient(120deg,#172b59 0%,#0e4d8c 45%,#2fb4c2 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
 }
 .cartao-nome{
-  margin:14px 0 0;text-align:center;font-size:38px;line-height:1.08;
-  font-weight:800;color:#df4a27;word-break:break-word
+  margin:14px 0 0;text-align:center;font-family:"Outfit",sans-serif;
+  font-size:34px;line-height:1.1;font-weight:800;
+  color:#df4a27;word-break:break-word;
+  text-shadow:0 1px 0 rgba(255,255,255,.8);
 }
 .cartao-data{
-  margin:12px auto 0;width:max-content;padding:6px 22px;border-radius:30px;
-  background:#172b59;color:#fff;font-size:13px;font-weight:700;letter-spacing:.04em
+  margin:12px auto 0;width:max-content;padding:7px 24px;border-radius:999px;
+  background:linear-gradient(135deg,#172b59,#243f7a);color:#fff;
+  font-size:12px;font-weight:700;letter-spacing:.1em;
+  box-shadow:0 8px 20px rgba(23,43,89,.18);
 }
 .punchline{
-  margin:20px auto 0;max-width:560px;text-align:center;
-  font-size:12px;line-height:1.45;color:#778399;font-weight:600;font-style:italic
+  margin:16px auto 0;max-width:100%;text-align:center;
+  font-size:12.5px;line-height:1.5;color:#5c6b82;font-weight:600;font-style:italic;
+  padding:0 4px;
 }
 .cartao-mensagem{
-  margin:18px auto 0;max-width:600px;text-align:center;
-  font-family:Georgia,"Times New Roman",serif;font-size:14px;line-height:1.5;
-  color:#39475e
+  margin:14px auto 0;max-width:100%;text-align:center;
+  font-family:Georgia,"Times New Roman",serif;font-size:13.5px;line-height:1.58;
+  color:#3d4a5c;padding:0 2px;
 }
-.cartao-mensagem strong{color:#172b59}
+.cartao-mensagem strong{color:#172b59;font-weight:700}
 
-/* Ônibus */
-.buses-wrap{
-  margin-top:auto;padding-top:28px;position:relative;
-}
+.buses-wrap{margin-top:auto;padding-top:20px;position:relative;z-index:2}
 .bus-caption{
-  text-align:center;font-size:10px;letter-spacing:.14em;
-  color:#69768a;font-weight:800;text-transform:uppercase;margin-bottom:10px
+  text-align:center;font-size:9.5px;letter-spacing:.18em;
+  color:#69768a;font-weight:800;text-transform:uppercase;margin-bottom:8px
 }
 .buses{
-  display:flex;justify-content:center;align-items:flex-end;gap:0;
-  min-height:200px;padding:0 8px;
+  display:flex;justify-content:center;align-items:flex-end;gap:2px;
+  min-height:188px;padding:0;
 }
 .buses .bus{
-  width:48%;max-width:360px;height:auto;max-height:200px;
-  object-fit:contain;object-position:center bottom;
-  filter:drop-shadow(0 12px 18px rgba(23,43,89,.12));
+  width:340px;height:188px;object-fit:contain;object-position:center bottom;
+  filter:drop-shadow(0 14px 20px rgba(23,43,89,.11));
+  flex:0 0 340px;
 }
-.buses .bus--esq{transform:translateX(8px);z-index:2}
-.buses .bus--dir{transform:translateX(-8px);z-index:1}
+.buses .bus--esq{transform:translateX(4px)}
+.buses .bus--dir{transform:translateX(-4px)}
 
-/* Logos parceiros */
 .partners{
-  margin-top:22px;padding-top:16px;border-top:1px solid #d9dfe7;
+  margin-top:18px;padding-top:14px;border-top:1px solid rgba(217,223,231,.9);
+  position:relative;z-index:2;
 }
 .logos-row{
   display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
-  gap:18px 22px;min-height:56px;
+  gap:14px 20px;min-height:52px;
 }
-.logos-row img{object-fit:contain;max-height:42px;max-width:100px}
-.logos-row .lg-ciop{max-height:38px}
-.logos-row .lg-mov{max-height:44px;max-width:110px}
-.logos-row .lg-londri{max-height:24px;max-width:120px}
+.logos-row img{object-fit:contain;max-height:44px;max-width:108px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.04))}
+.logos-row .lg-tcgl{max-height:46px;max-width:96px}
+.logos-row .lg-londri{max-height:28px;max-width:130px}
+.logos-row .lg-ciop{max-height:40px}
+.logos-row .lg-mov{max-height:46px;max-width:115px}
+.logos-row .lg-cmtu{max-height:44px;max-width:100px}
 
 .cartao-foot{
-  margin-top:14px;text-align:center;font-size:9px;color:#8993a3;
-  font-weight:600;letter-spacing:.12em;text-transform:uppercase
+  margin-top:12px;text-align:center;font-size:8.5px;color:#8993a3;
+  font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  position:relative;z-index:2;
 }
 .notice{background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px 16px;color:#664d03;margin-bottom:16px}
 </style>
@@ -217,46 +281,58 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
       </div>
       <div class="actions">
         <button type="button" class="btn btn-primary" id="btnPdf">Baixar PDF (retrato)</button>
+        <button type="button" class="btn btn-outline" id="btnPng">Baixar imagem (PNG)</button>
         <button type="button" class="btn btn-secondary" id="btnReset">Restaurar mensagem padrão</button>
       </div>
-      <p class="hint">O PDF é gerado em formato A4 retrato, pronto para enviar por e-mail ou WhatsApp.</p>
+      <p class="hint">Exporte em PDF ou PNG (A4 retrato), pronto para enviar por e-mail ou WhatsApp.</p>
     </section>
 
     <section class="preview-wrap" aria-label="Pré-visualização do cartão">
       <div class="preview-scale">
         <article class="cartao" id="cartaoPreview" aria-label="Cartão de aniversário">
           <div class="cartao-top" aria-hidden="true"></div>
+          <div class="cartao-bg-fx" aria-hidden="true"></div>
+          <div class="cartao-grid" aria-hidden="true"></div>
           <div class="balloons" aria-hidden="true">
             <span class="balloon b1"></span>
             <span class="balloon b2"></span>
             <span class="balloon b3"></span>
             <span class="balloon b4"></span>
+            <span class="balloon b5"></span>
+            <span class="balloon b6"></span>
+            <span class="balloon b7"></span>
+            <span class="balloon b8"></span>
+            <span class="balloon b9"></span>
+            <span class="balloon b10"></span>
+            <span class="balloon b11"></span>
+            <span class="balloon b12"></span>
           </div>
 
           <div class="cartao-content">
-            <p class="eyebrow">Uma homenagem a quem faz parte da nossa equipe</p>
-            <h2 class="cartao-h1">Feliz Aniversário!</h2>
-            <h3 class="cartao-nome" id="prevNome">Nome do Colaborador</h3>
-            <div class="cartao-data" id="prevData">—</div>
-
-            <p class="punchline" id="prevPunchline"></p>
-            <div class="cartao-mensagem" id="prevMensagem"></div>
+            <div class="text-panel">
+              <p class="eyebrow">Uma homenagem a quem faz parte da nossa equipe</p>
+              <h2 class="cartao-h1">Feliz Aniversário!</h2>
+              <h3 class="cartao-nome" id="prevNome">Nome do Colaborador</h3>
+              <div class="cartao-data" id="prevData">—</div>
+              <p class="punchline" id="prevPunchline"></p>
+              <div class="cartao-mensagem" id="prevMensagem"></div>
+            </div>
 
             <div class="buses-wrap">
               <p class="bus-caption">Parabéns! · Movendo Londrina · Juntos</p>
               <div class="buses">
-                <img class="bus bus--esq" src="../assets/img/cartao-aniversario/onibus-londrisul-card.png?v=3" alt="Ônibus Londrisul">
-                <img class="bus bus--dir" src="../assets/img/cartao-aniversario/onibus-grande-londrina-card.png?v=3" alt="Ônibus Grande Londrina">
+                <img class="bus bus--esq" src="../assets/img/cartao-aniversario/onibus-esquerda.png?v=4" alt="Ônibus Londrisul">
+                <img class="bus bus--dir" src="../assets/img/cartao-aniversario/onibus-direita.png?v=4" alt="Ônibus Grande Londrina">
               </div>
             </div>
 
             <section class="partners" aria-label="Parceiros do sistema MOV">
               <div class="logos-row">
-                <img src="../assets/img/cartao-aniversario/ciop.png?v=3" alt="CIOP" class="lg-ciop">
-                <img src="../assets/img/cartao-aniversario/mov.png?v=3" alt="MOV" class="lg-mov">
-                <img src="../assets/img/cartao-aniversario/tcgl-nobg.png?v=3" alt="Grande Londrina">
-                <img src="../assets/img/cartao-aniversario/cmtu.png?v=3" alt="CMTU">
-                <img src="../assets/img/cartao-aniversario/londrisul-nobg.png?v=3" alt="Londrisul" class="lg-londri">
+                <img src="../assets/img/cartao-aniversario/tcgl.png?v=5" alt="Grande Londrina" class="lg-tcgl">
+                <img src="../assets/img/cartao-aniversario/londrisul.png?v=5" alt="Londrisul" class="lg-londri">
+                <img src="../assets/img/cartao-aniversario/ciop.png?v=5" alt="CIOP" class="lg-ciop">
+                <img src="../assets/img/cartao-aniversario/mov.png?v=5" alt="MOV" class="lg-mov">
+                <img src="../assets/img/cartao-aniversario/cmtu.png?v=5" alt="CMTU" class="lg-cmtu">
               </div>
             </section>
 
@@ -296,7 +372,77 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
   const prevMensagem = document.getElementById("prevMensagem");
   const cartao = document.getElementById("cartaoPreview");
   const btnPdf = document.getElementById("btnPdf");
+  const btnPng = document.getElementById("btnPng");
   const btnReset = document.getElementById("btnReset");
+
+  function slugArquivo() {
+    return (inpNome.value || "colaborador").trim()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "colaborador";
+  }
+
+  function baixarDataUrl(dataUrl, nome) {
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = nome;
+    a.click();
+  }
+
+  async function renderizarCartaoCanvas() {
+    if (document.fonts?.ready) await document.fonts.ready;
+    await aguardarImagens(cartao);
+    await new Promise((r) => requestAnimationFrame(() => r()));
+    return window.html2canvas(cartao, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      logging: false,
+      useCORS: true,
+      width: 794,
+      height: 1123,
+      windowWidth: 794,
+      windowHeight: 1123
+    });
+  }
+
+  async function gerarPdf() {
+    btnPdf.disabled = true;
+    btnPng.disabled = true;
+    btnPdf.textContent = "Gerando PDF…";
+    try {
+      const canvas = await renderizarCartaoCanvas();
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const w = pdf.internal.pageSize.getWidth();
+      const h = pdf.internal.pageSize.getHeight();
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, w, h, undefined, "FAST");
+      pdf.save("cartao-aniversario-" + slugArquivo() + ".pdf");
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível gerar o PDF. Tente novamente.");
+    } finally {
+      btnPdf.disabled = false;
+      btnPng.disabled = false;
+      btnPdf.textContent = "Baixar PDF (retrato)";
+    }
+  }
+
+  async function gerarImagem() {
+    btnPdf.disabled = true;
+    btnPng.disabled = true;
+    const rotulo = btnPng.textContent;
+    btnPng.textContent = "Gerando imagem…";
+    try {
+      const canvas = await renderizarCartaoCanvas();
+      baixarDataUrl(canvas.toDataURL("image/png"), "cartao-aniversario-" + slugArquivo() + ".png");
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível gerar a imagem. Tente novamente.");
+    } finally {
+      btnPdf.disabled = false;
+      btnPng.disabled = false;
+      btnPng.textContent = rotulo;
+    }
+  }
 
   function formatarDataBr(iso) {
     if (!iso) return "—";
@@ -330,49 +476,12 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
     }));
   }
 
-  async function gerarPdf() {
-    btnPdf.disabled = true;
-    btnPdf.textContent = "Gerando PDF…";
-    try {
-      if (document.fonts?.ready) await document.fonts.ready;
-      await aguardarImagens(cartao);
-      await new Promise((r) => requestAnimationFrame(() => r()));
-
-      const canvas = await window.html2canvas(cartao, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        logging: false,
-        useCORS: true,
-        width: 794,
-        height: 1123,
-        windowWidth: 794,
-        windowHeight: 1123
-      });
-
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const w = pdf.internal.pageSize.getWidth();
-      const h = pdf.internal.pageSize.getHeight();
-      pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, w, h, undefined, "FAST");
-
-      const slug = (inpNome.value || "colaborador").trim()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "colaborador";
-      pdf.save("cartao-aniversario-" + slug + ".pdf");
-    } catch (err) {
-      console.error(err);
-      alert("Não foi possível gerar o PDF. Tente novamente.");
-    } finally {
-      btnPdf.disabled = false;
-      btnPdf.textContent = "Baixar PDF (retrato)";
-    }
-  }
-
   inpNome.addEventListener("input", atualizarPreview);
   inpData.addEventListener("input", atualizarPreview);
   inpPunchline.addEventListener("input", atualizarPreview);
   inpMensagem.addEventListener("input", atualizarPreview);
   btnPdf.addEventListener("click", gerarPdf);
+  btnPng.addEventListener("click", gerarImagem);
   btnReset.addEventListener("click", restaurarPadrao);
 
   restaurarPadrao();
