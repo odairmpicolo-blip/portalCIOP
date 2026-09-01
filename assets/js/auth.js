@@ -13,7 +13,7 @@ import {
 import { app, buscarUsuarioFirestore, normalizarCadastro } from "./portal-firestore.js";
 import { usuarios } from "./usuarios.js";
 import { aplicarSaudacaoHero } from "./portal-saudacao.js?v=20260704a";
-import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260825sei";
+import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260901cartao";
 import "./portal-mfa.js?v=20260820mfa";
 import {
   iniciarHeartbeatPresenca,
@@ -670,13 +670,13 @@ function usuarioPodeVer(el, cadastro) {
     return usuariosPermitidos.includes(email);
   }
 
+  if (isAdministrador(cadastro)) return true;
+
   const moduloId = String(el.dataset.modulo || "").trim();
   if (moduloId) {
     const decisaoModulo = usuarioTemModulo(email, perfil, moduloId);
     if (decisaoModulo !== null) return decisaoModulo;
   }
-
-  if (isAdministrador(cadastro)) return true;
 
   const perfisPermitidos = listaAtributo(el.dataset.perfis);
 
