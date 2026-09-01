@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>
+document.documentElement.classList.add("portal-auth-pending");
+</script>
+<style id="portalAuthBootStyle">
+.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important}
+</style>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cartão de Aniversário — Portal CIOP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#06245c;
+  --orange:#ff6b00;
+  --mov-teal:#33b1cc;
+  --mov-gold:#f9b434;
+  --bg:#f0f4fa;
+  --border:#dfe5ef;
+  --text:#101828;
+  --muted:#475467;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;
+  min-height:100vh;
+}
+.header{
+  background:#fff;
+  display:grid;
+  grid-template-columns:minmax(160px,200px) 1fr minmax(220px,auto);
+  gap:16px;
+  align-items:center;
+  padding:10px 22px;
+  border-bottom:1px solid #e8edf6;
+}
+.logo-tcgl{height:52px;object-fit:contain}
+h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:800}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.container{
+  max-width:1200px;
+  margin:24px auto 40px;
+  padding:0 clamp(14px,2.2vw,28px);
+}
+.portal-return{margin-bottom:14px}
+.btn-link{
+  display:inline-flex;align-items:center;background:var(--blue);color:#fff;
+  text-decoration:none;padding:7px 12px;border-radius:6px;font-weight:700;font-size:12px
+}
+.layout{
+  display:grid;
+  grid-template-columns:minmax(260px,320px) 1fr;
+  gap:24px;
+  align-items:start;
+}
+@media(max-width:960px){.layout{grid-template-columns:1fr}}
+.panel{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:18px 20px;
+  box-shadow:0 8px 24px rgba(6,36,92,.06);
+}
+.panel h2{margin:0 0 14px;font-size:16px;color:var(--blue)}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
+.field input,.field textarea{
+  width:100%;
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:10px 12px;
+  font:inherit;
+  color:var(--text);
+}
+.field textarea{min-height:88px;resize:vertical;line-height:1.45}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.btn{
+  border:0;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:13px
+}
+.btn-primary{background:var(--orange);color:#fff}
+.btn-primary:hover{filter:brightness(1.05)}
+.btn-secondary{background:var(--blue);color:#fff}
+.btn-secondary:disabled{opacity:.55;cursor:not-allowed}
+.hint{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.45}
+.preview-wrap{
+  display:flex;
+  justify-content:center;
+  padding:12px 0 24px;
+  overflow:auto;
+}
+.preview-scale{
+  transform-origin:top center;
+}
+@media(max-width:900px){
+  .preview-scale{transform:scale(.72)}
+}
+@media(max-width:640px){
+  .preview-scale{transform:scale(.52)}
+}
+
+/* —— Cartão A4 retrato —— */
+.cartao{
+  width:794px;
+  height:1123px;
+  position:relative;
+  overflow:hidden;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -10%, rgba(51,177,204,.18) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 50% at 100% 40%, rgba(249,180,52,.12) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 45% at 0% 70%, rgba(255,107,0,.1) 0%, transparent 45%),
+    linear-gradient(180deg,#f8fbff 0%,#fff 42%,#fffaf3 100%);
+  font-family:"Nunito",Arial,Helvetica,sans-serif;
+  color:var(--blue);
+  box-shadow:0 28px 60px rgba(6,36,92,.2);
+  border:1px solid #d7dee8;
+}
+.cartao::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image:
+    radial-gradient(circle,#33b1cc 1.2px,transparent 1.2px),
+    radial-gradient(circle,#f9b434 1px,transparent 1px),
+    radial-gradient(circle,#ff6b00 1px,transparent 1px),
+    radial-gradient(circle,#8cc63f 1.2px,transparent 1.2px);
+  background-size:180px 180px,220px 220px,260px 260px,200px 200px;
+  background-position:0 0,40px 60px,80px 20px,120px 100px;
+  opacity:.35;
+  pointer-events:none;
+}
+.cartao-top-bar{
+  position:absolute;top:0;left:0;right:0;height:8px;z-index:2;
+  background:linear-gradient(90deg,var(--blue) 0%,var(--mov-teal) 35%,var(--mov-gold) 65%,var(--orange) 100%);
+}
+
+/* Balões em cachê */
+.baloes-cacho{
+  position:absolute;
+  z-index:3;
+  pointer-events:none;
+}
+.baloes-cacho--esq{top:52px;left:18px;transform:rotate(-8deg)}
+.baloes-cacho--dir{top:68px;right:22px;transform:rotate(6deg) scaleX(-1)}
+.balloon{
+  position:absolute;
+  border-radius:50% 50% 46% 46%;
+  box-shadow:
+    inset -10px -14px 22px rgba(0,0,0,.1),
+    inset 8px 8px 16px rgba(255,255,255,.35),
+    0 8px 18px rgba(6,36,92,.12);
+}
+.balloon::before{
+  content:"";
+  position:absolute;
+  bottom:-3px;left:50%;
+  width:10px;height:8px;
+  margin-left:-5px;
+  background:inherit;
+  border-radius:0 0 50% 50%;
+  filter:brightness(.88);
+}
+.balloon::after{
+  content:"";
+  position:absolute;
+  bottom:-52px;left:50%;
+  width:2px;height:52px;
+  background:linear-gradient(180deg,rgba(80,80,90,.5),rgba(80,80,90,.15));
+  transform:translateX(-50%);
+}
+.baloes-cacho--esq .b1{width:58px;height:72px;background:linear-gradient(145deg,#4ec9e0,#33b1cc);top:0;left:0}
+.baloes-cacho--esq .b2{width:44px;height:56px;background:linear-gradient(145deg,#ffd56a,#f9b434);top:28px;left:52px}
+.baloes-cacho--esq .b3{width:36px;height:46px;background:linear-gradient(145deg,#ff8c42,#ff6b00);top:62px;left:18px}
+.baloes-cacho--dir .b4{width:50px;height:64px;background:linear-gradient(145deg,#a8e063,#8cc63f);top:0;left:0}
+.baloes-cacho--dir .b5{width:40px;height:52px;background:linear-gradient(145deg,#ff6b7a,#e31e24);top:36px;left:44px}
+.baloes-cacho--dir .b6{width:32px;height:42px;background:linear-gradient(145deg,#7eb8ff,#0070bb);top:70px;left:8px}
+
+/* Confete */
+.confete{
+  position:absolute;
+  width:8px;height:14px;
+  border-radius:2px;
+  opacity:.75;
+  z-index:2;
+}
+.c1{top:120px;left:140px;background:#33b1cc;transform:rotate(25deg)}
+.c2{top:95px;right:160px;background:#f9b434;transform:rotate(-18deg);width:6px;height:12px}
+.c3{top:200px;left:60px;background:#ff6b00;transform:rotate(42deg);width:7px;height:11px}
+.c4{top:175px;right:70px;background:#8cc63f;transform:rotate(-35deg)}
+.c5{top:250px;right:200px;background:#e31e24;transform:rotate(15deg);width:5px;height:10px}
+
+.cartao-inner{
+  position:relative;z-index:4;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  padding:32px 40px 22px;
+}
+
+.logos-strip{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px 16px;
+  flex-wrap:wrap;
+  padding:12px 18px;
+  margin-bottom:10px;
+  background:rgba(255,255,255,.82);
+  border:1px solid rgba(6,36,92,.08);
+  border-radius:16px;
+  box-shadow:0 10px 28px rgba(6,36,92,.06);
+  backdrop-filter:blur(6px);
+}
+.logos-strip img{
+  object-fit:contain;
+  max-height:42px;
+  max-width:100px;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.06));
+}
+.logos-strip .logo-mov{max-height:48px;max-width:120px}
+.logos-strip .logo-ciop{max-height:40px}
+.logos-strip .logo-londrisul{max-height:26px;max-width:130px}
+
+.hero-row{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  gap:8px;
+  margin:6px 0 4px;
+}
+.hero-deco{
+  font-size:28px;
+  opacity:.9;
+  text-align:center;
+}
+.hero-deco--r{transform:scaleX(-1)}
+
+.cartao-titulo{
+  text-align:center;
+  margin:0;
+}
+.cartao-titulo .feliz{
+  display:block;
+  font-family:"Outfit",sans-serif;
+  font-size:50px;
+  font-weight:800;
+  letter-spacing:-.02em;
+  line-height:1;
+  background:linear-gradient(120deg,var(--blue) 0%,#0b5cad 40%,var(--mov-teal) 75%,var(--mov-gold) 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+.cartao-titulo .aniversario{
+  display:inline-block;
+  margin-top:6px;
+  padding:4px 18px;
+  font-family:"Outfit",sans-serif;
+  font-size:15px;
+  font-weight:800;
+  color:#fff;
+  letter-spacing:.32em;
+  text-transform:uppercase;
+  background:linear-gradient(90deg,var(--orange),#ff8c2a);
+  border-radius:999px;
+  box-shadow:0 6px 16px rgba(255,107,0,.35);
+}
+
+/* Bolo */
+.bolo-wrap{
+  display:flex;
+  justify-content:center;
+  margin:10px 0 6px;
+}
+.bolo{
+  position:relative;
+  width:110px;
+  height:88px;
+}
+.bolo-velas{
+  position:absolute;
+  top:0;left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:14px;
+  z-index:2;
+}
+.vela{
+  position:relative;
+  width:5px;height:22px;
+  background:linear-gradient(180deg,#fff9c4,#f9b434);
+  border-radius:3px 3px 1px 1px;
+  box-shadow:0 1px 2px rgba(0,0,0,.15);
+}
+.chama{
+  position:absolute;
+  top:-12px;left:50%;
+  transform:translateX(-50%);
+  width:10px;height:14px;
+  background:radial-gradient(ellipse at 50% 80%,#ff6b00 0%,#f9b434 45%,transparent 70%);
+  border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;
+  animation:none;
+}
+.bolo-camada{
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  border-radius:8px;
+}
+.bolo-camada--top{
+  top:28px;
+  width:72px;height:22px;
+  background:linear-gradient(180deg,#ffb8d0,#ff8cb8);
+  box-shadow:inset 0 -4px 0 rgba(0,0,0,.08),0 4px 8px rgba(0,0,0,.08);
+}
+.bolo-camada--top::before,
+.bolo-camada--top::after{
+  content:"";
+  position:absolute;
+  top:6px;
+  width:8px;height:8px;
+  border-radius:50%;
+  background:#fff;
+  opacity:.85;
+}
+.bolo-camada--top::before{left:12px}
+.bolo-camada--top::after{right:12px;background:#ff6b00;opacity:.7}
+.bolo-camada--mid{
+  top:46px;
+  width:88px;height:24px;
+  background:linear-gradient(180deg,#c8f0a0,#8cc63f);
+  box-shadow:inset 0 -4px 0 rgba(0,0,0,.08);
+}
+.bolo-base{
+  position:absolute;
+  top:66px;left:50%;
+  transform:translateX(-50%);
+  width:100px;height:22px;
+  background:linear-gradient(180deg,#8b5a2b,#6b4423);
+  border-radius:6px 6px 10px 10px;
+  box-shadow:0 6px 12px rgba(0,0,0,.15);
+}
+.bolo-base::after{
+  content:"";
+  position:absolute;
+  bottom:-6px;left:8px;right:8px;height:6px;
+  background:#4a2f18;
+  border-radius:0 0 8px 8px;
+}
+
+.nome-box{
+  text-align:center;
+  margin:8px auto 4px;
+  max-width:92%;
+}
+.cartao-nome{
+  display:inline-block;
+  margin:0;
+  padding:8px 22px 10px;
+  font-family:"Outfit",sans-serif;
+  font-size:32px;
+  font-weight:800;
+  color:var(--blue);
+  line-height:1.15;
+  word-break:break-word;
+  background:linear-gradient(135deg,rgba(6,36,92,.04),rgba(51,177,204,.08));
+  border:2px solid rgba(6,36,92,.1);
+  border-radius:14px;
+  box-shadow:0 8px 20px rgba(6,36,92,.06);
+}
+.cartao-data{
+  text-align:center;
+  font-size:14px;
+  font-weight:800;
+  color:var(--muted);
+  margin-bottom:10px;
+  letter-spacing:.04em;
+}
+.cartao-data::before{content:"📅 "}
+
+.punchline{
+  text-align:center;
+  margin:0 auto 12px;
+  max-width:520px;
+  padding:8px 16px;
+  font-size:13px;
+  font-weight:800;
+  color:var(--blue);
+  background:linear-gradient(90deg,rgba(249,180,52,.2),rgba(51,177,204,.15));
+  border-left:4px solid var(--orange);
+  border-radius:0 12px 12px 0;
+  line-height:1.4;
+}
+
+.cartao-mensagem{
+  text-align:center;
+  font-size:14.5px;
+  line-height:1.68;
+  color:#1f2937;
+  max-width:600px;
+  margin:0 auto 14px;
+  padding:14px 18px;
+  background:rgba(255,255,255,.75);
+  border-radius:14px;
+  border:1px dashed rgba(6,36,92,.12);
+  box-shadow:0 4px 14px rgba(6,36,92,.04);
+}
+
+.onibus-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:auto;
+  align-items:end;
+}
+.bus-card{
+  background:rgba(255,255,255,.7);
+  border-radius:12px;
+  padding:8px 8px 6px;
+  border:1px solid rgba(6,36,92,.06);
+  box-shadow:0 6px 16px rgba(6,36,92,.05);
+}
+.bus-wrap{
+  position:relative;
+  line-height:0;
+  border-radius:8px;
+  overflow:hidden;
+}
+.bus-wrap img{
+  width:100%;
+  height:auto;
+  display:block;
+}
+.led-sign{
+  position:absolute;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#0a0a0a;
+  border:2px solid #1a1a1a;
+  border-radius:3px;
+  color:#ffe566;
+  font-family:"Courier New",Courier,monospace;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  text-shadow:0 0 8px rgba(255,229,102,.9);
+  box-shadow:inset 0 0 10px rgba(255,229,102,.2),0 0 6px rgba(255,229,102,.3);
+  overflow:hidden;
+  white-space:nowrap;
+}
+.led-sign--gl{top:7.5%;left:11%;width:30%;height:7.5%;font-size:9px}
+.led-sign--ls{top:8%;left:10%;width:32%;height:7.8%;font-size:9px}
+.bus-label{
+  text-align:center;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-top:6px;
+}
+
+.cartao-rodape{
+  text-align:center;
+  margin-top:12px;
+  padding-top:10px;
+  border-top:2px solid var(--blue);
+  box-shadow:inset 0 4px 0 var(--orange);
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:#475467;
+}
+.notice{
+  background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px 16px;
+  color:#664d03;margin-bottom:16px
+}
+</style>
+<script src="../assets/js/loading.js?v=20260718d"></script>
+<link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
+<script src="../assets/js/theme-toggle.js?v=20260818logo6"></script>
+<script type="module" src="../assets/js/auth.js?v=20260821ui1"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260828planilhas">
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body data-require-perfis="Administrador,Secretária,Secretaria">
+<div class="body-bg-wall" aria-hidden="true"></div>
+<div class="body-bg-stain" aria-hidden="true"></div>
+
+<header class="header">
+  <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações">
+    <img class="portal-brand-art" src="../assets/img/logomarca-portalciop-tcgl-claro.png?v=20260818logo6" alt="Portal CIOP">
+    <span class="portal-brand-meta">TCGL · Operações</span>
+  </a>
+  <h1>Cartão de Aniversário</h1>
+  <div class="header-actions">
+    <div class="ciop-session" aria-label="Sessão do usuário">
+      <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+      <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+      <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+      <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+    </div>
+    <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener">
+      <img src="../assets/img/LOGO_TCGL-removebg-preview.png" class="logo-tcgl" alt="TCGL">
+    </a>
+  </div>
+</header>
+
+<main class="container">
+  <div class="portal-return">
+    <a class="btn-link" href="../index.html">← Voltar ao portal</a>
+  </div>
+
+  <div id="acessoNegado" class="notice" hidden>
+    Acesso restrito a administradores e secretarias do portal.
+  </div>
+
+  <div class="layout" id="conteudoCartao">
+    <section class="panel" aria-label="Dados do cartão">
+      <h2>Personalizar cartão</h2>
+      <div class="field">
+        <label for="inpNome">Nome do colaborador</label>
+        <input id="inpNome" type="text" placeholder="Ex.: Maria Silva" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="inpData">Data do aniversário</label>
+        <input id="inpData" type="date">
+      </div>
+      <div class="field">
+        <label for="inpPunchline">Frase divertida</label>
+        <input id="inpPunchline" type="text" spellcheck="true">
+      </div>
+      <div class="field">
+        <label for="inpMensagem">Mensagem</label>
+        <textarea id="inpMensagem" spellcheck="true"></textarea>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-primary" id="btnPdf">Baixar PDF (retrato)</button>
+        <button type="button" class="btn btn-secondary" id="btnReset">Restaurar mensagem padrão</button>
+      </div>
+      <p class="hint">O PDF é gerado em formato A4 retrato, pronto para enviar por e-mail ou WhatsApp.</p>
+    </section>
+
+    <section class="preview-wrap" aria-label="Pré-visualização do cartão">
+      <div class="preview-scale">
+        <article class="cartao" id="cartaoPreview" aria-label="Cartão de aniversário">
+          <div class="cartao-top-bar" aria-hidden="true"></div>
+
+          <div class="baloes-cacho baloes-cacho--esq" aria-hidden="true">
+            <div class="balloon b1"></div>
+            <div class="balloon b2"></div>
+            <div class="balloon b3"></div>
+          </div>
+          <div class="baloes-cacho baloes-cacho--dir" aria-hidden="true">
+            <div class="balloon b4"></div>
+            <div class="balloon b5"></div>
+            <div class="balloon b6"></div>
+          </div>
+          <div class="confete c1" aria-hidden="true"></div>
+          <div class="confete c2" aria-hidden="true"></div>
+          <div class="confete c3" aria-hidden="true"></div>
+          <div class="confete c4" aria-hidden="true"></div>
+          <div class="confete c5" aria-hidden="true"></div>
+
+          <div class="cartao-inner">
+            <div class="logos-strip">
+              <img src="../assets/img/cartao-aniversario/ciop.png" alt="CIOP" class="logo-ciop">
+              <img src="../assets/img/cartao-aniversario/mov.png" alt="MOV" class="logo-mov">
+              <img src="../assets/img/cartao-aniversario/tcgl.png" alt="Grande Londrina">
+              <img src="../assets/img/cartao-aniversario/cmtu.png" alt="CMTU">
+              <img src="../assets/img/cartao-aniversario/londrisul.png" alt="Londrisul" class="logo-londrisul">
+            </div>
+
+            <div class="hero-row">
+              <div class="hero-deco" aria-hidden="true">🎈</div>
+              <div class="cartao-titulo">
+                <span class="feliz">Feliz</span>
+                <span class="aniversario">Aniversário</span>
+              </div>
+              <div class="hero-deco hero-deco--r" aria-hidden="true">🎈</div>
+            </div>
+
+            <div class="bolo-wrap" aria-hidden="true">
+              <div class="bolo">
+                <div class="bolo-velas">
+                  <span class="vela"><i class="chama"></i></span>
+                  <span class="vela"><i class="chama"></i></span>
+                  <span class="vela"><i class="chama"></i></span>
+                </div>
+                <div class="bolo-camada bolo-camada--top"></div>
+                <div class="bolo-camada bolo-camada--mid"></div>
+                <div class="bolo-base"></div>
+              </div>
+            </div>
+
+            <div class="nome-box">
+              <h2 class="cartao-nome" id="prevNome">Nome do Colaborador</h2>
+            </div>
+            <div class="cartao-data" id="prevData">—</div>
+
+            <p class="punchline" id="prevPunchline">Hoje o itinerário é festa — e a única parada obrigatória é o bolo!</p>
+
+            <p class="cartao-mensagem" id="prevMensagem"></p>
+
+            <div class="onibus-row">
+              <div class="bus-card">
+                <div class="bus-wrap">
+                  <img src="../assets/img/cartao-aniversario/onibus-grande-londrina.png" alt="Ônibus Grande Londrina">
+                  <div class="led-sign led-sign--gl" aria-hidden="true">PARABÉNS</div>
+                </div>
+                <div class="bus-label">Grande Londrina</div>
+              </div>
+              <div class="bus-card">
+                <div class="bus-wrap">
+                  <img src="../assets/img/cartao-aniversario/onibus-londrisul.png" alt="Ônibus Londrisul">
+                  <div class="led-sign led-sign--ls" aria-hidden="true">PARABÉNS</div>
+                </div>
+                <div class="bus-label">Londrisul</div>
+              </div>
+            </div>
+
+            <div class="cartao-rodape">CIOP · Sistema MOV · Mobilidade Urbana de Londrina</div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+(function () {
+  const MENSAGEM_PADRAO =
+    "Você move Londrina todos os dias — hoje é a nossa vez de celebrar você! " +
+    "Que este novo ano traga saúde, alegria e conquistas, dentro e fora do ponto. " +
+    "Com muito carinho, o time do CIOP, da Londrisul, da Grande Londrina e da CMTU — juntos no sistema MOV — desejamos um feliz aniversário!";
+
+  const PUNCHLINE_PADRAO =
+    "Hoje o itinerário é festa — e a única parada obrigatória é o bolo! (Sem multa no CIOP.)";
+
+  const inpNome = document.getElementById("inpNome");
+  const inpData = document.getElementById("inpData");
+  const inpPunchline = document.getElementById("inpPunchline");
+  const inpMensagem = document.getElementById("inpMensagem");
+  const prevNome = document.getElementById("prevNome");
+  const prevData = document.getElementById("prevData");
+  const prevPunchline = document.getElementById("prevPunchline");
+  const prevMensagem = document.getElementById("prevMensagem");
+  const cartao = document.getElementById("cartaoPreview");
+  const btnPdf = document.getElementById("btnPdf");
+  const btnReset = document.getElementById("btnReset");
+
+  function formatarDataBr(iso) {
+    if (!iso) return "—";
+    const p = iso.split("-");
+    if (p.length !== 3) return iso;
+    return p[2] + "/" + p[1] + "/" + p[0];
+  }
+
+  function atualizarPreview() {
+    const nome = (inpNome.value || "").trim() || "Nome do Colaborador";
+    prevNome.textContent = nome;
+    prevData.textContent = formatarDataBr(inpData.value);
+    prevPunchline.textContent = (inpPunchline.value || "").trim() || PUNCHLINE_PADRAO;
+    prevMensagem.textContent = (inpMensagem.value || "").trim() || MENSAGEM_PADRAO;
+  }
+
+  function restaurarPadrao() {
+    inpPunchline.value = PUNCHLINE_PADRAO;
+    inpMensagem.value = MENSAGEM_PADRAO;
+    atualizarPreview();
+  }
+
+  function aguardarImagens(el) {
+    const imgs = [...el.querySelectorAll("img")];
+    return Promise.all(imgs.map((img) => {
+      if (img.complete && img.naturalWidth) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.addEventListener("load", resolve, { once: true });
+        img.addEventListener("error", resolve, { once: true });
+      });
+    }));
+  }
+
+  async function gerarPdf() {
+    btnPdf.disabled = true;
+    btnPdf.textContent = "Gerando PDF…";
+    try {
+      if (document.fonts?.ready) await document.fonts.ready;
+      await aguardarImagens(cartao);
+      await new Promise((r) => requestAnimationFrame(() => r()));
+
+      const canvas = await window.html2canvas(cartao, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        logging: false,
+        useCORS: true,
+        width: 794,
+        height: 1123,
+        windowWidth: 794,
+        windowHeight: 1123
+      });
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const w = pdf.internal.pageSize.getWidth();
+      const h = pdf.internal.pageSize.getHeight();
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, w, h, undefined, "FAST");
+
+      const slug = (inpNome.value || "colaborador").trim()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "colaborador";
+      pdf.save("cartao-aniversario-" + slug + ".pdf");
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível gerar o PDF. Tente novamente.");
+    } finally {
+      btnPdf.disabled = false;
+      btnPdf.textContent = "Baixar PDF (retrato)";
+    }
+  }
+
+  inpNome.addEventListener("input", atualizarPreview);
+  inpData.addEventListener("input", atualizarPreview);
+  inpPunchline.addEventListener("input", atualizarPreview);
+  inpMensagem.addEventListener("input", atualizarPreview);
+  btnPdf.addEventListener("click", gerarPdf);
+  btnReset.addEventListener("click", restaurarPadrao);
+
+  restaurarPadrao();
+
+  const hoje = new Date();
+  inpData.value = hoje.getFullYear() + "-" + String(hoje.getMonth() + 1).padStart(2, "0") + "-" + String(hoje.getDate()).padStart(2, "0");
+  atualizarPreview();
+})();
+</script>
+</body>
+</html>

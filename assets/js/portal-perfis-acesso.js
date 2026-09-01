@@ -67,6 +67,7 @@ export const MODULOS_PORTAL = [
   { id: "side-globus", label: "Menu: Globus", grupo: "Menu lateral" },
   { id: "side-mobilibus", label: "Menu: Mobilibus", grupo: "Menu lateral" },
   { id: "gerenciar-usuarios", label: "Menu: Gerenciar Usuários", grupo: "Menu lateral" },
+  { id: "cartao-aniversario", label: "Menu: Cartão de Aniversário", grupo: "Menu lateral" },
   { id: "integracoes", label: "Menu: Integrações", grupo: "Menu lateral" },
   { id: "automacoes", label: "Menu: Automações", grupo: "Menu lateral" },
   { id: "auditoria", label: "Menu: Auditoria", grupo: "Menu lateral" },
