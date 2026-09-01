@@ -13,7 +13,7 @@ document.documentElement.classList.add("portal-auth-pending");
 <title>Cartão de Aniversário — Portal CIOP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=DM+Serif+Display&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
   --blue:#06245c;
@@ -56,145 +56,99 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 @media(max-width:900px){.preview-scale{transform:scale(.72)}}
 @media(max-width:640px){.preview-scale{transform:scale(.52)}}
 
-/* —— Cartão A4 —— */
+/* —— Cartão A4 (estilo v2) —— */
 .cartao{
   width:794px;height:1123px;position:relative;overflow:hidden;
-  background:#fff;color:var(--blue);
-  font-family:"DM Sans",Arial,Helvetica,sans-serif;
-  box-shadow:0 24px 48px rgba(6,36,92,.14);
+  background:#fff;color:#24324b;
+  font-family:"DM Sans",Arial,"Segoe UI",sans-serif;
+  box-shadow:0 10px 35px rgba(0,0,0,.08);
   border:1px solid #d7dee8;
+  padding:42px 48px 36px;
 }
-.cartao-accent{height:6px;background:linear-gradient(90deg,var(--blue) 0 72%,var(--orange) 72% 100%)}
-
-.cartao-inner{
-  height:calc(100% - 6px);
-  display:flex;flex-direction:column;
-  padding:0 0 20px;
+.cartao-top{
+  position:absolute;top:0;left:0;right:0;height:19px;
+  background:linear-gradient(90deg,#172b59 0 45%,#2fb4c2 45% 75%,#f2b52b 75% 100%);
 }
 
-/* Cabeçalho institucional */
-.cartao-head{
-  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;
-  padding:22px 36px 18px;
-  background:linear-gradient(180deg,#f7f9fc 0%,#fff 100%);
-  border-bottom:1px solid #e8edf6;
+.balloons{position:absolute;inset:0;pointer-events:none;z-index:0}
+.balloon{
+  position:absolute;width:56px;height:72px;border-radius:50%;
+  opacity:.88;box-shadow:inset -12px -12px 20px rgba(0,0,0,.06);
 }
-.cartao-head-logos{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
-.cartao-head-logos img{object-fit:contain;max-height:38px;max-width:88px}
-.cartao-head-logos .lg-mov{max-height:44px;max-width:108px}
-.cartao-head-logos .lg-ciop{max-height:36px}
-.cartao-head-logos .lg-londri{max-height:22px;max-width:118px}
-.cartao-head-center{text-align:center;padding:0 8px}
-.cartao-head-kicker{
-  font-size:9px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:6px
+.balloon::after{
+  content:"";position:absolute;left:50%;top:70px;width:2px;height:90px;
+  background:#98a4b4;transform:translateX(-50%) rotate(6deg);transform-origin:top;
 }
-.cartao-head-title{
-  margin:0;font-family:"DM Serif Display",Georgia,serif;
-  font-size:38px;font-weight:400;color:var(--blue);line-height:1.05;letter-spacing:-.01em
-}
-.cartao-head-sub{
-  margin:8px 0 0;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--mov-teal)
-}
+.b1{background:#32b6c3;left:14px;top:220px;transform:rotate(-10deg)}
+.b2{background:#f4b52d;left:48px;top:276px;transform:rotate(8deg);width:46px;height:58px}
+.b3{background:#e34d28;right:16px;top:248px;transform:rotate(9deg)}
+.b4{background:#32b6c3;right:58px;top:302px;transform:rotate(-7deg);width:48px;height:62px}
 
-/* Balões decorativos discretos */
-.deco-balloon{opacity:.55}
-.deco-balloon svg{width:44px;height:auto;display:block}
+.cartao-content{position:relative;z-index:1;display:flex;flex-direction:column;min-height:100%}
 
-.cartao-body{flex:1;display:flex;flex-direction:column;padding:20px 40px 0;position:relative}
-.deco-corner{position:absolute;pointer-events:none;opacity:.4}
-.deco-corner--tl{top:8px;left:12px}
-.deco-corner--tr{top:8px;right:12px;transform:scaleX(-1)}
-
-.nome-bloco{text-align:center;margin:8px auto 6px;max-width:94%}
+.eyebrow{
+  margin-top:8px;text-align:center;font-size:11px;letter-spacing:.22em;
+  text-transform:uppercase;color:#718097;font-weight:800
+}
+.cartao-h1{
+  margin:10px 0 0;text-align:center;font-size:52px;line-height:1;
+  color:#172b59;letter-spacing:-.02em;font-weight:800
+}
 .cartao-nome{
-  margin:0;font-family:"DM Serif Display",Georgia,serif;
-  font-size:34px;font-weight:400;color:var(--blue);line-height:1.15;word-break:break-word
-}
-.nome-rule{
-  width:120px;height:3px;margin:12px auto 0;
-  background:linear-gradient(90deg,var(--blue),var(--mov-teal) 50%,var(--orange));
-  border-radius:2px
+  margin:14px 0 0;text-align:center;font-size:38px;line-height:1.08;
+  font-weight:800;color:#df4a27;word-break:break-word
 }
 .cartao-data{
-  text-align:center;margin:10px 0 16px;
-  font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)
+  margin:12px auto 0;width:max-content;padding:6px 22px;border-radius:30px;
+  background:#172b59;color:#fff;font-size:13px;font-weight:700;letter-spacing:.04em
 }
-
 .punchline{
-  text-align:center;margin:0 auto 14px;max-width:560px;
-  font-size:13px;font-weight:600;font-style:italic;color:var(--blue-mid);line-height:1.45
+  margin:20px auto 0;max-width:560px;text-align:center;
+  font-size:12px;line-height:1.45;color:#778399;font-weight:600;font-style:italic
 }
 .cartao-mensagem{
-  text-align:center;font-family:Georgia,"Times New Roman",serif;
-  font-size:14px;line-height:1.72;color:#1f2937;
-  max-width:580px;margin:0 auto 20px;padding:16px 20px;
-  background:#f8fafc;border:1px solid #e8edf6;border-radius:8px
+  margin:18px auto 0;max-width:600px;text-align:center;
+  font-family:Georgia,"Times New Roman",serif;font-size:14px;line-height:1.5;
+  color:#39475e
 }
+.cartao-mensagem strong{color:#172b59}
 
-/* Frota + painéis LED */
-.frota-section{margin-top:auto;padding-top:8px}
-.frota-titulo{
-  text-align:center;font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--muted);margin-bottom:14px
+/* Ônibus */
+.buses-wrap{
+  margin-top:auto;padding-top:28px;position:relative;
 }
-.frota-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:end}
-.frota-item{display:flex;flex-direction:column;align-items:center;gap:10px}
+.bus-caption{
+  text-align:center;font-size:10px;letter-spacing:.14em;
+  color:#69768a;font-weight:800;text-transform:uppercase;margin-bottom:10px
+}
+.buses{
+  display:flex;justify-content:center;align-items:flex-end;gap:0;
+  min-height:200px;padding:0 8px;
+}
+.buses .bus{
+  width:48%;max-width:360px;height:auto;max-height:200px;
+  object-fit:contain;object-position:center bottom;
+  filter:drop-shadow(0 12px 18px rgba(23,43,89,.12));
+}
+.buses .bus--esq{transform:translateX(8px);z-index:2}
+.buses .bus--dir{transform:translateX(-8px);z-index:1}
 
-/* Painel de destino — estilo itinerário eletrônico */
-.painel-led{
-  width:100%;max-width:280px;
-  background:linear-gradient(180deg,#3a3a3a,#1a1a1a);
-  border-radius:5px;padding:3px;
-  box-shadow:0 3px 10px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.12)
+/* Logos parceiros */
+.partners{
+  margin-top:22px;padding-top:16px;border-top:1px solid #d9dfe7;
 }
-.painel-led-vidro{
-  background:#050505;border-radius:3px;padding:7px 10px 8px;
-  border:1px solid #2a2a2a;
-  box-shadow:inset 0 2px 8px rgba(0,0,0,.6)
+.logos-row{
+  display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+  gap:18px 22px;min-height:56px;
 }
-.painel-led-texto{
-  display:block;text-align:center;
-  font-family:"Share Tech Mono","Courier New",monospace;
-  font-size:17px;font-weight:400;
-  letter-spacing:.28em;
-  color:#ffc830;
-  text-shadow:0 0 10px rgba(255,200,48,.65),0 0 2px rgba(255,200,48,.9);
-  padding-left:.28em;
-}
-.painel-led-reflexo{
-  height:2px;margin-top:5px;border-radius:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent)
-}
-
-.frota-img{
-  width:100%;height:148px;display:flex;align-items:flex-end;justify-content:center;
-  position:relative;
-}
-.frota-img::after{
-  content:"";position:absolute;bottom:4px;left:12%;right:12%;height:8px;
-  background:radial-gradient(ellipse at center,rgba(6,36,92,.14) 0%,transparent 72%);
-  border-radius:50%
-}
-.frota-img img{
-  max-width:100%;max-height:140px;width:auto;height:auto;object-fit:contain;
-  position:relative;z-index:1;
-  filter:drop-shadow(0 10px 14px rgba(6,36,92,.12))
-}
-.frota-empresa{
-  font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)
-}
-
-/* Bolo minimalista */
-.bolo-mini{
-  display:flex;justify-content:center;margin:0 auto 12px;opacity:.9
-}
-.bolo-mini svg{width:52px;height:auto}
+.logos-row img{object-fit:contain;max-height:42px;max-width:100px}
+.logos-row .lg-ciop{max-height:38px}
+.logos-row .lg-mov{max-height:44px;max-width:110px}
+.logos-row .lg-londri{max-height:24px;max-width:120px}
 
 .cartao-foot{
-  margin-top:16px;padding:12px 36px 0;
-  border-top:2px solid var(--blue);
-  box-shadow:inset 0 4px 0 var(--orange);
-  text-align:center;font-size:8.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#667085
+  margin-top:14px;text-align:center;font-size:9px;color:#8993a3;
+  font-weight:600;letter-spacing:.12em;text-transform:uppercase
 }
 .notice{background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px 16px;color:#664d03;margin-bottom:16px}
 </style>
@@ -271,98 +225,42 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
     <section class="preview-wrap" aria-label="Pré-visualização do cartão">
       <div class="preview-scale">
         <article class="cartao" id="cartaoPreview" aria-label="Cartão de aniversário">
-          <div class="cartao-accent" aria-hidden="true"></div>
-          <div class="cartao-inner">
-            <header class="cartao-head">
-              <div class="cartao-head-logos" aria-label="Parceiros">
-                <img src="../assets/img/cartao-aniversario/ciop.png?v=2" alt="CIOP" class="lg-ciop">
-                <img src="../assets/img/cartao-aniversario/mov.png?v=2" alt="MOV" class="lg-mov">
-              </div>
-              <div class="cartao-head-center">
-                <p class="cartao-head-kicker">Centro de Inteligência Operacional</p>
-                <h2 class="cartao-head-title">Feliz Aniversário</h2>
-                <p class="cartao-head-sub">Sistema MOV · Londrina</p>
-              </div>
-              <div class="cartao-head-logos" aria-label="Operadoras">
-                <img src="../assets/img/cartao-aniversario/tcgl-nobg.png?v=2" alt="Grande Londrina">
-                <img src="../assets/img/cartao-aniversario/cmtu.png?v=2" alt="CMTU">
-                <img src="../assets/img/cartao-aniversario/londrisul-nobg.png?v=2" alt="Londrisul" class="lg-londri">
-              </div>
-            </header>
+          <div class="cartao-top" aria-hidden="true"></div>
+          <div class="balloons" aria-hidden="true">
+            <span class="balloon b1"></span>
+            <span class="balloon b2"></span>
+            <span class="balloon b3"></span>
+            <span class="balloon b4"></span>
+          </div>
 
-            <div class="cartao-body">
-              <div class="deco-corner deco-corner--tl deco-balloon" aria-hidden="true">
-                <svg viewBox="0 0 48 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <ellipse cx="24" cy="22" rx="18" ry="22" fill="#33b1cc" opacity=".85"/>
-                  <path d="M24 44v22" stroke="#94a3b8" stroke-width="1.5"/>
-                  <ellipse cx="38" cy="50" rx="10" ry="13" fill="#f9b434" opacity=".7"/>
-                  <path d="M38 63v9" stroke="#94a3b8" stroke-width="1"/>
-                </svg>
-              </div>
-              <div class="deco-corner deco-corner--tr deco-balloon" aria-hidden="true">
-                <svg viewBox="0 0 48 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <ellipse cx="24" cy="22" rx="18" ry="22" fill="#ff6b00" opacity=".75"/>
-                  <path d="M24 44v22" stroke="#94a3b8" stroke-width="1.5"/>
-                  <ellipse cx="10" cy="52" rx="9" ry="12" fill="#8cc63f" opacity=".65"/>
-                  <path d="M10 64v8" stroke="#94a3b8" stroke-width="1"/>
-                </svg>
-              </div>
+          <div class="cartao-content">
+            <p class="eyebrow">Uma homenagem a quem faz parte da nossa equipe</p>
+            <h2 class="cartao-h1">Feliz Aniversário!</h2>
+            <h3 class="cartao-nome" id="prevNome">Nome do Colaborador</h3>
+            <div class="cartao-data" id="prevData">—</div>
 
-              <div class="bolo-mini" aria-hidden="true">
-                <svg viewBox="0 0 64 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="14" y="8" width="4" height="10" rx="1" fill="#f9b434"/>
-                  <rect x="30" y="6" width="4" height="12" rx="1" fill="#f9b434"/>
-                  <rect x="46" y="8" width="4" height="10" rx="1" fill="#f9b434"/>
-                  <ellipse cx="16" cy="6" rx="3" ry="4" fill="#ff6b00" opacity=".8"/>
-                  <ellipse cx="32" cy="4" rx="3" ry="4" fill="#ff6b00" opacity=".8"/>
-                  <ellipse cx="48" cy="6" rx="3" ry="4" fill="#ff6b00" opacity=".8"/>
-                  <rect x="10" y="20" width="44" height="12" rx="4" fill="#f4a9c6"/>
-                  <rect x="6" y="30" width="52" height="14" rx="4" fill="#8cc63f"/>
-                  <rect x="4" y="42" width="56" height="12" rx="5" fill="#6b4423"/>
-                </svg>
+            <p class="punchline" id="prevPunchline"></p>
+            <div class="cartao-mensagem" id="prevMensagem"></div>
+
+            <div class="buses-wrap">
+              <p class="bus-caption">Parabéns! · Movendo Londrina · Juntos</p>
+              <div class="buses">
+                <img class="bus bus--esq" src="../assets/img/cartao-aniversario/onibus-londrisul-card.png?v=3" alt="Ônibus Londrisul">
+                <img class="bus bus--dir" src="../assets/img/cartao-aniversario/onibus-grande-londrina-card.png?v=3" alt="Ônibus Grande Londrina">
               </div>
-
-              <div class="nome-bloco">
-                <h3 class="cartao-nome" id="prevNome">Nome do Colaborador</h3>
-                <div class="nome-rule" aria-hidden="true"></div>
-              </div>
-              <p class="cartao-data" id="prevData">—</p>
-
-              <p class="punchline" id="prevPunchline"></p>
-              <p class="cartao-mensagem" id="prevMensagem"></p>
-
-              <section class="frota-section" aria-label="Frota em celebração">
-                <p class="frota-titulo">Nossa frota também celebra com você</p>
-                <div class="frota-row">
-                  <div class="frota-item">
-                    <div class="painel-led" aria-label="Destino: PARABÉNS">
-                      <div class="painel-led-vidro">
-                        <span class="painel-led-texto">PARABÉNS</span>
-                        <div class="painel-led-reflexo" aria-hidden="true"></div>
-                      </div>
-                    </div>
-                    <div class="frota-img">
-                      <img src="../assets/img/cartao-aniversario/onibus-grande-londrina-nobg.png?v=2" alt="Ônibus Grande Londrina">
-                    </div>
-                    <span class="frota-empresa">Grande Londrina</span>
-                  </div>
-                  <div class="frota-item">
-                    <div class="painel-led" aria-label="Destino: PARABÉNS">
-                      <div class="painel-led-vidro">
-                        <span class="painel-led-texto">PARABÉNS</span>
-                        <div class="painel-led-reflexo" aria-hidden="true"></div>
-                      </div>
-                    </div>
-                    <div class="frota-img">
-                      <img src="../assets/img/cartao-aniversario/onibus-londrisul-nobg.png?v=2" alt="Ônibus Londrisul">
-                    </div>
-                    <span class="frota-empresa">Londrisul</span>
-                  </div>
-                </div>
-              </section>
             </div>
 
-            <footer class="cartao-foot">CIOP · Londrisul · Grande Londrina · CMTU · Mobilidade Urbana de Londrina</footer>
+            <section class="partners" aria-label="Parceiros do sistema MOV">
+              <div class="logos-row">
+                <img src="../assets/img/cartao-aniversario/ciop.png?v=3" alt="CIOP" class="lg-ciop">
+                <img src="../assets/img/cartao-aniversario/mov.png?v=3" alt="MOV" class="lg-mov">
+                <img src="../assets/img/cartao-aniversario/tcgl-nobg.png?v=3" alt="Grande Londrina">
+                <img src="../assets/img/cartao-aniversario/cmtu.png?v=3" alt="CMTU">
+                <img src="../assets/img/cartao-aniversario/londrisul-nobg.png?v=3" alt="Londrisul" class="lg-londri">
+              </div>
+            </section>
+
+            <footer class="cartao-foot">CIOP · Londrisul · Grande Londrina · CMTU · Sistema MOV</footer>
           </div>
         </article>
       </div>
@@ -372,13 +270,21 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 
 <script>
 (function () {
-  const MENSAGEM_PADRAO =
-    "Hoje celebramos você — profissional que faz a mobilidade de Londrina acontecer todos os dias. " +
-    "Que este novo ciclo traga saúde, alegria e realizações, em casa e no trabalho. " +
-    "Com estima, o time do CIOP e do sistema MOV desejam um feliz aniversário.";
-
   const PUNCHLINE_PADRAO =
-    "Que este dia seja leve, especial e repleto de boas conquistas.";
+    "Hoje celebramos mais do que uma data especial: celebramos você!";
+
+  const MENSAGEM_PADRAO =
+    "Seu trabalho, dedicação, parceria e compromisso fazem parte da força que movimenta nossa equipe e ajuda a levar Londrina cada vez mais longe. Que este novo ciclo seja repleto de **saúde, alegria, conquistas, realizações** e momentos inesquecíveis. Que nunca faltem motivos para sorrir e novos caminhos para seguir.\n\n" +
+    "Receba o carinho e os melhores desejos de toda a equipe do CIOP e de todo o sistema MOV. **Parabéns e muitas felicidades!**";
+
+  function formatMensagemHtml(text) {
+    return String(text || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\n/g, "<br>");
+  }
 
   const inpNome = document.getElementById("inpNome");
   const inpData = document.getElementById("inpData");
@@ -404,7 +310,7 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
     prevNome.textContent = nome;
     prevData.textContent = formatarDataBr(inpData.value);
     prevPunchline.textContent = (inpPunchline.value || "").trim() || PUNCHLINE_PADRAO;
-    prevMensagem.textContent = (inpMensagem.value || "").trim() || MENSAGEM_PADRAO;
+    prevMensagem.innerHTML = formatMensagemHtml((inpMensagem.value || "").trim() || MENSAGEM_PADRAO);
   }
 
   function restaurarPadrao() {
