@@ -13,477 +13,190 @@ document.documentElement.classList.add("portal-auth-pending");
 <title>Cartão de Aniversário — Portal CIOP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=DM+Serif+Display&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 :root{
   --blue:#06245c;
+  --blue-mid:#0b3a8a;
   --orange:#ff6b00;
   --mov-teal:#33b1cc;
-  --mov-gold:#f9b434;
-  --bg:#f0f4fa;
+  --bg:#eef2f8;
   --border:#dfe5ef;
   --text:#101828;
   --muted:#475467;
 }
 *{box-sizing:border-box}
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:Arial,Helvetica,sans-serif;
-  min-height:100vh;
-}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"DM Sans",Arial,Helvetica,sans-serif;min-height:100vh}
 .header{
-  background:#fff;
-  display:grid;
-  grid-template-columns:minmax(160px,200px) 1fr minmax(220px,auto);
-  gap:16px;
-  align-items:center;
-  padding:10px 22px;
-  border-bottom:1px solid #e8edf6;
+  background:#fff;display:grid;grid-template-columns:minmax(160px,200px) 1fr minmax(220px,auto);
+  gap:16px;align-items:center;padding:10px 22px;border-bottom:1px solid #e8edf6
 }
 .logo-tcgl{height:52px;object-fit:contain}
-h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:800}
+h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 .header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
-.container{
-  max-width:1200px;
-  margin:24px auto 40px;
-  padding:0 clamp(14px,2.2vw,28px);
-}
+.container{max-width:1200px;margin:24px auto 40px;padding:0 clamp(14px,2.2vw,28px)}
 .portal-return{margin-bottom:14px}
-.btn-link{
-  display:inline-flex;align-items:center;background:var(--blue);color:#fff;
-  text-decoration:none;padding:7px 12px;border-radius:6px;font-weight:700;font-size:12px
-}
-.layout{
-  display:grid;
-  grid-template-columns:minmax(260px,320px) 1fr;
-  gap:24px;
-  align-items:start;
-}
+.btn-link{display:inline-flex;align-items:center;background:var(--blue);color:#fff;text-decoration:none;padding:7px 12px;border-radius:6px;font-weight:700;font-size:12px}
+.layout{display:grid;grid-template-columns:minmax(260px,320px) 1fr;gap:24px;align-items:start}
 @media(max-width:960px){.layout{grid-template-columns:1fr}}
-.panel{
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:10px;
-  padding:18px 20px;
-  box-shadow:0 8px 24px rgba(6,36,92,.06);
-}
+.panel{background:#fff;border:1px solid var(--border);border-radius:10px;padding:18px 20px;box-shadow:0 8px 24px rgba(6,36,92,.06)}
 .panel h2{margin:0 0 14px;font-size:16px;color:var(--blue)}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
-.field input,.field textarea{
-  width:100%;
-  border:1px solid var(--border);
-  border-radius:8px;
-  padding:10px 12px;
-  font:inherit;
-  color:var(--text);
-}
+.field input,.field textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font:inherit;color:var(--text)}
 .field textarea{min-height:88px;resize:vertical;line-height:1.45}
 .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
-.btn{
-  border:0;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:13px
-}
+.btn{border:0;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:13px}
 .btn-primary{background:var(--orange);color:#fff}
-.btn-primary:hover{filter:brightness(1.05)}
 .btn-secondary{background:var(--blue);color:#fff}
 .btn-secondary:disabled{opacity:.55;cursor:not-allowed}
 .hint{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.45}
-.preview-wrap{
-  display:flex;
-  justify-content:center;
-  padding:12px 0 24px;
-  overflow:auto;
-}
-.preview-scale{
-  transform-origin:top center;
-}
-@media(max-width:900px){
-  .preview-scale{transform:scale(.72)}
-}
-@media(max-width:640px){
-  .preview-scale{transform:scale(.52)}
-}
+.preview-wrap{display:flex;justify-content:center;padding:12px 0 24px;overflow:auto}
+.preview-scale{transform-origin:top center}
+@media(max-width:900px){.preview-scale{transform:scale(.72)}}
+@media(max-width:640px){.preview-scale{transform:scale(.52)}}
 
-/* —— Cartão A4 retrato —— */
+/* —— Cartão A4 —— */
 .cartao{
-  width:794px;
-  height:1123px;
-  position:relative;
-  overflow:hidden;
-  background:
-    radial-gradient(ellipse 120% 80% at 50% -10%, rgba(51,177,204,.18) 0%, transparent 55%),
-    radial-gradient(ellipse 80% 50% at 100% 40%, rgba(249,180,52,.12) 0%, transparent 50%),
-    radial-gradient(ellipse 70% 45% at 0% 70%, rgba(255,107,0,.1) 0%, transparent 45%),
-    linear-gradient(180deg,#f8fbff 0%,#fff 42%,#fffaf3 100%);
-  font-family:"Nunito",Arial,Helvetica,sans-serif;
-  color:var(--blue);
-  box-shadow:0 28px 60px rgba(6,36,92,.2);
+  width:794px;height:1123px;position:relative;overflow:hidden;
+  background:#fff;color:var(--blue);
+  font-family:"DM Sans",Arial,Helvetica,sans-serif;
+  box-shadow:0 24px 48px rgba(6,36,92,.14);
   border:1px solid #d7dee8;
 }
-.cartao::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  background-image:
-    radial-gradient(circle,#33b1cc 1.2px,transparent 1.2px),
-    radial-gradient(circle,#f9b434 1px,transparent 1px),
-    radial-gradient(circle,#ff6b00 1px,transparent 1px),
-    radial-gradient(circle,#8cc63f 1.2px,transparent 1.2px);
-  background-size:180px 180px,220px 220px,260px 260px,200px 200px;
-  background-position:0 0,40px 60px,80px 20px,120px 100px;
-  opacity:.35;
-  pointer-events:none;
-}
-.cartao-top-bar{
-  position:absolute;top:0;left:0;right:0;height:8px;z-index:2;
-  background:linear-gradient(90deg,var(--blue) 0%,var(--mov-teal) 35%,var(--mov-gold) 65%,var(--orange) 100%);
-}
-
-/* Balões em cachê */
-.baloes-cacho{
-  position:absolute;
-  z-index:3;
-  pointer-events:none;
-}
-.baloes-cacho--esq{top:52px;left:18px;transform:rotate(-8deg)}
-.baloes-cacho--dir{top:68px;right:22px;transform:rotate(6deg) scaleX(-1)}
-.balloon{
-  position:absolute;
-  border-radius:50% 50% 46% 46%;
-  box-shadow:
-    inset -10px -14px 22px rgba(0,0,0,.1),
-    inset 8px 8px 16px rgba(255,255,255,.35),
-    0 8px 18px rgba(6,36,92,.12);
-}
-.balloon::before{
-  content:"";
-  position:absolute;
-  bottom:-3px;left:50%;
-  width:10px;height:8px;
-  margin-left:-5px;
-  background:inherit;
-  border-radius:0 0 50% 50%;
-  filter:brightness(.88);
-}
-.balloon::after{
-  content:"";
-  position:absolute;
-  bottom:-52px;left:50%;
-  width:2px;height:52px;
-  background:linear-gradient(180deg,rgba(80,80,90,.5),rgba(80,80,90,.15));
-  transform:translateX(-50%);
-}
-.baloes-cacho--esq .b1{width:58px;height:72px;background:linear-gradient(145deg,#4ec9e0,#33b1cc);top:0;left:0}
-.baloes-cacho--esq .b2{width:44px;height:56px;background:linear-gradient(145deg,#ffd56a,#f9b434);top:28px;left:52px}
-.baloes-cacho--esq .b3{width:36px;height:46px;background:linear-gradient(145deg,#ff8c42,#ff6b00);top:62px;left:18px}
-.baloes-cacho--dir .b4{width:50px;height:64px;background:linear-gradient(145deg,#a8e063,#8cc63f);top:0;left:0}
-.baloes-cacho--dir .b5{width:40px;height:52px;background:linear-gradient(145deg,#ff6b7a,#e31e24);top:36px;left:44px}
-.baloes-cacho--dir .b6{width:32px;height:42px;background:linear-gradient(145deg,#7eb8ff,#0070bb);top:70px;left:8px}
-
-/* Confete */
-.confete{
-  position:absolute;
-  width:8px;height:14px;
-  border-radius:2px;
-  opacity:.75;
-  z-index:2;
-}
-.c1{top:120px;left:140px;background:#33b1cc;transform:rotate(25deg)}
-.c2{top:95px;right:160px;background:#f9b434;transform:rotate(-18deg);width:6px;height:12px}
-.c3{top:200px;left:60px;background:#ff6b00;transform:rotate(42deg);width:7px;height:11px}
-.c4{top:175px;right:70px;background:#8cc63f;transform:rotate(-35deg)}
-.c5{top:250px;right:200px;background:#e31e24;transform:rotate(15deg);width:5px;height:10px}
+.cartao-accent{height:6px;background:linear-gradient(90deg,var(--blue) 0 72%,var(--orange) 72% 100%)}
 
 .cartao-inner{
-  position:relative;z-index:4;
-  height:100%;
-  display:flex;
-  flex-direction:column;
-  padding:32px 40px 22px;
+  height:calc(100% - 6px);
+  display:flex;flex-direction:column;
+  padding:0 0 20px;
 }
 
-.logos-strip{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:12px 16px;
-  flex-wrap:wrap;
-  padding:12px 18px;
-  margin-bottom:10px;
-  background:rgba(255,255,255,.82);
-  border:1px solid rgba(6,36,92,.08);
-  border-radius:16px;
-  box-shadow:0 10px 28px rgba(6,36,92,.06);
-  backdrop-filter:blur(6px);
+/* Cabeçalho institucional */
+.cartao-head{
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;
+  padding:22px 36px 18px;
+  background:linear-gradient(180deg,#f7f9fc 0%,#fff 100%);
+  border-bottom:1px solid #e8edf6;
 }
-.logos-strip img{
-  object-fit:contain;
-  max-height:42px;
-  max-width:100px;
-  filter:drop-shadow(0 2px 4px rgba(0,0,0,.06));
+.cartao-head-logos{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.cartao-head-logos img{object-fit:contain;max-height:38px;max-width:88px}
+.cartao-head-logos .lg-mov{max-height:44px;max-width:108px}
+.cartao-head-logos .lg-ciop{max-height:36px}
+.cartao-head-logos .lg-londri{max-height:22px;max-width:118px}
+.cartao-head-center{text-align:center;padding:0 8px}
+.cartao-head-kicker{
+  font-size:9px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:6px
 }
-.logos-strip .logo-mov{max-height:48px;max-width:120px}
-.logos-strip .logo-ciop{max-height:40px}
-.logos-strip .logo-londrisul{max-height:26px;max-width:130px}
-
-.hero-row{
-  display:grid;
-  grid-template-columns:1fr auto 1fr;
-  align-items:center;
-  gap:8px;
-  margin:6px 0 4px;
+.cartao-head-title{
+  margin:0;font-family:"DM Serif Display",Georgia,serif;
+  font-size:38px;font-weight:400;color:var(--blue);line-height:1.05;letter-spacing:-.01em
 }
-.hero-deco{
-  font-size:28px;
-  opacity:.9;
-  text-align:center;
-}
-.hero-deco--r{transform:scaleX(-1)}
-
-.cartao-titulo{
-  text-align:center;
-  margin:0;
-}
-.cartao-titulo .feliz{
-  display:block;
-  font-family:"Outfit",sans-serif;
-  font-size:50px;
-  font-weight:800;
-  letter-spacing:-.02em;
-  line-height:1;
-  background:linear-gradient(120deg,var(--blue) 0%,#0b5cad 40%,var(--mov-teal) 75%,var(--mov-gold) 100%);
-  -webkit-background-clip:text;
-  background-clip:text;
-  color:transparent;
-}
-.cartao-titulo .aniversario{
-  display:inline-block;
-  margin-top:6px;
-  padding:4px 18px;
-  font-family:"Outfit",sans-serif;
-  font-size:15px;
-  font-weight:800;
-  color:#fff;
-  letter-spacing:.32em;
-  text-transform:uppercase;
-  background:linear-gradient(90deg,var(--orange),#ff8c2a);
-  border-radius:999px;
-  box-shadow:0 6px 16px rgba(255,107,0,.35);
+.cartao-head-sub{
+  margin:8px 0 0;font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--mov-teal)
 }
 
-/* Bolo */
-.bolo-wrap{
-  display:flex;
-  justify-content:center;
-  margin:10px 0 6px;
-}
-.bolo{
-  position:relative;
-  width:110px;
-  height:88px;
-}
-.bolo-velas{
-  position:absolute;
-  top:0;left:50%;
-  transform:translateX(-50%);
-  display:flex;
-  gap:14px;
-  z-index:2;
-}
-.vela{
-  position:relative;
-  width:5px;height:22px;
-  background:linear-gradient(180deg,#fff9c4,#f9b434);
-  border-radius:3px 3px 1px 1px;
-  box-shadow:0 1px 2px rgba(0,0,0,.15);
-}
-.chama{
-  position:absolute;
-  top:-12px;left:50%;
-  transform:translateX(-50%);
-  width:10px;height:14px;
-  background:radial-gradient(ellipse at 50% 80%,#ff6b00 0%,#f9b434 45%,transparent 70%);
-  border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;
-  animation:none;
-}
-.bolo-camada{
-  position:absolute;
-  left:50%;
-  transform:translateX(-50%);
-  border-radius:8px;
-}
-.bolo-camada--top{
-  top:28px;
-  width:72px;height:22px;
-  background:linear-gradient(180deg,#ffb8d0,#ff8cb8);
-  box-shadow:inset 0 -4px 0 rgba(0,0,0,.08),0 4px 8px rgba(0,0,0,.08);
-}
-.bolo-camada--top::before,
-.bolo-camada--top::after{
-  content:"";
-  position:absolute;
-  top:6px;
-  width:8px;height:8px;
-  border-radius:50%;
-  background:#fff;
-  opacity:.85;
-}
-.bolo-camada--top::before{left:12px}
-.bolo-camada--top::after{right:12px;background:#ff6b00;opacity:.7}
-.bolo-camada--mid{
-  top:46px;
-  width:88px;height:24px;
-  background:linear-gradient(180deg,#c8f0a0,#8cc63f);
-  box-shadow:inset 0 -4px 0 rgba(0,0,0,.08);
-}
-.bolo-base{
-  position:absolute;
-  top:66px;left:50%;
-  transform:translateX(-50%);
-  width:100px;height:22px;
-  background:linear-gradient(180deg,#8b5a2b,#6b4423);
-  border-radius:6px 6px 10px 10px;
-  box-shadow:0 6px 12px rgba(0,0,0,.15);
-}
-.bolo-base::after{
-  content:"";
-  position:absolute;
-  bottom:-6px;left:8px;right:8px;height:6px;
-  background:#4a2f18;
-  border-radius:0 0 8px 8px;
-}
+/* Balões decorativos discretos */
+.deco-balloon{opacity:.55}
+.deco-balloon svg{width:44px;height:auto;display:block}
 
-.nome-box{
-  text-align:center;
-  margin:8px auto 4px;
-  max-width:92%;
-}
+.cartao-body{flex:1;display:flex;flex-direction:column;padding:20px 40px 0;position:relative}
+.deco-corner{position:absolute;pointer-events:none;opacity:.4}
+.deco-corner--tl{top:8px;left:12px}
+.deco-corner--tr{top:8px;right:12px;transform:scaleX(-1)}
+
+.nome-bloco{text-align:center;margin:8px auto 6px;max-width:94%}
 .cartao-nome{
-  display:inline-block;
-  margin:0;
-  padding:8px 22px 10px;
-  font-family:"Outfit",sans-serif;
-  font-size:32px;
-  font-weight:800;
-  color:var(--blue);
-  line-height:1.15;
-  word-break:break-word;
-  background:linear-gradient(135deg,rgba(6,36,92,.04),rgba(51,177,204,.08));
-  border:2px solid rgba(6,36,92,.1);
-  border-radius:14px;
-  box-shadow:0 8px 20px rgba(6,36,92,.06);
+  margin:0;font-family:"DM Serif Display",Georgia,serif;
+  font-size:34px;font-weight:400;color:var(--blue);line-height:1.15;word-break:break-word
+}
+.nome-rule{
+  width:120px;height:3px;margin:12px auto 0;
+  background:linear-gradient(90deg,var(--blue),var(--mov-teal) 50%,var(--orange));
+  border-radius:2px
 }
 .cartao-data{
-  text-align:center;
-  font-size:14px;
-  font-weight:800;
-  color:var(--muted);
-  margin-bottom:10px;
-  letter-spacing:.04em;
+  text-align:center;margin:10px 0 16px;
+  font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)
 }
-.cartao-data::before{content:"📅 "}
 
 .punchline{
-  text-align:center;
-  margin:0 auto 12px;
-  max-width:520px;
-  padding:8px 16px;
-  font-size:13px;
-  font-weight:800;
-  color:var(--blue);
-  background:linear-gradient(90deg,rgba(249,180,52,.2),rgba(51,177,204,.15));
-  border-left:4px solid var(--orange);
-  border-radius:0 12px 12px 0;
-  line-height:1.4;
+  text-align:center;margin:0 auto 14px;max-width:560px;
+  font-size:13px;font-weight:600;font-style:italic;color:var(--blue-mid);line-height:1.45
 }
-
 .cartao-mensagem{
-  text-align:center;
-  font-size:14.5px;
-  line-height:1.68;
-  color:#1f2937;
-  max-width:600px;
-  margin:0 auto 14px;
-  padding:14px 18px;
-  background:rgba(255,255,255,.75);
-  border-radius:14px;
-  border:1px dashed rgba(6,36,92,.12);
-  box-shadow:0 4px 14px rgba(6,36,92,.04);
+  text-align:center;font-family:Georgia,"Times New Roman",serif;
+  font-size:14px;line-height:1.72;color:#1f2937;
+  max-width:580px;margin:0 auto 20px;padding:16px 20px;
+  background:#f8fafc;border:1px solid #e8edf6;border-radius:8px
 }
 
-.onibus-row{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-  margin-top:auto;
-  align-items:end;
+/* Frota + painéis LED */
+.frota-section{margin-top:auto;padding-top:8px}
+.frota-titulo{
+  text-align:center;font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px
 }
-.bus-card{
-  background:rgba(255,255,255,.7);
-  border-radius:12px;
-  padding:8px 8px 6px;
-  border:1px solid rgba(6,36,92,.06);
-  box-shadow:0 6px 16px rgba(6,36,92,.05);
+.frota-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:end}
+.frota-item{display:flex;flex-direction:column;align-items:center;gap:10px}
+
+/* Painel de destino — estilo itinerário eletrônico */
+.painel-led{
+  width:100%;max-width:280px;
+  background:linear-gradient(180deg,#3a3a3a,#1a1a1a);
+  border-radius:5px;padding:3px;
+  box-shadow:0 3px 10px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.12)
 }
-.bus-wrap{
+.painel-led-vidro{
+  background:#050505;border-radius:3px;padding:7px 10px 8px;
+  border:1px solid #2a2a2a;
+  box-shadow:inset 0 2px 8px rgba(0,0,0,.6)
+}
+.painel-led-texto{
+  display:block;text-align:center;
+  font-family:"Share Tech Mono","Courier New",monospace;
+  font-size:17px;font-weight:400;
+  letter-spacing:.28em;
+  color:#ffc830;
+  text-shadow:0 0 10px rgba(255,200,48,.65),0 0 2px rgba(255,200,48,.9);
+  padding-left:.28em;
+}
+.painel-led-reflexo{
+  height:2px;margin-top:5px;border-radius:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent)
+}
+
+.frota-img{
+  width:100%;height:148px;display:flex;align-items:flex-end;justify-content:center;
   position:relative;
-  line-height:0;
-  border-radius:8px;
-  overflow:hidden;
 }
-.bus-wrap img{
-  width:100%;
-  height:auto;
-  display:block;
+.frota-img::after{
+  content:"";position:absolute;bottom:4px;left:12%;right:12%;height:8px;
+  background:radial-gradient(ellipse at center,rgba(6,36,92,.14) 0%,transparent 72%);
+  border-radius:50%
 }
-.led-sign{
-  position:absolute;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:#0a0a0a;
-  border:2px solid #1a1a1a;
-  border-radius:3px;
-  color:#ffe566;
-  font-family:"Courier New",Courier,monospace;
-  font-weight:800;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  text-shadow:0 0 8px rgba(255,229,102,.9);
-  box-shadow:inset 0 0 10px rgba(255,229,102,.2),0 0 6px rgba(255,229,102,.3);
-  overflow:hidden;
-  white-space:nowrap;
+.frota-img img{
+  max-width:100%;max-height:140px;width:auto;height:auto;object-fit:contain;
+  position:relative;z-index:1;
+  filter:drop-shadow(0 10px 14px rgba(6,36,92,.12))
 }
-.led-sign--gl{top:7.5%;left:11%;width:30%;height:7.5%;font-size:9px}
-.led-sign--ls{top:8%;left:10%;width:32%;height:7.8%;font-size:9px}
-.bus-label{
-  text-align:center;
-  font-size:9px;
-  font-weight:800;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-  color:var(--muted);
-  margin-top:6px;
+.frota-empresa{
+  font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)
 }
 
-.cartao-rodape{
-  text-align:center;
-  margin-top:12px;
-  padding-top:10px;
+/* Bolo minimalista */
+.bolo-mini{
+  display:flex;justify-content:center;margin:0 auto 12px;opacity:.9
+}
+.bolo-mini svg{width:52px;height:auto}
+
+.cartao-foot{
+  margin-top:16px;padding:12px 36px 0;
   border-top:2px solid var(--blue);
   box-shadow:inset 0 4px 0 var(--orange);
-  font-size:9px;
-  font-weight:800;
-  letter-spacing:.16em;
-  text-transform:uppercase;
-  color:#475467;
+  text-align:center;font-size:8.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#667085
 }
-.notice{
-  background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px 16px;
-  color:#664d03;margin-bottom:16px
-}
+.notice{background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px 16px;color:#664d03;margin-bottom:16px}
 </style>
 <script src="../assets/js/loading.js?v=20260718d"></script>
 <link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
@@ -541,7 +254,7 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:800}
         <input id="inpData" type="date">
       </div>
       <div class="field">
-        <label for="inpPunchline">Frase divertida</label>
+        <label for="inpPunchline">Frase de destaque</label>
         <input id="inpPunchline" type="text" spellcheck="true">
       </div>
       <div class="field">
@@ -558,82 +271,98 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:800}
     <section class="preview-wrap" aria-label="Pré-visualização do cartão">
       <div class="preview-scale">
         <article class="cartao" id="cartaoPreview" aria-label="Cartão de aniversário">
-          <div class="cartao-top-bar" aria-hidden="true"></div>
-
-          <div class="baloes-cacho baloes-cacho--esq" aria-hidden="true">
-            <div class="balloon b1"></div>
-            <div class="balloon b2"></div>
-            <div class="balloon b3"></div>
-          </div>
-          <div class="baloes-cacho baloes-cacho--dir" aria-hidden="true">
-            <div class="balloon b4"></div>
-            <div class="balloon b5"></div>
-            <div class="balloon b6"></div>
-          </div>
-          <div class="confete c1" aria-hidden="true"></div>
-          <div class="confete c2" aria-hidden="true"></div>
-          <div class="confete c3" aria-hidden="true"></div>
-          <div class="confete c4" aria-hidden="true"></div>
-          <div class="confete c5" aria-hidden="true"></div>
-
+          <div class="cartao-accent" aria-hidden="true"></div>
           <div class="cartao-inner">
-            <div class="logos-strip">
-              <img src="../assets/img/cartao-aniversario/ciop.png" alt="CIOP" class="logo-ciop">
-              <img src="../assets/img/cartao-aniversario/mov.png" alt="MOV" class="logo-mov">
-              <img src="../assets/img/cartao-aniversario/tcgl.png" alt="Grande Londrina">
-              <img src="../assets/img/cartao-aniversario/cmtu.png" alt="CMTU">
-              <img src="../assets/img/cartao-aniversario/londrisul.png" alt="Londrisul" class="logo-londrisul">
-            </div>
-
-            <div class="hero-row">
-              <div class="hero-deco" aria-hidden="true">🎈</div>
-              <div class="cartao-titulo">
-                <span class="feliz">Feliz</span>
-                <span class="aniversario">Aniversário</span>
+            <header class="cartao-head">
+              <div class="cartao-head-logos" aria-label="Parceiros">
+                <img src="../assets/img/cartao-aniversario/ciop.png?v=2" alt="CIOP" class="lg-ciop">
+                <img src="../assets/img/cartao-aniversario/mov.png?v=2" alt="MOV" class="lg-mov">
               </div>
-              <div class="hero-deco hero-deco--r" aria-hidden="true">🎈</div>
-            </div>
+              <div class="cartao-head-center">
+                <p class="cartao-head-kicker">Centro de Inteligência Operacional</p>
+                <h2 class="cartao-head-title">Feliz Aniversário</h2>
+                <p class="cartao-head-sub">Sistema MOV · Londrina</p>
+              </div>
+              <div class="cartao-head-logos" aria-label="Operadoras">
+                <img src="../assets/img/cartao-aniversario/tcgl-nobg.png?v=2" alt="Grande Londrina">
+                <img src="../assets/img/cartao-aniversario/cmtu.png?v=2" alt="CMTU">
+                <img src="../assets/img/cartao-aniversario/londrisul-nobg.png?v=2" alt="Londrisul" class="lg-londri">
+              </div>
+            </header>
 
-            <div class="bolo-wrap" aria-hidden="true">
-              <div class="bolo">
-                <div class="bolo-velas">
-                  <span class="vela"><i class="chama"></i></span>
-                  <span class="vela"><i class="chama"></i></span>
-                  <span class="vela"><i class="chama"></i></span>
+            <div class="cartao-body">
+              <div class="deco-corner deco-corner--tl deco-balloon" aria-hidden="true">
+                <svg viewBox="0 0 48 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <ellipse cx="24" cy="22" rx="18" ry="22" fill="#33b1cc" opacity=".85"/>
+                  <path d="M24 44v22" stroke="#94a3b8" stroke-width="1.5"/>
+                  <ellipse cx="38" cy="50" rx="10" ry="13" fill="#f9b434" opacity=".7"/>
+                  <path d="M38 63v9" stroke="#94a3b8" stroke-width="1"/>
+                </svg>
+              </div>
+              <div class="deco-corner deco-corner--tr deco-balloon" aria-hidden="true">
+                <svg viewBox="0 0 48 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <ellipse cx="24" cy="22" rx="18" ry="22" fill="#ff6b00" opacity=".75"/>
+                  <path d="M24 44v22" stroke="#94a3b8" stroke-width="1.5"/>
+                  <ellipse cx="10" cy="52" rx="9" ry="12" fill="#8cc63f" opacity=".65"/>
+                  <path d="M10 64v8" stroke="#94a3b8" stroke-width="1"/>
+                </svg>
+              </div>
+
+              <div class="bolo-mini" aria-hidden="true">
+                <svg viewBox="0 0 64 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="14" y="8" width="4" height="10" rx="1" fill="#f9b434"/>
+                  <rect x="30" y="6" width="4" height="12" rx="1" fill="#f9b434"/>
+                  <rect x="46" y="8" width="4" height="10" rx="1" fill="#f9b434"/>
+                  <ellipse cx="16" cy="6" rx="3" ry="4" fill="#ff6b00" opacity=".8"/>
+                  <ellipse cx="32" cy="4" rx="3" ry="4" fill="#ff6b00" opacity=".8"/>
+                  <ellipse cx="48" cy="6" rx="3" ry="4" fill="#ff6b00" opacity=".8"/>
+                  <rect x="10" y="20" width="44" height="12" rx="4" fill="#f4a9c6"/>
+                  <rect x="6" y="30" width="52" height="14" rx="4" fill="#8cc63f"/>
+                  <rect x="4" y="42" width="56" height="12" rx="5" fill="#6b4423"/>
+                </svg>
+              </div>
+
+              <div class="nome-bloco">
+                <h3 class="cartao-nome" id="prevNome">Nome do Colaborador</h3>
+                <div class="nome-rule" aria-hidden="true"></div>
+              </div>
+              <p class="cartao-data" id="prevData">—</p>
+
+              <p class="punchline" id="prevPunchline"></p>
+              <p class="cartao-mensagem" id="prevMensagem"></p>
+
+              <section class="frota-section" aria-label="Frota em celebração">
+                <p class="frota-titulo">Nossa frota também celebra com você</p>
+                <div class="frota-row">
+                  <div class="frota-item">
+                    <div class="painel-led" aria-label="Destino: PARABÉNS">
+                      <div class="painel-led-vidro">
+                        <span class="painel-led-texto">PARABÉNS</span>
+                        <div class="painel-led-reflexo" aria-hidden="true"></div>
+                      </div>
+                    </div>
+                    <div class="frota-img">
+                      <img src="../assets/img/cartao-aniversario/onibus-grande-londrina-nobg.png?v=2" alt="Ônibus Grande Londrina">
+                    </div>
+                    <span class="frota-empresa">Grande Londrina</span>
+                  </div>
+                  <div class="frota-item">
+                    <div class="painel-led" aria-label="Destino: PARABÉNS">
+                      <div class="painel-led-vidro">
+                        <span class="painel-led-texto">PARABÉNS</span>
+                        <div class="painel-led-reflexo" aria-hidden="true"></div>
+                      </div>
+                    </div>
+                    <div class="frota-img">
+                      <img src="../assets/img/cartao-aniversario/onibus-londrisul-nobg.png?v=2" alt="Ônibus Londrisul">
+                    </div>
+                    <span class="frota-empresa">Londrisul</span>
+                  </div>
                 </div>
-                <div class="bolo-camada bolo-camada--top"></div>
-                <div class="bolo-camada bolo-camada--mid"></div>
-                <div class="bolo-base"></div>
-              </div>
+              </section>
             </div>
 
-            <div class="nome-box">
-              <h2 class="cartao-nome" id="prevNome">Nome do Colaborador</h2>
-            </div>
-            <div class="cartao-data" id="prevData">—</div>
-
-            <p class="punchline" id="prevPunchline">Hoje o itinerário é festa — e a única parada obrigatória é o bolo!</p>
-
-            <p class="cartao-mensagem" id="prevMensagem"></p>
-
-            <div class="onibus-row">
-              <div class="bus-card">
-                <div class="bus-wrap">
-                  <img src="../assets/img/cartao-aniversario/onibus-grande-londrina.png" alt="Ônibus Grande Londrina">
-                  <div class="led-sign led-sign--gl" aria-hidden="true">PARABÉNS</div>
-                </div>
-                <div class="bus-label">Grande Londrina</div>
-              </div>
-              <div class="bus-card">
-                <div class="bus-wrap">
-                  <img src="../assets/img/cartao-aniversario/onibus-londrisul.png" alt="Ônibus Londrisul">
-                  <div class="led-sign led-sign--ls" aria-hidden="true">PARABÉNS</div>
-                </div>
-                <div class="bus-label">Londrisul</div>
-              </div>
-            </div>
-
-            <div class="cartao-rodape">CIOP · Sistema MOV · Mobilidade Urbana de Londrina</div>
+            <footer class="cartao-foot">CIOP · Londrisul · Grande Londrina · CMTU · Mobilidade Urbana de Londrina</footer>
           </div>
         </article>
       </div>
@@ -644,12 +373,12 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:800}
 <script>
 (function () {
   const MENSAGEM_PADRAO =
-    "Você move Londrina todos os dias — hoje é a nossa vez de celebrar você! " +
-    "Que este novo ano traga saúde, alegria e conquistas, dentro e fora do ponto. " +
-    "Com muito carinho, o time do CIOP, da Londrisul, da Grande Londrina e da CMTU — juntos no sistema MOV — desejamos um feliz aniversário!";
+    "Hoje celebramos você — profissional que faz a mobilidade de Londrina acontecer todos os dias. " +
+    "Que este novo ciclo traga saúde, alegria e realizações, em casa e no trabalho. " +
+    "Com estima, o time do CIOP e do sistema MOV desejam um feliz aniversário.";
 
   const PUNCHLINE_PADRAO =
-    "Hoje o itinerário é festa — e a única parada obrigatória é o bolo! (Sem multa no CIOP.)";
+    "Que este dia seja leve, especial e repleto de boas conquistas.";
 
   const inpNome = document.getElementById("inpNome");
   const inpData = document.getElementById("inpData");
