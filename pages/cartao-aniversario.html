@@ -61,12 +61,12 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 .hint{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.45}
 .preview-wrap{display:flex;justify-content:center;padding:12px 0 24px;overflow:auto}
 .preview-scale{transform-origin:top center}
-@media(max-width:900px){.preview-scale{transform:scale(.72)}}
-@media(max-width:640px){.preview-scale{transform:scale(.52)}}
+@media(max-width:900px){.preview-scale{transform:scale(.85)}}
+@media(max-width:640px){.preview-scale{transform:scale(.62)}}
 
-/* —— Cartão A4 retrato (210×297 mm) —— */
+/* —— Cartão 9:16 (fundo CIOP + balões + texto) —— */
 .cartao{
-  width:420px;height:594px;position:relative;overflow:hidden;
+  width:360px;height:640px;position:relative;overflow:hidden;
   background:#0a1628;
   box-shadow:0 32px 85px rgba(7,17,31,.28);
   border:1px solid #1a2d4a;
@@ -81,7 +81,7 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 .cartao-baloes{
   z-index:3;mix-blend-mode:screen;
   top:0;left:50%;right:auto;bottom:auto;
-  width:128%;height:46%;
+  width:124%;height:54%;
   transform:translateX(-50%) scale(1.06);
   transform-origin:top center;
   object-fit:cover;object-position:center top;
@@ -90,13 +90,13 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 .cartao-content{
   position:relative;z-index:1;height:100%;
   display:flex;flex-direction:column;align-items:center;
-  padding:82px 52px 168px;
+  padding:98px 36px 200px;
   text-align:center;
   color:#fff;
   text-shadow:0 1px 8px rgba(0,0,0,.45);
 }
 .cartao-text-col{
-  width:100%;max-width:330px;
+  width:100%;max-width:276px;
   display:flex;flex-direction:column;align-items:center;
 }
 
@@ -127,7 +127,7 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
   border:1px solid rgba(255,255,255,.24);border-radius:14px;
   background:rgba(8,22,42,.74);
   backdrop-filter:blur(2px);
-  text-align:center;flex:1;min-height:0;max-height:250px;overflow:hidden;
+  text-align:center;flex:1;min-height:0;max-height:290px;overflow:hidden;
 }
 .cartao-quote{
   position:absolute;color:#5ed4e8;font:700 34px Georgia,serif;
@@ -214,7 +214,7 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
         <button type="button" class="btn btn-outline" id="btnPdf">Baixar PDF</button>
         <button type="button" class="btn btn-secondary" id="btnReset">Restaurar mensagem padrão</button>
       </div>
-      <p class="hint">Formato A4 retrato (210×297 mm). A data no cartão aparece como dia/mês (ex.: 01/08).</p>
+      <p class="hint">Formato vertical 9:16. A data no cartão aparece como dia/mês (ex.: 01/08).</p>
     </section>
 
     <section class="preview-wrap" aria-label="Pré-visualização do cartão">
@@ -222,7 +222,7 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
         <article class="cartao" id="cartaoPreview" aria-label="Cartão de aniversário">
           <img
             class="cartao-bg"
-            src="../assets/img/cartao-aniversario/fundo-cartao-ciop.jpg?v=19"
+            src="../assets/img/cartao-aniversario/fundo-cartao-ciop.jpg?v=18"
             alt=""
             crossorigin="anonymous">
 
@@ -244,7 +244,7 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 
           <img
             class="cartao-baloes"
-            src="../assets/img/cartao-aniversario/baloes-overlay.png?v=19"
+            src="../assets/img/cartao-aniversario/baloes-overlay.png?v=18"
             alt=""
             crossorigin="anonymous">
         </article>
@@ -311,8 +311,8 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
   const btnWaItalic = document.getElementById("btnWaItalic");
   const btnWaStrike = document.getElementById("btnWaStrike");
 
-  const EXPORT_W = 420;
-  const EXPORT_H = 594;
+  const EXPORT_W = 360;
+  const EXPORT_H = 640;
 
   function slugArquivo() {
     return (inpNome.value || "colaborador").trim()
@@ -386,7 +386,7 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
     try {
       const canvas = await renderizarCartaoCanvas();
       const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: [90, 160] });
       const w = pdf.internal.pageSize.getWidth();
       const h = pdf.internal.pageSize.getHeight();
       pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, w, h, undefined, "FAST");
