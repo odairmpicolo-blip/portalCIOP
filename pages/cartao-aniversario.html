@@ -13,13 +13,14 @@ document.documentElement.classList.add("portal-auth-pending");
 <title>Cartão de Aniversário — Portal CIOP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --blue:#06245c;
-  --blue-mid:#0b3a8a;
-  --orange:#ff6b00;
-  --mov-teal:#33b1cc;
+  --blue:#172b59;
+  --teal:#5ec4d8;
+  --orange:#e85a28;
+  --ink:#2b3142;
+  --muted-ink:#6b7588;
   --bg:#eef2f8;
   --border:#dfe5ef;
   --text:#101828;
@@ -47,7 +48,7 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 .field textarea{min-height:88px;resize:vertical;line-height:1.45}
 .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
 .btn{border:0;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:13px}
-.btn-primary{background:var(--orange);color:#fff}
+.btn-primary{background:#ff6b00;color:#fff}
 .btn-secondary{background:var(--blue);color:#fff}
 .btn-outline{background:#fff;color:var(--blue);border:2px solid var(--blue)}
 .btn-secondary:disabled,.btn-primary:disabled,.btn-outline:disabled{opacity:.55;cursor:not-allowed}
@@ -57,117 +58,151 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 @media(max-width:900px){.preview-scale{transform:scale(.72)}}
 @media(max-width:640px){.preview-scale{transform:scale(.52)}}
 
-/* —— Cartão A4 (referência PDF) —— */
+/* —— Cartão A4 —— */
 .cartao{
   width:794px;height:1123px;position:relative;overflow:hidden;
-  background:#fff;color:#24324b;
-  font-family:"DM Sans",Arial,"Segoe UI",sans-serif;
-  box-shadow:0 10px 35px rgba(0,0,0,.08);
-  border:1px solid #d7dee8;
-  padding:40px 56px 32px;
+  background:linear-gradient(165deg,#f8fbff 0%,#fff 45%,#f6f9fc 100%);
+  color:var(--ink);
+  font-family:"DM Sans",Arial,Helvetica,sans-serif;
+  box-shadow:0 12px 40px rgba(23,43,89,.1);
+  border:1px solid #dce3ee;
 }
 .cartao-top{
-  position:absolute;top:0;left:0;right:0;height:16px;
-  background:linear-gradient(90deg,#9aa3b0 0 18%,#172b59 18% 52%,#f2b52b 52% 100%);
+  position:absolute;top:0;left:0;right:0;height:12px;z-index:4;
+  background:linear-gradient(90deg,#b8c0cb 0 33.33%,var(--blue) 33.33% 66.66%,var(--teal) 66.66% 100%);
 }
 
-.balloons{position:absolute;inset:0;pointer-events:none;z-index:0}
-.balloon{
-  position:absolute;width:52px;height:66px;border-radius:50%;
-  background:linear-gradient(145deg,#4ec9e0,#32b6c3);
-  opacity:.9;box-shadow:inset -10px -10px 18px rgba(0,0,0,.08);
+.cartao-bg{
+  position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;
 }
-.balloon::after{
-  content:"";position:absolute;left:50%;top:64px;width:2px;height:78px;
-  background:#98a4b4;transform:translateX(-50%) rotate(6deg);transform-origin:top;
+.cartao-bg-grid{
+  position:absolute;inset:0;opacity:.85;
+  background-image:
+    linear-gradient(rgba(23,43,89,.032) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(23,43,89,.032) 1px,transparent 1px);
+  background-size:40px 40px;
+  mask-image:radial-gradient(ellipse 70% 62% at 50% 38%,#000 22%,transparent 80%);
 }
-.b1{left:16px;top:168px;transform:rotate(-11deg)}
-.b2{left:22px;top:248px;transform:rotate(7deg);width:44px;height:56px}
-.b3{left:12px;top:326px;transform:rotate(-6deg);width:40px;height:52px}
-.b4{right:16px;top:168px;transform:rotate(10deg)}
-.b5{right:22px;top:248px;transform:rotate(-8deg);width:44px;height:56px}
-.b6{right:12px;top:326px;transform:rotate(7deg);width:40px;height:52px}
+.cartao-bg-lines{
+  position:absolute;inset:-12% -6%;opacity:.55;
+  background:
+    repeating-linear-gradient(125deg,transparent 0,transparent 80px,rgba(94,196,216,.06) 80px,rgba(94,196,216,.06) 81px),
+    repeating-linear-gradient(-125deg,transparent 0,transparent 96px,rgba(23,43,89,.04) 96px,rgba(23,43,89,.04) 97px);
+}
+.cartao-bg-lines::before,
+.cartao-bg-lines::after{
+  content:"";position:absolute;height:1px;width:62%;left:19%;
+  background:linear-gradient(90deg,transparent,rgba(23,43,89,.1),transparent);
+}
+.cartao-bg-lines::before{top:24%}
+.cartao-bg-lines::after{bottom:30%;opacity:.65}
+.cartao-bg-accent::before,
+.cartao-bg-accent::after{
+  content:"";position:absolute;width:200px;height:200px;border-radius:50%;
+  border:1px solid rgba(94,196,216,.12);
+}
+.cartao-bg-accent{position:absolute;inset:0}
+.cartao-bg-accent::before{top:-75px;left:-85px}
+.cartao-bg-accent::after{bottom:-95px;right:-75px;border-color:rgba(232,90,40,.1)}
+.cartao-bg-glow{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 45% 36% at 12% 16%,rgba(94,196,216,.09),transparent 58%),
+    radial-gradient(ellipse 40% 32% at 90% 20%,rgba(23,43,89,.05),transparent 55%),
+    radial-gradient(ellipse 48% 38% at 88% 84%,rgba(232,90,40,.05),transparent 52%);
+}
 
-.cartao-content{position:relative;z-index:1;display:flex;flex-direction:column;min-height:100%}
+.balloons-col{
+  position:absolute;top:128px;width:88px;pointer-events:none;z-index:2;opacity:.96;
+}
+.balloons-col img{width:100%;height:auto;display:block;filter:drop-shadow(0 6px 10px rgba(23,43,89,.06))}
+.balloons-col--esq{left:10px}
+.balloons-col--dir{right:10px}
 
+.cartao-body{
+  position:relative;z-index:3;height:100%;
+  padding:28px 96px 26px;
+  display:flex;flex-direction:column;
+}
+
+.cartao-header{text-align:center}
 .eyebrow{
-  margin-top:6px;text-align:center;font-size:10px;letter-spacing:.24em;
-  text-transform:uppercase;color:#718097;font-weight:800
+  margin:0;font-size:9px;letter-spacing:.26em;
+  text-transform:uppercase;color:var(--muted-ink);font-weight:700
 }
 .cartao-h1{
-  margin:12px 0 0;text-align:center;font-size:50px;line-height:1;
-  color:#172b59;letter-spacing:-.02em;font-weight:800
+  margin:10px 0 0;font-size:42px;line-height:1.04;
+  color:var(--blue);letter-spacing:-.4px;font-weight:800
 }
 
 .nome-data-wrap{
-  position:relative;margin-top:16px;padding:0 88px 0 48px;min-height:58px;
+  position:relative;margin-top:16px;padding:0 80px 0 0;min-height:54px;
 }
 .cartao-nome{
-  margin:0;text-align:center;font-size:36px;line-height:1.08;
-  font-weight:800;color:#df4a27;word-break:break-word
+  margin:0;text-align:center;font-size:30px;line-height:1.12;
+  font-weight:800;color:var(--orange);word-break:break-word
 }
 .cartao-data{
-  position:absolute;right:40px;top:50%;transform:translateY(-42%);
-  font-family:"Outfit",sans-serif;font-size:46px;line-height:1;font-weight:800;
-  color:#df4a27;letter-spacing:.04em;
-  -webkit-text-stroke:2.5px #172b59;
-  paint-order:stroke fill;
-  text-shadow:0 2px 0 rgba(255,255,255,.85);
+  position:absolute;right:4px;top:50%;transform:translateY(-50%);
+  font-size:44px;line-height:1;font-weight:800;
+  color:var(--orange);letter-spacing:.03em;
+  -webkit-text-stroke:2.2px var(--blue);paint-order:stroke fill;
 }
 
+.texto-bloco{
+  margin:20px auto 0;max-width:488px;text-align:center;
+  padding:18px 22px 16px;border-radius:16px;
+  background:rgba(255,255,255,.72);
+  border:1px solid rgba(23,43,89,.06);
+  box-shadow:0 8px 28px rgba(23,43,89,.05);
+  backdrop-filter:blur(6px);
+  font-size:13.5px;line-height:1.68;color:var(--ink);
+}
 .punchline{
-  margin:20px auto 0;max-width:580px;text-align:center;
-  font-size:14px;line-height:1.45;color:#172b59;font-weight:700
+  margin:0 0 12px;font-weight:700;font-size:13.5px;line-height:1.65;color:var(--blue)
 }
-.cartao-mensagem{
-  margin:16px auto 0;max-width:580px;text-align:center;
-  font-family:Georgia,"Times New Roman",serif;font-size:14px;line-height:1.55;
-  color:#39475e
-}
-.cartao-mensagem strong{color:#172b59}
+.cartao-mensagem p{margin:0 0 12px;color:var(--ink)}
+.cartao-mensagem p:last-child{margin-bottom:0;font-weight:700;color:var(--blue)}
 
 .ciop-hero{
-  margin:22px auto 6px;text-align:center;
+  margin:22px auto 6px;text-align:center;position:relative;
+  padding:14px 0 0;
 }
-.ciop-hero img{
-  max-height:76px;width:auto;object-fit:contain;
-  filter:drop-shadow(0 2px 6px rgba(23,43,89,.08));
+.ciop-hero::before{
+  content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:120px;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--teal),var(--orange),transparent);
 }
+.ciop-hero img{max-height:80px;width:auto;object-fit:contain}
 
-.buses-wrap{margin-top:8px;padding-top:4px;position:relative}
-.bus-caption{
-  text-align:center;font-size:9.5px;letter-spacing:.16em;
-  color:#69768a;font-weight:800;text-transform:uppercase;margin-bottom:8px
-}
+.buses-wrap{margin-top:2px}
 .buses{
-  display:flex;justify-content:center;align-items:flex-end;gap:0;
-  min-height:188px;padding:0 4px;
+  display:flex;justify-content:center;align-items:flex-end;
+  min-height:206px;padding:0 6px;
 }
 .buses .bus{
-  width:48%;max-width:348px;height:auto;max-height:188px;
+  width:50%;max-width:346px;height:auto;max-height:206px;
   object-fit:contain;object-position:center bottom;
-  filter:drop-shadow(0 10px 16px rgba(23,43,89,.1));
+  filter:drop-shadow(0 10px 14px rgba(23,43,89,.08));
 }
-.buses .bus--esq{transform:translateX(6px);z-index:2}
-.buses .bus--dir{transform:translateX(-6px);z-index:1}
+.buses .bus--esq{transform:translateX(5px)}
+.buses .bus--dir{transform:translateX(-5px)}
 
 .partners{
-  margin-top:auto;padding-top:14px;border-top:1px solid #d9dfe7;
+  margin-top:auto;padding:14px 8px 0;
+  border-top:1px solid rgba(23,43,89,.14);
+  background:linear-gradient(180deg,rgba(255,255,255,.5),transparent);
 }
 .logos-row{
-  display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
-  gap:20px 28px;min-height:52px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;min-height:52px;
 }
-.logos-row img{object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.05))}
-.logos-row .lg-londri{max-height:32px;max-width:150px}
-.logos-row .lg-mov{max-height:44px;max-width:115px}
-.logos-row .lg-cmtu{max-height:44px;max-width:100px}
-.logos-row .lg-tcgl{max-height:46px;max-width:96px}
+.logos-row img{object-fit:contain;flex:0 1 auto;opacity:.98}
+.logos-row .lg-londri{max-height:28px;max-width:136px}
+.logos-row .lg-mov{max-height:46px;max-width:114px}
+.logos-row .lg-cmtu{max-height:40px;max-width:90px}
+.logos-row .lg-tcgl{max-height:44px;max-width:86px}
 
-.cartao-foot{
-  margin-top:12px;text-align:center;font-size:8.5px;color:#8993a3;
-  font-weight:600;letter-spacing:.12em;text-transform:uppercase
-}
 .notice{background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px 16px;color:#664d03;margin-bottom:16px}
 </style>
 <script src="../assets/js/loading.js?v=20260718d"></script>
@@ -238,56 +273,62 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
         <button type="button" class="btn btn-outline" id="btnPng">Baixar imagem (PNG)</button>
         <button type="button" class="btn btn-secondary" id="btnReset">Restaurar mensagem padrão</button>
       </div>
-      <p class="hint">Exporte em PDF ou PNG (A4 retrato). No cartão a data aparece como dia/mês (ex.: 01/08).</p>
+      <p class="hint">Modelo igual ao PDF de referência. Data no cartão: dia/mês (ex.: 01/08).</p>
     </section>
 
     <section class="preview-wrap" aria-label="Pré-visualização do cartão">
       <div class="preview-scale">
         <article class="cartao" id="cartaoPreview" aria-label="Cartão de aniversário">
           <div class="cartao-top" aria-hidden="true"></div>
-          <div class="balloons" aria-hidden="true">
-            <span class="balloon b1"></span>
-            <span class="balloon b2"></span>
-            <span class="balloon b3"></span>
-            <span class="balloon b4"></span>
-            <span class="balloon b5"></span>
-            <span class="balloon b6"></span>
+          <div class="cartao-bg" aria-hidden="true">
+            <div class="cartao-bg-glow"></div>
+            <div class="cartao-bg-grid"></div>
+            <div class="cartao-bg-lines"></div>
+            <div class="cartao-bg-accent"></div>
           </div>
 
-          <div class="cartao-content">
-            <p class="eyebrow">Uma homenagem a quem faz parte da nossa equipe</p>
-            <h2 class="cartao-h1">Feliz Aniversário!</h2>
+          <div class="balloons-col balloons-col--esq" aria-hidden="true">
+            <img src="../assets/img/cartao-aniversario/baloes-esquerda.png?v=10" alt="">
+          </div>
+          <div class="balloons-col balloons-col--dir" aria-hidden="true">
+            <img src="../assets/img/cartao-aniversario/baloes-direita.png?v=10" alt="">
+          </div>
+
+          <div class="cartao-body">
+            <header class="cartao-header">
+              <p class="eyebrow">Uma homenagem a quem faz parte da nossa equipe</p>
+              <h2 class="cartao-h1">Feliz Aniversário!</h2>
+            </header>
 
             <div class="nome-data-wrap">
               <h3 class="cartao-nome" id="prevNome">Nome do Colaborador</h3>
               <div class="cartao-data" id="prevData" aria-label="Data do aniversário">—</div>
             </div>
 
-            <p class="punchline" id="prevPunchline"></p>
-            <div class="cartao-mensagem" id="prevMensagem"></div>
+            <div class="texto-bloco">
+              <p class="punchline" id="prevPunchline"></p>
+              <div class="cartao-mensagem" id="prevMensagem"></div>
+            </div>
 
-            <div class="ciop-hero" aria-hidden="false">
-              <img src="../assets/img/cartao-aniversario/ciop.png?v=7" alt="CIOP">
+            <div class="ciop-hero">
+              <img src="../assets/img/cartao-aniversario/ciop-pdf.png?v=10" alt="CIOP">
             </div>
 
             <div class="buses-wrap">
-              <p class="bus-caption">Parabéns! · Movendo Londrina · Juntos</p>
               <div class="buses">
-                <img class="bus bus--esq" src="../assets/img/cartao-aniversario/onibus-londrisul-card.png?v=7" alt="Ônibus Londrisul">
-                <img class="bus bus--dir" src="../assets/img/cartao-aniversario/onibus-grande-londrina-card.png?v=7" alt="Ônibus Grande Londrina">
+                <img class="bus bus--esq" src="../assets/img/cartao-aniversario/onibus-pdf-esq.png?v=10" alt="Ônibus Londrisul">
+                <img class="bus bus--dir" src="../assets/img/cartao-aniversario/onibus-pdf-dir.png?v=10" alt="Ônibus Grande Londrina">
               </div>
             </div>
 
-            <section class="partners" aria-label="Parceiros do sistema MOV">
+            <section class="partners" aria-label="Parceiros">
               <div class="logos-row">
-                <img src="../assets/img/cartao-aniversario/londrisul.png?v=7" alt="Londrisul" class="lg-londri">
-                <img src="../assets/img/cartao-aniversario/mov.png?v=7" alt="MOV" class="lg-mov">
-                <img src="../assets/img/cartao-aniversario/cmtu.png?v=7" alt="CMTU" class="lg-cmtu">
-                <img src="../assets/img/cartao-aniversario/tcgl.png?v=7" alt="Grande Londrina" class="lg-tcgl">
+                <img src="../assets/img/cartao-aniversario/londrisul-pdf.png?v=10" alt="Londrisul" class="lg-londri">
+                <img src="../assets/img/cartao-aniversario/mov-pdf.png?v=10" alt="MOV" class="lg-mov">
+                <img src="../assets/img/cartao-aniversario/cmtu-pdf.png?v=10" alt="CMTU" class="lg-cmtu">
+                <img src="../assets/img/cartao-aniversario/tcgl-pdf.png?v=10" alt="Grande Londrina" class="lg-tcgl">
               </div>
             </section>
-
-            <footer class="cartao-foot">CIOP · Londrisul · Grande Londrina · CMTU · Sistema MOV</footer>
           </div>
         </article>
       </div>
@@ -302,17 +343,29 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 
   const MENSAGEM_PADRAO =
     "Seu trabalho, dedicação, parceria e compromisso fazem parte da força que movimenta nossa equipe e ajuda a levar Londrina cada vez mais longe.\n\n" +
-    "Que este novo ciclo seja repleto de **saúde, alegria, conquistas, realizações** e momentos inesquecíveis. Que nunca faltem motivos para sorrir e novos caminhos para seguir.\n\n" +
+    "Que este novo ciclo seja repleto de saúde, alegria, conquistas, realizações e momentos inesquecíveis. Que nunca faltem motivos para sorrir e novos caminhos para seguir.\n\n" +
     "Receba o carinho e os melhores desejos de toda a equipe do CIOP.\n\n" +
-    "**Parabéns e muitas felicidades!**";
+    "Parabéns e muitas felicidades!";
 
-  function formatMensagemHtml(text) {
+  function escapeHtml(text) {
     return String(text || "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\n/g, "<br>");
+      .replace(/>/g, "&gt;");
+  }
+
+  function formatMensagemHtml(text) {
+    const blocos = String(text || "").trim().split(/\n\s*\n/);
+    if (!blocos.length) return "";
+    return blocos.map((bloco, idx) => {
+      const ultimo = idx === blocos.length - 1;
+      const cls = ultimo ? "" : "";
+      const tag = ultimo ? "p" : "p";
+      const conteudo = escapeHtml(bloco.trim()).replace(/\n/g, "<br>");
+      return ultimo
+        ? "<p><strong>" + conteudo + "</strong></p>"
+        : "<" + tag + ">" + conteudo + "</" + tag + ">";
+    }).join("");
   }
 
   const inpNome = document.getElementById("inpNome");
