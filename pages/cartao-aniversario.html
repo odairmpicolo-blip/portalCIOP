@@ -16,34 +16,32 @@ document.documentElement.classList.add("portal-auth-pending");
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --blue:#102f58;
-  --teal:#25b9c7;
-  --orange:#ed4928;
-  --bg:#eef2f8;
-  --border:#dfe5ef;
-  --text:#101828;
-  --muted:#475467;
+  --blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--teal:#25b9c7;
+  --bg:#f5f7fb;--border:#dfe5ef;--text:#101828;--muted:#475467;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:"DM Sans",Segoe UI,Arial,sans-serif;min-height:100vh}
-.header{
-  background:#fff;display:grid;grid-template-columns:minmax(160px,200px) 1fr minmax(220px,auto);
-  gap:16px;align-items:center;padding:10px 22px;border-bottom:1px solid #e8edf6
-}
-.logo-tcgl{height:52px;object-fit:contain}
-h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
-.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
-.container{max-width:1200px;margin:24px auto 40px;padding:0 clamp(14px,2.2vw,28px)}
-.portal-return{margin-bottom:14px}
-.btn-link{display:inline-flex;align-items:center;background:var(--blue);color:#fff;text-decoration:none;padding:7px 12px;border-radius:6px;font-weight:700;font-size:12px}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.title-wrap{justify-self:center;text-align:center}
+.cad-kicker{margin:0;font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--orange)}
+.header-title{margin:2px 0 0;color:var(--blue);font-size:22px;font-weight:900;letter-spacing:-.03em}
+.header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700}
+.container{max-width:1200px;margin:16px auto 32px;padding:0 clamp(14px,2.2vw,28px);flex:1;width:100%}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.btn-portal{display:inline-flex;align-items:center;gap:8px;min-height:38px;text-decoration:none;border-radius:12px;font-size:13px;font-weight:800;padding:8px 14px;border:0;cursor:pointer;font-family:inherit;background:var(--blue);color:#fff}
+.btn-portal:hover{background:var(--blue2)}
+.btn-icon{display:inline-flex;width:16px;height:16px}
+.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .layout{display:grid;grid-template-columns:minmax(280px,340px) 1fr;gap:24px;align-items:start}
 @media(max-width:960px){.layout{grid-template-columns:1fr}}
-.panel{background:#fff;border:1px solid var(--border);border-radius:10px;padding:18px 20px;box-shadow:0 8px 24px rgba(6,36,92,.06)}
-.panel h2{margin:0 0 14px;font-size:16px;color:var(--blue)}
-.panel-tag{font-size:11px;font-weight:800;letter-spacing:.12em;color:var(--teal);margin-bottom:8px}
+.panel{
+  padding:18px 20px;border-radius:18px;
+  background:rgba(255,255,255,.64);border:1px solid rgba(255,255,255,.5);
+  box-shadow:0 14px 36px rgba(16,24,40,.08);
+}
+.panel h2{margin:0 0 14px;font-size:16px;color:var(--blue);font-weight:900}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
-.field input,.field textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font:inherit;color:var(--text)}
+.field input,.field textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font:inherit;color:var(--text);background:#fff}
 .field textarea{min-height:140px;resize:vertical;line-height:1.5}
 .wa-toolbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .wa-toolbar button{
@@ -53,8 +51,8 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 .wa-toolbar button:hover{background:#eef4ff}
 .wa-hint{font-size:10px;color:var(--muted);margin:-6px 0 8px;line-height:1.4}
 .actions{display:grid;gap:10px;margin-top:16px}
-.btn{border:0;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:13px}
-.btn-primary{background:linear-gradient(135deg,#28c8d7,#1597bf);color:#041521}
+.btn{border:0;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:13px;font-family:inherit}
+.btn-primary{background:linear-gradient(135deg,var(--orange),#ff8a3d);color:#fff}
 .btn-secondary{background:var(--blue);color:#fff}
 .btn-outline{background:#fff;color:var(--blue);border:2px solid var(--blue)}
 .btn-secondary:disabled,.btn-primary:disabled,.btn-outline:disabled{opacity:.55;cursor:not-allowed}
@@ -64,7 +62,14 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 .preview-scale--export{transform:none!important}
 @media(max-width:900px){.preview-scale{transform:scale(.85)}}
 @media(max-width:640px){.preview-scale{transform:scale(.62)}}
-
+.page-footer{padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-top:1px solid var(--border);background:#fff}
+@media(min-width:721px){
+  body{background:transparent!important}
+  .body-bg-wall{position:fixed;inset:0;z-index:-3;background-image:url('../assets/img/portal-bg-onibus.jpg?v=20260718j');background-size:cover;background-position:center}
+  .body-bg-stain{position:fixed;inset:0;z-index:-2;pointer-events:none;background:linear-gradient(180deg,rgba(6,20,50,.28) 0%,rgba(6,20,50,.58) 100%)}
+  .header,.page-footer{background:rgba(255,255,255,.7)!important;backdrop-filter:blur(18px) saturate(180%)}
+  .panel{background:rgba(255,255,255,.62);backdrop-filter:blur(12px) saturate(160%)}
+}
 /* —— Cartão 9:16 (fundo CIOP + balões + texto) —— */
 .cartao{
   width:360px;height:640px;position:relative;overflow:hidden;
@@ -176,14 +181,17 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 
 .notice{background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px 16px;color:#664d03;margin-bottom:16px}
 </style>
-<script src="../assets/js/loading.js?v=20260718d"></script>
 <link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
+<link rel="stylesheet" href="../assets/css/portal-titulos.css?v=20260720y">
 <link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
 <link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
 <link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
-<script src="../assets/js/theme-toggle.js?v=20260818logo6"></script>
+<script src="../assets/js/loading.js?v=20260718d"></script>
 <script type="module" src="../assets/js/auth.js?v=20260821ui1"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260821hud">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260820bar4">
+<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260821fx">
 <link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260828planilhas">
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 </head>
@@ -196,7 +204,11 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
     <img class="portal-brand-art" src="../assets/img/logomarca-portalciop-tcgl-claro.png?v=20260818logo6" alt="Portal CIOP">
     <span class="portal-brand-meta">TCGL · Operações</span>
   </a>
-  <h1>Cartão de Aniversário</h1>
+  <div class="title-wrap">
+    <p class="cad-kicker">CIOP · Sistema MOV</p>
+    <h1 class="header-title">Cartão de Aniversário</h1>
+    <div class="header-subtitle">Personalize e exporte PNG ou PDF</div>
+  </div>
   <div class="header-actions">
     <div class="ciop-session" aria-label="Sessão do usuário">
       <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
@@ -211,8 +223,11 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 </header>
 
 <main class="container">
-  <div class="portal-return">
-    <a class="btn-link" href="../index.html">← Voltar ao portal</a>
+  <div class="toolbar">
+    <a class="btn-portal" href="../index.html">
+      <span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>
+      Portal
+    </a>
   </div>
 
   <div id="acessoNegado" class="notice" hidden>
@@ -221,7 +236,6 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 
   <div class="layout" id="conteudoCartao">
     <section class="panel" aria-label="Dados do cartão">
-      <p class="panel-tag">✦ CIOP · SISTEMA MOV</p>
       <h2>Personalizar cartão</h2>
       <div class="field">
         <label for="inpNome">Nome</label>
@@ -293,6 +307,10 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
     </section>
   </div>
 </main>
+
+<footer class="page-footer">Portal CIOP · Cartão de Aniversário</footer>
+<script src="../assets/js/theme-toggle.js?v=20260818logo6"></script>
+<script src="../assets/js/portal-futuristic.js?v=20260718am" defer></script>
 
 <script>
 (function () {
