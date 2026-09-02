@@ -61,6 +61,7 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 .hint{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.45}
 .preview-wrap{display:flex;justify-content:center;padding:12px 0 24px;overflow:auto}
 .preview-scale{transform-origin:top center}
+.preview-scale--export{transform:none!important}
 @media(max-width:900px){.preview-scale{transform:scale(.85)}}
 @media(max-width:640px){.preview-scale{transform:scale(.62)}}
 
@@ -185,7 +186,6 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 <script src="../assets/js/portal-senha.js" defer></script>
 <link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260828planilhas">
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body data-require-perfis="Administrador,Secretária,Secretaria">
 <div class="body-bg-wall" aria-hidden="true"></div>
@@ -254,13 +254,13 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
         <article class="cartao" id="cartaoPreview" aria-label="Cartão de aniversário">
           <img
             class="cartao-bg"
-            src="../assets/img/cartao-aniversario/fundo-cartao-ciop.jpg?v=44"
+            src="../assets/img/cartao-aniversario/fundo-cartao-ciop.jpg?v=45"
             alt=""
             crossorigin="anonymous">
 
           <img
             class="cartao-baloes"
-            src="../assets/img/cartao-aniversario/baloes-overlay.png?v=44"
+            src="../assets/img/cartao-aniversario/baloes-overlay.png?v=45"
             alt=""
             crossorigin="anonymous">
 
@@ -284,7 +284,7 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
             <p class="cartao-footer-tagline">Juntos, movemos Londrina</p>
             <img
               class="cartao-footer-logos"
-              src="../assets/img/cartao-aniversario/logos-parceiros-barra.png?v=44"
+              src="../assets/img/cartao-aniversario/logos-parceiros-barra.png?v=45"
               alt="Londrisul, MOV, CMTU e Grande Londrina"
               crossorigin="anonymous">
           </footer>
@@ -354,23 +354,71 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
   const btnWaItalic = document.getElementById("btnWaItalic");
   const btnWaStrike = document.getElementById("btnWaStrike");
 
+  const EXPORT_W = 360;
+  const EXPORT_H = 640;
   const EXPORT_SCALE = 2;
+  let htmlToImageMod = null;
 
-  function prepararCloneExportacao(doc) {
-    const root = doc.getElementById("cartaoPreview");
-    if (!root) return;
-    root.querySelectorAll(".cartao-message, .cartao-data").forEach((el) => {
-      el.style.backdropFilter = "none";
-      el.style.webkitBackdropFilter = "none";
+  async function obterHtmlToImage() {
+    if (htmlToImageMod) return htmlToImageMod;
+    htmlToImageMod = await import("https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/+esm");
+    return htmlToImageMod;
+  }
+
+  function corrigirMicrotextoExportacao(root) {
+    const micro = root.querySelector(".cartao-micro");
+    if (!micro) return;
+    const texto = (micro.textContent || "").trim();
+    const corte = texto.toLowerCase().indexOf("movimenta");
+    if (corte < 1) return;
+    const parteVerde = texto.slice(0, corte);
+    const parteLaranja = texto.slice(corte);
+    micro.innerHTML =
+      '<span style="color:#2a9d4a">' + escapeHtml(parteVerde) + "</span>" +
+      '<span style="color:#ff6b00">' + escapeHtml(parteLaranja) + "</span>";
+    micro.style.background = "none";
+    micro.style.webkitBackgroundClip = "border-box";
+    micro.style.backgroundClip = "border-box";
+    micro.style.webkitTextFillColor = "currentColor";
+    micro.style.color = "#2a9d4a";
+  }
+
+  function prepararExportacaoTemporaria() {
+    const restores = [];
+    const micro = cartao.querySelector(".cartao-micro");
+    if (micro) {
+      const htmlAnterior = micro.innerHTML;
+      const styleAnterior = micro.getAttribute("style");
+      corrigirMicrotextoExportacao(cartao);
+      restores.push(() => {
+        micro.innerHTML = htmlAnterior;
+        if (styleAnterior) micro.setAttribute("style", styleAnterior);
+        else micro.removeAttribute("style");
+      });
+    }
+    const quote = cartao.querySelector(".cartao-quote");
+    if (quote) {
+      const displayAnterior = quote.style.display;
+      quote.style.display = "none";
+      restores.push(() => { quote.style.display = displayAnterior; });
+    }
+    return () => restores.forEach((fn) => fn());
+  }
+
+  async function dataUrlParaCanvas(dataUrl) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas);
+      };
+      img.onerror = reject;
+      img.src = dataUrl;
     });
-    const msg = root.querySelector(".cartao-message");
-    if (msg) {
-      msg.style.background = "linear-gradient(135deg,rgba(255,255,255,.16) 0%,rgba(8,22,42,.58) 100%)";
-    }
-    const data = root.querySelector(".cartao-data");
-    if (data) {
-      data.style.background = "linear-gradient(135deg,rgba(255,255,255,.18) 0%,rgba(16,47,88,.52) 100%)";
-    }
   }
 
   async function renderizarCartaoCanvas() {
@@ -379,24 +427,30 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
     await new Promise((r) => requestAnimationFrame(() => r()));
 
     const previewScale = cartao.closest(".preview-scale");
-    const transformAnterior = previewScale ? previewScale.style.transform : "";
-    if (previewScale) previewScale.style.transform = "none";
+    if (previewScale) previewScale.classList.add("preview-scale--export");
+    cartao.classList.add("cartao--captura");
 
-    const largura = cartao.offsetWidth;
-    const altura = cartao.offsetHeight;
+    const htmlToImage = await obterHtmlToImage();
+    const restaurarExportacao = prepararExportacaoTemporaria();
 
     try {
-      return await window.html2canvas(cartao, {
-        scale: EXPORT_SCALE,
+      const dataUrl = await htmlToImage.toPng(cartao, {
+        pixelRatio: EXPORT_SCALE,
+        cacheBust: true,
         backgroundColor: "#0a1628",
-        logging: false,
-        useCORS: true,
-        width: largura,
-        height: altura,
-        onclone: prepararCloneExportacao
+        width: EXPORT_W,
+        height: EXPORT_H,
+        style: {
+          transform: "none",
+          margin: "0"
+        },
+        filter: (node) => !(node.nodeType === 1 && node.classList && node.classList.contains("cartao-quote"))
       });
+      return dataUrlParaCanvas(dataUrl);
     } finally {
-      if (previewScale) previewScale.style.transform = transformAnterior;
+      restaurarExportacao();
+      cartao.classList.remove("cartao--captura");
+      if (previewScale) previewScale.classList.remove("preview-scale--export");
     }
   }
 
