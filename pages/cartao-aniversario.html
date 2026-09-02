@@ -246,7 +246,7 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
         <button type="button" class="btn btn-outline" id="btnPdf">Baixar PDF</button>
         <button type="button" class="btn btn-secondary" id="btnReset">Restaurar mensagem padrão</button>
       </div>
-      <p class="hint">Formato vertical 9:16. A data no cartão aparece como dia/mês (ex.: 01/08).</p>
+      <p class="hint">PNG e PDF exportam exatamente o cartão da pré-visualização (9:16). A data aparece como dia/mês (ex.: 01/08).</p>
     </section>
 
     <section class="preview-wrap" aria-label="Pré-visualização do cartão">
@@ -354,9 +354,106 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
   const btnWaItalic = document.getElementById("btnWaItalic");
   const btnWaStrike = document.getElementById("btnWaStrike");
 
-  const EXPORT_W = 360;
-  const EXPORT_H = 640;
+  const EXPORT_SCALE = 2;
 
+  function prepararCloneExportacao(doc) {
+    const root = doc.getElementById("cartaoPreview");
+    if (!root) return;
+    root.querySelectorAll(".cartao-message, .cartao-data").forEach((el) => {
+      el.style.backdropFilter = "none";
+      el.style.webkitBackdropFilter = "none";
+    });
+    const msg = root.querySelector(".cartao-message");
+    if (msg) {
+      msg.style.background = "linear-gradient(135deg,rgba(255,255,255,.16) 0%,rgba(8,22,42,.58) 100%)";
+    }
+    const data = root.querySelector(".cartao-data");
+    if (data) {
+      data.style.background = "linear-gradient(135deg,rgba(255,255,255,.18) 0%,rgba(16,47,88,.52) 100%)";
+    }
+  }
+
+  async function renderizarCartaoCanvas() {
+    if (document.fonts?.ready) await document.fonts.ready;
+    await aguardarImagens(cartao);
+    await new Promise((r) => requestAnimationFrame(() => r()));
+
+    const previewScale = cartao.closest(".preview-scale");
+    const transformAnterior = previewScale ? previewScale.style.transform : "";
+    if (previewScale) previewScale.style.transform = "none";
+
+    const largura = cartao.offsetWidth;
+    const altura = cartao.offsetHeight;
+
+    try {
+      return await window.html2canvas(cartao, {
+        scale: EXPORT_SCALE,
+        backgroundColor: "#0a1628",
+        logging: false,
+        useCORS: true,
+        width: largura,
+        height: altura,
+        onclone: prepararCloneExportacao
+      });
+    } finally {
+      if (previewScale) previewScale.style.transform = transformAnterior;
+    }
+  }
+
+  async function gerarPng() {
+    btnPdf.disabled = true;
+    btnPng.disabled = true;
+    const rotulo = btnPng.textContent;
+    btnPng.textContent = "Gerando PNG…";
+    try {
+      const canvas = await renderizarCartaoCanvas();
+      baixarDataUrl(canvas.toDataURL("image/png"), "cartao-aniversario-" + slugArquivo() + ".png");
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível gerar a imagem. Tente novamente.");
+    } finally {
+      btnPdf.disabled = false;
+      btnPng.disabled = false;
+      btnPng.textContent = rotulo;
+    }
+  }
+
+  async function gerarPdf() {
+    btnPdf.disabled = true;
+    btnPng.disabled = true;
+    btnPdf.textContent = "Gerando PDF…";
+    try {
+      const canvas = await renderizarCartaoCanvas();
+      const { jsPDF } = window.jspdf;
+      const pxW = canvas.width;
+      const pxH = canvas.height;
+      const mmW = (pxW * 25.4) / 96;
+      const mmH = (pxH * 25.4) / 96;
+      const pdf = new jsPDF({
+        orientation: pxW >= pxH ? "landscape" : "portrait",
+        unit: "mm",
+        format: [mmW, mmH]
+      });
+      pdf.addImage(
+        canvas.toDataURL("image/png"),
+        "PNG",
+        0,
+        0,
+        mmW,
+        mmH,
+        undefined,
+        "FAST"
+      );
+      pdf.save("cartao-aniversario-" + slugArquivo() + ".pdf");
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível gerar o PDF. Tente novamente.");
+    } finally {
+      btnPdf.disabled = false;
+      btnPng.disabled = false;
+      btnPdf.textContent = "Baixar PDF";
+    }
+  }
   function slugArquivo() {
     return (inpNome.value || "colaborador").trim()
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -386,62 +483,6 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
         img.addEventListener("error", resolve, { once: true });
       });
     }));
-  }
-
-  async function renderizarCartaoCanvas() {
-    if (document.fonts?.ready) await document.fonts.ready;
-    await aguardarImagens(cartao);
-    await new Promise((r) => requestAnimationFrame(() => r()));
-    return window.html2canvas(cartao, {
-      scale: 2,
-      backgroundColor: "#0a1628",
-      logging: false,
-      useCORS: true,
-      width: EXPORT_W,
-      height: EXPORT_H,
-      windowWidth: EXPORT_W,
-      windowHeight: EXPORT_H
-    });
-  }
-
-  async function gerarPng() {
-    btnPdf.disabled = true;
-    btnPng.disabled = true;
-    const rotulo = btnPng.textContent;
-    btnPng.textContent = "Gerando PNG…";
-    try {
-      const canvas = await renderizarCartaoCanvas();
-      baixarDataUrl(canvas.toDataURL("image/png"), "cartao-aniversario-" + slugArquivo() + ".png");
-    } catch (err) {
-      console.error(err);
-      alert("Não foi possível gerar a imagem. Tente novamente.");
-    } finally {
-      btnPdf.disabled = false;
-      btnPng.disabled = false;
-      btnPng.textContent = rotulo;
-    }
-  }
-
-  async function gerarPdf() {
-    btnPdf.disabled = true;
-    btnPng.disabled = true;
-    btnPdf.textContent = "Gerando PDF…";
-    try {
-      const canvas = await renderizarCartaoCanvas();
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: [90, 160] });
-      const w = pdf.internal.pageSize.getWidth();
-      const h = pdf.internal.pageSize.getHeight();
-      pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, w, h, undefined, "FAST");
-      pdf.save("cartao-aniversario-" + slugArquivo() + ".pdf");
-    } catch (err) {
-      console.error(err);
-      alert("Não foi possível gerar o PDF. Tente novamente.");
-    } finally {
-      btnPdf.disabled = false;
-      btnPng.disabled = false;
-      btnPdf.textContent = "Baixar PDF";
-    }
   }
 
   function atualizarPreview() {
