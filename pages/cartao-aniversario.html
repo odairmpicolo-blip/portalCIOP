@@ -16,18 +16,16 @@ document.documentElement.classList.add("portal-auth-pending");
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --blue:#172b59;
-  --teal:#5ec4d8;
-  --orange:#e85a28;
-  --ink:#2b3142;
-  --muted-ink:#6b7588;
+  --blue:#102f58;
+  --teal:#25b9c7;
+  --orange:#ed4928;
   --bg:#eef2f8;
   --border:#dfe5ef;
   --text:#101828;
   --muted:#475467;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:"DM Sans",Arial,Helvetica,sans-serif;min-height:100vh}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"DM Sans",Segoe UI,Arial,sans-serif;min-height:100vh}
 .header{
   background:#fff;display:grid;grid-template-columns:minmax(160px,200px) 1fr minmax(220px,auto);
   gap:16px;align-items:center;padding:10px 22px;border-bottom:1px solid #e8edf6
@@ -38,170 +36,127 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 .container{max-width:1200px;margin:24px auto 40px;padding:0 clamp(14px,2.2vw,28px)}
 .portal-return{margin-bottom:14px}
 .btn-link{display:inline-flex;align-items:center;background:var(--blue);color:#fff;text-decoration:none;padding:7px 12px;border-radius:6px;font-weight:700;font-size:12px}
-.layout{display:grid;grid-template-columns:minmax(260px,320px) 1fr;gap:24px;align-items:start}
+.layout{display:grid;grid-template-columns:minmax(280px,340px) 1fr;gap:24px;align-items:start}
 @media(max-width:960px){.layout{grid-template-columns:1fr}}
 .panel{background:#fff;border:1px solid var(--border);border-radius:10px;padding:18px 20px;box-shadow:0 8px 24px rgba(6,36,92,.06)}
 .panel h2{margin:0 0 14px;font-size:16px;color:var(--blue)}
+.panel-tag{font-size:11px;font-weight:800;letter-spacing:.12em;color:var(--teal);margin-bottom:8px}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
 .field input,.field textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font:inherit;color:var(--text)}
-.field textarea{min-height:88px;resize:vertical;line-height:1.45}
-.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.field textarea{min-height:120px;resize:vertical;line-height:1.45}
+.actions{display:grid;gap:10px;margin-top:16px}
 .btn{border:0;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:13px}
-.btn-primary{background:#ff6b00;color:#fff}
+.btn-primary{background:linear-gradient(135deg,#28c8d7,#1597bf);color:#041521}
 .btn-secondary{background:var(--blue);color:#fff}
 .btn-outline{background:#fff;color:var(--blue);border:2px solid var(--blue)}
 .btn-secondary:disabled,.btn-primary:disabled,.btn-outline:disabled{opacity:.55;cursor:not-allowed}
 .hint{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.45}
 .preview-wrap{display:flex;justify-content:center;padding:12px 0 24px;overflow:auto}
 .preview-scale{transform-origin:top center}
-@media(max-width:900px){.preview-scale{transform:scale(.72)}}
-@media(max-width:640px){.preview-scale{transform:scale(.52)}}
+@media(max-width:900px){.preview-scale{transform:scale(.85)}}
+@media(max-width:640px){.preview-scale{transform:scale(.62)}}
 
-/* —— Cartão A4 —— */
+/* —— Cartão 9:16 (modelo CIOP MOV) —— */
 .cartao{
-  width:794px;height:1123px;position:relative;overflow:hidden;
-  background:linear-gradient(165deg,#f8fbff 0%,#fff 45%,#f6f9fc 100%);
-  color:var(--ink);
-  font-family:"DM Sans",Arial,Helvetica,sans-serif;
-  box-shadow:0 12px 40px rgba(23,43,89,.1);
-  border:1px solid #dce3ee;
+  width:360px;height:640px;position:relative;overflow:hidden;
+  color:#102d4c;
+  background:linear-gradient(160deg,#fff,#f7fdff 58%,#eaf8fc);
+  box-shadow:0 32px 85px rgba(7,17,31,.18);
+  border:1px solid #d5e8ef;
+  isolation:isolate;
+  font-family:Segoe UI,Arial,sans-serif;
 }
-.cartao-top{
-  position:absolute;top:0;left:0;right:0;height:12px;z-index:4;
-  background:linear-gradient(90deg,#b8c0cb 0 33.33%,var(--blue) 33.33% 66.66%,var(--teal) 66.66% 100%);
-}
-
-.cartao-bg{
-  position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;
-}
-.cartao-bg-grid{
-  position:absolute;inset:0;opacity:.85;
+.cartao-grid{
+  position:absolute;inset:0;z-index:0;
   background-image:
-    linear-gradient(rgba(23,43,89,.032) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(23,43,89,.032) 1px,transparent 1px);
-  background-size:40px 40px;
-  mask-image:radial-gradient(ellipse 70% 62% at 50% 38%,#000 22%,transparent 80%);
+    linear-gradient(rgba(20,112,145,.07) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(20,112,145,.07) 1px,transparent 1px);
+  background-size:38px 38px;
 }
-.cartao-bg-lines{
-  position:absolute;inset:-12% -6%;opacity:.55;
-  background:
-    repeating-linear-gradient(125deg,transparent 0,transparent 80px,rgba(94,196,216,.06) 80px,rgba(94,196,216,.06) 81px),
-    repeating-linear-gradient(-125deg,transparent 0,transparent 96px,rgba(23,43,89,.04) 96px,rgba(23,43,89,.04) 97px);
+.cartao-ribbon{
+  position:relative;z-index:2;height:12px;display:grid;grid-template-columns:45% 30% 25%;
 }
-.cartao-bg-lines::before,
-.cartao-bg-lines::after{
-  content:"";position:absolute;height:1px;width:62%;left:19%;
-  background:linear-gradient(90deg,transparent,rgba(23,43,89,.1),transparent);
-}
-.cartao-bg-lines::before{top:24%}
-.cartao-bg-lines::after{bottom:30%;opacity:.65}
-.cartao-bg-accent::before,
-.cartao-bg-accent::after{
-  content:"";position:absolute;width:200px;height:200px;border-radius:50%;
-  border:1px solid rgba(94,196,216,.12);
-}
-.cartao-bg-accent{position:absolute;inset:0}
-.cartao-bg-accent::before{top:-75px;left:-85px}
-.cartao-bg-accent::after{bottom:-95px;right:-75px;border-color:rgba(232,90,40,.1)}
-.cartao-bg-glow{
-  position:absolute;inset:0;
-  background:
-    radial-gradient(ellipse 45% 36% at 12% 16%,rgba(94,196,216,.09),transparent 58%),
-    radial-gradient(ellipse 40% 32% at 90% 20%,rgba(23,43,89,.05),transparent 55%),
-    radial-gradient(ellipse 48% 38% at 88% 84%,rgba(232,90,40,.05),transparent 52%);
-}
+.cartao-ribbon i:nth-child(1){background:#102e56}
+.cartao-ribbon i:nth-child(2){background:#25b9c7}
+.cartao-ribbon i:nth-child(3){background:#f6b81c}
 
-.balloons-col{
-  position:absolute;top:128px;width:88px;pointer-events:none;z-index:2;opacity:.96;
+.balloon{
+  position:absolute;width:52px;height:65px;border-radius:50%;z-index:1;
+  background:radial-gradient(circle at 34% 26%,#9df4ff,#25bfd4 38%,#087eaa);
+  box-shadow:inset -7px -8px 13px rgba(0,41,78,.2);
 }
-.balloons-col img{width:100%;height:auto;display:block;filter:drop-shadow(0 6px 10px rgba(23,43,89,.06))}
-.balloons-col--esq{left:10px}
-.balloons-col--dir{right:10px}
-
-.cartao-body{
-  position:relative;z-index:3;height:100%;
-  padding:28px 96px 26px;
-  display:flex;flex-direction:column;
+.balloon::after{
+  content:"";position:absolute;bottom:-8px;left:21px;
+  border:5px solid transparent;border-top:10px solid #087eaa;
 }
+.balloon.a{left:-18px;top:205px}
+.balloon.b{right:-17px;top:194px}
+.balloon.c{left:-25px;top:355px;transform:scale(.87)}
+.balloon.d{right:-23px;top:365px;transform:scale(.9)}
 
-.cartao-header{text-align:center}
-.eyebrow{
-  margin:0;font-size:9px;letter-spacing:.26em;
-  text-transform:uppercase;color:var(--muted-ink);font-weight:700
+.cartao-header{
+  text-align:center;padding:27px 46px 0;position:relative;z-index:2;
+}
+.cartao-micro{
+  font-size:8px;font-weight:900;letter-spacing:.19em;color:#4a7791;
+  text-transform:uppercase;
 }
 .cartao-h1{
-  margin:10px 0 0;font-size:42px;line-height:1.04;
-  color:var(--blue);letter-spacing:-.4px;font-weight:800
-}
-
-.nome-data-wrap{
-  position:relative;margin-top:16px;padding:0 80px 0 0;min-height:54px;
+  margin:10px 0 2px;font-size:32px;line-height:1;color:#102f58;
+  letter-spacing:-.04em;font-weight:800;
 }
 .cartao-nome{
-  margin:0;text-align:center;font-size:30px;line-height:1.12;
-  font-weight:800;color:var(--orange);word-break:break-word
+  font-size:21px;font-weight:900;color:var(--orange);
+  min-height:26px;overflow-wrap:anywhere;
 }
 .cartao-data{
-  position:absolute;right:4px;top:50%;transform:translateY(-50%);
-  font-size:44px;line-height:1;font-weight:800;
-  color:var(--orange);letter-spacing:.03em;
-  -webkit-text-stroke:2.2px var(--blue);paint-order:stroke fill;
+  display:inline-block;margin-top:10px;padding:5px 15px;border-radius:99px;
+  color:#fff;background:#102f58;box-shadow:0 5px 0 var(--orange);
+  font-size:20px;font-weight:900;letter-spacing:.04em;
 }
 
-.texto-bloco{
-  margin:20px auto 0;max-width:488px;text-align:center;
-  padding:18px 22px 16px;border-radius:16px;
-  background:rgba(255,255,255,.72);
-  border:1px solid rgba(23,43,89,.06);
-  box-shadow:0 8px 28px rgba(23,43,89,.05);
-  backdrop-filter:blur(6px);
-  font-size:13.5px;line-height:1.68;color:var(--ink);
+.cartao-message{
+  position:relative;z-index:2;
+  margin:26px 72px 0;padding:20px;
+  border:1px solid rgba(27,140,169,.16);border-radius:18px;
+  background:rgba(255,255,255,.85);
+  box-shadow:0 12px 28px rgba(21,87,111,.08);
+  text-align:center;
 }
-.punchline{
-  margin:0 0 12px;font-weight:700;font-size:13.5px;line-height:1.65;color:var(--blue)
+.cartao-quote{
+  position:absolute;color:#28b9c8;font:700 48px Georgia,serif;
+  margin-top:-40px;left:18px;line-height:1;
 }
-.cartao-mensagem p{margin:0 0 12px;color:var(--ink)}
-.cartao-mensagem p:last-child{margin-bottom:0;font-weight:700;color:var(--blue)}
+.cartao-message p{
+  margin:0;font-size:12px;line-height:1.45;color:#1f3444;
+}
 
-.ciop-hero{
-  margin:22px auto 6px;text-align:center;position:relative;
-  padding:14px 0 0;
+.cartao-signature{
+  margin-top:14px;text-align:center;position:relative;z-index:2;
 }
-.ciop-hero::before{
-  content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);
-  width:120px;height:2px;border-radius:2px;
-  background:linear-gradient(90deg,transparent,var(--teal),var(--orange),transparent);
+.cartao-signature span{
+  display:block;font-size:7px;font-weight:900;letter-spacing:.22em;color:#4c7790;
 }
-.ciop-hero img{max-height:80px;width:auto;object-fit:contain}
+.cartao-signature img{width:92px;mix-blend-mode:multiply}
 
-.buses-wrap{margin-top:2px}
-.buses{
-  display:flex;justify-content:center;align-items:flex-end;
-  min-height:206px;padding:0 6px;
+.cartao-buses{
+  position:absolute;left:20px;right:20px;bottom:86px;height:130px;
+  display:flex;align-items:flex-end;z-index:2;
 }
-.buses .bus{
-  width:50%;max-width:346px;height:auto;max-height:206px;
-  object-fit:contain;object-position:center bottom;
-  filter:drop-shadow(0 10px 14px rgba(23,43,89,.08));
-}
-.buses .bus--esq{transform:translateX(5px)}
-.buses .bus--dir{transform:translateX(-5px)}
+.cartao-buses img{width:100%;height:auto;max-height:130px;object-fit:contain;mix-blend-mode:multiply}
 
-.partners{
-  margin-top:auto;padding:14px 8px 0;
-  border-top:1px solid rgba(23,43,89,.14);
-  background:linear-gradient(180deg,rgba(255,255,255,.5),transparent);
+.cartao-footer{
+  position:absolute;bottom:0;left:0;right:0;height:88px;z-index:2;
+  border-top:1px solid rgba(25,63,89,.12);
+  background:rgba(255,255,255,.94);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:0 12px;
 }
-.logos-row{
-  display:flex;align-items:center;justify-content:space-between;
-  gap:10px;min-height:52px;
+.cartao-footer b{
+  font-size:7px;letter-spacing:.22em;color:#1b5472;margin-bottom:4px;
 }
-.logos-row img{object-fit:contain;flex:0 1 auto;opacity:.98}
-.logos-row .lg-londri{max-height:28px;max-width:136px}
-.logos-row .lg-mov{max-height:46px;max-width:114px}
-.logos-row .lg-cmtu{max-height:40px;max-width:90px}
-.logos-row .lg-tcgl{max-height:44px;max-width:86px}
+.cartao-footer img{width:78%;max-height:52px;object-fit:contain;mix-blend-mode:multiply}
 
 .notice{background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px 16px;color:#664d03;margin-bottom:16px}
 </style>
@@ -251,85 +206,63 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 
   <div class="layout" id="conteudoCartao">
     <section class="panel" aria-label="Dados do cartão">
+      <p class="panel-tag">✦ CIOP · SISTEMA MOV</p>
       <h2>Personalizar cartão</h2>
       <div class="field">
         <label for="inpNome">Nome do colaborador</label>
-        <input id="inpNome" type="text" placeholder="Ex.: Maria Silva" autocomplete="name">
+        <input id="inpNome" type="text" maxlength="38" placeholder="Ex.: Maria Silva" autocomplete="name">
       </div>
       <div class="field">
         <label for="inpData">Dia e mês do aniversário</label>
         <input id="inpData" type="date">
       </div>
       <div class="field">
-        <label for="inpPunchline">Frase de destaque</label>
-        <input id="inpPunchline" type="text" spellcheck="true">
-      </div>
-      <div class="field">
         <label for="inpMensagem">Mensagem</label>
         <textarea id="inpMensagem" spellcheck="true"></textarea>
       </div>
       <div class="actions">
-        <button type="button" class="btn btn-primary" id="btnPdf">Baixar PDF (retrato)</button>
-        <button type="button" class="btn btn-outline" id="btnPng">Baixar imagem (PNG)</button>
+        <button type="button" class="btn btn-primary" id="btnPng">Baixar PNG</button>
+        <button type="button" class="btn btn-outline" id="btnPdf">Baixar PDF</button>
         <button type="button" class="btn btn-secondary" id="btnReset">Restaurar mensagem padrão</button>
       </div>
-      <p class="hint">Modelo igual ao PDF de referência. Data no cartão: dia/mês (ex.: 01/08).</p>
+      <p class="hint">Formato vertical 9:16. A data no cartão aparece como dia/mês (ex.: 01/08).</p>
     </section>
 
     <section class="preview-wrap" aria-label="Pré-visualização do cartão">
       <div class="preview-scale">
         <article class="cartao" id="cartaoPreview" aria-label="Cartão de aniversário">
-          <div class="cartao-top" aria-hidden="true"></div>
-          <div class="cartao-bg" aria-hidden="true">
-            <div class="cartao-bg-glow"></div>
-            <div class="cartao-bg-grid"></div>
-            <div class="cartao-bg-lines"></div>
-            <div class="cartao-bg-accent"></div>
+          <div class="cartao-grid" aria-hidden="true"></div>
+          <div class="cartao-ribbon" aria-hidden="true"><i></i><i></i><i></i></div>
+          <span class="balloon a" aria-hidden="true"></span>
+          <span class="balloon b" aria-hidden="true"></span>
+          <span class="balloon c" aria-hidden="true"></span>
+          <span class="balloon d" aria-hidden="true"></span>
+
+          <header class="cartao-header">
+            <div class="cartao-micro">Uma homenagem a quem movimenta nossa cidade</div>
+            <h2 class="cartao-h1">Feliz Aniversário!</h2>
+            <div class="cartao-nome" id="prevNome">Nome do Colaborador</div>
+            <div class="cartao-data" id="prevData">—</div>
+          </header>
+
+          <div class="cartao-message">
+            <div class="cartao-quote" aria-hidden="true">“</div>
+            <p id="prevMensagem"></p>
           </div>
 
-          <div class="balloons-col balloons-col--esq" aria-hidden="true">
-            <img src="../assets/img/cartao-aniversario/baloes-esquerda.png?v=10" alt="">
-          </div>
-          <div class="balloons-col balloons-col--dir" aria-hidden="true">
-            <img src="../assets/img/cartao-aniversario/baloes-direita.png?v=10" alt="">
+          <div class="cartao-signature">
+            <span>COM CARINHO,</span>
+            <img src="../assets/img/cartao-aniversario/ciop-mov.png?v=11" alt="CIOP">
           </div>
 
-          <div class="cartao-body">
-            <header class="cartao-header">
-              <p class="eyebrow">Uma homenagem a quem faz parte da nossa equipe</p>
-              <h2 class="cartao-h1">Feliz Aniversário!</h2>
-            </header>
-
-            <div class="nome-data-wrap">
-              <h3 class="cartao-nome" id="prevNome">Nome do Colaborador</h3>
-              <div class="cartao-data" id="prevData" aria-label="Data do aniversário">—</div>
-            </div>
-
-            <div class="texto-bloco">
-              <p class="punchline" id="prevPunchline"></p>
-              <div class="cartao-mensagem" id="prevMensagem"></div>
-            </div>
-
-            <div class="ciop-hero">
-              <img src="../assets/img/cartao-aniversario/ciop-pdf.png?v=10" alt="CIOP">
-            </div>
-
-            <div class="buses-wrap">
-              <div class="buses">
-                <img class="bus bus--esq" src="../assets/img/cartao-aniversario/onibus-pdf-esq.png?v=10" alt="Ônibus Londrisul">
-                <img class="bus bus--dir" src="../assets/img/cartao-aniversario/onibus-pdf-dir.png?v=10" alt="Ônibus Grande Londrina">
-              </div>
-            </div>
-
-            <section class="partners" aria-label="Parceiros">
-              <div class="logos-row">
-                <img src="../assets/img/cartao-aniversario/londrisul-pdf.png?v=10" alt="Londrisul" class="lg-londri">
-                <img src="../assets/img/cartao-aniversario/mov-pdf.png?v=10" alt="MOV" class="lg-mov">
-                <img src="../assets/img/cartao-aniversario/cmtu-pdf.png?v=10" alt="CMTU" class="lg-cmtu">
-                <img src="../assets/img/cartao-aniversario/tcgl-pdf.png?v=10" alt="Grande Londrina" class="lg-tcgl">
-              </div>
-            </section>
+          <div class="cartao-buses">
+            <img src="../assets/img/cartao-aniversario/onibus-mov-barra.png?v=11" alt="Ônibus do sistema MOV">
           </div>
+
+          <footer class="cartao-footer">
+            <b>JUNTOS, MOVEMOS LONDRINA.</b>
+            <img src="../assets/img/cartao-aniversario/logos-parceiros-barra.png?v=11" alt="Empresas parceiras">
+          </footer>
         </article>
       </div>
     </section>
@@ -338,48 +271,24 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
 
 <script>
 (function () {
-  const PUNCHLINE_PADRAO =
-    "Hoje celebramos mais do que uma data especial: celebramos você!";
-
   const MENSAGEM_PADRAO =
-    "Seu trabalho, dedicação, parceria e compromisso fazem parte da força que movimenta nossa equipe e ajuda a levar Londrina cada vez mais longe.\n\n" +
-    "Que este novo ciclo seja repleto de saúde, alegria, conquistas, realizações e momentos inesquecíveis. Que nunca faltem motivos para sorrir e novos caminhos para seguir.\n\n" +
-    "Receba o carinho e os melhores desejos de toda a equipe do CIOP.\n\n" +
-    "Parabéns e muitas felicidades!";
-
-  function escapeHtml(text) {
-    return String(text || "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  }
-
-  function formatMensagemHtml(text) {
-    const blocos = String(text || "").trim().split(/\n\s*\n/);
-    if (!blocos.length) return "";
-    return blocos.map((bloco, idx) => {
-      const ultimo = idx === blocos.length - 1;
-      const cls = ultimo ? "" : "";
-      const tag = ultimo ? "p" : "p";
-      const conteudo = escapeHtml(bloco.trim()).replace(/\n/g, "<br>");
-      return ultimo
-        ? "<p><strong>" + conteudo + "</strong></p>"
-        : "<" + tag + ">" + conteudo + "</" + tag + ">";
-    }).join("");
-  }
+    "Hoje celebramos muito mais do que uma data: celebramos a sua história, o seu talento e a contribuição que você traz todos os dias. " +
+    "Que este novo ciclo chegue com saúde, alegria e grandes realizações. Que nunca faltem bons caminhos, novas conquistas e motivos sinceros para sorrir. " +
+    "Receba o carinho e os melhores desejos de toda a equipe do CIOP. Parabéns e muitas felicidades!";
 
   const inpNome = document.getElementById("inpNome");
   const inpData = document.getElementById("inpData");
-  const inpPunchline = document.getElementById("inpPunchline");
   const inpMensagem = document.getElementById("inpMensagem");
   const prevNome = document.getElementById("prevNome");
   const prevData = document.getElementById("prevData");
-  const prevPunchline = document.getElementById("prevPunchline");
   const prevMensagem = document.getElementById("prevMensagem");
   const cartao = document.getElementById("cartaoPreview");
   const btnPdf = document.getElementById("btnPdf");
   const btnPng = document.getElementById("btnPng");
   const btnReset = document.getElementById("btnReset");
+
+  const EXPORT_W = 360;
+  const EXPORT_H = 640;
 
   function slugArquivo() {
     return (inpNome.value || "colaborador").trim()
@@ -395,80 +304,10 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
   }
 
   function formatarDataCartao(iso) {
-    if (!iso) return "—";
+    if (!iso) return "__/__";
     const p = iso.split("-");
-    if (p.length !== 3) return "—";
+    if (p.length !== 3) return "__/__";
     return String(parseInt(p[2], 10)).padStart(2, "0") + "/" + String(parseInt(p[1], 10)).padStart(2, "0");
-  }
-
-  async function renderizarCartaoCanvas() {
-    if (document.fonts?.ready) await document.fonts.ready;
-    await aguardarImagens(cartao);
-    await new Promise((r) => requestAnimationFrame(() => r()));
-    return window.html2canvas(cartao, {
-      scale: 2,
-      backgroundColor: "#ffffff",
-      logging: false,
-      useCORS: true,
-      width: 794,
-      height: 1123,
-      windowWidth: 794,
-      windowHeight: 1123
-    });
-  }
-
-  async function gerarPdf() {
-    btnPdf.disabled = true;
-    btnPng.disabled = true;
-    btnPdf.textContent = "Gerando PDF…";
-    try {
-      const canvas = await renderizarCartaoCanvas();
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const w = pdf.internal.pageSize.getWidth();
-      const h = pdf.internal.pageSize.getHeight();
-      pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, w, h, undefined, "FAST");
-      pdf.save("cartao-aniversario-" + slugArquivo() + ".pdf");
-    } catch (err) {
-      console.error(err);
-      alert("Não foi possível gerar o PDF. Tente novamente.");
-    } finally {
-      btnPdf.disabled = false;
-      btnPng.disabled = false;
-      btnPdf.textContent = "Baixar PDF (retrato)";
-    }
-  }
-
-  async function gerarImagem() {
-    btnPdf.disabled = true;
-    btnPng.disabled = true;
-    const rotulo = btnPng.textContent;
-    btnPng.textContent = "Gerando imagem…";
-    try {
-      const canvas = await renderizarCartaoCanvas();
-      baixarDataUrl(canvas.toDataURL("image/png"), "cartao-aniversario-" + slugArquivo() + ".png");
-    } catch (err) {
-      console.error(err);
-      alert("Não foi possível gerar a imagem. Tente novamente.");
-    } finally {
-      btnPdf.disabled = false;
-      btnPng.disabled = false;
-      btnPng.textContent = rotulo;
-    }
-  }
-
-  function atualizarPreview() {
-    const nome = (inpNome.value || "").trim() || "Nome do Colaborador";
-    prevNome.textContent = nome;
-    prevData.textContent = formatarDataCartao(inpData.value);
-    prevPunchline.textContent = (inpPunchline.value || "").trim() || PUNCHLINE_PADRAO;
-    prevMensagem.innerHTML = formatMensagemHtml((inpMensagem.value || "").trim() || MENSAGEM_PADRAO);
-  }
-
-  function restaurarPadrao() {
-    inpPunchline.value = PUNCHLINE_PADRAO;
-    inpMensagem.value = MENSAGEM_PADRAO;
-    atualizarPreview();
   }
 
   function aguardarImagens(el) {
@@ -482,16 +321,81 @@ h1{margin:0;text-align:center;color:var(--blue);font-size:22px;font-weight:700}
     }));
   }
 
+  async function renderizarCartaoCanvas() {
+    if (document.fonts?.ready) await document.fonts.ready;
+    await aguardarImagens(cartao);
+    await new Promise((r) => requestAnimationFrame(() => r()));
+    return window.html2canvas(cartao, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      logging: false,
+      useCORS: true,
+      width: EXPORT_W,
+      height: EXPORT_H,
+      windowWidth: EXPORT_W,
+      windowHeight: EXPORT_H
+    });
+  }
+
+  async function gerarPng() {
+    btnPdf.disabled = true;
+    btnPng.disabled = true;
+    const rotulo = btnPng.textContent;
+    btnPng.textContent = "Gerando PNG…";
+    try {
+      const canvas = await renderizarCartaoCanvas();
+      baixarDataUrl(canvas.toDataURL("image/png"), "cartao-aniversario-" + slugArquivo() + ".png");
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível gerar a imagem. Tente novamente.");
+    } finally {
+      btnPdf.disabled = false;
+      btnPng.disabled = false;
+      btnPng.textContent = rotulo;
+    }
+  }
+
+  async function gerarPdf() {
+    btnPdf.disabled = true;
+    btnPng.disabled = true;
+    btnPdf.textContent = "Gerando PDF…";
+    try {
+      const canvas = await renderizarCartaoCanvas();
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: [90, 160] });
+      const w = pdf.internal.pageSize.getWidth();
+      const h = pdf.internal.pageSize.getHeight();
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, w, h, undefined, "FAST");
+      pdf.save("cartao-aniversario-" + slugArquivo() + ".pdf");
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível gerar o PDF. Tente novamente.");
+    } finally {
+      btnPdf.disabled = false;
+      btnPng.disabled = false;
+      btnPdf.textContent = "Baixar PDF";
+    }
+  }
+
+  function atualizarPreview() {
+    prevNome.textContent = (inpNome.value || "").trim() || "Nome do Colaborador";
+    prevData.textContent = formatarDataCartao(inpData.value);
+    prevMensagem.textContent = (inpMensagem.value || "").trim() || MENSAGEM_PADRAO;
+  }
+
+  function restaurarPadrao() {
+    inpMensagem.value = MENSAGEM_PADRAO;
+    atualizarPreview();
+  }
+
   inpNome.addEventListener("input", atualizarPreview);
   inpData.addEventListener("input", atualizarPreview);
-  inpPunchline.addEventListener("input", atualizarPreview);
   inpMensagem.addEventListener("input", atualizarPreview);
+  btnPng.addEventListener("click", gerarPng);
   btnPdf.addEventListener("click", gerarPdf);
-  btnPng.addEventListener("click", gerarImagem);
   btnReset.addEventListener("click", restaurarPadrao);
 
   restaurarPadrao();
-
   const hoje = new Date();
   inpData.value = hoje.getFullYear() + "-" + String(hoje.getMonth() + 1).padStart(2, "0") + "-" + String(hoje.getDate()).padStart(2, "0");
   atualizarPreview();
