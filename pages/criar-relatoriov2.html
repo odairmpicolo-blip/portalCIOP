@@ -1,0 +1,2367 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>
+document.documentElement.classList.add("portal-auth-pending");
+</script>
+<style id="portalAuthBootStyle">
+.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}
+</style>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relatório de Ocorrência - Portal CIOP</title>
+<style>
+:root{
+    --blue:#06245c;
+    --blue2:#0b3a8a;
+    --orange:#ff6b00;
+    --bg:#f5f7fb;
+    --border:#dfe5ef;
+    --text:#101828;
+    --muted:#3f4757;
+    --white:#fff;
+    --red:#dc2626;
+    --green:#15803d;
+}
+*{box-sizing:border-box}
+body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:Arial, Helvetica, sans-serif;
+    min-height:100vh;
+}
+.header{
+    background:#fff;
+    display:grid;
+    grid-template-columns:minmax(260px, 1fr) auto minmax(260px, 1fr);
+    gap:16px;
+    align-items:center;
+    padding:6px 20px;
+    border-bottom:1px solid #e8edf6;
+}
+.header > a:first-child.portal-brand-mark{justify-self:start}
+.logo-ciop{height:40px;object-fit:contain}
+.logo-tcgl{height:45px;object-fit:contain}
+h1{margin:0;text-align:center;color:var(--blue);font-size:22px}
+.header-actions{
+    justify-self:end;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:10px;
+    min-width:0;
+}
+.relatorio-title-wrap{
+    justify-self:center;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-width:0;
+}
+.relatorio-title-art{margin:0;display:flex;align-items:center;justify-content:center;min-width:0;line-height:0}
+
+/* session container: portal-session.css?v=20260818open */
+/* session user styles: portal-session.css?v=20260818open */
+/* session profile styles: portal-session.css?v=20260818open */
+.btn-logout,.btn{
+    border:0;
+    border-radius:6px;
+    padding:8px 10px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+}
+/* session logout: portal-session.css?v=20260818open */
+.container{max-width:1480px;margin:22px auto;padding:0 18px}
+.portal-return{
+    margin-bottom:14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    padding:10px 16px;
+    background:#fff;
+    border:1px solid #e8edf6;
+    border-radius:14px;
+    box-shadow:0 1px 2px rgba(16,24,40,.06);
+}
+.report-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+}
+.btn-link,.btn-portal,.btn-primary,.btn-secondary{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    text-decoration:none;
+    min-height:38px;
+    box-shadow:0 1px 2px rgba(16,24,40,.08);
+}
+.btn-link,.btn-portal{
+    background:linear-gradient(135deg,var(--blue),var(--blue2));
+    color:#fff;
+    padding:8px 14px;
+    border-radius:8px;
+    font-size:12px;
+    font-weight:800;
+    box-shadow:0 8px 16px rgba(6,36,92,.16);
+}
+.btn-icon{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 auto;
+}
+.btn-icon svg{
+    width:18px;
+    height:18px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-secondary{background:#e8edf6;color:var(--blue)}
+.anexos-status{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 10px;
+    border-radius:8px;
+    background:#eef4ff;
+    color:var(--blue);
+    font-size:11px;
+    font-weight:700;
+}
+.anexos-status button{
+    border:0;
+    background:transparent;
+    color:var(--blue);
+    cursor:pointer;
+    font-weight:800;
+    font-size:13px;
+    line-height:1;
+    padding:0;
+}
+.btn-danger{background:var(--red);color:#fff}
+.workspace{
+    display:grid;
+    grid-template-columns:minmax(320px, 400px) minmax(0, 1fr);
+    gap:20px;
+    align-items:start;
+}
+.panel{
+    position:sticky;
+    top:16px;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:18px;
+    box-shadow:0 12px 32px rgba(16,24,40,.08);
+}
+.panel-title{
+    margin:0 0 12px;
+    color:var(--blue);
+    font-size:16px;
+}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-grid .full{grid-column:1/-1}
+label{display:block;margin:10px 0 5px;color:var(--muted);font-size:12px;font-weight:700}
+input,select,textarea{
+    width:100%;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:9px 10px;
+    font-size:14px;
+    font-family:inherit;
+    background:#fff;
+}
+textarea{resize:none;overflow:hidden;line-height:1.55}
+input[readonly],
+select:disabled{
+    background:#f8fafc;
+    color:#344054;
+}
+#numeroRelatorio{
+    color:var(--red);
+    font-weight:900;
+}
+.cargo-vinculado,.assinatura-vinculada{
+    min-height:38px;
+    display:flex;
+    align-items:center;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:9px 10px;
+    background:#f8fafc;
+    color:#344054;
+    font-size:14px;
+    font-weight:700;
+}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:flex-start}
+.modelo-wrap{position:relative;flex:1 1 100%}
+.modelo-btn{width:100%;justify-content:space-between}
+.modelo-menu{
+    position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;
+    background:#fff;border:1px solid var(--border);border-radius:8px;
+    box-shadow:0 12px 28px rgba(16,24,40,.14);padding:6px;max-height:280px;overflow:auto;
+}
+.modelo-menu[hidden]{display:none!important}
+.modelo-item{
+    display:block;width:100%;border:0;background:transparent;border-radius:6px;
+    padding:9px 10px;font:inherit;font-size:12px;font-weight:700;text-align:left;
+    color:var(--blue);cursor:pointer;
+}
+.modelo-item:hover,.modelo-item.active{background:#effcfb}
+.modelo-item.active{color:var(--blue)}
+.ia-actions{display:flex;gap:8px;flex-wrap:wrap;width:100%}
+.ia-actions .btn{flex:1 1 calc(50% - 4px);min-width:140px}
+.bloco-funcionario.oculto{display:none!important}
+.preview-funcionario.oculto{display:none!important}
+.report-title-informativo{font-size:17px}
+.status.ia{color:var(--blue)}
+.status{min-height:18px;margin-top:10px;font-size:12px;font-weight:700;color:var(--muted)}
+.status.erro{color:var(--red)}
+.status.ok{color:var(--green)}
+
+/* Confirmação central após envio de e-mail */
+.email-enviado-overlay{
+  position:fixed;
+  inset:0;
+  z-index:100000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(6,20,40,.42);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .28s ease;
+}
+.email-enviado-overlay.is-open{
+  opacity:1;
+  pointer-events:auto;
+}
+.email-enviado-box{
+  width:min(340px,92vw);
+  background:linear-gradient(160deg,#16a34a 0%,#15803d 55%,#166534 100%);
+  color:#fff;
+  border-radius:22px;
+  padding:34px 28px 28px;
+  text-align:center;
+  box-shadow:
+    0 28px 60px -24px rgba(21,128,61,.65),
+    inset 0 1px 0 rgba(255,255,255,.28);
+  border:1px solid rgba(255,255,255,.28);
+  transform:scale(.82) translateY(18px);
+  opacity:0;
+  transition:transform .38s cubic-bezier(.2,1.1,.3,1), opacity .28s ease;
+}
+.email-enviado-overlay.is-open .email-enviado-box{
+  transform:scale(1) translateY(0);
+  opacity:1;
+}
+.email-enviado-check{
+  width:72px;
+  height:72px;
+  margin:0 auto 16px;
+  border-radius:50%;
+  background:rgba(255,255,255,.18);
+  border:2px solid rgba(255,255,255,.55);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  animation:emailEnviadoPulse 1.1s ease-out 1;
+}
+.email-enviado-check svg{
+  width:38px;
+  height:38px;
+  fill:none;
+  stroke:#fff;
+  stroke-width:3;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-dasharray:48;
+  stroke-dashoffset:48;
+}
+.email-enviado-overlay.is-open .email-enviado-check svg{
+  animation:emailEnviadoDraw .55s ease forwards .18s;
+}
+.email-enviado-titulo{
+  margin:0;
+  font-size:28px;
+  font-weight:900;
+  letter-spacing:.02em;
+  animation:emailEnviadoPop .45s ease .25s both;
+}
+.email-enviado-sub{
+  margin:8px 0 0;
+  font-size:13px;
+  font-weight:700;
+  color:rgba(255,255,255,.9);
+  line-height:1.4;
+}
+@keyframes emailEnviadoPulse{
+  0%{transform:scale(.7);opacity:.4}
+  60%{transform:scale(1.08);opacity:1}
+  100%{transform:scale(1);opacity:1}
+}
+@keyframes emailEnviadoDraw{
+  to{stroke-dashoffset:0}
+}
+@keyframes emailEnviadoPop{
+  from{opacity:0;transform:translateY(8px) scale(.94)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.paper-wrap{
+    background:#eef2f7;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:22px;
+    overflow:auto;
+}
+.paper{
+    width:210mm;
+    max-width:100%;
+    min-height:297mm;
+    margin:0 auto;
+    background:#fff;
+    color:#1a2332;
+    border:1px solid #d7dee8;
+    box-shadow:0 22px 55px rgba(16,24,40,.16);
+    padding:0 0 16mm;
+    font-family:Arial, Helvetica, sans-serif;
+}
+.report-head{
+    display:grid;
+    grid-template-columns:88px 1fr 88px;
+    align-items:center;
+    gap:14px;
+    padding:11mm 16mm 9mm;
+    background:linear-gradient(180deg,#f4f7fb 0%,#fff 100%);
+    border:0;
+}
+.report-head img{max-width:100%;height:50px;object-fit:contain;display:block}
+.report-head img:last-child{justify-self:end}
+.report-company{text-align:center;min-width:0}
+.report-org{
+    display:block;
+    font-size:12.5px;
+    font-weight:800;
+    color:#06245c;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    line-height:1.3;
+}
+.report-org-sub{
+    display:block;
+    margin-top:4px;
+    font-size:10.5px;
+    font-weight:700;
+    color:#3f4757;
+    letter-spacing:.04em;
+}
+.report-accent{
+    height:5px;
+    background:linear-gradient(90deg,#06245c 0 70%,#ff6b00 70% 100%);
+    box-shadow:0 1px 0 #fff inset;
+}
+.report-sheet{padding:8mm 16mm 0}
+.report-title{
+    display:grid;
+    grid-template-columns:minmax(138px,1fr) auto minmax(138px,1fr);
+    align-items:center;
+    gap:10px;
+    margin:0 0 10px;
+}
+.report-title-spacer{min-height:1px}
+.report-title h2{
+    grid-column:2;
+    margin:0;
+    text-align:center;
+    color:#06245c;
+    font-size:18.5px;
+    font-weight:800;
+    letter-spacing:.08em;
+    line-height:1.15;
+}
+.report-protocolo{
+    grid-column:3;
+    justify-self:end;
+    text-align:center;
+    border:1.5px solid #e11d48;
+    background:#fff5f5;
+    border-radius:4px;
+    padding:7px 12px 8px;
+    min-width:138px;
+    box-shadow:inset 0 0 0 1px #fff;
+}
+.report-protocolo span{
+    display:block;
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:#9f1239;
+}
+.report-number{
+    display:block;
+    position:static;
+    transform:none;
+    border:0;
+    background:transparent;
+    padding:3px 0 0;
+    color:#be123c;
+    font-size:14px;
+    font-weight:800;
+    white-space:nowrap;
+}
+.report-rule{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:4px 0 16px;
+}
+.report-rule::before,
+.report-rule::after{
+    content:"";
+    flex:1;
+    height:1.5px;
+    background:#06245c;
+}
+.report-rule i{
+    flex:0 0 42px;
+    height:4px;
+    background:#ff6b00;
+    border-radius:2px;
+}
+.report-rule.soft{margin:2px 0 14px}
+.report-rule.soft::before,
+.report-rule.soft::after{
+    height:1px;
+    background:#9aa8bc;
+}
+.report-rule.soft i{height:3px;flex-basis:28px}
+.report-meta-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:0 18px;
+    margin:0 0 8px;
+}
+.report-field{
+    padding:10px 0 9px 11px;
+    border-bottom:1.5px solid #06245c;
+    border-left:3px solid #06245c;
+    min-width:0;
+    background:linear-gradient(90deg,#f4f7fb 0 8px,transparent 8px);
+}
+.report-field span{
+    display:block;
+    font-size:9.5px;
+    font-weight:800;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:#344054;
+    margin-bottom:4px;
+}
+.report-field strong{
+    display:block;
+    font-size:14px;
+    font-weight:800;
+    color:#06245c;
+    word-break:break-word;
+}
+.report-field.preview-funcionario.oculto{display:none}
+.report-ref{
+    margin-top:6px;
+    min-height:360px;
+    padding:4px 0 8px 14px;
+    border-left:2px solid #06245c;
+    box-shadow:inset 4px 0 0 #ff6b00;
+}
+.report-ref-label{
+    display:inline-block;
+    font-weight:800;
+    font-size:11px;
+    color:#06245c;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    margin:0 0 10px;
+    padding:0;
+    border:0;
+}
+.report-body{
+    min-height:370px;
+    width:100%;
+    border:0;
+    border-radius:0;
+    padding:0;
+    font-size:12.8px;
+    line-height:1.65;
+    color:#1f2937;
+    text-align:justify;
+    background:transparent;
+    font-family:Georgia, "Times New Roman", Times, serif;
+}
+.report-body:focus{outline:none}
+.report-body-print{
+    display:none;
+    min-height:370px;
+    width:100%;
+    border:0;
+    padding:0;
+    font-size:12.8px;
+    line-height:1.65;
+    color:#1f2937;
+    white-space:pre-wrap;
+    text-align:justify;
+    font-family:Georgia, "Times New Roman", Times, serif;
+}
+.signature{
+    margin:36px auto 0;
+    max-width:300px;
+    text-align:center;
+    color:#1a2332;
+}
+.signature-line{border-top:2px solid #06245c;padding-top:10px;box-shadow:0 -5px 0 #ff6b00}
+.report-foot{
+    margin:28px 16mm 0;
+    padding-top:10px;
+    border-top:2px solid #06245c;
+    box-shadow:inset 0 5px 0 #ff6b00;
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:#475467;
+    text-align:center;
+}
+.signature-title{
+    display:block;
+    margin-bottom:28px;
+    color:#667085;
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+}
+.signature strong{display:block;font-size:13px;font-weight:800;color:#06245c}
+.signature span{display:block;font-size:11.5px;margin-top:2px;color:#475467}
+.print-only{display:none}
+body.pdf-exporting .paper-wrap{
+    border:0;
+    padding:0;
+    background:#fff;
+    overflow:visible;
+}
+body.pdf-exporting .paper{
+    width:210mm;
+    max-width:none;
+    min-height:297mm;
+    border:0;
+    box-shadow:none;
+    padding:0 0 14mm;
+    background:#fff;
+}
+body.pdf-exporting .report-body{display:none}
+body.pdf-exporting .report-body-print{display:block}
+@media (max-width:980px){
+    .header{grid-template-columns:1fr;justify-items:center;text-align:center}
+    .header > a:first-child{justify-self:center}
+    .header-actions{justify-self:center;min-width:0;flex-wrap:wrap}
+    
+    .workspace{grid-template-columns:1fr}
+    .paper{padding:0 0 18px;min-height:auto}
+    .report-head{grid-template-columns:72px 1fr 72px;padding:16px 16px 12px}
+    .report-sheet{padding:12px 16px 0}
+    .report-title{grid-template-columns:1fr;justify-items:center}
+    .report-title-spacer{display:none}
+    .report-protocolo{grid-column:1;justify-self:center}
+    .report-meta-grid{grid-template-columns:1fr}
+}
+/* O "papel" (.paper) simula documento impresso: nunca deve herdar o
+   texto branco forçado pelo modo escuro global (html.dk-dark h1/h2/h3/label). */
+html.dk-dark .paper h1,
+html.dk-dark .paper h2,
+html.dk-dark .paper h3,
+html.dk-dark .paper th,
+html.dk-dark .paper label{
+    color:#111827 !important;
+    text-shadow:none !important;
+    opacity:1 !important;
+}
+@page{size:A4;margin:0}
+@media print{
+    html,body{width:210mm;min-height:297mm;background:#fff!important}
+    body::before,body::after,.container::before,.container::after{display:none!important;content:none!important}
+    .header,.portal-return,.panel{display:none!important}
+    .container{max-width:none;margin:0;padding:0;background:#fff!important}
+    .workspace{display:block}
+    .paper-wrap{border:0;padding:0;background:#fff!important;overflow:visible}
+    .paper{width:210mm;max-width:none;min-height:297mm;border:0;box-shadow:none;padding:0 0 14mm;background:#fff!important}
+    .report-body{display:none}
+    .report-body-print{display:block}
+}
+/* ===== Redesign iOS26 Liquid Glass (mobile/app nativo) =====
+   O "papel" (.paper/.report-*) simula o documento impresso — fica
+   branco de propósito, não é tematizado. Tematiza só o formulário. */
+@media (max-width:720px){
+  .body-bg-wall,
+  .body-bg-stain{
+    display:none !important;
+  }
+  :root{
+    --jewel-1:#7a5cff;
+    --jewel-2:#c04fd6;
+    --jewel-shadow:0 10px 26px -8px rgba(122,92,255,.65);
+
+    --glass-bg:rgba(255,255,255,.08);
+    --glass-bg-strong:rgba(255,255,255,.13);
+    --glass-border:rgba(255,255,255,.16);
+    --glass-blur:blur(30px) saturate(180%);
+    --glass-shadow:0 20px 40px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18);
+
+    --ink:#fff;
+    --ink-soft:rgba(255,255,255,.6);
+    --ink-faint:rgba(255,255,255,.48);
+  }
+
+  html.native-light{
+    --glass-bg:rgba(255,255,255,.6);
+    --glass-bg-strong:rgba(255,255,255,.8);
+    --glass-border:rgba(30,20,70,.10);
+    --glass-shadow:0 16px 34px -16px rgba(40,25,90,.22), inset 0 1px 0 rgba(255,255,255,.75);
+
+    --ink:#18182a;
+    --ink-soft:rgba(24,24,42,.62);
+    --ink-faint:rgba(24,24,42,.5);
+  }
+
+  body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(122,92,255,.4) 0%, transparent 40%),
+      radial-gradient(circle at 90% 15%, rgba(255,110,180,.3) 0%, transparent 38%),
+      radial-gradient(circle at 20% 60%, rgba(60,180,255,.26) 0%, transparent 42%),
+      radial-gradient(circle at 85% 78%, rgba(255,170,60,.2) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
+      #0d0e14 !important;
+    color:var(--ink) !important;
+  }
+  html.native-light body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(122,92,255,.3) 0%, transparent 40%),
+      radial-gradient(circle at 90% 15%, rgba(255,110,180,.24) 0%, transparent 38%),
+      radial-gradient(circle at 20% 60%, rgba(60,180,255,.2) 0%, transparent 42%),
+      radial-gradient(circle at 85% 78%, rgba(255,170,60,.18) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
+      #f2effa !important;
+  }
+
+  .header{display:none !important;}
+
+  .container{
+    max-width:none !important;
+    margin:0 !important;
+    padding:calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-left)) 28px calc(14px + env(safe-area-inset-right)) !important;
+  }
+  html.native-embedded .container{padding-top:14px !important;}
+
+  .portal-return{flex-direction:column !important;align-items:stretch !important;gap:10px !important;}
+  .report-actions{flex-direction:column !important;align-items:stretch !important;gap:10px !important;}
+  .btn-portal,.btn-primary,.btn-secondary{
+    min-height:46px !important;
+    border-radius:14px !important;
+    font-size:15px !important;
+  }
+  .btn-portal,.btn-primary{
+    background:linear-gradient(135deg, var(--jewel-1), var(--jewel-2)) !important;
+    box-shadow:var(--jewel-shadow) !important;
+  }
+  .btn-secondary{background:var(--glass-bg-strong) !important;color:var(--ink) !important;}
+
+  .workspace{grid-template-columns:1fr !important;gap:16px !important;}
+  .panel{
+    position:static !important;
+    background:var(--glass-bg) !important;
+    backdrop-filter:var(--glass-blur) !important;
+    -webkit-backdrop-filter:var(--glass-blur) !important;
+    border:1px solid var(--glass-border) !important;
+    border-radius:20px !important;
+    box-shadow:var(--glass-shadow) !important;
+  }
+  .panel-title{color:var(--ink) !important;font-size:16px !important;}
+  label{color:var(--ink-faint) !important;font-size:13px !important;}
+  input,select,textarea{
+    background:var(--glass-bg-strong) !important;
+    border:1px solid var(--glass-border) !important;
+    color:var(--ink) !important;
+    font-size:16px !important;
+    padding:11px 12px !important;
+  }
+  input[readonly],select:disabled{background:color-mix(in srgb, var(--glass-bg) 60%, transparent) !important;color:var(--ink-faint) !important;}
+  .cargo-vinculado,.assinatura-vinculada{background:var(--glass-bg-strong) !important;border:1px solid var(--glass-border) !important;color:var(--ink-faint) !important;}
+  .modelo-menu{background:#18182a !important;border:1px solid var(--glass-border) !important;}
+  html.native-light .modelo-menu{background:#fff !important;}
+  .modelo-item{color:var(--ink) !important;}
+  .status{color:var(--ink-faint) !important;}
+  .paper-wrap{background:var(--glass-bg) !important;border:1px solid var(--glass-border) !important;padding:12px !important;}
+}
+
+/* ===== Redesign iOS26 Liquid Glass (desktop) =====
+   Fundo com parede de traços + mancha do laço do mês, vidro
+   no header/painel/sessão, hover nos botões. O "papel" (.paper/
+   .paper-wrap) simula o documento impresso e fica intocado. */
+@media (min-width:721px){
+  body{
+    position:relative;
+    background:var(--bg);
+  }
+  .body-bg-wall{
+    position:fixed;
+    inset:0;
+    z-index:-2;
+    pointer-events:none;
+    background-image:url('../assets/img/portal-bg-onibus.jpg?v=20260718j');
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+  }
+  .body-bg-stain{
+    position:fixed;
+    inset:0;
+    z-index:-1;
+    pointer-events:none;
+    background:linear-gradient(180deg, rgba(6,20,50,.30) 0%, rgba(6,20,50,.55) 100%);
+  }
+
+  .container{
+    max-width:100% !important;
+  }
+
+  .paper{
+    width:100%;
+    max-width:none;
+  }
+
+  .header{
+    background:rgba(255,255,255,.6) !important;
+    backdrop-filter:blur(18px) saturate(190%) !important;
+    -webkit-backdrop-filter:blur(18px) saturate(190%) !important;
+    border-bottom:1px solid rgba(255,255,255,.5) !important;
+    box-shadow:0 10px 28px -16px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.4) !important;
+  }
+
+  footer.portal-site-footer{
+    background:rgba(255,255,255,.42) !important;
+    backdrop-filter:blur(16px) saturate(190%) !important;
+    -webkit-backdrop-filter:blur(16px) saturate(190%) !important;
+    border-top:1px solid rgba(255,255,255,.5) !important;
+    box-shadow:0 -10px 28px -16px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.4) !important;
+  }
+  footer.portal-site-footer .footer-text{
+    color:#3f4757 !important;
+  }
+
+  .portal-return{
+    background:rgba(255,255,255,.55);
+    backdrop-filter:blur(18px) saturate(190%);
+    -webkit-backdrop-filter:blur(18px) saturate(190%);
+    border:1px solid rgba(255,255,255,.6);
+    border-radius:18px;
+    box-shadow:0 10px 24px -14px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.5);
+  }
+
+  .panel{
+    background:rgba(255,255,255,.55);
+    backdrop-filter:blur(16px) saturate(190%);
+    -webkit-backdrop-filter:blur(16px) saturate(190%);
+    border:1px solid rgba(255,255,255,.5);
+    box-shadow:0 12px 30px -16px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.4);
+  }
+
+  /* session container: portal-session.css?v=20260818open */
+
+  .modelo-menu{
+    background:rgba(255,255,255,.85);
+    backdrop-filter:blur(16px) saturate(190%);
+    -webkit-backdrop-filter:blur(16px) saturate(190%);
+    border:1px solid rgba(255,255,255,.5);
+  }
+
+  .btn-link,.btn-portal,.btn-primary{
+    min-height:44px !important;padding:8px 14px !important;border-radius:10px !important;font-size:14px !important;
+    background:linear-gradient(135deg, rgba(6,36,92,.85), rgba(11,58,138,.85));
+  }
+  .btn-link:hover,.btn-portal:hover,.btn-primary:hover{
+    background:linear-gradient(135deg, var(--orange), #ff8f3d);
+    transform:translateY(-2px);
+    box-shadow:0 14px 28px -12px rgba(255,107,0,.5), inset 0 1px 0 rgba(255,255,255,.35);
+  }
+  #enviarTopoBtn{
+    background:rgba(255,255,255,.42) !important;
+    color:var(--blue) !important;
+    border-left:3px solid var(--orange) !important;
+    box-shadow:0 10px 24px -14px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.5) !important;
+  }
+  #enviarTopoBtn:hover{
+    background:rgba(224,235,255,.85) !important;
+    color:var(--blue) !important;
+    transform:translateY(-2px) !important;
+    box-shadow:0 14px 28px -14px rgba(6,36,92,.35), inset 0 1px 0 rgba(255,255,255,.6) !important;
+  }
+  #anexosBtn{
+    background:rgba(255,255,255,.42) !important;
+    color:var(--blue) !important;
+    border-left:3px solid var(--orange) !important;
+    box-shadow:0 10px 24px -14px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.5) !important;
+  }
+  #anexosBtn:hover{
+    background:rgba(224,235,255,.85) !important;
+    color:var(--blue) !important;
+    transform:translateY(-2px) !important;
+    box-shadow:0 14px 28px -14px rgba(6,36,92,.35), inset 0 1px 0 rgba(255,255,255,.6) !important;
+  }
+  .btn-secondary{
+    background:rgba(255,255,255,.55);
+  }
+  .btn-secondary:hover{
+    background:rgba(224,235,255,.85);
+    transform:translateY(-2px);
+    box-shadow:0 14px 28px -14px rgba(6,36,92,.35), inset 0 1px 0 rgba(255,255,255,.6);
+  }
+  .btn-link,.btn-portal,.btn-primary,.btn-secondary,.btn-danger{
+    transition:transform .2s ease, background .25s ease, box-shadow .25s ease, color .25s ease !important;
+  }
+}
+
+/* ===== PDF fiel à prévia / A4 profissional =====
+   Estas regras ficam por último para não serem sobrescritas pelo layout desktop.
+   A exportação preserva a composição do "papel" exatamente em proporção A4. */
+body.pdf-exporting{
+    background:#fff !important;
+}
+
+body.pdf-exporting .paper-wrap{
+    width:210mm !important;
+    max-width:210mm !important;
+    margin:0 auto !important;
+    padding:0 !important;
+    border:0 !important;
+    border-radius:0 !important;
+    background:#fff !important;
+    overflow:visible !important;
+    box-shadow:none !important;
+}
+
+body.pdf-exporting .paper{
+    width:210mm !important;
+    max-width:210mm !important;
+    min-width:210mm !important;
+    min-height:297mm !important;
+    margin:0 !important;
+    padding:0 0 14mm !important;
+    border:0 !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+    background:#fff !important;
+    color:#1a2332 !important;
+}
+
+body.pdf-exporting .report-head{
+    grid-template-columns:88px 1fr 88px !important;
+    gap:14px !important;
+    padding:11mm 16mm 9mm !important;
+}
+
+body.pdf-exporting .report-sheet{
+    padding:8mm 16mm 0 !important;
+}
+
+body.pdf-exporting .report-title{
+    grid-template-columns:minmax(138px,1fr) auto minmax(138px,1fr) !important;
+    justify-items:stretch !important;
+}
+
+body.pdf-exporting .report-title-spacer{
+    display:block !important;
+}
+
+body.pdf-exporting .report-protocolo{
+    grid-column:3 !important;
+    justify-self:end !important;
+}
+
+body.pdf-exporting .report-meta-grid{
+    grid-template-columns:1fr 1fr !important;
+}
+
+body.pdf-exporting .report-body{
+    display:none !important;
+}
+
+body.pdf-exporting .report-body-print{
+    display:block !important;
+}
+
+body.pdf-exporting .report-foot{
+    margin-left:16mm !important;
+    margin-right:16mm !important;
+}
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260821hud">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260820bar4">
+<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260821fx">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260828planilhas">
+</head>
+<body>
+<div class="body-bg-wall" aria-hidden="true"></div>
+<div class="body-bg-stain" aria-hidden="true"></div>
+<header class="header">
+    <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/logomarca-portalciop-tcgl-claro.png?v=20260818logo6" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
+    <div class="relatorio-title-wrap">
+        <h1 class="relatorio-title-art" aria-label="Relatório de Ocorrência"><img src="../assets/img/titulo-relatorio.png" alt="Relatório de Ocorrência"></h1>
+    </div>
+    <div class="header-actions">
+<img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+        <div class="ciop-session" aria-label="Sessão do usuário">
+    <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+    <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+    <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+    <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+</div>
+    </div>
+</header>
+
+<main class="container">
+    <div class="portal-return">
+        <a class="btn btn-portal" href="../index.html" aria-label="Voltar ao portal">
+            <span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>
+            <span>Portal</span>
+        </a>
+        <div class="report-actions">
+            <button class="btn btn-secondary" type="button" id="anexosBtn">+ Anexo</button>
+            <input type="file" id="anexosInput" multiple hidden>
+            <span class="anexos-status" id="anexosStatus" hidden></span>
+            <button class="btn btn-primary" type="button" id="enviarTopoBtn">ENVIAR</button>
+        </div>
+    </div>
+
+    <section class="workspace">
+        <aside class="panel">
+            <h2 class="panel-title">Dados do relatório</h2>
+
+            <label for="modeloRelatorio">Modelo do relatório</label>
+            <div class="modelo-wrap">
+                <button type="button" class="btn btn-secondary modelo-btn" id="modeloBtn" aria-haspopup="listbox" aria-expanded="false">
+                    <span id="modeloBtnLabel">Selecione o modelo</span>
+                    <span aria-hidden="true">▾</span>
+                </button>
+                <div class="modelo-menu" id="modeloMenu" role="listbox" hidden></div>
+            </div>
+
+            <div class="field-grid bloco-funcionario" id="blocoFuncionario">
+                <div>
+                    <label for="registroFuncionario">Registro do funcionário</label>
+                    <input id="registroFuncionario" type="text" inputmode="numeric" autocomplete="off" list="listaFuncionarios" placeholder="Digite o registro">
+                    <datalist id="listaFuncionarios"></datalist>
+                </div>
+                <div>
+                    <label for="numeroRelatorio">Nº Protocolo</label>
+                    <input id="numeroRelatorio" type="text" readonly>
+                </div>
+                <div class="full">
+                    <label for="nomeFuncionario">Nome</label>
+                    <input id="nomeFuncionario" type="text" readonly>
+                </div>
+                <div>
+                    <label for="funcaoFuncionario">Função</label>
+                    <input id="funcaoFuncionario" type="text" readonly>
+                </div>
+            </div>
+
+            <div class="field-grid">
+                <div class="full" id="wrapProtocoloInformativo" hidden>
+                    <label for="numeroRelatorioInfo">Nº Protocolo</label>
+                    <input id="numeroRelatorioInfo" type="text" readonly>
+                </div>
+                <div>
+                    <label for="dataRelatorio">Data</label>
+                    <input id="dataRelatorio" type="date">
+                </div>
+                <div>
+                    <label for="carroRelatorio">Carro</label>
+                    <input id="carroRelatorio" list="listaCarros" type="text">
+                    <datalist id="listaCarros"></datalist>
+                </div>
+                <div>
+                    <label for="linhaRelatorio">Linha/Rota</label>
+                    <input id="linhaRelatorio" list="listaLinhas" type="text">
+                    <datalist id="listaLinhas"></datalist>
+                </div>
+                <div class="full" id="wrapAgenteOrgaoGestor" hidden>
+                    <label for="agenteOrgaoGestor">Agente do órgão gestor (CMTU)</label>
+                    <input id="agenteOrgaoGestor" type="text" placeholder="Nome do agente que repassou a ordem">
+                </div>
+            </div>
+
+            <label>Assinatura</label>
+            <div id="assinaturaResponsavel" class="assinatura-vinculada">Carregando assinatura...</div>
+
+            <label>Cargo da assinatura</label>
+            <div id="cargoAssinaturaTexto" class="cargo-vinculado">Cargo não vinculado</div>
+
+            <div class="actions">
+                <div class="ia-actions">
+                    <button class="btn btn-secondary" type="button" id="iaGerarBtn">Gerar com IA</button>
+                    <button class="btn btn-secondary" type="button" id="iaCorrigirBtn">Corrigir texto</button>
+                </div>
+                <button class="btn btn-secondary" type="button" id="gerarTextoBtn">Gerar texto padrão</button>
+                <button class="btn btn-secondary" type="button" id="limparBtn">Limpar</button>
+            </div>
+            <div class="status" id="statusRelatorio">Preparando base do relatório...</div>
+        </aside>
+
+        <section class="paper-wrap" aria-label="Prévia do relatório">
+            <article class="paper">
+                <div class="report-head">
+                    <img src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+                    <div class="report-company">
+                        <span class="report-org">Transportes Coletivos Grande Londrina</span>
+                        <span class="report-org-sub">Centro de Inteligência Operacional de Londrina</span>
+                    </div>
+                    <img src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
+                </div>
+                <div class="report-accent" aria-hidden="true"></div>
+                <div class="report-sheet">
+                <div class="report-title">
+                    <div class="report-title-spacer" aria-hidden="true"></div>
+                    <h2 id="previewTitulo">RELATÓRIO DE OCORRÊNCIAS</h2>
+                    <div class="report-protocolo">
+                        <span>Protocolo</span>
+                        <strong class="report-number" id="previewNumero">N° CIOP00000</strong>
+                    </div>
+                </div>
+                <div class="report-rule" aria-hidden="true"><i></i></div>
+
+                <div class="report-meta-grid">
+                    <div class="report-field preview-funcionario">
+                        <span>Funcionário</span>
+                        <strong id="previewRegistro"></strong>
+                    </div>
+                    <div class="report-field preview-funcionario">
+                        <span>Nome</span>
+                        <strong id="previewNome"></strong>
+                    </div>
+                    <div class="report-field preview-funcionario">
+                        <span>Função</span>
+                        <strong id="previewFuncao"></strong>
+                    </div>
+                    <div class="report-field">
+                        <span>Carro</span>
+                        <strong id="previewCarro"></strong>
+                    </div>
+                    <div class="report-field">
+                        <span>Data</span>
+                        <strong id="previewData"></strong>
+                    </div>
+                    <div class="report-field">
+                        <span>Linha / Rota</span>
+                        <strong id="previewLinha"></strong>
+                    </div>
+                </div>
+                <div class="report-rule soft" aria-hidden="true"><i></i></div>
+
+                <div class="report-ref">
+                    <div class="report-ref-label">Referência</div>
+                    <textarea id="corpoRelatorio" class="report-body" spellcheck="true"></textarea>
+                    <div id="corpoRelatorioPrint" class="report-body-print"></div>
+                </div>
+
+                <div class="signature">
+                    <span class="signature-title">Responsável pelo relatório</span>
+                    <div class="signature-line">
+                        <strong id="previewAssinaturaNome">Selecione o usuário para assinatura</strong>
+                        <span id="previewAssinaturaRegistro"></span>
+                        <span id="previewAssinaturaCargo"></span>
+                    </div>
+                </div>
+                </div>
+                <div class="report-foot">Documento interno · CIOP / TCGL Operações</div>
+            </article>
+        </section>
+    </section>
+</main>
+
+<link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
+<link rel="stylesheet" href="../assets/css/portal-titulos.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
+    <link rel="stylesheet" href="../assets/css/dashboard-kit.css">
+    
+
+<script src="../assets/js/theme-toggle.js?v=20260818logo6"></script>
+<script src="../assets/js/loading.js?v=20260718d"></script>
+<script type="module" src="../assets/js/auth.js?v=20260821ui1"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+<script type="module">
+import { buscarUsuarioFirestore, normalizarCadastro } from "../assets/js/portal-firestore.js";
+import { usuarios as usuariosLocais } from "../assets/js/usuarios.js";
+import { TIPOS_RELATORIO, gerarTextoModelo, gerarTextoIA, corrigirTextoIA, configurarRelatorioIa, resumirErroIa } from "../assets/js/relatorio-ia.js?v=20260701b";
+import { salvarPdfRelatorioOcorrencia } from "../assets/js/relatorio-storage.js?v=20260817a";
+import { initPortalAwsRuntime } from "../assets/js/portal-aws-config.js";
+
+const SHEET_ID = "1zY_BFsidZyF4RnzKTZkZAlmo-Qiz6JEdIEb3E2xoIeA";
+const GID_RO = "665320337";
+const GID_CONT_PROT = "1001265560";
+const GID_FUNCIONARIOS = "1931884858";
+const GID_DADOS = "665133219";
+const CACHE_RELATORIO_KEY = "portal_criar_relatorio_csv_v1";
+const CACHE_RELATORIO_TTL_MS = 60 * 60 * 1000;
+        const PROTOCOLO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
+/** Cole aqui a URL /exec do Apps Script (scripts/relatorio-ia.gs) após implantar. */
+const RELATORIO_IA_SCRIPT_URL = "";
+const TIPO_DOCUMENTO_PROTOCOLO = "R. OCORRÊNCIA";
+
+configurarRelatorioIa({ scriptUrl: RELATORIO_IA_SCRIPT_URL });
+
+const assinaturaResponsavel = document.getElementById("assinaturaResponsavel");
+const cargoAssinaturaTexto = document.getElementById("cargoAssinaturaTexto");
+const statusRelatorio = document.getElementById("statusRelatorio");
+const corpoRelatorio = document.getElementById("corpoRelatorio");
+const corpoRelatorioPrint = document.getElementById("corpoRelatorioPrint");
+const campos = {
+    registro: document.getElementById("registroFuncionario"),
+    numero: document.getElementById("numeroRelatorio"),
+    nome: document.getElementById("nomeFuncionario"),
+    funcao: document.getElementById("funcaoFuncionario"),
+    data: document.getElementById("dataRelatorio"),
+    carro: document.getElementById("carroRelatorio"),
+    linha: document.getElementById("linhaRelatorio"),
+    agenteOrgaoGestor: document.getElementById("agenteOrgaoGestor")
+};
+const preview = {
+    titulo: document.getElementById("previewTitulo"),
+    numero: document.getElementById("previewNumero"),
+    registro: document.getElementById("previewRegistro"),
+    nome: document.getElementById("previewNome"),
+    funcao: document.getElementById("previewFuncao"),
+    data: document.getElementById("previewData"),
+    carro: document.getElementById("previewCarro"),
+    linha: document.getElementById("previewLinha"),
+    assinaturaNome: document.getElementById("previewAssinaturaNome"),
+    assinaturaRegistro: document.getElementById("previewAssinaturaRegistro"),
+    assinaturaCargo: document.getElementById("previewAssinaturaCargo")
+};
+const blocoFuncionario = document.getElementById("blocoFuncionario");
+const wrapProtocoloInformativo = document.getElementById("wrapProtocoloInformativo");
+const numeroRelatorioInfo = document.getElementById("numeroRelatorioInfo");
+const modeloBtn = document.getElementById("modeloBtn");
+const modeloBtnLabel = document.getElementById("modeloBtnLabel");
+const modeloMenu = document.getElementById("modeloMenu");
+
+let funcionarios = [];
+let protocoloAtual = null;
+let usuarioCriador = null;
+let protocoloRegistrado = false;
+let corpoFoiEditado = false;
+let dadosGeraisLinhas = [];
+let colunasDadosGerais = { carro: 6, linha: 7, motorista: 5 };
+let tipoRelatorio = null;
+let iaBusy = false;
+
+function ehInformativo() {
+    return !!TIPOS_RELATORIO[tipoRelatorio]?.informativo;
+}
+
+function contextoRelatorio() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+        data: normalizarDataInput(campos.data.value),
+        nome: campos.nome.value,
+        registro: campos.registro.value,
+        funcao: campos.funcao.value,
+        carro: campos.carro.value,
+        linha: campos.linha.value,
+        quantidade: params.get("quantidade") || params.get("minutos") || "",
+        agenteOrgaoGestor: campos.agenteOrgaoGestor?.value || params.get("agente") || params.get("agenteCmtu") || ""
+    };
+}
+
+function montarMenuModelos() {
+    if (!modeloMenu) return;
+    modeloMenu.innerHTML = Object.values(TIPOS_RELATORIO).map((tipo) =>
+        "<button type=\"button\" class=\"modelo-item" + (tipoRelatorio === tipo.id ? " active" : "") + "\" data-tipo=\"" + tipo.id + "\" role=\"option\">" + escapeOption(tipo.label) + "</button>"
+    ).join("");
+    modeloMenu.querySelectorAll(".modelo-item").forEach((btn) => {
+        btn.addEventListener("click", () => selecionarModelo(btn.dataset.tipo));
+    });
+}
+
+function fecharMenuModelos() {
+    if (!modeloMenu || !modeloBtn) return;
+    modeloMenu.hidden = true;
+    modeloBtn.setAttribute("aria-expanded", "false");
+}
+
+function abrirMenuModelos() {
+    if (!modeloMenu || !modeloBtn) return;
+    montarMenuModelos();
+    modeloMenu.hidden = false;
+    modeloBtn.setAttribute("aria-expanded", "true");
+}
+
+function aplicarCamposModelo() {
+    const wrap = document.getElementById("wrapAgenteOrgaoGestor");
+    if (wrap) wrap.hidden = tipoRelatorio !== "nao_acatou_cmtu";
+}
+
+function aplicarModoInformativo() {
+    const informativo = ehInformativo();
+    blocoFuncionario?.classList.toggle("oculto", informativo);
+    wrapProtocoloInformativo.hidden = !informativo;
+    document.querySelectorAll(".preview-funcionario").forEach((el) => el.classList.toggle("oculto", informativo));
+    if (preview.titulo) {
+        preview.titulo.textContent = informativo ? "RELATÓRIO INFORMATIVO" : "RELATÓRIO DE OCORRÊNCIAS";
+        preview.titulo.classList.toggle("report-title-informativo", informativo);
+    }
+    if (informativo) {
+        campos.registro.value = "";
+        campos.nome.value = "";
+        campos.funcao.value = "";
+        if (numeroRelatorioInfo) numeroRelatorioInfo.value = campos.numero.value;
+    }
+}
+
+function selecionarModelo(tipoId, opts) {
+    if (!TIPOS_RELATORIO[tipoId]) return;
+    tipoRelatorio = tipoId;
+    if (modeloBtnLabel) modeloBtnLabel.textContent = TIPOS_RELATORIO[tipoId].label;
+    aplicarModoInformativo();
+    aplicarCamposModelo();
+    fecharMenuModelos();
+    if (!opts?.silencioso) {
+        corpoFoiEditado = false;
+        corpoRelatorio.value = gerarCorpoPadrao();
+        autoGrow();
+    }
+    atualizarPreview();
+    setStatus("Modelo selecionado: " + TIPOS_RELATORIO[tipoId].label + ".", "ok");
+}
+
+async function executarGeracaoIA() {
+    if (!tipoRelatorio) {
+        setStatus("Selecione um modelo de relatório antes de gerar com IA.", "erro");
+        return;
+    }
+    if (!ehInformativo() && !String(campos.registro.value || "").trim()) {
+        setStatus("Informe o registro do funcionário ou escolha Relatório informativo.", "erro");
+        return;
+    }
+    if (iaBusy) return;
+    iaBusy = true;
+    setStatus("Gerando texto com IA...", "ia");
+    window.portalMostrarCarregando?.("Gerando texto com IA");
+    try {
+        const res = await gerarTextoIA(tipoRelatorio, contextoRelatorio());
+        corpoFoiEditado = false;
+        corpoRelatorio.value = profissionalizarTextoAutomatico(tipoRelatorio, res.texto, contextoRelatorio());
+        autoGrow();
+        setStatus(res.origem === "ia"
+            ? "Texto gerado com IA. Revise antes de gerar o PDF."
+            : "Modelo padrão aplicado — " + resumirErroIa(res.erro), res.origem === "ia" ? "ok" : "erro");
+    } catch (err) {
+        console.error(err);
+        corpoRelatorio.value = gerarCorpoPadrao();
+        autoGrow();
+        setStatus("Não foi possível usar a IA. Modelo padrão aplicado.", "erro");
+    } finally {
+        iaBusy = false;
+        window.portalOcultarCarregando?.();
+    }
+}
+
+async function executarCorrecaoIA() {
+    const base = String(corpoRelatorio.value || "").trim();
+    if (!base) {
+        setStatus("Digite ou gere um texto antes de corrigir.", "erro");
+        return;
+    }
+    if (iaBusy) return;
+    iaBusy = true;
+    setStatus("Corrigindo texto com IA...", "ia");
+    window.portalMostrarCarregando?.("Corrigindo texto");
+    try {
+        const res = await corrigirTextoIA(base);
+        corpoFoiEditado = true;
+        corpoRelatorio.value = removerAutorizacaoCiop(res.texto);
+        autoGrow();
+        setStatus(res.origem === "ia"
+            ? "Texto corrigido com IA."
+            : "Correções básicas aplicadas — " + resumirErroIa(res.erro), res.origem === "ia" ? "ok" : "erro");
+    } catch (err) {
+        console.error(err);
+        setStatus("Falha ao corrigir o texto.", "erro");
+    } finally {
+        iaBusy = false;
+        window.portalOcultarCarregando?.();
+    }
+}
+
+function normalizarCabecalho(valor) {
+    return String(valor || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toUpperCase();
+}
+
+function indiceColunaPlanilha(linhas, nomes) {
+    const cabecalho = (linhas[0] || []).map(normalizarCabecalho);
+    const candidatos = Array.isArray(nomes) ? nomes : [nomes];
+    for (const nome of candidatos) {
+        const idx = cabecalho.indexOf(normalizarCabecalho(nome));
+        if (idx >= 0) return idx;
+    }
+    return -1;
+}
+
+function valorDadoPlanilha(valor) {
+    const texto = String(valor || "").trim();
+    return texto && texto !== "-" ? texto : "";
+}
+
+function mapearColunasDadosGerais(linhas) {
+    colunasDadosGerais = {
+        motorista: indiceColunaPlanilha(linhas, "MOTORISTA"),
+        carro: indiceColunaPlanilha(linhas, "CARRO"),
+        linha: indiceColunaPlanilha(linhas, ["LINHA", "LINHA/ROTA", "ROTA"])
+    };
+}
+
+function buscarCarroLinhaPorRegistro(registro) {
+    const registroNorm = String(registro || "").trim();
+    if (!registroNorm || colunasDadosGerais.motorista < 0) return null;
+    const linha = dadosGeraisLinhas.slice(1).find((item) => {
+        return String(item[colunasDadosGerais.motorista] || "").trim() === registroNorm;
+    });
+    if (!linha) return null;
+    return {
+        carro: valorDadoPlanilha(linha[colunasDadosGerais.carro]),
+        linha: valorDadoPlanilha(linha[colunasDadosGerais.linha])
+    };
+}
+
+function setStatus(texto, tipo) {
+    statusRelatorio.textContent = texto;
+    statusRelatorio.className = "status" + (tipo ? " " + tipo : "");
+    if (tipo === "erro") window.portalMostrarAvisoDashboard?.(window.portalMensagemErro?.({ message: texto }) || texto);
+    else window.portalLimparAvisoDashboard?.();
+}
+
+function csvUrl(gid, semCache) {
+    let url = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=csv&gid=" + gid;
+    if (semCache) url += "&_=" + Date.now();
+    return url;
+}
+
+function parseCsv(texto) {
+    const linhas = [];
+    let linha = [];
+    let campo = "";
+    let aspas = false;
+    for (let i = 0; i < texto.length; i += 1) {
+        const c = texto[i];
+        const prox = texto[i + 1];
+        if (c === '"') {
+            if (aspas && prox === '"') {
+                campo += '"';
+                i += 1;
+            } else {
+                aspas = !aspas;
+            }
+        } else if (c === "," && !aspas) {
+            linha.push(campo);
+            campo = "";
+        } else if ((c === "\n" || c === "\r") && !aspas) {
+            if (c === "\r" && prox === "\n") i += 1;
+            linha.push(campo);
+            if (linha.some((item) => String(item).trim())) linhas.push(linha);
+            linha = [];
+            campo = "";
+        } else {
+            campo += c;
+        }
+    }
+    linha.push(campo);
+    if (linha.some((item) => String(item).trim())) linhas.push(linha);
+    return linhas;
+}
+
+function lerCacheRelatorioCsv() {
+    try {
+        const raw = localStorage.getItem(CACHE_RELATORIO_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed?.gids || !parsed?.ts) return null;
+        if (Date.now() - parsed.ts > CACHE_RELATORIO_TTL_MS) return null;
+        return parsed.gids;
+    } catch (error) {
+        return null;
+    }
+}
+
+function salvarCacheRelatorioCsv(gids) {
+    try {
+        const limpo = { ...(gids || {}) };
+        delete limpo[GID_CONT_PROT];
+        localStorage.setItem(CACHE_RELATORIO_KEY, JSON.stringify({ ts: Date.now(), gids: limpo }));
+    } catch (error) {}
+}
+
+async function carregarCsvComCache(gid) {
+    if (gid === GID_CONT_PROT) return carregarCsv(gid, { semCache: true });
+    const cache = lerCacheRelatorioCsv();
+    if (cache && cache[gid]) return cache[gid];
+    const linhas = await carregarCsv(gid);
+    const gids = cache || {};
+    gids[gid] = linhas;
+    salvarCacheRelatorioCsv(gids);
+    return linhas;
+}
+
+async function carregarCsv(gid, opcoes = {}) {
+    const resposta = await fetch(csvUrl(gid, opcoes.semCache), { cache: "no-store" });
+    if (!resposta.ok) throw new Error("Base " + gid + " indisponível.");
+    return parseCsv(await resposta.text());
+}
+
+async function carregarProtocoloAtualizado() {
+    const contProtCsv = await carregarCsv(GID_CONT_PROT, { semCache: true });
+    configurarProtocolo(contProtCsv);
+    return protocoloAtual;
+}
+
+function normalizarDataInput(data) {
+    const d = data ? new Date(data + "T12:00:00") : new Date();
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("pt-BR");
+}
+
+function hojeISO() {
+    const d = new Date();
+    const mes = String(d.getMonth() + 1).padStart(2, "0");
+    const dia = String(d.getDate()).padStart(2, "0");
+    return d.getFullYear() + "-" + mes + "-" + dia;
+}
+
+function escapeOption(valor) {
+    return String(valor || "").replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+    }[c]));
+}
+
+function preencherDatalist(id, valores) {
+    const lista = document.getElementById(id);
+    const unicos = [...new Set(valores.map((item) => String(item || "").trim()).filter(Boolean))];
+    lista.innerHTML = unicos.slice(0, 600).map((item) => "<option value=\"" + escapeOption(item) + "\"></option>").join("");
+}
+
+function carregarFuncionarios(linhas) {
+    const dados = linhas.slice(1)
+        .map((linha) => ({
+            registro: String(linha[0] || "").trim(),
+            nome: String(linha[1] || "").trim(),
+            funcao: String(linha[2] || "").trim()
+        }))
+        .filter((item) => item.registro && item.nome)
+        .sort((a, b) => Number(a.registro) - Number(b.registro) || a.nome.localeCompare(b.nome, "pt-BR"));
+    funcionarios = dados;
+    const lista = document.getElementById("listaFuncionarios");
+    lista.innerHTML = dados.map((item) =>
+        "<option value=\"" + escapeOption(item.registro) + "\">" + escapeOption(item.nome + " - " + item.funcao) + "</option>"
+    ).join("");
+}
+
+function carregarDadosGerais(linhas) {
+    dadosGeraisLinhas = linhas;
+    mapearColunasDadosGerais(linhas);
+    const idxCarro = colunasDadosGerais.carro;
+    const idxLinha = colunasDadosGerais.linha;
+    preencherDatalist("listaCarros", linhas.slice(1).map((linha) => valorDadoPlanilha(linha[idxCarro])));
+    preencherDatalist("listaLinhas", linhas.slice(1).map((linha) => valorDadoPlanilha(linha[idxLinha])));
+}
+
+function protocoloDisponivel(linhas) {
+    const idx = linhas.findIndex((linha, index) => {
+        if (index <= 1) return false;
+        const protocolo = String(linha[0] || "").trim();
+        const semDados = [1, 2, 3, 4].every((coluna) => !String(linha[coluna] || "").trim());
+        return protocolo && semDados;
+    });
+    if (idx < 0) return null;
+    return {
+        linhaPlanilha: idx + 1,
+        protocolo: String(linhas[idx][0] || "").trim()
+    };
+}
+
+function formatarNumero(valor) {
+    const texto = String(valor || "").trim();
+    if (/^N[°º]?\s*CIOP/i.test(texto)) return texto.replace(/^Nº/i, "N°");
+    const numero = Number(texto.replace(/\D/g, ""));
+    return "N° CIOP" + String(numero || 0).padStart(5, "0");
+}
+
+function configurarProtocolo(linhas) {
+    protocoloAtual = protocoloDisponivel(linhas);
+    campos.numero.value = protocoloAtual?.protocolo || "";
+    atualizarPreview();
+}
+
+function removerAutorizacaoCiop(texto) {
+    let saida = String(texto || "");
+
+    /* Remove frases/trechos automáticos que atribuem a ocorrência à
+       necessidade de autorização, liberação ou consentimento do CIOP. */
+    saida = saida
+        .split(/(?<=[.!?])\s+|\n+/)
+        .filter((trecho) => {
+            const t = trecho.toLowerCase();
+            const mencionaCiop = /\bciop\b/.test(t);
+            const mencionaAutorizacao = /\bautoriza(?:ção|cao|do|da|r|da)?\b|\blibera(?:ção|cao|do|da|r|da)?\b|\bconsentimento\b/.test(t);
+            return !(mencionaCiop && mencionaAutorizacao);
+        })
+        .join(" ")
+        .replace(/\s{2,}/g, " ")
+        .replace(/\s+([,.;:!?])/g, "$1")
+        .trim();
+
+    return saida;
+}
+
+function textoProfissionalAdiantamento(ctx) {
+    const data = ctx.data || "data informada";
+    const nome = String(ctx.nome || "funcionário").trim();
+    const registro = String(ctx.registro || "").trim();
+    const funcao = String(ctx.funcao || "colaborador").trim();
+    const carro = String(ctx.carro || "").trim();
+    const linha = String(ctx.linha || "").trim();
+
+    const identificacao = [
+        funcao ? "o(a) " + funcao.toLowerCase() : "o(a) colaborador(a)",
+        nome || "",
+        registro ? "registro " + registro : ""
+    ].filter(Boolean).join(", ");
+
+    const operacao = [
+        carro ? "veículo " + carro : "",
+        linha ? "linha/rota " + linha : ""
+    ].filter(Boolean).join(", ");
+
+    return [
+        "Na data de " + data + ", foi constatado que " + identificacao +
+        (operacao ? ", em operação no " + operacao : "") +
+        ", encontrava-se adiantado em relação ao horário previsto para a operação.",
+        "O presente registro tem por finalidade formalizar a ocorrência e reforçar a necessidade de cumprimento da programação estabelecida, preservando a regularidade da operação, o intervalo previsto entre os veículos e a qualidade do serviço prestado aos usuários.",
+        "Solicita-se atenção ao cumprimento dos horários programados, evitando novos adiantamentos e eventuais impactos na operação."
+    ].join("\\n\\n");
+}
+
+function profissionalizarTextoAutomatico(tipo, texto, ctx) {
+    let saida = String(texto || "");
+
+    if (tipo === "carro_adiantado") {
+        saida = textoProfissionalAdiantamento(ctx);
+    }
+
+    /* Aplicado a todos os modelos automáticos. */
+    saida = removerAutorizacaoCiop(saida);
+
+    return saida.trim();
+}
+
+function gerarCorpoPadrao() {
+    const ctx = contextoRelatorio();
+
+    if (tipoRelatorio) {
+        return profissionalizarTextoAutomatico(
+            tipoRelatorio,
+            gerarTextoModelo(tipoRelatorio, ctx),
+            ctx
+        );
+    }
+
+    const data = normalizarDataInput(campos.data.value);
+    const nome = campos.nome.value || "nome do funcionário";
+    const registro = campos.registro.value || "registro";
+    const funcao = campos.funcao.value || "função";
+    const carro = campos.carro.value ? ", carro " + campos.carro.value : "";
+    const linha = campos.linha.value ? ", linha/rota " + campos.linha.value : "";
+
+    return "Na data de " + data + ", foi registrada ocorrência envolvendo o(a) " +
+        funcao.toLowerCase() + " " + nome + ", registro " + registro + carro + linha +
+        ".\\n\\nO presente relatório tem por finalidade formalizar os fatos observados e registrar as informações pertinentes para conhecimento e acompanhamento.";
+}
+
+function atualizarCorpoPDF() {
+    corpoRelatorioPrint.textContent = corpoRelatorio.value || "";
+}
+
+function autoGrow() {
+    corpoRelatorio.style.height = "auto";
+    corpoRelatorio.style.height = Math.max(410, corpoRelatorio.scrollHeight + 2) + "px";
+    atualizarCorpoPDF();
+}
+
+function textoCargoAssinatura(user) {
+    if (!user) return "Cargo não vinculado";
+    return String(user.cargo || user.perfil || "").trim() || "Cargo não vinculado";
+}
+
+function montarUsuarioAssinaturaLogado(cadastro, email) {
+    const base = normalizarCadastro(cadastro || {}, email);
+    const sessao = window.portalUsuario || {};
+    return normalizarUsuarioAssinatura({
+        email: base.email || email,
+        nome: base.nome || sessao.nome || email,
+        perfil: base.perfil || sessao.perfil || "Usuario",
+        registro: base.registro || sessao.registro || "",
+        cargo: base.cargo || sessao.cargo || "",
+        ativo: base.ativo !== false
+    }, email);
+}
+
+function atualizarPreview() {
+    preview.numero.textContent = formatarNumero(campos.numero.value);
+    if (numeroRelatorioInfo) numeroRelatorioInfo.value = campos.numero.value;
+    preview.registro.textContent = campos.registro.value || "";
+    preview.nome.textContent = campos.nome.value || "";
+    preview.funcao.textContent = campos.funcao.value || "";
+    preview.data.textContent = normalizarDataInput(campos.data.value);
+    preview.carro.textContent = campos.carro.value || "";
+    preview.linha.textContent = campos.linha.value || "";
+    const user = usuarioCriador;
+    preview.assinaturaNome.textContent = user?.nome || "Assinatura não disponível";
+    preview.assinaturaRegistro.textContent = user?.registro ? "Registro " + user.registro : "";
+    preview.assinaturaCargo.textContent = textoCargoAssinatura(user);
+    cargoAssinaturaTexto.textContent = textoCargoAssinatura(user);
+    if (assinaturaResponsavel) {
+        assinaturaResponsavel.textContent = user
+            ? ((user.registro ? user.registro + " - " : "") + user.nome)
+            : "Assinatura não disponível para este usuário";
+    }
+    if (!corpoFoiEditado && (tipoRelatorio || campos.registro.value || ehInformativo())) {
+        corpoRelatorio.value = gerarCorpoPadrao();
+        autoGrow();
+    }
+}
+
+function preencherFuncionarioPorRegistro() {
+    if (ehInformativo()) return;
+    const registro = String(campos.registro.value || "").trim();
+    const funcionario = funcionarios.find((item) => item.registro === registro);
+    campos.nome.value = funcionario?.nome || "";
+    campos.funcao.value = funcionario?.funcao || "";
+    const vinculo = buscarCarroLinhaPorRegistro(registro);
+    if (vinculo) {
+        campos.carro.value = vinculo.carro || "";
+        campos.linha.value = vinculo.linha || "";
+    }
+    if (!funcionario && registro) {
+        setStatus("Registro " + registro + " não encontrado na base de funcionários.", "erro");
+    } else if (funcionario) {
+        const extra = vinculo?.carro || vinculo?.linha
+            ? " Carro/linha preenchidos conforme a base."
+            : "";
+        setStatus("Funcionário carregado: " + funcionario.registro + " - " + funcionario.nome + "." + extra, "ok");
+    }
+    if (!corpoFoiEditado) corpoRelatorio.value = gerarCorpoPadrao();
+    atualizarPreview();
+}
+
+function normalizarUsuarioAssinatura(cadastro, email) {
+    const user = normalizarCadastro(cadastro, email);
+    return {
+        email: user.email || email,
+        nome: String(user.nome || email || "").trim(),
+        registro: String(user.registro || "").trim(),
+        cargo: String(user.cargo || "").trim(),
+        perfil: String(user.perfil || "").trim(),
+        ativo: user.ativo !== false
+    };
+}
+
+async function carregarAssinaturaUsuarioLogado() {
+    const email = String(window.portalUsuario?.email || "").trim().toLowerCase();
+    if (!email) {
+        usuarioCriador = null;
+        atualizarPreview();
+        return;
+    }
+
+    let cadastro = {
+        email,
+        nome: window.portalUsuario?.nome || "",
+        perfil: window.portalUsuario?.perfil || "Usuario",
+        registro: window.portalUsuario?.registro || "",
+        cargo: window.portalUsuario?.cargo || ""
+    };
+
+    try {
+        const online = await buscarUsuarioFirestore(email);
+        if (online) {
+            cadastro = {
+                email,
+                nome: online.nome || cadastro.nome,
+                perfil: online.perfil || cadastro.perfil,
+                registro: online.registro || cadastro.registro,
+                cargo: online.cargo || cadastro.cargo,
+                ativo: online.ativo !== false
+            };
+        }
+    } catch (error) {
+        console.warn("Assinatura online indisponível:", error);
+    }
+
+    if (!cadastro.registro && !cadastro.cargo) {
+        const local = usuariosLocais?.[email] || usuariosLocais?.[window.portalUsuario?.email];
+        if (local) {
+            const loc = normalizarCadastro(local, email);
+            cadastro.registro = loc.registro || cadastro.registro;
+            cadastro.cargo = loc.cargo || cadastro.cargo;
+            cadastro.nome = loc.nome || cadastro.nome;
+        }
+    }
+
+    usuarioCriador = montarUsuarioAssinaturaLogado(cadastro, email);
+    if (!usuarioCriador?.nome) usuarioCriador = null;
+    atualizarPreview();
+}
+
+async function iniciarRelatorio() {
+    const cacheGids = lerCacheRelatorioCsv();
+    let mostrouCache = false;
+    if (cacheGids?.[GID_FUNCIONARIOS] && cacheGids?.[GID_DADOS]) {
+        campos.data.value = hojeISO();
+        carregarFuncionarios(cacheGids[GID_FUNCIONARIOS]);
+        carregarDadosGerais(cacheGids[GID_DADOS]);
+        await carregarAssinaturaUsuarioLogado();
+        montarMenuModelos();
+        selecionarModelo("carro_adiantado", { silencioso: true });
+        corpoRelatorio.value = gerarCorpoPadrao();
+        autoGrow();
+        atualizarPreview();
+        setStatus("Base carregada do cache. Atualizando protocolo livre...", "ia");
+    }
+
+    if (!mostrouCache) window.portalMostrarCarregando?.("Carregando relatório");
+    campos.data.value = hojeISO();
+    try {
+        const [funcionariosCsv, dadosCsv, contProtCsv] = await Promise.all([
+            carregarCsvComCache(GID_FUNCIONARIOS),
+            carregarCsvComCache(GID_DADOS),
+            carregarCsv(GID_CONT_PROT, { semCache: true })
+        ]);
+        carregarFuncionarios(funcionariosCsv);
+        carregarDadosGerais(dadosCsv);
+        configurarProtocolo(contProtCsv);
+        await carregarAssinaturaUsuarioLogado();
+        corpoRelatorio.value = gerarCorpoPadrao();
+        autoGrow();
+        atualizarPreview();
+        const protocoloTexto = protocoloAtual ? " Próximo protocolo: " + protocoloAtual.protocolo + "." : "";
+        setStatus("Base carregada." + protocoloTexto + " Selecione o modelo e preencha os dados.", "ok");
+        montarMenuModelos();
+        selecionarModelo("carro_adiantado", { silencioso: true });
+    } catch (error) {
+        console.error(error);
+        if (!mostrouCache) setStatus("Não foi possível carregar a base da planilha: " + error.message, "erro");
+    } finally {
+        if (!mostrouCache) window.portalOcultarCarregando?.();
+    }
+}
+
+campos.registro.addEventListener("change", preencherFuncionarioPorRegistro);
+campos.registro.addEventListener("blur", preencherFuncionarioPorRegistro);
+Object.values(campos).forEach((campo) => campo.addEventListener("input", atualizarPreview));
+corpoRelatorio.addEventListener("input", () => {
+    corpoFoiEditado = true;
+    autoGrow();
+});
+document.getElementById("gerarTextoBtn").addEventListener("click", () => {
+    corpoFoiEditado = false;
+    corpoRelatorio.value = gerarCorpoPadrao();
+    autoGrow();
+});
+document.getElementById("iaGerarBtn").addEventListener("click", executarGeracaoIA);
+document.getElementById("iaCorrigirBtn").addEventListener("click", executarCorrecaoIA);
+modeloBtn?.addEventListener("click", () => {
+    if (modeloMenu?.hidden) abrirMenuModelos();
+    else fecharMenuModelos();
+});
+document.addEventListener("click", (ev) => {
+    if (!ev.target.closest(".modelo-wrap")) fecharMenuModelos();
+});
+function dadosProtocolo() {
+    const analista = usuarioCriador;
+    const informativo = ehInformativo();
+    const tipoDocumento = informativo ? "R. INFORMATIVO" : TIPO_DOCUMENTO_PROTOCOLO;
+    const registroFuncionario = informativo ? "INFORMATIVO" : String(campos.registro.value || "").trim();
+    const nomeFuncionario = informativo ? "INFORMATIVO" : String(campos.nome.value || "").trim();
+    const funcaoFuncionario = informativo ? "" : String(campos.funcao.value || "").trim();
+    const dataDocumento = normalizarDataInput(campos.data.value);
+    const dataDocumentoIso = campos.data.value;
+    const analistaTexto = analista ? ((analista.registro ? analista.registro + " - " : "") + analista.nome).toUpperCase() : "";
+    const cargoAnalista = textoCargoAssinatura(analista);
+    const funcionarioTexto = nomeFuncionario && registroFuncionario && registroFuncionario !== "INFORMATIVO"
+        ? registroFuncionario + " - " + nomeFuncionario
+        : registroFuncionario;
+
+    return {
+        acao: "registrarProtocolo",
+        protocolo: campos.numero.value,
+        linhaPlanilha: protocoloAtual?.linhaPlanilha || "",
+
+        // Chaves usadas pelo Apps Script atual/antigo.
+        tipoDocumento,
+        funcionario: registroFuncionario,
+        funcionário: registroFuncionario,
+        registroFuncionario,
+        funcionarioTexto,
+        nomeFuncionario,
+        funcaoFuncionario,
+        dataDocumento,
+        dataDocumentoIso,
+        data: dataDocumento,
+        carro: String(campos.carro.value || "").trim(),
+        linha: String(campos.linha.value || "").trim(),
+        analista: analistaTexto,
+        cargoAnalista,
+
+        // Chaves com o mesmo nome dos cabeçalhos da aba CONT. PROT.
+        "TIPO DE DOCUMENTO": tipoDocumento,
+        "TIPO_DOCUMENTO": tipoDocumento,
+        "FUNCIONÁRIO": registroFuncionario,
+        "FUNCIONARIO": registroFuncionario,
+        "FUNCIONÁRIO/NOME": funcionarioTexto,
+        "FUNCIONARIO/NOME": funcionarioTexto,
+        "NOME FUNCIONÁRIO": nomeFuncionario,
+        "NOME FUNCIONARIO": nomeFuncionario,
+        "FUNÇÃO": funcaoFuncionario,
+        "FUNCAO": funcaoFuncionario,
+        "DATA DO DOCUMENTO": dataDocumento,
+        "DATA_DOCUMENTO": dataDocumento,
+        "DATA DO DOCUMENTO ISO": dataDocumentoIso,
+        "ANALISTA": analistaTexto,
+        "CARGO ANALISTA": cargoAnalista
+    };
+}
+
+function mensagemErroProtocolo(error) {
+    const msg = String(error?.message || error || "");
+    if (/failed to fetch|networkerror|load failed|fetch/i.test(msg)) {
+        return "Não foi possível acessar o Apps Script de protocolos. Confira se a implantação está como App da Web, executando como Eu, com acesso para Qualquer pessoa, e se a URL termina com /exec.";
+    }
+    return msg || "Falha ao registrar protocolo.";
+}
+
+function linhaProtocoloPreenchida(linhas, dados) {
+    const idx = Number(dados.linhaPlanilha) - 1;
+    if (!Number.isFinite(idx) || idx < 0) return false;
+    const linha = linhas[idx] || [];
+    const protocoloOk = String(linha[0] || "").trim() === String(dados.protocolo || "").trim();
+
+    // Na aba CONT. PROT, além do protocolo, estas colunas precisam voltar preenchidas:
+    // B = TIPO DE DOCUMENTO, C = FUNCIONÁRIO, D = DATA DO DOCUMENTO, E = ANALISTA.
+    const camposObrigatorios = [1, 2, 3, 4].every((coluna) => String(linha[coluna] || "").trim());
+    return protocoloOk && camposObrigatorios;
+}
+
+function aguardar(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function confirmarProtocoloNaPlanilha(dados) {
+        for (let tentativa = 0; tentativa < 16; tentativa += 1) {
+            await aguardar(tentativa === 0 ? 1200 : 1500);
+        const linhas = await carregarCsv(GID_CONT_PROT, { semCache: true });
+        if (linhaProtocoloPreenchida(linhas, dados)) {
+            configurarProtocolo(linhas);
+            return true;
+        }
+    }
+    return false;
+}
+
+async function enviarProtocoloSemCors(dados) {
+        console.info("Dados enviados para registro de protocolo:", dados);
+        const resposta = await fetch(PROTOCOLO_SCRIPT_URL, {
+                    method: "POST",
+                    cache: "no-store",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify(dados)
+        });
+        const texto = await resposta.text();
+        try {
+                    return JSON.parse(texto);
+        } catch (erroParse) {
+                    return { ok: false, erro: "Resposta inválida do Apps Script: " + texto.slice(0, 200) };
+        }
+}
+
+async function registrarProtocolo() {
+    if (protocoloRegistrado) return true;
+
+    if (!PROTOCOLO_SCRIPT_URL) {
+        setStatus("Para gravar na planilha, falta publicar o Apps Script de gravação da aba CONT. PROT.", "erro");
+        return false;
+    }
+
+    setStatus("Atualizando próximo protocolo livre...", "ia");
+    try {
+        await carregarProtocoloAtualizado();
+    } catch (error) {
+        throw new Error("Não foi possível atualizar a aba CONT. PROT antes do registro: " + (error.message || error));
+    }
+
+    const dados = dadosProtocolo();
+    if (!dados.protocolo || !dados.linhaPlanilha) {
+        setStatus("Não foi possível identificar o próximo protocolo livre.", "erro");
+        return false;
+    }
+    if (!ehInformativo() && (!dados.funcionario || !campos.nome.value)) {
+        setStatus("Digite um registro de funcionário válido antes de gerar o PDF.", "erro");
+        return false;
+    }
+    if (!dados.analista) {
+        setStatus("Não encontrei o registro do usuário logado para preencher o analista.", "erro");
+        return false;
+    }
+
+    try {
+        let dadosEnvio = dados;
+                let resultado = null;
+                for (let tentativaEnvio = 0; tentativaEnvio < 3; tentativaEnvio += 1) {
+                            setStatus("Registrando protocolo " + dadosEnvio.protocolo + " na planilha...", "ia");
+                            resultado = await enviarProtocoloSemCors(dadosEnvio);
+                            if (resultado && resultado.ok) break;
+                            const msgErroEnvio = String((resultado && resultado.erro) || "");
+                            const podeTentarDeNovo = /já foi preenchido|protocolo da linha mudou|linha inválida/i.test(msgErroEnvio);
+                            if (!podeTentarDeNovo || tentativaEnvio >= 2) {
+                                        throw new Error(msgErroEnvio || "Falha ao registrar protocolo.");
+                            }
+                            setStatus("Protocolo " + dadosEnvio.protocolo + " já foi usado por outra pessoa. Buscando o próximo...", "ia");
+                            await carregarProtocoloAtualizado();
+                            dadosEnvio = dadosProtocolo();
+                            if (!dadosEnvio.protocolo || !dadosEnvio.linhaPlanilha) {
+                                        throw new Error("Não foi possível encontrar um novo protocolo livre.");
+                            }
+                }
+                protocoloRegistrado = true;
+                setStatus("Protocolo " + resultado.protocolo + " registrado e confirmado na planilha.", "ok");
+                return true;
+    } catch (error) {
+        throw new Error(mensagemErroProtocolo(error));
+    }
+}
+
+/* Guarda o PDF no acervo do portal (S3 + tabela relatorios_ocorrencia), que e o que
+   alimenta a pagina Relatorio de Ocorrencia. Ate aqui a pagina so fazia pdf.save():
+   o arquivo ia para o computador de quem gerou e mais nada, e por isso o historico
+   estava vazio para todos.
+
+   Falha aqui NAO pode atrapalhar o fluxo: o relatorio ja foi baixado e o protocolo ja
+   foi registrado. Por isso o erro so avisa e segue. */
+function nomeArquivoPdf() {
+    const numero = String(campos.numero.value || "").replace(/\D/g, "");
+    const data = campos.data.value || hojeISO();
+    return "Relatorio-CIOP" + (numero || "00000") + "-" + data + ".pdf";
+}
+
+function metaPdfRelatorio(origem) {
+    const dados = dadosProtocolo();
+    return {
+        data: dados.dataDocumentoIso || campos.data.value || hojeISO(),
+        protocolo: dados.protocolo || campos.numero.value || "",
+        funcionarioRegistro: dados.registroFuncionario || "",
+        funcionarioNome: dados.nomeFuncionario || "",
+        funcionarioTexto: dados.funcionarioTexto || "",
+        origem: origem || "pdf",
+        criadoPorNome: usuarioCriador?.nome || window.portalUsuario?.nome || ""
+    };
+}
+
+async function tentarSalvarPdfAws(pdf, origem) {
+    try {
+        await initPortalAwsRuntime();
+        const salvo = await salvarPdfRelatorioOcorrencia({
+            pdf,
+            filename: nomeArquivoPdf(),
+            meta: metaPdfRelatorio(origem)
+        });
+        return salvo;
+    } catch (err) {
+        console.warn("Falha ao salvar PDF na AWS:", err);
+        return { ok: false, erro: String(err?.message || err || "erro desconhecido ao salvar na AWS") };
+    }
+}
+
+function corpoEmailRelatorio() {
+    const dados = dadosProtocolo();
+    const funcionarioLabel = String(dados.funcionarioTexto || "").trim()
+        || [dados.registroFuncionario, dados.nomeFuncionario].filter(Boolean).join(" - ")
+        || "informado no relatório";
+    const nomeUsuario = String(usuarioCriador?.nome || window.portalUsuario?.nome || "").trim()
+        || "usuário do portal";
+    return [
+        "Prezados,",
+        `Em anexo o relatório de ocorrência do funcionário "${funcionarioLabel}".`,
+        "",
+        "Atenciosamente,",
+        `"${nomeUsuario}".`
+    ].join("\n");
+}
+
+async function aguardarImagensPdf(alvo) {
+    const imagens = Array.from(alvo.querySelectorAll("img"));
+    await Promise.all(imagens.map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+            const done = () => resolve();
+            img.addEventListener("load", done, { once: true });
+            img.addEventListener("error", done, { once: true });
+            setTimeout(done, 1800);
+        });
+    }));
+}
+
+async function construirPdfRelatorio() {
+    atualizarCorpoPDF();
+    if (!window.jspdf?.jsPDF || !window.html2canvas) {
+        throw new Error("Biblioteca PDF indisponível.");
+    }
+
+    const folha = document.querySelector(".paper");
+    if (!folha) {
+        throw new Error("Não encontrei a prévia do relatório para gerar o PDF.");
+    }
+
+    await aguardarImagensPdf(folha);
+    if (document.fonts?.ready) {
+        try { await document.fonts.ready; } catch (_) {}
+    }
+
+    /* Espera o navegador aplicar integralmente o modo A4 antes da captura. */
+    await new Promise((resolve) => requestAnimationFrame(() =>
+        requestAnimationFrame(resolve)
+    ));
+
+    const larguraCaptura = Math.ceil(folha.getBoundingClientRect().width);
+    const alturaCaptura = Math.ceil(folha.scrollHeight);
+
+    const canvas = await html2canvas(folha, {
+        scale: Math.max(2, Math.min(3, window.devicePixelRatio || 2)),
+        backgroundColor: "#ffffff",
+        logging: false,
+        useCORS: true,
+        allowTaint: false,
+        width: larguraCaptura,
+        height: alturaCaptura,
+        windowWidth: larguraCaptura,
+        windowHeight: alturaCaptura,
+        scrollX: 0,
+        scrollY: 0
+    });
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+        compress: true
+    });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const imgData = canvas.toDataURL("image/jpeg", 0.95);
+    const imgH = (canvas.height * pageW) / canvas.width;
+
+    let y = 0;
+    let restante = imgH;
+    pdf.addImage(imgData, "JPEG", 0, y, pageW, imgH, undefined, "MEDIUM");
+    restante -= pageH;
+    while (restante > 1) {
+        pdf.addPage();
+        y = restante - imgH;
+        pdf.addImage(imgData, "JPEG", 0, y, pageW, imgH, undefined, "MEDIUM");
+        restante -= pageH;
+    }
+
+    return pdf;
+}
+
+// ==== Envio do relatório (registro na planilha + PDF + e-mail, botão único ENVIAR) ====
+// Depois de publicar o Apps Script (ver guia), cole aqui a URL do Web App
+// (termina em /exec) e, se tiver definido um TOKEN no script, repita o
+// mesmo valor abaixo.
+const EMAIL_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyIzChvHGgheuGaO87dxbRmLL56r9l41BPhp4gwX3fbzHhjsOcyT_vct1NpkcKAeJBprw/exec";
+const EMAIL_SCRIPT_TOKEN = "";
+const EMAIL_DESTINATARIOS = [
+    "rh@tcgl.com.br",
+    "monitoramento@tcgl.com.br",
+    "danielmartins@tcgl.com.br",
+    "planejamento@tcgl.com.br",
+    "rehder@tcgl.com.br"
+];
+
+function pdfParaBase64(pdf) {
+    const dataUri = pdf.output("datauristring");
+    const virgula = dataUri.indexOf(",");
+    return dataUri.slice(virgula + 1);
+}
+
+function arquivoParaBase64(arquivo) {
+    return new Promise((resolve, reject) => {
+        const leitor = new FileReader();
+        leitor.onload = () => {
+            const resultado = String(leitor.result || "");
+            const virgula = resultado.indexOf(",");
+            resolve(virgula >= 0 ? resultado.slice(virgula + 1) : resultado);
+        };
+        leitor.onerror = () => reject(new Error("Falha ao ler o arquivo " + arquivo.name));
+        leitor.readAsDataURL(arquivo);
+    });
+}
+
+// ---- Anexos extras (além do PDF do relatório) ----
+let anexosExtras = [];
+const TAMANHO_MAX_TOTAL_ANEXOS = 20 * 1024 * 1024; // 20MB (limite prático do Gmail é ~25MB)
+
+function atualizarAnexosStatus() {
+    const status = document.getElementById("anexosStatus");
+    if (!anexosExtras.length) {
+        status.hidden = true;
+        status.innerHTML = "";
+        return;
+    }
+    status.hidden = false;
+    const label = anexosExtras.length === 1 ? "1 anexo extra" : anexosExtras.length + " anexos extras";
+    status.innerHTML = "";
+    const texto = document.createElement("span");
+    texto.textContent = label;
+    const limpar = document.createElement("button");
+    limpar.type = "button";
+    limpar.title = "Remover anexos extras";
+    limpar.textContent = "×";
+    limpar.addEventListener("click", () => {
+        anexosExtras = [];
+        document.getElementById("anexosInput").value = "";
+        atualizarAnexosStatus();
+    });
+    status.appendChild(texto);
+    status.appendChild(limpar);
+}
+
+document.getElementById("anexosBtn").addEventListener("click", () => {
+    document.getElementById("anexosInput").click();
+});
+
+document.getElementById("anexosInput").addEventListener("change", (evento) => {
+    const novos = Array.from(evento.target.files || []);
+    anexosExtras = anexosExtras.concat(novos);
+    evento.target.value = "";
+    atualizarAnexosStatus();
+});
+
+async function enviarRelatorio() {
+    const botao = document.getElementById("enviarTopoBtn");
+    if (!EMAIL_SCRIPT_URL) {
+        setStatus("Para enviar o relatório, falta publicar o Apps Script de envio e colar a URL em EMAIL_SCRIPT_URL.", "erro");
+        return;
+    }
+
+    const tamanhoExtras = anexosExtras.reduce((soma, arquivo) => soma + arquivo.size, 0);
+    if (tamanhoExtras > TAMANHO_MAX_TOTAL_ANEXOS) {
+        setStatus("Os anexos extras somam mais de 20MB — remova algum arquivo antes de enviar.", "erro");
+        return;
+    }
+
+    botao.disabled = true;
+    window.portalMostrarCarregando?.("Enviando relatório");
+    document.body.classList.add("pdf-exporting");
+
+    try {
+        let registrado = false;
+        try {
+            registrado = await registrarProtocolo();
+        } catch (error) {
+            console.error(error);
+            setStatus("Falha ao registrar protocolo: " + (error.message || "tente novamente."), "erro");
+            return;
+        }
+        if (!registrado && PROTOCOLO_SCRIPT_URL) return;
+
+        setStatus("Gerando PDF...", "ia");
+        let pdf;
+        try {
+            pdf = await construirPdfRelatorio();
+            pdf.save(nomeArquivoPdf());
+        } catch (errPdf) {
+            window.print();
+            throw errPdf;
+        }
+
+        const anexos = [
+            {
+                filename: nomeArquivoPdf(),
+                mimeType: "application/pdf",
+                base64: pdfParaBase64(pdf)
+            }
+        ];
+
+        if (anexosExtras.length) {
+            setStatus("Preparando anexos extras...", "ia");
+            for (const arquivo of anexosExtras) {
+                anexos.push({
+                    filename: arquivo.name,
+                    mimeType: arquivo.type || "application/octet-stream",
+                    base64: await arquivoParaBase64(arquivo)
+                });
+            }
+        }
+
+        setStatus("Salvando PDF na AWS...", "ia");
+        const salvoAws = await tentarSalvarPdfAws(pdf, "envio");
+
+        setStatus("Enviando e-mail...", "ia");
+        const resposta = await fetch(EMAIL_SCRIPT_URL, {
+            method: "POST",
+            cache: "no-store",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+                token: EMAIL_SCRIPT_TOKEN,
+                destinatarios: EMAIL_DESTINATARIOS,
+                assunto: "Relatório de ocorrência",
+                corpo: corpoEmailRelatorio(),
+                anexos
+            })
+        });
+        const texto = await resposta.text();
+        let resultado;
+        try {
+            resultado = JSON.parse(texto);
+        } catch (erroParse) {
+            resultado = { ok: false, erro: "Resposta inválida do Apps Script: " + texto.slice(0, 200) };
+        }
+
+        if (!resultado.ok) {
+            throw new Error(resultado.erro || "Falha ao enviar e-mail.");
+        }
+        setStatus(
+            salvoAws?.storageKey
+                ? "Relatório gerado, registrado, enviado por e-mail e salvo na AWS."
+                : "Relatório gerado, registrado e enviado por e-mail, mas FALHOU ao salvar na AWS" + (salvoAws?.erro ? (": " + salvoAws.erro) : "") + " — ele não vai aparecer na listagem de Relatório de Ocorrência.",
+            salvoAws?.storageKey ? "ok" : "erro"
+        );
+        anexosExtras = [];
+        atualizarAnexosStatus();
+        mostrarConfirmacaoEmailEnviado(salvoAws?.storageKey);
+    } catch (error) {
+        console.error(error);
+        setStatus("Falha ao enviar relatório: " + (error.message || "tente novamente."), "erro");
+    } finally {
+        document.body.classList.remove("pdf-exporting");
+        window.portalOcultarCarregando?.();
+        botao.disabled = false;
+    }
+}
+
+function mostrarConfirmacaoEmailEnviado(salvoAws) {
+    const overlay = document.getElementById("emailEnviadoOverlay");
+    const sub = document.getElementById("emailEnviadoSub");
+    const checkSvg = overlay?.querySelector(".email-enviado-check svg");
+    if (!overlay) return;
+    if (sub) {
+        sub.textContent = salvoAws
+            ? "E-mail enviado e PDF salvo na AWS."
+            : "E-mail enviado com sucesso.";
+    }
+    overlay.classList.remove("is-open");
+    if (checkSvg) {
+        checkSvg.style.animation = "none";
+        void checkSvg.offsetWidth;
+        checkSvg.style.animation = "";
+    }
+    void overlay.offsetWidth;
+    overlay.classList.add("is-open");
+    overlay.setAttribute("aria-hidden", "false");
+    window.clearTimeout(mostrarConfirmacaoEmailEnviado._timer);
+    mostrarConfirmacaoEmailEnviado._timer = window.setTimeout(() => {
+        fecharConfirmacaoEmailEnviado();
+    }, 2800);
+}
+
+function fecharConfirmacaoEmailEnviado() {
+    const overlay = document.getElementById("emailEnviadoOverlay");
+    if (!overlay) return;
+    overlay.classList.remove("is-open");
+    overlay.setAttribute("aria-hidden", "true");
+}
+
+document.getElementById("emailEnviadoOverlay")?.addEventListener("click", (ev) => {
+    if (ev.target.id === "emailEnviadoOverlay") fecharConfirmacaoEmailEnviado();
+});
+
+document.getElementById("enviarTopoBtn").addEventListener("click", enviarRelatorio);
+window.addEventListener("beforeprint", atualizarCorpoPDF);
+document.getElementById("limparBtn").addEventListener("click", () => {
+    if (!ehInformativo()) {
+        campos.registro.value = "";
+        campos.nome.value = "";
+        campos.funcao.value = "";
+    }
+    campos.carro.value = "";
+    campos.linha.value = "";
+    corpoFoiEditado = false;
+    corpoRelatorio.value = gerarCorpoPadrao();
+    autoGrow();
+    atualizarPreview();
+});
+
+if (window.portalUsuarioValidado) {
+    iniciarRelatorio();
+} else {
+    window.addEventListener("portal:usuario-validado", iniciarRelatorio, { once: true });
+}
+</script>
+<script src="../assets/js/portal-futuristic.js?v=20260718am" defer></script>
+<div id="emailEnviadoOverlay" class="email-enviado-overlay" aria-hidden="true" role="status" aria-live="polite">
+  <div class="email-enviado-box" role="dialog" aria-label="E-mail enviado">
+    <div class="email-enviado-check" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+    </div>
+    <p class="email-enviado-titulo">Enviado</p>
+    <p class="email-enviado-sub" id="emailEnviadoSub">E-mail enviado com sucesso.</p>
+  </div>
+</div>
+</body>
+</html>
