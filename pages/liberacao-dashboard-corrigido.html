@@ -637,14 +637,14 @@ atualizadoEm: Date.now()
 
 async function apiGet(params){
 const ctrl = new AbortController();
-const timer = setTimeout(() => ctrl.abort(), 12000);
+const timer = setTimeout(() => ctrl.abort(), 45000);
 try {
 const res = await fetch(API_URL+"?"+new URLSearchParams(Object.assign({liberacao:"1"},params)), {cache:"no-store", signal: ctrl.signal});
 const data = await lerJsonResposta(res, "Planilha");
 if(!data.ok) throw new Error(data.erro||"Falha na API.");
 return data;
 } catch (e) {
-if (e.name === "AbortError") throw new Error("Timeout na planilha de liberação.");
+if (e.name === "AbortError") throw new Error("A planilha demorou mais de 45 segundos para responder. Tente novamente.");
 throw e;
 } finally {
 clearTimeout(timer);
@@ -970,7 +970,7 @@ window.portalOcultarCarregando?.();
 
 function agendarRecarga(){
 clearTimeout(state.reloadTimer);
-state.reloadTimer = setTimeout(() => carregar().catch(e => setStatus(e.message,"erro")), 350);
+state.reloadTimer = setTimeout(() => carregar().catch(e => setStatus(e.message,"erro")), 900);
 }
 
 async function gerarPdf(){
