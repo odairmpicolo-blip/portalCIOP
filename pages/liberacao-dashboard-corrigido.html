@@ -1,0 +1,1052 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}</style>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard — Acompanhamento da Liberação | Portal CIOP</title>
+<style>
+:root{--blue:#06245c;--blue2:#0b3a8a;--bg:#f5f7fb;--border:#dfe5ef;--text:#101828;--muted:#3f4757;--red:#dc2626;--rosa:#16a34a;--laranja:#eab308}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh}
+.header{background:#fff;display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);gap:16px;align-items:center;padding:8px 20px;border-bottom:1px solid #e8edf6}
+.header > a:first-child.portal-brand-mark{justify-self:start}
+.logo-ciop{height:42px;object-fit:contain}.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+/* título via PNG */
+.header-subtitle{margin-top:4px;color:var(--muted);font-size:11px;font-weight:700}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+/* session container: portal-session.css?v=20260818open */
+/* session user styles: portal-session.css?v=20260818open */
+/* session profile styles: portal-session.css?v=20260818open */
+/* session logout: portal-session.css?v=20260818open */
+.container{max-width:1680px;margin:20px auto 32px;padding:0 20px}
+.toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.toolbar-left{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;flex:1;min-width:0}
+.nav-actions{display:flex;gap:8px;flex-wrap:wrap;flex:0 0 auto}
+.btn-portal,.btn-primary,.btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;border:0;cursor:pointer;font-family:inherit}
+.btn-portal,.btn-primary{background:var(--blue);color:#fff}.btn-secondary{background:#e8edf6;color:var(--blue)}
+.btn-icon{display:inline-flex;width:16px;height:16px}.btn-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.status-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;background:#fff;border:1px solid var(--border);border-radius:999px;font-size:12px;font-weight:700;color:var(--muted)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;flex:0 0 auto}
+.status-dot.ok{background:#15803d}.status-dot.load{background:var(--laranja);animation:pulse 1s infinite}.status-dot.erro{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.group-section{margin-bottom:18px}
+.group-head{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:0 2px}
+.group-dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto}
+.group-dot.rosa{background:var(--rosa)}.group-dot.laranja{background:var(--laranja)}.group-dot.vermelha{background:var(--red)}
+.group-title{margin:0;font-size:13px;font-weight:900;color:var(--blue);text-transform:uppercase;letter-spacing:.03em}
+.group-dot.orientar{background:linear-gradient(135deg,var(--rosa) 0%,var(--laranja) 100%)}
+.charts-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.charts-grid.linha-quatro{grid-template-columns:repeat(4,minmax(0,1fr))}
+.chart-card{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 32px rgba(16,24,40,.08);overflow:hidden;display:flex;flex-direction:column;min-height:300px}
+.chart-card.tone-rosa{border-top:4px solid var(--rosa)}.chart-card.tone-laranja{border-top:4px solid var(--laranja)}.chart-card.tone-vermelha{border-top:4px solid var(--red)}
+.chart-head{padding:12px 14px 10px;border-bottom:1px solid rgba(255,255,255,.65);background:rgba(255,255,255,.72);backdrop-filter:blur(4px)}
+.chart-title{margin:0;font-size:10px;font-weight:900;color:var(--blue);line-height:1.35;text-transform:uppercase;letter-spacing:.02em}
+.chart-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+.badge{font-size:9px;font-weight:900;text-transform:uppercase;padding:3px 8px;border-radius:999px;letter-spacing:.04em}
+.badge.orientar{background:#ecfdf3;color:#15803d}.badge.grave{background:#fef2f2;color:var(--red)}
+.chart-total{font-size:11px;font-weight:800;color:var(--muted)}
+.chart-body{flex:1;padding:10px 12px 14px;position:relative;min-height:220px;border-radius:0 0 16px 16px}
+.chart-body.tone-rosa{background:linear-gradient(145deg,rgba(22,163,74,.22) 0%,rgba(22,163,74,.08) 42%,rgba(255,255,255,.92) 100%)}
+.chart-body.tone-laranja{background:linear-gradient(145deg,rgba(234,179,8,.22) 0%,rgba(234,179,8,.08) 42%,rgba(255,255,255,.92) 100%)}
+.chart-body.tone-vermelha{background:linear-gradient(145deg,rgba(220,38,38,.2) 0%,rgba(220,38,38,.07) 42%,rgba(255,255,255,.92) 100%)}
+.chart-body canvas{width:100%!important;height:100%!important}
+.chart-empty[hidden]{display:none!important}
+.chart-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;font-weight:700;background:rgba(255,255,255,.45);border-radius:0 0 16px 16px}
+.empty-page{padding:48px 24px;text-align:center;color:var(--muted);font-weight:700;background:#fff;border:1px solid var(--border);border-radius:16px}
+.pdf-sheet-header{display:none;padding:0 0 10px}
+.pdf-sheet-top{display:grid;grid-template-columns:minmax(140px,1fr) auto minmax(140px,1fr);align-items:center;gap:16px;padding:8px 14px 10px;background:#fff;border-bottom:1px solid #e8edf6;margin-bottom:10px}
+.pdf-sheet-top .logo-ciop{justify-self:start;height:38px}
+.pdf-sheet-top .logo-tcgl{justify-self:end;height:42px}
+.pdf-sheet-title-wrap{text-align:center}
+.pdf-sheet-title{margin:0;color:var(--blue);font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:.02em}
+.pdf-sheet-period{margin:4px 0 0;color:var(--muted);font-size:11px;font-weight:700}
+.pdf-exporting .pdf-sheet-header{display:block}
+.pdf-exporting .toolbar,.pdf-exporting .header,.pdf-exporting .status-pill{display:none!important}
+.pdf-exporting #pdfExport{background:var(--bg);padding:8px 0;width:1680px;max-width:none;margin:0 auto}
+.pdf-exporting .charts-grid,.pdf-exporting .charts-grid.linha-quatro{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+.pdf-exporting .chart-card{min-height:240px}
+@media(max-width:1100px){.charts-grid.linha-quatro{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:960px){.charts-grid,.charts-grid.linha-quatro{grid-template-columns:1fr}.toolbar-left,.filters-inline{width:100%}.filter-field{max-width:none}}
+@media(max-width:720px){.header{grid-template-columns:1fr;text-align:center}h1{font-size:18px}}
+/* ===== Redesign iOS26 Liquid Glass (mobile/app nativo) =====
+   Suporta escuro (padrão) e claro (html.native-light), sincronizado
+   pelo shell nativo. Fontes ampliadas para leitura confortável. */
+/* ===== Redesign iOS26 Liquid Glass — jewel/glass em toda a página =====
+   Portal web (desktop): somente modo claro, sem alternância.
+   App nativo mobile: continua escuro por padrão (html.native-light
+   controlado pelo shell), inalterado — ver @media abaixo. */
+:root{
+  --jewel-1:#7a5cff;
+  --jewel-2:#c04fd6;
+  --jewel-shadow:0 10px 26px -8px rgba(122,92,255,.65);
+
+  --glass-bg:rgba(255,255,255,.6);
+  --glass-bg-strong:rgba(255,255,255,.8);
+  --glass-border:rgba(30,20,70,.10);
+  --glass-blur:blur(30px) saturate(180%);
+  --glass-shadow:0 16px 34px -16px rgba(40,25,90,.22), inset 0 1px 0 rgba(255,255,255,.75);
+
+  --ink:#18182a;
+  --ink-soft:rgba(24,24,42,.62);
+  --ink-faint:rgba(24,24,42,.5);
+  --field-bg:rgba(255,255,255,.8);
+
+  --g-green:#15803d;
+  --g-amber:#b45309;
+  --g-red:#dc2626;
+  --g-green-a20:rgba(21,128,61,.2);
+  --g-amber-a20:rgba(180,83,9,.2);
+  --g-red-a20:rgba(220,38,38,.2);
+}
+
+body{
+  background:
+    radial-gradient(circle at 15% 8%, rgba(122,92,255,.3) 0%, transparent 40%),
+    radial-gradient(circle at 90% 15%, rgba(255,110,180,.24) 0%, transparent 38%),
+    radial-gradient(circle at 20% 60%, rgba(60,180,255,.2) 0%, transparent 42%),
+    radial-gradient(circle at 85% 78%, rgba(255,170,60,.18) 0%, transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
+    #f2effa !important;
+  color:var(--ink) !important;
+}
+
+.dk-theme-toggle{display:none !important}
+
+.header{
+  background:var(--glass-bg) !important;
+  backdrop-filter:var(--glass-blur) !important;
+  -webkit-backdrop-filter:var(--glass-blur) !important;
+  border-bottom:1px solid var(--glass-border) !important;
+  position:sticky !important;
+  top:0 !important;
+  z-index:30 !important;
+}
+.header-subtitle{color:var(--ink-faint) !important}
+.ciop-session{/* session glass: portal-session.css */}
+/* session profile styles: portal-session.css?v=20260818open */
+
+.btn-portal,.btn-primary{
+  background:linear-gradient(135deg, var(--jewel-1), var(--jewel-2)) !important;
+  box-shadow:var(--jewel-shadow) !important;
+  color:#fff !important;
+}
+.btn-secondary{
+  background:var(--glass-bg-strong) !important;
+  color:var(--ink) !important;
+  border:1px solid var(--glass-border) !important;
+}
+.filter-field label{color:var(--ink-faint) !important;font-weight:700 !important}
+.filter-field input{
+  background:var(--field-bg) !important;
+  border:1px solid var(--glass-border) !important;
+  border-radius:10px !important;
+  color:var(--ink) !important;
+}
+.status-pill{
+  background:var(--glass-bg) !important;
+  border:1px solid var(--glass-border) !important;
+  color:var(--ink-soft) !important;
+}
+
+.group-title{color:var(--ink) !important}
+
+.chart-card{
+  background:var(--glass-bg) !important;
+  backdrop-filter:var(--glass-blur) !important;
+  -webkit-backdrop-filter:var(--glass-blur) !important;
+  border:1px solid var(--glass-border) !important;
+  box-shadow:var(--glass-shadow) !important;
+}
+.chart-card.tone-rosa{border-top:4px solid var(--g-green) !important;}
+.chart-card.tone-laranja{border-top:4px solid var(--g-amber) !important;}
+.chart-card.tone-vermelha{border-top:4px solid var(--g-red) !important;}
+.chart-head{
+  background:transparent !important;
+  border-bottom:1px solid var(--glass-border) !important;
+}
+.chart-title{color:var(--ink) !important}
+.chart-total{color:var(--ink-faint) !important}
+.badge.orientar{background:var(--g-green-a20) !important;color:var(--g-green) !important;}
+.badge.grave{background:var(--g-red-a20) !important;color:var(--g-red) !important;}
+.chart-body.tone-rosa,.chart-body.tone-laranja,.chart-body.tone-vermelha{background:transparent !important;}
+.chart-empty{color:var(--ink-faint) !important;background:transparent !important;}
+.empty-page{
+  background:var(--glass-bg) !important;
+  border:1px solid var(--glass-border) !important;
+  color:var(--ink-faint) !important;
+}
+
+@media (max-width:720px){
+  .body-bg-wall,
+  .body-bg-stain{
+    display:none !important;
+  }
+  /* App nativo mobile: escuro por padrão, claro via html.native-light
+     (definido pelo shell nativo) — comportamento original, inalterado. */
+  :root{
+    --glass-bg:rgba(255,255,255,.08);
+    --glass-bg-strong:rgba(255,255,255,.13);
+    --glass-border:rgba(255,255,255,.16);
+    --glass-shadow:0 20px 40px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18);
+
+    --ink:#fff;
+    --ink-soft:rgba(255,255,255,.6);
+    --ink-faint:rgba(255,255,255,.48);
+    --field-bg:rgba(255,255,255,.07);
+
+    --g-green:#4ade80;
+    --g-amber:#fbbf24;
+    --g-red:#f87171;
+    --g-green-a20:rgba(74,222,128,.2);
+    --g-amber-a20:rgba(251,191,36,.2);
+    --g-red-a20:rgba(248,113,113,.2);
+  }
+  html.native-light{
+    --glass-bg:rgba(255,255,255,.6);
+    --glass-bg-strong:rgba(255,255,255,.8);
+    --glass-border:rgba(30,20,70,.10);
+    --glass-shadow:0 16px 34px -16px rgba(40,25,90,.22), inset 0 1px 0 rgba(255,255,255,.75);
+
+    --ink:#18182a;
+    --ink-soft:rgba(24,24,42,.62);
+    --ink-faint:rgba(24,24,42,.5);
+    --field-bg:rgba(255,255,255,.8);
+
+    --g-green:#15803d;
+    --g-amber:#b45309;
+    --g-red:#dc2626;
+    --g-green-a20:rgba(21,128,61,.2);
+    --g-amber-a20:rgba(180,83,9,.2);
+    --g-red-a20:rgba(220,38,38,.2);
+  }
+  body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(122,92,255,.4) 0%, transparent 40%),
+      radial-gradient(circle at 90% 15%, rgba(255,110,180,.3) 0%, transparent 38%),
+      radial-gradient(circle at 20% 60%, rgba(60,180,255,.26) 0%, transparent 42%),
+      radial-gradient(circle at 85% 78%, rgba(255,170,60,.2) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
+      #0d0e14 !important;
+    color:var(--ink) !important;
+  }
+  html.native-light body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(122,92,255,.3) 0%, transparent 40%),
+      radial-gradient(circle at 90% 15%, rgba(255,110,180,.24) 0%, transparent 38%),
+      radial-gradient(circle at 20% 60%, rgba(60,180,255,.2) 0%, transparent 42%),
+      radial-gradient(circle at 85% 78%, rgba(255,170,60,.18) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(80,255,190,.16) 0%, transparent 45%),
+      #f2effa !important;
+  }
+
+  .header{display:none !important;}
+
+  .container{
+    max-width:none !important;
+    margin:0 !important;
+    padding:calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-left)) 28px calc(14px + env(safe-area-inset-right)) !important;
+  }
+  html.native-embedded .container{padding-top:14px !important;}
+
+  .toolbar{flex-direction:column !important;align-items:stretch !important;gap:12px !important;}
+  .toolbar-left{flex-direction:column !important;align-items:stretch !important;gap:10px !important;}
+  .nav-actions{width:100% !important;}
+  .btn-portal,.btn-primary,.btn-secondary{
+    flex:1 !important;
+    min-height:46px !important;
+    border-radius:14px !important;
+    font-size:15px !important;
+  }
+  .filters-inline{width:100% !important;gap:10px !important;}
+  .filter-field{max-width:none !important;flex:1 !important;}
+  .filter-field label{font-size:13px !important;}
+  .filter-field input{
+    border-radius:14px !important;
+    padding:12px !important;
+    font-size:16px !important;
+    min-height:46px !important;
+    width:100%;
+  }
+  .status-pill{
+    font-size:13px !important;
+    width:100% !important;
+    justify-content:center !important;
+  }
+
+  .group-head{padding:0 !important;}
+  .group-title{font-size:14.5px !important;}
+
+  .charts-grid,.charts-grid.linha-quatro{grid-template-columns:1fr !important;gap:14px !important;}
+  .chart-card{
+    border-radius:22px !important;
+    min-height:260px !important;
+  }
+  .chart-card.tone-rosa{border-top-width:3px !important;}
+  .chart-card.tone-laranja{border-top-width:3px !important;}
+  .chart-card.tone-vermelha{border-top-width:3px !important;}
+  .chart-head{
+    padding:14px 16px 10px !important;
+  }
+  .chart-title{font-size:13.5px !important;}
+  .chart-total{font-size:12.5px !important;}
+  .chart-body{min-height:230px !important;}
+  .chart-empty{font-size:14px !important;}
+  .empty-page{
+    font-size:15px !important;
+  }
+}
+
+/* ===== Fundo padrao-parede (tracos azul degrade) + mancha julho + vidro iOS 26 (desktop/portal web) ===== */
+@media (min-width:721px){
+  body{
+    background: transparent !important;
+  }
+  .body-bg-wall{
+    position: fixed;
+    inset: 0;
+    z-index: -3;
+    background-image:url('../assets/img/portal-bg-onibus.jpg?v=20260718j');
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+  }
+  .body-bg-stain{
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background:linear-gradient(180deg, rgba(6,20,50,.30) 0%, rgba(6,20,50,.55) 100%);
+  }
+
+  .header{
+    background:rgba(255,255,255,.6) !important;
+    backdrop-filter:blur(18px) saturate(190%) !important;
+    -webkit-backdrop-filter:blur(18px) saturate(190%) !important;
+    border-bottom:1px solid rgba(255,255,255,.5) !important;
+    box-shadow:0 10px 28px -16px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.4) !important;
+  }
+
+  footer.portal-site-footer{
+    background:rgba(255,255,255,.42) !important;
+    backdrop-filter:blur(16px) saturate(190%) !important;
+    -webkit-backdrop-filter:blur(16px) saturate(190%) !important;
+    border-top:1px solid rgba(255,255,255,.5) !important;
+    box-shadow:0 -10px 28px -16px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.4) !important;
+  }
+  footer.portal-site-footer .footer-text{
+    color:#3f4757 !important;
+  }
+
+  .container{
+    max-width:100% !important;
+    min-height:calc(100vh - 90px) !important;
+    display:flex !important;
+    flex-direction:column !important;
+  }
+
+  #pdfExport{
+    display:flex !important;
+    flex-direction:column !important;
+    flex:1 !important;
+  }
+
+  .toolbar{
+    padding:10px 16px !important;
+    background:rgba(255,255,255,.42) !important;
+    backdrop-filter:blur(14px) saturate(190%) !important;
+    -webkit-backdrop-filter:blur(14px) saturate(190%) !important;
+    border:1px solid rgba(255,255,255,.6) !important;
+    border-radius:14px !important;
+    box-shadow:0 10px 24px -14px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.5) !important;
+  }
+  .status-pill{
+    background:transparent !important;
+    border:none !important;
+    box-shadow:none !important;
+  }
+  .filter-field input{
+    background:rgba(255,255,255,.6) !important;
+    border:1px solid rgba(255,255,255,.7) !important;
+  }
+
+  .chart-card{
+    background:rgba(255,255,255,.72) !important;
+  }
+  .btn-portal,
+  .btn-primary,
+  .btn-secondary{
+    transition: transform .2s ease, background .25s ease, box-shadow .25s ease, color .25s ease !important;
+  }
+  .btn-portal,
+  .btn-primary{
+    min-height:44px !important;padding:8px 14px !important;border-radius:10px !important;font-size:14px !important;
+    background: linear-gradient(135deg, rgba(6,36,92,.85), rgba(11,58,138,.85)) !important;
+    backdrop-filter: blur(14px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(190%) !important;
+    border: 1px solid rgba(255,255,255,.4) !important;
+    box-shadow: 0 10px 24px -14px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.25) !important;
+    color: #fff !important;
+  }
+  .btn-portal:hover,
+  .btn-primary:hover{
+    background: linear-gradient(135deg, #ff6b00, #ff8f3d) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 14px 28px -12px rgba(255,107,0,.5), inset 0 1px 0 rgba(255,255,255,.35) !important;
+  }
+  .btn-secondary{
+    background:rgba(255,255,255,.42) !important;
+    backdrop-filter: blur(14px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(190%) !important;
+    border: 1px solid rgba(255,255,255,.6) !important;
+    border-left: 3px solid var(--orange) !important;
+    box-shadow: 0 10px 24px -14px rgba(20,20,40,.3), inset 0 1px 0 rgba(255,255,255,.5) !important;
+  }
+  .btn-secondary:hover{
+    background: rgba(224,235,255,.85) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 14px 28px -14px rgba(6,36,92,.35), inset 0 1px 0 rgba(255,255,255,.6) !important;
+  }
+}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
+<link rel="stylesheet" href="../assets/css/portal-titulos.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
+<link rel="stylesheet" href="../assets/css/portal-filtros.css">
+<link rel="stylesheet" href="../assets/css/dashboard-kit.css">
+
+
+<script src="../assets/js/theme-toggle.js?v=20260818logo6"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="../assets/js/loading.js?v=20260718d"></script>
+<script type="module" src="../assets/js/auth.js?v=20260821ui1"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260821hud">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260820bar4">
+<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260821fx">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260828planilhas">
+</head>
+<body>
+<div class="body-bg-wall" aria-hidden="true"></div>
+<div class="body-bg-stain" aria-hidden="true"></div>
+<header class="header">
+<a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/logomarca-portalciop-tcgl-claro.png?v=20260818logo6" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
+<div class="title-wrap">
+<h1 class="liberacao-title-art" aria-label="Acompanhamento da Liberação">
+<img src="../assets/img/titulo-liberacao.png" alt="Acompanhamento da Liberação">
+</h1>
+</div>
+<div class="header-actions">
+<div class="ciop-session" aria-label="Sessão do usuário">
+    <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+    <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+    <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+    <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+</div>
+<a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+</div>
+</header>
+
+<main class="container">
+<div class="toolbar">
+<div class="toolbar-left">
+<div class="nav-actions">
+<a class="btn-portal" href="../index.html"><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg></span>Portal</a>
+<a class="btn-secondary" href="liberacao-lancamento.html"><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>Lançamento</a>
+</div>
+<div class="filters-inline" aria-label="Filtros de período">
+<div class="filter-field"><label for="dataDe">De</label><input id="dataDe" type="date"></div>
+<div class="filter-field"><label for="dataAte">Até</label><input id="dataAte" type="date"></div>
+</div>
+<button class="btn-primary" type="button" id="btnPdf"><span class="btn-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg></span>Gerar PDF</button>
+</div>
+<div class="status-pill"><span class="status-dot load" id="statusDot"></span><span id="statusLine">Carregando...</span></div>
+</div>
+
+<div id="pdfExport">
+<div class="pdf-sheet-header" aria-hidden="true">
+<div class="pdf-sheet-top">
+<img class="logo-ciop" src="../assets/img/CIOP Sem Fundo.png" alt="CIOP">
+<div class="pdf-sheet-title-wrap">
+<h2 class="pdf-sheet-title">Acompanhamento da Liberação</h2>
+<p class="pdf-sheet-period" id="pdfPeriodo"></p>
+</div>
+<img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+</div>
+</div>
+<div id="chartsRoot"></div>
+</div>
+<div class="empty-page" id="pageEmpty" hidden>Nenhum registro no período selecionado.</div>
+</main>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycby9hpIGulGYxlm_Oseasi_D2GIaLSvusFNqcgrSj7l7HwxcUXLTPqd8kX1JxwkCx9lqOA/exec";
+const LIBERACAO_DATA_BASE = "../assets/data/liberacao";
+const LIBERACAO_MANIFEST_URL = LIBERACAO_DATA_BASE + "/manifest.json";
+let liberacaoManifest = null;
+
+const SECOES = [
+{
+id: "orientar",
+titulo: "Orientar",
+dotClass: "orientar",
+categorias: [
+{ chave: "NO_HORARIO|ATRASADO", titulo: "SAIU NO HORÁRIO E INICIOU ATRASADO", gravidade: "ORIENTAR", cor: "#16a34a", tone: "tone-rosa" },
+{ chave: "NO_HORARIO|ADIANTADO", titulo: "SAIU NO HORÁRIO E INICIOU ADIANTADO", gravidade: "ORIENTAR", cor: "#16a34a", tone: "tone-rosa" },
+{ chave: "ATRASADO|NO_HORARIO", titulo: "SAIU ATRASADO E INICIOU NO HORÁRIO", gravidade: "ORIENTAR", cor: "#eab308", tone: "tone-laranja" },
+{ chave: "ATRASADO|ADIANTADO", titulo: "SAIU ATRASADO E INICIOU ADIANTADO", gravidade: "ORIENTAR", cor: "#eab308", tone: "tone-laranja" }
+]
+},
+{
+id: "grave",
+titulo: "Grave",
+dotClass: "vermelha",
+categorias: [
+{ chave: "ATRASADO|ATRASADO", titulo: "SAIU ATRASADO E INICIOU ATRASADO", gravidade: "GRAVE", cor: "#dc2626", tone: "tone-vermelha" },
+{ chave: "ADIANTADO|NO_HORARIO", titulo: "SAIU ADIANTADO E INICIOU NO HORÁRIO", gravidade: "GRAVE", cor: "#dc2626", tone: "tone-vermelha" },
+{ chave: "ADIANTADO|ATRASADO", titulo: "SAIU ADIANTADO E INICIOU ATRASADO", gravidade: "GRAVE", cor: "#dc2626", tone: "tone-vermelha" },
+{ chave: "ADIANTADO|ADIANTADO", titulo: "SAIU ADIANTADO E INICIOU ADIANTADO", gravidade: "GRAVE", cor: "#dc2626", tone: "tone-vermelha" }
+]
+}
+];
+
+const CATEGORIAS = SECOES.flatMap(s => s.categorias.map(c => Object.assign({ grupo: s.id }, c)));
+const state = { mapaGraficos: {}, totalLinhas: 0, cacheChave: "", charts: {}, reloadTimer: null };
+const CACHE_DASHBOARD_KEY = "portal_liberacao_dashboard_v1";
+
+function $(id){ return document.getElementById(id); }
+async function lerJsonResposta(res, rotulo){
+  const texto = await res.text();
+  const t = String(texto || "").trim();
+  if (!res.ok) throw new Error((rotulo || "Dados") + ": HTTP " + res.status);
+  if (!t) throw new Error((rotulo || "JSON") + " vazio.");
+  if (t.charAt(0) === "<") throw new Error("A origem devolveu HTML em vez de JSON.");
+  try { return JSON.parse(t); }
+  catch (_) { throw new Error("JSON inválido ou incompleto."); }
+}
+async function lerJsonOpcional(res){
+  try {
+    const texto = await res.text();
+    const t = String(texto || "").trim();
+    if (!res.ok || !t || t.charAt(0) === "<") return null;
+    return JSON.parse(t);
+  } catch (_) {
+    return null;
+  }
+}
+function idGrafico(chave){ return String(chave).replace(/\|/g, "-"); }
+function escapeHtml(v){ return String(v||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function formatNumber(v){ return Number(v||0).toLocaleString("pt-BR"); }
+function dataLocalIso(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + day;
+}
+
+function datasIniciaisDashboard(){
+  const hoje = dataLocalIso();
+  const g = liberacaoManifest?.graficos || {};
+  if (g.hoje?.data_de === hoje && g.hoje?.data_ate === hoje) return { de: hoje, ate: hoje };
+  if (g.hoje?.data_de && g.hoje?.data_ate) return { de: g.hoje.data_de, ate: g.hoje.data_ate };
+  const dias = Object.keys(liberacaoManifest?.dias || {}).sort();
+  const last = dias[dias.length - 1];
+  if (last) return { de: last, ate: last };
+  return { de: hoje, ate: hoje };
+}
+function val(row,key){
+if(row[key]!=null&&row[key]!=="") return row[key];
+if(key==="saida_atrasado_adiantado") return row.saida_atrasado_adiantado||"";
+if(key==="saiu_no_horario") return row.saiu_no_horaro||"";
+return "";
+}
+function brDate(iso){
+if(!iso) return "—";
+const p=String(iso).split("-");
+return p.length===3 ? p[2]+"/"+p[1]+"/"+p[0] : String(iso);
+}
+function normalizarDataIso(v){
+if(!v) return "";
+const t=String(v).trim();
+if(/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0,10);
+const m=t.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+return m ? m[3]+"-"+m[2]+"-"+m[1] : "";
+}
+function dataIso(row){
+  if (row?.data_iso && /^\d{4}-\d{2}-\d{2}$/.test(String(row.data_iso))) return row.data_iso;
+  const direto = normalizarDataIso(val(row,"data"));
+  if (direto) return direto;
+  const keys = Object.keys(row || {});
+  for (let i = 0; i < keys.length; i++) {
+    const iso = normalizarDataIso(row[keys[i]]);
+    if (iso) return iso;
+  }
+  return "";
+}
+function normalizarSituacao(v){
+const t=String(v||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase();
+if(!t) return "";
+if(t.includes("ADIANT")) return "ADIANTADO";
+if(t.includes("ATRAS")) return "ATRASADO";
+if(t.includes("HOR")||t==="SIM") return "NO_HORARIO";
+return "";
+}
+function situacaoSaida(row){ return normalizarSituacao(val(row,"saida_atrasado_adiantado")) || normalizarSituacao(val(row,"saiu_no_horario")); }
+function situacaoInicio(row){ return normalizarSituacao(val(row,"inicio_no_horario")); }
+
+function setStatus(texto, tipo){
+  const msg = tipo === "erro" && window.portalMensagemErro
+    ? window.portalMensagemErro({ message: texto })
+    : texto;
+  $("statusLine").textContent = msg;
+  $("statusDot").className = "status-dot" + (tipo ? " "+tipo : "");
+  if (tipo === "erro") window.portalMostrarAvisoDashboard?.(msg);
+  else window.portalLimparAvisoDashboard?.();
+}
+
+function lerCacheDashboardLiberacao(chave) {
+try {
+const raw = localStorage.getItem(CACHE_DASHBOARD_KEY);
+if (!raw) return null;
+const parsed = JSON.parse(raw);
+if (!parsed?.chave || parsed.chave !== chave || !parsed?.mapaGraficos) return null;
+return parsed;
+} catch (_) {
+return null;
+}
+}
+
+function salvarCacheDashboardLiberacao(chave, mapaGraficos, totalLinhas) {
+try {
+localStorage.setItem(CACHE_DASHBOARD_KEY, JSON.stringify({
+chave,
+mapaGraficos,
+totalLinhas,
+atualizadoEm: Date.now()
+}));
+} catch (_) {}
+}
+
+async function apiGet(params){
+const ctrl = new AbortController();
+const timer = setTimeout(() => ctrl.abort(), 12000);
+try {
+const res = await fetch(API_URL+"?"+new URLSearchParams(Object.assign({liberacao:"1"},params)), {cache:"no-store", signal: ctrl.signal});
+const data = await lerJsonResposta(res, "Planilha");
+if(!data.ok) throw new Error(data.erro||"Falha na API.");
+return data;
+} catch (e) {
+if (e.name === "AbortError") throw new Error("Timeout na planilha de liberação.");
+throw e;
+} finally {
+clearTimeout(timer);
+}
+}
+
+function montarHtmlGraficos(){
+$("chartsRoot").innerHTML = SECOES.map(s => `
+<section class="group-section" data-grupo="${s.id}">
+<div class="group-head"><span class="group-dot ${s.dotClass}"></span><h2 class="group-title">${escapeHtml(s.titulo)}</h2></div>
+<div class="charts-grid linha-quatro">
+${s.categorias.map(c => `
+<article class="chart-card ${c.tone}" data-chave="${c.chave}">
+<div class="chart-head">
+<h3 class="chart-title">${escapeHtml(c.titulo)}</h3>
+<div class="chart-meta">
+<span class="badge ${c.gravidade==="GRAVE"?"grave":"orientar"}">${escapeHtml(c.gravidade)}</span>
+<span class="chart-total" id="total-${idGrafico(c.chave)}">0 ocorrências</span>
+</div>
+</div>
+<div class="chart-body ${c.tone}">
+<canvas id="chart-${idGrafico(c.chave)}" aria-label="${escapeHtml(c.titulo)}"></canvas>
+<div class="chart-empty" id="empty-${idGrafico(c.chave)}" hidden>Sem registros no período</div>
+</div>
+</article>
+`).join("")}
+</div>
+</section>
+`).join("");
+}
+
+function hexToRgb(hex){
+const h = String(hex||"").replace("#","");
+if(h.length!==6) return {r:236,g:72,b:153};
+return { r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16) };
+}
+
+function rgbaHex(hex, alpha){
+const c = hexToRgb(hex);
+return "rgba("+c.r+","+c.g+","+c.b+","+alpha+")";
+}
+
+function isDarkTheme(){
+  return document.documentElement.classList.contains("dk-dark")
+    || (window.innerWidth <= 720 && !document.documentElement.classList.contains("native-light"));
+}
+
+function gradienteBarras(chart, cor){
+const { ctx, chartArea } = chart;
+if(!chartArea) return cor;
+const g = ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
+g.addColorStop(0, rgbaHex(cor, 0.28));
+g.addColorStop(0.45, rgbaHex(cor, 0.62));
+g.addColorStop(1, cor);
+return g;
+}
+
+function agregarPorCategoria(dados){
+const mapa = {};
+CATEGORIAS.forEach(c => mapa[c.chave] = {});
+dados.forEach(row => {
+const s = situacaoSaida(row), i = situacaoInicio(row), mot = String(val(row,"motorista")).trim();
+if(!s || !i || !mot) return;
+const chave = s+"|"+i;
+if(!mapa[chave]) return;
+mapa[chave][mot] = (mapa[chave][mot] || 0) + 1;
+});
+return mapa;
+}
+
+function dadosGrafico(mapa, chave, limite){
+const pares = Object.entries(mapa[chave] || {})
+.sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0],"pt-BR",{numeric:true}))
+.slice(0, limite || 12);
+return {
+labels: pares.map(p => p[0]),
+values: pares.map(p => p[1]),
+total: Object.values(mapa[chave] || {}).reduce((a,n) => a+n, 0)
+};
+}
+
+function destruirGraficos(){
+Object.values(state.charts).forEach(ch => { try { ch.destroy(); } catch(_){} });
+state.charts = {};
+}
+
+function renderGraficos(){
+destruirGraficos();
+const mapa = state.mapaGraficos || {};
+let algumDado = false;
+
+CATEGORIAS.forEach(cat => {
+const info = dadosGrafico(mapa, cat.chave);
+const gid = idGrafico(cat.chave);
+const canvas = $("chart-"+gid);
+const empty = $("empty-"+gid);
+const totalEl = $("total-"+gid);
+if(!canvas) return;
+
+totalEl.textContent = formatNumber(info.total) + (info.total===1 ? " ocorrência" : " ocorrências");
+if(!info.total){
+empty.hidden = false;
+canvas.style.display = "none";
+return;
+}
+algumDado = true;
+empty.hidden = true;
+canvas.style.display = "block";
+const altura = Math.max(200, Math.min(340, info.labels.length * 32 + 48));
+canvas.parentElement.style.minHeight = altura + "px";
+const maxValor = Math.max(...info.values, 1);
+
+state.charts[cat.chave] = new Chart(canvas.getContext("2d"), {
+type: "bar",
+data: {
+labels: info.labels,
+datasets: [{
+data: info.values,
+backgroundColor(context){
+return gradienteBarras(context.chart, cat.cor);
+},
+hoverBackgroundColor: cat.cor,
+borderSkipped: false,
+borderRadius: 12,
+barThickness: 20,
+maxBarThickness: 24
+}]
+},
+options: {
+indexAxis: "y",
+responsive: true,
+maintainAspectRatio: false,
+layout: { padding: { right: 36, left: 4, top: 4, bottom: 4 } },
+animation: { duration: 700, easing: "easeOutQuart" },
+plugins: {
+legend: { display: false },
+tooltip: {
+backgroundColor: isDarkTheme() ? "rgba(20,20,24,.94)" : "#101828",
+titleColor: "#fff",
+bodyColor: "#e2e8f0",
+titleFont: { size: 11, weight: "700" },
+bodyFont: { size: 11, weight: "700" },
+padding: 10,
+cornerRadius: 8,
+callbacks: {
+label(ctx){ return formatNumber(ctx.raw) + " ocorrência(s)"; }
+}
+},
+datalabels: {
+anchor: "end",
+align: "end",
+offset: 6,
+clamp: true,
+color: isDarkTheme() ? "#ffffff" : "#06245c",
+font: { size: 10, weight: "800" },
+formatter(v){ return formatNumber(v); }
+}
+},
+scales: {
+x: {
+beginAtZero: true,
+suggestedMax: maxValor + Math.max(1, Math.ceil(maxValor * 0.15)),
+ticks: { display: false },
+grid: { display: false },
+border: { display: false }
+},
+y: {
+ticks: {
+font: { size: 10, weight: "700" },
+color: isDarkTheme() ? "rgba(255,255,255,.85)" : "#18182a",
+padding: 6
+},
+grid: { display: false },
+border: { display: false }
+}
+}
+}
+});
+});
+
+$("pageEmpty").hidden = algumDado || state.totalLinhas > 0;
+}
+
+async function carregarManifestLiberacao() {
+try {
+const res = await fetch(LIBERACAO_MANIFEST_URL, { cache: "no-store" });
+return await lerJsonOpcional(res);
+} catch (_) {
+return null;
+}
+}
+
+function resolverSnapshotGraficos(dataDe, dataAte) {
+const presets = liberacaoManifest?.graficos || {};
+for (const preset of Object.values(presets)) {
+if (preset?.data_de === dataDe && preset?.data_ate === dataAte && preset?.arquivo) {
+return LIBERACAO_DATA_BASE + "/" + preset.arquivo;
+}
+}
+return null;
+}
+
+async function carregarSnapshotComDados(dataDe, dataAte) {
+const direto = await carregarSnapshotGraficos(dataDe, dataAte);
+if (direto && ((direto.total_linhas || 0) > 0 || direto.categorias)) return { payload: direto, de: dataDe, ate: dataAte };
+for (const key of ["hoje", "7d", "30d"]) {
+const p = liberacaoManifest?.graficos?.[key];
+if (!p?.arquivo || (p.data_de === dataDe && p.data_ate === dataAte)) continue;
+const payload = await carregarSnapshotGraficos(p.data_de, p.data_ate);
+if (payload && (payload.total_linhas || 0) > 0) return { payload, de: p.data_de, ate: p.data_ate, rotulo: key };
+}
+return direto ? { payload: direto, de: dataDe, ate: dataAte } : null;
+}
+
+async function carregarSnapshotGraficos(dataDe, dataAte) {
+const url = resolverSnapshotGraficos(dataDe, dataAte);
+if (!url) return null;
+try {
+const res = await fetch(url, { cache: "no-store" });
+const payload = await lerJsonOpcional(res);
+if (!payload?.categorias) return null;
+return payload;
+} catch (_) {
+return null;
+}
+}
+
+async function carregar(){
+const dataDe = $("dataDe").value;
+const dataAte = $("dataAte").value;
+if(!dataDe || !dataAte){ setStatus("Informe o período (de/até).","erro"); return; }
+if(dataDe > dataAte){ setStatus("A data inicial não pode ser maior que a final.","erro"); return; }
+
+const chave = dataDe + "|" + dataAte;
+if(state.cacheChave === chave && state.mapaGraficos){
+renderGraficos();
+setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · memória","ok");
+return;
+}
+
+const cacheLocal = lerCacheDashboardLiberacao(chave);
+let mostrouCache = false;
+let mostrouSnapshot = false;
+
+if (!liberacaoManifest) liberacaoManifest = await carregarManifestLiberacao();
+
+/*
+ * Importante: usa snapshot SOMENTE quando ele corresponde exatamente
+ * ao período escolhido pelo usuário. Não altera mais os campos de data
+ * para um período de fallback.
+ */
+const snapPayload = await carregarSnapshotGraficos(dataDe, dataAte);
+if (snapPayload) {
+state.mapaGraficos = snapPayload.categorias || {};
+state.totalLinhas = snapPayload.total_linhas || 0;
+state.cacheChave = chave;
+renderGraficos();
+const extra = liberacaoManifest?.atualizadoEm
+? " · snapshot: " + new Date(liberacaoManifest.atualizadoEm).toLocaleString("pt-BR")
+: "";
+const vazioPeriodo = (snapPayload.total_linhas || 0) === 0;
+setStatus(
+  vazioPeriodo
+    ? "Sem registros no arquivo local para este período. Consultando a planilha…"
+    : formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · arquivo JSON" + extra,
+  vazioPeriodo ? "load" : "ok"
+);
+mostrouSnapshot = true;
+}
+
+if (cacheLocal && !mostrouSnapshot) {
+state.mapaGraficos = cacheLocal.mapaGraficos || {};
+state.totalLinhas = cacheLocal.totalLinhas || 0;
+state.cacheChave = chave;
+renderGraficos();
+setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · cache local", "ok");
+mostrouCache = true;
+}
+
+if (mostrouSnapshot && (state.totalLinhas || 0) > 0) {
+return;
+}
+
+if (!mostrouCache && !mostrouSnapshot) {
+setStatus("Carregando planilha...","load");
+window.portalMostrarCarregando?.("Carregando liberação");
+}
+
+try {
+const res = await apiGet({
+recurso: "graficos",
+data_de: dataDe,
+data_ate: dataAte
+});
+state.mapaGraficos = res.categorias || {};
+state.totalLinhas = res.total_linhas || 0;
+state.cacheChave = chave;
+salvarCacheDashboardLiberacao(chave, state.mapaGraficos, state.totalLinhas);
+renderGraficos();
+const cacheTxt = res.meta && res.meta.cache ? " · cache servidor" : "";
+const origem = (mostrouCache || mostrouSnapshot) ? " · atualizado" : "";
+setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + cacheTxt + origem, "ok");
+} catch (e) {
+/*
+ * Mantém sempre o período escolhido pelo usuário.
+ * Se já havia cache/snapshot do mesmo período, preserva os gráficos;
+ * caso contrário, exibe o erro da consulta sem trocar as datas.
+ */
+if (mostrouCache || mostrouSnapshot) {
+setStatus(
+  formatNumber(state.totalLinhas) + " registro(s) · " +
+  brDate(dataDe) + " a " + brDate(dataAte) +
+  " · não foi possível atualizar pela planilha",
+  state.totalLinhas ? "ok" : "erro"
+);
+} else {
+setStatus(e.message || "Não foi possível carregar a liberação.", "erro");
+}
+} finally {
+window.portalOcultarCarregando?.();
+}
+}
+
+function agendarRecarga(){
+clearTimeout(state.reloadTimer);
+state.reloadTimer = setTimeout(() => carregar().catch(e => setStatus(e.message,"erro")), 350);
+}
+
+async function gerarPdf(){
+const dataDe = $("dataDe").value, dataAte = $("dataAte").value;
+if(!window.jspdf){ setStatus("Biblioteca PDF indisponível.","erro"); return; }
+if(!window.html2canvas){ setStatus("Biblioteca de captura indisponível.","erro"); return; }
+if(!$("chartsRoot")?.querySelector(".chart-card")){ setStatus("Carregue os gráficos antes de gerar o PDF.","erro"); return; }
+
+setStatus("Gerando PDF...","load");
+window.portalMostrarCarregando?.("Gerando PDF");
+$("pdfPeriodo").textContent = "Período: " + brDate(dataDe) + " a " + brDate(dataAte);
+document.body.classList.add("pdf-exporting");
+
+try {
+await new Promise(r => setTimeout(r, 120));
+const alvo = $("pdfExport");
+const canvas = await html2canvas(alvo, {
+scale: 2,
+backgroundColor: "#f5f7fb",
+logging: false,
+useCORS: true,
+windowWidth: alvo.scrollWidth,
+windowHeight: alvo.scrollHeight
+});
+
+const { jsPDF } = window.jspdf;
+const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+const pageW = 297, pageH = 210, margin = 4;
+const availW = pageW - margin * 2;
+const availH = pageH - margin * 2;
+const imgRatio = canvas.width / canvas.height;
+let drawW = availW;
+let drawH = drawW / imgRatio;
+if(drawH > availH){
+drawH = availH;
+drawW = drawH * imgRatio;
+}
+const x = (pageW - drawW) / 2;
+const y = (pageH - drawH) / 2;
+pdf.addImage(canvas.toDataURL("image/png"), "PNG", x, y, drawW, drawH);
+pdf.save("liberacao-" + dataDe + "-" + dataAte + ".pdf");
+setStatus("PDF gerado · " + brDate(dataDe) + " a " + brDate(dataAte), "ok");
+} finally {
+document.body.classList.remove("pdf-exporting");
+window.portalOcultarCarregando?.();
+}
+}
+
+async function iniciar(){
+if (window.Chart && window.ChartDataLabels) {
+try { Chart.register(ChartDataLabels); } catch (_) {}
+}
+montarHtmlGraficos();
+if (!window.Chart) {
+setStatus("Não foi possível carregar os gráficos. Recarregue a página.", "erro");
+return;
+}
+if (!liberacaoManifest) liberacaoManifest = await carregarManifestLiberacao();
+const padrao = datasIniciaisDashboard();
+$("dataDe").value = padrao.de;
+$("dataAte").value = padrao.ate;
+$("dataDe").addEventListener("change", agendarRecarga);
+$("dataAte").addEventListener("change", agendarRecarga);
+$("btnPdf").addEventListener("click", () => gerarPdf().catch(e => setStatus(e.message,"erro")));
+document.getElementById("dkThemeToggle")?.addEventListener("click", () => {
+if(Object.keys(state.charts).length) renderGraficos();
+});
+window.addEventListener("dk-theme-change", () => {
+if(Object.keys(state.charts).length) renderGraficos();
+});
+carregar().catch(e => setStatus(e.message,"erro"));
+}
+
+if(window.portalUsuarioValidado) iniciar();
+else window.addEventListener("portal:usuario-validado", iniciar, { once: true });
+</script>
+<script src="../assets/js/portal-futuristic.js?v=20260718am" defer></script>
+</body>
+</html>
