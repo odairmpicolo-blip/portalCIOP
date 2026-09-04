@@ -1471,12 +1471,12 @@ function gerarTextoModelo(tipo, ctx) {
     const modelos = {
         carro_adiantado: juntar(abertura + "\nO veículo passou adiantado em relação ao horário previsto.", horarios, complementos, "O cumprimento de horário é essencial para a operação."),
         atraso_frequente: juntar(abertura + "\nForam registrados atrasos recorrentes em relação aos horários previstos.", horarios, complementos, "O cumprimento de horário é essencial para a operação. Os motivos dos atrasos devem ser informados ao CIOP."),
-        nao_login_tdm: juntar(abertura + "\nO login no TDM não foi realizado no início da operação.", complementos, "O login no TDM deve ser realizado antes do início da operação para permitir o acompanhamento do serviço."),
-        nao_acatou_ciop: juntar(abertura + "\nA orientação transmitida pelo CIOP não foi cumprida.", "Orientação recebida - [descreva a orientação]\nJustificativa apresentada - [registre a justificativa, se houver]", complementos, "O cumprimento das orientações do CIOP é essencial para a organização da operação."),
-        nao_acatou_cmtu: juntar(abertura + "\nA orientação da CMTU" + (agente ? ", transmitida pelo agente " + agente + "," : "") + " não foi cumprida.", "Orientação recebida - [descreva a orientação]\nJustificativa apresentada - [registre a justificativa, se houver]", complementos, "O cumprimento das orientações da CMTU é essencial para a regularidade do serviço."),
-        supressao_viagem: juntar("No dia " + data + ", o funcionário " + pessoa + " estava vinculado à operação " + operacao + ". A viagem prevista não foi realizada.", "Horário de tabela - " + (ctx.horarioTabela || "[horário previsto]"), "Motivo - [informe o motivo, se conhecido]\nProvidências adotadas - [descreva as providências]", complementos, "O cumprimento das viagens programadas é essencial para o atendimento aos passageiros."),
-        desvio_itinerario: juntar(abertura + "\nO veículo passou por um trajeto diferente do itinerário previsto, sem justificativa informada.", "Trecho alterado - [informe o trecho]\nJustificativa apresentada - [registre a justificativa, se houver]", complementos, "O cumprimento do itinerário é essencial para o atendimento aos passageiros. Alterações devem ser comunicadas ao CIOP."),
-        informativo: juntar("No dia " + data + ", o CIOP registra as informações sobre a operação " + operacao + ".", "[Descreva os fatos observados.]", (ctx.horarioTabela || ctx.horarioRealizado) ? horarios : "", complementos, "Providências adotadas - [descreva as providências, se houver]")
+        nao_login_tdm: juntar(abertura + "\nO login no TDM não foi realizado no início da operação.", horarios, complementos, "O login no TDM deve ser realizado antes do início da operação para permitir o acompanhamento do serviço."),
+        nao_acatou_ciop: juntar(abertura + "\nA orientação transmitida pelo CIOP não foi cumprida.", "Orientação recebida - [descreva a orientação]\nJustificativa apresentada - [registre a justificativa, se houver]", horarios, complementos, "O cumprimento das orientações do CIOP é essencial para a organização da operação."),
+        nao_acatou_cmtu: juntar(abertura + "\nA orientação da CMTU" + (agente ? ", transmitida pelo agente " + agente + "," : "") + " não foi cumprida.", "Orientação recebida - [descreva a orientação]\nJustificativa apresentada - [registre a justificativa, se houver]", horarios, complementos, "O cumprimento das orientações da CMTU é essencial para a regularidade do serviço."),
+        supressao_viagem: juntar("No dia " + data + ", o funcionário " + pessoa + " estava vinculado à operação " + operacao + ". A viagem prevista não foi realizada.", horarios, "Motivo - [informe o motivo, se conhecido]\nProvidências adotadas - [descreva as providências]", complementos, "O cumprimento das viagens programadas é essencial para o atendimento aos passageiros."),
+        desvio_itinerario: juntar(abertura + "\nO veículo passou por um trajeto diferente do itinerário previsto, sem justificativa informada.", "Trecho alterado - [informe o trecho]\nJustificativa apresentada - [registre a justificativa, se houver]", horarios, complementos, "O cumprimento do itinerário é essencial para o atendimento aos passageiros. Alterações devem ser comunicadas ao CIOP."),
+        informativo: juntar("No dia " + data + ", o CIOP registra as informações sobre a operação " + operacao + ".", "[Descreva os fatos observados.]", horarios, complementos, "Providências adotadas - [descreva as providências, se houver]")
     };
     return modelos[tipo] || modelos.informativo;
 }
@@ -2388,11 +2388,22 @@ async function construirPdfRelatorio() {
     const imgData = canvas.toDataURL("image/jpeg", 0.95);
     const imgH = (canvas.height * pageW) / canvas.width;
 
+    /* Uma captura com diferença mínima de arredondamento ainda pertence a uma folha A4. */
+    const toleranciaA4 = 3;
+    if (imgH <= pageH + toleranciaA4) {
+        const alturaFinal = Math.min(imgH, pageH);
+        const larguraFinal = pageW * (alturaFinal / imgH);
+        const xFinal = (pageW - larguraFinal) / 2;
+        pdf.addImage(imgData, "JPEG", xFinal, 0, larguraFinal, alturaFinal, undefined, "MEDIUM");
+        return pdf;
+    }
+
+    /* Páginas adicionais são criadas somente quando o conteúdo realmente excede o A4. */
     let y = 0;
     let restante = imgH;
     pdf.addImage(imgData, "JPEG", 0, y, pageW, imgH, undefined, "MEDIUM");
     restante -= pageH;
-    while (restante > 1) {
+    while (restante > toleranciaA4) {
         pdf.addPage();
         y = restante - imgH;
         pdf.addImage(imgData, "JPEG", 0, y, pageW, imgH, undefined, "MEDIUM");
