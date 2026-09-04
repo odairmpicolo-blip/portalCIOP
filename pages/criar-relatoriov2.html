@@ -1099,7 +1099,7 @@ body.pdf-exporting .report-foot{
                         <strong id="previewCarro"></strong>
                     </div>
                     <div class="report-field preview-funcionario">
-                        <span>Funcionário · Registro e nome completo</span>
+                        <span>Funcionário</span>
                         <strong><span id="previewRegistro"></span><span id="previewNome"></span></strong>
                     </div>
                     <div class="report-field preview-funcionario">
@@ -1146,7 +1146,7 @@ body.pdf-exporting .report-foot{
 <script type="module">
 import { buscarUsuarioFirestore, normalizarCadastro } from "../assets/js/portal-firestore.js";
 import { usuarios as usuariosLocais } from "../assets/js/usuarios.js";
-import { TIPOS_RELATORIO, gerarTextoModelo, gerarTextoIA, corrigirTextoIA, configurarRelatorioIa, resumirErroIa } from "../assets/js/relatorio-ia.js?v=20260701b";
+import { TIPOS_RELATORIO, gerarTextoIA, corrigirTextoIA, configurarRelatorioIa, resumirErroIa } from "../assets/js/relatorio-ia.js?v=20260701b";
 import { salvarPdfRelatorioOcorrencia } from "../assets/js/relatorio-storage.js?v=20260817a";
 import { initPortalAwsRuntime } from "../assets/js/portal-aws-config.js";
 
@@ -1249,6 +1249,34 @@ let colunasDadosGerais = { carro: 6, linha: 7, motorista: 5 };
 let tipoRelatorio = null;
 let iaBusy = false;
 
+const nomesComerciaisLinhas = {"001": "Reserva de operação", "081": "Especial Epesmel", "086": "Especial Apae", "087": "Especial Guarda Mirim", "091": "Corujão Parigot de Souza", "092": "Corujão parque Waldemar Hauer", "093": "Corujão Aquiles", "096": "Corujão guilherme Pires", "097": "Corujão Avelino Vieira", "099": "Corujão São Francisco", "100": "Ceasa", "101": "Novo Amparo", "102": "Ideal", "103": "Santa Fé", "104": "Interlagos", "106": "Guilherme Pires", "107": "Hemocentro", "108": "Albatroz", "109": "Rodoviária - Boulevard", "110": "Mister Thomas", "111": "Eucaliptos", "112": "Alexandre Urbanas", "113": "Pioneiros", "121": "Três Figueiras", "200T": "Vila Brasil", "301": "Presidente", "302": "Hedi", "303": "Tóquio", "305": "Campus", "306": "Cidade Universitária", "307": "Avelino Vieira", "308": "Bandeirantes", "309": "Ney Braga", "310": "Jardim do Sol", "311": "Santa Rita", "312": "Santo André", "313": "Jardim Maria Lúcia", "314": "Olímpico", "315": "Columbia", "317": "Maracanã", "351": "Parador Terminal Oeste - Termina", "360": "Exposição Agro Pecuária", "400": "Parigot", "401": "Chefe Newton", "402": "Vivi Xavier", "404": "Heimtal", "405": "Maria Cecília", "406": "Aquiles Stenguel", "407": "João paz", "408T": "Recreio", "412": "Hilda Mandarino", "413": "Residencial do Café", "414": "Nova Olinda", "415": "Jd. Itapoá", "417": "Jd. Catuaí", "418": "Jd. Dom Vicente", "419": "Porto Seguro", "420": "Jd. Alto da Boa Vista", "421": "Jd. Alpes", "423": "São Jorge", "424": "Maristela", "425": "Comercial Norte", "426": "Paris", "427": "Terminal Vivi - Warta", "428": "Vista bela", "430": "Residencial Flor de Lótus", "432": "Cidade Industrial", "444": "Terminal Milton gavetti - Warta", "445": "Felicidade", "446": "Terminal Gavetti/ Shopping Londr", "447": "Jardim Flores do Campo", "448": "BRF", "449": "Residencial Lituânia", "501": "Parador Terminal Vivi Xavier", "502": "Terminal Ouro Verde (via Residen", "504": "Terminal Milton Gavetti - Termin", "505": "Expresso Terminal Vivi Xavier -", "512": "Parador Terminal Ouro Verde", "703": "Rápido Aquiles - centro", "706": "Rápido Maria Cecília - centro", "800T": "Terminal Acapulco - Terminal Viv", "801T": "Centro Cívico", "802T": "Terminal Vivi Xavier - Av. Bande", "803": "Terminal Vivi - Shopping Catuaí", "804T": "Terminal Oeste - Gleba Palhano", "806T": "Av. Saul Elkind - Shopping Catua", "835": "UEL - Terminal Milton gavetti", "900": "Terminal Vivi - HU", "901": "Cacique - Cinco Conjuntos", "902": "Terminal Vivi - Av. Maritacas", "904": "Terminal Vivi - UEL - Terminal A", "913T": "Av. Robert Koch - Gleba Palhano", "931": "Terminal Oeste - Terminal Ouro V", "932": "Terminal Vivi - UEL - Terminal A"};
+function nomeComercialLinha(valor) {
+    const texto = String(valor || "").trim();
+    const codigo = texto.match(/^\d+(?=\s|$|[-–])/);
+    if (!codigo) return texto;
+    const chave = codigo[0].padStart(3, "0");
+    return nomesComerciaisLinhas[chave] || nomesComerciaisLinhas[codigo[0]] || texto;
+}
+function gerarTextoModelo(tipo, ctx) {
+    const data = ctx.data || "[data]";
+    const pessoa = (ctx.nome || "[nome do funcionário]") + (ctx.registro ? ", registro " + ctx.registro : "");
+    const operacao = [ctx.carro ? "carro " + ctx.carro : "", ctx.linha ? "linha " + ctx.linha : ""].filter(Boolean).join(", ");
+    const abertura = "Em " + data + ", " + pessoa + (operacao ? " (" + operacao + ")" : "");
+    const minutos = String(ctx.quantidade || ctx.minutos || "").trim();
+    const agente = String(ctx.agenteOrgaoGestor || ctx.agenteCmtu || "").trim();
+    const modelos = {
+        carro_adiantado: abertura + " iniciou a viagem " + (minutos ? minutos + " minutos antes do horário previsto." : "antes do horário previsto.") + "\n\nÉ necessário cumprir os horários programados.",
+        atraso_frequente: abertura + " apresentou atrasos recorrentes no cumprimento dos horários.\n\nRegistrar os horários e as causas para acompanhamento da operação.",
+        nao_login_tdm: abertura + " iniciou a operação sem realizar login no TDM.\n\nO login deve ser realizado antes do início da operação.",
+        nao_acatou_ciop: abertura + " não cumpriu a orientação transmitida pelo CIOP.\n\nRegistrar a orientação recebida e a justificativa apresentada.",
+        nao_acatou_cmtu: abertura + " não cumpriu a orientação da CMTU" + (agente ? ", transmitida pelo agente " + agente : "") + ".\n\nRegistrar a orientação recebida e a justificativa apresentada.",
+        supressao_viagem: "Em " + data + ", não foi realizada uma viagem prevista na programação" + (operacao ? " (" + operacao + ")" : "") + ". Funcionário vinculado: " + pessoa + ".\n\nRegistrar o horário da viagem, o motivo e as providências adotadas.",
+        desvio_itinerario: abertura + " realizou um trajeto diferente do itinerário previsto, sem justificativa informada.\n\nRegistrar o trecho alterado e solicitar esclarecimentos.",
+        informativo: "Em " + data + ", o CIOP registra as informações a seguir" + (operacao ? " sobre " + operacao : "") + ".\n\n[Descreva os fatos e as providências adotadas.]"
+    };
+    return modelos[tipo] || modelos.informativo;
+}
+
 function ehInformativo() {
     return !!TIPOS_RELATORIO[tipoRelatorio]?.informativo;
 }
@@ -1263,7 +1291,7 @@ function contextoRelatorio() {
         registro: campos.registro.value,
         funcao: campos.funcao.value,
         carro: campos.carro.value,
-        linha: campos.linha.value,
+        linha: nomeComercialLinha(campos.linha.value),
         quantidade: params.get("quantidade") || params.get("minutos") || "",
         agenteOrgaoGestor: campos.agenteOrgaoGestor?.value || params.get("agente") || params.get("agenteCmtu") || ""
     };
@@ -1625,45 +1653,8 @@ function removerAutorizacaoCiop(texto) {
     return saida;
 }
 
-function textoProfissionalAdiantamento(ctx) {
-    const data = ctx.data || "data informada";
-    const nome = String(ctx.nome || "funcionário").trim();
-    const registro = String(ctx.registro || "").trim();
-    const funcao = String(ctx.funcao || "colaborador").trim();
-    const carro = String(ctx.carro || "").trim();
-    const linha = String(ctx.linha || "").trim();
-
-    const identificacao = [
-        funcao ? "o(a) " + funcao.toLowerCase() : "o(a) colaborador(a)",
-        nome || "",
-        registro ? "registro " + registro : ""
-    ].filter(Boolean).join(", ");
-
-    const operacao = [
-        carro ? "veículo " + carro : "",
-        linha ? "linha/rota " + linha : ""
-    ].filter(Boolean).join(", ");
-
-    return [
-        "Na data de " + data + ", foi constatado que " + identificacao +
-        (operacao ? ", em operação no " + operacao : "") +
-        ", encontrava-se adiantado em relação ao horário previsto para a operação.",
-        "O presente registro tem por finalidade formalizar a ocorrência e reforçar a necessidade de cumprimento da programação estabelecida, preservando a regularidade da operação, o intervalo previsto entre os veículos e a qualidade do serviço prestado aos usuários.",
-        "Solicita-se atenção ao cumprimento dos horários programados, evitando novos adiantamentos e eventuais impactos na operação."
-    ].join("\\n\\n");
-}
-
 function profissionalizarTextoAutomatico(tipo, texto, ctx) {
-    let saida = String(texto || "");
-
-    if (tipo === "carro_adiantado") {
-        saida = textoProfissionalAdiantamento(ctx);
-    }
-
-    /* Aplicado a todos os modelos automáticos. */
-    saida = removerAutorizacaoCiop(saida);
-
-    return saida.trim();
+    return removerAutorizacaoCiop(String(texto || "")).trim();
 }
 
 function gerarCorpoPadrao() {
@@ -1677,16 +1668,7 @@ function gerarCorpoPadrao() {
         );
     }
 
-    const data = normalizarDataInput(campos.data.value);
-    const nome = campos.nome.value || "nome do funcionário";
-    const registro = campos.registro.value || "registro";
-    const funcao = campos.funcao.value || "função";
-    const carro = campos.carro.value ? ", carro " + campos.carro.value : "";
-    const linha = campos.linha.value ? ", linha/rota " + campos.linha.value : "";
-
-    return "Na data de " + data + ", foi registrada ocorrência envolvendo o(a) " +
-        funcao.toLowerCase() + " " + nome + ", registro " + registro + carro + linha +
-        ".\\n\\nO presente relatório tem por finalidade formalizar os fatos observados e registrar as informações pertinentes para conhecimento e acompanhamento.";
+    return gerarTextoModelo("informativo", ctx);
 }
 
 function atualizarCorpoPDF() {
@@ -1727,7 +1709,7 @@ function atualizarPreview() {
     if (preview.hora) preview.hora.textContent = campos.hora?.value ? " · " + campos.hora.value : "";
     if (preview.local) preview.local.textContent = campos.local?.value || "-";
     preview.carro.textContent = campos.carro.value || "";
-    preview.linha.textContent = campos.linha.value || "";
+    preview.linha.textContent = nomeComercialLinha(campos.linha.value);
     const user = usuarioCriador;
     const imagemAssinatura = document.getElementById("previewAssinaturaImagem");
     const registroAssinatura = String(user?.registro || "").trim();
@@ -1841,6 +1823,15 @@ async function carregarAssinaturaUsuarioLogado() {
 }
 
 async function iniciarRelatorio() {
+    fetch("../assets/data/cr0108/meta.json", { cache: "no-store" })
+        .then(res => { if (!res.ok) throw new Error("Base de linhas indisponível"); return res.json(); })
+        .then(meta => {
+            if (meta.linhas && typeof meta.linhas === "object") {
+                Object.assign(nomesComerciaisLinhas, meta.linhas);
+                atualizarPreview();
+            }
+        }).catch(() => {});
+
     const cacheGids = lerCacheRelatorioCsv();
     let mostrouCache = false;
     if (cacheGids?.[GID_FUNCIONARIOS] && cacheGids?.[GID_DADOS]) {
