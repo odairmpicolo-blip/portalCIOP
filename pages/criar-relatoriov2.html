@@ -1027,7 +1027,7 @@ body.pdf-exporting .report-foot{
                     <input id="localRelatorio" type="text" placeholder="Informe o local da ocorrência">
                 </div>
                 <div>
-                    <label for="carroRelatorio">Carro</label>
+                    <label for="carroRelatorio">Veículo</label>
                     <input id="carroRelatorio" list="listaCarros" type="text">
                     <datalist id="listaCarros"></datalist>
                 </div>
@@ -1095,7 +1095,7 @@ body.pdf-exporting .report-foot{
                         <strong id="previewLocal"></strong>
                     </div>
                     <div class="report-field">
-                        <span>Carro</span>
+                        <span>Veículo</span>
                         <strong id="previewCarro"></strong>
                     </div>
                     <div class="report-field preview-funcionario">
@@ -1255,17 +1255,18 @@ function nomeComercialLinha(valor) {
     const codigo = texto.match(/^\d+(?=\s|$|[-–])/);
     if (!codigo) return texto;
     const chave = codigo[0].padStart(3, "0");
-    return nomesComerciaisLinhas[chave] || nomesComerciaisLinhas[codigo[0]] || texto;
+    const nome = nomesComerciaisLinhas[chave] || nomesComerciaisLinhas[codigo[0]];
+    return nome ? chave + " - " + nome : texto;
 }
 function gerarTextoModelo(tipo, ctx) {
     const data = ctx.data || "[data]";
     const pessoa = (ctx.nome || "[nome do funcionário]") + (ctx.registro ? ", registro " + ctx.registro : "");
-    const operacao = [ctx.carro ? "carro " + ctx.carro : "", ctx.linha ? "linha " + ctx.linha : ""].filter(Boolean).join(", ");
+    const operacao = [ctx.carro ? "veículo " + ctx.carro : "", ctx.linha ? "linha " + ctx.linha : ""].filter(Boolean).join(", ");
     const abertura = "Em " + data + ", " + pessoa + (operacao ? " (" + operacao + ")" : "");
     const minutos = String(ctx.quantidade || ctx.minutos || "").trim();
     const agente = String(ctx.agenteOrgaoGestor || ctx.agenteCmtu || "").trim();
     const modelos = {
-        carro_adiantado: abertura + " iniciou a viagem " + (minutos ? minutos + " minutos antes do horário previsto." : "antes do horário previsto.") + "\n\nÉ necessário cumprir os horários programados.",
+        carro_adiantado: "Em " + data + ", o veículo" + (ctx.carro ? " " + ctx.carro : "") + (ctx.linha ? ", na linha " + ctx.linha + "," : "") + " estava atrasado em relação ao horário previsto" + (minutos ? " em " + minutos + " minutos" : "") + ". Funcionário vinculado: " + pessoa + ".\n\nÉ necessário cumprir os horários programados.",
         atraso_frequente: abertura + " apresentou atrasos recorrentes no cumprimento dos horários.\n\nRegistrar os horários e as causas para acompanhamento da operação.",
         nao_login_tdm: abertura + " iniciou a operação sem realizar login no TDM.\n\nO login deve ser realizado antes do início da operação.",
         nao_acatou_ciop: abertura + " não cumpriu a orientação transmitida pelo CIOP.\n\nRegistrar a orientação recebida e a justificativa apresentada.",
@@ -1754,7 +1755,7 @@ function preencherFuncionarioPorRegistro() {
         setStatus("Registro " + registro + " não encontrado na base de funcionários.", "erro");
     } else if (funcionario) {
         const extra = vinculo?.carro || vinculo?.linha
-            ? " Carro/linha preenchidos conforme a base."
+            ? " Veículo e linha preenchidos conforme a base."
             : "";
         setStatus("Funcionário carregado: " + funcionario.registro + " - " + funcionario.nome + "." + extra, "ok");
     }
