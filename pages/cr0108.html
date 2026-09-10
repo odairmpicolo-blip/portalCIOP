@@ -311,7 +311,7 @@ tr.det-ponto.aberta>td,tr.det-horario.aberta>td{background:rgba(31,111,235,.12)}
      do cache antes do download do fonte.js, retomava com Fonte ainda indefinida.
      Uma corrida que so aparecia quando o script nao estava em cache. -->
 <script src="../assets/js/cr0108-serie.js?v=20260817q"></script>
-<script src="../assets/js/cr0108-fonte.js?v=20260824lin110"></script>
+<script src="../assets/js/cr0108-fonte.js?v=20260910-empty1"></script>
 
 <script>
 "use strict";
@@ -772,12 +772,11 @@ function temDados(lista){
 }
 
 async function pintar(dados, origem){
-    /* A 1ª passada (arquivo) aplica o recorte novo, mesmo vazio.
-       A 2ª (banco) só substitui se veio dado: [] é truthy em JS e apagava a tela. */
+    /* Arrays vazios são resultados válidos. null indica indisponibilidade do recorte. */
     const doBanco = origem === "banco";
-    if (!doBanco || temDados(dados.serie)) estado.serie = dados.serie;
-    if (!doBanco || temDados(dados.hora)) estado.hora = dados.hora;
-    if (!doBanco || dados.serieAnterior === null || temDados(dados.serieAnterior)) {
+    if (!doBanco || Array.isArray(dados.serie)) estado.serie = dados.serie;
+    if (!doBanco || Array.isArray(dados.hora)) estado.hora = dados.hora;
+    if (!doBanco || dados.serieAnterior === null || Array.isArray(dados.serieAnterior)) {
         estado.serieAnterior = dados.serieAnterior;
     }
     renderKpis();
@@ -809,7 +808,7 @@ async function renderTudo(){
             if (!(await Fonte.disponivel())) return;
             const dados = await buscarTudo(filtro, p);
             if (seq !== renderSeq) return;          // os filtros mudaram no meio do caminho
-            if (temDados(dados.serie) || temDados(dados.hora)) await pintar(dados, "banco");
+            if (Array.isArray(dados.serie) || Array.isArray(dados.hora)) await pintar(dados, "banco");
         } catch (err){
             console.info("CR-0108: banco nao respondeu; a tela segue com os arquivos.", err && err.message);
         }
