@@ -20,6 +20,9 @@ if ! "$AWS" sts get-caller-identity --region "$REGION" >/dev/null 2>&1; then
   exit 1
 fi
 
+echo "==> Dependências da API"
+(cd "$ROOT/backend" && npm ci --ignore-scripts --no-audit --no-fund)
+
 echo "==> Testes da API"
 (cd "$ROOT/backend" && npm test)
 
