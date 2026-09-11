@@ -107,18 +107,18 @@ function juntar(listas, chaves) {
  * Roda a consulta uma vez por faixa, em paralelo, e junta.
  * `montar(sqlInterno)` devolve o SQL externo; `chaves` diz por onde agrupar ao somar.
  */
-async function consultar(req, colunas, montar, chaves) {
+async function consultar(req, colunas, montar, chaves, datas = null) {
   const pedacos = faixas(req);
   const resultados = await Promise.all(pedacos.map((f) => {
     const reqFaixa = { query: { ...req.query, ...(f.de ? { de: f.de, ate: f.ate } : {}) } };
-    const b = base(reqFaixa, colunas);
+    const b = base(reqFaixa, colunas, datas);
     return query(montar(b.sql), b.par).then((r) => r.rows);
   }));
   return pedacos.length === 1 ? resultados[0] : juntar(resultados, chaves);
 }
 
 /** Monta o SELECT interno já com os minutos calculados e os filtros aplicados. */
-function base(req, colunas = []) {
+function base(req, colunas = [], datas = null) {
   const cond = [];
   const par = [];
   const add = (sql, valor) => { par.push(valor); cond.push(sql.replace("?", `$${par.length}`)); };
@@ -128,6 +128,7 @@ function base(req, colunas = []) {
   if (ISO.test(de)) add("data_ref >= ?::date", de);
   if (ISO.test(ate)) add("data_ref <= ?::date", ate);
   /* TEXT no DSQL vem com espaço; sem btrim o filtro "110" zera a série. */
+  if (datas) add("data_ref = ANY(?::date[])", datas);
   if (req.query.linha) add("btrim(linha) = btrim(?)", String(req.query.linha).trim());
   if (req.query.sentido) add("btrim(direcao) = btrim(?)", String(req.query.sentido).trim());
   if (req.query.garagem) add("garagem = ?", String(req.query.garagem));
@@ -196,6 +197,37 @@ function filtroAgregado(req, comLinha) {
   return { where: cond.length ? `WHERE ${cond.join(" AND ")}` : "", par };
 }
 
+/** Confere a cobertura por dia antes de usar o resumo. Dias parciais são
+ * substituídos inteiros pela base original, evitando dupla contagem. */
+async function consultarResumo(req, tabela, comLinha, montarResumo, colunas, montarOriginal, chaves) {
+  if (!["cr0108_dia_linha", "cr0108_dia_hora"].includes(tabela)) {
+    throw new Error("Agregado inválido");
+  }
+  // A cobertura é do dia inteiro: filtros de linha/sentido/tipo de dia são
+  // aplicados só à consulta final, nunca à comparação com o controle da carga.
+  const periodo = filtroAgregado({ query: { de: req.query.de, ate: req.query.ate } }, false);
+  const cobertura = await query(`
+    SELECT c.data_ref::text AS data
+    FROM (SELECT data_ref, sum(linhas) AS total FROM cr_0108_cargas
+          ${periodo.where} GROUP BY data_ref) c
+    LEFT JOIN (SELECT data_ref, sum(total) AS total FROM ${tabela}
+               ${periodo.where} GROUP BY data_ref) a ON a.data_ref = c.data_ref
+    WHERE a.total IS NULL OR a.total <> c.total
+    ORDER BY c.data_ref`, periodo.par);
+  const datas = cobertura.rows.map(r => r.data);
+  const f = filtroAgregado(req, comLinha);
+  if (datas.length) {
+    f.par.push(datas);
+    f.where += `${f.where ? " AND" : "WHERE"} NOT (data_ref = ANY($${f.par.length}::date[]))`;
+  }
+  const resumo = await query(montarResumo(f.where), f.par);
+  if (!datas.length) return { itens: resumo.rows, origem: "agregado" };
+  // Limita as faixas ao primeiro e último dia faltante, mantendo os demais filtros.
+  const recorte = { query: { ...req.query, de: datas[0], ate: datas[datas.length - 1] } };
+  const originais = await consultar(recorte, colunas, montarOriginal, chaves, datas);
+  return { itens: juntar([resumo.rows, originais], chaves), origem: "agregado+dsql" };
+}
+
 function erro(res, err) {
   console.error("cr0108:", err);
   res.status(500).json({ ok: false, erro: err.message });
@@ -234,12 +266,12 @@ router.get("/serie", requireFirebaseUser, async (req, res) => {
         (sql) => `SELECT data_ref::text AS data, ${AGG} FROM (${sql}) t GROUP BY data_ref ORDER BY data_ref`,
         ["data"]);
     } else {
-      const f = filtroAgregado(req, true);
-      const r = await query(
-        `SELECT data_ref::text AS data, ${AGG_PRE}
-         FROM cr0108_dia_linha ${f.where}
-         GROUP BY data_ref ORDER BY data_ref`, f.par);
-      itens = r.rows;
+      ({ itens, origem } = await consultarResumo(req, "cr0108_dia_linha", true,
+        where => `SELECT data_ref::text AS data, ${AGG_PRE}
+                  FROM cr0108_dia_linha ${where} GROUP BY data_ref ORDER BY data_ref`,
+        ["data_ref"],
+        sql => `SELECT data_ref::text AS data, ${AGG} FROM (${sql}) t GROUP BY data_ref ORDER BY data_ref`,
+        ["data"]));
     }
     itens.sort((a, b2) => a.data.localeCompare(b2.data));
     res.json({ ok: true, origem, itens });
@@ -273,11 +305,10 @@ router.get("/ranking", requireFirebaseUser, async (req, res) => {
         (sql) => `SELECT ${col} AS chave, ${AGG} FROM (${sql}) t GROUP BY ${col}`,
         ["chave"]);
     } else {
-      const f = filtroAgregado(req, true);
-      const r = await query(
-        `SELECT linha AS chave, ${AGG_PRE}
-         FROM cr0108_dia_linha ${f.where} GROUP BY linha`, f.par);
-      itens = r.rows;
+      ({ itens, origem } = await consultarResumo(req, "cr0108_dia_linha", true,
+        where => `SELECT linha AS chave, ${AGG_PRE} FROM cr0108_dia_linha ${where} GROUP BY linha`,
+        [col], sql => `SELECT ${col} AS chave, ${AGG} FROM (${sql}) t GROUP BY ${col}`,
+        ["chave"]));
     }
     itens.sort((a, b2) => Number(b2.total) - Number(a.total));
     res.json({ ok: true, origem, dimensao: col, itens: itens.slice(0, limite) });
@@ -313,10 +344,10 @@ router.get("/hora", requireFirebaseUser, async (req, res) => {
       itens = await consultar(req, [`${HORA} AS hora`],
         (sql) => `SELECT hora, ${AGG} FROM (${sql}) t GROUP BY hora`, ["hora"]);
     } else {
-      const f = filtroAgregado(req, false);
-      const r = await query(
-        `SELECT hora, ${AGG_PRE} FROM cr0108_dia_hora ${f.where} GROUP BY hora`, f.par);
-      itens = r.rows;
+      ({ itens, origem } = await consultarResumo(req, "cr0108_dia_hora", false,
+        where => `SELECT hora, ${AGG_PRE} FROM cr0108_dia_hora ${where} GROUP BY hora`,
+        [`${HORA} AS hora`], sql => `SELECT hora, ${AGG} FROM (${sql}) t GROUP BY hora`,
+        ["hora"]));
     }
     itens.sort((a, b2) => String(a.hora).localeCompare(String(b2.hora)));
     res.json({ ok: true, origem, itens });
