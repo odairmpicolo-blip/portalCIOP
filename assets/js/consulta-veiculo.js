@@ -44,6 +44,23 @@
     return t.includes("ar condicionado");
   }
 
+  function sistemaPorVeiculo(prefixo, tecnologia) {
+    if (["4526", "4527", "4528", "4529"].includes(String(prefixo))) return "PadAz13Ar";
+    const t = norm(tecnologia);
+    if (t.includes("articulado")) return "ArtVm18Ar";
+    if (t.includes("leve amarelo")) return "LevAm11";
+    if (t.includes("leve azul")) return "LevAz11";
+    if (t.includes("low entry")) return "LowAz09Ar";
+    if (t.includes("microonibus amarelo")) return "MinAm09";
+    if (t.includes("microonibus azul")) return "MinAz09";
+    if (t.includes("padron")) return "SupVm13Ar";
+    if (t.includes("pesado amarelo") && temArCondicionado(t)) return "PesAm13Ar";
+    if (t.includes("pesado amarelo")) return "PesAm13";
+    if (t.includes("pesado azul") && temArCondicionado(t)) return "PesAz13Ar";
+    if (t.includes("pesado azul")) return "PesAz13";
+    return "—";
+  }
+
   function fotoPorTecnologia(tecnologia, modelo) {
     const t = norm(tecnologia);
     const m = norm(modelo);
@@ -78,10 +95,11 @@
         placa,
         placaKey: placaLimpa(placa),
         tecnologia,
+        sistema: sistemaPorVeiculo(prefixo, tecnologia),
         modelo: partes.modelo,
         tamanho: partes.tamanho,
         foto: fotoArq ? new URL(FOTOS + fotoArq, document.baseURI).href : "",
-        busca: norm([prefixo, placa, tecnologia, modeloBruto, partes.modelo, partes.tamanho].join(" "))
+        busca: norm([prefixo, placa, tecnologia, sistemaPorVeiculo(prefixo, tecnologia), modeloBruto, partes.modelo, partes.tamanho].join(" "))
       };
     });
   }
@@ -181,6 +199,7 @@
     document.getElementById("cvPrefixo").textContent = v.prefixo;
     document.getElementById("cvPlaca").textContent = v.placa || "—";
     document.getElementById("cvTec").textContent = v.tecnologia || "—";
+    document.getElementById("cvSistema").textContent = v.sistema || "—";
     document.getElementById("cvModelo").textContent = v.modelo || "—";
     const tamDt = document.getElementById("cvTamDt");
     const tamDd = document.getElementById("cvTamanho");
