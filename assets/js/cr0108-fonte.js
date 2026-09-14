@@ -421,7 +421,7 @@ function montarAjustes(bins, nomes = {}) {
     const fx = porFaixa.get(fk);
     Object.entries(h.cnt).forEach(([d, n]) => { fx.cnt[d] = (fx.cnt[d] || 0) + n; });
 
-    if (!/^\d{1,2}:\d{2}$/.test(h.programado) || a.n < 20) return;
+    if (!/^\d{1,2}:\d{2}$/.test(h.programado) || a.n < 5) return;
     if (a.shift === 0 || a.recuperadas < 5) return;
     horarios.push({
       linha: h.linha, sentido: h.sentido, ponto: h.ponto,
@@ -433,7 +433,7 @@ function montarAjustes(bins, nomes = {}) {
   const pontos = [];
   porPonto.forEach((p, pk) => {
     const a = avaliaHist(p.cnt);
-    if (!a || a.n < 60) return;
+    if (!a || a.n < 15) return;
     const faixas = [];
     porFaixa.forEach((f, fk) => {
       if (!fk.startsWith(pk + "\u0001")) return;
