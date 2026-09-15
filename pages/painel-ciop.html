@@ -188,6 +188,25 @@
     font-variant-numeric:tabular-nums; color:var(--ink);
     text-shadow:0 0 24px var(--glow);
   }
+  .firm-week-row, .firm-pct-row{
+    display:flex; align-items:baseline; gap:clamp(10px,1.2vw,16px); flex-wrap:wrap;
+  }
+  .firm-delta{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:clamp(15px,1.35vw,22px); font-weight:800; letter-spacing:.02em;
+    padding:6px 12px; border-radius:999px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.06);
+    white-space:nowrap;
+  }
+  .firm-delta b{ font-size:1.05em; }
+  .firm-delta small{
+    font-size:.62em; font-weight:800; letter-spacing:.08em; text-transform:uppercase; opacity:.75;
+  }
+  .firm-delta.up{ color:#4ade80; background:rgba(34,197,94,.16); border-color:rgba(74,222,128,.35); }
+  .firm-delta.down{ color:#fb7185; background:rgba(239,68,68,.16); border-color:rgba(251,113,133,.35); }
+  .firm-delta.flat{ color:#d7e2f6; }
+  .firm-delta-lg{ font-size:clamp(18px,1.8vw,28px); align-self:center; }
   .firm-hero{
     position:relative; min-height:0;
     display:flex; flex-direction:column; justify-content:center; gap:8px;
@@ -422,7 +441,7 @@
         <div class="brand-sub">CIOP — Centro de Inteligência Operacional de Londrina</div>
       </div>
     </div>
-    <div class="hdr-right"><span class="live-dot"></span><span id="slideTag">Área 1 · Área 2 · Total</span></div>
+    <div class="hdr-right"><span class="live-dot"></span><span id="slideTag">Área 1 · Área 2 · Sistema</span></div>
   </header>
 
   <main class="viewport">
@@ -443,11 +462,17 @@
             </div>
             <div class="firm-block">
               <div class="firm-label">Média da semana</div>
-              <div class="firm-week-pct" id="weekTcgl">—</div>
+              <div class="firm-week-row">
+                <div class="firm-week-pct" id="weekTcgl">—</div>
+                <div class="firm-delta flat" id="weekDeltaTcgl">—</div>
+              </div>
             </div>
             <div class="firm-hero">
               <div class="firm-label">No horário</div>
-              <div class="firm-pct" id="pctTcgl">--%</div>
+              <div class="firm-pct-row">
+                <div class="firm-pct" id="pctTcgl">--%</div>
+                <div class="firm-delta firm-delta-lg flat" id="dayDeltaTcgl">—</div>
+              </div>
               <div class="firm-day" id="dayTcgl">—</div>
             </div>
             <div class="firm-load" id="loadTcgl"><i></i></div>
@@ -460,11 +485,17 @@
             </div>
             <div class="firm-block">
               <div class="firm-label">Média da semana</div>
-              <div class="firm-week-pct" id="weekLs">—</div>
+              <div class="firm-week-row">
+                <div class="firm-week-pct" id="weekLs">—</div>
+                <div class="firm-delta flat" id="weekDeltaLs">—</div>
+              </div>
             </div>
             <div class="firm-hero">
               <div class="firm-label">No horário</div>
-              <div class="firm-pct" id="pctLs">--%</div>
+              <div class="firm-pct-row">
+                <div class="firm-pct" id="pctLs">--%</div>
+                <div class="firm-delta firm-delta-lg flat" id="dayDeltaLs">—</div>
+              </div>
               <div class="firm-day" id="dayLs">—</div>
             </div>
             <div class="firm-load" id="loadLs"><i></i></div>
@@ -472,16 +503,22 @@
           </article>
           <article class="firm ipv-ciop" id="card-ciop">
             <div class="firm-top">
-              <div class="firm-kicker">CIOP</div>
+              <div class="firm-kicker">SISTEMA</div>
               <h2>Total</h2>
             </div>
             <div class="firm-block">
               <div class="firm-label">Média das áreas</div>
-              <div class="firm-week-pct" id="weekCiop">—</div>
+              <div class="firm-week-row">
+                <div class="firm-week-pct" id="weekCiop">—</div>
+                <div class="firm-delta flat" id="weekDeltaCiop">—</div>
+              </div>
             </div>
             <div class="firm-hero">
               <div class="firm-label">No horário</div>
-              <div class="firm-pct" id="pctCiop">--%</div>
+              <div class="firm-pct-row">
+                <div class="firm-pct" id="pctCiop">--%</div>
+                <div class="firm-delta firm-delta-lg flat" id="dayDeltaCiop">—</div>
+              </div>
               <div class="firm-day" id="dayCiop">—</div>
             </div>
             <div class="firm-load" id="loadCiop"><i></i></div>
@@ -589,6 +626,11 @@ const CAMPANHAS = [
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const iso = (d) => d.toISOString().slice(0, 10);
+function shiftIso(s, n) {
+  const d = new Date(s + "T12:00:00");
+  d.setDate(d.getDate() + n);
+  return iso(d);
+}
 
 function semanaIpv(ref = new Date()) {
   const qDe = PARAMS.get("de");
@@ -643,12 +685,33 @@ function montarDias(de, ate) {
   return out;
 }
 
-function seriePorDia(serie) {
+function seriePorDia(serie, dias = DIAS) {
   const map = new Map((serie || []).map((x) => [x.data, x.ipv]));
-  return DIAS.map((d) => {
+  return dias.map((d) => {
     const v = map.get(d.iso);
     return v == null ? null : v;
   });
+}
+
+function pintarDelta(id, atual, anterior) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove("up", "down", "flat");
+  if (atual == null || anterior == null || !Number.isFinite(atual) || !Number.isFinite(anterior)) {
+    el.classList.add("flat");
+    el.innerHTML = "—";
+    return;
+  }
+  const d = atual - anterior;
+  if (Math.abs(d) < 0.05) {
+    el.classList.add("flat");
+    el.innerHTML = `<b>▸</b> 0,0 p.p. <small>vs ant.</small>`;
+    return;
+  }
+  const up = d > 0;
+  el.classList.add(up ? "up" : "down");
+  const txt = Math.abs(d).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  el.innerHTML = `<b>${up ? "▲" : "▼"}</b> ${up ? "+" : "−"}${txt} p.p. <small>vs ant.</small>`;
 }
 
 function setPct(id, v) {
@@ -686,9 +749,15 @@ function aplicarDia(n) {
   const a = estado.tcgl?.byDay?.[n] ?? null;
   const b = estado.ls?.byDay?.[n] ?? null;
   const t = a != null && b != null ? (a + b) / 2 : (a ?? b ?? null);
+  const a0 = estado.tcglAnt?.byDay?.[n] ?? null;
+  const b0 = estado.lsAnt?.byDay?.[n] ?? null;
+  const t0 = a0 != null && b0 != null ? (a0 + b0) / 2 : (a0 ?? b0 ?? null);
   setPct("pctTcgl", a);
   setPct("pctLs", b);
   setPct("pctCiop", t);
+  pintarDelta("dayDeltaTcgl", a, a0);
+  pintarDelta("dayDeltaLs", b, b0);
+  pintarDelta("dayDeltaCiop", t, t0);
   ["dayTcgl", "dayLs", "dayCiop"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.textContent = d.nome;
@@ -700,10 +769,12 @@ function aplicarDia(n) {
   ["loadTcgl", "loadLs", "loadCiop"].forEach(reiniciarLoad);
 }
 
-function pintarArea(prefix, bloco) {
+function pintarArea(prefix, bloco, ant) {
   const week = document.getElementById("week" + prefix);
   if (week) week.textContent = formatPct(bloco?.ipv);
-  if (bloco) bloco.byDay = seriePorDia(bloco.serie);
+  if (bloco) bloco.byDay = seriePorDia(bloco.serie, DIAS);
+  if (ant) ant.byDay = seriePorDia(ant.serie, DIAS_ANT);
+  pintarDelta("weekDelta" + prefix, bloco?.ipv, ant?.ipv);
 }
 
 function grupoClima(code) {
@@ -735,12 +806,12 @@ function comTimeout(promessa, ms, motivo) {
   ]);
 }
 
-async function carregarTcgl(de, ate) {
+async function carregarTcgl() {
   const res = await comTimeout(fetch(TCGL_URL, { cache: "no-store" }), 10000, "api tcgl");
   if (!res.ok) throw new Error("HTTP " + res.status);
   const payload = await res.json();
   if (!payload || payload.ok === false) throw new Error(payload?.erro || "IPV TCGL inválido");
-  return agregarTcgl(payload.dias || [], de, ate);
+  return payload.dias || [];
 }
 
 function agregarTcgl(itens, de, ate) {
@@ -754,18 +825,25 @@ function agregarTcgl(itens, de, ate) {
     serie.push({ data, ipv });
     soma += ipv;
   }
-  if (!serie.length) throw new Error("sem dias TCGL");
+  if (!serie.length) return { ipv: null, serie: [], origem: "tcgl" };
   return { ipv: soma / serie.length, serie, origem: "tcgl" };
 }
 
 function agregarLondrisul(payload, de, ate) {
+  const bruto = [];
+  for (const d of payload.dias || []) bruto.push(d);
+  for (const s of payload.semanas || []) {
+    for (const d of s.dias || []) bruto.push(d);
+  }
+  const visto = new Set();
   const serie = [];
   let peso = 0, somaPeso = 0, somaSimples = 0;
-  for (const d of payload.dias || []) {
+  for (const d of bruto) {
     const data = String(d.data || d.date || "").slice(0, 10);
-    if (!data || data < de || data > ate || d.sem_dados) continue;
+    if (!data || data < de || data > ate || d.sem_dados || visto.has(data)) continue;
     const ipv = toPct(d.no_horario_percent ?? d.no_horario ?? d.ipv);
     if (ipv == null) continue;
+    visto.add(data);
     serie.push({ data, ipv });
     const pts = Number(d.timepoints_processados) || 0;
     if (pts > 0) {
@@ -778,10 +856,10 @@ function agregarLondrisul(payload, de, ate) {
   return { ipv, serie, origem: "londrisul" };
 }
 
-async function carregarLondrisul(de, ate) {
+async function carregarLondrisul() {
   const res = await comTimeout(fetch(LS_URL, { cache: "no-store" }), 8000, "api londrisul");
   if (!res.ok) throw new Error("HTTP " + res.status);
-  return agregarLondrisul(await res.json(), de, ate);
+  return res.json();
 }
 
 async function carregarClima() {
@@ -834,15 +912,17 @@ function aplicarCampanha() {
 }
 
 const SEMANA = semanaIpv();
+const SEMANA_ANT = { de: shiftIso(SEMANA.de, -7), ate: shiftIso(SEMANA.ate, -7) };
 const ROTULO = rotuloFaixa(SEMANA.de, SEMANA.ate);
 const DIAS = montarDias(SEMANA.de, SEMANA.ate);
+const DIAS_ANT = montarDias(SEMANA_ANT.de, SEMANA_ANT.ate);
 document.getElementById("periodoBoard").textContent = ROTULO;
 aplicarCampanha();
 
 const CICLO = [
-  { id: "ipv", ms: IPV_MS, titulo: "PONTUALIDADE", tag: "TCGL · LondriSul · Total" },
+  { id: "ipv", ms: IPV_MS, titulo: "PONTUALIDADE", tag: "TCGL · LondriSul · Sistema" },
   { id: "tempo", ms: 10000, titulo: "Previsão do Tempo", tag: "Clima · Londrina/PR" },
-  { id: "ipv", ms: IPV_MS, titulo: "PONTUALIDADE", tag: "TCGL · LondriSul · Total" },
+  { id: "ipv", ms: IPV_MS, titulo: "PONTUALIDADE", tag: "TCGL · LondriSul · Sistema" },
   { id: "campanha", ms: 10000, titulo: CAMPANHAS[new Date().getMonth()].nome, tag: "Campanha do mês · CIOP" }
 ];
 
@@ -851,7 +931,7 @@ let diaIpv = 0;
 let ipvTimer = null;
 let rotacaoId = null;
 let modoFixo = false;
-const estado = { tcgl: null, ls: null };
+const estado = { tcgl: null, ls: null, tcglAnt: null, lsAnt: null };
 
 function mostrarSlide(id) {
   document.querySelectorAll(".slide").forEach((el) => el.classList.remove("ativo"));
@@ -935,8 +1015,14 @@ function pintarTotal() {
   let total = null;
   if (a != null && b != null) total = (a + b) / 2;
   else total = a ?? b ?? null;
+  const a0 = estado.tcglAnt?.ipv;
+  const b0 = estado.lsAnt?.ipv;
+  let total0 = null;
+  if (a0 != null && b0 != null) total0 = (a0 + b0) / 2;
+  else total0 = a0 ?? b0 ?? null;
   const week = document.getElementById("weekCiop");
   if (week) week.textContent = formatPct(total);
+  pintarDelta("weekDeltaCiop", total, total0);
   aplicarDia(diaIpv);
 }
 
@@ -949,18 +1035,20 @@ function atualizarStatus() {
 document.getElementById("boot").style.display = "none";
 atualizarStatus();
 
-carregarLondrisul(SEMANA.de, SEMANA.ate).then((ls) => {
-  estado.ls = ls;
-  pintarArea("Ls", ls);
+carregarLondrisul().then((payload) => {
+  estado.ls = agregarLondrisul(payload, SEMANA.de, SEMANA.ate);
+  estado.lsAnt = agregarLondrisul(payload, SEMANA_ANT.de, SEMANA_ANT.ate);
+  pintarArea("Ls", estado.ls, estado.lsAnt);
   pintarTotal();
   atualizarStatus();
 }).catch((err) => {
   document.getElementById("tvStatus").textContent = "LondriSul: " + (err.message || err);
 });
 carregarClima().catch(() => {});
-carregarTcgl(SEMANA.de, SEMANA.ate).then((tcgl) => {
-  estado.tcgl = tcgl;
-  pintarArea("Tcgl", tcgl);
+carregarTcgl().then((dias) => {
+  estado.tcgl = agregarTcgl(dias, SEMANA.de, SEMANA.ate);
+  estado.tcglAnt = agregarTcgl(dias, SEMANA_ANT.de, SEMANA_ANT.ate);
+  pintarArea("Tcgl", estado.tcgl, estado.tcglAnt);
   pintarTotal();
   atualizarStatus();
 }).catch((err) => {
@@ -998,15 +1086,17 @@ document.addEventListener("keydown", (e) => {
 });
 
 setInterval(() => {
-  carregarLondrisul(SEMANA.de, SEMANA.ate).then((ls) => {
-    estado.ls = ls;
-    pintarArea("Ls", ls);
+  carregarLondrisul().then((payload) => {
+    estado.ls = agregarLondrisul(payload, SEMANA.de, SEMANA.ate);
+    estado.lsAnt = agregarLondrisul(payload, SEMANA_ANT.de, SEMANA_ANT.ate);
+    pintarArea("Ls", estado.ls, estado.lsAnt);
     pintarTotal();
     atualizarStatus();
   }).catch(() => {});
-  carregarTcgl(SEMANA.de, SEMANA.ate).then((tcgl) => {
-    estado.tcgl = tcgl;
-    pintarArea("Tcgl", tcgl);
+  carregarTcgl().then((dias) => {
+    estado.tcgl = agregarTcgl(dias, SEMANA.de, SEMANA.ate);
+    estado.tcglAnt = agregarTcgl(dias, SEMANA_ANT.de, SEMANA_ANT.ate);
+    pintarArea("Tcgl", estado.tcgl, estado.tcglAnt);
     pintarTotal();
     atualizarStatus();
   }).catch(() => {});
