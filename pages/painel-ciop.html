@@ -6,7 +6,7 @@
 <title>Painel CIOP · Pontualidade</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&display=swap">
 <style>
   :root{
     --bg-1:#04060f;
@@ -26,11 +26,19 @@
   *{box-sizing:border-box;}
   html,body{
     margin:0; width:100%; height:100%; overflow:hidden; color:var(--ink);
-    font-family:Inter, system-ui, sans-serif;
+    font-family:Outfit, Inter, system-ui, sans-serif;
     background:
       radial-gradient(900px 520px at 8% -10%, rgba(43,52,128,.55), transparent 58%),
       radial-gradient(800px 480px at 100% 0%, rgba(228,74,28,.28), transparent 52%),
       linear-gradient(180deg, var(--bg-1), var(--bg-2) 58%, #050814);
+  }
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.18;
+    background-image:
+      linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+    background-size:64px 64px;
+    mask-image:radial-gradient(ellipse at 50% 30%, #000 30%, transparent 78%);
   }
   .boot{
     position:fixed; inset:0; z-index:80; display:flex; flex-direction:column;
@@ -56,11 +64,18 @@
     transition:opacity .35s;
   }
   .brand{ display:flex; align-items:center; gap:16px; min-width:0; }
-  .brand img{ height:clamp(36px,4.2vh,52px); width:auto; }
-  .brand-title{ font-size:clamp(18px,2vw,30px); font-weight:900; letter-spacing:-.03em; white-space:nowrap; }
-  .brand-sub{ font-size:clamp(11px,.85vw,14px); color:var(--muted); font-weight:700; letter-spacing:.04em; }
-  .hdr-right{ display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; font-size:clamp(11px,.95vw,14px); color:var(--muted); }
-  .live-dot{ width:8px; height:8px; border-radius:50%; background:#22c55e; box-shadow:0 0 10px #22c55e; animation:pulse 2.2s ease-in-out infinite; }
+  .brand img{ height:clamp(40px,4.6vh,58px); width:auto; filter:drop-shadow(0 8px 18px rgba(0,0,0,.35)); }
+  .brand-title{ font-size:clamp(22px,2.4vw,36px); font-weight:900; letter-spacing:-.04em; white-space:nowrap; }
+  .brand-sub{ font-size:clamp(12px,.95vw,15px); color:var(--muted); font-weight:700; letter-spacing:.04em; }
+  .hdr-right{
+    display:flex; align-items:center; gap:10px;
+    font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+    font-size:clamp(12px,1vw,15px); color:var(--ink);
+    padding:8px 14px 8px 12px; border-radius:999px;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+  }
+  .live-dot{ width:9px; height:9px; border-radius:50%; background:#22c55e; box-shadow:0 0 12px #22c55e; animation:pulse 2.2s ease-in-out infinite; }
   @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
 
   .viewport{ flex:1 1 auto; min-height:0; position:relative; }
@@ -74,19 +89,21 @@
 
   .ftr{
     display:flex; align-items:center; justify-content:space-between; gap:12px;
-    flex:0 0 auto; font-size:clamp(11px,.9vw,14px); color:var(--muted); font-weight:700;
+    flex:0 0 auto; font-size:clamp(12px,1vw,15px); color:var(--muted); font-weight:700;
     transition:opacity .35s;
   }
-  .ftr-mid{ display:flex; gap:10px; align-items:center; font-variant-numeric:tabular-nums; color:var(--ink); }
+  .ftr-mid{
+    display:flex; gap:10px; align-items:center; font-variant-numeric:tabular-nums; color:var(--ink);
+    padding:6px 14px; border-radius:999px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
+  }
   .ciclo{
-    position:absolute; left:0; right:0; bottom:0; height:4px;
-    background:rgba(255,255,255,.06); overflow:hidden;
-    box-shadow:0 0 18px rgba(56,189,248,.15);
+    position:absolute; left:0; right:0; bottom:0; height:5px;
+    background:rgba(255,255,255,.07); overflow:hidden;
   }
   .ciclo-bar{
     height:100%; width:0;
     background:linear-gradient(90deg,#38bdf8, #818cf8, #e44a1c);
-    box-shadow:0 0 16px rgba(56,189,248,.65);
+    box-shadow:0 0 18px rgba(56,189,248,.7);
     position:relative;
   }
   .ciclo-bar::after{
@@ -121,16 +138,17 @@
   .firm{
     --accent:#38bdf8; --glow:rgba(56,189,248,.45);
     position:relative; min-height:0; overflow:hidden;
-    border-radius:30px;
+    border-radius:32px;
     padding:clamp(22px,2.8vh,36px) clamp(22px,2.2vw,34px) clamp(18px,2.2vh,28px);
     background:
       radial-gradient(120% 80% at 100% 0%, var(--glow), transparent 55%),
-      linear-gradient(165deg, rgba(255,255,255,.12), rgba(255,255,255,.035) 42%, rgba(8,12,28,.55));
-    border:1px solid rgba(255,255,255,.18);
+      linear-gradient(165deg, rgba(255,255,255,.14), rgba(255,255,255,.04) 42%, rgba(8,12,28,.62));
+    border:1px solid rgba(255,255,255,.2);
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.2),
-      inset 0 -1px 0 rgba(0,0,0,.25),
-      0 28px 56px rgba(0,0,0,.38);
+      inset 0 1px 0 rgba(255,255,255,.28),
+      inset 0 -1px 0 rgba(0,0,0,.28),
+      0 28px 56px rgba(0,0,0,.4);
+    backdrop-filter:blur(18px);
     display:grid;
     grid-template-rows:auto auto 1fr auto auto;
     gap:clamp(12px,1.8vh,22px);
@@ -140,9 +158,9 @@
     background:radial-gradient(circle, var(--glow), transparent 70%); pointer-events:none; opacity:.9;
   }
   .firm::after{
-    content:""; position:absolute; left:0; top:0; bottom:0; width:5px;
-    background:linear-gradient(180deg, var(--accent), transparent 85%);
-    box-shadow:0 0 18px var(--accent);
+    content:""; position:absolute; left:18px; right:18px; top:0; height:3px;
+    background:linear-gradient(90deg, transparent, var(--accent), transparent);
+    box-shadow:0 0 18px var(--accent); opacity:.9;
   }
   .firm-top{ position:relative; display:flex; flex-direction:column; gap:6px; }
   .firm-kicker{
@@ -155,15 +173,15 @@
   }
   .firm-block{
     position:relative;
-    padding:clamp(14px,1.8vh,20px) clamp(14px,1.4vw,18px);
-    border-radius:18px;
-    background:rgba(0,0,0,.22);
-    border:1px solid rgba(255,255,255,.1);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+    padding:clamp(14px,1.8vh,20px) clamp(16px,1.5vw,20px);
+    border-radius:20px;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
   }
   .firm-label{
     font-size:clamp(14px,1.25vw,19px); font-weight:800; letter-spacing:.16em; text-transform:uppercase;
-    color:var(--muted); margin-bottom:8px;
+    color:#c9d6ef; margin-bottom:8px;
   }
   .firm-week-pct{
     font-size:clamp(36px,4vw,62px); font-weight:900; letter-spacing:-.045em; line-height:.92;
@@ -192,13 +210,11 @@
     color:var(--ink);
   }
   .firm-load{
-    height:18px; border-radius:99px;
-    background:
-      repeating-linear-gradient(90deg, rgba(255,255,255,.08) 0 11px, transparent 11px 15px),
-      rgba(2,6,18,.78);
-    border:1px solid rgba(255,255,255,.2);
+    height:14px; border-radius:99px;
+    background:rgba(2,6,18,.55);
+    border:1px solid rgba(255,255,255,.16);
     position:relative; overflow:hidden;
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.05), 0 0 26px var(--glow);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.04), 0 0 22px var(--glow);
   }
   .firm-load i{
     display:block; height:100%; width:0;
@@ -243,13 +259,15 @@
   /* ===== Clima (igual painel TV) ===== */
   .wx{
     --accent:#0ea5e9; --accent-glow:rgba(14,165,233,.35);
-    height:100%; min-height:0; border-radius:28px;
-    padding:clamp(18px,2.4vh,34px) clamp(20px,2.4vw,36px);
+    height:100%; min-height:0; border-radius:32px;
+    padding:clamp(16px,2vh,28px) clamp(22px,2.6vw,40px);
     background:
       radial-gradient(520px 260px at 100% 0%, var(--accent-glow), transparent 70%),
-      linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-    border:1px solid rgba(255,255,255,.12);
-    display:flex; flex-direction:column; gap:clamp(10px,1.6vh,18px);
+      linear-gradient(165deg, rgba(255,255,255,.12), rgba(255,255,255,.04) 48%, rgba(8,12,28,.55));
+    border:1px solid rgba(255,255,255,.18);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.22), 0 24px 50px rgba(0,0,0,.32);
+    backdrop-filter:blur(18px);
+    display:flex; flex-direction:column; gap:clamp(8px,1.2vh,14px);
     position:relative; overflow:hidden;
   }
   .wx::after{
@@ -257,87 +275,98 @@
     background:linear-gradient(90deg, transparent, var(--accent), transparent);
     opacity:.85;
   }
-  .wx-head{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; position:relative; z-index:1; }
+  .wx-head{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; position:relative; z-index:1; }
   .wx-tag{
-    font-size:clamp(12px,1vw,16px); font-weight:900; letter-spacing:.08em;
-    color:#04101f; background:var(--accent); padding:4px 12px; border-radius:999px;
+    font-size:clamp(16px,1.4vw,22px); font-weight:900; letter-spacing:.1em;
+    color:#04101f; background:var(--accent); padding:6px 16px; border-radius:999px;
   }
   .wx-head h2{
-    margin:0; font-size:clamp(18px,1.6vw,26px); font-weight:800; letter-spacing:.04em; text-transform:uppercase;
+    margin:0; font-size:clamp(28px,2.8vw,44px); font-weight:900; letter-spacing:.03em; text-transform:uppercase;
   }
   .wx-badge{
-    margin-left:auto; font-size:clamp(12px,1vw,15px); font-weight:700; color:var(--muted);
-    border:1px solid rgba(255,255,255,.12); border-radius:999px; padding:5px 14px;
-    background:rgba(255,255,255,.03);
+    margin-left:auto; font-size:clamp(16px,1.5vw,22px); font-weight:800; color:var(--ink);
+    border:1px solid rgba(255,255,255,.18); border-radius:999px; padding:8px 18px;
+    background:rgba(255,255,255,.06);
   }
   .wx-hero{
-    display:flex; align-items:flex-end; gap:clamp(16px,2vw,30px);
+    display:flex; align-items:flex-end; gap:clamp(18px,2.2vw,34px);
     position:relative; z-index:1; flex:0 0 auto;
   }
-  .wx-icon.tv-wx, .wx-icon{ font-size:clamp(52px,6vw,88px); line-height:0; filter:drop-shadow(0 0 22px rgba(14,165,233,.45)); }
+  .wx-icon.tv-wx, .wx-icon{ font-size:clamp(72px,8vw,120px); line-height:0; filter:drop-shadow(0 0 22px rgba(14,165,233,.45)); }
   .wx-icon svg, .tv-wx svg{ width:1em; height:1em; display:block; }
   .wx-temp{
-    font-size:clamp(90px,10.5vw,168px); font-weight:900; letter-spacing:-.04em; line-height:.88;
+    font-size:clamp(110px,12.5vw,200px); font-weight:900; letter-spacing:-.05em; line-height:.86;
     color:var(--accent); text-shadow:0 0 40px var(--accent-glow);
     font-variant-numeric:tabular-nums;
   }
-  .wx-hero-side{ display:flex; flex-direction:column; gap:8px; padding-bottom:clamp(10px,1.4vh,20px); }
-  .wx-label{ font-size:clamp(16px,1.5vw,24px); font-weight:700; color:var(--muted); }
-  .wx-minmax{ font-size:clamp(15px,1.3vw,20px); font-weight:800; color:var(--ink); }
+  .wx-hero-side{ display:flex; flex-direction:column; gap:10px; padding-bottom:clamp(10px,1.4vh,20px); }
+  .wx-label{ font-size:clamp(24px,2.4vw,38px); font-weight:800; color:var(--ink); }
+  .wx-minmax{ font-size:clamp(22px,2.2vw,34px); font-weight:800; color:#e2eaf8; }
   .wx-chips{
     display:grid; grid-template-columns:repeat(4,1fr); gap:clamp(10px,1.4vw,18px);
     position:relative; z-index:1; flex:0 0 auto;
   }
   .wx-chip{
-    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);
-    border-radius:18px; padding:clamp(14px,2vh,22px) clamp(14px,1.4vw,22px);
-    display:flex; flex-direction:column; gap:8px; min-width:0;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14);
+    border-radius:20px; padding:clamp(12px,1.6vh,20px) clamp(14px,1.4vw,22px);
+    display:flex; flex-direction:column; gap:6px; min-width:0;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+    position:relative; overflow:hidden;
+  }
+  .wx-chip::before{
+    content:""; position:absolute; left:0; top:18%; bottom:18%; width:4px; border-radius:99px;
+    background:var(--accent); box-shadow:0 0 12px var(--accent);
   }
   .wx-chip-label{
-    font-size:clamp(12px,1vw,15px); color:var(--muted-2); text-transform:uppercase;
-    letter-spacing:.06em; font-weight:700;
+    font-size:clamp(15px,1.35vw,20px); color:#c9d6ef; text-transform:uppercase;
+    letter-spacing:.08em; font-weight:800; padding-left:10px;
   }
   .wx-chip-value{
-    font-size:clamp(28px,3.4vw,52px); font-weight:900; font-variant-numeric:tabular-nums;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font-size:clamp(36px,4.4vw,68px); font-weight:900; font-variant-numeric:tabular-nums;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#fff; padding-left:10px;
   }
   .wx-chart-title{
-    font-size:clamp(13px,1.1vw,16px); font-weight:800; letter-spacing:.12em; text-transform:uppercase;
-    color:var(--muted); position:relative; z-index:1;
+    font-size:clamp(18px,1.6vw,24px); font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+    color:#e2eaf8; position:relative; z-index:1;
   }
   .wx-days{
     display:grid; grid-template-columns:repeat(5,1fr); gap:clamp(8px,1.2vw,16px);
     position:relative; z-index:1; flex:1; min-height:0; align-content:stretch;
   }
   .wx-day{
-    background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:16px;
-    padding:clamp(12px,1.8vh,20px) 8px; text-align:center;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); border-radius:20px;
+    padding:clamp(10px,1.4vh,16px) 8px; text-align:center;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.1);
   }
-  .wx-day-name{ font-size:clamp(11px,.95vw,14px); text-transform:uppercase; color:var(--muted-2); font-weight:800; letter-spacing:.08em; }
-  .wx-day-icon.tv-wx, .wx-day .tv-wx{ font-size:clamp(26px,2.8vw,38px); }
-  .wx-day-max{ font-size:clamp(18px,1.8vw,26px); font-weight:900; font-variant-numeric:tabular-nums; }
-  .wx-day-min{ font-size:clamp(13px,1.1vw,16px); font-weight:700; color:var(--muted); font-variant-numeric:tabular-nums; }
-  .wx-day-rain{ font-size:clamp(12px,1vw,14px); font-weight:700; color:#0ea5e9; }
+  .wx-day-name{ font-size:clamp(16px,1.5vw,22px); text-transform:uppercase; color:#fff; font-weight:800; letter-spacing:.1em; }
+  .wx-day-icon.tv-wx, .wx-day .tv-wx{ font-size:clamp(34px,3.6vw,52px); }
+  .wx-day-max{ font-size:clamp(28px,2.8vw,42px); font-weight:900; font-variant-numeric:tabular-nums; color:#fff; }
+  .wx-day-min{ font-size:clamp(18px,1.7vw,26px); font-weight:800; color:#c9d6ef; font-variant-numeric:tabular-nums; }
+  .wx-day-rain{ font-size:clamp(16px,1.5vw,22px); font-weight:800; color:#7dd3fc; }
   @media (max-aspect-ratio: 4/3){
     .wx-chips{ grid-template-columns:repeat(2,1fr); }
     .wx-days{ grid-template-columns:repeat(2,1fr); }
-    .wx-temp{ font-size:clamp(64px,14vw,96px); }
+    .wx-temp{ font-size:clamp(72px,16vw,110px); }
+    .wx-label{ font-size:clamp(18px,4vw,28px); }
   }
 
   /* ===== Campanha ===== */
-  .campanha{ position:relative; width:100%; height:100%; overflow:hidden; border-radius:24px; background:#050b18; }
-  .campanha img.bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-  .campanha .logo{ position:absolute; top:22px; right:22px; height:48px; z-index:4; }
+  .campanha{ position:relative; width:100%; height:100%; overflow:hidden; border-radius:32px; background:#050b18; border:1px solid rgba(255,255,255,.12); }
+  .campanha img.bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scale(1.04); filter:saturate(1.08); }
+  .campanha .logo{ position:absolute; top:22px; right:22px; height:56px; z-index:4; filter:drop-shadow(0 8px 18px rgba(0,0,0,.45)); }
   .campanha .ov{
     position:absolute; inset:0; z-index:3;
-    background:linear-gradient(90deg, rgba(5,11,24,.9) 0%, rgba(5,11,24,.5) 46%, transparent 80%);
+    background:linear-gradient(90deg, rgba(5,11,24,.92) 0%, rgba(5,11,24,.55) 46%, transparent 80%);
     display:flex; flex-direction:column; justify-content:flex-end;
-    padding:clamp(22px,3.4vh,52px) clamp(22px,3vw,48px); gap:8px;
+    padding:clamp(26px,3.8vh,56px) clamp(26px,3.2vw,52px); gap:12px;
   }
-  .campanha .nome{ font-size:13px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:var(--campanha-cor,#facc15); }
-  .campanha h2{ margin:0; max-width:16ch; font-size:clamp(28px,3.8vw,58px); font-weight:900; line-height:1.08; letter-spacing:-.03em; }
-  .campanha p{ margin:0; max-width:42ch; color:var(--muted); font-weight:700; font-size:clamp(14px,1.3vw,20px); }
+  .campanha .nome{
+    font-size:clamp(14px,1.2vw,18px); font-weight:800; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--campanha-cor,#facc15); text-shadow:0 0 18px var(--campanha-cor,#facc15);
+  }
+  .campanha h2{ margin:0; max-width:16ch; font-size:clamp(34px,4.4vw,68px); font-weight:900; line-height:1.06; letter-spacing:-.04em; }
+  .campanha p{ margin:0; max-width:42ch; color:#d7e2f6; font-weight:700; font-size:clamp(16px,1.5vw,24px); }
 
   /* ===== Transição (arte CIOP) ===== */
   .scene{ position:relative; width:100%; height:100%; overflow:hidden; background:#020617; }
@@ -368,10 +397,11 @@
   @keyframes brandIn{ to{ opacity:1; } }
   .brand-hit img{ display:none; }
   .brand-hit .next{
-    font-size:clamp(15px,1.4vw,22px); font-weight:800; letter-spacing:.18em; text-transform:uppercase;
+    font-size:clamp(16px,1.6vw,24px); font-weight:800; letter-spacing:.2em; text-transform:uppercase;
     color:#fff; text-shadow:0 2px 20px rgba(0,0,0,.85), 0 0 24px rgba(43,52,128,.5);
+    padding:8px 16px; border-radius:999px; background:rgba(2,6,23,.45); border:1px solid rgba(255,255,255,.18);
   }
-  .next-bar{ width:min(46vw, 420px); height:4px; background:rgba(255,255,255,.22); border-radius:99px; overflow:hidden; box-shadow:0 0 18px rgba(228,74,28,.25); }
+  .next-bar{ width:min(46vw, 420px); height:5px; background:rgba(255,255,255,.22); border-radius:99px; overflow:hidden; box-shadow:0 0 18px rgba(228,74,28,.25); }
   .next-bar i{ display:block; height:100%; width:0; background:linear-gradient(90deg,#2b3480,#38bdf8,#e44a1c); }
   .scene.tocar .next-bar i{ animation:ciclo 3.8s linear forwards; }
 </style>
@@ -416,7 +446,7 @@
               <div class="firm-week-pct" id="weekTcgl">—</div>
             </div>
             <div class="firm-hero">
-              <div class="firm-label">IPV do dia</div>
+              <div class="firm-label">No horário</div>
               <div class="firm-pct" id="pctTcgl">--%</div>
               <div class="firm-day" id="dayTcgl">—</div>
             </div>
@@ -433,7 +463,7 @@
               <div class="firm-week-pct" id="weekLs">—</div>
             </div>
             <div class="firm-hero">
-              <div class="firm-label">IPV do dia</div>
+              <div class="firm-label">No horário</div>
               <div class="firm-pct" id="pctLs">--%</div>
               <div class="firm-day" id="dayLs">—</div>
             </div>
@@ -450,7 +480,7 @@
               <div class="firm-week-pct" id="weekCiop">—</div>
             </div>
             <div class="firm-hero">
-              <div class="firm-label">IPV do dia</div>
+              <div class="firm-label">No horário</div>
               <div class="firm-pct" id="pctCiop">--%</div>
               <div class="firm-day" id="dayCiop">—</div>
             </div>
@@ -730,16 +760,22 @@ function agregarTcgl(itens, de, ate) {
 
 function agregarLondrisul(payload, de, ate) {
   const serie = [];
-  let no = 0, sch = 0;
+  let peso = 0, somaPeso = 0, somaSimples = 0;
   for (const d of payload.dias || []) {
-    const data = String(d.data || "").slice(0, 10);
-    if (data < de || data > ate || d.sem_dados) continue;
-    const ipv = toPct(d.ipv);
+    const data = String(d.data || d.date || "").slice(0, 10);
+    if (!data || data < de || data > ate || d.sem_dados) continue;
+    const ipv = toPct(d.no_horario_percent ?? d.no_horario ?? d.ipv);
+    if (ipv == null) continue;
     serie.push({ data, ipv });
-    no += Number(d.no_horario) || 0;
-    sch += Number(d.scheduled_trips) || 0;
+    const pts = Number(d.timepoints_processados) || 0;
+    if (pts > 0) {
+      peso += pts;
+      somaPeso += ipv * pts;
+    }
+    somaSimples += ipv;
   }
-  return { ipv: sch ? (100 * no) / sch : null, serie, origem: "londrisul" };
+  const ipv = peso ? (somaPeso / peso) : (serie.length ? somaSimples / serie.length : null);
+  return { ipv, serie, origem: "londrisul" };
 }
 
 async function carregarLondrisul(de, ate) {
