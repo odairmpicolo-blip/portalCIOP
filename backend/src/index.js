@@ -32,26 +32,18 @@ if (!config.corsOrigins.length) {
     }
 }
 
-app.use(cors({
-    origin(origin, callback) {
-          if (!origin) {
-                  callback(null, true);
-                  return;
-          }
-          if (config.corsOrigins.length) {
-                  if (config.corsOrigins.includes(origin)) {
-                            callback(null, true);
-                  } else {
-                            callback(new Error("CORS bloqueado"));
-                  }
-                  return;
-          }
-          if (isProduction) {
-                  callback(new Error("CORS bloqueado: CORS_ORIGINS nao configurada em producao"));
-          } else {
-                  callback(null, true);
-          }
+app.use(cors((req, callback) => {
+    const origin = req.headers.origin;
+    const shareIpv = String(req.path || "").startsWith("/cr0108/share");
+    if (shareIpv || !origin) {
+          callback(null, { origin: true });
+          return;
     }
+    if (config.corsOrigins.length) {
+          callback(null, { origin: config.corsOrigins.includes(origin) });
+          return;
+    }
+    callback(null, { origin: !isProduction });
 }));
 
 app.get("/health", async (_req, res) => {

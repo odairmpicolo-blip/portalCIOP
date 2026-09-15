@@ -488,6 +488,61 @@ const FONTES_IPV = {
            pontos: "timepoints_processed" }
 };
 
+const TOKEN_IPV_SHARE = process.env.IPV_SHARE_TOKEN || "IPV@2026";
+
+function tokenIpvShareOk(req) {
+  return String(req.query.token || req.get("X-Ipv-Token") || "") === TOKEN_IPV_SHARE;
+}
+
+async function consultarIpv(req) {
+  const chave = String(req.query.fonte || "2-6");
+  const f = FONTES_IPV[chave];
+  if (!f) {
+    const err = new Error("fonte inválida (use 2-6 ou 1-3)");
+    err.status = 400;
+    throw err;
+  }
+  const cond = [];
+  const par = [];
+  for (const [campo, sql] of [["de", "data_ref >= ?::date"], ["ate", "data_ref <= ?::date"]]) {
+    const v = String(req.query[campo] || "");
+    if (ISO.test(v)) { par.push(v); cond.push(sql.replace("?", `$${par.length}`)); }
+  }
+  const tipoDia = condTipoDia(req);
+  if (tipoDia) cond.push(tipoDia);
+  const r = await query(
+    `SELECT data_ref::text AS data,
+            ${numero(f.ipv)} AS ipv
+     FROM ${f.tabela} ${cond.length ? `WHERE ${cond.join(" AND ")}` : ""}
+     ORDER BY data_ref`,
+    par
+  );
+  const dias = r.rows.map((x) => ({
+    data: String(x.data || "").slice(0, 10),
+    ipv: x.ipv == null ? null : Number(x.ipv)
+  }));
+  return { fonte: chave, dias };
+}
+
+router.get("/share/ipv", async (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Cache-Control", "no-store");
+  if (!tokenIpvShareOk(req)) {
+    res.status(401).json({ ok: false, erro: "token inválido" });
+    return;
+  }
+  try {
+    const { fonte, dias } = await consultarIpv(req);
+    res.json({ ok: true, indicador: "IPV", origem: "dsql", fonte, dias });
+  } catch (err) {
+    if (err.status === 400) {
+      res.status(400).json({ ok: false, erro: err.message });
+      return;
+    }
+    erro(res, err);
+  }
+});
+
 router.get("/ipv", requireFirebaseUser, async (req, res) => {
   const chave = String(req.query.fonte || "2-6");
   const f = FONTES_IPV[chave];
