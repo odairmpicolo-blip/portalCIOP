@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel CIOP · Pontualidade</title>
+<title>Painel CIOP · TV</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&display=swap">
@@ -118,6 +118,7 @@
   .board{ height:100%; display:flex; flex-direction:column; gap:clamp(10px,1.4vh,18px); min-height:0; }
   .board-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex:0 0 auto; }
   .board-kicker{ font-size:clamp(13px,1.1vw,16px); font-weight:800; letter-spacing:.2em; text-transform:uppercase; color:#38bdf8; }
+  .board-icv .board-kicker{ color:#2dd4bf; }
   .board-period{ font-size:clamp(24px,2.4vw,38px); font-weight:900; margin-top:2px; letter-spacing:-.035em; }
   .hud-week{ display:flex; gap:8px; align-items:center; }
   .hud-seg{
@@ -539,6 +540,89 @@
       </div>
     </section>
 
+    <section class="slide" id="slide-icv">
+      <div class="board board-icv">
+        <div class="board-head">
+          <div>
+            <div class="board-kicker">Cumprimento de viagem · domingo a sábado</div>
+            <div class="board-period" id="periodoBoardIcv">—</div>
+          </div>
+          <div class="hud-week" id="hudWeekIcv"></div>
+        </div>
+        <div class="board-grid">
+          <article class="firm ipv-tcgl" id="card-icv-tcgl">
+            <div class="firm-top">
+              <div class="firm-kicker">Área 1</div>
+              <h2>TCGL</h2>
+            </div>
+            <div class="firm-block">
+              <div class="firm-label">Média da semana</div>
+              <div class="firm-week-row">
+                <div class="firm-week-pct" id="weekIcvTcgl">—</div>
+                <div class="firm-delta firm-delta-lg flat" id="weekDeltaIcvTcgl">—</div>
+              </div>
+            </div>
+            <div class="firm-hero">
+              <div class="firm-label">Cumprimento</div>
+              <div class="firm-pct-row">
+                <div class="firm-pct" id="pctIcvTcgl">--%</div>
+                <div class="firm-delta flat" id="dayDeltaIcvTcgl">—</div>
+              </div>
+              <div class="firm-day" id="dayIcvTcgl">—</div>
+            </div>
+            <div class="firm-load" id="loadIcvTcgl"><i></i></div>
+            <div class="firm-ticks" id="ticksIcvTcgl"></div>
+          </article>
+          <article class="firm ipv-ls" id="card-icv-ls">
+            <div class="firm-top">
+              <div class="firm-kicker">Área 2</div>
+              <h2>LondriSul</h2>
+            </div>
+            <div class="firm-block">
+              <div class="firm-label">Média da semana</div>
+              <div class="firm-week-row">
+                <div class="firm-week-pct" id="weekIcvLs">—</div>
+                <div class="firm-delta firm-delta-lg flat" id="weekDeltaIcvLs">—</div>
+              </div>
+            </div>
+            <div class="firm-hero">
+              <div class="firm-label">Cumprimento</div>
+              <div class="firm-pct-row">
+                <div class="firm-pct" id="pctIcvLs">--%</div>
+                <div class="firm-delta flat" id="dayDeltaIcvLs">—</div>
+              </div>
+              <div class="firm-day" id="dayIcvLs">—</div>
+            </div>
+            <div class="firm-load" id="loadIcvLs"><i></i></div>
+            <div class="firm-ticks" id="ticksIcvLs"></div>
+          </article>
+          <article class="firm ipv-ciop" id="card-icv-ciop">
+            <div class="firm-top">
+              <div class="firm-kicker">SISTEMA</div>
+              <h2>Total</h2>
+            </div>
+            <div class="firm-block">
+              <div class="firm-label">Média das áreas</div>
+              <div class="firm-week-row">
+                <div class="firm-week-pct" id="weekIcvCiop">—</div>
+                <div class="firm-delta firm-delta-lg flat" id="weekDeltaIcvCiop">—</div>
+              </div>
+            </div>
+            <div class="firm-hero">
+              <div class="firm-label">Cumprimento</div>
+              <div class="firm-pct-row">
+                <div class="firm-pct" id="pctIcvCiop">--%</div>
+                <div class="firm-delta flat" id="dayDeltaIcvCiop">—</div>
+              </div>
+              <div class="firm-day" id="dayIcvCiop">—</div>
+            </div>
+            <div class="firm-load" id="loadIcvCiop"><i></i></div>
+            <div class="firm-ticks" id="ticksIcvCiop"></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <section class="slide" id="slide-tempo">
       <div class="wx">
         <div class="wx-head">
@@ -602,8 +686,10 @@
 
 <script type="module">
 const PARAMS = new URLSearchParams(location.search);
-const LS_URL = "https://londrisul.online/relatorios/tvs/pontualidade/api.php?token=" + encodeURIComponent("OverallAnual@2026");
-const TCGL_URL = "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com/cr0108/share/ipv?token=" + encodeURIComponent("IPV@2026");
+const LS_IPV_URL = "https://londrisul.online/relatorios/tvs/pontualidade/api.php?token=" + encodeURIComponent("OverallAnual@2026");
+const LS_ICV_URL = "https://londrisul.online/relatorios/tvs/pontualidade/api.php?token=" + encodeURIComponent("IPV@2026");
+const TCGL_IPV_URL = "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com/cr0108/share/ipv?token=" + encodeURIComponent("IPV@2026");
+const TCGL_ICV_URL = "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com/cr0108/share/icv?token=" + encodeURIComponent("IPV@2026");
 const CLIMA_URL = "https://api.open-meteo.com/v1/forecast?latitude=-23.3045&longitude=-51.1696&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=America%2FSao_Paulo&forecast_days=6";
 const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
 const DIAS_ABREV = ["dom","seg","ter","qua","qui","sex","sáb"];
@@ -620,6 +706,7 @@ const CLIMA_LABEL = {
 const DUR_TRANSICAO = 3800;
 const DIA_MS = Math.round(30000 / 7);
 const IPV_MS = 30000;
+const ICV_MS = 30000;
 
 const CAMPANHAS = [
   { nome: "Janeiro Branco", titulo: "Cuidar da mente também é segurança", sub: "Fale, ouça e peça ajuda. Ninguém na operação precisa enfrentar isso sozinho.", img: "../assets/img/painel-tv-jan-branco.jpg", cor: "#f4f0e6" },
@@ -750,43 +837,54 @@ function pintarTicks(id, n) {
   el.innerHTML = DIAS.map((_, i) => `<b class="${i < n ? "on" : ""} ${i === n ? "now" : ""}"></b>`).join("");
 }
 
-function pintarHud(n) {
-  const el = document.getElementById("hudWeek");
+function pintarHud(n, id = "hudWeek") {
+  const el = document.getElementById(id);
   if (!el) return;
   el.innerHTML = DIAS.map((d, i) => `<span class="hud-seg ${i < n ? "on" : ""} ${i === n ? "now" : ""}" title="${d.nome}"></span>`).join("");
 }
 
-function aplicarDia(n) {
+const IPV_IDS = { pct: "pct", dayDelta: "dayDelta", day: "day", load: "load", ticks: "ticks", hud: "hudWeek", week: "week", weekDelta: "weekDelta" };
+const ICV_IDS = { pct: "pctIcv", dayDelta: "dayDeltaIcv", day: "dayIcv", load: "loadIcv", ticks: "ticksIcv", hud: "hudWeekIcv", week: "weekIcv", weekDelta: "weekDeltaIcv" };
+
+function aplicarDiaEm(n, est, ids) {
   const d = DIAS[n] || DIAS[0];
-  const a = estado.tcgl?.byDay?.[n] ?? null;
-  const b = estado.ls?.byDay?.[n] ?? null;
+  const a = est.tcgl?.byDay?.[n] ?? null;
+  const b = est.ls?.byDay?.[n] ?? null;
   const t = a != null && b != null ? (a + b) / 2 : (a ?? b ?? null);
-  const a0 = estado.tcglAnt?.byDay?.[n] ?? null;
-  const b0 = estado.lsAnt?.byDay?.[n] ?? null;
+  const a0 = est.tcglAnt?.byDay?.[n] ?? null;
+  const b0 = est.lsAnt?.byDay?.[n] ?? null;
   const t0 = a0 != null && b0 != null ? (a0 + b0) / 2 : (a0 ?? b0 ?? null);
-  setPct("pctTcgl", a);
-  setPct("pctLs", b);
-  setPct("pctCiop", t);
-  pintarDelta("dayDeltaTcgl", a, a0);
-  pintarDelta("dayDeltaLs", b, b0);
-  pintarDelta("dayDeltaCiop", t, t0);
-  ["dayTcgl", "dayLs", "dayCiop"].forEach((id) => {
+  setPct(ids.pct + "Tcgl", a);
+  setPct(ids.pct + "Ls", b);
+  setPct(ids.pct + "Ciop", t);
+  pintarDelta(ids.dayDelta + "Tcgl", a, a0);
+  pintarDelta(ids.dayDelta + "Ls", b, b0);
+  pintarDelta(ids.dayDelta + "Ciop", t, t0);
+  [ids.day + "Tcgl", ids.day + "Ls", ids.day + "Ciop"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.textContent = d.nome;
   });
-  pintarTicks("ticksTcgl", n);
-  pintarTicks("ticksLs", n);
-  pintarTicks("ticksCiop", n);
-  pintarHud(n);
-  ["loadTcgl", "loadLs", "loadCiop"].forEach(reiniciarLoad);
+  pintarTicks(ids.ticks + "Tcgl", n);
+  pintarTicks(ids.ticks + "Ls", n);
+  pintarTicks(ids.ticks + "Ciop", n);
+  pintarHud(n, ids.hud);
+  [ids.load + "Tcgl", ids.load + "Ls", ids.load + "Ciop"].forEach(reiniciarLoad);
 }
 
-function pintarArea(prefix, bloco, ant) {
-  const week = document.getElementById("week" + prefix);
+function aplicarDia(n) {
+  aplicarDiaEm(n, estadoIpv, IPV_IDS);
+}
+
+function aplicarDiaIcv(n) {
+  aplicarDiaEm(n, estadoIcv, ICV_IDS);
+}
+
+function pintarArea(prefix, bloco, ant, ids = IPV_IDS) {
+  const week = document.getElementById(ids.week + prefix);
   if (week) week.textContent = formatPct(bloco?.ipv);
   if (bloco) bloco.byDay = seriePorDia(bloco.serie, DIAS);
   if (ant) ant.byDay = seriePorDia(ant.serie, DIAS_ANT);
-  pintarDelta("weekDelta" + prefix, bloco?.ipv, ant?.ipv);
+  pintarDelta(ids.weekDelta + prefix, bloco?.ipv, ant?.ipv);
 }
 
 function grupoClima(code) {
@@ -818,11 +916,19 @@ function comTimeout(promessa, ms, motivo) {
   ]);
 }
 
-async function carregarTcgl() {
-  const res = await comTimeout(fetch(TCGL_URL, { cache: "no-store" }), 10000, "api tcgl");
+async function carregarTcglIpv() {
+  const res = await comTimeout(fetch(TCGL_IPV_URL, { cache: "no-store" }), 10000, "api tcgl ipv");
   if (!res.ok) throw new Error("HTTP " + res.status);
   const payload = await res.json();
   if (!payload || payload.ok === false) throw new Error(payload?.erro || "IPV TCGL inválido");
+  return payload.dias || [];
+}
+
+async function carregarTcglIcv() {
+  const res = await comTimeout(fetch(TCGL_ICV_URL, { cache: "no-store" }), 10000, "api tcgl icv");
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const payload = await res.json();
+  if (!payload || payload.ok === false) throw new Error(payload?.erro || "ICV TCGL inválido");
   return payload.dias || [];
 }
 
@@ -868,10 +974,57 @@ function agregarLondrisul(payload, de, ate) {
   return { ipv, serie, origem: "londrisul" };
 }
 
-async function carregarLondrisul() {
-  const res = await comTimeout(fetch(LS_URL, { cache: "no-store" }), 8000, "api londrisul");
+function agregarIcv(itens, de, ate, origem) {
+  const serie = [];
+  let somaProg = 0, somaViag = 0, somaSimples = 0;
+  for (const x of itens || []) {
+    const data = String(x.data || x.date || "").slice(0, 10);
+    if (!data || data < de || data > ate || x.sem_dados) continue;
+    const icv = toPct(x.icv);
+    if (icv == null) continue;
+    serie.push({ data, ipv: icv });
+    const prog = Number(x.scheduled_trips ?? x.viagensProgramadas) || 0;
+    const viag = Number(x.trips ?? x.viagens) || 0;
+    if (prog > 0) {
+      somaProg += prog;
+      somaViag += viag > 0 ? viag : (icv / 100) * prog;
+    }
+    somaSimples += icv;
+  }
+  if (!serie.length) return { ipv: null, serie: [], origem };
+  const ipv = somaProg ? (somaViag / somaProg) * 100 : somaSimples / serie.length;
+  return { ipv, serie, origem };
+}
+
+async function carregarLondrisulIpv() {
+  const res = await comTimeout(fetch(LS_IPV_URL, { cache: "no-store" }), 8000, "api londrisul ipv");
   if (!res.ok) throw new Error("HTTP " + res.status);
   return res.json();
+}
+
+async function carregarLondrisulIcv() {
+  const meses = [...new Set([
+    Number(SEMANA.de.slice(5, 7)),
+    Number(SEMANA.ate.slice(5, 7)),
+    Number(SEMANA_ANT.de.slice(5, 7)),
+    Number(SEMANA_ANT.ate.slice(5, 7))
+  ].filter(Boolean))];
+  const payloads = await Promise.all(meses.map(async (mes) => {
+    const res = await comTimeout(fetch(LS_ICV_URL + "&mes=" + mes, { cache: "no-store" }), 8000, "api londrisul icv");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return res.json();
+  }));
+  const dias = [];
+  const visto = new Set();
+  for (const p of payloads) {
+    for (const d of p.dias || []) {
+      const data = String(d.data || "").slice(0, 10);
+      if (!data || visto.has(data)) continue;
+      visto.add(data);
+      dias.push(d);
+    }
+  }
+  return { dias };
 }
 
 async function carregarClima() {
@@ -929,12 +1082,15 @@ const ROTULO = rotuloFaixa(SEMANA.de, SEMANA.ate);
 const DIAS = montarDias(SEMANA.de, SEMANA.ate);
 const DIAS_ANT = montarDias(SEMANA_ANT.de, SEMANA_ANT.ate);
 document.getElementById("periodoBoard").textContent = ROTULO;
+document.getElementById("periodoBoardIcv").textContent = ROTULO;
 aplicarCampanha();
 
 const CICLO = [
   { id: "ipv", ms: IPV_MS, titulo: "PONTUALIDADE", tag: "TCGL · LondriSul · Sistema" },
+  { id: "icv", ms: ICV_MS, titulo: "CUMPRIMENTO", tag: "TCGL · LondriSul · Sistema" },
   { id: "tempo", ms: 10000, titulo: "Previsão do Tempo", tag: "Clima · Londrina/PR" },
   { id: "ipv", ms: IPV_MS, titulo: "PONTUALIDADE", tag: "TCGL · LondriSul · Sistema" },
+  { id: "icv", ms: ICV_MS, titulo: "CUMPRIMENTO", tag: "TCGL · LondriSul · Sistema" },
   { id: "campanha", ms: 10000, titulo: CAMPANHAS[new Date().getMonth()].nome, tag: "Campanha do mês · CIOP" }
 ];
 
@@ -943,7 +1099,8 @@ let diaIpv = 0;
 let ipvTimer = null;
 let rotacaoId = null;
 let modoFixo = false;
-const estado = { tcgl: null, ls: null, tcglAnt: null, lsAnt: null };
+const estadoIpv = { tcgl: null, ls: null, tcglAnt: null, lsAnt: null };
+const estadoIcv = { tcgl: null, ls: null, tcglAnt: null, lsAnt: null };
 
 function mostrarSlide(id) {
   document.querySelectorAll(".slide").forEach((el) => el.classList.remove("ativo"));
@@ -961,19 +1118,21 @@ function reiniciarBarra(ms) {
   el.classList.add("anim");
 }
 
-function iniciarDiasIpv({ loop = false } = {}) {
+function iniciarDiasBoard(tipo, { loop = false } = {}) {
   clearInterval(ipvTimer);
   diaIpv = 0;
-  aplicarDia(0);
+  if (tipo === "icv") aplicarDiaIcv(0);
+  else aplicarDia(0);
   ipvTimer = setInterval(() => {
     diaIpv += 1;
     if (diaIpv >= DIAS.length) {
       clearInterval(ipvTimer);
-      if (loop) iniciarDiasIpv({ loop: true });
+      if (loop) iniciarDiasBoard(tipo, { loop: true });
       else avancar();
       return;
     }
-    aplicarDia(diaIpv);
+    if (tipo === "icv") aplicarDiaIcv(diaIpv);
+    else aplicarDia(diaIpv);
   }, DIA_MS);
 }
 
@@ -1000,7 +1159,7 @@ async function avancar() {
   const bloco = CICLO[idx];
   aplicarInfo(bloco);
   mostrarSlide(bloco.id);
-  if (bloco.id === "ipv") iniciarDiasIpv();
+  if (bloco.id === "ipv" || bloco.id === "icv") iniciarDiasBoard(bloco.id);
   else clearInterval(ipvTimer);
   reiniciarBarra(bloco.ms);
   agendar();
@@ -1009,7 +1168,7 @@ async function avancar() {
 function agendar() {
   clearTimeout(rotacaoId);
   if (modoFixo) return;
-  if (CICLO[idx].id === "ipv") return;
+  if (CICLO[idx].id === "ipv" || CICLO[idx].id === "icv") return;
   rotacaoId = setTimeout(avancar, CICLO[idx].ms);
 }
 
@@ -1021,65 +1180,87 @@ function atualizarRelogio() {
 atualizarRelogio();
 setInterval(atualizarRelogio, 1000);
 
-function pintarTotal() {
-  const a = estado.tcgl?.ipv;
-  const b = estado.ls?.ipv;
+function pintarTotal(est, ids, diaN) {
+  const a = est.tcgl?.ipv;
+  const b = est.ls?.ipv;
   let total = null;
   if (a != null && b != null) total = (a + b) / 2;
   else total = a ?? b ?? null;
-  const a0 = estado.tcglAnt?.ipv;
-  const b0 = estado.lsAnt?.ipv;
+  const a0 = est.tcglAnt?.ipv;
+  const b0 = est.lsAnt?.ipv;
   let total0 = null;
   if (a0 != null && b0 != null) total0 = (a0 + b0) / 2;
   else total0 = a0 ?? b0 ?? null;
-  const week = document.getElementById("weekCiop");
+  const week = document.getElementById(ids.week + "Ciop");
   if (week) week.textContent = formatPct(total);
-  pintarDelta("weekDeltaCiop", total, total0);
-  aplicarDia(diaIpv);
+  pintarDelta(ids.weekDelta + "Ciop", total, total0);
+  aplicarDiaEm(diaN, est, ids);
 }
 
 function atualizarStatus() {
-  const tcglOk = estado.tcgl ? "TCGL API" : "TCGL indisponível";
-  const lsOk = estado.ls ? "LondriSul API" : "LondriSul indisponível";
-  document.getElementById("tvStatus").textContent = `Semana ${ROTULO} · ${tcglOk} · ${lsOk}`;
+  const ipvTcgl = estadoIpv.tcgl ? "IPV TCGL" : "IPV TCGL indisponível";
+  const ipvLs = estadoIpv.ls ? "IPV LondriSul" : "IPV LondriSul indisponível";
+  const icvTcgl = estadoIcv.tcgl ? "ICV TCGL" : "ICV TCGL indisponível";
+  const icvLs = estadoIcv.ls ? "ICV LondriSul" : "ICV LondriSul indisponível";
+  document.getElementById("tvStatus").textContent = `Semana ${ROTULO} · ${ipvTcgl} · ${ipvLs} · ${icvTcgl} · ${icvLs}`;
 }
 
 document.getElementById("boot").style.display = "none";
 atualizarStatus();
 
-carregarLondrisul().then((payload) => {
-  estado.ls = agregarLondrisul(payload, SEMANA.de, SEMANA.ate);
-  estado.lsAnt = agregarLondrisul(payload, SEMANA_ANT.de, SEMANA_ANT.ate);
-  pintarArea("Ls", estado.ls, estado.lsAnt);
-  pintarTotal();
+carregarLondrisulIpv().then((payload) => {
+  estadoIpv.ls = agregarLondrisul(payload, SEMANA.de, SEMANA.ate);
+  estadoIpv.lsAnt = agregarLondrisul(payload, SEMANA_ANT.de, SEMANA_ANT.ate);
+  pintarArea("Ls", estadoIpv.ls, estadoIpv.lsAnt, IPV_IDS);
+  pintarTotal(estadoIpv, IPV_IDS, diaIpv);
   atualizarStatus();
 }).catch((err) => {
-  document.getElementById("tvStatus").textContent = "LondriSul: " + (err.message || err);
+  document.getElementById("tvStatus").textContent = "LondriSul IPV: " + (err.message || err);
+});
+carregarLondrisulIcv().then((payload) => {
+  estadoIcv.ls = agregarIcv(payload.dias || [], SEMANA.de, SEMANA.ate, "londrisul");
+  estadoIcv.lsAnt = agregarIcv(payload.dias || [], SEMANA_ANT.de, SEMANA_ANT.ate, "londrisul");
+  pintarArea("Ls", estadoIcv.ls, estadoIcv.lsAnt, ICV_IDS);
+  pintarTotal(estadoIcv, ICV_IDS, diaIpv);
+  atualizarStatus();
+}).catch((err) => {
+  console.info("LondriSul ICV:", err.message || err);
+  atualizarStatus();
 });
 carregarClima().catch(() => {});
-carregarTcgl().then((dias) => {
-  estado.tcgl = agregarTcgl(dias, SEMANA.de, SEMANA.ate);
-  estado.tcglAnt = agregarTcgl(dias, SEMANA_ANT.de, SEMANA_ANT.ate);
-  pintarArea("Tcgl", estado.tcgl, estado.tcglAnt);
-  pintarTotal();
+carregarTcglIpv().then((dias) => {
+  estadoIpv.tcgl = agregarTcgl(dias, SEMANA.de, SEMANA.ate);
+  estadoIpv.tcglAnt = agregarTcgl(dias, SEMANA_ANT.de, SEMANA_ANT.ate);
+  pintarArea("Tcgl", estadoIpv.tcgl, estadoIpv.tcglAnt, IPV_IDS);
+  pintarTotal(estadoIpv, IPV_IDS, diaIpv);
   atualizarStatus();
 }).catch((err) => {
-  console.info("TCGL:", err.message || err);
+  console.info("TCGL IPV:", err.message || err);
+  atualizarStatus();
+});
+carregarTcglIcv().then((dias) => {
+  estadoIcv.tcgl = agregarIcv(dias, SEMANA.de, SEMANA.ate, "tcgl");
+  estadoIcv.tcglAnt = agregarIcv(dias, SEMANA_ANT.de, SEMANA_ANT.ate, "tcgl");
+  pintarArea("Tcgl", estadoIcv.tcgl, estadoIcv.tcglAnt, ICV_IDS);
+  pintarTotal(estadoIcv, ICV_IDS, diaIpv);
+  atualizarStatus();
+}).catch((err) => {
+  console.info("TCGL ICV:", err.message || err);
   atualizarStatus();
 });
 
 const telaFixa = PARAMS.get("tela");
-if (telaFixa && ["ipv", "tempo", "campanha"].includes(telaFixa)) {
+if (telaFixa && ["ipv", "icv", "tempo", "campanha"].includes(telaFixa)) {
   modoFixo = true;
   document.getElementById("kiosk").classList.add("modo-fixo");
   const bloco = CICLO.find((c) => c.id === telaFixa) || CICLO[0];
   aplicarInfo(bloco);
   mostrarSlide(telaFixa);
-  if (telaFixa === "ipv") iniciarDiasIpv({ loop: true });
+  if (telaFixa === "ipv" || telaFixa === "icv") iniciarDiasBoard(telaFixa, { loop: true });
 } else {
   aplicarInfo(CICLO[0]);
   mostrarSlide("ipv");
-  iniciarDiasIpv();
+  iniciarDiasBoard("ipv");
   reiniciarBarra(CICLO[0].ms);
   agendar();
 }
@@ -1091,25 +1272,39 @@ document.addEventListener("keydown", (e) => {
   const bloco = CICLO[idx];
   aplicarInfo(bloco);
   mostrarSlide(bloco.id);
-  if (bloco.id === "ipv") iniciarDiasIpv({ loop: modoFixo });
+  if (bloco.id === "ipv" || bloco.id === "icv") iniciarDiasBoard(bloco.id, { loop: modoFixo });
   else clearInterval(ipvTimer);
   if (!modoFixo) reiniciarBarra(bloco.ms);
   agendar();
 });
 
 setInterval(() => {
-  carregarLondrisul().then((payload) => {
-    estado.ls = agregarLondrisul(payload, SEMANA.de, SEMANA.ate);
-    estado.lsAnt = agregarLondrisul(payload, SEMANA_ANT.de, SEMANA_ANT.ate);
-    pintarArea("Ls", estado.ls, estado.lsAnt);
-    pintarTotal();
+  carregarLondrisulIpv().then((payload) => {
+    estadoIpv.ls = agregarLondrisul(payload, SEMANA.de, SEMANA.ate);
+    estadoIpv.lsAnt = agregarLondrisul(payload, SEMANA_ANT.de, SEMANA_ANT.ate);
+    pintarArea("Ls", estadoIpv.ls, estadoIpv.lsAnt, IPV_IDS);
+    pintarTotal(estadoIpv, IPV_IDS, diaIpv);
     atualizarStatus();
   }).catch(() => {});
-  carregarTcgl().then((dias) => {
-    estado.tcgl = agregarTcgl(dias, SEMANA.de, SEMANA.ate);
-    estado.tcglAnt = agregarTcgl(dias, SEMANA_ANT.de, SEMANA_ANT.ate);
-    pintarArea("Tcgl", estado.tcgl, estado.tcglAnt);
-    pintarTotal();
+  carregarLondrisulIcv().then((payload) => {
+    estadoIcv.ls = agregarIcv(payload.dias || [], SEMANA.de, SEMANA.ate, "londrisul");
+    estadoIcv.lsAnt = agregarIcv(payload.dias || [], SEMANA_ANT.de, SEMANA_ANT.ate, "londrisul");
+    pintarArea("Ls", estadoIcv.ls, estadoIcv.lsAnt, ICV_IDS);
+    pintarTotal(estadoIcv, ICV_IDS, diaIpv);
+    atualizarStatus();
+  }).catch(() => {});
+  carregarTcglIpv().then((dias) => {
+    estadoIpv.tcgl = agregarTcgl(dias, SEMANA.de, SEMANA.ate);
+    estadoIpv.tcglAnt = agregarTcgl(dias, SEMANA_ANT.de, SEMANA_ANT.ate);
+    pintarArea("Tcgl", estadoIpv.tcgl, estadoIpv.tcglAnt, IPV_IDS);
+    pintarTotal(estadoIpv, IPV_IDS, diaIpv);
+    atualizarStatus();
+  }).catch(() => {});
+  carregarTcglIcv().then((dias) => {
+    estadoIcv.tcgl = agregarIcv(dias, SEMANA.de, SEMANA.ate, "tcgl");
+    estadoIcv.tcglAnt = agregarIcv(dias, SEMANA_ANT.de, SEMANA_ANT.ate, "tcgl");
+    pintarArea("Tcgl", estadoIcv.tcgl, estadoIcv.tcglAnt, ICV_IDS);
+    pintarTotal(estadoIcv, ICV_IDS, diaIpv);
     atualizarStatus();
   }).catch(() => {});
   carregarClima().catch(() => {});
