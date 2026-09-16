@@ -543,6 +543,48 @@ router.get("/share/ipv", async (req, res) => {
   }
 });
 
+async function consultarIcv(req) {
+  const cond = [];
+  const par = [];
+  for (const [campo, sql] of [["de", "data_ref >= ?::date"], ["ate", "data_ref <= ?::date"]]) {
+    const v = String(req.query[campo] || "");
+    if (ISO.test(v)) { par.push(v); cond.push(sql.replace("?", `$${par.length}`)); }
+  }
+  const tipoDia = condTipoDia(req);
+  if (tipoDia) cond.push(tipoDia);
+  const r = await query(
+    `SELECT data_ref::text AS data,
+            ${numero("icv")}             AS icv,
+            ${numero("scheduled_trips")} AS "scheduled_trips",
+            ${numero("trips")}           AS trips
+     FROM cr_custom ${cond.length ? `WHERE ${cond.join(" AND ")}` : ""}
+     ORDER BY data_ref`,
+    par
+  );
+  const dias = r.rows.map((x) => ({
+    data: String(x.data || "").slice(0, 10),
+    icv: x.icv == null ? null : Number(x.icv),
+    scheduled_trips: x.scheduled_trips == null ? null : Number(x.scheduled_trips),
+    trips: x.trips == null ? null : Number(x.trips)
+  }));
+  return { dias };
+}
+
+router.get("/share/icv", async (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Cache-Control", "no-store");
+  if (!tokenIpvShareOk(req)) {
+    res.status(401).json({ ok: false, erro: "token inválido" });
+    return;
+  }
+  try {
+    const { dias } = await consultarIcv(req);
+    res.json({ ok: true, indicador: "ICV", origem: "dsql", dias });
+  } catch (err) {
+    erro(res, err);
+  }
+});
+
 router.get("/ipv", requireFirebaseUser, async (req, res) => {
   const chave = String(req.query.fonte || "2-6");
   const f = FONTES_IPV[chave];
