@@ -1305,10 +1305,11 @@ function serieHist(hist, campo) {
     return v == null ? null : Math.round(v * 10) / 10;
   });
 }
-function barraVivo(label, cor, dados) {
+function linhaVivo(label, cor, dados, fill) {
   return {
-    label, data: dados, backgroundColor: cor, borderRadius: 3,
-    maxBarThickness: 14, skipNull: true
+    label, data: dados, borderColor: cor, backgroundColor: cor + "33",
+    fill: !!fill, pointBackgroundColor: cor, pointBorderColor: "#fff",
+    pointRadius: 3, borderWidth: 3, tension: .35, spanGaps: true
   };
 }
 function pintarHoraVivo(hist) {
@@ -1319,24 +1320,27 @@ function pintarHoraVivo(hist) {
   const data = {
     labels,
     datasets: [
-      barraVivo("No horário", "#22c55e", serieHist(hist, "ok")),
-      barraVivo("Atrasado", "#fbbf24", serieHist(hist, "late")),
-      barraVivo("Adiantado", "#ef4444", serieHist(hist, "early"))
+      linhaVivo("No horário", "#22c55e", serieHist(hist, "ok"), true),
+      linhaVivo("Atrasado", "#fbbf24", serieHist(hist, "late"), false),
+      linhaVivo("Adiantado", "#ef4444", serieHist(hist, "early"), false)
     ]
   };
+  if (vivoHoraChart && vivoHoraChart.config.type !== "line") {
+    vivoHoraChart.destroy();
+    vivoHoraChart = null;
+  }
   if (vivoHoraChart) {
     vivoHoraChart.data = data;
     vivoHoraChart.update("none");
     return;
   }
   vivoHoraChart = new ChartLib(canvas, {
-    type: "bar",
+    type: "line",
     data,
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: "index", intersect: false },
       plugins: { legend: { display: false } },
-      datasets: { bar: { categoryPercentage: 0.78, barPercentage: 0.9 } },
       scales: {
         x: {
           ticks: {
@@ -1346,7 +1350,7 @@ function pintarHoraVivo(hist) {
             font: { size: 11, weight: "700" },
             callback: (_v, i) => (i % 2 === 0 ? labels[i] : "")
           },
-          grid: { display: false }
+          grid: { color: "rgba(255,255,255,.06)" }
         },
         y: {
           min: 0, max: 100,

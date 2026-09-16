@@ -348,36 +348,40 @@ function serieHora(hist, campo) {
   });
 }
 
-function pintarBarrasHora(hist) {
+function pintarLinhaHora(hist) {
   const labels = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0") + "h");
   const data = {
     labels,
     datasets: [
-      barra("No horário", CORES.ok, serieHora(hist, "ok")),
-      barra("Atrasado", CORES.late, serieHora(hist, "late")),
-      barra("Adiantado", CORES.early, serieHora(hist, "early"))
+      linha("No horário", CORES.ok, serieHora(hist, "ok"), true),
+      linha("Atrasado", CORES.late, serieHora(hist, "late"), false),
+      linha("Adiantado", CORES.early, serieHora(hist, "early"), false)
     ]
   };
+  if (horaChart && horaChart.config.type !== "line") {
+    horaChart.destroy();
+    horaChart = null;
+  }
   if (horaChart) {
     horaChart.data = data;
     horaChart.update();
     return;
   }
   horaChart = new Chart(document.getElementById("horaChart"), {
-    type: "bar",
+    type: "line",
     data,
     options: {
       responsive: true,
       maintainAspectRatio: false,
       interaction: { mode: "index", intersect: false },
+      spanGaps: true,
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.parsed.y == null ? "—" : Math.round(c.parsed.y) + "%"}` } }
       },
-      datasets: { bar: { categoryPercentage: 0.78, barPercentage: 0.9 } },
       scales: {
         x: {
-          grid: { display: false },
+          grid: { color: "rgba(6,36,92,.08)" },
           ticks: {
             maxRotation: 0, autoSkip: false,
             font: { weight: "700" },
@@ -389,13 +393,23 @@ function pintarBarrasHora(hist) {
           ticks: { callback: (v) => v + "%" },
           grid: { color: "rgba(6,36,92,.08)" }
         }
-      }
+      },
+      elements: { line: { tension: .35, borderWidth: 3 }, point: { radius: 3, hoverRadius: 6 } }
     }
   });
 }
 
-function barra(label, cor, dados) {
-  return { label, data: dados, backgroundColor: cor, borderRadius: 3, maxBarThickness: 14, skipNull: true };
+function linha(label, cor, dados, fill) {
+  return {
+    label, data: dados,
+    borderColor: cor,
+    backgroundColor: cor + "22",
+    fill: !!fill,
+    pointBackgroundColor: cor,
+    pointBorderColor: "#fff",
+    pointBorderWidth: 1,
+    spanGaps: true
+  };
 }
 
 function pintar(payload) {
@@ -405,7 +419,7 @@ function pintar(payload) {
   pintarFirma("Total", d.total);
   pintarGaragens(d.garagens);
   const hist = gravarHist(d.total);
-  pintarBarrasHora(hist);
+  pintarLinhaHora(hist);
   document.getElementById("stamp").textContent = d.atualizado
     ? "Atualizado em " + d.atualizado
     : "Atualizado agora";
@@ -426,7 +440,7 @@ async function carregar() {
   }
 }
 
-pintarBarrasHora(lerHist());
+pintarLinhaHora(lerHist());
 carregar();
 setInterval(carregar, POLL_MS);
 </script>
