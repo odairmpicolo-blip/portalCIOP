@@ -828,6 +828,7 @@ const LS_IPV_URL = "https://londrisul.online/relatorios/tvs/pontualidade/api.php
 const LS_ICV_URL = "https://londrisul.online/relatorios/tvs/pontualidade/api.php?token=" + encodeURIComponent("IPV@2026");
 const MAPA_URL = "https://londrisul.online/relatorios/mapa/api.php?chave=" + encodeURIComponent("Pontualidade@2026");
 const HIST_VIVO_KEY = "ciop-mapa-pontualidade-horas-v1";
+const VIVO_POLL_MS = 15000;
 const TCGL_IPV_URL = "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com/cr0108/share/ipv?token=" + encodeURIComponent("IPV@2026");
 const TCGL_ICV_URL = "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com/cr0108/share/icv?token=" + encodeURIComponent("IPV@2026");
 const CLIMA_URL = "https://api.open-meteo.com/v1/forecast?latitude=-23.3045&longitude=-51.1696&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=America%2FSao_Paulo&forecast_days=6";
@@ -1361,25 +1362,24 @@ function pintarHoraVivo(hist) {
     }
   });
 }
-function pintarVivo(payload) {
-  const d = parseVivo(payload);
+function aplicarVivo(d) {
   pintarBlocoVivo("Tcgl", d.tcgl);
   pintarBlocoVivo("Ls", d.ls);
   pintarBlocoVivo("Total", d.total);
   const hist = gravarHistVivo(d.total);
   pintarHoraVivo(hist);
   const stamp = document.getElementById("vivoStamp");
-  if (stamp) stamp.textContent = d.atualizado ? d.atualizado : "Ao vivo";
+  if (stamp) stamp.textContent = d.atualizado || "Ao vivo";
   estadoVivo.ok = true;
   atualizarStatus();
 }
 async function carregarVivo() {
   try {
-    const res = await comTimeout(fetch(MAPA_URL, { cache: "no-store" }), 8000, "api mapa");
+    const res = await comTimeout(fetch(MAPA_URL + "&t=" + Date.now(), { cache: "no-store" }), 8000, "api mapa");
     if (!res.ok) throw new Error("HTTP " + res.status);
     const payload = await res.json();
     if (!payload || payload.ok === false) throw new Error(payload?.erro || "mapa inválido");
-    pintarVivo(payload);
+    aplicarVivo(parseVivo(payload));
   } catch (err) {
     estadoVivo.ok = false;
     atualizarStatus();
@@ -1540,7 +1540,7 @@ carregarLondrisulIcv().then((payload) => {
 });
 carregarClima().catch(() => {});
 carregarVivo();
-setInterval(carregarVivo, 20000);
+setInterval(carregarVivo, VIVO_POLL_MS);
 carregarTcglIpv().then((dias) => {
   estadoIpv.tcgl = agregarTcgl(dias, SEMANA.de, SEMANA.ate);
   estadoIpv.tcglAnt = agregarTcgl(dias, SEMANA_ANT.de, SEMANA_ANT.ate);
