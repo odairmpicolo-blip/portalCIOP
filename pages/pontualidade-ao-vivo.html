@@ -47,30 +47,36 @@ h1.pontualidade-title-art { margin:0; display:flex; align-items:center; line-hei
 .firm {
   background:var(--card); border:1px solid var(--border); border-radius:12px;
   padding:16px; box-shadow:0 8px 24px rgba(16,24,40,.05);
-  display:grid; grid-template-columns:140px 1fr; gap:16px; align-items:center;
+  display:flex; flex-direction:column; gap:12px;
 }
 .firm-kicker { font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--blue); }
 .firm h2 { margin:4px 0 0; font-size:26px; letter-spacing:-.03em; }
-.donut-wrap { width:140px; height:140px; position:relative; }
-.donut-center {
-  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-  pointer-events:none;
+.bars3 {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
+  min-height:160px; height:180px;
 }
-.donut-center b { font-size:28px; font-weight:900; color:var(--green); line-height:1; }
-.donut-center span { font-size:10px; font-weight:800; text-transform:uppercase; color:var(--muted); letter-spacing:.06em; margin-top:4px; }
-.nums { display:flex; flex-direction:column; gap:8px; }
-.num {
-  display:flex; align-items:baseline; justify-content:space-between; gap:10px;
-  padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:#f8fafc;
+.bar3 {
+  display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:6px;
+  text-align:center; min-height:0;
 }
-.num .lab { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
-.num .val { font-size:22px; font-weight:900; font-variant-numeric:tabular-nums; }
-.num.ok { border-left:4px solid var(--green); }
-.num.ok .lab, .num.ok .val { color:var(--green); }
-.num.late { border-left:4px solid var(--yellow); }
-.num.late .lab, .num.late .val { color:#b45309; }
-.num.early { border-left:4px solid var(--red); }
-.num.early .lab, .num.early .val { color:var(--red); }
+.bar3 b { font-size:22px; font-weight:900; font-variant-numeric:tabular-nums; line-height:1; }
+.bar3 .col {
+  position:relative; min-height:0; height:100%;
+  background:#f1f5f9; border:1px solid var(--border); border-radius:10px;
+}
+.bar3 .col i {
+  position:absolute; left:22%; right:22%; bottom:6px; top:6px;
+  transform:scaleY(var(--p, 0));
+  transform-origin:bottom center;
+  border-radius:6px 6px 3px 3px; transition:transform .4s ease;
+}
+.bar3 em { font-style:normal; font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; line-height:1.2; }
+.bar3.ok b, .bar3.ok em { color:var(--green); }
+.bar3.ok i { background:var(--green); }
+.bar3.late b, .bar3.late em { color:#b45309; }
+.bar3.late i { background:var(--yellow); }
+.bar3.early b, .bar3.early em { color:var(--red); }
+.bar3.early i { background:var(--red); }
 
 .garages {
   display:grid; grid-template-columns:repeat(5,1fr); gap:8px;
@@ -95,19 +101,18 @@ h1.pontualidade-title-art { margin:0; display:flex; align-items:center; line-hei
 .legend .ok::before { background:var(--green); }
 .legend .late::before { background:var(--yellow); }
 .legend .early::before { background:var(--red); }
-.chart-box { position:relative; height:min(340px, 42vh); }
+.chart-box { position:relative; height:min(180px, 22vh); }
 .erro { color:var(--red); font-weight:700; font-size:13px; }
 
 @media (max-width: 980px) {
   .firm-grid, .garages { grid-template-columns:1fr; }
-  .firm { grid-template-columns:1fr; justify-items:center; }
-  .nums { width:100%; }
+  .firm { grid-template-columns:1fr; justify-items:stretch; }
 }
 html.dk-dark {
   --bg:#070b14; --card:#10182a; --border:#243049; --text:#e8eefc; --muted:#9aa8c2; --blue:#8eb6ff;
 }
 html.dk-dark .toolbar, html.dk-dark .firm, html.dk-dark .garage, html.dk-dark .chart-card { box-shadow:none; }
-html.dk-dark .num { background:#0c1322; }
+html.dk-dark .bar3 .col { background:#0c1322; }
 </style>
 <script src="../assets/js/loading.js?v=20260718d"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -165,36 +170,33 @@ html.dk-dark .num { background:#0c1322; }
       <div>
         <div class="firm-kicker">Área 1</div>
         <h2>TCGL</h2>
-        <div class="donut-wrap"><canvas id="donutTcgl"></canvas><div class="donut-center"><b id="okTcgl">—</b><span>No horário</span></div></div>
       </div>
-      <div class="nums">
-        <div class="num ok"><span class="lab">No horário</span><span class="val" id="nOkTcgl">—</span></div>
-        <div class="num late"><span class="lab">Atrasado</span><span class="val" id="nLateTcgl">—</span></div>
-        <div class="num early"><span class="lab">Adiantado</span><span class="val" id="nEarlyTcgl">—</span></div>
+      <div class="bars3">
+        <div class="bar3 ok"><b id="okTcgl">—</b><span class="col"><i id="colOkTcgl"></i></span><em>No horário</em></div>
+        <div class="bar3 late"><b id="nLateTcgl">—</b><span class="col"><i id="colLateTcgl"></i></span><em>Atrasado</em></div>
+        <div class="bar3 early"><b id="nEarlyTcgl">—</b><span class="col"><i id="colEarlyTcgl"></i></span><em>Adiantado</em></div>
       </div>
     </article>
     <article class="firm" id="cardLs">
       <div>
         <div class="firm-kicker">Área 2</div>
         <h2>LondriSul</h2>
-        <div class="donut-wrap"><canvas id="donutLs"></canvas><div class="donut-center"><b id="okLs">—</b><span>No horário</span></div></div>
       </div>
-      <div class="nums">
-        <div class="num ok"><span class="lab">No horário</span><span class="val" id="nOkLs">—</span></div>
-        <div class="num late"><span class="lab">Atrasado</span><span class="val" id="nLateLs">—</span></div>
-        <div class="num early"><span class="lab">Adiantado</span><span class="val" id="nEarlyLs">—</span></div>
+      <div class="bars3">
+        <div class="bar3 ok"><b id="okLs">—</b><span class="col"><i id="colOkLs"></i></span><em>No horário</em></div>
+        <div class="bar3 late"><b id="nLateLs">—</b><span class="col"><i id="colLateLs"></i></span><em>Atrasado</em></div>
+        <div class="bar3 early"><b id="nEarlyLs">—</b><span class="col"><i id="colEarlyLs"></i></span><em>Adiantado</em></div>
       </div>
     </article>
     <article class="firm" id="cardTotal">
       <div>
         <div class="firm-kicker">Sistema</div>
         <h2>Total</h2>
-        <div class="donut-wrap"><canvas id="donutTotal"></canvas><div class="donut-center"><b id="okTotal">—</b><span>No horário</span></div></div>
       </div>
-      <div class="nums">
-        <div class="num ok"><span class="lab">No horário</span><span class="val" id="nOkTotal">—</span></div>
-        <div class="num late"><span class="lab">Atrasado</span><span class="val" id="nLateTotal">—</span></div>
-        <div class="num early"><span class="lab">Adiantado</span><span class="val" id="nEarlyTotal">—</span></div>
+      <div class="bars3">
+        <div class="bar3 ok"><b id="okTotal">—</b><span class="col"><i id="colOkTotal"></i></span><em>No horário</em></div>
+        <div class="bar3 late"><b id="nLateTotal">—</b><span class="col"><i id="colLateTotal"></i></span><em>Atrasado</em></div>
+        <div class="bar3 early"><b id="nEarlyTotal">—</b><span class="col"><i id="colEarlyTotal"></i></span><em>Adiantado</em></div>
       </div>
     </article>
   </div>
@@ -222,7 +224,6 @@ const API = "https://londrisul.online/relatorios/mapa/api.php?chave=" + encodeUR
 const HIST_KEY = "ciop-mapa-pontualidade-horas-v1";
 const CORES = { ok: "#2e9b45", late: "#f6bf26", early: "#de1b1b" };
 const POLL_MS = 20000;
-const donuts = {};
 let horaChart;
 
 const fmtPct = (v) => (v == null || !Number.isFinite(v) ? "—" : Math.round(v) + "%");
@@ -275,43 +276,21 @@ function setTxt(id, v) {
   if (el) el.textContent = fmtPct(v);
 }
 
-function donutCfg(ok, late, early) {
-  return {
-    type: "doughnut",
-    data: {
-      labels: ["No horário", "Atrasado", "Adiantado"],
-      datasets: [{
-        data: [ok ?? 0, late ?? 0, early ?? 0],
-        backgroundColor: [CORES.ok, CORES.late, CORES.early],
-        borderWidth: 0,
-        hoverOffset: 4
-      }]
-    },
-    options: {
-      cutout: "72%",
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label}: ${Math.round(c.parsed)}%` } } },
-      animation: { duration: 450 }
-    }
-  };
+function alturaBarra(v) {
+  if (v == null || !Number.isFinite(v)) return 0;
+  return Math.max(3, Math.min(100, v));
 }
-
-function pintarDonut(id, bloco) {
-  const canvas = document.getElementById(id);
-  if (!canvas) return;
-  const cfg = donutCfg(bloco.ok, bloco.late, bloco.early);
-  if (donuts[id]) {
-    donuts[id].data.datasets[0].data = cfg.data.datasets[0].data;
-    donuts[id].update();
-    return;
-  }
-  donuts[id] = new Chart(canvas, cfg);
+function pintarCol(id, v) {
+  const el = document.getElementById(id);
+  if (el) el.style.setProperty("--p", String(alturaBarra(v) / 100));
 }
-
 function pintarFirma(suf, bloco) {
   setTxt("ok" + suf, bloco.ok);
-  setTxt("nOk" + suf, bloco.ok);
   setTxt("nLate" + suf, bloco.late);
   setTxt("nEarly" + suf, bloco.early);
+  pintarCol("colOk" + suf, bloco.ok);
+  pintarCol("colLate" + suf, bloco.late);
+  pintarCol("colEarly" + suf, bloco.early);
 }
 
 function pintarGaragens(lista) {
@@ -369,14 +348,14 @@ function serieHora(hist, campo) {
   });
 }
 
-function pintarLinha(hist) {
+function pintarBarrasHora(hist) {
   const labels = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0") + "h");
   const data = {
     labels,
     datasets: [
-      linha("No horário", CORES.ok, serieHora(hist, "ok")),
-      linha("Atrasado", CORES.late, serieHora(hist, "late")),
-      linha("Adiantado", CORES.early, serieHora(hist, "early"))
+      barra("No horário", CORES.ok, serieHora(hist, "ok")),
+      barra("Atrasado", CORES.late, serieHora(hist, "late")),
+      barra("Adiantado", CORES.early, serieHora(hist, "early"))
     ]
   };
   if (horaChart) {
@@ -385,43 +364,38 @@ function pintarLinha(hist) {
     return;
   }
   horaChart = new Chart(document.getElementById("horaChart"), {
-    type: "line",
+    type: "bar",
     data,
     options: {
       responsive: true,
       maintainAspectRatio: false,
       interaction: { mode: "index", intersect: false },
-      spanGaps: true,
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.parsed.y == null ? "—" : Math.round(c.parsed.y) + "%"}` } }
       },
+      datasets: { bar: { categoryPercentage: 0.78, barPercentage: 0.9 } },
       scales: {
         x: {
-          grid: { color: "rgba(6,36,92,.08)" },
-          ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12, font: { weight: "700" } }
+          grid: { display: false },
+          ticks: {
+            maxRotation: 0, autoSkip: false,
+            font: { weight: "700" },
+            callback: (_v, i) => (i % 2 === 0 ? labels[i] : "")
+          }
         },
         y: {
           min: 0, max: 100,
           ticks: { callback: (v) => v + "%" },
           grid: { color: "rgba(6,36,92,.08)" }
         }
-      },
-      elements: { line: { tension: .35, borderWidth: 3 }, point: { radius: 3, hoverRadius: 6 } }
+      }
     }
   });
 }
 
-function linha(label, cor, dados) {
-  return {
-    label, data: dados,
-    borderColor: cor,
-    backgroundColor: cor + "22",
-    fill: label === "No horário",
-    pointBackgroundColor: cor,
-    pointBorderColor: "#fff",
-    pointBorderWidth: 1
-  };
+function barra(label, cor, dados) {
+  return { label, data: dados, backgroundColor: cor, borderRadius: 3, maxBarThickness: 14, skipNull: true };
 }
 
 function pintar(payload) {
@@ -429,12 +403,9 @@ function pintar(payload) {
   pintarFirma("Tcgl", d.tcgl);
   pintarFirma("Ls", d.ls);
   pintarFirma("Total", d.total);
-  pintarDonut("donutTcgl", d.tcgl);
-  pintarDonut("donutLs", d.ls);
-  pintarDonut("donutTotal", d.total);
   pintarGaragens(d.garagens);
   const hist = gravarHist(d.total);
-  pintarLinha(hist);
+  pintarBarrasHora(hist);
   document.getElementById("stamp").textContent = d.atualizado
     ? "Atualizado em " + d.atualizado
     : "Atualizado agora";
@@ -455,7 +426,7 @@ async function carregar() {
   }
 }
 
-pintarLinha(lerHist());
+pintarBarrasHora(lerHist());
 carregar();
 setInterval(carregar, POLL_MS);
 </script>

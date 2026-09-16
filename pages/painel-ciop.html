@@ -126,51 +126,59 @@
     gap:clamp(10px,1.3vh,18px);
   }
   .vivo-grid{
-    flex:1 1 58%; min-height:0;
+    flex:1 1 auto; min-height:0;
     display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(14px,1.8vw,24px);
   }
-  .vivo-firm{
-    display:grid; grid-template-rows:auto 1fr auto; gap:clamp(8px,1.2vh,14px);
-    min-height:0;
+  .firm.vivo-firm{
+    display:grid;
+    grid-template-rows:auto minmax(0,1fr);
+    gap:clamp(8px,1.2vh,14px);
   }
-  .vivo-mid{
-    display:flex; align-items:center; justify-content:center; min-height:0;
+  .vivo-mid{ min-height:0; height:100%; }
+  .vivo-bars{
+    height:100%; min-height:0;
+    display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(8px,1.1vw,16px);
   }
-  .vivo-donut{
-    position:relative; width:min(46%, 190px); aspect-ratio:1;
-    display:grid; place-items:center;
+  .vivo-bar{
+    display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:6px;
+    min-height:0; text-align:center;
   }
-  .vivo-ring{
-    position:absolute; inset:0; border-radius:50%;
-    background:conic-gradient(#22c55e 0 64%, #fbbf24 64% 89%, #ef4444 89% 100%);
-    -webkit-mask:radial-gradient(circle, transparent 58%, #000 59%);
-    mask:radial-gradient(circle, transparent 58%, #000 59%);
-    filter:drop-shadow(0 0 18px rgba(34,197,94,.35));
+  .vivo-bar b{
+    font-size:clamp(20px,2.2vw,34px); font-weight:900;
+    font-variant-numeric:tabular-nums; line-height:1;
   }
-  .vivo-donut b{
-    position:relative; z-index:1;
-    font-size:clamp(28px,3.2vw,48px); font-weight:900; color:#4ade80;
-    font-variant-numeric:tabular-nums;
+  .vivo-col{
+    position:relative; min-height:0; height:100%;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:14px;
   }
-  .vivo-nums{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-  .vivo-num{
-    padding:clamp(8px,1vh,12px) 8px; border-radius:14px; text-align:center;
-    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+  .vivo-col i{
+    position:absolute; left:22%; right:22%; bottom:8px; top:8px;
+    transform:scaleY(var(--p, 0));
+    transform-origin:bottom center;
+    border-radius:8px 8px 4px 4px;
+    transition:transform .45s ease;
   }
-  .vivo-num span{ display:block; font-size:clamp(11px,.9vw,13px); font-weight:800; letter-spacing:.08em; text-transform:uppercase; opacity:.9; }
-  .vivo-num b{ display:block; margin-top:4px; font-size:clamp(22px,2.4vw,36px); font-weight:900; font-variant-numeric:tabular-nums; }
-  .vivo-num.ok{ color:#4ade80; box-shadow:inset 0 0 0 1px rgba(74,222,128,.25); }
-  .vivo-num.late{ color:#fbbf24; box-shadow:inset 0 0 0 1px rgba(251,191,36,.25); }
-  .vivo-num.early{ color:#fb7185; box-shadow:inset 0 0 0 1px rgba(251,113,133,.25); }
+  .vivo-bar em{
+    font-style:normal; font-size:clamp(10px,.85vw,13px); font-weight:800;
+    letter-spacing:.04em; text-transform:uppercase; line-height:1.2;
+  }
+  .vivo-bar.ok b, .vivo-bar.ok em{ color:#4ade80; }
+  .vivo-bar.ok i{ background:linear-gradient(180deg,#86efac,#22c55e); box-shadow:0 0 14px rgba(34,197,94,.4); }
+  .vivo-bar.late b, .vivo-bar.late em{ color:#fbbf24; }
+  .vivo-bar.late i{ background:linear-gradient(180deg,#fde68a,#fbbf24); box-shadow:0 0 14px rgba(251,191,36,.35); }
+  .vivo-bar.early b, .vivo-bar.early em{ color:#fb7185; }
+  .vivo-bar.early i{ background:linear-gradient(180deg,#fda4af,#ef4444); box-shadow:0 0 14px rgba(239,68,68,.35); }
   .vivo-chart{
-    flex:0 0 38%; min-height:0;
-    border-radius:24px; padding:clamp(10px,1.4vh,16px) clamp(14px,1.6vw,22px) 8px;
+    flex:0 0 20%; max-height:20vh; min-height:110px;
+    border-radius:24px; padding:clamp(6px,1vh,10px) clamp(14px,1.6vw,22px) 4px;
     background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);
-    display:flex; flex-direction:column; gap:6px;
+    display:flex; flex-direction:column; gap:4px;
   }
   .vivo-chart-head{
     display:flex; justify-content:space-between; align-items:center; gap:10px;
-    font-size:clamp(12px,1vw,15px); font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:#c9d6ef;
+    font-size:clamp(11px,.9vw,14px); font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:#c9d6ef;
   }
   .vivo-legend{ display:flex; gap:12px; font-size:clamp(11px,.9vw,13px); letter-spacing:.04em; }
   .vivo-legend i{ font-style:normal; }
@@ -180,7 +188,7 @@
   .vivo-chart canvas{ flex:1; min-height:0; width:100% !important; }
   @media (max-aspect-ratio: 4/3){
     .vivo-grid{ grid-template-columns:1fr; }
-    .vivo-chart{ flex-basis:28%; }
+    .vivo-chart{ flex-basis:18%; max-height:18vh; }
   }
   .board-period{ font-size:clamp(24px,2.4vw,38px); font-weight:900; margin-top:2px; letter-spacing:-.035em; }
   .hud-week{ display:flex; gap:8px; align-items:center; }
@@ -216,6 +224,10 @@
     display:grid;
     grid-template-rows:auto auto 1fr auto auto;
     gap:clamp(12px,1.8vh,22px);
+  }
+  .firm.vivo-firm{
+    grid-template-rows:auto minmax(0,1fr);
+    gap:clamp(8px,1.2vh,14px);
   }
   .firm::before{
     content:""; position:absolute; width:320px; height:320px; right:-100px; top:-110px; border-radius:50%;
@@ -622,11 +634,12 @@
               <div class="firm-kicker">Área 1</div>
               <h2>TCGL</h2>
             </div>
-            <div class="vivo-mid"><div class="vivo-donut"><div class="vivo-ring" id="ringTcgl"></div><b id="vivoOkTcgl">—</b></div></div>
-            <div class="vivo-nums">
-              <div class="vivo-num ok"><span>No horário</span><b id="vivoNokTcgl">—</b></div>
-              <div class="vivo-num late"><span>Atrasado</span><b id="vivoNlateTcgl">—</b></div>
-              <div class="vivo-num early"><span>Adiantado</span><b id="vivoNearlyTcgl">—</b></div>
+            <div class="vivo-mid">
+              <div class="vivo-bars">
+                <div class="vivo-bar ok"><b id="vivoOkTcgl">—</b><span class="vivo-col"><i id="colOkTcgl"></i></span><em>No horário</em></div>
+                <div class="vivo-bar late"><b id="vivoNlateTcgl">—</b><span class="vivo-col"><i id="colLateTcgl"></i></span><em>Atrasado</em></div>
+                <div class="vivo-bar early"><b id="vivoNearlyTcgl">—</b><span class="vivo-col"><i id="colEarlyTcgl"></i></span><em>Adiantado</em></div>
+              </div>
             </div>
           </article>
           <article class="firm ipv-ls vivo-firm">
@@ -634,11 +647,12 @@
               <div class="firm-kicker">Área 2</div>
               <h2>LondriSul</h2>
             </div>
-            <div class="vivo-mid"><div class="vivo-donut"><div class="vivo-ring" id="ringLs"></div><b id="vivoOkLs">—</b></div></div>
-            <div class="vivo-nums">
-              <div class="vivo-num ok"><span>No horário</span><b id="vivoNokLs">—</b></div>
-              <div class="vivo-num late"><span>Atrasado</span><b id="vivoNlateLs">—</b></div>
-              <div class="vivo-num early"><span>Adiantado</span><b id="vivoNearlyLs">—</b></div>
+            <div class="vivo-mid">
+              <div class="vivo-bars">
+                <div class="vivo-bar ok"><b id="vivoOkLs">—</b><span class="vivo-col"><i id="colOkLs"></i></span><em>No horário</em></div>
+                <div class="vivo-bar late"><b id="vivoNlateLs">—</b><span class="vivo-col"><i id="colLateLs"></i></span><em>Atrasado</em></div>
+                <div class="vivo-bar early"><b id="vivoNearlyLs">—</b><span class="vivo-col"><i id="colEarlyLs"></i></span><em>Adiantado</em></div>
+              </div>
             </div>
           </article>
           <article class="firm ipv-ciop vivo-firm">
@@ -646,11 +660,12 @@
               <div class="firm-kicker">SISTEMA</div>
               <h2>Total</h2>
             </div>
-            <div class="vivo-mid"><div class="vivo-donut"><div class="vivo-ring" id="ringTotal"></div><b id="vivoOkTotal">—</b></div></div>
-            <div class="vivo-nums">
-              <div class="vivo-num ok"><span>No horário</span><b id="vivoNokTotal">—</b></div>
-              <div class="vivo-num late"><span>Atrasado</span><b id="vivoNlateTotal">—</b></div>
-              <div class="vivo-num early"><span>Adiantado</span><b id="vivoNearlyTotal">—</b></div>
+            <div class="vivo-mid">
+              <div class="vivo-bars">
+                <div class="vivo-bar ok"><b id="vivoOkTotal">—</b><span class="vivo-col"><i id="colOkTotal"></i></span><em>No horário</em></div>
+                <div class="vivo-bar late"><b id="vivoNlateTotal">—</b><span class="vivo-col"><i id="colLateTotal"></i></span><em>Atrasado</em></div>
+                <div class="vivo-bar early"><b id="vivoNearlyTotal">—</b><span class="vivo-col"><i id="colEarlyTotal"></i></span><em>Adiantado</em></div>
+              </div>
             </div>
           </article>
         </div>
@@ -1245,22 +1260,21 @@ function setVivoTxt(id, v) {
   const el = document.getElementById(id);
   if (el) el.textContent = pctInt(v);
 }
-function pintarAnel(id, bloco) {
+function alturaBarra(v) {
+  if (v == null || !Number.isFinite(v)) return 0;
+  return Math.max(3, Math.min(100, v));
+}
+function pintarCol(id, v) {
   const el = document.getElementById(id);
-  if (!el) return;
-  const ok = Math.max(0, bloco.ok || 0);
-  const late = Math.max(0, bloco.late || 0);
-  const early = Math.max(0, bloco.early || 0);
-  const a = ok;
-  const b = ok + late;
-  el.style.background = `conic-gradient(#22c55e 0 ${a}%, #fbbf24 ${a}% ${b}%, #ef4444 ${b}% 100%)`;
+  if (el) el.style.setProperty("--p", String(alturaBarra(v) / 100));
 }
 function pintarBlocoVivo(suf, bloco) {
   setVivoTxt("vivoOk" + suf, bloco.ok);
-  setVivoTxt("vivoNok" + suf, bloco.ok);
   setVivoTxt("vivoNlate" + suf, bloco.late);
   setVivoTxt("vivoNearly" + suf, bloco.early);
-  pintarAnel("ring" + suf, bloco);
+  pintarCol("colOk" + suf, bloco.ok);
+  pintarCol("colLate" + suf, bloco.late);
+  pintarCol("colEarly" + suf, bloco.early);
 }
 function hojeSP() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
@@ -1291,11 +1305,10 @@ function serieHist(hist, campo) {
     return v == null ? null : Math.round(v * 10) / 10;
   });
 }
-function linhaVivo(label, cor, dados, fill) {
+function barraVivo(label, cor, dados) {
   return {
-    label, data: dados, borderColor: cor, backgroundColor: cor + "33",
-    fill: !!fill, pointBackgroundColor: cor, pointBorderColor: "#fff",
-    pointRadius: 3, borderWidth: 3, tension: .35, spanGaps: true
+    label, data: dados, backgroundColor: cor, borderRadius: 3,
+    maxBarThickness: 14, skipNull: true
   };
 }
 function pintarHoraVivo(hist) {
@@ -1306,9 +1319,9 @@ function pintarHoraVivo(hist) {
   const data = {
     labels,
     datasets: [
-      linhaVivo("No horário", "#22c55e", serieHist(hist, "ok"), true),
-      linhaVivo("Atrasado", "#fbbf24", serieHist(hist, "late"), false),
-      linhaVivo("Adiantado", "#ef4444", serieHist(hist, "early"), false)
+      barraVivo("No horário", "#22c55e", serieHist(hist, "ok")),
+      barraVivo("Atrasado", "#fbbf24", serieHist(hist, "late")),
+      barraVivo("Adiantado", "#ef4444", serieHist(hist, "early"))
     ]
   };
   if (vivoHoraChart) {
@@ -1317,15 +1330,29 @@ function pintarHoraVivo(hist) {
     return;
   }
   vivoHoraChart = new ChartLib(canvas, {
-    type: "line",
+    type: "bar",
     data,
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: "index", intersect: false },
       plugins: { legend: { display: false } },
+      datasets: { bar: { categoryPercentage: 0.78, barPercentage: 0.9 } },
       scales: {
-        x: { ticks: { color: "rgba(226,234,250,.7)", maxTicksLimit: 12, maxRotation: 0 }, grid: { color: "rgba(255,255,255,.06)" } },
-        y: { min: 0, max: 100, ticks: { color: "rgba(226,234,250,.7)", callback: (v) => v + "%" }, grid: { color: "rgba(255,255,255,.06)" } }
+        x: {
+          ticks: {
+            color: "rgba(226,234,250,.75)",
+            maxRotation: 0,
+            autoSkip: false,
+            font: { size: 11, weight: "700" },
+            callback: (_v, i) => (i % 2 === 0 ? labels[i] : "")
+          },
+          grid: { display: false }
+        },
+        y: {
+          min: 0, max: 100,
+          ticks: { color: "rgba(226,234,250,.7)", font: { size: 10 }, callback: (v) => v + "%" },
+          grid: { color: "rgba(255,255,255,.06)" }
+        }
       }
     }
   });
