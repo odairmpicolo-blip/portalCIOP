@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store">
+<title>Performance em tempo real - Portal CIOP</title>
+<style>
+:root {
+  --blue:#06245c; --blue2:#0b3a8a; --orange:#ff6b00;
+  --bg:#f5f7fb; --border:#dfe5ef; --text:#101828; --muted:#3f4757;
+  --green:#2e9b45; --yellow:#f6bf26; --red:#de1b1b;
+  --card:#fff;
+}
+* { box-sizing: border-box; }
+html, body { margin:0; min-height:100%; background:var(--bg); color:var(--text); font-family:Arial, Helvetica, sans-serif; }
+.header-actions { justify-self:end; display:flex; align-items:center; gap:10px; }
+.logo-tcgl { height:45px; width:auto; object-fit:contain; }
+.pontualidade-title-wrap { display:flex; flex-direction:column; align-items:center; }
+h1.page-title-text {
+  margin: 0;
+  font-size: clamp(20px, 2.6vw, 30px);
+  font-weight: 900;
+  letter-spacing: -.03em;
+  color: var(--blue);
+  line-height: 1.1;
+  text-align: center;
+}
+.subtitle { margin-top:4px; color:var(--blue); font-weight:800; font-size:13px; letter-spacing:.04em; text-transform:uppercase; }
+.content-body { padding:12px; display:flex; flex-direction:column; gap:12px; max-width:1400px; margin:0 auto; }
+.toolbar {
+  background:var(--card); border:1px solid var(--border); border-radius:8px;
+  padding:10px 12px; display:flex; align-items:center; justify-content:space-between;
+  gap:12px; flex-wrap:wrap; box-shadow:0 8px 24px rgba(16,24,40,.05);
+}
+.toolbar-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.btn-portal {
+  display:inline-flex; align-items:center; gap:8px; min-height:36px; padding:8px 14px;
+  border-radius:8px; background:linear-gradient(135deg,var(--blue),var(--blue2));
+  color:#fff; text-decoration:none; font-weight:700; font-size:12px;
+}
+.live-badge {
+  display:inline-flex; align-items:center; gap:8px; font-weight:800; font-size:12px;
+  letter-spacing:.08em; text-transform:uppercase; color:var(--green);
+  border:1px solid #cfeed8; background:#f2faf4; border-radius:999px; padding:7px 12px;
+}
+.live-dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:pulse 2s ease-in-out infinite; }
+@keyframes pulse { 50%{ opacity:.35; } }
+.stamp { color:var(--muted); font-size:12px; font-weight:700; }
+
+.firm-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.firm {
+  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  padding:16px; box-shadow:0 8px 24px rgba(16,24,40,.05);
+  display:flex; flex-direction:column; gap:12px;
+}
+.firm-kicker { font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--blue); }
+.firm h2 { margin:4px 0 0; font-size:26px; letter-spacing:-.03em; }
+.bars3 {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
+  min-height:160px; height:180px;
+}
+.bar3 {
+  display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:6px;
+  text-align:center; min-height:0;
+}
+.bar3 b { font-size:22px; font-weight:900; font-variant-numeric:tabular-nums; line-height:1; }
+.bar3 .col {
+  position:relative; min-height:0; height:100%;
+  background:#f1f5f9; border:1px solid var(--border); border-radius:10px;
+}
+.bar3 .col i {
+  position:absolute; left:22%; right:22%; bottom:6px; top:6px;
+  transform:scaleY(var(--p, 0));
+  transform-origin:bottom center;
+  border-radius:6px 6px 3px 3px; transition:transform .4s ease;
+}
+.bar3 em { font-style:normal; font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; line-height:1.2; }
+.bar3.ok b, .bar3.ok em { color:var(--green); }
+.bar3.ok i { background:var(--green); }
+.bar3.late b, .bar3.late em { color:#b45309; }
+.bar3.late i { background:var(--yellow); }
+.bar3.early b, .bar3.early em { color:var(--red); }
+.bar3.early i { background:var(--red); }
+
+.garages {
+  display:grid; grid-template-columns:repeat(5,1fr); gap:8px;
+}
+.garage {
+  background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px;
+}
+.garage b { display:block; font-size:12px; color:var(--blue); margin-bottom:6px; }
+.bars { display:flex; height:8px; border-radius:99px; overflow:hidden; background:#eef2f7; }
+.bars i { display:block; height:100%; }
+.garage .mini { margin-top:6px; display:flex; justify-content:space-between; font-size:11px; font-weight:800; }
+
+.chart-card {
+  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  padding:14px 16px 8px; box-shadow:0 8px 24px rgba(16,24,40,.05);
+}
+.chart-head { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:8px; flex-wrap:wrap; }
+.chart-title { font-size:16px; font-weight:800; color:var(--blue); }
+.chart-sub { font-size:12px; color:var(--muted); font-weight:600; }
+.legend { display:flex; gap:12px; flex-wrap:wrap; font-size:12px; font-weight:800; }
+.legend span::before { content:""; display:inline-block; width:10px; height:10px; border-radius:99px; margin-right:6px; vertical-align:middle; }
+.legend .ok::before { background:var(--green); }
+.legend .late::before { background:var(--yellow); }
+.legend .early::before { background:var(--red); }
+.chart-box { position:relative; height:min(280px, 32vh); }
+.erro { color:var(--red); font-weight:700; font-size:13px; }
+
+@media (max-width: 980px) {
+  .firm-grid, .garages { grid-template-columns:1fr; }
+  .firm { grid-template-columns:1fr; justify-items:stretch; }
+}
+html.dk-dark {
+  --bg:#070b14; --card:#10182a; --border:#243049; --text:#e8eefc; --muted:#9aa8c2; --blue:#8eb6ff;
+}
+html.dk-dark .toolbar, html.dk-dark .firm, html.dk-dark .garage, html.dk-dark .chart-card { box-shadow:none; }
+html.dk-dark .bar3 .col { background:#0c1322; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/dashboard-kit.css?v=20260720p">
+<script src="../assets/js/theme-toggle.js?v=20260818logo6"></script>
+<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260821fx">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260828planilhas">
+</head>
+<body>
+<div class="body-bg-wall" aria-hidden="true"></div>
+<div class="body-bg-stain" aria-hidden="true"></div>
+<div class="header">
+  <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP"><img class="portal-brand-art" src="../assets/img/logomarca-portalciop-tcgl-claro.png?v=20260818logo6" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
+  <div class="pontualidade-title-wrap">
+    <h1 class="page-title-text">Performance em tempo real</h1>
+    <div class="subtitle">TCGL · LondriSul · Sistema</div>
+  </div>
+  <div class="header-actions">
+    <a href="https://www.tcgrandelondrina.com.br/" target="_blank" style="display:flex;">
+      <img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL">
+    </a>
+  </div>
+</div>
+
+<div class="content-body">
+  <div class="toolbar">
+    <div class="toolbar-actions">
+      <a class="btn-portal" href="../index.html">Portal</a>
+      <a class="btn-portal" href="pontualidade.html">IPV histórico</a>
+    </div>
+    <span class="live-badge"><span class="live-dot"></span> Tempo real</span>
+    <span class="stamp" id="stamp">Atualizando…</span>
+  </div>
+  <div class="erro" id="erro" hidden></div>
+
+  <div class="firm-grid">
+    <article class="firm" id="cardTcgl">
+      <div>
+        <div class="firm-kicker">Área 1</div>
+        <h2>TCGL</h2>
+      </div>
+      <div class="bars3">
+        <div class="bar3 ok"><b id="okTcgl">—</b><span class="col"><i id="colOkTcgl"></i></span><em>No horário</em></div>
+        <div class="bar3 late"><b id="nLateTcgl">—</b><span class="col"><i id="colLateTcgl"></i></span><em>Atrasado</em></div>
+        <div class="bar3 early"><b id="nEarlyTcgl">—</b><span class="col"><i id="colEarlyTcgl"></i></span><em>Adiantado</em></div>
+      </div>
+    </article>
+    <article class="firm" id="cardLs">
+      <div>
+        <div class="firm-kicker">Área 2</div>
+        <h2>LondriSul</h2>
+      </div>
+      <div class="bars3">
+        <div class="bar3 ok"><b id="okLs">—</b><span class="col"><i id="colOkLs"></i></span><em>No horário</em></div>
+        <div class="bar3 late"><b id="nLateLs">—</b><span class="col"><i id="colLateLs"></i></span><em>Atrasado</em></div>
+        <div class="bar3 early"><b id="nEarlyLs">—</b><span class="col"><i id="colEarlyLs"></i></span><em>Adiantado</em></div>
+      </div>
+    </article>
+    <article class="firm" id="cardTotal">
+      <div>
+        <div class="firm-kicker">Sistema</div>
+        <h2>Total</h2>
+      </div>
+      <div class="bars3">
+        <div class="bar3 ok"><b id="okTotal">—</b><span class="col"><i id="colOkTotal"></i></span><em>No horário</em></div>
+        <div class="bar3 late"><b id="nLateTotal">—</b><span class="col"><i id="colLateTotal"></i></span><em>Atrasado</em></div>
+        <div class="bar3 early"><b id="nEarlyTotal">—</b><span class="col"><i id="colEarlyTotal"></i></span><em>Adiantado</em></div>
+      </div>
+    </article>
+  </div>
+
+  <div class="garages" id="garages"></div>
+
+  <section class="chart-card">
+    <div class="chart-head">
+      <div>
+        <div class="chart-title">Decorrer do dia · hora a hora</div>
+        <div class="chart-sub">Total do sistema. O gráfico guarda um ponto por hora enquanto a página estiver aberta.</div>
+      </div>
+      <div class="legend">
+        <span class="ok">No horário</span>
+        <span class="late">Atrasado</span>
+        <span class="early">Adiantado</span>
+      </div>
+    </div>
+    <div class="chart-box"><canvas id="horaChart"></canvas></div>
+  </section>
+</div>
+
+<script>
+const API = "https://londrisul.online/relatorios/mapa/api.php?chave=" + encodeURIComponent("Pontualidade@2026");
+const HIST_KEY = "ciop-mapa-pontualidade-horas-v1";
+const CORES = { ok: "#2e9b45", late: "#f6bf26", early: "#de1b1b" };
+const POLL_MS = 20000;
+let horaChart;
+
+const fmtPct = (v) => (v == null || !Number.isFinite(v) ? "—" : Math.round(v) + "%");
+const toPct = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+function isTcgl(g) {
+  const n = String(g?.nome || "").toUpperCase();
+  return n.includes("TCGL") || Number(g?.id) === 9;
+}
+
+function media(lista, campo) {
+  const vals = lista.map((g) => toPct(g[campo])).filter((v) => v != null);
+  if (!vals.length) return null;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+function blocoDe(onTime, late, early) {
+  return { ok: toPct(onTime), late: toPct(late), early: toPct(early) };
+}
+
+function parseEmpresas(payload) {
+  const garagens = Array.isArray(payload.garagens) ? payload.garagens : [];
+  const tcglG = garagens.find(isTcgl);
+  const lsG = garagens.filter((g) => !isTcgl(g) && !g.excluida);
+  const r = payload.resumo || {};
+  const tcgl = tcglG
+    ? blocoDe(tcglG.onTimePercent, tcglG.latePercent, tcglG.earlyPercent)
+    : blocoDe(null, null, null);
+  const ls = (r.no_horario != null)
+    ? blocoDe(r.no_horario, r.atrasado, r.adiantado)
+    : blocoDe(media(lsG, "onTimePercent"), media(lsG, "latePercent"), media(lsG, "earlyPercent"));
+  const total = {
+    ok: mediaVal(tcgl.ok, ls.ok),
+    late: mediaVal(tcgl.late, ls.late),
+    early: mediaVal(tcgl.early, ls.early)
+  };
+  return { tcgl, ls, total, garagens: lsG, atualizado: payload.atualizado_em || payload.capturado_em || "" };
+}
+
+function mediaVal(a, b) {
+  if (a != null && b != null) return (a + b) / 2;
+  return a ?? b ?? null;
+}
+
+function setTxt(id, v) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = fmtPct(v);
+}
+
+function alturaBarra(v) {
+  if (v == null || !Number.isFinite(v)) return 0;
+  return Math.max(3, Math.min(100, v));
+}
+function pintarCol(id, v) {
+  const el = document.getElementById(id);
+  if (el) el.style.setProperty("--p", String(alturaBarra(v) / 100));
+}
+function pintarFirma(suf, bloco) {
+  setTxt("ok" + suf, bloco.ok);
+  setTxt("nLate" + suf, bloco.late);
+  setTxt("nEarly" + suf, bloco.early);
+  pintarCol("colOk" + suf, bloco.ok);
+  pintarCol("colLate" + suf, bloco.late);
+  pintarCol("colEarly" + suf, bloco.early);
+}
+
+function pintarGaragens(lista) {
+  const el = document.getElementById("garages");
+  if (!el) return;
+  el.innerHTML = lista.map((g) => {
+    const ok = toPct(g.onTimePercent) || 0;
+    const late = toPct(g.latePercent) || 0;
+    const early = toPct(g.earlyPercent) || 0;
+    const nome = String(g.nome || "").replace(/^G\./, "");
+    return `<div class="garage">
+      <b>${nome}</b>
+      <div class="bars" title="No horário ${ok}% · atrasado ${late}% · adiantado ${early}%">
+        <i style="width:${ok}%;background:${CORES.ok}"></i>
+        <i style="width:${late}%;background:${CORES.late}"></i>
+        <i style="width:${early}%;background:${CORES.early}"></i>
+      </div>
+      <div class="mini"><span style="color:${CORES.ok}">${ok}%</span><span style="color:#b45309">${late}%</span><span style="color:${CORES.early}">${early}%</span></div>
+    </div>`;
+  }).join("");
+}
+
+function hojeSP() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+}
+function horaSP() {
+  const p = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", hour12: false }).formatToParts(new Date());
+  return Number((p.find((x) => x.type === "hour") || {}).value || 0);
+}
+
+function lerHist() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(HIST_KEY) || "null");
+    if (!raw || raw.date !== hojeSP()) return { date: hojeSP(), horas: {} };
+    return raw;
+  } catch (_) {
+    return { date: hojeSP(), horas: {} };
+  }
+}
+
+function gravarHist(total) {
+  const hist = lerHist();
+  hist.date = hojeSP();
+  hist.horas[String(horaSP())] = {
+    ok: total.ok, late: total.late, early: total.early, ts: Date.now()
+  };
+  try { localStorage.setItem(HIST_KEY, JSON.stringify(hist)); } catch (_) {}
+  return hist;
+}
+
+function serieHora(hist, campo) {
+  return Array.from({ length: 24 }, (_, h) => {
+    const v = hist.horas[String(h)]?.[campo];
+    return v == null ? null : Math.round(v * 10) / 10;
+  });
+}
+
+function pintarLinhaHora(hist) {
+  const labels = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0") + "h");
+  const data = {
+    labels,
+    datasets: [
+      linha("No horário", CORES.ok, serieHora(hist, "ok"), true),
+      linha("Atrasado", CORES.late, serieHora(hist, "late"), false),
+      linha("Adiantado", CORES.early, serieHora(hist, "early"), false)
+    ]
+  };
+  if (horaChart && horaChart.config.type !== "line") {
+    horaChart.destroy();
+    horaChart = null;
+  }
+  if (horaChart) {
+    horaChart.data = data;
+    horaChart.update();
+    return;
+  }
+  horaChart = new Chart(document.getElementById("horaChart"), {
+    type: "line",
+    data,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      spanGaps: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.parsed.y == null ? "—" : Math.round(c.parsed.y) + "%"}` } }
+      },
+      scales: {
+        x: {
+          grid: { color: "rgba(6,36,92,.08)" },
+          ticks: {
+            maxRotation: 0, autoSkip: false,
+            font: { size: 16, weight: "800" },
+            callback: (_v, i) => (i % 2 === 0 ? labels[i] : "")
+          }
+        },
+        y: {
+          min: 0, max: 100,
+          ticks: { callback: (v) => v + "%" },
+          grid: { color: "rgba(6,36,92,.08)" }
+        }
+      },
+      elements: { line: { tension: .35, borderWidth: 3 }, point: { radius: 3, hoverRadius: 6 } }
+    }
+  });
+}
+
+function linha(label, cor, dados, fill) {
+  return {
+    label, data: dados,
+    borderColor: cor,
+    backgroundColor: cor + "22",
+    fill: !!fill,
+    pointBackgroundColor: cor,
+    pointBorderColor: "#fff",
+    pointBorderWidth: 1,
+    spanGaps: true
+  };
+}
+
+function pintar(payload) {
+  const d = parseEmpresas(payload);
+  pintarFirma("Tcgl", d.tcgl);
+  pintarFirma("Ls", d.ls);
+  pintarFirma("Total", d.total);
+  pintarGaragens(d.garagens);
+  const hist = gravarHist(d.total);
+  pintarLinhaHora(hist);
+  document.getElementById("stamp").textContent = d.atualizado
+    ? "Atualizado em " + d.atualizado
+    : "Atualizado agora";
+}
+
+async function carregar() {
+  const erro = document.getElementById("erro");
+  try {
+    const res = await fetch(API + "&t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const payload = await res.json();
+    if (!payload || payload.ok === false) throw new Error(payload?.erro || "API inválida");
+    erro.hidden = true;
+    pintar(payload);
+  } catch (err) {
+    erro.hidden = false;
+    erro.textContent = "Não foi possível atualizar a performance em tempo real: " + (err.message || err);
+  }
+}
+
+pintarLinhaHora(lerHist());
+carregar();
+setInterval(carregar, POLL_MS);
+</script>
+</body>
+</html>

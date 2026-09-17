@@ -64,7 +64,12 @@ function liberarHtmlValidado() {
   document.documentElement.classList.remove(AUTH_PENDING_CLASS);
 }
 
-if (!PORTAL_NATIVE_EMBEDDED) {
+function paginaEhPublica() {
+  const file = (window.location.pathname.split("/").pop() || "").split("?")[0].toLowerCase();
+  return file === "performance-tempo-real.html" || file === "pontualidade-ao-vivo.html";
+}
+
+if (!PORTAL_NATIVE_EMBEDDED && !paginaEhPublica()) {
   bloquearHtmlAteValidar();
 }
 const loadingExternoMostrar = typeof window.portalMostrarCarregando === "function"
@@ -764,6 +769,11 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
 
   try {
     if (!user) {
+      if (paginaEhPublica()) {
+        liberarHtmlValidado();
+        ocultarCarregando();
+        return;
+      }
       if (!pagina.endsWith("/login.html") && !pagina.endsWith("login.html")) {
         if (PORTAL_NATIVE_EMBEDDED) {
           return;
