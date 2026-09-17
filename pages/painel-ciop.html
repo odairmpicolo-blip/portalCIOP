@@ -144,8 +144,8 @@
     min-height:0; text-align:center;
   }
   .vivo-bar b{
-    font-size:clamp(20px,2.2vw,34px); font-weight:900;
-    font-variant-numeric:tabular-nums; line-height:1;
+    font-size:clamp(16px,1.9vw,30px); font-weight:900;
+    font-variant-numeric:tabular-nums; line-height:1; white-space:nowrap;
   }
   .vivo-col{
     position:relative; min-height:0; height:100%;
@@ -1230,7 +1230,8 @@ function parseVivo(payload) {
   };
 }
 function pctInt(v) {
-  return v == null || !Number.isFinite(v) ? "—" : Math.round(v) + "%";
+  if (v == null || !Number.isFinite(v)) return "—";
+  return v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%";
 }
 function setVivoTxt(id, v) {
   const el = document.getElementById(id);
