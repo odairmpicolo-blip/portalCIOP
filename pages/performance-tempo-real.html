@@ -143,7 +143,7 @@
   .vivo-bar.early b, .vivo-bar.early em{ color:#fb7185; }
   .vivo-bar.early i{ background:linear-gradient(180deg,#fda4af,#ef4444); box-shadow:0 0 14px rgba(239,68,68,.35); }
 
-  .garages{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+  .garages{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; }
   .garage{
     padding:12px 14px; border-radius:16px;
     background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);
@@ -297,10 +297,13 @@ function parseEmpresas(payload) {
   const ls = (r.no_horario != null)
     ? blocoDe(r.no_horario, r.atrasado, r.adiantado)
     : blocoDe(media(lsG, "onTimePercent"), media(lsG, "latePercent"), media(lsG, "earlyPercent"));
+  const visiveis = [];
+  if (tcglG) visiveis.push(tcglG);
+  visiveis.push(...lsG);
   return {
     tcgl, ls,
     total: { ok: mediaVal(tcgl.ok, ls.ok), late: mediaVal(tcgl.late, ls.late), early: mediaVal(tcgl.early, ls.early) },
-    garagens: lsG,
+    garagens: visiveis,
     atualizado: payload.atualizado_em || payload.capturado_em || ""
   };
 }
@@ -331,7 +334,7 @@ function pintarGaragens(lista) {
     const ok = toPct(g.onTimePercent) || 0;
     const late = toPct(g.latePercent) || 0;
     const early = toPct(g.earlyPercent) || 0;
-    const nome = String(g.nome || "").replace(/^G\./, "");
+    const nome = String(g.nome || "").replace(/^G\./, "").replace(/^TCGLL$/i, "TCGL");
     return `<div class="garage">
       <b>${nome}</b>
       <div class="bars" title="No horário ${fmtPct(ok)} · atrasado ${fmtPct(late)} · adiantado ${fmtPct(early)}">
