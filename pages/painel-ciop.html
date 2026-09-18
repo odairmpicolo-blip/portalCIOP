@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
   :root{
     --bg-1:#04060f;
@@ -120,76 +119,6 @@
   .board-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex:0 0 auto; }
   .board-kicker{ font-size:clamp(13px,1.1vw,16px); font-weight:800; letter-spacing:.2em; text-transform:uppercase; color:#38bdf8; }
   .board-icv .board-kicker{ color:#2dd4bf; }
-  .board-vivo .board-kicker{ color:#22c55e; }
-  .vivo{
-    height:100%; min-height:0; display:flex; flex-direction:column;
-    gap:clamp(10px,1.3vh,18px);
-  }
-  .vivo-grid{
-    flex:1 1 auto; min-height:0;
-    display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(14px,1.8vw,24px);
-  }
-  .firm.vivo-firm{
-    display:grid;
-    grid-template-rows:auto minmax(0,1fr);
-    gap:clamp(8px,1.2vh,14px);
-  }
-  .vivo-mid{ min-height:0; height:100%; }
-  .vivo-bars{
-    height:100%; min-height:0;
-    display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(8px,1.1vw,16px);
-  }
-  .vivo-bar{
-    display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:6px;
-    min-height:0; text-align:center;
-  }
-  .vivo-bar b{
-    font-size:clamp(16px,1.9vw,30px); font-weight:900;
-    font-variant-numeric:tabular-nums; line-height:1; white-space:nowrap;
-  }
-  .vivo-col{
-    position:relative; min-height:0; height:100%;
-    background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.1);
-    border-radius:14px;
-  }
-  .vivo-col i{
-    position:absolute; left:22%; right:22%; bottom:8px; top:8px;
-    transform:scaleY(var(--p, 0));
-    transform-origin:bottom center;
-    border-radius:8px 8px 4px 4px;
-    transition:transform .45s ease;
-  }
-  .vivo-bar em{
-    font-style:normal; font-size:clamp(10px,.85vw,13px); font-weight:800;
-    letter-spacing:.04em; text-transform:uppercase; line-height:1.2;
-  }
-  .vivo-bar.ok b, .vivo-bar.ok em{ color:#4ade80; }
-  .vivo-bar.ok i{ background:linear-gradient(180deg,#86efac,#22c55e); box-shadow:0 0 14px rgba(34,197,94,.4); }
-  .vivo-bar.late b, .vivo-bar.late em{ color:#fbbf24; }
-  .vivo-bar.late i{ background:linear-gradient(180deg,#fde68a,#fbbf24); box-shadow:0 0 14px rgba(251,191,36,.35); }
-  .vivo-bar.early b, .vivo-bar.early em{ color:#fb7185; }
-  .vivo-bar.early i{ background:linear-gradient(180deg,#fda4af,#ef4444); box-shadow:0 0 14px rgba(239,68,68,.35); }
-  .vivo-chart{
-    flex:0 0 28%; max-height:30vh; min-height:160px;
-    border-radius:24px; padding:clamp(6px,1vh,10px) clamp(14px,1.6vw,22px) 4px;
-    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);
-    display:flex; flex-direction:column; gap:4px;
-  }
-  .vivo-chart-head{
-    display:flex; justify-content:space-between; align-items:center; gap:10px;
-    font-size:clamp(11px,.9vw,14px); font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:#c9d6ef;
-  }
-  .vivo-legend{ display:flex; gap:12px; font-size:clamp(11px,.9vw,13px); letter-spacing:.04em; }
-  .vivo-legend i{ font-style:normal; }
-  .vivo-legend .ok{ color:#4ade80; }
-  .vivo-legend .late{ color:#fbbf24; }
-  .vivo-legend .early{ color:#fb7185; }
-  .vivo-chart canvas{ flex:1; min-height:0; width:100% !important; }
-  @media (max-aspect-ratio: 4/3){
-    .vivo-grid{ grid-template-columns:1fr; }
-    .vivo-chart{ flex-basis:24%; max-height:24vh; }
-  }
   .board-period{ font-size:clamp(24px,2.4vw,38px); font-weight:900; margin-top:2px; letter-spacing:-.035em; }
   .hud-week{ display:flex; gap:8px; align-items:center; }
   .hud-seg{
@@ -224,10 +153,6 @@
     display:grid;
     grid-template-rows:auto auto 1fr auto auto;
     gap:clamp(12px,1.8vh,22px);
-  }
-  .firm.vivo-firm{
-    grid-template-rows:auto minmax(0,1fr);
-    gap:clamp(8px,1.2vh,14px);
   }
   .firm::before{
     content:""; position:absolute; width:320px; height:320px; right:-100px; top:-110px; border-radius:50%;
@@ -597,69 +522,6 @@
       </div>
     </section>
 
-    <section class="slide" id="slide-vivo">
-      <div class="vivo">
-        <div class="board-head">
-          <div>
-            <div class="board-kicker board-vivo" style="color:#22c55e">Pontualidade ao vivo</div>
-            <div class="board-period" id="vivoStamp">Atualizando…</div>
-          </div>
-          <div class="vivo-legend">
-            <i class="ok">● No horário</i>
-            <i class="late">● Atrasado</i>
-            <i class="early">● Adiantado</i>
-          </div>
-        </div>
-        <div class="vivo-grid">
-          <article class="firm ipv-tcgl vivo-firm">
-            <div class="firm-top">
-              <div class="firm-kicker">Área 1</div>
-              <h2>TCGL</h2>
-            </div>
-            <div class="vivo-mid">
-              <div class="vivo-bars">
-                <div class="vivo-bar ok"><b id="vivoOkTcgl">—</b><span class="vivo-col"><i id="colOkTcgl"></i></span><em>No horário</em></div>
-                <div class="vivo-bar late"><b id="vivoNlateTcgl">—</b><span class="vivo-col"><i id="colLateTcgl"></i></span><em>Atrasado</em></div>
-                <div class="vivo-bar early"><b id="vivoNearlyTcgl">—</b><span class="vivo-col"><i id="colEarlyTcgl"></i></span><em>Adiantado</em></div>
-              </div>
-            </div>
-          </article>
-          <article class="firm ipv-ls vivo-firm">
-            <div class="firm-top">
-              <div class="firm-kicker">Área 2</div>
-              <h2>LondriSul</h2>
-            </div>
-            <div class="vivo-mid">
-              <div class="vivo-bars">
-                <div class="vivo-bar ok"><b id="vivoOkLs">—</b><span class="vivo-col"><i id="colOkLs"></i></span><em>No horário</em></div>
-                <div class="vivo-bar late"><b id="vivoNlateLs">—</b><span class="vivo-col"><i id="colLateLs"></i></span><em>Atrasado</em></div>
-                <div class="vivo-bar early"><b id="vivoNearlyLs">—</b><span class="vivo-col"><i id="colEarlyLs"></i></span><em>Adiantado</em></div>
-              </div>
-            </div>
-          </article>
-          <article class="firm ipv-ciop vivo-firm">
-            <div class="firm-top">
-              <div class="firm-kicker">SISTEMA</div>
-              <h2>Total</h2>
-            </div>
-            <div class="vivo-mid">
-              <div class="vivo-bars">
-                <div class="vivo-bar ok"><b id="vivoOkTotal">—</b><span class="vivo-col"><i id="colOkTotal"></i></span><em>No horário</em></div>
-                <div class="vivo-bar late"><b id="vivoNlateTotal">—</b><span class="vivo-col"><i id="colLateTotal"></i></span><em>Atrasado</em></div>
-                <div class="vivo-bar early"><b id="vivoNearlyTotal">—</b><span class="vivo-col"><i id="colEarlyTotal"></i></span><em>Adiantado</em></div>
-              </div>
-            </div>
-          </article>
-        </div>
-        <div class="vivo-chart">
-          <div class="vivo-chart-head">
-            <span>Decorrer do dia · hora a hora</span>
-          </div>
-          <canvas id="vivoHoraChart"></canvas>
-        </div>
-      </div>
-    </section>
-
     <section class="slide" id="slide-icv">
       <div class="board board-icv">
         <div class="board-head">
@@ -802,9 +664,6 @@
 const PARAMS = new URLSearchParams(location.search);
 const LS_IPV_URL = "https://londrisul.online/relatorios/tvs/pontualidade/api.php?token=" + encodeURIComponent("OverallAnual@2026");
 const LS_ICV_URL = "https://londrisul.online/relatorios/tvs/pontualidade/api.php?token=" + encodeURIComponent("IPV@2026");
-const MAPA_URL = "https://londrisul.online/relatorios/mapa/api.php?chave=" + encodeURIComponent("Pontualidade@2026");
-const HIST_VIVO_KEY = "ciop-mapa-pontualidade-horas-v1";
-const VIVO_POLL_MS = 15000;
 const TCGL_IPV_URL = "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com/cr0108/share/ipv?token=" + encodeURIComponent("IPV@2026");
 const TCGL_ICV_URL = "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com/cr0108/share/icv?token=" + encodeURIComponent("IPV@2026");
 const CLIMA_URL = "https://api.open-meteo.com/v1/forecast?latitude=-23.3045&longitude=-51.1696&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=America%2FSao_Paulo&forecast_days=6";
@@ -824,7 +683,6 @@ const CAPA_MS = 8000;
 const DIA_MS = Math.round(30000 / 7);
 const IPV_MS = 30000;
 const ICV_MS = 30000;
-const VIVO_MS = 30000;
 
 const CAMPANHAS = [
   { nome: "Janeiro Branco", titulo: "Cuidar da mente também é segurança", sub: "Fale, ouça e peça ajuda. Ninguém na operação precisa enfrentar isso sozinho.", img: "../assets/img/painel-tv-jan-branco.jpg", cor: "#f4f0e6" },
@@ -1193,176 +1051,6 @@ function aplicarCampanha() {
   document.getElementById("campanhaScene").style.setProperty("--campanha-cor", c.cor);
 }
 
-const estadoVivo = { ok: false };
-let vivoHoraChart = null;
-
-function isTcglGaragem(g) {
-  const n = String(g?.nome || "").toUpperCase();
-  return n.includes("TCGL") || Number(g?.id) === 9;
-}
-function mediaCampo(lista, campo) {
-  const vals = lista.map((g) => toPct(g[campo])).filter((v) => v != null);
-  if (!vals.length) return null;
-  return vals.reduce((a, b) => a + b, 0) / vals.length;
-}
-function mediaDois(a, b) {
-  if (a != null && b != null) return (a + b) / 2;
-  return a ?? b ?? null;
-}
-function blocoVivo(onTime, late, early) {
-  return { ok: toPct(onTime), late: toPct(late), early: toPct(early) };
-}
-function parseVivo(payload) {
-  const garagens = Array.isArray(payload.garagens) ? payload.garagens : [];
-  const tcglG = garagens.find(isTcglGaragem);
-  const lsG = garagens.filter((g) => !isTcglGaragem(g) && !g.excluida);
-  const r = payload.resumo || {};
-  const tcgl = tcglG
-    ? blocoVivo(tcglG.onTimePercent, tcglG.latePercent, tcglG.earlyPercent)
-    : blocoVivo(null, null, null);
-  const ls = (r.no_horario != null)
-    ? blocoVivo(r.no_horario, r.atrasado, r.adiantado)
-    : blocoVivo(mediaCampo(lsG, "onTimePercent"), mediaCampo(lsG, "latePercent"), mediaCampo(lsG, "earlyPercent"));
-  return {
-    tcgl, ls,
-    total: { ok: mediaDois(tcgl.ok, ls.ok), late: mediaDois(tcgl.late, ls.late), early: mediaDois(tcgl.early, ls.early) },
-    atualizado: payload.atualizado_em || payload.capturado_em || ""
-  };
-}
-function pctInt(v) {
-  if (v == null || !Number.isFinite(v)) return "—";
-  return v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%";
-}
-function setVivoTxt(id, v) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = pctInt(v);
-}
-function alturaBarra(v) {
-  if (v == null || !Number.isFinite(v)) return 0;
-  return Math.max(3, Math.min(100, v));
-}
-function pintarCol(id, v) {
-  const el = document.getElementById(id);
-  if (el) el.style.setProperty("--p", String(alturaBarra(v) / 100));
-}
-function pintarBlocoVivo(suf, bloco) {
-  setVivoTxt("vivoOk" + suf, bloco.ok);
-  setVivoTxt("vivoNlate" + suf, bloco.late);
-  setVivoTxt("vivoNearly" + suf, bloco.early);
-  pintarCol("colOk" + suf, bloco.ok);
-  pintarCol("colLate" + suf, bloco.late);
-  pintarCol("colEarly" + suf, bloco.early);
-}
-function hojeSP() {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
-}
-function horaSP() {
-  const p = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", hour12: false }).formatToParts(new Date());
-  return Number((p.find((x) => x.type === "hour") || {}).value || 0);
-}
-function lerHistVivo() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(HIST_VIVO_KEY) || "null");
-    if (!raw || raw.date !== hojeSP()) return { date: hojeSP(), horas: {} };
-    return raw;
-  } catch (_) {
-    return { date: hojeSP(), horas: {} };
-  }
-}
-function gravarHistVivo(total) {
-  const hist = lerHistVivo();
-  hist.date = hojeSP();
-  hist.horas[String(horaSP())] = { ok: total.ok, late: total.late, early: total.early, ts: Date.now() };
-  try { localStorage.setItem(HIST_VIVO_KEY, JSON.stringify(hist)); } catch (_) {}
-  return hist;
-}
-function serieHist(hist, campo) {
-  return Array.from({ length: 24 }, (_, h) => {
-    const v = hist.horas[String(h)]?.[campo];
-    return v == null ? null : Math.round(v * 10) / 10;
-  });
-}
-function linhaVivo(label, cor, dados, fill) {
-  return {
-    label, data: dados, borderColor: cor, backgroundColor: cor + "33",
-    fill: !!fill, pointBackgroundColor: cor, pointBorderColor: "#fff",
-    pointRadius: 3, borderWidth: 3, tension: .35, spanGaps: true
-  };
-}
-function pintarHoraVivo(hist) {
-  const ChartLib = window.Chart;
-  const canvas = document.getElementById("vivoHoraChart");
-  if (!ChartLib || !canvas) return;
-  const labels = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0") + "h");
-  const data = {
-    labels,
-    datasets: [
-      linhaVivo("No horário", "#22c55e", serieHist(hist, "ok"), true),
-      linhaVivo("Atrasado", "#fbbf24", serieHist(hist, "late"), false),
-      linhaVivo("Adiantado", "#ef4444", serieHist(hist, "early"), false)
-    ]
-  };
-  if (vivoHoraChart && vivoHoraChart.config.type !== "line") {
-    vivoHoraChart.destroy();
-    vivoHoraChart = null;
-  }
-  if (vivoHoraChart) {
-    vivoHoraChart.data = data;
-    vivoHoraChart.update("none");
-    return;
-  }
-  vivoHoraChart = new ChartLib(canvas, {
-    type: "line",
-    data,
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { mode: "index", intersect: false },
-      plugins: { legend: { display: false } },
-      scales: {
-        x: {
-          ticks: {
-            color: "rgba(226,234,250,.75)",
-            maxRotation: 0,
-            autoSkip: false,
-            font: { size: 18, weight: "800" },
-            callback: (_v, i) => (i % 2 === 0 ? labels[i] : "")
-          },
-          grid: { color: "rgba(255,255,255,.06)" }
-        },
-        y: {
-          min: 0, max: 100,
-          ticks: { color: "rgba(226,234,250,.7)", font: { size: 13, weight: "700" }, callback: (v) => v + "%" },
-          grid: { color: "rgba(255,255,255,.06)" }
-        }
-      }
-    }
-  });
-}
-function aplicarVivo(d) {
-  pintarBlocoVivo("Tcgl", d.tcgl);
-  pintarBlocoVivo("Ls", d.ls);
-  pintarBlocoVivo("Total", d.total);
-  const hist = gravarHistVivo(d.total);
-  pintarHoraVivo(hist);
-  const stamp = document.getElementById("vivoStamp");
-  if (stamp) stamp.textContent = d.atualizado || "Ao vivo";
-  estadoVivo.ok = true;
-  atualizarStatus();
-}
-async function carregarVivo() {
-  try {
-    const res = await comTimeout(fetch(MAPA_URL + "&t=" + Date.now(), { cache: "no-store" }), 8000, "api mapa");
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const payload = await res.json();
-    if (!payload || payload.ok === false) throw new Error(payload?.erro || "mapa inválido");
-    aplicarVivo(parseVivo(payload));
-  } catch (err) {
-    estadoVivo.ok = false;
-    atualizarStatus();
-    console.info("Mapa:", err.message || err);
-  }
-}
-
 const SEMANA = semanaIpv();
 const SEMANA_ANT = { de: shiftIso(SEMANA.de, -7), ate: shiftIso(SEMANA.ate, -7) };
 const ROTULO = rotuloFaixa(SEMANA.de, SEMANA.ate);
@@ -1375,7 +1063,6 @@ aplicarCampanha();
 const CICLO = [
   { id: "capa", ms: CAPA_MS, titulo: "CIOP", tag: "Juntos movemos Londrina" },
   { id: "ipv", ms: IPV_MS, titulo: "PONTUALIDADE", tag: "TCGL · LondriSul · Sistema" },
-  { id: "vivo", ms: VIVO_MS, titulo: "Pontualidade ao vivo", tag: "TCGL · LondriSul · Sistema" },
   { id: "tempo", ms: 10000, titulo: "Previsão do Tempo", tag: "Clima · Londrina/PR" },
   { id: "icv", ms: ICV_MS, titulo: "Cumprimento de Viagem", tag: "TCGL · LondriSul · Sistema" },
   { id: "campanha", ms: 10000, titulo: CAMPANHAS[new Date().getMonth()].nome, tag: "Campanha do mês · CIOP" }
@@ -1484,8 +1171,7 @@ function atualizarStatus() {
   const ipvLs = estadoIpv.ls ? "IPV LondriSul" : "IPV LondriSul indisponível";
   const icvTcgl = estadoIcv.tcgl ? "ICV TCGL" : "ICV TCGL indisponível";
   const icvLs = estadoIcv.ls ? "ICV LondriSul" : "ICV LondriSul indisponível";
-  const vivo = estadoVivo.ok ? "Ao vivo" : "Ao vivo indisponível";
-  document.getElementById("tvStatus").textContent = `Semana ${ROTULO} · ${ipvTcgl} · ${ipvLs} · ${icvTcgl} · ${icvLs} · ${vivo}`;
+  document.getElementById("tvStatus").textContent = `Semana ${ROTULO} · ${ipvTcgl} · ${ipvLs} · ${icvTcgl} · ${icvLs}`;
 }
 
 document.getElementById("boot").style.display = "none";
@@ -1511,8 +1197,6 @@ carregarLondrisulIcv().then((payload) => {
   atualizarStatus();
 });
 carregarClima().catch(() => {});
-carregarVivo();
-setInterval(carregarVivo, VIVO_POLL_MS);
 carregarTcglIpv().then((dias) => {
   estadoIpv.tcgl = agregarTcgl(dias, SEMANA.de, SEMANA.ate);
   estadoIpv.tcglAnt = agregarTcgl(dias, SEMANA_ANT.de, SEMANA_ANT.ate);
@@ -1535,7 +1219,7 @@ carregarTcglIcv().then((dias) => {
 });
 
 const telaFixa = PARAMS.get("tela");
-if (telaFixa && ["capa", "ipv", "icv", "vivo", "tempo", "campanha"].includes(telaFixa)) {
+if (telaFixa && ["capa", "ipv", "icv", "tempo", "campanha"].includes(telaFixa)) {
   modoFixo = true;
   document.getElementById("kiosk").classList.add("modo-fixo");
   const bloco = CICLO.find((c) => c.id === telaFixa) || CICLO[0];
@@ -1592,7 +1276,6 @@ setInterval(() => {
     atualizarStatus();
   }).catch(() => {});
   carregarClima().catch(() => {});
-  carregarVivo();
 }, 10 * 60 * 1000);
 </script>
 </body>
