@@ -81,6 +81,10 @@ service cloud.firestore {
       allow write: if donoPortal();
     }
 
+    match /performanceHoras/{diaId} {
+      allow read, write: if signedIn() && perfilAtual() == 'Administrador';
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

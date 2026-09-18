@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-store">
+<title>Comparação de performance | Portal CIOP</title>
+<style>
+:root{
+  --blue:#06245c;--blue2:#0b3a8a;--orange:#ff6b00;--bg:#f5f7fb;--border:#dfe5ef;
+  --text:#101828;--muted:#3f4757;--surface:#fff;--ok:#15803d;--late:#a16207;--early:#b91c1c;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.header{background:var(--surface);display:grid;grid-template-columns:minmax(180px,1fr) auto minmax(280px,1fr);gap:16px;align-items:center;padding:8px 20px;border-bottom:1px solid #e8edf6}
+.header > a:first-child.portal-brand-mark{justify-self:start}
+.logo-tcgl{height:46px;object-fit:contain}
+.title-wrap{justify-self:center;text-align:center}
+.header-title{margin:0;color:var(--blue);font-size:18px;font-weight:900}
+.header-subtitle{margin-top:4px;color:var(--muted);font-size:12px;font-weight:700}
+.header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.container{max-width:1680px;margin:16px auto 32px;padding:0 20px;flex:1;width:100%}
+.toolbar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 12px;margin-bottom:14px;padding:12px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--border);box-shadow:0 8px 20px rgba(16,24,40,.06)}
+.campo{display:flex;flex-direction:column;gap:4px}
+.campo label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+.campo select,.campo input{height:38px;border:1px solid var(--border);border-radius:10px;padding:0 10px;font:inherit;font-size:13px;font-weight:600;background:#f8fafc;color:var(--text)}
+.btn-portal,.btn-ghost{display:inline-flex;align-items:center;gap:8px;min-height:38px;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;padding:8px 14px;border:0;cursor:pointer;font-family:inherit}
+.btn-portal{background:var(--blue);color:#fff}
+.btn-portal:hover{background:var(--blue2)}
+.btn-ghost{background:#e8edf6;color:var(--blue)}
+.btn-portal:disabled,.btn-ghost:disabled{opacity:.55;cursor:wait}
+.status{margin-left:auto;font-size:12px;font-weight:700;color:var(--muted);align-self:center}
+.status.ok{color:var(--ok)}
+.status.err{color:var(--early)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:0 8px 20px rgba(16,24,40,.06)}
+.kpi .label{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--muted);letter-spacing:.03em}
+.kpi .value{font-size:22px;font-weight:900;color:var(--blue);margin-top:4px}
+.kpi .sub{font-size:11px;font-weight:700;color:var(--muted);margin-top:3px}
+.layout{display:grid;grid-template-columns:280px 1fr;gap:14px;min-height:0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 28px rgba(16,24,40,.07);overflow:hidden;min-width:0}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)}
+.card-title{margin:0;color:var(--blue);font-size:14px;font-weight:900}
+.card-body{padding:12px 14px}
+.dias{max-height:560px;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.dia{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:#f8fafc;cursor:pointer;font-size:13px;font-weight:700}
+.dia:hover{border-color:#b9c7de}
+.dia input{accent-color:var(--blue)}
+.dia .meta{margin-left:auto;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.dia .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+.chart-wrap{height:380px}
+.aviso{padding:24px 12px;text-align:center;color:var(--muted);font-weight:700}
+table.rel{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
+table.rel th{background:var(--blue);color:#fff;padding:8px 6px;font-size:10px;font-weight:900;text-transform:uppercase}
+table.rel td{border-bottom:1px solid #edf2f7;padding:8px 6px;text-align:center;font-weight:700}
+table.rel td.txt{text-align:left}
+.page-footer{padding:14px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-top:1px solid var(--border);background:var(--surface)}
+@media(max-width:980px){
+  .layout{grid-template-columns:1fr}
+  .header{grid-template-columns:1fr;text-align:center}
+  .status{margin-left:0;width:100%}
+}
+</style>
+<link rel="stylesheet" href="../assets/css/portal-senha.css?v=20260718e">
+<link rel="stylesheet" href="../assets/css/portal-titulos.css?v=20260720y">
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
+<script src="../assets/js/loading.js?v=20260718d"></script>
+<script type="module" src="../assets/js/auth.js?v=20260821ui1"></script>
+<script src="../assets/js/portal-senha.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260821hud">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260820bar4">
+<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260821fx">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260828planilhas">
+</head>
+<body data-require-perfis="Administrador">
+<div class="body-bg-wall" aria-hidden="true"></div>
+<div class="body-bg-stain" aria-hidden="true"></div>
+<header class="header">
+  <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP TCGL Operações"><img class="portal-brand-art" src="../assets/img/logomarca-portalciop-tcgl-claro.png?v=20260818logo6" alt="Portal CIOP"><span class="portal-brand-meta">TCGL · Operações</span></a>
+  <div class="title-wrap">
+    <h1 class="header-title">Comparação de performance</h1>
+    <div class="header-subtitle">Linha hora a hora · salvar e comparar dias</div>
+  </div>
+  <div class="header-actions">
+    <div class="ciop-session" aria-label="Sessão do usuário">
+      <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+      <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+      <button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>
+      <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+    </div>
+    <a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener"><img class="logo-tcgl" src="../assets/img/LOGO_TCGL-removebg-preview.png" alt="TCGL"></a>
+  </div>
+</header>
+
+<main class="container">
+  <div class="toolbar">
+    <a class="btn-portal" href="../index.html">Portal</a>
+    <a class="btn-ghost" href="performance-tempo-real.html" target="_blank" rel="noopener">Ao vivo</a>
+    <div class="campo">
+      <label for="fLado">Área</label>
+      <select id="fLado">
+        <option value="total">Total</option>
+        <option value="tcgl">TCGL</option>
+        <option value="ls">LondriSul</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label for="fCampo">Linha</label>
+      <select id="fCampo">
+        <option value="ok">No horário</option>
+        <option value="late">Atrasado</option>
+        <option value="early">Adiantado</option>
+      </select>
+    </div>
+    <button class="btn-portal" id="btnSalvar" type="button">Salvar dia de hoje</button>
+    <button class="btn-ghost" id="btnRecarregar" type="button">Atualizar</button>
+    <div class="status" id="status">Carregando…</div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="label">Dias salvos</div><div class="value" id="kpiDias">—</div><div class="sub" id="kpiOrigem">Firestore + este computador</div></div>
+    <div class="kpi"><div class="label">Hoje · no horário</div><div class="value" id="kpiHoje">—</div><div class="sub" id="kpiStamp">Ainda sem amostra</div></div>
+    <div class="kpi"><div class="label">Dias selecionados</div><div class="value" id="kpiSel">0</div><div class="sub">Sobrepostos no gráfico</div></div>
+  </div>
+
+  <div class="layout">
+    <section class="card">
+      <div class="card-head">
+        <h2 class="card-title">Dias</h2>
+        <button class="btn-ghost" id="btnLimpar" type="button">Limpar seleção</button>
+      </div>
+      <div class="card-body">
+        <p style="margin:0 0 10px;font-size:12px;font-weight:700;color:var(--muted)">Marque até 7 dias para sobrepor as linhas.</p>
+        <div class="dias" id="listaDias"><div class="aviso">Nenhum dia salvo ainda.</div></div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-head">
+        <h2 class="card-title" id="tituloGrafico">No horário · Total</h2>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap"><canvas id="chart"></canvas></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:14px">
+    <div class="card-head"><h2 class="card-title">Amostras salvas</h2></div>
+    <div class="card-body" style="overflow:auto">
+      <table class="rel">
+        <thead>
+          <tr>
+            <th class="txt">Dia</th>
+            <th>Horas</th>
+            <th>No horário</th>
+            <th>Atrasado</th>
+            <th>Adiantado</th>
+            <th>Origem</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaDias"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<footer class="page-footer">Portal CIOP · Comparação da linha de performance em tempo real</footer>
+<script src="../assets/js/theme-toggle.js?v=20260818logo6"></script>
+<script type="module">
+import {
+  hojeSP, pontoDaAmostra, arquivarLocal, importarHojeLocal, lerArquivoLocal,
+  listarDiasFirestore, salvarDiaFirestore, unirDias,
+  serieDoDia, ultimoPonto, horasCapturadas
+} from "../assets/js/performance-horas-store.js";
+
+const API = "https://londrisul.online/relatorios/mapa/api.php?chave=" + encodeURIComponent("Pontualidade@2026");
+const CORES = ["#0b3a8a", "#e44a1c", "#0f766e", "#7c3aed", "#b45309", "#0369a1", "#be185d"];
+const NOMES = { ok: "No horário", late: "Atrasado", early: "Adiantado", total: "Total", tcgl: "TCGL", ls: "LondriSul" };
+const fmtPct = (v) => (v == null || !Number.isFinite(v) ? "—" : v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%");
+const dataBR = (iso) => {
+  if (!iso) return "—";
+  const [y, m, d] = String(iso).split("-");
+  return `${d}/${m}/${y}`;
+};
+
+const $ = (id) => document.getElementById(id);
+let dias = {};
+let selecionados = [];
+let chart;
+let amostraHoje = null;
+
+function isTcgl(g) {
+  const n = String(g?.nome || "").toUpperCase();
+  return n.includes("TCGL") || Number(g?.id) === 9;
+}
+function toPct(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+function blocoDe(onTime, late, early) {
+  return { ok: toPct(onTime), late: toPct(late), early: toPct(early) };
+}
+function media(lista, campo) {
+  const vals = lista.map((g) => toPct(g[campo])).filter((v) => v != null);
+  if (!vals.length) return null;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+function mediaVal(a, b) {
+  if (a != null && b != null) return (a + b) / 2;
+  return a ?? b ?? null;
+}
+function parseEmpresas(payload) {
+  const garagens = Array.isArray(payload.garagens) ? payload.garagens : [];
+  const tcglG = garagens.find(isTcgl);
+  const lsG = garagens.filter((g) => !isTcgl(g) && !g.excluida);
+  const r = payload.resumo || {};
+  const tcgl = tcglG
+    ? blocoDe(tcglG.onTimePercent, tcglG.latePercent, tcglG.earlyPercent)
+    : blocoDe(null, null, null);
+  const ls = (r.no_horario != null)
+    ? blocoDe(r.no_horario, r.atrasado, r.adiantado)
+    : blocoDe(media(lsG, "onTimePercent"), media(lsG, "latePercent"), media(lsG, "earlyPercent"));
+  return {
+    tcgl, ls,
+    total: { ok: mediaVal(tcgl.ok, ls.ok), late: mediaVal(tcgl.late, ls.late), early: mediaVal(tcgl.early, ls.early) },
+    atualizado: payload.atualizado_em || payload.capturado_em || ""
+  };
+}
+
+function setStatus(txt, cls = "") {
+  const el = $("status");
+  el.textContent = txt;
+  el.className = "status" + (cls ? " " + cls : "");
+}
+
+function idsOrdenados() {
+  return Object.keys(dias).sort().reverse();
+}
+
+function pintarLista() {
+  const el = $("listaDias");
+  const ids = idsOrdenados();
+  $("kpiDias").textContent = String(ids.length);
+  if (!ids.length) {
+    el.innerHTML = '<div class="aviso">Nenhum dia salvo ainda. Clique em “Salvar dia de hoje”.</div>';
+    $("tabelaDias").innerHTML = "";
+    return;
+  }
+  el.innerHTML = ids.map((id, i) => {
+    const dia = dias[id];
+    const cor = CORES[i % CORES.length];
+    const checked = selecionados.includes(id) ? "checked" : "";
+    return `<label class="dia">
+      <input type="checkbox" data-dia="${id}" ${checked}>
+      <span class="dot" style="background:${cor}"></span>
+      <span>${dataBR(id)}</span>
+      <span class="meta">${horasCapturadas(dia)}h</span>
+    </label>`;
+  }).join("");
+  el.querySelectorAll("input[type=checkbox]").forEach((input) => {
+    input.addEventListener("change", () => {
+      const id = input.dataset.dia;
+      if (input.checked) {
+        if (selecionados.length >= 7) {
+          input.checked = false;
+          setStatus("Marque no máximo 7 dias.", "err");
+          return;
+        }
+        if (!selecionados.includes(id)) selecionados.push(id);
+      } else {
+        selecionados = selecionados.filter((x) => x !== id);
+      }
+      pintarGrafico();
+    });
+  });
+
+  const lado = $("fLado").value;
+  $("tabelaDias").innerHTML = ids.map((id) => {
+    const dia = dias[id];
+    const p = ultimoPonto(dia, lado) || {};
+    return `<tr>
+      <td class="txt">${dataBR(id)}</td>
+      <td>${horasCapturadas(dia)}</td>
+      <td>${fmtPct(p.ok)}</td>
+      <td>${fmtPct(p.late)}</td>
+      <td>${fmtPct(p.early)}</td>
+      <td>${dia.origem === "firestore" ? "Nuvem" : "Computador"}</td>
+    </tr>`;
+  }).join("");
+}
+
+function pintarGrafico() {
+  const campo = $("fCampo").value;
+  const lado = $("fLado").value;
+  $("tituloGrafico").textContent = `${NOMES[campo]} · ${NOMES[lado]}`;
+  $("kpiSel").textContent = String(selecionados.length);
+  const labels = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0") + "h");
+  const ids = selecionados.length ? selecionados : [];
+  const datasets = ids.map((id) => {
+    const i = idsOrdenados().indexOf(id);
+    const cor = CORES[(i >= 0 ? i : 0) % CORES.length];
+    return {
+      label: dataBR(id),
+      data: serieDoDia(dias[id], campo, lado),
+      borderColor: cor,
+      backgroundColor: cor + "22",
+      fill: false,
+      tension: .3,
+      borderWidth: 3,
+      pointRadius: 3,
+      spanGaps: true
+    };
+  });
+  const data = { labels, datasets };
+  if (chart) {
+    chart.data = data;
+    chart.update();
+    return;
+  }
+  chart = new Chart($("chart"), {
+    type: "line",
+    data,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { display: true, position: "top" },
+        tooltip: {
+          callbacks: {
+            label: (c) => `${c.dataset.label}: ${fmtPct(c.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: "rgba(6,36,92,.06)" }, ticks: { maxRotation: 0, autoSkip: false, callback: (_v, i) => (i % 2 === 0 ? labels[i] : "") } },
+        y: { min: 0, max: 100, ticks: { callback: (v) => v + "%" }, grid: { color: "rgba(6,36,92,.08)" } }
+      }
+    }
+  });
+}
+
+function garantirSelecaoInicial() {
+  if (selecionados.length) {
+    selecionados = selecionados.filter((id) => dias[id]);
+  }
+  if (!selecionados.length) {
+    selecionados = idsOrdenados().slice(0, 2);
+  }
+}
+
+async function carregarFirestoreELocal() {
+  importarHojeLocal();
+  let nuvem = {};
+  try {
+    nuvem = await listarDiasFirestore();
+  } catch (err) {
+    console.info("Firestore performance:", err.message || err);
+  }
+  dias = unirDias(nuvem, lerArquivoLocal());
+  garantirSelecaoInicial();
+  pintarLista();
+  pintarGrafico();
+}
+
+async function puxarApi() {
+  const res = await fetch(API + "&t=" + Date.now(), { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const payload = await res.json();
+  if (!payload || payload.ok === false) throw new Error(payload?.erro || "API inválida");
+  return parseEmpresas(payload);
+}
+
+async function salvarHoje(silencioso = false) {
+  const btn = $("btnSalvar");
+  if (!silencioso) {
+    btn.disabled = true;
+    setStatus("Salvando…");
+  }
+  try {
+    const amostra = amostraHoje || await puxarApi();
+    amostraHoje = amostra;
+    const dia = {
+      date: hojeSP(),
+      horas: pontoDaAmostra(amostra),
+      total: amostra.total,
+      tcgl: amostra.tcgl,
+      ls: amostra.ls,
+      atualizado: amostra.atualizado
+    };
+    importarHojeLocal();
+    arquivarLocal(dia);
+    const email = window.portalUsuario?.email || "";
+    let origem = "neste computador";
+    try {
+      await salvarDiaFirestore(dia, email);
+      origem = "na nuvem";
+    } catch (err) {
+      console.info("Salvar Firestore:", err.message || err);
+      if (!silencioso) origem = "neste computador (nuvem indisponível)";
+    }
+    $("kpiHoje").textContent = fmtPct(amostra.total?.ok);
+    $("kpiStamp").textContent = amostra.atualizado || "Agora";
+    await carregarFirestoreELocal();
+    if (!selecionados.includes(dia.date) && selecionados.length < 7) selecionados.unshift(dia.date);
+    pintarLista();
+    pintarGrafico();
+    setStatus("Dia " + dataBR(dia.date) + " salvo " + origem + ".", "ok");
+  } catch (err) {
+    setStatus("Não foi possível salvar: " + (err.message || err), "err");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function atualizarAoVivo() {
+  try {
+    amostraHoje = await puxarApi();
+    $("kpiHoje").textContent = fmtPct(amostraHoje.total?.ok);
+    $("kpiStamp").textContent = amostraHoje.atualizado || "Ao vivo";
+    const dia = {
+      date: hojeSP(),
+      horas: pontoDaAmostra(amostraHoje),
+      total: amostraHoje.total,
+      tcgl: amostraHoje.tcgl,
+      ls: amostraHoje.ls,
+      atualizado: amostraHoje.atualizado
+    };
+    arquivarLocal(dia);
+    dias[dia.date] = { ...(dias[dia.date] || {}), ...dia, horas: { ...(dias[dia.date]?.horas || {}), ...dia.horas } };
+    if (!selecionados.includes(dia.date)) {
+      garantirSelecaoInicial();
+    }
+    pintarLista();
+    pintarGrafico();
+  } catch (err) {
+    setStatus("API ao vivo: " + (err.message || err), "err");
+  }
+}
+
+$("fCampo").addEventListener("change", pintarGrafico);
+$("fLado").addEventListener("change", () => { pintarLista(); pintarGrafico(); });
+$("btnSalvar").addEventListener("click", () => salvarHoje(false));
+$("btnRecarregar").addEventListener("click", async () => {
+  $("btnRecarregar").disabled = true;
+  await carregarFirestoreELocal();
+  await atualizarAoVivo();
+  $("btnRecarregar").disabled = false;
+  setStatus("Atualizado.", "ok");
+});
+$("btnLimpar").addEventListener("click", () => {
+  selecionados = [];
+  pintarLista();
+  pintarGrafico();
+});
+
+window.portalAguardarUsuario((user) => {
+  if (!user?.isAdmin) return;
+  carregarFirestoreELocal()
+    .then(() => atualizarAoVivo())
+    .then(() => salvarHoje(true))
+    .then(() => setStatus("Pronto para comparar. O dia de hoje é gravado automaticamente enquanto esta página estiver aberta.", "ok"))
+    .catch((err) => setStatus(err.message || String(err), "err"));
+  setInterval(() => {
+    atualizarAoVivo().then(() => salvarHoje(true)).catch(() => {});
+  }, 60000);
+});
+</script>
+<script src="../assets/js/portal-futuristic.js?v=20260718am" defer></script>
+</body>
+</html>

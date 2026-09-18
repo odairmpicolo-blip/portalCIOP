@@ -260,6 +260,7 @@
 <script>
 const API = "https://londrisul.online/relatorios/mapa/api.php?chave=" + encodeURIComponent("Pontualidade@2026");
 const HIST_KEY = "ciop-mapa-pontualidade-horas-v1";
+const DIAS_KEY = "ciop-mapa-pontualidade-dias-v1";
 const CORES = { ok: "#22c55e", late: "#fbbf24", early: "#ef4444" };
 const POLL_MS = 20000;
 let horaChart;
@@ -362,11 +363,31 @@ function lerHist() {
     return { date: hojeSP(), horas: {} };
   }
 }
-function gravarHist(total) {
+function gravarHist(d) {
+  const total = d.total || d;
   const hist = lerHist();
   hist.date = hojeSP();
-  hist.horas[String(horaSP())] = { ok: total.ok, late: total.late, early: total.early, ts: Date.now() };
+  hist.horas[String(horaSP())] = {
+    ok: total.ok, late: total.late, early: total.early,
+    tcgl: d.tcgl || null, ls: d.ls || null, ts: Date.now()
+  };
   try { localStorage.setItem(HIST_KEY, JSON.stringify(hist)); } catch (_) {}
+  try {
+    const all = JSON.parse(localStorage.getItem(DIAS_KEY) || "{}") || {};
+    const prev = all[hist.date] || { date: hist.date, horas: {} };
+    all[hist.date] = {
+      date: hist.date,
+      horas: { ...(prev.horas || {}), ...hist.horas },
+      total: d.total || total,
+      tcgl: d.tcgl || prev.tcgl || null,
+      ls: d.ls || prev.ls || null,
+      atualizado: d.atualizado || prev.atualizado || "",
+      ts: Date.now()
+    };
+    const keys = Object.keys(all).sort();
+    while (keys.length > 90) delete all[keys.shift()];
+    localStorage.setItem(DIAS_KEY, JSON.stringify(all));
+  } catch (_) {}
   return hist;
 }
 function serieHora(hist, campo) {
@@ -440,7 +461,7 @@ function pintar(payload) {
   pintarFirma("Ls", d.ls);
   pintarFirma("Total", d.total);
   pintarGaragens(d.garagens);
-  const hist = gravarHist(d.total);
+  const hist = gravarHist(d);
   pintarLinhaHora(hist);
   document.getElementById("stamp").textContent = d.atualizado || "Ao vivo";
 }

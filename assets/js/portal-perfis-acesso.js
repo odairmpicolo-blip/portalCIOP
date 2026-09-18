@@ -48,6 +48,7 @@ export const MODULOS_PORTAL = [
   { id: "consulta-veiculo", label: "Consulta de veículo", grupo: "Operação" },
   { id: "dashboard-servico", label: "Dashboard de Serviço", grupo: "Indicadores" },
   { id: "ipv", label: "IPV", grupo: "Indicadores" },
+  { id: "performance-comparacao", label: "Comparação de performance", grupo: "Indicadores" },
   { id: "painel-ciop", label: "Painel CIOP (TV)", grupo: "Indicadores" },
   { id: "icv", label: "ICV", grupo: "Indicadores" },
   { id: "autuacoes", label: "Autuações", grupo: "Indicadores" },
