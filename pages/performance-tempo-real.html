@@ -132,7 +132,7 @@
     transform:scaleY(var(--p, 0));
     transform-origin:bottom center;
     border-radius:8px 8px 4px 4px;
-    transition:transform .45s ease;
+    transition:transform .2s ease;
   }
   .vivo-bar em{
     font-style:normal; font-size:clamp(10px,.85vw,13px); font-weight:800;
@@ -267,8 +267,11 @@ const API = "https://londrisul.online/relatorios/mapa/api.php?chave=" + encodeUR
 const HIST_KEY = "ciop-mapa-pontualidade-horas-v1";
 const DIAS_KEY = "ciop-mapa-pontualidade-dias-v1";
 const CORES = { ok: "#22c55e", late: "#fbbf24", early: "#ef4444" };
-const POLL_MS = 20000;
+const POLL_MS = 5000;
+const SLOTS_HORA = 12;
 let horaChart;
+let carregando = false;
+let ultimoStamp = "";
 
 const fmtPct = (v) => (v == null || !Number.isFinite(v) ? "—" : v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%");
 const toPct = (v) => {
@@ -355,9 +358,36 @@ function pintarGaragens(lista) {
 function hojeSP() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
 }
+function partesSP() {
+  const p = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", hour12: false
+  }).formatToParts(new Date());
+  const n = (tipo) => Number((p.find((x) => x.type === tipo) || {}).value || 0);
+  return { h: n("hour"), m: n("minute") };
+}
 function horaSP() {
-  const p = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", hour12: false }).formatToParts(new Date());
-  return Number((p.find((x) => x.type === "hour") || {}).value || 0);
+  return partesSP().h;
+}
+function slotAgora() {
+  const { h, m } = partesSP();
+  return h * SLOTS_HORA + Math.floor(m / 5);
+}
+function idadeApi(stamp) {
+  const m = String(stamp || "").match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+  if (!m) return "";
+  const t = Date.parse(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}-03:00`);
+  if (!Number.isFinite(t)) return "";
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if (s < 60) return `há ${s}s`;
+  if (s < 3600) return `há ${Math.floor(s / 60)} min`;
+  return `há ${Math.floor(s / 3600)} h`;
+}
+function pintarStamp() {
+  const el = document.getElementById("stamp");
+  if (!el) return;
+  const hora = (String(ultimoStamp).match(/(\d{2}:\d{2}:\d{2})/) || [])[1] || ultimoStamp || "Ao vivo";
+  const idade = idadeApi(ultimoStamp);
+  el.textContent = idade ? `${hora} · ${idade}` : hora;
 }
 function lerHist() {
   try {
@@ -372,10 +402,13 @@ function gravarHist(d) {
   const total = d.total || d;
   const hist = lerHist();
   hist.date = hojeSP();
-  hist.horas[String(horaSP())] = {
+  const ponto = {
     ok: total.ok, late: total.late, early: total.early,
     tcgl: d.tcgl || null, ls: d.ls || null, ts: Date.now()
   };
+  hist.horas[String(horaSP())] = ponto;
+  hist.minutos = hist.minutos || {};
+  hist.minutos[String(slotAgora())] = ponto;
   try { localStorage.setItem(HIST_KEY, JSON.stringify(hist)); } catch (_) {}
   try {
     const all = JSON.parse(localStorage.getItem(DIAS_KEY) || "{}") || {};
@@ -396,10 +429,17 @@ function gravarHist(d) {
   return hist;
 }
 function serieHora(hist, campo) {
-  return Array.from({ length: 24 }, (_, h) => {
-    const v = hist.horas[String(h)]?.[campo];
-    return v == null ? null : Math.round(v * 10) / 10;
+  const out = Array(24 * SLOTS_HORA).fill(null);
+  for (let h = 0; h < 24; h++) {
+    const v = Number(hist.horas?.[String(h)]?.[campo]);
+    if (Number.isFinite(v)) out[h * SLOTS_HORA] = Math.round(v * 10) / 10;
+  }
+  Object.entries(hist.minutos || {}).forEach(([k, p]) => {
+    const i = Number(k);
+    const v = Number(p?.[campo]);
+    if (i >= 0 && i < out.length && Number.isFinite(v)) out[i] = Math.round(v * 10) / 10;
   });
+  return out;
 }
 function linha(label, cor, dados, fill) {
   return {
@@ -414,7 +454,10 @@ function linha(label, cor, dados, fill) {
   };
 }
 function pintarLinhaHora(hist) {
-  const labels = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0") + "h");
+  const labels = Array.from({ length: 24 * SLOTS_HORA }, (_, i) => {
+    if (i % (SLOTS_HORA * 2) !== 0) return "";
+    return String(i / SLOTS_HORA).padStart(2, "0") + "h";
+  });
   const data = {
     labels,
     datasets: [
@@ -425,7 +468,7 @@ function pintarLinhaHora(hist) {
   };
   if (horaChart) {
     horaChart.data = data;
-    horaChart.update();
+    horaChart.update("none");
     return;
   }
   horaChart = new Chart(document.getElementById("horaChart"), {
@@ -461,7 +504,8 @@ function pintarLinhaHora(hist) {
         }
       },
       layout: { padding: { top: 6, right: 8, bottom: 8, left: 4 } },
-      elements: { line: { tension: .35, borderWidth: 3 }, point: { radius: 3, hoverRadius: 6 } }
+      animation: false,
+      elements: { line: { tension: .25, borderWidth: 3 }, point: { radius: 0, hoverRadius: 5 } }
     }
   });
 }
@@ -473,9 +517,12 @@ function pintar(payload) {
   pintarGaragens(d.garagens);
   const hist = gravarHist(d);
   pintarLinhaHora(hist);
-  document.getElementById("stamp").textContent = d.atualizado || "Ao vivo";
+  ultimoStamp = d.atualizado || "";
+  pintarStamp();
 }
 async function carregar() {
+  if (carregando) return;
+  carregando = true;
   const erro = document.getElementById("erro");
   try {
     const res = await fetch(API + "&t=" + Date.now(), { cache: "no-store" });
@@ -487,11 +534,14 @@ async function carregar() {
   } catch (err) {
     erro.hidden = false;
     erro.textContent = "Não foi possível atualizar a performance em tempo real: " + (err.message || err);
+  } finally {
+    carregando = false;
   }
 }
 pintarLinhaHora(lerHist());
 carregar();
 setInterval(carregar, POLL_MS);
+setInterval(pintarStamp, 1000);
 </script>
 </body>
 </html>
