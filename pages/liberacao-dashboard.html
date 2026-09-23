@@ -635,7 +635,7 @@ atualizadoEm: Date.now()
 
 async function apiGet(params){
 const ctrl = new AbortController();
-const timer = setTimeout(() => ctrl.abort(), 12000);
+const timer = setTimeout(() => ctrl.abort(), 45000);
 try {
 const res = await fetch(API_URL+"?"+new URLSearchParams(Object.assign({liberacao:"1"},params)), {cache:"no-store", signal: ctrl.signal});
 const data = await lerJsonResposta(res, "Planilha");
@@ -647,6 +647,26 @@ throw e;
 } finally {
 clearTimeout(timer);
 }
+}
+
+async function carregarBanco(dataDe, dataAte) {
+  try {
+    const mod = await import("../assets/js/liberacao-aws.js?v=20260923dash");
+    if (!await mod.liberacaoAwsDisponivel()) return null;
+    const res = await Promise.race([
+      mod.carregarJanelaLiberacaoAws(dataDe, dataAte),
+      new Promise((_, rej) => setTimeout(() => rej(new Error("timeout AWS")), 12000))
+    ]);
+    const dados = Array.isArray(res?.dados) ? res.dados : [];
+    return {
+      categorias: agregarPorCategoria(dados),
+      total_linhas: dados.length,
+      origem: "banco"
+    };
+  } catch (err) {
+    console.warn("Dashboard liberação: banco indisponível.", err?.message || err);
+    return null;
+  }
 }
 
 function montarHtmlGraficos(){
@@ -864,6 +884,15 @@ return null;
 }
 }
 
+function aplicarResultado(chave, categorias, totalLinhas, dataDe, dataAte, origem) {
+  state.mapaGraficos = categorias || {};
+  state.totalLinhas = totalLinhas || 0;
+  state.cacheChave = chave;
+  salvarCacheDashboardLiberacao(chave, state.mapaGraficos, state.totalLinhas);
+  renderGraficos();
+  setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · " + origem, "ok");
+}
+
 async function carregar(){
 const dataDe = $("dataDe").value;
 const dataAte = $("dataAte").value;
@@ -871,72 +900,53 @@ if(!dataDe || !dataAte){ setStatus("Informe o período (de/até).","erro"); retu
 if(dataDe > dataAte){ setStatus("A data inicial não pode ser maior que a final.","erro"); return; }
 
 const chave = dataDe + "|" + dataAte;
-if(state.cacheChave === chave && state.mapaGraficos){
+if(state.cacheChave === chave && Object.keys(state.mapaGraficos || {}).length && (state.totalLinhas || 0) > 0){
 renderGraficos();
 setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · memória","ok");
 return;
 }
 
 const cacheLocal = lerCacheDashboardLiberacao(chave);
-let mostrouCache = false;
-let mostrouSnapshot = false;
-
-if (!liberacaoManifest) liberacaoManifest = await carregarManifestLiberacao();
-const snap = await carregarSnapshotComDados(dataDe, dataAte);
-if (snap?.payload) {
-state.mapaGraficos = snap.payload.categorias || {};
-state.totalLinhas = snap.payload.total_linhas || 0;
-state.cacheChave = chave;
-renderGraficos();
-const extra = liberacaoManifest?.atualizadoEm
-? " · snapshot: " + new Date(liberacaoManifest.atualizadoEm).toLocaleString("pt-BR")
-: "";
-const vazioHoje = (snap.payload.total_linhas || 0) === 0;
-setStatus(
-  vazioHoje
-    ? "Ainda não há lançamentos neste período no JSON. Consultando a planilha…"
-    : formatNumber(state.totalLinhas) + " registro(s) · " + brDate(snap.de || dataDe) + " a " + brDate(snap.ate || dataAte) + " · arquivo JSON" + extra,
-  vazioHoje ? "load" : "ok"
-);
-mostrouSnapshot = true;
-}
-
-if (cacheLocal && !mostrouSnapshot) {
+if (cacheLocal && (cacheLocal.totalLinhas || 0) > 0) {
 state.mapaGraficos = cacheLocal.mapaGraficos || {};
 state.totalLinhas = cacheLocal.totalLinhas || 0;
 state.cacheChave = chave;
 renderGraficos();
-setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · cache local", "ok");
-mostrouCache = true;
+setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · cache local · atualizando…", "load");
 }
 
-if (mostrouSnapshot && (state.totalLinhas || 0) > 0) {
-return;
-}
-
-if (!mostrouCache && !mostrouSnapshot) {
-setStatus("Carregando planilha...","load");
+setStatus("Consultando o banco…","load");
 window.portalMostrarCarregando?.("Carregando liberação");
-}
-
 try {
-const res = await apiGet({
-recurso: "graficos",
-data_de: dataDe,
-data_ate: dataAte
-});
-state.mapaGraficos = res.categorias || {};
-state.totalLinhas = res.total_linhas || 0;
-state.cacheChave = chave;
-salvarCacheDashboardLiberacao(chave, state.mapaGraficos, state.totalLinhas);
-renderGraficos();
-const cacheTxt = res.meta && res.meta.cache ? " · cache servidor" : "";
-const origem = (mostrouCache || mostrouSnapshot) ? " · atualizado" : "";
-setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + cacheTxt + origem, "ok");
+  const banco = await carregarBanco(dataDe, dataAte);
+  if (banco && banco.total_linhas > 0) {
+    aplicarResultado(chave, banco.categorias, banco.total_linhas, dataDe, dataAte, "banco");
+    return;
+  }
+
+  if (!liberacaoManifest) liberacaoManifest = await carregarManifestLiberacao();
+  const snap = await carregarSnapshotComDados(dataDe, dataAte);
+  if (snap?.payload && (snap.payload.total_linhas || 0) > 0) {
+    const extra = liberacaoManifest?.atualizadoEm
+      ? "arquivo JSON · " + new Date(liberacaoManifest.atualizadoEm).toLocaleString("pt-BR")
+      : "arquivo JSON";
+    aplicarResultado(chave, snap.payload.categorias, snap.payload.total_linhas, dataDe, dataAte, extra);
+    return;
+  }
+
+  setStatus("Consultando a planilha…","load");
+  const res = await apiGet({
+    recurso: "graficos",
+    data_de: dataDe,
+    data_ate: dataAte
+  });
+  aplicarResultado(chave, res.categorias, res.total_linhas, dataDe, dataAte, res.meta?.cache ? "planilha · cache servidor" : "planilha");
 } catch (e) {
-if (!(mostrouCache || mostrouSnapshot)) {
-setStatus(e.message || "Não foi possível carregar a liberação.", "erro");
-}
+  if ((state.totalLinhas || 0) > 0 && state.cacheChave === chave) {
+    setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · cache local", "ok");
+  } else {
+    setStatus(e.message || "Não foi possível carregar a liberação.", "erro");
+  }
 } finally {
 window.portalOcultarCarregando?.();
 }
