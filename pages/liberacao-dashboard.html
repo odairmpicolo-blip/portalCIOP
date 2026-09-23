@@ -554,12 +554,10 @@ function dataLocalIso(){
 
 function datasIniciaisDashboard(){
   const hoje = dataLocalIso();
-  const g = liberacaoManifest?.graficos || {};
-  if (g.hoje?.data_de === hoje && g.hoje?.data_ate === hoje) return { de: hoje, ate: hoje };
-  if (g.hoje?.data_de && g.hoje?.data_ate) return { de: g.hoje.data_de, ate: g.hoje.data_ate };
-  const dias = Object.keys(liberacaoManifest?.dias || {}).sort();
-  const last = dias[dias.length - 1];
-  if (last) return { de: last, ate: last };
+  const q = new URLSearchParams(location.search);
+  const de = normalizarDataIso(q.get("de"));
+  const ate = normalizarDataIso(q.get("ate"));
+  if (de && ate) return de <= ate ? { de, ate } : { de: ate, ate: de };
   return { de: hoje, ate: hoje };
 }
 function val(row,key){
@@ -849,14 +847,8 @@ return null;
 
 async function carregarSnapshotComDados(dataDe, dataAte) {
 const direto = await carregarSnapshotGraficos(dataDe, dataAte);
-if (direto && ((direto.total_linhas || 0) > 0 || direto.categorias)) return { payload: direto, de: dataDe, ate: dataAte };
-for (const key of ["hoje", "7d", "30d"]) {
-const p = liberacaoManifest?.graficos?.[key];
-if (!p?.arquivo || (p.data_de === dataDe && p.data_ate === dataAte)) continue;
-const payload = await carregarSnapshotGraficos(p.data_de, p.data_ate);
-if (payload && (payload.total_linhas || 0) > 0) return { payload, de: p.data_de, ate: p.data_ate, rotulo: key };
-}
-return direto ? { payload: direto, de: dataDe, ate: dataAte } : null;
+if (!direto) return null;
+return { payload: direto, de: dataDe, ate: dataAte };
 }
 
 async function carregarSnapshotGraficos(dataDe, dataAte) {
@@ -892,13 +884,9 @@ let mostrouSnapshot = false;
 if (!liberacaoManifest) liberacaoManifest = await carregarManifestLiberacao();
 const snap = await carregarSnapshotComDados(dataDe, dataAte);
 if (snap?.payload) {
-if (snap.de && snap.ate && (snap.de !== dataDe || snap.ate !== dataAte)) {
-$("dataDe").value = snap.de;
-$("dataAte").value = snap.ate;
-}
 state.mapaGraficos = snap.payload.categorias || {};
 state.totalLinhas = snap.payload.total_linhas || 0;
-state.cacheChave = (snap.de || dataDe) + "|" + (snap.ate || dataAte);
+state.cacheChave = chave;
 renderGraficos();
 const extra = liberacaoManifest?.atualizadoEm
 ? " · snapshot: " + new Date(liberacaoManifest.atualizadoEm).toLocaleString("pt-BR")
@@ -946,21 +934,7 @@ const cacheTxt = res.meta && res.meta.cache ? " · cache servidor" : "";
 const origem = (mostrouCache || mostrouSnapshot) ? " · atualizado" : "";
 setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + cacheTxt + origem, "ok");
 } catch (e) {
-if (mostrouCache || mostrouSnapshot) {
-if (!state.totalLinhas) {
-const extra = await carregarSnapshotComDados("", "");
-if (extra?.payload && (extra.payload.total_linhas || 0) > 0) {
-$("dataDe").value = extra.de;
-$("dataAte").value = extra.ate;
-state.mapaGraficos = extra.payload.categorias || {};
-state.totalLinhas = extra.payload.total_linhas || 0;
-state.cacheChave = extra.de + "|" + extra.ate;
-renderGraficos();
-setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(extra.de) + " a " + brDate(extra.ate) + " · JSON de fallback", "ok");
-return;
-}
-}
-} else {
+if (!(mostrouCache || mostrouSnapshot)) {
 setStatus(e.message || "Não foi possível carregar a liberação.", "erro");
 }
 } finally {
