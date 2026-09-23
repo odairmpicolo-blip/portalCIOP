@@ -651,12 +651,22 @@ clearTimeout(timer);
 
 async function carregarBanco(dataDe, dataAte) {
   try {
-    const mod = await import("../assets/js/liberacao-aws.js?v=20260923dash");
+    const mod = await import("../assets/js/liberacao-aws.js?v=20260923dash2");
     if (!await mod.liberacaoAwsDisponivel()) return null;
+    const pedido = typeof mod.carregarGraficosLiberacaoAws === "function"
+      ? mod.carregarGraficosLiberacaoAws(dataDe, dataAte)
+      : mod.carregarJanelaLiberacaoAws(dataDe, dataAte);
     const res = await Promise.race([
-      mod.carregarJanelaLiberacaoAws(dataDe, dataAte),
+      pedido,
       new Promise((_, rej) => setTimeout(() => rej(new Error("timeout AWS")), 12000))
     ]);
+    if (res?.categorias) {
+      return {
+        categorias: res.categorias,
+        total_linhas: Number(res.total_linhas || 0),
+        origem: "banco"
+      };
+    }
     const dados = Array.isArray(res?.dados) ? res.dados : [];
     return {
       categorias: agregarPorCategoria(dados),
@@ -855,7 +865,70 @@ return null;
 }
 }
 
-function resolverSnapshotGraficos(dataDe, dataAte) {
+function somarCategorias(listas) {
+  const mapa = {};
+  CATEGORIAS.forEach((c) => { mapa[c.chave] = {}; });
+  (listas || []).forEach((cats) => {
+    Object.entries(cats || {}).forEach(([chave, motes]) => {
+      if (!mapa[chave]) mapa[chave] = {};
+      Object.entries(motes || {}).forEach(([mot, n]) => {
+        mapa[chave][mot] = (mapa[chave][mot] || 0) + Number(n || 0);
+      });
+    });
+  });
+  return mapa;
+}
+
+function listarDiasIso(de, ate) {
+  const out = [];
+  if (!de || !ate || ate < de) return out;
+  const [y0, m0, d0] = de.split("-").map(Number);
+  const [y1, m1, d1] = ate.split("-").map(Number);
+  const cursor = new Date(Date.UTC(y0, m0 - 1, d0));
+  const fim = new Date(Date.UTC(y1, m1 - 1, d1));
+  while (cursor <= fim) {
+    out.push(cursor.toISOString().slice(0, 10));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return out;
+}
+
+async function carregarJsonDia(dia) {
+  const urls = [
+    LIBERACAO_DATA_BASE + "/graficos-dia-" + dia + ".json",
+    LIBERACAO_DATA_BASE + "/acompanhamento-dia-" + dia + ".json"
+  ];
+  for (const url of urls) {
+    try {
+      const res = await fetch(url + "?t=" + Date.now(), { cache: "no-store" });
+      const payload = await lerJsonOpcional(res);
+      if (payload?.categorias) {
+        return { categorias: payload.categorias, total: payload.total_linhas || 0 };
+      }
+      if (Array.isArray(payload?.dados) && payload.dados.length) {
+        return { categorias: agregarPorCategoria(payload.dados), total: payload.dados.length };
+      }
+    } catch (_) { /* próximo arquivo */ }
+  }
+  return null;
+}
+
+async function carregarJsonPeriodo(dataDe, dataAte) {
+  const snap = await carregarSnapshotComDados(dataDe, dataAte);
+  if (snap?.payload && (snap.payload.total_linhas || 0) > 0) {
+    return { categorias: snap.payload.categorias, total_linhas: snap.payload.total_linhas, origem: "arquivo JSON" };
+  }
+  const dias = listarDiasIso(dataDe, dataAte);
+  if (!dias.length) return null;
+  const partes = await Promise.all(dias.map((dia) => carregarJsonDia(dia)));
+  const ok = partes.filter(Boolean);
+  if (!ok.length) return null;
+  return {
+    categorias: somarCategorias(ok.map((x) => x.categorias)),
+    total_linhas: ok.reduce((a, x) => a + (x.total || 0), 0),
+    origem: "arquivo JSON"
+  };
+}
 const presets = liberacaoManifest?.graficos || {};
 for (const preset of Object.values(presets)) {
 if (preset?.data_de === dataDe && preset?.data_ate === dataAte && preset?.arquivo) {
@@ -906,50 +979,35 @@ setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) 
 return;
 }
 
+if (!liberacaoManifest) liberacaoManifest = await carregarManifestLiberacao();
+
 const cacheLocal = lerCacheDashboardLiberacao(chave);
 if (cacheLocal && (cacheLocal.totalLinhas || 0) > 0) {
-state.mapaGraficos = cacheLocal.mapaGraficos || {};
-state.totalLinhas = cacheLocal.totalLinhas || 0;
-state.cacheChave = chave;
-renderGraficos();
-setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · cache local · atualizando…", "load");
+aplicarResultado(chave, cacheLocal.mapaGraficos, cacheLocal.totalLinhas, dataDe, dataAte, "cache local");
 }
 
-setStatus("Consultando o banco…","load");
-window.portalMostrarCarregando?.("Carregando liberação");
-try {
-  const banco = await carregarBanco(dataDe, dataAte);
-  if (banco && banco.total_linhas > 0) {
-    aplicarResultado(chave, banco.categorias, banco.total_linhas, dataDe, dataAte, "banco");
-    return;
-  }
-
-  if (!liberacaoManifest) liberacaoManifest = await carregarManifestLiberacao();
-  const snap = await carregarSnapshotComDados(dataDe, dataAte);
-  if (snap?.payload && (snap.payload.total_linhas || 0) > 0) {
-    const extra = liberacaoManifest?.atualizadoEm
-      ? "arquivo JSON · " + new Date(liberacaoManifest.atualizadoEm).toLocaleString("pt-BR")
-      : "arquivo JSON";
-    aplicarResultado(chave, snap.payload.categorias, snap.payload.total_linhas, dataDe, dataAte, extra);
-    return;
-  }
-
-  setStatus("Consultando a planilha…","load");
-  const res = await apiGet({
-    recurso: "graficos",
-    data_de: dataDe,
-    data_ate: dataAte
-  });
-  aplicarResultado(chave, res.categorias, res.total_linhas, dataDe, dataAte, res.meta?.cache ? "planilha · cache servidor" : "planilha");
-} catch (e) {
-  if ((state.totalLinhas || 0) > 0 && state.cacheChave === chave) {
-    setStatus(formatNumber(state.totalLinhas) + " registro(s) · " + brDate(dataDe) + " a " + brDate(dataAte) + " · cache local", "ok");
-  } else {
-    setStatus(e.message || "Não foi possível carregar a liberação.", "erro");
-  }
-} finally {
-window.portalOcultarCarregando?.();
+setStatus("Carregando JSON…","load");
+const json = await carregarJsonPeriodo(dataDe, dataAte);
+if (json && json.total_linhas > 0) {
+  aplicarResultado(chave, json.categorias, json.total_linhas, dataDe, dataAte, json.origem);
+} else if (!(state.totalLinhas > 0 && state.cacheChave === chave)) {
+  setStatus("Sem JSON deste período. Consultando o banco…","load");
 }
+
+carregarBanco(dataDe, dataAte).then((banco) => {
+  if (!banco || !(banco.total_linhas > 0)) {
+    if ($("dataDe").value === dataDe && $("dataAte").value === dataAte && !(state.totalLinhas > 0 && state.cacheChave === chave)) {
+      setStatus("Sem registros neste período.", "ok");
+    }
+    return;
+  }
+  if ($("dataDe").value !== dataDe || $("dataAte").value !== dataAte) return;
+  aplicarResultado(chave, banco.categorias, banco.total_linhas, dataDe, dataAte, "banco");
+}).catch(() => {
+  if ($("dataDe").value === dataDe && $("dataAte").value === dataAte && !(state.totalLinhas > 0 && state.cacheChave === chave)) {
+    setStatus("Sem registros neste período.", "ok");
+  }
+});
 }
 
 function agendarRecarga(){

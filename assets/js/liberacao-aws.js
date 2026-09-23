@@ -28,6 +28,12 @@ export async function carregarJanelaLiberacaoAws(dataDe, dataAte) {
   return awsFetch(`/liberacao?${qs}`, headers);
 }
 
+export async function carregarGraficosLiberacaoAws(dataDe, dataAte) {
+  const headers = await authHeaders();
+  const qs = new URLSearchParams({ de: dataDe, ate: dataAte });
+  return awsFetch(`/liberacao/graficos?${qs}`, headers);
+}
+
 export async function salvarLinhaLiberacaoAws(dataIso, rowId, payload) {
   const headers = await authHeaders();
   return awsFetch(`/liberacao/${encodeURIComponent(dataIso)}/${encodeURIComponent(rowId)}`, {

@@ -6,6 +6,7 @@ import {
   enviarLinhaPlanilha,
   listarDatasIso
 } from "../lib/liberacao-planilha.js";
+import { agregarLiberacao } from "../lib/liberacao-graficos.js";
 
 const router = Router();
 
@@ -76,6 +77,33 @@ router.get("/", requireFirebaseUser, async (req, res) => {
     );
     const dados = result.rows.map((r) => r.payload);
     res.json({ ok: true, dados, total: dados.length, origem: "aws" });
+  } catch (err) {
+    res.status(500).json({ ok: false, erro: err.message });
+  }
+});
+
+router.get("/graficos", requireFirebaseUser, async (req, res) => {
+  const dataDe = String(req.query.de || "").slice(0, 10);
+  const dataAte = String(req.query.ate || "").slice(0, 10);
+  if (!dataDe || !dataAte || dataAte < dataDe) {
+    res.status(400).json({ ok: false, erro: "Parâmetros de e ate obrigatórios (YYYY-MM-DD)" });
+    return;
+  }
+  try {
+    const result = await query(
+      `SELECT payload FROM liberacao_linhas
+       WHERE data_iso >= $1::date AND data_iso <= $2::date`,
+      [dataDe, dataAte]
+    );
+    const dados = result.rows.map((r) => r.payload);
+    res.json({
+      ok: true,
+      origem: "dsql",
+      data_de: dataDe,
+      data_ate: dataAte,
+      total_linhas: dados.length,
+      categorias: agregarLiberacao(dados)
+    });
   } catch (err) {
     res.status(500).json({ ok: false, erro: err.message });
   }
