@@ -254,6 +254,7 @@
   }
 
   function staggerCards() {
+    if (window.gsap) return;
     if (document.body.classList.contains("oa-page")) return;
     const cards = document.querySelectorAll(".grid .card");
     cards.forEach((card, i) => {

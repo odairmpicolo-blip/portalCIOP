@@ -2321,7 +2321,7 @@ html.dk-dark .ciop-command-inner{
 }
 </style>
 <link rel="stylesheet" href="assets/css/portal-glass-desktop.css?v=20260821hud">
-<link rel="stylesheet" href="assets/css/portal-futuristic.css?v=20260821cc1">
+<link rel="stylesheet" href="assets/css/portal-futuristic.css?v=20260929gsap">
 <link rel="stylesheet" href="assets/css/portal-tokens.css?v=20260821fx">
 <link rel="stylesheet" href="assets/css/portal-unify.css?v=20260828planilhas">
 <link rel="stylesheet" href="assets/css/portal-ciop-home.css?v=20260821full">
@@ -4222,6 +4222,8 @@ if (window.portalUsuarioValidado) {
 </script>
 
 
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="assets/js/portal-gsap.js?v=20260929a"></script>
 <script>
 /* Abas: uma secao por vez. Cada recarregamento abre Operação (inicio).
    A escolha durante a sessao nao e restaurada no F5. */
@@ -4271,6 +4273,11 @@ if (window.portalUsuarioValidado) {
     /* Reinicia a animacao a cada troca: sem o reflow o navegador reaproveita a anterior
        e os cards entrariam sem movimento na segunda vez. */
     function animarEntrada(sec) {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        if (typeof window.portalAnimarSecao === "function") {
+            window.portalAnimarSecao(sec);
+            return;
+        }
         sec.classList.remove("portal-secao-entra");
         void sec.offsetWidth;
         Array.prototype.forEach.call(sec.querySelectorAll("a.card:not([hidden])"), (c, i) => {
