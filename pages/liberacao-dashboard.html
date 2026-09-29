@@ -913,6 +913,16 @@ async function carregarJsonDia(dia) {
   return null;
 }
 
+function resolverSnapshotGraficos(dataDe, dataAte) {
+  const presets = liberacaoManifest?.graficos || {};
+  for (const preset of Object.values(presets)) {
+    if (preset?.data_de === dataDe && preset?.data_ate === dataAte && preset?.arquivo) {
+      return LIBERACAO_DATA_BASE + "/" + preset.arquivo;
+    }
+  }
+  return null;
+}
+
 async function carregarJsonPeriodo(dataDe, dataAte) {
   const snap = await carregarSnapshotComDados(dataDe, dataAte);
   if (snap?.payload && (snap.payload.total_linhas || 0) > 0) {
@@ -928,14 +938,6 @@ async function carregarJsonPeriodo(dataDe, dataAte) {
     total_linhas: ok.reduce((a, x) => a + (x.total || 0), 0),
     origem: "arquivo JSON"
   };
-}
-const presets = liberacaoManifest?.graficos || {};
-for (const preset of Object.values(presets)) {
-if (preset?.data_de === dataDe && preset?.data_ate === dataAte && preset?.arquivo) {
-return LIBERACAO_DATA_BASE + "/" + preset.arquivo;
-}
-}
-return null;
 }
 
 async function carregarSnapshotComDados(dataDe, dataAte) {
