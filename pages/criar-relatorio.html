@@ -531,10 +531,19 @@ select:disabled{
 }
 .signature{
     margin:36px auto 0;
-    max-width:300px;
+    max-width:340px;
     text-align:center;
     color:#1a2332;
 }
+.signature-img{
+    display:none;
+    width:auto;
+    max-width:260px;
+    max-height:96px;
+    margin:0 auto -6px;
+    object-fit:contain;
+}
+.signature-img.is-on{display:block}
 .signature-line{border-top:2px solid #06245c;padding-top:10px;box-shadow:0 -5px 0 #ff6b00}
 .report-foot{
     margin:28px 16mm 0;
@@ -1019,6 +1028,7 @@ html.dk-dark .paper label{
 
                 <div class="signature">
                     <span class="signature-title">Responsável pelo relatório</span>
+                    <img id="previewAssinaturaImg" class="signature-img" alt="Assinatura do responsável">
                     <div class="signature-line">
                         <strong id="previewAssinaturaNome">Selecione o usuário para assinatura</strong>
                         <span id="previewAssinaturaRegistro"></span>
@@ -1091,7 +1101,8 @@ const preview = {
     linha: document.getElementById("previewLinha"),
     assinaturaNome: document.getElementById("previewAssinaturaNome"),
     assinaturaRegistro: document.getElementById("previewAssinaturaRegistro"),
-    assinaturaCargo: document.getElementById("previewAssinaturaCargo")
+    assinaturaCargo: document.getElementById("previewAssinaturaCargo"),
+    assinaturaImg: document.getElementById("previewAssinaturaImg")
 };
 const blocoFuncionario = document.getElementById("blocoFuncionario");
 const wrapProtocoloInformativo = document.getElementById("wrapProtocoloInformativo");
@@ -1502,6 +1513,35 @@ function montarUsuarioAssinaturaLogado(cadastro, email) {
     }, email);
 }
 
+function registroAssinaturaArquivo(registro) {
+    return String(registro || "").replace(/\D/g, "");
+}
+
+function aplicarImagemAssinatura(registro) {
+    const img = preview.assinaturaImg;
+    if (!img) return;
+    const id = registroAssinaturaArquivo(registro);
+    if (!id) {
+        img.removeAttribute("src");
+        img.classList.remove("is-on");
+        img.alt = "";
+        return;
+    }
+    const url = "../assets/img/assinaturas/" + id + ".png";
+    img.onload = () => img.classList.add("is-on");
+    img.onerror = () => {
+        img.classList.remove("is-on");
+        img.removeAttribute("src");
+    };
+    img.alt = "Assinatura do responsável";
+    if (img.getAttribute("src") === url) {
+        if (img.complete && img.naturalWidth) img.classList.add("is-on");
+        return;
+    }
+    img.classList.remove("is-on");
+    img.src = url;
+}
+
 function atualizarPreview() {
     preview.numero.textContent = formatarNumero(campos.numero.value);
     if (numeroRelatorioInfo) numeroRelatorioInfo.value = campos.numero.value;
@@ -1515,6 +1555,7 @@ function atualizarPreview() {
     preview.assinaturaNome.textContent = user?.nome || "Assinatura não disponível";
     preview.assinaturaRegistro.textContent = user?.registro ? "Registro " + user.registro : "";
     preview.assinaturaCargo.textContent = textoCargoAssinatura(user);
+    aplicarImagemAssinatura(user?.registro);
     cargoAssinaturaTexto.textContent = textoCargoAssinatura(user);
     if (assinaturaResponsavel) {
         assinaturaResponsavel.textContent = user
@@ -1894,7 +1935,7 @@ function corpoEmailRelatorio() {
 }
 
 async function aguardarImagensPdf(alvo) {
-    const imagens = Array.from(alvo.querySelectorAll("img"));
+    const imagens = Array.from(alvo.querySelectorAll("img")).filter((img) => img.getAttribute("src"));
     await Promise.all(imagens.map((img) => {
         if (img.complete) return Promise.resolve();
         return new Promise((resolve) => {
