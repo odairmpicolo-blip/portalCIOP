@@ -209,8 +209,8 @@
   <div class="vivo-grid">
     <article class="firm ipv-tcgl">
       <div class="firm-top">
-        <div class="firm-kicker">Área 1</div>
-        <h2>TCGL</h2>
+        <div class="firm-kicker">Último dia</div>
+        <h2 id="titDia">Dia</h2>
       </div>
       <div class="vivo-bars">
         <div class="vivo-bar ok"><b id="okTcgl">—</b><span class="vivo-col"><i id="colOkTcgl"></i></span><em>No horário</em></div>
@@ -220,8 +220,8 @@
     </article>
     <article class="firm ipv-ls">
       <div class="firm-top">
-        <div class="firm-kicker">Área 2</div>
-        <h2>LondriSul</h2>
+        <div class="firm-kicker">Mês</div>
+        <h2 id="titMes">Mês</h2>
       </div>
       <div class="vivo-bars">
         <div class="vivo-bar ok"><b id="okLs">—</b><span class="vivo-col"><i id="colOkLs"></i></span><em>No horário</em></div>
@@ -231,8 +231,8 @@
     </article>
     <article class="firm ipv-ciop">
       <div class="firm-top">
-        <div class="firm-kicker">SISTEMA</div>
-        <h2>Total</h2>
+        <div class="firm-kicker">Ano</div>
+        <h2 id="titAno">Ano</h2>
       </div>
       <div class="vivo-bars">
         <div class="vivo-bar ok"><b id="okTotal">—</b><span class="vivo-col"><i id="colOkTotal"></i></span><em>No horário</em></div>
@@ -246,7 +246,7 @@
 
   <section class="vivo-chart">
     <div class="vivo-chart-head">
-      <span>Decorrer do dia · hora a hora</span>
+      <span id="chartTitulo">Mês · dia a dia</span>
       <div class="vivo-legend">
         <i class="ok">● No horário</i>
         <i class="late">● Atrasado</i>
@@ -263,12 +263,9 @@
 </div>
 
 <script>
-const API = "https://londrisul.online/relatorios/mapa/api.php?chave=" + encodeURIComponent("Pontualidade@2026");
-const HIST_KEY = "ciop-mapa-pontualidade-horas-v1";
-const DIAS_KEY = "ciop-mapa-pontualidade-dias-v1";
+const API = "https://londrisul.online/relatorios/tvs/pontualidade/api.php?token=" + encodeURIComponent("OverallAnual@2026");
 const CORES = { ok: "#22c55e", late: "#fbbf24", early: "#ef4444" };
-const POLL_MS = 5000;
-const SLOTS_HORA = 12;
+const POLL_MS = 60000;
 let horaChart;
 let carregando = false;
 let ultimoStamp = "";
@@ -279,42 +276,29 @@ const toPct = (v) => {
   return Number.isFinite(n) ? n : null;
 };
 
-function isTcgl(g) {
-  const n = String(g?.nome || "").toUpperCase();
-  return n.includes("TCGL") || Number(g?.id) === 9;
-}
-function media(lista, campo) {
-  const vals = lista.map((g) => toPct(g[campo])).filter((v) => v != null);
-  if (!vals.length) return null;
-  return vals.reduce((a, b) => a + b, 0) / vals.length;
-}
-function blocoDe(onTime, late, early) {
-  return { ok: toPct(onTime), late: toPct(late), early: toPct(early) };
-}
-function mediaVal(a, b) {
-  if (a != null && b != null) return (a + b) / 2;
-  return a ?? b ?? null;
-}
-function parseEmpresas(payload) {
-  const garagens = Array.isArray(payload.garagens) ? payload.garagens : [];
-  const tcglG = garagens.find(isTcgl);
-  const lsG = garagens.filter((g) => !isTcgl(g) && !g.excluida);
-  const r = payload.resumo || {};
-  const tcgl = tcglG
-    ? blocoDe(tcglG.onTimePercent, tcglG.latePercent, tcglG.earlyPercent)
-    : blocoDe(null, null, null);
-  const ls = (r.no_horario != null)
-    ? blocoDe(r.no_horario, r.atrasado, r.adiantado)
-    : blocoDe(media(lsG, "onTimePercent"), media(lsG, "latePercent"), media(lsG, "earlyPercent"));
-  const visiveis = [];
-  if (tcglG) visiveis.push(tcglG);
-  visiveis.push(...lsG);
+function blocoApi(src) {
+  if (!src) return { ok: null, late: null, early: null };
   return {
-    tcgl, ls,
-    total: { ok: mediaVal(tcgl.ok, ls.ok), late: mediaVal(tcgl.late, ls.late), early: mediaVal(tcgl.early, ls.early) },
-    garagens: visiveis,
-    atualizado: payload.atualizado_em || payload.capturado_em || ""
+    ok: toPct(src.no_horario_percent),
+    late: toPct(src.atrasado_percent),
+    early: toPct(src.adiantado_percent)
   };
+}
+function diasComDados(payload) {
+  return (payload?.dias || []).filter((d) => !d.sem_dados && toPct(d.no_horario_percent) != null);
+}
+function mesAtualSP(offset) {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit"
+  }).format(new Date()).split("-");
+  const ano = Number(partes[0]);
+  const mes = Number(partes[1]);
+  const dt = new Date(Date.UTC(ano, mes - 1 + (offset || 0), 1));
+  return dt.getUTCMonth() + 1;
+}
+function rotuloDia(iso) {
+  const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? m[3] + "/" + m[2] : "Dia";
 }
 function setTxt(id, v) {
   const el = document.getElementById(id);
@@ -336,16 +320,15 @@ function pintarFirma(suf, bloco) {
   pintarCol("colLate" + suf, bloco.late);
   pintarCol("colEarly" + suf, bloco.early);
 }
-function pintarGaragens(lista) {
+function pintarDias(lista) {
   const el = document.getElementById("garages");
   if (!el) return;
-  el.innerHTML = lista.map((g) => {
-    const ok = toPct(g.onTimePercent) || 0;
-    const late = toPct(g.latePercent) || 0;
-    const early = toPct(g.earlyPercent) || 0;
-    const nome = String(g.nome || "").replace(/^G\./, "").replace(/^TCGLL$/i, "TCGL");
+  el.innerHTML = lista.slice(-8).map((d) => {
+    const ok = toPct(d.no_horario_percent) || 0;
+    const late = toPct(d.atrasado_percent) || 0;
+    const early = toPct(d.adiantado_percent) || 0;
     return `<div class="garage">
-      <b>${nome}</b>
+      <b>${rotuloDia(d.data)}</b>
       <div class="bars" title="No horário ${fmtPct(ok)} · atrasado ${fmtPct(late)} · adiantado ${fmtPct(early)}">
         <i style="width:${ok}%;background:${CORES.ok}"></i>
         <i style="width:${late}%;background:${CORES.late}"></i>
@@ -355,27 +338,17 @@ function pintarGaragens(lista) {
     </div>`;
   }).join("");
 }
-function hojeSP() {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
-}
-function partesSP() {
-  const p = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", hour12: false
-  }).formatToParts(new Date());
-  const n = (tipo) => Number((p.find((x) => x.type === tipo) || {}).value || 0);
-  return { h: n("hour"), m: n("minute") };
-}
-function horaSP() {
-  return partesSP().h;
-}
-function slotAgora() {
-  const { h, m } = partesSP();
-  return h * SLOTS_HORA + Math.floor(m / 5);
+function instanteApi(stamp) {
+  const direto = Date.parse(stamp);
+  if (Number.isFinite(direto)) return direto;
+  const iso = String(stamp || "").match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (iso) return Date.parse(`${iso[1]}-${iso[2]}-${iso[3]}T${iso[4]}:${iso[5]}:${iso[6] || "00"}-03:00`);
+  const br = String(stamp || "").match(/^(\d{2})\/(\d{2})\/(\d{4})[ T](\d{2}):(\d{2})/);
+  if (br) return Date.parse(`${br[3]}-${br[2]}-${br[1]}T${br[4]}:${br[5]}:00-03:00`);
+  return NaN;
 }
 function idadeApi(stamp) {
-  const m = String(stamp || "").match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
-  if (!m) return "";
-  const t = Date.parse(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}-03:00`);
+  const t = instanteApi(stamp);
   if (!Number.isFinite(t)) return "";
   const s = Math.max(0, Math.round((Date.now() - t) / 1000));
   if (s < 60) return `há ${s}s`;
@@ -385,61 +358,12 @@ function idadeApi(stamp) {
 function pintarStamp() {
   const el = document.getElementById("stamp");
   if (!el) return;
-  const hora = (String(ultimoStamp).match(/(\d{2}:\d{2}:\d{2})/) || [])[1] || ultimoStamp || "Ao vivo";
+  const t = instanteApi(ultimoStamp);
+  const hora = Number.isFinite(t)
+    ? new Date(t).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    : (ultimoStamp || "Ao vivo");
   const idade = idadeApi(ultimoStamp);
   el.textContent = idade ? `${hora} · ${idade}` : hora;
-}
-function lerHist() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(HIST_KEY) || "null");
-    if (!raw || raw.date !== hojeSP()) return { date: hojeSP(), horas: {} };
-    return raw;
-  } catch (_) {
-    return { date: hojeSP(), horas: {} };
-  }
-}
-function gravarHist(d) {
-  const total = d.total || d;
-  const hist = lerHist();
-  hist.date = hojeSP();
-  const ponto = {
-    ok: total.ok, late: total.late, early: total.early,
-    tcgl: d.tcgl || null, ls: d.ls || null, ts: Date.now()
-  };
-  hist.horas[String(horaSP())] = ponto;
-  hist.minutos = hist.minutos || {};
-  hist.minutos[String(slotAgora())] = ponto;
-  try { localStorage.setItem(HIST_KEY, JSON.stringify(hist)); } catch (_) {}
-  try {
-    const all = JSON.parse(localStorage.getItem(DIAS_KEY) || "{}") || {};
-    const prev = all[hist.date] || { date: hist.date, horas: {} };
-    all[hist.date] = {
-      date: hist.date,
-      horas: { ...(prev.horas || {}), ...hist.horas },
-      total: d.total || total,
-      tcgl: d.tcgl || prev.tcgl || null,
-      ls: d.ls || prev.ls || null,
-      atualizado: d.atualizado || prev.atualizado || "",
-      ts: Date.now()
-    };
-    const keys = Object.keys(all).sort();
-    while (keys.length > 90) delete all[keys.shift()];
-    localStorage.setItem(DIAS_KEY, JSON.stringify(all));
-  } catch (_) {}
-  return hist;
-}
-function serieHora(hist, campo) {
-  const out = Array(24 * SLOTS_HORA).fill(null);
-  for (let h = 0; h < 24; h++) {
-    const v = Number(hist.horas?.[String(h)]?.[campo]);
-    if (Number.isFinite(v)) out[h * SLOTS_HORA] = Math.round(v * 10) / 10;
-  }
-  Object.entries(hist.minutos || {}).forEach(([k, p]) => {
-    const i = Number(k);
-    const v = Number(p?.[campo]);
-    if (i >= 0 && i < out.length && Number.isFinite(v)) out[i] = Math.round(v * 10) / 10;
-  });
-  return out;
 }
 function linha(label, cor, dados, fill) {
   return {
@@ -453,21 +377,20 @@ function linha(label, cor, dados, fill) {
     spanGaps: true
   };
 }
-function pintarLinhaHora(hist) {
-  const labels = Array.from({ length: 24 * SLOTS_HORA }, (_, i) => {
-    if (i % (SLOTS_HORA * 2) !== 0) return "";
-    return String(i / SLOTS_HORA).padStart(2, "0") + "h";
-  });
+function pintarSerie(dias) {
+  const labels = dias.map((d) => rotuloDia(d.data));
+  const passo = labels.length > 16 ? 2 : 1;
   const data = {
     labels,
     datasets: [
-      linha("No horário", CORES.ok, serieHora(hist, "ok"), true),
-      linha("Atrasado", CORES.late, serieHora(hist, "late"), false),
-      linha("Adiantado", CORES.early, serieHora(hist, "early"), false)
+      linha("No horário", CORES.ok, dias.map((d) => toPct(d.no_horario_percent)), true),
+      linha("Atrasado", CORES.late, dias.map((d) => toPct(d.atrasado_percent)), false),
+      linha("Adiantado", CORES.early, dias.map((d) => toPct(d.adiantado_percent)), false)
     ]
   };
   if (horaChart) {
     horaChart.data = data;
+    horaChart.options.scales.x.ticks.callback = (_v, i) => (i % passo === 0 ? labels[i] : "");
     horaChart.update("none");
     return;
   }
@@ -491,9 +414,9 @@ function pintarLinhaHora(hist) {
             display: true,
             color: "rgba(226,234,250,.9)",
             maxRotation: 0, autoSkip: false,
-            font: { size: 20, weight: "800" },
+            font: { size: 16, weight: "800" },
             padding: 8,
-            callback: (_v, i) => (i % 2 === 0 ? labels[i] : "")
+            callback: (_v, i) => (i % passo === 0 ? labels[i] : "")
           }
         },
         y: {
@@ -505,32 +428,47 @@ function pintarLinhaHora(hist) {
       },
       layout: { padding: { top: 6, right: 8, bottom: 8, left: 4 } },
       animation: false,
-      elements: { line: { tension: .25, borderWidth: 3 }, point: { radius: 0, hoverRadius: 5 } }
+      elements: { line: { tension: .25, borderWidth: 3 }, point: { radius: 3, hoverRadius: 5 } }
     }
   });
 }
-function pintar(payload) {
-  const d = parseEmpresas(payload);
-  pintarFirma("Tcgl", d.tcgl);
-  pintarFirma("Ls", d.ls);
-  pintarFirma("Total", d.total);
-  pintarGaragens(d.garagens);
-  const hist = gravarHist(d);
-  pintarLinhaHora(hist);
-  ultimoStamp = d.atualizado || "";
+function pintar(payload, serie) {
+  const dias = diasComDados(payload);
+  const ultimo = dias[dias.length - 1] || null;
+  const titDia = document.getElementById("titDia");
+  const titMes = document.getElementById("titMes");
+  const titAno = document.getElementById("titAno");
+  if (titDia) titDia.textContent = ultimo ? rotuloDia(ultimo.data) : "Dia";
+  if (titMes) titMes.textContent = payload.mes_nome || "Mês";
+  if (titAno) titAno.textContent = String(payload.ano || "Ano");
+  pintarFirma("Tcgl", blocoApi(ultimo));
+  pintarFirma("Ls", blocoApi(payload.resumo_mes));
+  pintarFirma("Total", blocoApi(payload.resumo_ano));
+  pintarDias(serie);
+  pintarSerie(serie);
+  ultimoStamp = payload.atualizado_em_iso || payload.atualizado_em || "";
   pintarStamp();
+}
+async function buscarMes(mes) {
+  const res = await fetch(API + "&mes=" + mes + "&t=" + Date.now(), { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const payload = await res.json();
+  if (!payload || payload.ok === false) throw new Error(payload?.erro || "API inválida");
+  return payload;
 }
 async function carregar() {
   if (carregando) return;
   carregando = true;
   const erro = document.getElementById("erro");
   try {
-    const res = await fetch(API + "&t=" + Date.now(), { cache: "no-store" });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const payload = await res.json();
-    if (!payload || payload.ok === false) throw new Error(payload?.erro || "API inválida");
+    const payload = await buscarMes(mesAtualSP(0));
+    let serie = diasComDados(payload);
+    if (serie.length < 7) {
+      const anterior = await buscarMes(mesAtualSP(-1));
+      serie = diasComDados(anterior).concat(serie).slice(-14);
+    }
     erro.hidden = true;
-    pintar(payload);
+    pintar(payload, serie);
   } catch (err) {
     erro.hidden = false;
     erro.textContent = "Não foi possível atualizar a performance em tempo real: " + (err.message || err);
@@ -538,7 +476,6 @@ async function carregar() {
     carregando = false;
   }
 }
-pintarLinhaHora(lerHist());
 carregar();
 setInterval(carregar, POLL_MS);
 setInterval(pintarStamp, 1000);
