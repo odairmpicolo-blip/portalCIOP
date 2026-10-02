@@ -975,21 +975,18 @@ function agregarIcv(itens, de, ate, origem) {
   return { ipv, serie, origem };
 }
 
-async function carregarLondrisulIpv() {
-  const res = await comTimeout(fetch(LS_IPV_URL, { cache: "no-store" }), 8000, "api londrisul ipv");
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  return res.json();
-}
-
-async function carregarLondrisulIcv() {
-  const meses = [...new Set([
+function mesesDaFaixa() {
+  return [...new Set([
     Number(SEMANA.de.slice(5, 7)),
     Number(SEMANA.ate.slice(5, 7)),
     Number(SEMANA_ANT.de.slice(5, 7)),
     Number(SEMANA_ANT.ate.slice(5, 7))
   ].filter(Boolean))];
-  const payloads = await Promise.all(meses.map(async (mes) => {
-    const res = await comTimeout(fetch(LS_ICV_URL + "&mes=" + mes, { cache: "no-store" }), 8000, "api londrisul icv");
+}
+
+async function carregarLondrisulPorMes(url, motivo) {
+  const payloads = await Promise.all(mesesDaFaixa().map(async (mes) => {
+    const res = await comTimeout(fetch(url + "&mes=" + mes, { cache: "no-store" }), 8000, motivo);
     if (!res.ok) throw new Error("HTTP " + res.status);
     return res.json();
   }));
@@ -1004,6 +1001,14 @@ async function carregarLondrisulIcv() {
     }
   }
   return { dias };
+}
+
+async function carregarLondrisulIpv() {
+  return carregarLondrisulPorMes(LS_IPV_URL, "api londrisul ipv");
+}
+
+async function carregarLondrisulIcv() {
+  return carregarLondrisulPorMes(LS_ICV_URL, "api londrisul icv");
 }
 
 async function carregarClima() {
