@@ -1,13 +1,9 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<script>document.documentElement.classList.add("portal-auth-pending");</script>
-<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}</style>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Apresentação KM | Portal CIOP</title>
-<script src="../assets/js/loading.js?v=20261005km"></script>
-<script type="module" src="../assets/js/auth.js?v=20261005km"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@420;560;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
@@ -15,753 +11,422 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
   :root{
-    --bg:#030814;
-    --ink:#f3f7ff;
-    --muted:#93a8c4;
-    --line:rgba(120,190,255,.18);
-    --cyan:#3de1ff;
-    --orange:#ff6a2c;
-    --red:#ff4d5e;
-    --green:#2ee6a6;
-    --glass:rgba(10,20,42,.62);
+    --bg:#030814; --ink:#f3f7ff; --muted:#93a8c4; --line:rgba(120,190,255,.18);
+    --cyan:#3de1ff; --orange:#ff6a2c; --green:#2ee6a6;
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Outfit,system-ui,sans-serif}
   body{overflow:hidden}
   .stage{position:relative;height:100%;display:flex;flex-direction:column}
   .sky{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
-  .sky .grid{
-    position:absolute;inset:-20%;
-    background-image:linear-gradient(rgba(61,225,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(61,225,255,.07) 1px,transparent 1px);
-    background-size:56px 56px;
-    mask-image:radial-gradient(ellipse at 50% 30%,#000 20%,transparent 72%);
-    opacity:.55;
-  }
+  .sky .grid{position:absolute;inset:-20%;background-image:linear-gradient(rgba(61,225,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(61,225,255,.07) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse at 50% 30%,#000 20%,transparent 72%);opacity:.55}
   .orb{position:absolute;border-radius:50%;filter:blur(18px);opacity:.7}
   .orb-a{width:420px;height:420px;left:-80px;top:-90px;background:radial-gradient(circle,#1d6dff 0%,transparent 68%)}
   .orb-b{width:380px;height:380px;right:-60px;bottom:-80px;background:radial-gradient(circle,#ff4d2a 0%,transparent 70%)}
-  .orb-c{width:260px;height:260px;right:18%;top:12%;background:radial-gradient(circle,#3de1ff 0%,transparent 70%);opacity:.45}
-  .scan{position:absolute;left:0;right:0;height:18%;top:-18%;background:linear-gradient(180deg,transparent,rgba(61,225,255,.08),transparent);opacity:.7}
-
-  header{
-    position:relative;z-index:2;height:76px;display:flex;align-items:center;justify-content:space-between;gap:16px;
-    padding:0 28px;border-bottom:1px solid var(--line);
-    background:linear-gradient(180deg,rgba(6,12,28,.78),rgba(6,12,28,.35));
-    backdrop-filter:blur(16px);
-  }
-  .brand{display:flex;align-items:center;gap:12px;min-width:220px}
-  .brand img{width:46px;height:46px;object-fit:contain;background:#fff;border-radius:12px;padding:4px}
-  .portal-back{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;margin-right:8px}
-  .portal-back:hover{color:#fff}
-  .brand strong{display:block;font-family:Sora,Outfit,sans-serif;letter-spacing:.12em;font-size:13px}
-  .brand small{color:var(--muted);letter-spacing:.16em;font-size:10px}
-  nav{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
-  nav button{
-    font:700 12px/1 Outfit,sans-serif;letter-spacing:.06em;text-transform:uppercase;
-    color:var(--muted);background:transparent;border:1px solid transparent;border-radius:999px;
-    padding:8px 12px;cursor:pointer;
-  }
+  header{position:relative;z-index:2;min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(6,12,28,.82),rgba(6,12,28,.4));backdrop-filter:blur(16px)}
+  .brand{display:flex;align-items:center;gap:10px;min-width:180px}
+  .brand img{width:42px;height:42px;object-fit:contain;background:#fff;border-radius:12px;padding:4px}
+  .brand strong{display:block;font-family:Sora,sans-serif;letter-spacing:.12em;font-size:13px}
+  .brand small{color:var(--muted);letter-spacing:.14em;font-size:10px}
+  .cenarios{display:flex;gap:4px;padding:4px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04)}
+  .cenarios button{border:0;background:transparent;color:var(--muted);font:800 15px/1 Outfit,sans-serif;letter-spacing:.04em;padding:12px 16px;border-radius:999px;cursor:pointer}
+  .cenarios button.on{color:#1a0a04;background:var(--orange)}
+  .cenarios button[data-cenario="2"].on{color:#041018;background:var(--cyan)}
+  nav{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+  nav button{font:700 12px/1 Outfit,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid transparent;border-radius:999px;padding:8px 10px;cursor:pointer}
   nav button.on,nav button:hover{color:#fff;border-color:var(--line);background:rgba(61,225,255,.1)}
-  .count{font-variant-numeric:tabular-nums;color:var(--cyan);font-weight:800;letter-spacing:.14em;font-size:12px}
-
+  .count{font-variant-numeric:tabular-nums;color:var(--cyan);font-weight:800;letter-spacing:.12em;font-size:13px}
+  .portal-back{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-decoration:none}
+  .portal-back:hover{color:#fff}
   main{position:relative;z-index:1;flex:1;min-height:0}
-  .slide{height:100%;padding:28px 40px 18px;display:flex;flex-direction:column;gap:18px}
-  .kicker{color:var(--cyan);font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}
-  h1{font-family:Sora,Outfit,sans-serif;font-weight:800;letter-spacing:-.045em;line-height:.96;margin:8px 0 0;font-size:clamp(36px,4.6vw,68px)}
+  .slide{height:100%;padding:22px 36px 16px;display:flex;flex-direction:column;gap:14px}
+  .kicker{color:var(--cyan);font-size:13px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
+  h1{font-family:Sora,sans-serif;font-weight:800;letter-spacing:-.045em;line-height:.96;margin:6px 0 0;font-size:clamp(40px,4.4vw,64px)}
   h1 em{font-style:normal;color:var(--cyan)}
-  .lead{max-width:720px;color:var(--muted);font-size:17px;line-height:1.45;margin:8px 0 0}
-
-  .hero{display:grid;grid-template-columns:1.15fr .85fr;gap:28px;align-items:center;height:100%}
-  .hero-stats{display:grid;gap:12px}
-  .glass{
-    position:relative;overflow:hidden;border:1px solid var(--line);border-radius:22px;
-    background:linear-gradient(160deg,rgba(18,34,68,.78),rgba(6,12,28,.72));
-    box-shadow:0 24px 60px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08);
-    padding:18px 20px;
-  }
+  .lead{max-width:920px;color:var(--muted);font-size:20px;line-height:1.35;margin:8px 0 0}
+  .glass{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:22px;background:linear-gradient(160deg,rgba(18,34,68,.78),rgba(6,12,28,.72));box-shadow:0 18px 40px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.08);padding:16px 18px}
   .glass:before{content:"";position:absolute;inset:0 auto auto 0;width:120px;height:2px;background:linear-gradient(90deg,var(--cyan),transparent)}
-  .stat-k{color:var(--muted);font-size:13px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
-  .stat-v{font-family:Sora,Outfit,sans-serif;font-size:clamp(52px,5.4vw,84px);letter-spacing:-.04em;line-height:.95;margin-top:8px}
-  .hero .stat-v{font-size:clamp(72px,7.2vw,120px)}
-  .kpi .stat-v{font-size:clamp(40px,3.4vw,64px)}
-  .stat-v.sub{font-size:clamp(36px,3vw,52px);margin-top:16px}
-  .stat-v.cyan{color:var(--cyan)} .stat-v.orange{color:var(--orange)} .stat-v.red{color:#ff8b96}
-  .stat-s{color:#c5d4e8;margin-top:8px;font-size:16px}
-
-  .split{display:grid;grid-template-columns:280px 1fr;gap:22px;min-height:0;flex:1}
-  .pair{display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;min-height:0}
-  .chart-box{min-height:0;height:100%;padding:16px 16px 8px;display:flex;flex-direction:column}
-  .chart-box canvas{width:100%!important;flex:1;min-height:0}
-  .side-notes{display:flex;flex-direction:column;gap:10px;justify-content:center}
-  .note{padding:14px 16px}
-  .note b{display:block;font-family:Sora,sans-serif;font-size:42px;letter-spacing:-.03em}
-  .note span{color:var(--muted);font-size:16px}
-
-  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-  .kpi{min-height:118px}
-  .compare{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:stretch;flex:1}
-  .compare .glass{display:flex;flex-direction:column;justify-content:center}
-  .arrow{align-self:center;width:64px;height:64px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);color:var(--orange);font-size:22px;background:rgba(255,106,44,.12)}
-  .pct-pill{display:inline-flex;margin-top:12px;padding:8px 14px;border-radius:999px;background:rgba(255,77,94,.16);color:#ffd0d5;font-weight:800;letter-spacing:.04em;font-size:20px}
-
-  .fleet{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;flex:1}
-  .fleet .glass{display:flex;flex-direction:column;justify-content:flex-start;gap:8px;min-height:240px}
-  .dots{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px;max-width:420px}
-  .dots i{width:18px;height:18px;border-radius:5px;background:linear-gradient(180deg,var(--cyan),#1a6cff);box-shadow:0 0 12px rgba(61,225,255,.45)}
-  .dots.sat i{background:linear-gradient(180deg,#ffb088,var(--orange));box-shadow:0 0 10px rgba(255,106,44,.4)}
-  .dots.sun i{background:linear-gradient(180deg,#ffb0b8,var(--red));box-shadow:0 0 10px rgba(255,77,94,.4)}
+  .pick{border-color:rgba(61,225,255,.7);box-shadow:0 0 0 1px rgba(61,225,255,.35),0 18px 40px rgba(0,0,0,.28)}
+  .pick.a{border-color:rgba(255,106,44,.75);box-shadow:0 0 0 1px rgba(255,106,44,.35),0 18px 40px rgba(0,0,0,.28)}
+  .stat-k{color:var(--muted);font-size:15px;letter-spacing:.12em;text-transform:uppercase;font-weight:800}
+  .stat-v{font-family:Sora,sans-serif;font-size:clamp(48px,4.6vw,76px);letter-spacing:-.04em;line-height:.92;margin-top:6px}
+  .stat-v.orange{color:var(--orange)} .stat-v.cyan{color:var(--cyan)} .stat-v.green{color:var(--green)}
+  .stat-s{color:#d5e6f8;margin-top:8px;font-size:18px;line-height:1.3}
+  .quad{display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;min-height:0}
+  .quad .glass{display:flex;flex-direction:column;justify-content:center;padding:22px 28px}
+  .quad .stat-v{font-size:clamp(64px,6.2vw,108px)}
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;flex:1}
+  .kpi-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;flex:1}
+  .kpi-row .glass,.kpi-3 .glass{display:flex;flex-direction:column;justify-content:center}
+  .kpi-3 .stat-v{font-size:clamp(72px,7.4vw,120px)}
+  .kpi-row .stat-v{font-size:clamp(42px,3.6vw,64px)}
+  .tres{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;flex:1}
+  .tres .glass,.pair-big .glass{display:flex;flex-direction:column;justify-content:center}
+  .pair-big{display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1}
+  .pair-big .stat-v{font-size:clamp(56px,5.4vw,92px)}
   .fronts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-  .fronts p{margin:8px 0 0;color:var(--muted);font-size:14px;line-height:1.4}
-
-  .rank-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
-  .rank-kpis{display:flex;gap:10px}
-  .rank-kpis .glass{padding:10px 14px;min-width:140px}
-  .rank-kpis b{font-family:Sora,sans-serif;font-size:40px}
-  .cols{display:grid;grid-template-columns:1fr 1fr;gap:8px 28px;flex:1;align-content:start;overflow:auto}
-  .rank-row{display:grid;grid-template-columns:78px minmax(0,1fr) 84px 108px;gap:8px;align-items:center;padding:4px 0}
-  .rank-row .code{font-family:Sora,sans-serif;font-size:18px}
-  .track{height:10px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden}
-  .bar-fill{display:block;height:100%;width:var(--w);border-radius:99px;background:linear-gradient(90deg,#1a6cff,var(--cyan));box-shadow:0 0 12px rgba(61,225,255,.45);transform-origin:left center}
-  .rank-row.zero .bar-fill{background:linear-gradient(90deg,#ff6a2c,#ff4d5e)}
-  .rank-row .num{text-align:right;font-weight:800;font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap}
-  .rank-row .km{text-align:right;color:var(--muted);font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
-  .where{flex:1;min-height:0;display:grid;grid-template-columns:1.25fr 1fr .78fr;gap:12px}
-  .where-stack{display:flex;flex-direction:column;gap:12px;min-height:0}
-  .zone{display:flex;flex-direction:column;min-height:0;padding:14px 16px}
-  .zone.peak{border-color:rgba(61,225,255,.55);box-shadow:0 0 0 1px rgba(61,225,255,.25),0 24px 60px rgba(0,0,0,.35)}
-  .zone-head{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin-bottom:8px}
-  .zone-head span{font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--cyan)}
-  .zone-head b{font-family:Sora,sans-serif;font-size:40px;letter-spacing:-.04em;line-height:.9}
-  .zone-head small{display:block;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
-  .zrow{display:grid;grid-template-columns:78px 1fr auto;gap:8px;align-items:center;padding:5px 0;border-top:1px solid rgba(255,255,255,.06)}
-  .zrow .code{font-family:Sora,sans-serif;font-size:18px}
-  .zrow .wait{color:#d5e6f8;font-size:15px;font-variant-numeric:tabular-nums}
-  .zrow .cut{color:#ff8b96;font-weight:800;font-size:16px;font-variant-numeric:tabular-nums}
-  .callout{display:flex;justify-content:space-between;align-items:center;gap:12px;border-color:rgba(46,230,166,.4);background:linear-gradient(90deg,rgba(46,230,166,.14),rgba(8,18,36,.7))}
-  .callout b{color:var(--green);font-family:Sora,sans-serif;font-size:40px}
-  .reserve-slide{gap:12px}
-  .reserve-slide h1{font-size:clamp(32px,3.6vw,52px)}
-  .reserve-slide .note b{font-size:32px}
-  .reserve{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-  .reserve .glass{padding:8px 12px}
-  .reserve .code{font-family:Sora,sans-serif;font-size:20px;letter-spacing:-.03em}
-  .reserve .km{font-family:Sora,sans-serif;font-size:16px;color:var(--green);margin-top:0}
-  .reserve .meta{color:var(--muted);font-size:12px;margin-top:0}
-  .choice-slide{gap:12px}
-  .choice-slide h1{font-size:clamp(36px,4vw,56px)}
-  .choice{display:grid;grid-template-columns:1fr 1fr;gap:16px;flex:1;min-height:0}
-  .choice .glass{display:flex;flex-direction:column;justify-content:center;padding:22px 28px}
-  .choice .stat-v{font-size:clamp(64px,6.2vw,104px)}
-  .facts{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;margin-top:14px}
-  .facts div{border-top:1px solid rgba(255,255,255,.08);padding-top:8px}
-  .facts b{display:block;font-family:Sora,sans-serif;font-size:clamp(22px,2vw,32px);letter-spacing:-.03em}
-  .facts span{color:var(--muted);font-size:15px}
-  .option-a{border-color:rgba(255,106,44,.55)}
-  .option-b{border-color:rgba(61,225,255,.55)}
-  .option-a:before{background:linear-gradient(90deg,var(--orange),transparent);width:200px}
-  .option-b:before{background:linear-gradient(90deg,var(--cyan),transparent);width:200px}
-  .reserve-tag{margin-top:14px;padding:12px 16px;border-radius:14px;background:rgba(46,230,166,.14);color:#d8ffe4;font-weight:800;font-size:18px}
-  .rank-row.hold .bar-fill{background:linear-gradient(90deg,#147a58,var(--green));box-shadow:0 0 12px rgba(46,230,166,.35)}
-  .rank-row.hold .num{color:var(--green);font-size:15px}
-
+  .fronts p{margin:8px 0 0;color:#d5e6f8;font-size:20px;line-height:1.35}
+  .chart-slim{height:200px;flex:none;padding:12px 14px 8px;display:flex;flex-direction:column}
+  .chart-slim canvas{width:100%!important;flex:1;min-height:0}
+  .chart-slim .stat-k{margin-bottom:4px}
+  .esp-list,.km-list{display:grid;grid-template-columns:1fr 1fr;gap:2px 32px;align-content:start;flex:1;min-height:0}
+  .esp-row,.km-row{display:grid;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+  .esp-row{grid-template-columns:92px 1fr auto}
+  .esp-row .code,.km-row .code{font-family:Sora,sans-serif;font-size:28px}
+  .esp-row .mins{font-size:22px;color:#d5e6f8;font-variant-numeric:tabular-nums}
+  .esp-row .plus{font-family:Sora,sans-serif;font-size:34px;color:var(--orange);font-variant-numeric:tabular-nums}
+  .km-row{grid-template-columns:168px 100px minmax(0,1fr)}
+  .km-row b{font-family:Sora,sans-serif;font-size:40px;letter-spacing:-.03em;color:var(--orange);font-variant-numeric:tabular-nums}
+  .bar{display:block;height:8px;width:var(--w);border-radius:99px;background:linear-gradient(90deg,#1a6cff,var(--cyan));transform-origin:left center}
+  .stop{color:var(--green);font-size:22px;font-weight:800}
+  .onde{display:grid;gap:12px;flex:1;min-height:0}
+  .onde.u{grid-template-columns:1.3fr 1fr .72fr}
+  .onde.s{grid-template-columns:1fr 1fr 1fr}
+  .onde.d{grid-template-columns:1fr 1fr}
+  .zone h2{margin:0 0 6px;font-family:Sora,sans-serif;font-size:28px;letter-spacing:-.03em}
+  .zone li{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid rgba(255,255,255,.07);font-size:22px;list-style:none}
+  .zone ul{margin:0;padding:0}
+  .zone .ln{font-family:Sora,sans-serif;font-size:24px}
+  .zone .meta{color:#d5e6f8;font-variant-numeric:tabular-nums;font-size:18px}
+  .callout{display:flex;justify-content:space-between;align-items:center;gap:12px;border-color:rgba(46,230,166,.45);background:linear-gradient(90deg,rgba(46,230,166,.14),rgba(8,18,36,.72))}
+  .callout b{color:var(--green);font-family:Sora,sans-serif;font-size:36px}
+  .banner{border-color:rgba(46,230,166,.4);color:#d8ffe4;font-size:20px;font-weight:700}
   .progress{position:relative;z-index:2;height:3px;background:rgba(255,255,255,.06)}
-  .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--orange));box-shadow:0 0 12px var(--cyan)}
-  .hint{position:fixed;left:28px;bottom:14px;z-index:3;color:var(--muted);font-size:12px}
+  .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--orange))}
+  .hint{position:fixed;left:22px;bottom:12px;z-index:3;color:var(--muted);font-size:12px}
   .hint kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:#d5e6f8}
-  .nav-float{position:fixed;right:24px;bottom:16px;z-index:3;display:flex;gap:8px}
+  .nav-float{position:fixed;right:18px;bottom:12px;z-index:3;display:flex;gap:8px}
   .nav-float button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(6,12,28,.72);color:#fff;font-size:18px;cursor:pointer}
-  .nav-float button:hover{background:rgba(61,225,255,.18)}
-
-  @media(max-width:980px){
+  @media(max-width:1100px){
     body{overflow:auto}
-    header{height:auto;padding:12px 16px;flex-wrap:wrap}
-    .slide{height:auto;min-height:calc(100vh - 90px);padding:20px 16px 80px}
-    .hero,.split,.pair,.compare,.fleet,.fronts,.cols,.kpi-row,.where,.reserve,.choice,.facts{grid-template-columns:1fr}
-    .chart-box{height:320px}
-    .arrow{transform:rotate(90deg)}
+    header{flex-wrap:wrap;height:auto}
     nav{display:none}
+    .slide{height:auto;min-height:calc(100vh - 120px);padding:18px 16px 80px}
+    .quad,.kpi-row,.kpi-3,.tres,.pair-big,.fronts,.esp-list,.km-list,.onde.u,.onde.s,.onde.d{grid-template-columns:1fr}
+    .chart-slim{height:220px}
   }
-  @media(prefers-reduced-motion:reduce){
-    .scan,.orb{display:none}
-  }
+  @media(prefers-reduced-motion:reduce){ .orb{display:none} }
 </style>
 </head>
-<body data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
-<div class="sky" aria-hidden="true">
-  <div class="grid"></div>
-  <div class="orb orb-a"></div>
-  <div class="orb orb-b"></div>
-  <div class="orb orb-c"></div>
-  <div class="scan"></div>
-</div>
+<body>
+<div class="sky" aria-hidden="true"><div class="grid"></div><div class="orb orb-a"></div><div class="orb orb-b"></div></div>
 <div class="stage">
   <header>
     <div class="brand">
       <img src="../assets/img/LOGO_TCGL.png" alt="TCGL">
-      <div><strong>TCGL</strong><small>REDUÇÃO DE OFERTA 2026</small></div>
+      <div><strong>TCGL</strong><small>REDUÇÃO 2026</small></div>
+    </div>
+    <div class="cenarios" id="cenarios">
+      <button type="button" data-cenario="1" class="on">1 · Total</button>
+      <button type="button" data-cenario="2">2 · Parcial</button>
     </div>
     <nav id="nav"></nav>
-    <div style="display:flex;align-items:center;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px">
       <a class="portal-back" href="../index.html">Portal</a>
-      <div class="count" id="pager">01 / 10</div>
+      <div class="count" id="pager">01</div>
     </div>
   </header>
   <main id="app"></main>
   <div class="progress" aria-hidden="true"><i id="bar"></i></div>
 </div>
-<div class="hint"><kbd>←</kbd> <kbd>→</kbd> navegar &nbsp;·&nbsp; <kbd>F</kbd> tela cheia</div>
+<div class="hint"><kbd>←</kbd> <kbd>→</kbd> navegar · os cenários ficam no topo</div>
 <div class="nav-float">
   <button id="prev" aria-label="Anterior">←</button>
   <button id="next" aria-label="Próximo">→</button>
 </div>
 <script>
-const lines = {
-  "Útil": [
-    ["101",78,71,7,58.32],["106",162,148,14,116.16],["107",77,33,44,314.31],["110/111",173,151,22,207.15],
-    ["112",108,94,14,116.98],["113",162,135,27,277.85],["303",73,64,9,112.25],["306",70,50,20,126.61],
-    ["311",158,146,12,107.70],["351",68,58,10,33.50],["404",99,79,20,132.44],["405",115,104,11,107.31],
-    ["420",126,97,29,284.49],["501",160,145,15,108.29],["800",45,32,13,197.28],["802",44,32,12,141.35],
-    ["803",137,122,15,190.11],["806",35,22,13,194.73],["900",55,25,30,427.55],["913",41,25,16,229.65]
+const reserva = new Set(["110/111","803","404","306","106","303","501","311","405","101","351"]);
+const progMes = 1419544;
+const redMes = { 1:112971, 2:85567 };
+const reservaMes = 27404;
+const ano = { 1:1355647, 2:1026804 };
+const viagensMes = { antes:158838, 1:147220, corte1:11618, corte2:8350 };
+const diasBase = {
+  util:{ nome:"Dias úteis", viagensA:5988, viagensD:5635, corteV:353, kmA:54700, km:3487, espA:19, espD:32, extra:13, frota:26 },
+  sab:{ nome:"Sábados", viagensA:3940, viagensD:3477, corteV:463, kmA:33060, km:5003, espA:32, espD:59, extra:27, frota:19 },
+  dom:{ nome:"Domingos", viagensA:2993, viagensD:2563, corteV:430, kmA:23489, km:3363, espA:37, espD:80, extra:43, frota:15 }
+};
+const linhas = {
+  util:[
+    ["101","Noite",78,71,58.32,30,60],["106","Entrepico",162,148,116.16,12,15],["107","Entrepico e noite",77,33,314.31,null,null],
+    ["110/111","Entrepico",173,151,207.15,23,35],["112","Entrepico",108,94,116.98,22,32],["113","Entrepico",162,135,277.85,12,15],
+    ["303","Entrepico",73,64,112.25,30,45],["306","Entrepico",70,50,126.61,22,44],["311","Entrepico",158,146,107.7,14,18],
+    ["351","Entrepico e tarde",68,58,33.5,null,null],["404","Entrepico",99,79,132.44,22,43],["405","Entrepico",115,104,107.31,12,25],
+    ["420","Entrepico e noite",126,97,284.49,17,35],["501","Entrepico e noite",160,145,108.29,15,20],["800","Entrepico",45,32,197.28,null,null],
+    ["802","Entrepico",44,32,141.35,null,null],["803","Entrepico e noite",137,122,190.11,18,22],["806","Entrepico e noite",35,22,194.73,null,null],
+    ["900","Entrepico e noite",55,25,427.55,null,null],["913","Entrepico",41,25,229.65,null,null]
   ],
-  "Sábado": [
-    ["102",85,67,18,80.65],["104",85,67,18,94.86],["107",58,0,58,433.78],["112",73,60,13,109.19],
-    ["113",74,60,14,146.78],["301",53,47,6,30.39],["302",60,51,9,45.07],["303",69,60,9,112.25],
-    ["310",30,0,30,221.24],["400",70,58,12,25.38],["402",72,62,10,33.76],["420",65,48,17,165.44],
-    ["426",72,62,10,31.63],["800",4,0,4,63.13],["803",102,47,55,708.74],["804",32,0,32,429.33],
-    ["806",45,0,45,710.95],["900",62,0,62,928.52],["913",41,0,41,632.06]
+  sab:[
+    ["102","Após as 14h",85,67,80.65,20,40],["104","Após as 14h",85,67,94.86,20,40],["107","Dia todo",58,0,433.78,null,null],
+    ["112","Após as 14h",73,60,109.19,31,40],["113","Após as 14h",74,60,146.78,30,40],["301","Após as 18h",53,47,30.39,50,90],
+    ["302","Após as 18h",60,51,45.07,45,90],["303","Após as 18h",69,60,112.25,40,80],["310","Dia todo",30,0,221.24,null,null],
+    ["400","Após as 18h",70,58,25.38,32,64],["402","Após as 18h",72,62,33.76,32,64],["420","Após as 14h",65,48,165.44,35,70],
+    ["426","Após as 18h",72,62,31.63,32,64],["800","Dia todo",4,0,63.13,null,null],["803","Dia todo",102,47,708.74,17,29],
+    ["804","Dia todo",32,0,429.33,null,null],["806","Dia todo",45,0,710.95,null,null],["900","Dia todo",62,0,928.52,null,null],
+    ["913","Dia todo",41,0,632.06,null,null]
   ],
-  "Domingo": [
-    ["102",56,28,28,131.88],["104",56,28,28,148.69],["107",46,0,46,339.69],["301",46,28,18,91.16],
-    ["302",56,27,29,156.62],["303",58,29,29,364.81],["400",66,32,34,53.44],["402",47,23,24,47.26],
-    ["413",68,36,32,119.27],["417",13,71,-58,-372.66],["420",75,35,40,394.85],["423",70,40,30,138.99],
-    ["425",50,0,50,568.74],["426",45,29,16,56.61],["803",38,0,38,586.07],["900",46,0,46,688.14]
+  dom:[
+    ["102","Dia todo",56,28,131.88,40,80],["104","Dia todo",56,28,148.69,40,80],["107","Dia todo",46,0,339.69,null,null],
+    ["301","Dia todo",46,28,91.16,50,90],["302","Dia todo",56,27,156.62,40,90],["303","Dia todo",58,29,364.81,40,80],
+    ["400","Dia todo",66,32,53.44,34,85],["402","Dia todo",47,23,47.26,34,85],["413","Dia todo",68,36,119.27,34,68],
+    ["417","Dia todo",13,71,-372.66,null,null],["420","Dia todo",75,35,394.85,30,65],["423","Dia todo",70,40,138.99,34,68],
+    ["425","Dia todo",50,0,568.74,null,null],["426","Dia todo",45,29,56.61,34,85],["803","Dia todo",38,0,586.07,null,null],
+    ["900","Dia todo",46,0,688.14,null,null]
   ]
 };
-const trips = [
-  { dia:"Dias úteis", antes:5988, depois:5635, queda:5.9 },
-  { dia:"Sábados", antes:3940, depois:3477, queda:11.8 },
-  { dia:"Domingos", antes:2993, depois:2563, queda:14.4 }
-];
-const kms = [
-  { dia:"Dias úteis", antes:54700, depois:51213, queda:6.4, diaKm:3487 },
-  { dia:"Sábados", antes:33060, depois:28057, queda:15.1, diaKm:5003 },
-  { dia:"Domingos", antes:23489, depois:20126, queda:14.3, diaKm:3363 }
-];
-const espera = [
-  { dia:"Dias úteis", antes:19, depois:32, extra:13 },
-  { dia:"Sábados", antes:32, depois:59, extra:27 },
-  { dia:"Domingos", antes:37, depois:80, extra:43 }
-];
-const ondeUtil = [
-  { nome:"Entrepico", viagens:190, linhas:[
-    ["113",12,15,27],["110/111",23,35,22],["306",22,44,20],["404",22,43,20],
-    ["913",null,null,16],["106",12,15,14],["112",22,32,14],["800",null,null,13],
-    ["311",14,18,12],["802",null,null,12],["405",12,25,11],["303",30,45,9]
-  ]},
-  { nome:"Entrepico e noite", viagens:146, linhas:[
-    ["107",null,null,44],["900",null,null,30],["420",17,35,29],
-    ["501",15,20,15],["803",18,22,15],["806",null,null,13]
-  ]},
-  { nome:"Entrepico e tarde", viagens:10, linhas:[["351",null,null,10]] },
-  { nome:"Noite", viagens:7, linhas:[["101",30,60,7]] }
-];
-const reservaLinhas = [
-  ["110/111", 22, 207.15],
-  ["803", 15, 190.11],
-  ["404", 20, 132.44],
-  ["306", 20, 126.61],
-  ["106", 14, 116.16],
-  ["303", 9, 112.25],
-  ["501", 15, 108.29],
-  ["311", 12, 107.70],
-  ["405", 11, 107.31],
-  ["101", 7, 58.32],
-  ["351", 10, 33.50]
-].map(([linha, viagens, kmDia]) => ({
-  linha, viagens, kmDia, kmMes: Math.round(kmDia * 253 / 12)
-}));
-const reservaMes = reservaLinhas.reduce((s, r) => s + r.kmMes, 0);
-const reservaViagens = reservaLinhas.reduce((s, r) => s + r.viagens, 0);
-const reservaKmDia = reservaLinhas.reduce((s, r) => s + r.kmDia, 0);
-const reducaoTotalMes = 112971;
-const reducaoSemReserva = reducaoTotalMes - reservaMes;
-const kmAnoOp1 = 1355647;
-const kmAnoOp2 = reducaoSemReserva * 12;
-const viagensMesOp1 = 11618;
-const viagensMesOp2 = viagensMesOp1 - Math.round(reservaViagens * 253 / 12);
-const kmDiaUtilOp2 = Math.round(3487 - reservaKmDia);
-const viagensDiaUtilOp2 = 353 - reservaViagens;
-const sabMes = Math.round(5003 * 59 / 12);
-const domMes = Math.round(3363 * 53 / 12);
-const kmMesTipo = {
-  labels:["Dias úteis","Sábados","Domingos"],
-  op1:[reducaoTotalMes - sabMes - domMes, sabMes, domMes],
-  op2:[reducaoSemReserva - sabMes - domMes, sabMes, domMes]
-};
-const viagensSabMes = Math.round(463 * 59 / 12);
-const viagensUtilMes = Math.round(353 * 253 / 12);
-const viagensDomMes = viagensMesOp1 - viagensUtilMes - viagensSabMes;
-const viagensMesTipo = {
-  labels:["Dias úteis","Sábados","Domingos"],
-  op1:[viagensUtilMes, viagensSabMes, viagensDomMes],
-  op2:[viagensUtilMes - Math.round(reservaViagens * 253 / 12), viagensSabMes, viagensDomMes]
-};
-const navItems = [
-  ["Capa",0],["Opções",1],["Viagens",3],["Espera",4],["Km",6],["Reserva",8],["Frota",9],["Linhas",10],["Fecho",13]
-];
+function row(r){ return { linha:r[0], periodo:r[1], antes:r[2], depois:r[3], km:r[4], espA:r[5], espD:r[6], corta:r[2]-r[3] }; }
+const pacote = { util:linhas.util.map(row), sab:linhas.sab.map(row), dom:linhas.dom.map(row) };
+
+let cenario = 1;
+let page = 0;
+let slideTween = null;
+let charts = [];
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const app = document.querySelector("#app");
 const pager = document.querySelector("#pager");
 const bar = document.querySelector("#bar");
-let page = 0;
-let slideTween = null;
-let charts = [];
-
 Chart.defaults.color = "#9fb0c8";
 Chart.defaults.font.family = "Outfit, sans-serif";
-Chart.defaults.font.size = 20;
-Chart.defaults.animation.duration = reduce ? 0 : 900;
+Chart.defaults.font.size = 14;
+Chart.defaults.animation.duration = reduce ? 0 : 700;
 
-function fmt(n, dec){
-  return Number(n).toLocaleString("pt-BR", { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 });
+function fmt(n, dec){ return Number(n).toLocaleString("pt-BR", { minimumFractionDigits:dec||0, maximumFractionDigits:dec||0 }); }
+function entra(dia, linha){ return !(cenario === 2 && dia === "util" && reserva.has(linha)); }
+function nomeCenario(){ return cenario === 1 ? "Cenário total" : "Cenário parcial"; }
+function redAtual(){ return redMes[cenario]; }
+function ficaAtual(){ return progMes - redAtual(); }
+function corteViagens(){ return cenario === 1 ? viagensMes.corte1 : viagensMes.corte2; }
+function viagensDepois(){ return viagensMes.antes - corteViagens(); }
+function diaVista(id){
+  const d = diasBase[id];
+  if (id === "util" && cenario === 2) return Object.assign({}, d, { corteV:198, km:2187, viagensD:5790 });
+  return d;
 }
-function km(n){ return fmt(n, 2).replace(",00","") + " km"; }
-
-function chartBase(){
-  return {
-    responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{ labels:{ boxWidth:10, boxHeight:10, usePointStyle:true, pointStyle:"circle" } } },
-    scales:{
-      x:{ grid:{ color:"rgba(255,255,255,.06)" }, border:{ display:false } },
-      y:{ grid:{ color:"rgba(255,255,255,.06)" }, border:{ display:false }, ticks:{ callback:v => fmt(v) } }
-    }
-  };
+function cortes(dia){ return pacote[dia].filter(r => r.corta > 0 && entra(dia, r.linha)); }
+function mediaUtil(){
+  const rows = pacote.util.filter(r => r.espA != null && r.corta > 0 && entra("util", r.linha));
+  if (rows.length === 13) return { antes:19, depois:32, extra:13 };
+  const a = Math.round(rows.reduce((s,r)=>s+r.espA,0) / rows.length);
+  const d = Math.round(rows.reduce((s,r)=>s+r.espD,0) / rows.length);
+  return { antes:a, depois:d, extra:d - a };
 }
-const calendario = { "Dias úteis":253, "Sábados":59, "Domingos":53 };
-const shareTrips = trips.map(r => ({ dia:r.dia, valor:Math.round(calendario[r.dia] * (r.antes - r.depois) / 12) }));
-const shareKm = kms.map(r => ({ dia:r.dia, valor:Math.round(calendario[r.dia] * r.diaKm / 12) }));
 
-function shareChart(id, rows, total){
+function num(k, v, s, cls){
+  return `<article class="glass reveal"><div class="stat-k">${k}</div><div class="stat-v ${cls||""}" data-count="${v}">0</div>${s ? `<div class="stat-s">${s}</div>` : ""}</article>`;
+}
+function bannerReserva(){
+  if (cenario !== 2) return "";
+  return `<article class="glass banner reveal">11 linhas do dia útil ficam como estão e dá para aumentar se precisar: 110/111, 803, 404, 306, 106, 303, 501, 311, 405, 101 e 351. São ${fmt(reservaMes)} km por mês.</article>`;
+}
+function espHtml(dia){
+  const rows = cortes(dia).filter(r => r.espA != null).sort((a,b) => (b.espD-b.espA) - (a.espD-a.espA));
+  return `<div class="esp-list">${rows.map(r => `<div class="esp-row reveal"><span class="code">${r.linha}</span><span class="mins">${r.espA} → ${r.espD} min</span><span class="plus">+${r.espD - r.espA}</span></div>`).join("")}</div>`;
+}
+function paraHtml(dia){
+  const rows = cortes(dia).filter(r => r.espA == null);
+  return `<div class="esp-list">${rows.map(r => `<div class="esp-row reveal"><span class="code">${r.linha}</span><span class="mins">${r.periodo}</span><span class="stop">sem horário</span></div>`).join("")}</div>`;
+}
+function kmHtml(dia){
+  const rows = cortes(dia).slice().sort((a,b) => b.km - a.km);
+  const max = Math.max(...rows.map(r => r.km));
+  return `<div class="km-list">${rows.map(r => `<div class="km-row reveal"><b>${fmt(r.km)} km</b><span class="code">${r.linha}</span><i class="bar" style="--w:${(r.km / max * 100).toFixed(1)}%"></i></div>`).join("")}</div>`;
+}
+function ondeHtml(dia, periodos, cls){
+  const blocos = periodos.map(p => {
+    const rows = cortes(dia).filter(r => r.periodo === p).sort((a,b) => b.corta - a.corta);
+    const itens = rows.map(r => {
+      const espera = r.espA == null ? "sem horário" : `${r.espA} → ${r.espD} min`;
+      return `<li><span class="ln">${r.linha}</span><span class="meta">↓ ${r.corta} · ${espera}</span></li>`;
+    }).join("");
+    return `<article class="glass zone reveal"><h2>${p}</h2><ul>${itens}</ul></article>`;
+  }).join("");
+  return `<div class="onde ${cls}">${blocos}</div>`;
+}
+function slim(id, labels, series){
   const ctx = document.getElementById(id);
   if (!ctx) return;
-  const colors = ["rgba(61,225,255,.92)","rgba(255,106,44,.92)","rgba(255,77,94,.92)"];
-  charts.push(new Chart(ctx, {
-    type:"bar",
-    data:{
-      labels: rows.map(r => r.dia),
-      datasets:[{
-        data: rows.map(r => r.valor),
-        backgroundColor: colors,
-        borderRadius: 12,
-        maxBarThickness: 72
-      }]
-    },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      layout:{ padding:{ top:8 } },
-      plugins:{
-        legend:{ display:false },
-        tooltip:{ callbacks:{ label:c => fmt(c.parsed.y) + " · " + fmt(c.parsed.y / total * 100, 1) + "%" } }
-      },
-      scales:{
-        x:{ grid:{ display:false }, border:{ display:false } },
-        y:{ grace:"32%", grid:{ color:"rgba(255,255,255,.06)" }, border:{ display:false }, ticks:{ callback:v => fmt(v) } }
-      }
-    },
-    plugins:[{
-      id:"shareValue",
-      afterDatasetsDraw(chart){
-        const { ctx } = chart;
-        const meta = chart.getDatasetMeta(0);
-        meta.data.forEach((bar, i) => {
-          const val = chart.data.datasets[0].data[i];
-          const pct = fmt(val / total * 100, 1) + "%";
-          const top = bar.y;
-          ctx.save();
-          ctx.textAlign = "center";
-          ctx.fillStyle = "#f3f7ff";
-          ctx.font = "800 22px Sora, sans-serif";
-          ctx.fillText(fmt(val), bar.x, top - 34);
-          ctx.fillStyle = "#c5d4e8";
-          ctx.font = "700 16px Outfit, sans-serif";
-          ctx.fillText(pct, bar.x, top - 14);
-          ctx.restore();
-        });
-      }
-    }]
-  }));
-}
-function grouped(id, rows, labelA, labelB){
-  const ctx = document.getElementById(id);
-  if (!ctx) return;
-  charts.push(new Chart(ctx, {
-    type:"bar",
-    data:{
-      labels: rows.map(r => r.dia),
-      datasets:[
-        { label:labelA, data:rows.map(r => r.antes), backgroundColor:"rgba(61,225,255,.85)", borderRadius:8, maxBarThickness:42 },
-        { label:labelB, data:rows.map(r => r.depois), backgroundColor:"rgba(255,106,44,.9)", borderRadius:8, maxBarThickness:42 }
-      ]
-    },
-    options:Object.assign(chartBase(), {
-      plugins:{
-        legend: chartBase().plugins.legend,
-        tooltip:{ callbacks:{ label:c => c.dataset.label + ": " + fmt(c.parsed.y) } }
-      }
-    })
-  }));
-}
-
-function choiceChart(id, labels, a, b){
-  const ctx = document.getElementById(id);
-  if (!ctx) return;
-  const series = [a, b];
   charts.push(new Chart(ctx, {
     type:"bar",
     data:{
       labels,
-      datasets:[
-        { label:"Opção 1", data:a, backgroundColor:"rgba(255,106,44,.92)", borderRadius:10, maxBarThickness:54 },
-        { label:"Opção 2", data:b, backgroundColor:"rgba(61,225,255,.92)", borderRadius:10, maxBarThickness:54 }
-      ]
+      datasets: series.map(s => ({
+        label:s.label, data:s.data, backgroundColor:s.color, borderRadius:8, maxBarThickness:36
+      }))
     },
     options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      layout:{ padding:{ top:32 } },
-      plugins:{
-        legend:{ labels:{ boxWidth:12, boxHeight:12, usePointStyle:true, pointStyle:"circle", font:{ size:18, weight:"700" }, padding:18 } },
-        tooltip:{ callbacks:{ label:c => c.dataset.label + ": " + fmt(c.parsed.y) } }
-      },
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:series.length > 1, labels:{ boxWidth:10, boxHeight:10, usePointStyle:true, font:{ size:14, weight:"700" } } } },
       scales:{
-        x:{ grid:{ display:false }, border:{ display:false }, ticks:{ font:{ size:18, weight:"700" } } },
-        y:{ grace:"38%", grid:{ color:"rgba(255,255,255,.06)" }, border:{ display:false }, ticks:{ callback:v => fmt(v) } }
+        x:{ grid:{ display:false }, border:{ display:false }, ticks:{ font:{ size:15, weight:"700" } } },
+        y:{ display:false }
       }
-    },
-    plugins:[{
-      id:"choiceValue" + id,
-      afterDatasetsDraw(chart){
-        const { ctx } = chart;
-        const m0 = chart.getDatasetMeta(0);
-        const m1 = chart.getDatasetMeta(1);
-        ctx.save();
-        ctx.textAlign = "center";
-        ctx.fillStyle = "#f3f7ff";
-        ctx.font = "800 22px Sora, sans-serif";
-        m0.data.forEach((bar, i) => {
-          const v0 = series[0][i];
-          const v1 = series[1][i];
-          const other = m1.data[i];
-          if (v0 === v1) ctx.fillText(fmt(v0), (bar.x + other.x) / 2, Math.min(bar.y, other.y) - 16);
-          else {
-            ctx.fillText(fmt(v0), bar.x, bar.y - 12);
-            ctx.fillText(fmt(v1), other.x, other.y - 12);
-          }
-        });
-        ctx.restore();
-      }
-    }]
+    }
   }));
 }
 
-function limitChart(){
-  const ctx = document.getElementById("chartLimite");
-  if (!ctx) return;
-  const valores = [reducaoTotalMes, reducaoSemReserva, reservaMes];
-  charts.push(new Chart(ctx, {
-    type:"bar",
-    data:{
-      labels:["Opção 1","Opção 2","Reserva"],
-      datasets:[{
-        data: valores,
-        backgroundColor:["rgba(255,106,44,.92)","rgba(61,225,255,.92)","rgba(46,230,166,.92)"],
-        borderRadius:12,
-        maxBarThickness:88
-      }]
-    },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      layout:{ padding:{ top:28 } },
-      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c => fmt(c.parsed.y) + " km" } } },
-      scales:{
-        x:{ grid:{ display:false }, border:{ display:false } },
-        y:{ grace:"16%", grid:{ color:"rgba(255,255,255,.06)" }, border:{ display:false }, ticks:{ callback:v => fmt(v) } }
-      }
-    },
-    plugins:[{
-      id:"limiteValue",
-      afterDatasetsDraw(chart){
-        const { ctx } = chart;
-        chart.getDatasetMeta(0).data.forEach((bar, i) => {
-          ctx.save();
-          ctx.textAlign = "center";
-          ctx.fillStyle = "#f3f7ff";
-          ctx.font = "800 26px Sora, sans-serif";
-          ctx.fillText(fmt(valores[i]), bar.x, bar.y - 14);
-          ctx.restore();
-        });
-      }
-    }]
-  }));
-}
-
-function rankRows(day){
-  return lines[day]
-    .filter(r => r[3] > 0)
-    .slice()
-    .sort((a,b) => b[3] - a[3]);
-}
-function rankHtml(day){
-  const rows = rankRows(day);
-  const max = Math.max(...rows.map(r => r[3]));
-  const reserva = day === "Útil" ? new Set(reservaLinhas.map(r => r.linha)) : null;
-  return `<div class="cols">${rows.map(r => {
-    const gone = r[2] === 0;
-    const hold = reserva && reserva.has(r[0]);
-    return `<div class="rank-row ${gone ? "zero" : ""} ${hold ? "hold" : ""}">
-      <span class="code">${r[0]}</span>
-      <div class="track"><i class="bar-fill" style="--w:${(r[3] / max * 100).toFixed(1)}%"></i></div>
-      <span class="num">${hold ? "reserva" : "↓ " + r[3]}</span>
-      <span class="km">${fmt(r[4], 2)} km</span>
-    </div>`;
-  }).join("")}</div>`;
-}
-function dots(n, cls){
-  return `<div class="dots ${cls}">${Array.from({length:n}, () => "<i></i>").join("")}</div>`;
-}
-
-function opcaoCard(nome, classe, kmMes, kmAno, viagensMes, kmDia, viagensDia, tag){
-  return `<article class="glass ${classe} reveal">
-    <div class="stat-k">${nome}</div>
-    <div class="stat-v ${classe === "option-a" ? "orange" : "cyan"}" data-count="${kmMes}">0</div>
-    <div class="stat-s">quilômetros a menos por mês</div>
-    <div class="facts">
-      <div><b>${fmt(kmAno)}</b><span>km a menos no ano</span></div>
-      <div><b>${fmt(viagensMes)}</b><span>viagens a menos no mês</span></div>
-      <div><b>${fmt(kmDia)} km</b><span>no dia útil · ${fmt(viagensDia)} viagens</span></div>
-      <div><b>5.003 km</b><span>no sábado · 463 viagens</span></div>
-      <div><b>3.363 km</b><span>no domingo · 430 viagens</span></div>
-      <div><b>19 + 15</b><span>veículos no fim de semana</span></div>
-    </div>
-    ${tag || ""}
-  </article>`;
-}
-
+const navItems = [
+  ["Totais",0],["Impacto",1],["Viagens",2],["Intervalo",3],["Onde",8],["Cenários",11],["Frota",12],["Linhas",13],["Saldo",16]
+];
 const slides = [
-  () => `<section class="slide choice-slide">
-    <div class="reveal"><div class="kicker">TCGL · diretoria 2026</div><h1>Duas opções<br><em>de redução.</em></h1><p class="lead">Sábado e domingo são iguais. A diferença está em onze linhas do dia útil: na opção 2 elas ficam de reserva e dá para aumentar se precisar.</p></div>
-    <div class="choice">
-      ${opcaoCard("Opção 1 · redução total","option-a", reducaoTotalMes, kmAnoOp1, viagensMesOp1, 3487, 353, "")}
-      ${opcaoCard("Opção 2 · com reserva","option-b", reducaoSemReserva, kmAnoOp2, viagensMesOp2, kmDiaUtilOp2, viagensDiaUtilOp2, `<div class="reserve-tag">${reservaLinhas.length} linhas dá para aumentar · ${fmt(reservaMes)} km/mês</div>`)}
-    </div>
-  </section>`,
-  () => `<section class="slide">
-    <div class="reveal"><div class="kicker">01 · onde está a diferença</div><h1>O fim de semana<br><em>não muda.</em></h1><p class="lead">Sábado e domingo repetem o mesmo número nas duas opções. Só o dia útil muda.</p></div>
-    <div class="pair">
-      <article class="glass chart-box reveal"><div class="stat-k">Quilômetros a menos no mês</div><canvas id="chartEscolhaKm"></canvas></article>
-      <article class="glass chart-box reveal"><div class="stat-k">Viagens a menos no mês</div><canvas id="chartEscolhaViagens"></canvas></article>
-    </div>
-  </section>`,
-  () => `<section class="slide">
-    <div class="reveal"><div class="kicker">02 · opção 1 em detalhe</div><h1>Impacto estimado<br><em>para decisão.</em></h1><p class="lead">A opção 1 combina redução de frequência, integração entre linhas e suspensão de trechos. Os slides seguintes abrem essa redução total. A opção 2 repete sábado e domingo.</p></div>
+  () => {
+    const reservaValor = cenario === 1 ? 0 : reservaMes;
+    const reservaTexto = cenario === 1 ? "Entra na redução total" : "Fica de fora e dá para aumentar";
+    return `<section class="slide"><div class="reveal"><div class="kicker">01 · ${nomeCenario()}</div><h1>Os quilômetros<br><em>do mês.</em></h1></div>
+      <div class="quad">
+        ${num("Km programado / mês", progMes, "Antes da redução")}
+        ${num("Km reduzidos / mês", redAtual(), nomeCenario(), "orange")}
+        ${num("Reserva / mês", reservaValor, reservaTexto, "green")}
+        ${num("Total que fica / mês", ficaAtual(), "Programado menos a redução", "cyan")}
+      </div></section>`;
+  },
+  () => `<section class="slide"><div class="reveal"><div class="kicker">02 · ${nomeCenario()}</div><h1>Impacto estimado<br><em>para decisão.</em></h1><p class="lead">Frequência revista, linhas integradas e períodos suspensos. Sábado e domingo são iguais nos dois cenários.</p></div>
     <div class="kpi-row">
-      <article class="glass kpi reveal"><div class="stat-k">Viagens atuais / mês</div><div class="stat-v" data-count="158838">0</div></article>
-      <article class="glass kpi reveal"><div class="stat-k">Nova programação / mês</div><div class="stat-v cyan" data-count="147220">0</div></article>
-      <article class="glass kpi reveal"><div class="stat-k">Km atuais / mês</div><div class="stat-v" data-count="1419544">0</div></article>
-      <article class="glass kpi reveal"><div class="stat-k">Km após redução / mês</div><div class="stat-v orange" data-count="1306574">0</div></article>
+      ${num("Viagens hoje / mês", viagensMes.antes)}
+      ${num("Viagens depois / mês", viagensDepois(), "", "cyan")}
+      ${num("Km hoje / mês", progMes)}
+      ${num("Km que ficam / mês", ficaAtual(), "", "orange")}
     </div>
     <div class="fronts">
-      <article class="glass reveal"><div class="stat-k">Frequências revisadas</div><p>Intervalos ajustados no entrepico, tarde e noite, com o atendimento programado mantido.</p></article>
-      <article class="glass reveal"><div class="stat-k">Integrações entre linhas</div><p>Mesclagem em horários específicos para concentrar a operação onde a demanda pede.</p></article>
-      <article class="glass reveal"><div class="stat-k">Retiradas programadas</div><p>Suspensão de linhas ou períodos, com alternativa de atendimento quando a planilha indica.</p></article>
-    </div>
-  </section>`,
-  () => `<section class="slide">
-    <div class="split">
-      <div class="side-notes">
-        <div class="reveal"><div class="kicker">03 · opção 1 · viagens</div><h1>A queda cresce<br><em>no fim de semana.</em></h1></div>
-        ${trips.map(t => `<article class="glass note reveal"><b>↓ ${fmt(t.queda,1)}%</b><span>${t.dia}: ${fmt(t.antes)} → ${fmt(t.depois)}</span></article>`).join("")}
+      <article class="glass reveal"><div class="stat-k">Frequências</div><p>O intervalo até o próximo ônibus aumenta no período da mudança.</p></article>
+      <article class="glass reveal"><div class="stat-k">Integrações</div><p>Linhas se encontram em horários específicos e concentram a oferta.</p></article>
+      <article class="glass reveal"><div class="stat-k">Retiradas</div><p>Trechos e períodos com menor demanda saem da programação.</p></article>
+    </div></section>`,
+  () => {
+    const u = diaVista("util"), s = diaVista("sab"), d = diaVista("dom");
+    return `<section class="slide"><div class="reveal"><div class="kicker">03 · ${nomeCenario()}</div><h1>Viagens<br><em>produtivas.</em></h1></div>
+      <div class="kpi-3">
+        ${num(u.nome, u.corteV, `${fmt(u.viagensA)} → ${fmt(u.viagensD)} por dia`, "orange")}
+        ${num(s.nome, s.corteV, `${fmt(s.viagensA)} → ${fmt(s.viagensD)} por dia`, "orange")}
+        ${num(d.nome, d.corteV, `${fmt(d.viagensA)} → ${fmt(d.viagensD)} por dia`, "orange")}
       </div>
-      <article class="glass chart-box reveal"><canvas id="chartTrips"></canvas></article>
-    </div>
-  </section>`,
-  () => `<section class="slide">
-    <div class="split">
-      <div class="side-notes">
-        <div class="reveal"><div class="kicker">04 · opção 1 · espera</div><h1>O intervalo<br><em>fica maior.</em></h1><p class="lead">Minutos até o próximo ônibus, no período da mudança. Média das linhas que seguem com horário.</p></div>
-        ${espera.map(t => `<article class="glass note reveal"><b>+ ${fmt(t.extra)} min</b><span>${t.dia}: ${fmt(t.antes)} → ${fmt(t.depois)} min</span></article>`).join("")}
+      <article class="glass chart-slim reveal"><div class="stat-k">Viagens a menos por dia</div><canvas id="chartViagens"></canvas></article>
+    </section>`;
+  },
+  () => {
+    const u = mediaUtil();
+    return `<section class="slide"><div class="reveal"><div class="kicker">04 · ${nomeCenario()}</div><h1>O intervalo<br><em>fica maior.</em></h1><p class="lead">Minutos até o próximo ônibus, nas linhas que seguem com horário.</p></div>
+      <div class="kpi-3">
+        ${num("Dias úteis", u.extra, `${u.antes} → ${u.depois} min`, "orange")}
+        ${num("Sábados", 27, "32 → 59 min", "orange")}
+        ${num("Domingos", 43, "37 → 80 min", "orange")}
       </div>
-      <article class="glass chart-box reveal"><div class="stat-k">Minutos até o próximo ônibus</div><canvas id="chartWait"></canvas></article>
+      <article class="glass chart-slim reveal"><div class="stat-k">Minutos a mais na espera</div><canvas id="chartEspera"></canvas></article>
+    </section>`;
+  },
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis · ${nomeCenario()}</div><h1>A espera sobe<br><em>linha a linha.</em></h1></div>${bannerReserva()}${espHtml("util")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis · ${nomeCenario()}</div><h1>Estas linhas<br><em>ficam sem horário.</em></h1><p class="lead">Param no período da redução. A espera deixa de ter intervalo.</p></div>${paraHtml("util")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>Depois das 14h,<br><em>o intervalo abre.</em></h1></div>${espHtml("sab")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>Linhas que<br><em>param no sábado.</em></h1></div>${paraHtml("sab")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · domingos</div><h1>No domingo<br><em>a espera cresce.</em></h1></div>${espHtml("dom")}<article class="glass callout reveal"><div><div class="stat-k">Linha 417</div><div class="stat-s">Aumento de atendimento, de 13 para 71 viagens.</div></div><b>+58 viagens · +372,66 km</b></article></section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · domingos</div><h1>Linhas que<br><em>param no domingo.</em></h1></div>${paraHtml("dom")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · ${nomeCenario()}</div><h1>No útil, a redução<br><em>está no entrepico.</em></h1></div>${bannerReserva()}${ondeHtml("util", ["Entrepico","Entrepico e noite","Entrepico e tarde","Noite"], "u")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · sábados</div><h1>No sábado,<br><em>a partir das 14h.</em></h1></div>${ondeHtml("sab", ["Após as 14h","Após as 18h","Dia todo"], "s")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · domingos</div><h1>No domingo,<br><em>o dia todo.</em></h1></div>${ondeHtml("dom", ["Dia todo"], "d")}<article class="glass callout reveal"><div><div class="stat-k">Fora da redução</div><div class="stat-s">A linha 417 recebe viagens.</div></div><b>+58 viagens</b></article></section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · as duas propostas</div><h1>Antes, depois<br><em>e a escolha.</em></h1><p class="lead">O total corta tudo. O parcial guarda a reserva do dia útil. Sábado e domingo permanecem iguais.</p></div>
+    <div class="tres">
+      ${num("Programado hoje", progMes, `${fmt(viagensMes.antes)} viagens por mês`)}
+      <article class="glass a reveal ${cenario===1?"pick":""}"><div class="stat-k">1 · Cenário total</div><div class="stat-v orange" data-count="${redMes[1]}">0</div><div class="stat-s">km a menos por mês · ficam ${fmt(progMes-redMes[1])} · ${fmt(viagensMes.corte1)} viagens a menos</div></article>
+      <article class="glass reveal ${cenario===2?"pick":""}"><div class="stat-k">2 · Cenário parcial</div><div class="stat-v cyan" data-count="${redMes[2]}">0</div><div class="stat-s">km a menos por mês · ficam ${fmt(progMes-redMes[2])} · reserva de ${fmt(reservaMes)} km</div></article>
     </div>
+    <article class="glass chart-slim reveal"><div class="stat-k">Km a menos no mês, por tipo de dia</div><canvas id="chartCenarios"></canvas></article>
   </section>`,
-  () => `<section class="slide">
-    <div class="rank-head">
-      <div class="reveal"><div class="kicker">05 · opção 1 · onde reduz</div><h1 style="font-size:clamp(32px,3.4vw,48px)">A redução útil<br><em>está no entrepico.</em></h1><p class="lead" style="margin-top:4px">346 das 353 viagens saem desse período. Em cada linha, a espera até o próximo ônibus.</p></div>
-      <div class="rank-kpis">
-        <article class="glass reveal"><div class="stat-k">Viagens no entrepico</div><b>346</b></article>
-        <article class="glass reveal"><div class="stat-k">Fora do entrepico</div><b>7</b></article>
-      </div>
+  () => `<section class="slide"><div class="reveal"><div class="kicker">07 · veículos</div><h1>Veículos a menos<br><em>em cada dia.</em></h1><p class="lead">${cenario===1?"Redução total de frota.":"No parcial, sábado e domingo seguem iguais. As 11 linhas de reserva do útil continuam com o veículo de hoje."}</p></div>
+    <div class="kpi-3" style="flex:1">
+      ${num("Dias úteis", 26, "veículos a menos", "cyan")}
+      ${num("Sábados", 19, "veículos a menos", "orange")}
+      ${num("Domingos", 15, "veículos a menos · 34 no fim de semana")}
+    </div></section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">08 · dias úteis · ${nomeCenario()}</div><h1>Km na frente<br><em>de cada linha.</em></h1><p class="lead">↓ ${fmt(diaVista("util").km)} km neste dia.</p></div>${bannerReserva()}${kmHtml("util")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">08 · sábados</div><h1>Km na frente<br><em>de cada linha.</em></h1><p class="lead">↓ ${fmt(5003)} km neste dia. Igual nos dois cenários.</p></div>${kmHtml("sab")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">08 · domingos</div><h1>Km na frente<br><em>de cada linha.</em></h1><p class="lead">↓ ${fmt(3363)} km neste dia. Igual nos dois cenários.</p></div>${kmHtml("dom")}<article class="glass callout reveal"><div><div class="stat-k">Linha 417 soma km</div><div class="stat-s">13 → 71 viagens.</div></div><b>+372,66 km</b></article></section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">09 · saldo</div><h1>As duas propostas<br><em>lado a lado.</em></h1></div>
+    <div class="pair-big">
+      <article class="glass a reveal ${cenario===1?"pick":""}"><div class="stat-k">1 · Total</div><div class="stat-v orange" data-count="${redMes[1]}">0</div><div class="stat-s">km a menos por mês · ${fmt(ano[1])} no ano</div><div class="stat-v" style="font-size:clamp(36px,3vw,52px)" data-count="${progMes-redMes[1]}">0</div><div class="stat-s">km que ficam por mês · ${fmt(viagensMes.corte1)} viagens a menos</div></article>
+      <article class="glass reveal ${cenario===2?"pick":""}"><div class="stat-k">2 · Parcial</div><div class="stat-v cyan" data-count="${redMes[2]}">0</div><div class="stat-s">km a menos por mês · ${fmt(ano[2])} no ano · reserva ${fmt(reservaMes)}</div><div class="stat-v" style="font-size:clamp(36px,3vw,52px)" data-count="${progMes-redMes[2]}">0</div><div class="stat-s">km que ficam por mês · ${fmt(viagensMes.corte2)} viagens a menos</div></article>
     </div>
-    ${ondeReduz()}
-  </section>`,
-  () => `<section class="slide">
-    <div class="split">
-      <div class="side-notes">
-        <div class="reveal"><div class="kicker">06 · opção 1 · quilometragem</div><h1>Km retirados<br><em>em um dia típico.</em></h1><p class="lead">Opção 1. Média mensal: 112.971 km. No ano, 1.355.647 km.</p></div>
-        ${kms.map(t => `<article class="glass note reveal"><b>↓ ${fmt(t.diaKm)} km</b><span>${t.dia} · queda de ${fmt(t.queda,1)}%</span></article>`).join("")}
-      </div>
-      <article class="glass chart-box reveal"><canvas id="chartKm"></canvas></article>
-    </div>
-  </section>`,
-  () => `<section class="slide">
-    <div class="reveal"><div class="kicker">07 · opção 1 · mês</div><h1>Antes e depois<br><em>da redução.</em></h1><p class="lead">Opção 1, a redução total. Base anual: 253 dias úteis, 59 sábados e 53 domingos.</p></div>
-    <div class="compare">
-      <article class="glass reveal"><div class="stat-k">Cenário atual</div><div class="stat-v" data-count="1419544">0</div><div class="stat-s">quilômetros por mês</div><div class="stat-v sub" data-count="158838">0</div><div class="stat-s">viagens produtivas por mês</div></article>
-      <div class="arrow reveal">↓</div>
-      <article class="glass reveal"><div class="stat-k">Após a redução</div><div class="stat-v orange" data-count="1306574">0</div><div class="stat-s">quilômetros por mês</div><span class="pct-pill">↓ 112.971 km · 8,0%</span><div class="stat-v sub cyan" data-count="147220">0</div><div class="stat-s">viagens produtivas por mês</div></article>
-    </div>
-  </section>`,
-  () => `<section class="slide reserve-slide">
-    <div class="reveal"><div class="kicker">08 · opção 2 · reserva</div><h1>Dá para aumentar<br><em>se precisar.</em></h1><p class="lead">Estas onze linhas separam as opções. Na opção 2 elas ficam fora da redução. Se a operação precisar, a oferta aumenta nelas.</p></div>
-    <div class="reserve">
-      ${reservaLinhas.map(r => `<article class="glass reveal"><div class="code">${r.linha}</div><div class="km">${fmt(r.kmMes)} km/mês</div><div class="meta">${r.viagens} viagens/dia · ${fmt(r.kmDia, 2)} km</div></article>`).join("")}
-    </div>
-    <div class="split">
-      <div class="side-notes">
-        <article class="glass note reveal"><b>${fmt(reducaoTotalMes)} km</b><span>Opção 1 · redução total no mês</span></article>
-        <article class="glass note reveal"><b>${fmt(reducaoSemReserva)} km</b><span>Opção 2 · com a reserva fora</span></article>
-        <article class="glass note reveal"><b>${fmt(reservaMes)} km</b><span>Reserva · ${fmt(reservaViagens)} viagens por dia útil</span></article>
-      </div>
-      <article class="glass chart-box reveal"><div class="stat-k">Quilômetros a menos no mês</div><canvas id="chartLimite"></canvas></article>
-    </div>
-  </section>`,
-  () => `<section class="slide">
-    <div class="reveal"><div class="kicker">09 · frota</div><h1>Veículos concentrados<br><em>nos fins de semana.</em></h1><p class="lead">Cada tabela totalmente em vermelho na planilha indica uma linha com redução de veículo. A estimativa fica em cerca de 60 veículos.</p></div>
-    <div class="fleet">
-      <article class="glass reveal"><div><div class="stat-k">Dias úteis</div><div class="stat-v cyan" data-count="26">0</div><div class="stat-s">veículos reduzidos</div></div>${dots(26,"")}</article>
-      <article class="glass reveal"><div><div class="stat-k">Sábados</div><div class="stat-v orange" data-count="19">0</div><div class="stat-s">veículos reduzidos</div></div>${dots(19,"sat")}</article>
-      <article class="glass reveal"><div><div class="stat-k">Domingos</div><div class="stat-v red" data-count="15">0</div><div class="stat-s">veículos reduzidos · 34 no fim de semana</div></div>${dots(15,"sun")}</article>
-    </div>
-  </section>`,
-  () => lineSlide("Útil","10 · dias úteis · opção 1","Em verde, as 11 linhas que a opção 2 devolve",353,"3.487"),
-  () => lineSlide("Sábado","11 · sábados","19 linhas ajustadas · igual nas duas opções",463,"5.003"),
-  () => lineSlide("Domingo","12 · domingos","16 linhas ajustadas · igual nas duas opções",430,"3.363", true),
-  () => `<section class="slide">
-    <div class="reveal"><div class="kicker">13 · a escolha</div><h1>O saldo das<br><em>duas opções.</em></h1><p class="lead">Sábado e domingo permanecem iguais. A opção 2 devolve ${fmt(reservaMes)} km por mês em ${reservaLinhas.length} linhas do dia útil. No domingo, a linha 417 segue com 58 viagens a mais.</p></div>
-    <div class="split">
-      <div class="side-notes">
-        <article class="glass note reveal"><b>${fmt(reducaoTotalMes)} km</b><span>Opção 1 por mês · ${fmt(kmAnoOp1)} no ano</span></article>
-        <article class="glass note reveal"><b>${fmt(reducaoSemReserva)} km</b><span>Opção 2 por mês · ${fmt(kmAnoOp2)} no ano</span></article>
-        <article class="glass note reveal"><b>${fmt(viagensMesOp1)} · ${fmt(viagensMesOp2)}</b><span>Viagens a menos no mês · opção 1 e opção 2</span></article>
-      </div>
-      <article class="glass chart-box reveal"><div class="stat-k">Quilômetros a menos no mês</div><canvas id="chartFecho"></canvas></article>
-    </div>
+    <article class="glass chart-slim reveal"><div class="stat-k">Km reduzidos no mês</div><canvas id="chartSaldo"></canvas></article>
   </section>`
 ];
 
-function zonaHtml(zona, peak){
-  const linhas = zona.linhas.map(r => {
-    const espera = r[1] == null ? "sem horário" : `${r[1]} → ${r[2]} min`;
-    return `<div class="zrow"><span class="code">${r[0]}</span><span class="wait">${espera}</span><span class="cut">↓ ${r[3]}</span></div>`;
-  }).join("");
-  return `<article class="glass zone ${peak ? "peak" : ""} reveal">
-    <div class="zone-head"><span>${zona.nome}</span><div><b>${zona.viagens}</b><small>viagens</small></div></div>
-    ${linhas}
-  </article>`;
-}
-function ondeReduz(){
-  return `<div class="where">
-    ${zonaHtml(ondeUtil[0], true)}
-    ${zonaHtml(ondeUtil[1], false)}
-    <div class="where-stack">${zonaHtml(ondeUtil[2], false)}${zonaHtml(ondeUtil[3], false)}</div>
-  </div>`;
-}
-function lineSlide(day, kicker, sub, tripsDay, kmDay, sunday){
-  const extra = sunday ? `<article class="glass callout reveal"><div><div class="stat-k">Alternativa de atendimento</div><div class="stat-s">A linha 417 passa de 13 para 71 viagens.</div></div><b>+58 viagens · +372,66 km</b></article>` : "";
-  return `<section class="slide">
-    <div class="rank-head">
-      <div class="reveal"><div class="kicker">${kicker}</div><h1 style="font-size:clamp(32px,3.4vw,48px)">Redução por linha.</h1><p class="lead" style="margin-top:4px">${sub}. Barras na escala da maior redução do dia.</p></div>
-      <div class="rank-kpis">
-        <article class="glass reveal"><div class="stat-k">Viagens / dia</div><b>↓ ${fmt(tripsDay)}</b></article>
-        <article class="glass reveal"><div class="stat-k">Km / dia</div><b>↓ ${kmDay}</b></article>
-      </div>
-    </div>
-    ${extra}
-    ${rankHtml(day)}
-  </section>`;
-}
-
 function killCharts(){ charts.splice(0).forEach(c => c.destroy()); }
-
 function animateIn(root){
+  root.querySelectorAll("[data-count]").forEach(el => {
+    const end = Number(el.dataset.count);
+    const dec = Number(el.dataset.dec || 0);
+    const suffix = el.dataset.suffix || "";
+    if (reduce){ el.textContent = fmt(end, dec) + suffix; return; }
+  });
   if (reduce) return;
   slideTween = gsap.timeline({ defaults:{ ease:"power3.out" } });
-  slideTween.from(root.querySelectorAll(".reveal"), {
-    y:18, autoAlpha:0, duration:.55, stagger:.045
-  }, 0);
-  slideTween.from(root.querySelectorAll(".bar-fill"), {
-    scaleX:0, duration:.7, stagger:.02, ease:"power3.out"
-  }, .12);
+  slideTween.from(root.querySelectorAll(".reveal"), { y:16, autoAlpha:0, duration:.5, stagger:.04 }, 0);
+  slideTween.from(root.querySelectorAll(".bar"), { scaleX:0, duration:.6, stagger:.02, ease:"power3.out" }, .1);
   root.querySelectorAll("[data-count]").forEach(el => {
     const end = Number(el.dataset.count);
     const dec = Number(el.dataset.dec || 0);
     const suffix = el.dataset.suffix || "";
     const obj = { v:0 };
-    slideTween.to(obj, {
-      v:end, duration:1.05, ease:"power2.out",
-      onUpdate(){ el.textContent = fmt(obj.v, dec) + suffix; }
-    }, .08);
+    slideTween.to(obj, { v:end, duration:.9, ease:"power2.out", onUpdate(){ el.textContent = fmt(obj.v, dec) + suffix; } }, .05);
   });
 }
-
+function drawCharts(){
+  const u = diaVista("util");
+  if (document.getElementById("chartViagens")) slim("chartViagens", ["Dias úteis","Sábados","Domingos"], [{ label:"Viagens", data:[u.corteV, 463, 430], color:"rgba(255,106,44,.9)" }]);
+  if (document.getElementById("chartEspera")){
+    const m = mediaUtil();
+    slim("chartEspera", ["Dias úteis","Sábados","Domingos"], [{ label:"Minutos", data:[m.extra, 27, 43], color:"rgba(255,106,44,.9)" }]);
+  }
+  if (document.getElementById("chartCenarios") || document.getElementById("chartSaldo")){
+    const id = document.getElementById("chartCenarios") ? "chartCenarios" : "chartSaldo";
+    const util1 = redMes[1] - Math.round(5003*59/12) - Math.round(3363*53/12);
+    const util2 = util1 - reservaMes;
+    const sab = Math.round(5003*59/12);
+    const dom = Math.round(3363*53/12);
+    slim(id, ["Dias úteis","Sábados","Domingos"], [
+      { label:"Total", data:[util1, sab, dom], color:"rgba(255,106,44,.92)" },
+      { label:"Parcial", data:[util2, sab, dom], color:"rgba(61,225,255,.92)" }
+    ]);
+  }
+}
 function render(){
   killCharts();
   if (slideTween) slideTween.kill();
   app.innerHTML = slides[page]();
-  pager.textContent = String(page + 1).padStart(2,"0") + " / " + String(slides.length).padStart(2,"0");
-  gsap.to(bar, { width: ((page + 1) / slides.length * 100) + "%", duration: reduce ? 0 : .45, ease:"power2.out" });
-  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", Number(b.dataset.go) === page || (b.dataset.span && page >= Number(b.dataset.go) && page <= Number(b.dataset.end))));
-  if (document.getElementById("chartEscolhaKm")) choiceChart("chartEscolhaKm", kmMesTipo.labels, kmMesTipo.op1, kmMesTipo.op2);
-  if (document.getElementById("chartEscolhaViagens")) choiceChart("chartEscolhaViagens", viagensMesTipo.labels, viagensMesTipo.op1, viagensMesTipo.op2);
-  if (document.getElementById("chartTrips")) grouped("chartTrips", trips, "Programação original", "Nova programação");
-  if (document.getElementById("chartWait")) grouped("chartWait", espera, "Espera atual", "Nova espera");
-  if (document.getElementById("chartKm")) grouped("chartKm", kms, "Cenário atual", "Após a redução");
-  if (document.getElementById("chartLimite")) limitChart();
-  if (document.getElementById("chartFecho")) choiceChart("chartFecho", kmMesTipo.labels, kmMesTipo.op1, kmMesTipo.op2);
+  pager.textContent = String(page+1).padStart(2,"0") + " / " + String(slides.length).padStart(2,"0");
+  gsap.to(bar, { width:((page+1)/slides.length*100)+"%", duration: reduce ? 0 : .4, ease:"power2.out" });
+  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", page >= Number(b.dataset.go) && page <= Number(b.dataset.end)));
+  document.querySelectorAll("#cenarios button").forEach(b => b.classList.toggle("on", Number(b.dataset.cenario) === cenario));
+  drawCharts();
   animateIn(app);
 }
-
 function go(n){
-  const next = Math.max(0, Math.min(slides.length - 1, n));
+  const next = Math.max(0, Math.min(slides.length-1, n));
   if (next === page) return;
   const current = app.querySelector(".slide");
   if (!current || reduce){ page = next; render(); return; }
-  gsap.to(current, { autoAlpha:0, y:-12, duration:.22, ease:"power2.in", onComplete(){ page = next; render(); } });
+  gsap.to(current, { autoAlpha:0, y:-10, duration:.2, ease:"power2.in", onComplete(){ page = next; render(); } });
 }
-
-document.querySelector("#nav").innerHTML = navItems.map(([label, i], idx) => {
-  const end = navItems[idx + 1] ? navItems[idx + 1][1] - 1 : slides.length - 1;
-  return `<button data-go="${i}" data-end="${end}" data-span="1">${label}</button>`;
+document.querySelector("#nav").innerHTML = navItems.map(([label,i], idx) => {
+  const end = navItems[idx+1] ? navItems[idx+1][1]-1 : slides.length-1;
+  return `<button data-go="${i}" data-end="${end}">${label}</button>`;
 }).join("");
-document.querySelector("#nav").addEventListener("click", e => {
+document.querySelector("#nav").addEventListener("click", e => { const b = e.target.closest("button"); if (b) go(Number(b.dataset.go)); });
+document.querySelector("#cenarios").addEventListener("click", e => {
   const b = e.target.closest("button");
-  if (b) go(Number(b.dataset.go));
+  if (!b) return;
+  cenario = Number(b.dataset.cenario);
+  render();
 });
-document.querySelector("#prev").onclick = () => go(page - 1);
-document.querySelector("#next").onclick = () => go(page + 1);
+document.querySelector("#prev").onclick = () => go(page-1);
+document.querySelector("#next").onclick = () => go(page+1);
 document.addEventListener("keydown", e => {
-  if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " ") { e.preventDefault(); go(page + 1); }
-  if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); go(page - 1); }
-  if (e.key.toLowerCase() === "f") document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+  if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " ") { e.preventDefault(); go(page+1); }
+  if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); go(page-1); }
+  if (e.key === "1"){ cenario = 1; render(); }
+  if (e.key === "2"){ cenario = 2; render(); }
 });
-
 if (!reduce){
-  gsap.to(".orb-a", { x:50, y:30, duration:9, yoyo:true, repeat:-1, ease:"sine.inOut" });
-  gsap.to(".orb-b", { x:-40, y:-24, duration:11, yoyo:true, repeat:-1, ease:"sine.inOut" });
-  gsap.to(".orb-c", { x:-30, y:20, duration:7, yoyo:true, repeat:-1, ease:"sine.inOut" });
-  gsap.fromTo(".scan", { y:"-20vh" }, { y:"120vh", duration:7.5, repeat:-1, ease:"none" });
+  gsap.to(".orb-a", { x:40, y:24, duration:9, yoyo:true, repeat:-1, ease:"sine.inOut" });
+  gsap.to(".orb-b", { x:-30, y:-20, duration:11, yoyo:true, repeat:-1, ease:"sine.inOut" });
 }
 render();
 </script>
