@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){visibility:hidden!important}</style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Apresentação KM | Portal CIOP</title>
+<script src="../assets/js/loading.js?v=20261005km"></script>
+<script type="module" src="../assets/js/auth.js?v=20261005km"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@420;560;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#030814;
+    --ink:#f3f7ff;
+    --muted:#93a8c4;
+    --line:rgba(120,190,255,.18);
+    --cyan:#3de1ff;
+    --orange:#ff6a2c;
+    --red:#ff4d5e;
+    --green:#2ee6a6;
+    --glass:rgba(10,20,42,.62);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Outfit,system-ui,sans-serif}
+  body{overflow:hidden}
+  .stage{position:relative;height:100%;display:flex;flex-direction:column}
+  .sky{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+  .sky .grid{
+    position:absolute;inset:-20%;
+    background-image:linear-gradient(rgba(61,225,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(61,225,255,.07) 1px,transparent 1px);
+    background-size:56px 56px;
+    mask-image:radial-gradient(ellipse at 50% 30%,#000 20%,transparent 72%);
+    opacity:.55;
+  }
+  .orb{position:absolute;border-radius:50%;filter:blur(18px);opacity:.7}
+  .orb-a{width:420px;height:420px;left:-80px;top:-90px;background:radial-gradient(circle,#1d6dff 0%,transparent 68%)}
+  .orb-b{width:380px;height:380px;right:-60px;bottom:-80px;background:radial-gradient(circle,#ff4d2a 0%,transparent 70%)}
+  .orb-c{width:260px;height:260px;right:18%;top:12%;background:radial-gradient(circle,#3de1ff 0%,transparent 70%);opacity:.45}
+  .scan{position:absolute;left:0;right:0;height:18%;top:-18%;background:linear-gradient(180deg,transparent,rgba(61,225,255,.08),transparent);opacity:.7}
+
+  header{
+    position:relative;z-index:2;height:76px;display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:0 28px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(6,12,28,.78),rgba(6,12,28,.35));
+    backdrop-filter:blur(16px);
+  }
+  .brand{display:flex;align-items:center;gap:12px;min-width:220px}
+  .brand img{width:46px;height:46px;object-fit:contain;background:#fff;border-radius:12px;padding:4px}
+  .portal-back{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;margin-right:8px}
+  .portal-back:hover{color:#fff}
+  .brand strong{display:block;font-family:Sora,Outfit,sans-serif;letter-spacing:.12em;font-size:13px}
+  .brand small{color:var(--muted);letter-spacing:.16em;font-size:10px}
+  nav{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+  nav button{
+    font:700 12px/1 Outfit,sans-serif;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--muted);background:transparent;border:1px solid transparent;border-radius:999px;
+    padding:8px 12px;cursor:pointer;
+  }
+  nav button.on,nav button:hover{color:#fff;border-color:var(--line);background:rgba(61,225,255,.1)}
+  .count{font-variant-numeric:tabular-nums;color:var(--cyan);font-weight:800;letter-spacing:.14em;font-size:12px}
+
+  main{position:relative;z-index:1;flex:1;min-height:0}
+  .slide{height:100%;padding:28px 40px 18px;display:flex;flex-direction:column;gap:18px}
+  .kicker{color:var(--cyan);font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}
+  h1{font-family:Sora,Outfit,sans-serif;font-weight:800;letter-spacing:-.045em;line-height:.96;margin:8px 0 0;font-size:clamp(36px,4.6vw,68px)}
+  h1 em{font-style:normal;color:var(--cyan)}
+  .lead{max-width:720px;color:var(--muted);font-size:17px;line-height:1.45;margin:8px 0 0}
+
+  .hero{display:grid;grid-template-columns:1.15fr .85fr;gap:28px;align-items:center;height:100%}
+  .hero-stats{display:grid;gap:12px}
+  .glass{
+    position:relative;overflow:hidden;border:1px solid var(--line);border-radius:22px;
+    background:linear-gradient(160deg,rgba(18,34,68,.78),rgba(6,12,28,.72));
+    box-shadow:0 24px 60px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08);
+    padding:18px 20px;
+  }
+  .glass:before{content:"";position:absolute;inset:0 auto auto 0;width:120px;height:2px;background:linear-gradient(90deg,var(--cyan),transparent)}
+  .stat-k{color:var(--muted);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+  .stat-v{font-family:Sora,Outfit,sans-serif;font-size:clamp(34px,4vw,56px);letter-spacing:-.04em;line-height:1;margin-top:6px}
+  .stat-v.cyan{color:var(--cyan)} .stat-v.orange{color:var(--orange)} .stat-v.red{color:#ff8b96}
+  .stat-s{color:#c5d4e8;margin-top:6px;font-size:13px}
+
+  .split{display:grid;grid-template-columns:280px 1fr;gap:22px;min-height:0;flex:1}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;min-height:0}
+  .chart-box{min-height:0;height:100%;padding:16px 16px 8px;display:flex;flex-direction:column}
+  .chart-box canvas{width:100%!important;flex:1;min-height:0}
+  .side-notes{display:flex;flex-direction:column;gap:10px;justify-content:center}
+  .note{padding:14px 16px}
+  .note b{display:block;font-family:Sora,sans-serif;font-size:28px;letter-spacing:-.03em}
+  .note span{color:var(--muted);font-size:13px}
+
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .kpi{min-height:118px}
+  .compare{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:stretch;flex:1}
+  .compare .glass{display:flex;flex-direction:column;justify-content:center}
+  .arrow{align-self:center;width:64px;height:64px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);color:var(--orange);font-size:22px;background:rgba(255,106,44,.12)}
+  .pct-pill{display:inline-flex;margin-top:10px;padding:6px 10px;border-radius:999px;background:rgba(255,77,94,.16);color:#ffd0d5;font-weight:800;letter-spacing:.06em}
+
+  .fleet{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;flex:1}
+  .fleet .glass{display:flex;flex-direction:column;justify-content:flex-start;gap:8px;min-height:240px}
+  .dots{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px;max-width:420px}
+  .dots i{width:18px;height:18px;border-radius:5px;background:linear-gradient(180deg,var(--cyan),#1a6cff);box-shadow:0 0 12px rgba(61,225,255,.45)}
+  .dots.sat i{background:linear-gradient(180deg,#ffb088,var(--orange));box-shadow:0 0 10px rgba(255,106,44,.4)}
+  .dots.sun i{background:linear-gradient(180deg,#ffb0b8,var(--red));box-shadow:0 0 10px rgba(255,77,94,.4)}
+  .fronts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .fronts p{margin:8px 0 0;color:var(--muted);font-size:14px;line-height:1.4}
+
+  .rank-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
+  .rank-kpis{display:flex;gap:10px}
+  .rank-kpis .glass{padding:10px 14px;min-width:140px}
+  .rank-kpis b{font-family:Sora,sans-serif;font-size:26px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:8px 28px;flex:1;align-content:start;overflow:auto}
+  .rank-row{display:grid;grid-template-columns:72px 1fr 54px 88px;gap:8px;align-items:center;padding:4px 0}
+  .rank-row .code{font-family:Sora,sans-serif;font-size:16px}
+  .track{height:10px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden}
+  .bar-fill{display:block;height:100%;width:var(--w);border-radius:99px;background:linear-gradient(90deg,#1a6cff,var(--cyan));box-shadow:0 0 12px rgba(61,225,255,.45);transform-origin:left center}
+  .rank-row.zero .bar-fill{background:linear-gradient(90deg,#ff6a2c,#ff4d5e)}
+  .rank-row .num{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+  .rank-row .km{text-align:right;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+  .callout{display:flex;justify-content:space-between;align-items:center;gap:12px;border-color:rgba(46,230,166,.4);background:linear-gradient(90deg,rgba(46,230,166,.14),rgba(8,18,36,.7))}
+  .callout b{color:var(--green);font-family:Sora,sans-serif;font-size:28px}
+
+  .progress{position:relative;z-index:2;height:3px;background:rgba(255,255,255,.06)}
+  .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--orange));box-shadow:0 0 12px var(--cyan)}
+  .hint{position:fixed;left:28px;bottom:14px;z-index:3;color:var(--muted);font-size:12px}
+  .hint kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:#d5e6f8}
+  .nav-float{position:fixed;right:24px;bottom:16px;z-index:3;display:flex;gap:8px}
+  .nav-float button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(6,12,28,.72);color:#fff;font-size:18px;cursor:pointer}
+  .nav-float button:hover{background:rgba(61,225,255,.18)}
+
+  @media(max-width:980px){
+    body{overflow:auto}
+    header{height:auto;padding:12px 16px;flex-wrap:wrap}
+    .slide{height:auto;min-height:calc(100vh - 90px);padding:20px 16px 80px}
+    .hero,.split,.pair,.compare,.fleet,.fronts,.cols,.kpi-row{grid-template-columns:1fr}
+    .chart-box{height:320px}
+    .arrow{transform:rotate(90deg)}
+    nav{display:none}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .scan,.orb{display:none}
+  }
+</style>
+</head>
+<body data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
+<div class="sky" aria-hidden="true">
+  <div class="grid"></div>
+  <div class="orb orb-a"></div>
+  <div class="orb orb-b"></div>
+  <div class="orb orb-c"></div>
+  <div class="scan"></div>
+</div>
+<div class="stage">
+  <header>
+    <div class="brand">
+      <img src="../assets/img/LOGO_TCGL.png" alt="TCGL">
+      <div><strong>TCGL</strong><small>REDUÇÃO DE OFERTA 2026</small></div>
+    </div>
+    <nav id="nav"></nav>
+    <div style="display:flex;align-items:center;gap:14px">
+      <a class="portal-back" href="../index.html">Portal</a>
+      <div class="count" id="pager">01 / 10</div>
+    </div>
+  </header>
+  <main id="app"></main>
+  <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+</div>
+<div class="hint"><kbd>←</kbd> <kbd>→</kbd> navegar &nbsp;·&nbsp; <kbd>F</kbd> tela cheia</div>
+<div class="nav-float">
+  <button id="prev" aria-label="Anterior">←</button>
+  <button id="next" aria-label="Próximo">→</button>
+</div>
+<script>
+const lines = {
+  "Útil": [
+    ["101",78,71,7,58.32],["106",162,148,14,116.16],["107",77,33,44,314.31],["110/111",173,151,22,207.15],
+    ["112",108,94,14,116.98],["113",162,135,27,277.85],["303",73,64,9,112.25],["306",70,50,20,126.61],
+    ["311",158,146,12,107.70],["351",68,58,10,33.50],["404",99,79,20,132.44],["405",115,104,11,107.31],
+    ["420",126,97,29,284.49],["501",160,145,15,108.29],["800",45,32,13,197.28],["802",44,32,12,141.35],
+    ["803",137,122,15,190.11],["806",35,22,13,194.73],["900",55,25,30,427.55],["913",41,25,16,229.65]
+  ],
+  "Sábado": [
+    ["102",85,67,18,80.65],["104",85,67,18,94.86],["107",58,0,58,433.78],["112",73,60,13,109.19],
+    ["113",74,60,14,146.78],["301",53,47,6,30.39],["302",60,51,9,45.07],["303",69,60,9,112.25],
+    ["310",30,0,30,221.24],["400",70,58,12,25.38],["402",72,62,10,33.76],["420",65,48,17,165.44],
+    ["426",72,62,10,31.63],["800",4,0,4,63.13],["803",102,47,55,708.74],["804",32,0,32,429.33],
+    ["806",45,0,45,710.95],["900",62,0,62,928.52],["913",41,0,41,632.06]
+  ],
+  "Domingo": [
+    ["102",56,28,28,131.88],["104",56,28,28,148.69],["107",46,0,46,339.69],["301",46,28,18,91.16],
+    ["302",56,27,29,156.62],["303",58,29,29,364.81],["400",66,32,34,53.44],["402",47,23,24,47.26],
+    ["413",68,36,32,119.27],["417",13,71,-58,-372.66],["420",75,35,40,394.85],["423",70,40,30,138.99],
+    ["425",50,0,50,568.74],["426",45,29,16,56.61],["803",38,0,38,586.07],["900",46,0,46,688.14]
+  ]
+};
+const trips = [
+  { dia:"Dias úteis", antes:5988, depois:5635, queda:5.9 },
+  { dia:"Sábados", antes:3940, depois:3477, queda:11.8 },
+  { dia:"Domingos", antes:2993, depois:2563, queda:14.4 }
+];
+const kms = [
+  { dia:"Dias úteis", antes:54700, depois:51213, queda:6.4, diaKm:3487 },
+  { dia:"Sábados", antes:33060, depois:28057, queda:15.1, diaKm:5003 },
+  { dia:"Domingos", antes:23489, depois:20126, queda:14.3, diaKm:3363 }
+];
+const navItems = [
+  ["Capa",0],["Resumo",1],["Viagens",2],["Km",3],["Frota",5],["Linhas",6],["Fecho",9]
+];
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const app = document.querySelector("#app");
+const pager = document.querySelector("#pager");
+const bar = document.querySelector("#bar");
+let page = 0;
+let slideTween = null;
+let charts = [];
+
+Chart.defaults.color = "#9fb0c8";
+Chart.defaults.font.family = "Outfit, sans-serif";
+Chart.defaults.font.size = 13;
+Chart.defaults.animation.duration = reduce ? 0 : 900;
+
+function fmt(n, dec){
+  return Number(n).toLocaleString("pt-BR", { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 });
+}
+function km(n){ return fmt(n, 2).replace(",00","") + " km"; }
+
+function chartBase(){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ labels:{ boxWidth:10, boxHeight:10, usePointStyle:true, pointStyle:"circle" } } },
+    scales:{
+      x:{ grid:{ color:"rgba(255,255,255,.06)" }, border:{ display:false } },
+      y:{ grid:{ color:"rgba(255,255,255,.06)" }, border:{ display:false }, ticks:{ callback:v => fmt(v) } }
+    }
+  };
+}
+const calendario = { "Dias úteis":253, "Sábados":59, "Domingos":53 };
+const shareTrips = trips.map(r => ({ dia:r.dia, valor:Math.round(calendario[r.dia] * (r.antes - r.depois) / 12) }));
+const shareKm = kms.map(r => ({ dia:r.dia, valor:Math.round(calendario[r.dia] * r.diaKm / 12) }));
+
+function shareChart(id, rows, total){
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const colors = ["rgba(61,225,255,.92)","rgba(255,106,44,.92)","rgba(255,77,94,.92)"];
+  charts.push(new Chart(ctx, {
+    type:"bar",
+    data:{
+      labels: rows.map(r => r.dia),
+      datasets:[{
+        data: rows.map(r => r.valor),
+        backgroundColor: colors,
+        borderRadius: 12,
+        maxBarThickness: 72
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{ padding:{ top:8 } },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ callbacks:{ label:c => fmt(c.parsed.y) + " · " + fmt(c.parsed.y / total * 100, 1) + "%" } }
+      },
+      scales:{
+        x:{ grid:{ display:false }, border:{ display:false } },
+        y:{ grace:"32%", grid:{ color:"rgba(255,255,255,.06)" }, border:{ display:false }, ticks:{ callback:v => fmt(v) } }
+      }
+    },
+    plugins:[{
+      id:"shareValue",
+      afterDatasetsDraw(chart){
+        const { ctx } = chart;
+        const meta = chart.getDatasetMeta(0);
+        meta.data.forEach((bar, i) => {
+          const val = chart.data.datasets[0].data[i];
+          const pct = fmt(val / total * 100, 1) + "%";
+          const top = bar.y;
+          ctx.save();
+          ctx.textAlign = "center";
+          ctx.fillStyle = "#f3f7ff";
+          ctx.font = "800 16px Sora, sans-serif";
+          ctx.fillText(fmt(val), bar.x, top - 28);
+          ctx.fillStyle = "#c5d4e8";
+          ctx.font = "700 12px Outfit, sans-serif";
+          ctx.fillText(pct, bar.x, top - 12);
+          ctx.restore();
+        });
+      }
+    }]
+  }));
+}
+function grouped(id, rows, labelA, labelB){
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  charts.push(new Chart(ctx, {
+    type:"bar",
+    data:{
+      labels: rows.map(r => r.dia),
+      datasets:[
+        { label:labelA, data:rows.map(r => r.antes), backgroundColor:"rgba(61,225,255,.85)", borderRadius:8, maxBarThickness:42 },
+        { label:labelB, data:rows.map(r => r.depois), backgroundColor:"rgba(255,106,44,.9)", borderRadius:8, maxBarThickness:42 }
+      ]
+    },
+    options:Object.assign(chartBase(), {
+      plugins:{
+        legend: chartBase().plugins.legend,
+        tooltip:{ callbacks:{ label:c => c.dataset.label + ": " + fmt(c.parsed.y) } }
+      }
+    })
+  }));
+}
+
+function rankRows(day){
+  return lines[day]
+    .filter(r => r[3] > 0)
+    .slice()
+    .sort((a,b) => b[3] - a[3]);
+}
+function rankHtml(day){
+  const rows = rankRows(day);
+  const max = Math.max(...rows.map(r => r[3]));
+  return `<div class="cols">${rows.map(r => {
+    const gone = r[2] === 0;
+    return `<div class="rank-row ${gone ? "zero" : ""}">
+      <span class="code">${r[0]}</span>
+      <div class="track"><i class="bar-fill" style="--w:${(r[3] / max * 100).toFixed(1)}%"></i></div>
+      <span class="num">↓ ${r[3]}</span>
+      <span class="km">${fmt(r[4], 2)} km</span>
+    </div>`;
+  }).join("")}</div>`;
+}
+function dots(n, cls){
+  return `<div class="dots ${cls}">${Array.from({length:n}, () => "<i></i>").join("")}</div>`;
+}
+
+const slides = [
+  () => `<section class="slide hero">
+    <div>
+      <div class="kicker reveal">TCGL · mobilidade inteligente</div>
+      <h1 class="reveal">Plano de<br>redução<br><em>de oferta.</em></h1>
+      <p class="lead reveal">Cenário de redução e otimização operacional para 2026. A leitura parte da programação completa e mostra o efeito em viagens, quilômetros e frota.</p>
+    </div>
+    <div class="hero-stats">
+      <article class="glass reveal"><div class="stat-k">Viagens reduzidas / mês</div><div class="stat-v red" data-count="11618">0</div><div class="stat-s">de 158.838 para 147.220 viagens produtivas</div></article>
+      <article class="glass reveal"><div class="stat-k">Queda sobre o total produtivo</div><div class="stat-v cyan" data-count="7.3" data-dec="1" data-suffix="%">0</div><div class="stat-s">11.618 ÷ 158.838 viagens mensais</div></article>
+      <article class="glass reveal"><div class="stat-k">Quilômetros reduzidos / mês</div><div class="stat-v orange" data-count="112971">0</div><div class="stat-s">1,36 milhão de km a menos por ano</div></article>
+    </div>
+  </section>`,
+  () => `<section class="slide">
+    <div class="reveal"><div class="kicker">01 · visão executiva</div><h1>Impacto estimado<br><em>para decisão.</em></h1><p class="lead">A proposta combina redução de frequência, integração entre linhas e suspensão de trechos ou períodos com menor demanda.</p></div>
+    <div class="kpi-row">
+      <article class="glass kpi reveal"><div class="stat-k">Viagens atuais / mês</div><div class="stat-v" data-count="158838">0</div></article>
+      <article class="glass kpi reveal"><div class="stat-k">Nova programação / mês</div><div class="stat-v cyan" data-count="147220">0</div></article>
+      <article class="glass kpi reveal"><div class="stat-k">Km atuais / mês</div><div class="stat-v" data-count="1419544">0</div></article>
+      <article class="glass kpi reveal"><div class="stat-k">Km após redução / mês</div><div class="stat-v orange" data-count="1306574">0</div></article>
+    </div>
+    <div class="fronts">
+      <article class="glass reveal"><div class="stat-k">Frequências revisadas</div><p>Intervalos ajustados no entrepico, tarde e noite, com o atendimento programado mantido.</p></article>
+      <article class="glass reveal"><div class="stat-k">Integrações entre linhas</div><p>Mesclagem em horários específicos para concentrar a operação onde a demanda pede.</p></article>
+      <article class="glass reveal"><div class="stat-k">Retiradas programadas</div><p>Suspensão de linhas ou períodos, com alternativa de atendimento quando a planilha indica.</p></article>
+    </div>
+  </section>`,
+  () => `<section class="slide">
+    <div class="split">
+      <div class="side-notes">
+        <div class="reveal"><div class="kicker">02 · viagens produtivas</div><h1>A queda cresce<br><em>no fim de semana.</em></h1></div>
+        ${trips.map(t => `<article class="glass note reveal"><b>↓ ${fmt(t.queda,1)}%</b><span>${t.dia}: ${fmt(t.antes)} → ${fmt(t.depois)}</span></article>`).join("")}
+      </div>
+      <article class="glass chart-box reveal"><canvas id="chartTrips"></canvas></article>
+    </div>
+  </section>`,
+  () => `<section class="slide">
+    <div class="split">
+      <div class="side-notes">
+        <div class="reveal"><div class="kicker">03 · quilometragem</div><h1>Km retirados<br><em>em um dia típico.</em></h1><p class="lead">Média mensal anualizada: 112.971 km. No ano, 1.355.647 km.</p></div>
+        ${kms.map(t => `<article class="glass note reveal"><b>↓ ${fmt(t.diaKm)} km</b><span>${t.dia} · queda de ${fmt(t.queda,1)}%</span></article>`).join("")}
+      </div>
+      <article class="glass chart-box reveal"><canvas id="chartKm"></canvas></article>
+    </div>
+  </section>`,
+  () => `<section class="slide">
+    <div class="reveal"><div class="kicker">04 · cenário mensal</div><h1>Antes e depois<br><em>da redução.</em></h1><p class="lead">Base anual: 253 dias úteis, 59 sábados e 53 domingos. A média mensal é a soma anual dividida por 12.</p></div>
+    <div class="compare">
+      <article class="glass reveal"><div class="stat-k">Cenário atual</div><div class="stat-v" data-count="1419544">0</div><div class="stat-s">quilômetros por mês</div><div class="stat-v" style="font-size:28px;margin-top:18px" data-count="158838">0</div><div class="stat-s">viagens produtivas por mês</div></article>
+      <div class="arrow reveal">↓</div>
+      <article class="glass reveal"><div class="stat-k">Após a redução</div><div class="stat-v orange" data-count="1306574">0</div><div class="stat-s">quilômetros por mês</div><span class="pct-pill">↓ 112.971 km · 8,0%</span><div class="stat-v cyan" style="font-size:28px;margin-top:18px" data-count="147220">0</div><div class="stat-s">viagens produtivas por mês</div></article>
+    </div>
+  </section>`,
+  () => `<section class="slide">
+    <div class="reveal"><div class="kicker">05 · frota</div><h1>Veículos concentrados<br><em>nos fins de semana.</em></h1><p class="lead">Cada tabela totalmente em vermelho na planilha indica uma linha com redução de veículo. A estimativa fica em cerca de 60 veículos.</p></div>
+    <div class="fleet">
+      <article class="glass reveal"><div><div class="stat-k">Dias úteis</div><div class="stat-v cyan" data-count="26">0</div><div class="stat-s">veículos reduzidos</div></div>${dots(26,"")}</article>
+      <article class="glass reveal"><div><div class="stat-k">Sábados</div><div class="stat-v orange" data-count="19">0</div><div class="stat-s">veículos reduzidos</div></div>${dots(19,"sat")}</article>
+      <article class="glass reveal"><div><div class="stat-k">Domingos</div><div class="stat-v red" data-count="15">0</div><div class="stat-s">veículos reduzidos · 34 no fim de semana</div></div>${dots(15,"sun")}</article>
+    </div>
+  </section>`,
+  () => lineSlide("Útil","06 · dias úteis","20 linhas ajustadas",353,"3.487"),
+  () => lineSlide("Sábado","07 · sábados","19 linhas ajustadas",463,"5.003"),
+  () => lineSlide("Domingo","08 · domingos","16 linhas ajustadas",430,"3.363", true),
+  () => `<section class="slide">
+    <div class="reveal"><div class="kicker">09 · resultado</div><h1>O saldo da<br><em>programação.</em></h1><p class="lead">A redução se concentra no fim de semana. A linha 417, no domingo, recebe 58 viagens como alternativa de atendimento.</p></div>
+    <div class="kpi-row">
+      <article class="glass kpi reveal"><div class="stat-k">Viagens a menos / mês</div><div class="stat-v red" data-count="11618">0</div><div class="stat-s">queda de 7,3%</div></article>
+      <article class="glass kpi reveal"><div class="stat-k">Km a menos / mês</div><div class="stat-v orange" data-count="112971">0</div><div class="stat-s">queda de 8,0%</div></article>
+      <article class="glass kpi reveal"><div class="stat-k">Km a menos / ano</div><div class="stat-v cyan" data-count="1355647">0</div><div class="stat-s">253 úteis · 59 sábados · 53 domingos</div></article>
+      <article class="glass kpi reveal"><div class="stat-k">Veículos no fim de semana</div><div class="stat-v" data-count="34">0</div><div class="stat-s">19 no sábado e 15 no domingo</div></article>
+    </div>
+    <div class="pair">
+      <article class="glass chart-box reveal"><div class="stat-k">Viagens a menos no mês · por tipo de dia</div><canvas id="chartShareTrips"></canvas></article>
+      <article class="glass chart-box reveal"><div class="stat-k">Quilômetros a menos no mês · por tipo de dia</div><canvas id="chartShareKm"></canvas></article>
+    </div>
+  </section>`
+];
+
+function lineSlide(day, kicker, sub, tripsDay, kmDay, sunday){
+  const extra = sunday ? `<article class="glass callout reveal"><div><div class="stat-k">Alternativa de atendimento</div><div class="stat-s">A linha 417 passa de 13 para 71 viagens.</div></div><b>+58 viagens · +372,66 km</b></article>` : "";
+  return `<section class="slide">
+    <div class="rank-head">
+      <div class="reveal"><div class="kicker">${kicker}</div><h1 style="font-size:clamp(32px,3.4vw,48px)">Redução por linha.</h1><p class="lead" style="margin-top:4px">${sub}. Barras na escala da maior redução do dia.</p></div>
+      <div class="rank-kpis">
+        <article class="glass reveal"><div class="stat-k">Viagens / dia</div><b>↓ ${fmt(tripsDay)}</b></article>
+        <article class="glass reveal"><div class="stat-k">Km / dia</div><b>↓ ${kmDay}</b></article>
+      </div>
+    </div>
+    ${extra}
+    ${rankHtml(day)}
+  </section>`;
+}
+
+function killCharts(){ charts.splice(0).forEach(c => c.destroy()); }
+
+function animateIn(root){
+  if (reduce) return;
+  slideTween = gsap.timeline({ defaults:{ ease:"power3.out" } });
+  slideTween.from(root.querySelectorAll(".reveal"), {
+    y:18, autoAlpha:0, duration:.55, stagger:.045
+  }, 0);
+  slideTween.from(root.querySelectorAll(".bar-fill"), {
+    scaleX:0, duration:.7, stagger:.02, ease:"power3.out"
+  }, .12);
+  root.querySelectorAll("[data-count]").forEach(el => {
+    const end = Number(el.dataset.count);
+    const dec = Number(el.dataset.dec || 0);
+    const suffix = el.dataset.suffix || "";
+    const obj = { v:0 };
+    slideTween.to(obj, {
+      v:end, duration:1.05, ease:"power2.out",
+      onUpdate(){ el.textContent = fmt(obj.v, dec) + suffix; }
+    }, .08);
+  });
+}
+
+function render(){
+  killCharts();
+  if (slideTween) slideTween.kill();
+  app.innerHTML = slides[page]();
+  pager.textContent = String(page + 1).padStart(2,"0") + " / " + String(slides.length).padStart(2,"0");
+  gsap.to(bar, { width: ((page + 1) / slides.length * 100) + "%", duration: reduce ? 0 : .45, ease:"power2.out" });
+  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", Number(b.dataset.go) === page || (b.dataset.span && page >= Number(b.dataset.go) && page <= Number(b.dataset.end))));
+  if (page === 2) grouped("chartTrips", trips, "Programação original", "Nova programação");
+  if (page === 3) grouped("chartKm", kms, "Cenário atual", "Após a redução");
+  if (page === 9){ shareChart("chartShareTrips", shareTrips, 11618); shareChart("chartShareKm", shareKm, 112971); }
+  animateIn(app);
+}
+
+function go(n){
+  const next = Math.max(0, Math.min(slides.length - 1, n));
+  if (next === page) return;
+  const current = app.querySelector(".slide");
+  if (!current || reduce){ page = next; render(); return; }
+  gsap.to(current, { autoAlpha:0, y:-12, duration:.22, ease:"power2.in", onComplete(){ page = next; render(); } });
+}
+
+document.querySelector("#nav").innerHTML = navItems.map(([label, i], idx) => {
+  const end = navItems[idx + 1] ? navItems[idx + 1][1] - 1 : slides.length - 1;
+  return `<button data-go="${i}" data-end="${end}" data-span="1">${label}</button>`;
+}).join("");
+document.querySelector("#nav").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (b) go(Number(b.dataset.go));
+});
+document.querySelector("#prev").onclick = () => go(page - 1);
+document.querySelector("#next").onclick = () => go(page + 1);
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " ") { e.preventDefault(); go(page + 1); }
+  if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); go(page - 1); }
+  if (e.key.toLowerCase() === "f") document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+});
+
+if (!reduce){
+  gsap.to(".orb-a", { x:50, y:30, duration:9, yoyo:true, repeat:-1, ease:"sine.inOut" });
+  gsap.to(".orb-b", { x:-40, y:-24, duration:11, yoyo:true, repeat:-1, ease:"sine.inOut" });
+  gsap.to(".orb-c", { x:-30, y:20, duration:7, yoyo:true, repeat:-1, ease:"sine.inOut" });
+  gsap.fromTo(".scan", { y:"-20vh" }, { y:"120vh", duration:7.5, repeat:-1, ease:"none" });
+}
+render();
+</script>
+</body>
+</html>
