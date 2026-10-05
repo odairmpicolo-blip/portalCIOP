@@ -241,8 +241,11 @@ const ondeUtil = [
   { nome:"Entrepico e tarde", viagens:10, linhas:[["351",null,null,10]] },
   { nome:"Noite", viagens:7, linhas:[["101",30,60,7]] }
 ];
+const limiteDiaUtil = 30549;
+const kmUtilAtual = 54700;
+const kmUtilProposta = 51213;
 const navItems = [
-  ["Capa",0],["Resumo",1],["Viagens",2],["Espera",3],["Km",5],["Frota",7],["Linhas",8],["Fecho",11]
+  ["Capa",0],["Resumo",1],["Viagens",2],["Espera",3],["Km",5],["Limite",7],["Frota",8],["Linhas",9],["Fecho",12]
 ];
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const app = document.querySelector("#app");
@@ -348,6 +351,48 @@ function grouped(id, rows, labelA, labelB){
   }));
 }
 
+function limitChart(){
+  const ctx = document.getElementById("chartLimite");
+  if (!ctx) return;
+  const valores = [kmUtilAtual, kmUtilProposta, limiteDiaUtil];
+  charts.push(new Chart(ctx, {
+    type:"bar",
+    data:{
+      labels:["Programação atual","Proposta","Limite"],
+      datasets:[{
+        data: valores,
+        backgroundColor:["rgba(61,225,255,.9)","rgba(255,106,44,.92)","rgba(46,230,166,.92)"],
+        borderRadius:12,
+        maxBarThickness:88
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{ padding:{ top:28 } },
+      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c => fmt(c.parsed.y) + " km" } } },
+      scales:{
+        x:{ grid:{ display:false }, border:{ display:false } },
+        y:{ grace:"16%", grid:{ color:"rgba(255,255,255,.06)" }, border:{ display:false }, ticks:{ callback:v => fmt(v) } }
+      }
+    },
+    plugins:[{
+      id:"limiteValue",
+      afterDatasetsDraw(chart){
+        const { ctx } = chart;
+        chart.getDatasetMeta(0).data.forEach((bar, i) => {
+          ctx.save();
+          ctx.textAlign = "center";
+          ctx.fillStyle = "#f3f7ff";
+          ctx.font = "800 22px Sora, sans-serif";
+          ctx.fillText(fmt(valores[i]), bar.x, bar.y - 12);
+          ctx.restore();
+        });
+      }
+    }]
+  }));
+}
+
 function rankRows(day){
   return lines[day]
     .filter(r => r[3] > 0)
@@ -444,18 +489,29 @@ const slides = [
     </div>
   </section>`,
   () => `<section class="slide">
-    <div class="reveal"><div class="kicker">07 · frota</div><h1>Veículos concentrados<br><em>nos fins de semana.</em></h1><p class="lead">Cada tabela totalmente em vermelho na planilha indica uma linha com redução de veículo. A estimativa fica em cerca de 60 veículos.</p></div>
+    <div class="split">
+      <div class="side-notes">
+        <div class="reveal"><div class="kicker">07 · limite à parte</div><h1>Teto de<br><em>30.549 km.</em></h1><p class="lead">Limite só dos dias úteis, separado da proposta. Em 253 dias, o teto soma 7.728.897 km.</p></div>
+        <article class="glass note reveal"><b>54.700 km</b><span>Programação atual do dia útil</span></article>
+        <article class="glass note reveal"><b>51.213 km</b><span>Proposta · ainda 20.664 km acima do limite</span></article>
+        <article class="glass note reveal"><b>↓ 24.151 km</b><span>Para encostar no teto · queda de 44,2%</span></article>
+      </div>
+      <article class="glass chart-box reveal"><div class="stat-k">Quilômetros por dia útil</div><canvas id="chartLimite"></canvas></article>
+    </div>
+  </section>`,
+  () => `<section class="slide">
+    <div class="reveal"><div class="kicker">08 · frota</div><h1>Veículos concentrados<br><em>nos fins de semana.</em></h1><p class="lead">Cada tabela totalmente em vermelho na planilha indica uma linha com redução de veículo. A estimativa fica em cerca de 60 veículos.</p></div>
     <div class="fleet">
       <article class="glass reveal"><div><div class="stat-k">Dias úteis</div><div class="stat-v cyan" data-count="26">0</div><div class="stat-s">veículos reduzidos</div></div>${dots(26,"")}</article>
       <article class="glass reveal"><div><div class="stat-k">Sábados</div><div class="stat-v orange" data-count="19">0</div><div class="stat-s">veículos reduzidos</div></div>${dots(19,"sat")}</article>
       <article class="glass reveal"><div><div class="stat-k">Domingos</div><div class="stat-v red" data-count="15">0</div><div class="stat-s">veículos reduzidos · 34 no fim de semana</div></div>${dots(15,"sun")}</article>
     </div>
   </section>`,
-  () => lineSlide("Útil","08 · dias úteis","20 linhas ajustadas",353,"3.487"),
-  () => lineSlide("Sábado","09 · sábados","19 linhas ajustadas",463,"5.003"),
-  () => lineSlide("Domingo","10 · domingos","16 linhas ajustadas",430,"3.363", true),
+  () => lineSlide("Útil","09 · dias úteis","20 linhas ajustadas",353,"3.487"),
+  () => lineSlide("Sábado","10 · sábados","19 linhas ajustadas",463,"5.003"),
+  () => lineSlide("Domingo","11 · domingos","16 linhas ajustadas",430,"3.363", true),
   () => `<section class="slide">
-    <div class="reveal"><div class="kicker">11 · resultado</div><h1>O saldo da<br><em>programação.</em></h1><p class="lead">A redução se concentra no fim de semana. A linha 417, no domingo, recebe 58 viagens como alternativa de atendimento.</p></div>
+    <div class="reveal"><div class="kicker">12 · resultado</div><h1>O saldo da<br><em>programação.</em></h1><p class="lead">A redução se concentra no fim de semana. A linha 417, no domingo, recebe 58 viagens como alternativa de atendimento.</p></div>
     <div class="kpi-row">
       <article class="glass kpi reveal"><div class="stat-k">Viagens a menos / mês</div><div class="stat-v red" data-count="11618">0</div><div class="stat-s">queda de 7,3%</div></article>
       <article class="glass kpi reveal"><div class="stat-k">Km a menos / mês</div><div class="stat-v orange" data-count="112971">0</div><div class="stat-s">queda de 8,0%</div></article>
@@ -534,7 +590,8 @@ function render(){
   if (page === 2) grouped("chartTrips", trips, "Programação original", "Nova programação");
   if (page === 3) grouped("chartWait", espera, "Espera atual", "Nova espera");
   if (page === 5) grouped("chartKm", kms, "Cenário atual", "Após a redução");
-  if (page === 11){ shareChart("chartShareTrips", shareTrips, 11618); shareChart("chartShareKm", shareKm, 112971); }
+  if (page === 7) limitChart();
+  if (page === 12){ shareChart("chartShareTrips", shareTrips, 11618); shareChart("chartShareKm", shareKm, 112971); }
   animateIn(app);
 }
 
