@@ -125,12 +125,18 @@
   .rank-row.zero .bar-fill{background:linear-gradient(90deg,#ff6a2c,#ff4d5e)}
   .rank-row .num{text-align:right;font-weight:800;font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap}
   .rank-row .km{text-align:right;color:var(--muted);font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
-  .wait-list{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:1px}
-  .wait-row{display:grid;grid-template-columns:86px 168px minmax(0,1fr) 96px 150px;gap:10px;align-items:center}
-  .wait-row .code{font-family:Sora,sans-serif;font-size:20px}
-  .wait-row .per{color:var(--muted);font-size:15px;white-space:nowrap}
-  .wait-row .num{text-align:right;font-weight:800;font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap}
-  .wait-row .km{text-align:right;color:var(--muted);font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .where{flex:1;min-height:0;display:grid;grid-template-columns:1.25fr 1fr .78fr;gap:12px}
+  .where-stack{display:flex;flex-direction:column;gap:12px;min-height:0}
+  .zone{display:flex;flex-direction:column;min-height:0;padding:14px 16px}
+  .zone.peak{border-color:rgba(61,225,255,.55);box-shadow:0 0 0 1px rgba(61,225,255,.25),0 24px 60px rgba(0,0,0,.35)}
+  .zone-head{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin-bottom:8px}
+  .zone-head span{font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--cyan)}
+  .zone-head b{font-family:Sora,sans-serif;font-size:40px;letter-spacing:-.04em;line-height:.9}
+  .zone-head small{display:block;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+  .zrow{display:grid;grid-template-columns:78px 1fr auto;gap:8px;align-items:center;padding:5px 0;border-top:1px solid rgba(255,255,255,.06)}
+  .zrow .code{font-family:Sora,sans-serif;font-size:18px}
+  .zrow .wait{color:#d5e6f8;font-size:15px;font-variant-numeric:tabular-nums}
+  .zrow .cut{color:#ff8b96;font-weight:800;font-size:16px;font-variant-numeric:tabular-nums}
   .callout{display:flex;justify-content:space-between;align-items:center;gap:12px;border-color:rgba(46,230,166,.4);background:linear-gradient(90deg,rgba(46,230,166,.14),rgba(8,18,36,.7))}
   .callout b{color:var(--green);font-family:Sora,sans-serif;font-size:40px}
 
@@ -146,7 +152,7 @@
     body{overflow:auto}
     header{height:auto;padding:12px 16px;flex-wrap:wrap}
     .slide{height:auto;min-height:calc(100vh - 90px);padding:20px 16px 80px}
-    .hero,.split,.pair,.compare,.fleet,.fronts,.cols,.kpi-row,.wait-row{grid-template-columns:1fr}
+    .hero,.split,.pair,.compare,.fleet,.fronts,.cols,.kpi-row,.where{grid-template-columns:1fr}
     .chart-box{height:320px}
     .arrow{transform:rotate(90deg)}
     nav{display:none}
@@ -222,20 +228,18 @@ const espera = [
   { dia:"Sábados", antes:32, depois:59, extra:27 },
   { dia:"Domingos", antes:37, depois:80, extra:43 }
 ];
-const esperaUtil = [
-  ["101","Noite",30,60],
-  ["306","Entrepico",22,44],
-  ["404","Entrepico",22,43],
-  ["420","Entrepico e noite",17,35],
-  ["303","Entrepico",30,45],
-  ["405","Entrepico",12,25],
-  ["110/111","Entrepico",23,35],
-  ["112","Entrepico",22,32],
-  ["501","Entrepico e noite",15,20],
-  ["311","Entrepico",14,18],
-  ["803","Entrepico e noite",18,22],
-  ["106","Entrepico",12,15],
-  ["113","Entrepico",12,15]
+const ondeUtil = [
+  { nome:"Entrepico", viagens:190, linhas:[
+    ["113",12,15,27],["110/111",23,35,22],["306",22,44,20],["404",22,43,20],
+    ["913",null,null,16],["106",12,15,14],["112",22,32,14],["800",null,null,13],
+    ["311",14,18,12],["802",null,null,12],["405",12,25,11],["303",30,45,9]
+  ]},
+  { nome:"Entrepico e noite", viagens:146, linhas:[
+    ["107",null,null,44],["900",null,null,30],["420",17,35,29],
+    ["501",15,20,15],["803",18,22,15],["806",null,null,13]
+  ]},
+  { nome:"Entrepico e tarde", viagens:10, linhas:[["351",null,null,10]] },
+  { nome:"Noite", viagens:7, linhas:[["101",30,60,7]] }
 ];
 const navItems = [
   ["Capa",0],["Resumo",1],["Viagens",2],["Espera",3],["Km",5],["Frota",7],["Linhas",8],["Fecho",11]
@@ -414,13 +418,13 @@ const slides = [
   </section>`,
   () => `<section class="slide">
     <div class="rank-head">
-      <div class="reveal"><div class="kicker">04 · dias úteis</div><h1 style="font-size:clamp(32px,3.6vw,52px)">A retirada é grande<br><em>no entrepico.</em></h1><p class="lead" style="margin-top:4px">346 das 353 viagens a menos no dia útil saem do entrepico. Abaixo, o tempo até o próximo ônibus em cada linha.</p></div>
+      <div class="reveal"><div class="kicker">04 · onde reduz</div><h1 style="font-size:clamp(32px,3.4vw,48px)">A redução útil<br><em>está no entrepico.</em></h1><p class="lead" style="margin-top:4px">346 das 353 viagens saem desse período. Em cada linha, a espera até o próximo ônibus.</p></div>
       <div class="rank-kpis">
         <article class="glass reveal"><div class="stat-k">Viagens no entrepico</div><b>346</b></article>
-        <article class="glass reveal"><div class="stat-k">Espera média</div><b>+ 13 min</b></article>
+        <article class="glass reveal"><div class="stat-k">Fora do entrepico</div><b>7</b></article>
       </div>
     </div>
-    ${esperaPorLinha()}
+    ${ondeReduz()}
   </section>`,
   () => `<section class="slide">
     <div class="split">
@@ -465,18 +469,22 @@ const slides = [
   </section>`
 ];
 
-function esperaPorLinha(){
-  const max = Math.max(...esperaUtil.map(r => r[3] - r[2]));
-  return `<div class="wait-list">${esperaUtil.map(r => {
-    const extra = r[3] - r[2];
-    return `<div class="wait-row">
-      <span class="code">${r[0]}</span>
-      <span class="per">${r[1]}</span>
-      <div class="track"><i class="bar-fill" style="--w:${(extra / max * 100).toFixed(1)}%"></i></div>
-      <span class="num">+ ${extra} min</span>
-      <span class="km">${r[2]} → ${r[3]} min</span>
-    </div>`;
-  }).join("")}</div>`;
+function zonaHtml(zona, peak){
+  const linhas = zona.linhas.map(r => {
+    const espera = r[1] == null ? "sem horário" : `${r[1]} → ${r[2]} min`;
+    return `<div class="zrow"><span class="code">${r[0]}</span><span class="wait">${espera}</span><span class="cut">↓ ${r[3]}</span></div>`;
+  }).join("");
+  return `<article class="glass zone ${peak ? "peak" : ""} reveal">
+    <div class="zone-head"><span>${zona.nome}</span><div><b>${zona.viagens}</b><small>viagens</small></div></div>
+    ${linhas}
+  </article>`;
+}
+function ondeReduz(){
+  return `<div class="where">
+    ${zonaHtml(ondeUtil[0], true)}
+    ${zonaHtml(ondeUtil[1], false)}
+    <div class="where-stack">${zonaHtml(ondeUtil[2], false)}${zonaHtml(ondeUtil[3], false)}</div>
+  </div>`;
 }
 function lineSlide(day, kicker, sub, tripsDay, kmDay, sunday){
   const extra = sunday ? `<article class="glass callout reveal"><div><div class="stat-k">Alternativa de atendimento</div><div class="stat-s">A linha 417 passa de 13 para 71 viagens.</div></div><b>+58 viagens · +372,66 km</b></article>` : "";
