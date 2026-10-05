@@ -211,8 +211,13 @@ const kms = [
   { dia:"Sábados", antes:33060, depois:28057, queda:15.1, diaKm:5003 },
   { dia:"Domingos", antes:23489, depois:20126, queda:14.3, diaKm:3363 }
 ];
+const espera = [
+  { dia:"Dias úteis", antes:19, depois:32, extra:13 },
+  { dia:"Sábados", antes:32, depois:59, extra:27 },
+  { dia:"Domingos", antes:37, depois:80, extra:43 }
+];
 const navItems = [
-  ["Capa",0],["Resumo",1],["Viagens",2],["Km",3],["Frota",5],["Linhas",6],["Fecho",9]
+  ["Capa",0],["Resumo",1],["Viagens",2],["Espera",3],["Km",4],["Frota",6],["Linhas",7],["Fecho",10]
 ];
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const app = document.querySelector("#app");
@@ -380,14 +385,23 @@ const slides = [
   () => `<section class="slide">
     <div class="split">
       <div class="side-notes">
-        <div class="reveal"><div class="kicker">03 · quilometragem</div><h1>Km retirados<br><em>em um dia típico.</em></h1><p class="lead">Média mensal anualizada: 112.971 km. No ano, 1.355.647 km.</p></div>
+        <div class="reveal"><div class="kicker">03 · espera do cliente</div><h1>O intervalo<br><em>fica maior.</em></h1><p class="lead">Minutos até o próximo ônibus, no período da mudança. Média das linhas que seguem com horário.</p></div>
+        ${espera.map(t => `<article class="glass note reveal"><b>+ ${fmt(t.extra)} min</b><span>${t.dia}: ${fmt(t.antes)} → ${fmt(t.depois)} min</span></article>`).join("")}
+      </div>
+      <article class="glass chart-box reveal"><div class="stat-k">Minutos até o próximo ônibus</div><canvas id="chartWait"></canvas></article>
+    </div>
+  </section>`,
+  () => `<section class="slide">
+    <div class="split">
+      <div class="side-notes">
+        <div class="reveal"><div class="kicker">04 · quilometragem</div><h1>Km retirados<br><em>em um dia típico.</em></h1><p class="lead">Média mensal anualizada: 112.971 km. No ano, 1.355.647 km.</p></div>
         ${kms.map(t => `<article class="glass note reveal"><b>↓ ${fmt(t.diaKm)} km</b><span>${t.dia} · queda de ${fmt(t.queda,1)}%</span></article>`).join("")}
       </div>
       <article class="glass chart-box reveal"><canvas id="chartKm"></canvas></article>
     </div>
   </section>`,
   () => `<section class="slide">
-    <div class="reveal"><div class="kicker">04 · cenário mensal</div><h1>Antes e depois<br><em>da redução.</em></h1><p class="lead">Base anual: 253 dias úteis, 59 sábados e 53 domingos. A média mensal é a soma anual dividida por 12.</p></div>
+    <div class="reveal"><div class="kicker">05 · cenário mensal</div><h1>Antes e depois<br><em>da redução.</em></h1><p class="lead">Base anual: 253 dias úteis, 59 sábados e 53 domingos. A média mensal é a soma anual dividida por 12.</p></div>
     <div class="compare">
       <article class="glass reveal"><div class="stat-k">Cenário atual</div><div class="stat-v" data-count="1419544">0</div><div class="stat-s">quilômetros por mês</div><div class="stat-v sub" data-count="158838">0</div><div class="stat-s">viagens produtivas por mês</div></article>
       <div class="arrow reveal">↓</div>
@@ -395,18 +409,18 @@ const slides = [
     </div>
   </section>`,
   () => `<section class="slide">
-    <div class="reveal"><div class="kicker">05 · frota</div><h1>Veículos concentrados<br><em>nos fins de semana.</em></h1><p class="lead">Cada tabela totalmente em vermelho na planilha indica uma linha com redução de veículo. A estimativa fica em cerca de 60 veículos.</p></div>
+    <div class="reveal"><div class="kicker">06 · frota</div><h1>Veículos concentrados<br><em>nos fins de semana.</em></h1><p class="lead">Cada tabela totalmente em vermelho na planilha indica uma linha com redução de veículo. A estimativa fica em cerca de 60 veículos.</p></div>
     <div class="fleet">
       <article class="glass reveal"><div><div class="stat-k">Dias úteis</div><div class="stat-v cyan" data-count="26">0</div><div class="stat-s">veículos reduzidos</div></div>${dots(26,"")}</article>
       <article class="glass reveal"><div><div class="stat-k">Sábados</div><div class="stat-v orange" data-count="19">0</div><div class="stat-s">veículos reduzidos</div></div>${dots(19,"sat")}</article>
       <article class="glass reveal"><div><div class="stat-k">Domingos</div><div class="stat-v red" data-count="15">0</div><div class="stat-s">veículos reduzidos · 34 no fim de semana</div></div>${dots(15,"sun")}</article>
     </div>
   </section>`,
-  () => lineSlide("Útil","06 · dias úteis","20 linhas ajustadas",353,"3.487"),
-  () => lineSlide("Sábado","07 · sábados","19 linhas ajustadas",463,"5.003"),
-  () => lineSlide("Domingo","08 · domingos","16 linhas ajustadas",430,"3.363", true),
+  () => lineSlide("Útil","07 · dias úteis","20 linhas ajustadas",353,"3.487"),
+  () => lineSlide("Sábado","08 · sábados","19 linhas ajustadas",463,"5.003"),
+  () => lineSlide("Domingo","09 · domingos","16 linhas ajustadas",430,"3.363", true),
   () => `<section class="slide">
-    <div class="reveal"><div class="kicker">09 · resultado</div><h1>O saldo da<br><em>programação.</em></h1><p class="lead">A redução se concentra no fim de semana. A linha 417, no domingo, recebe 58 viagens como alternativa de atendimento.</p></div>
+    <div class="reveal"><div class="kicker">10 · resultado</div><h1>O saldo da<br><em>programação.</em></h1><p class="lead">A redução se concentra no fim de semana. A linha 417, no domingo, recebe 58 viagens como alternativa de atendimento.</p></div>
     <div class="kpi-row">
       <article class="glass kpi reveal"><div class="stat-k">Viagens a menos / mês</div><div class="stat-v red" data-count="11618">0</div><div class="stat-s">queda de 7,3%</div></article>
       <article class="glass kpi reveal"><div class="stat-k">Km a menos / mês</div><div class="stat-v orange" data-count="112971">0</div><div class="stat-s">queda de 8,0%</div></article>
@@ -466,8 +480,9 @@ function render(){
   gsap.to(bar, { width: ((page + 1) / slides.length * 100) + "%", duration: reduce ? 0 : .45, ease:"power2.out" });
   document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", Number(b.dataset.go) === page || (b.dataset.span && page >= Number(b.dataset.go) && page <= Number(b.dataset.end))));
   if (page === 2) grouped("chartTrips", trips, "Programação original", "Nova programação");
-  if (page === 3) grouped("chartKm", kms, "Cenário atual", "Após a redução");
-  if (page === 9){ shareChart("chartShareTrips", shareTrips, 11618); shareChart("chartShareKm", shareKm, 112971); }
+  if (page === 3) grouped("chartWait", espera, "Espera atual", "Nova espera");
+  if (page === 4) grouped("chartKm", kms, "Cenário atual", "Após a redução");
+  if (page === 10){ shareChart("chartShareTrips", shareTrips, 11618); shareChart("chartShareKm", shareKm, 112971); }
   animateIn(app);
 }
 
