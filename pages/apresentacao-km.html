@@ -125,6 +125,12 @@
   .rank-row.zero .bar-fill{background:linear-gradient(90deg,#ff6a2c,#ff4d5e)}
   .rank-row .num{text-align:right;font-weight:800;font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap}
   .rank-row .km{text-align:right;color:var(--muted);font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .wait-list{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:1px}
+  .wait-row{display:grid;grid-template-columns:86px 168px minmax(0,1fr) 96px 150px;gap:10px;align-items:center}
+  .wait-row .code{font-family:Sora,sans-serif;font-size:20px}
+  .wait-row .per{color:var(--muted);font-size:15px;white-space:nowrap}
+  .wait-row .num{text-align:right;font-weight:800;font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .wait-row .km{text-align:right;color:var(--muted);font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
   .callout{display:flex;justify-content:space-between;align-items:center;gap:12px;border-color:rgba(46,230,166,.4);background:linear-gradient(90deg,rgba(46,230,166,.14),rgba(8,18,36,.7))}
   .callout b{color:var(--green);font-family:Sora,sans-serif;font-size:40px}
 
@@ -140,7 +146,7 @@
     body{overflow:auto}
     header{height:auto;padding:12px 16px;flex-wrap:wrap}
     .slide{height:auto;min-height:calc(100vh - 90px);padding:20px 16px 80px}
-    .hero,.split,.pair,.compare,.fleet,.fronts,.cols,.kpi-row{grid-template-columns:1fr}
+    .hero,.split,.pair,.compare,.fleet,.fronts,.cols,.kpi-row,.wait-row{grid-template-columns:1fr}
     .chart-box{height:320px}
     .arrow{transform:rotate(90deg)}
     nav{display:none}
@@ -216,8 +222,23 @@ const espera = [
   { dia:"Sábados", antes:32, depois:59, extra:27 },
   { dia:"Domingos", antes:37, depois:80, extra:43 }
 ];
+const esperaUtil = [
+  ["101","Noite",30,60],
+  ["306","Entrepico",22,44],
+  ["404","Entrepico",22,43],
+  ["420","Entrepico e noite",17,35],
+  ["303","Entrepico",30,45],
+  ["405","Entrepico",12,25],
+  ["110/111","Entrepico",23,35],
+  ["112","Entrepico",22,32],
+  ["501","Entrepico e noite",15,20],
+  ["311","Entrepico",14,18],
+  ["803","Entrepico e noite",18,22],
+  ["106","Entrepico",12,15],
+  ["113","Entrepico",12,15]
+];
 const navItems = [
-  ["Capa",0],["Resumo",1],["Viagens",2],["Espera",3],["Km",4],["Frota",6],["Linhas",7],["Fecho",10]
+  ["Capa",0],["Resumo",1],["Viagens",2],["Espera",3],["Km",5],["Frota",7],["Linhas",8],["Fecho",11]
 ];
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const app = document.querySelector("#app");
@@ -392,16 +413,26 @@ const slides = [
     </div>
   </section>`,
   () => `<section class="slide">
+    <div class="rank-head">
+      <div class="reveal"><div class="kicker">04 · dias úteis</div><h1 style="font-size:clamp(32px,3.6vw,52px)">A retirada é grande<br><em>no entrepico.</em></h1><p class="lead" style="margin-top:4px">346 das 353 viagens a menos no dia útil saem do entrepico. Abaixo, o tempo até o próximo ônibus em cada linha.</p></div>
+      <div class="rank-kpis">
+        <article class="glass reveal"><div class="stat-k">Viagens no entrepico</div><b>346</b></article>
+        <article class="glass reveal"><div class="stat-k">Espera média</div><b>+ 13 min</b></article>
+      </div>
+    </div>
+    ${esperaPorLinha()}
+  </section>`,
+  () => `<section class="slide">
     <div class="split">
       <div class="side-notes">
-        <div class="reveal"><div class="kicker">04 · quilometragem</div><h1>Km retirados<br><em>em um dia típico.</em></h1><p class="lead">Média mensal anualizada: 112.971 km. No ano, 1.355.647 km.</p></div>
+        <div class="reveal"><div class="kicker">05 · quilometragem</div><h1>Km retirados<br><em>em um dia típico.</em></h1><p class="lead">Média mensal anualizada: 112.971 km. No ano, 1.355.647 km.</p></div>
         ${kms.map(t => `<article class="glass note reveal"><b>↓ ${fmt(t.diaKm)} km</b><span>${t.dia} · queda de ${fmt(t.queda,1)}%</span></article>`).join("")}
       </div>
       <article class="glass chart-box reveal"><canvas id="chartKm"></canvas></article>
     </div>
   </section>`,
   () => `<section class="slide">
-    <div class="reveal"><div class="kicker">05 · cenário mensal</div><h1>Antes e depois<br><em>da redução.</em></h1><p class="lead">Base anual: 253 dias úteis, 59 sábados e 53 domingos. A média mensal é a soma anual dividida por 12.</p></div>
+    <div class="reveal"><div class="kicker">06 · cenário mensal</div><h1>Antes e depois<br><em>da redução.</em></h1><p class="lead">Base anual: 253 dias úteis, 59 sábados e 53 domingos. A média mensal é a soma anual dividida por 12.</p></div>
     <div class="compare">
       <article class="glass reveal"><div class="stat-k">Cenário atual</div><div class="stat-v" data-count="1419544">0</div><div class="stat-s">quilômetros por mês</div><div class="stat-v sub" data-count="158838">0</div><div class="stat-s">viagens produtivas por mês</div></article>
       <div class="arrow reveal">↓</div>
@@ -409,18 +440,18 @@ const slides = [
     </div>
   </section>`,
   () => `<section class="slide">
-    <div class="reveal"><div class="kicker">06 · frota</div><h1>Veículos concentrados<br><em>nos fins de semana.</em></h1><p class="lead">Cada tabela totalmente em vermelho na planilha indica uma linha com redução de veículo. A estimativa fica em cerca de 60 veículos.</p></div>
+    <div class="reveal"><div class="kicker">07 · frota</div><h1>Veículos concentrados<br><em>nos fins de semana.</em></h1><p class="lead">Cada tabela totalmente em vermelho na planilha indica uma linha com redução de veículo. A estimativa fica em cerca de 60 veículos.</p></div>
     <div class="fleet">
       <article class="glass reveal"><div><div class="stat-k">Dias úteis</div><div class="stat-v cyan" data-count="26">0</div><div class="stat-s">veículos reduzidos</div></div>${dots(26,"")}</article>
       <article class="glass reveal"><div><div class="stat-k">Sábados</div><div class="stat-v orange" data-count="19">0</div><div class="stat-s">veículos reduzidos</div></div>${dots(19,"sat")}</article>
       <article class="glass reveal"><div><div class="stat-k">Domingos</div><div class="stat-v red" data-count="15">0</div><div class="stat-s">veículos reduzidos · 34 no fim de semana</div></div>${dots(15,"sun")}</article>
     </div>
   </section>`,
-  () => lineSlide("Útil","07 · dias úteis","20 linhas ajustadas",353,"3.487"),
-  () => lineSlide("Sábado","08 · sábados","19 linhas ajustadas",463,"5.003"),
-  () => lineSlide("Domingo","09 · domingos","16 linhas ajustadas",430,"3.363", true),
+  () => lineSlide("Útil","08 · dias úteis","20 linhas ajustadas",353,"3.487"),
+  () => lineSlide("Sábado","09 · sábados","19 linhas ajustadas",463,"5.003"),
+  () => lineSlide("Domingo","10 · domingos","16 linhas ajustadas",430,"3.363", true),
   () => `<section class="slide">
-    <div class="reveal"><div class="kicker">10 · resultado</div><h1>O saldo da<br><em>programação.</em></h1><p class="lead">A redução se concentra no fim de semana. A linha 417, no domingo, recebe 58 viagens como alternativa de atendimento.</p></div>
+    <div class="reveal"><div class="kicker">11 · resultado</div><h1>O saldo da<br><em>programação.</em></h1><p class="lead">A redução se concentra no fim de semana. A linha 417, no domingo, recebe 58 viagens como alternativa de atendimento.</p></div>
     <div class="kpi-row">
       <article class="glass kpi reveal"><div class="stat-k">Viagens a menos / mês</div><div class="stat-v red" data-count="11618">0</div><div class="stat-s">queda de 7,3%</div></article>
       <article class="glass kpi reveal"><div class="stat-k">Km a menos / mês</div><div class="stat-v orange" data-count="112971">0</div><div class="stat-s">queda de 8,0%</div></article>
@@ -434,6 +465,19 @@ const slides = [
   </section>`
 ];
 
+function esperaPorLinha(){
+  const max = Math.max(...esperaUtil.map(r => r[3] - r[2]));
+  return `<div class="wait-list">${esperaUtil.map(r => {
+    const extra = r[3] - r[2];
+    return `<div class="wait-row">
+      <span class="code">${r[0]}</span>
+      <span class="per">${r[1]}</span>
+      <div class="track"><i class="bar-fill" style="--w:${(extra / max * 100).toFixed(1)}%"></i></div>
+      <span class="num">+ ${extra} min</span>
+      <span class="km">${r[2]} → ${r[3]} min</span>
+    </div>`;
+  }).join("")}</div>`;
+}
 function lineSlide(day, kicker, sub, tripsDay, kmDay, sunday){
   const extra = sunday ? `<article class="glass callout reveal"><div><div class="stat-k">Alternativa de atendimento</div><div class="stat-s">A linha 417 passa de 13 para 71 viagens.</div></div><b>+58 viagens · +372,66 km</b></article>` : "";
   return `<section class="slide">
@@ -481,8 +525,8 @@ function render(){
   document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", Number(b.dataset.go) === page || (b.dataset.span && page >= Number(b.dataset.go) && page <= Number(b.dataset.end))));
   if (page === 2) grouped("chartTrips", trips, "Programação original", "Nova programação");
   if (page === 3) grouped("chartWait", espera, "Espera atual", "Nova espera");
-  if (page === 4) grouped("chartKm", kms, "Cenário atual", "Após a redução");
-  if (page === 10){ shareChart("chartShareTrips", shareTrips, 11618); shareChart("chartShareKm", shareKm, 112971); }
+  if (page === 5) grouped("chartKm", kms, "Cenário atual", "Após a redução");
+  if (page === 11){ shareChart("chartShareTrips", shareTrips, 11618); shareChart("chartShareKm", shareKm, 112971); }
   animateIn(app);
 }
 
