@@ -75,8 +75,9 @@
   .esp-row .code,.km-row .code{font-family:Sora,sans-serif;font-size:28px}
   .esp-row .mins{font-size:22px;color:#d5e6f8;font-variant-numeric:tabular-nums}
   .esp-row .plus{font-family:Sora,sans-serif;font-size:34px;color:var(--orange);font-variant-numeric:tabular-nums}
-  .km-row{grid-template-columns:168px 100px minmax(0,1fr)}
-  .km-row b{font-family:Sora,sans-serif;font-size:40px;letter-spacing:-.03em;color:var(--orange);font-variant-numeric:tabular-nums}
+  .km-row{grid-template-columns:220px 140px minmax(0,1fr);padding:5px 0}
+  .km-row b{font-family:Sora,sans-serif;font-size:48px;letter-spacing:-.03em;color:var(--orange);font-variant-numeric:tabular-nums}
+  .km-row .code{font-size:36px}
   .bar{display:block;height:8px;width:var(--w);border-radius:99px;background:linear-gradient(90deg,#1a6cff,var(--cyan));transform-origin:left center}
   .stop{color:var(--green);font-size:22px;font-weight:800}
   .onde{display:grid;gap:12px;flex:1;min-height:0}
@@ -227,10 +228,6 @@ function mediaUtil(){
 function num(k, v, s, cls){
   return `<article class="glass reveal"><div class="stat-k">${k}</div><div class="stat-v ${cls||""}" data-count="${v}">0</div>${s ? `<div class="stat-s">${s}</div>` : ""}</article>`;
 }
-function bannerReserva(){
-  if (cenario !== 2) return "";
-  return `<article class="glass banner reveal">11 linhas do dia útil ficam como estão e dá para aumentar se precisar: 110/111, 803, 404, 306, 106, 303, 501, 311, 405, 101 e 351. São ${fmt(reservaMes)} km por mês.</article>`;
-}
 function espHtml(dia){
   const rows = cortes(dia).filter(r => r.espA != null).sort((a,b) => (b.espD-b.espA) - (a.espD-a.espA));
   return `<div class="esp-list">${rows.map(r => `<div class="esp-row reveal"><span class="code">${r.linha}</span><span class="mins">${r.espA} → ${r.espD} min</span><span class="plus">+${r.espD - r.espA}</span></div>`).join("")}</div>`;
@@ -278,11 +275,11 @@ function slim(id, labels, series){
 }
 
 const navItems = [
-  ["Escolha",0],["Totais",1],["Impacto",2],["Viagens",3],["Intervalo",4],["Onde",9],["Cenários",12],["Frota",13],["Linhas",14],["Saldo",17]
+  ["Escolha",0],["Totais",1],["Impacto",2],["Viagens",3],["Intervalo",4],["Onde",10],["Cenários",13],["Frota",14],["Linhas",15],["Saldo",18]
 ];
 const slides = [
   () => `<section class="slide choice-slide">
-    <div class="reveal"><div class="kicker">TCGL · diretoria 2026</div><h1>Duas opções<br><em>de redução.</em></h1><p class="lead">Clique na proposta. As páginas seguintes seguem esse cenário. Sábado e domingo são iguais nas duas.</p></div>
+    <div class="reveal"><div class="kicker">TCGL · diretoria 2026</div><h1>Duas opções<br><em>de redução.</em></h1><p class="lead">Clique na proposta. As páginas seguintes seguem esse cenário.</p></div>
     <div class="choice">
       <button type="button" class="glass opt a reveal ${cenario===1?"pick":""}" data-escolhe="1">
         <div class="stat-k">Opção 1 · redução total</div>
@@ -309,13 +306,12 @@ const slides = [
           <div><b>3.363 km</b><span>no domingo · 430 viagens</span></div>
           <div><b>19 + 15</b><span>veículos no fim de semana</span></div>
         </div>
-        <div class="tag">11 linhas dá para aumentar · ${fmt(reservaMes)} km/mês</div>
       </button>
     </div>
   </section>`,
   () => {
     const fora = cenario === 1 ? 0 : reservaMes;
-    const foraTexto = cenario === 1 ? "Tudo entra na redução" : "Fica de fora e dá para aumentar";
+    const foraTexto = cenario === 1 ? "Tudo entra na redução" : "Fora desta proposta";
     return `<section class="slide"><div class="reveal"><div class="kicker">01 · ${nomeCenario()}</div><h1>Os quilômetros<br><em>do mês.</em></h1></div>
       <div class="quad">
         ${num("Km programado / mês", progMes, "Antes da redução")}
@@ -324,7 +320,7 @@ const slides = [
         ${num("Total que fica / mês", ficaAtual(), "Programado menos a redução", "cyan")}
       </div></section>`;
   },
-  () => `<section class="slide"><div class="reveal"><div class="kicker">02 · ${nomeCenario()}</div><h1>Impacto estimado<br><em>para decisão.</em></h1><p class="lead">Frequência revista, linhas integradas e períodos suspensos. Sábado e domingo são iguais nos dois cenários.</p></div>
+  () => `<section class="slide"><div class="reveal"><div class="kicker">02 · ${nomeCenario()}</div><h1>Impacto estimado<br><em>para decisão.</em></h1><p class="lead">Frequência revista, linhas integradas e períodos suspensos.</p></div>
     <div class="kpi-row">
       ${num("Viagens hoje / mês", viagensMes.antes)}
       ${num("Viagens depois / mês", viagensDepois(), "", "cyan")}
@@ -347,27 +343,16 @@ const slides = [
       <article class="glass chart-slim reveal"><div class="stat-k">Viagens a menos por dia</div><canvas id="chartViagens"></canvas></article>
     </section>`;
   },
-  () => {
-    const u = mediaUtil();
-    return `<section class="slide"><div class="reveal"><div class="kicker">04 · ${nomeCenario()}</div><h1>O intervalo<br><em>fica maior.</em></h1><p class="lead">Minutos até o próximo ônibus, nas linhas que seguem com horário.</p></div>
-      <div class="kpi-3">
-        ${num("Dias úteis", u.extra, `${u.antes} → ${u.depois} min`, "orange")}
-        ${num("Sábados", 27, "32 → 59 min", "orange")}
-        ${num("Domingos", 43, "37 → 80 min", "orange")}
-      </div>
-      <article class="glass chart-slim reveal"><div class="stat-k">Minutos a mais na espera</div><canvas id="chartEspera"></canvas></article>
-    </section>`;
-  },
-  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis · ${nomeCenario()}</div><h1>A espera sobe<br><em>linha a linha.</em></h1></div>${bannerReserva()}${espHtml("util")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis · ${nomeCenario()}</div><h1>Estas linhas<br><em>ficam sem horário.</em></h1><p class="lead">Param no período da redução. A espera deixa de ter intervalo.</p></div>${paraHtml("util")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>Depois das 14h,<br><em>o intervalo abre.</em></h1></div>${espHtml("sab")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>Linhas que<br><em>param no sábado.</em></h1></div>${paraHtml("sab")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · domingos</div><h1>No domingo<br><em>a espera cresce.</em></h1></div>${espHtml("dom")}<article class="glass callout reveal"><div><div class="stat-k">Linha 417</div><div class="stat-s">Aumento de atendimento, de 13 para 71 viagens.</div></div><b>+58 viagens · +372,66 km</b></article></section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · domingos</div><h1>Linhas que<br><em>param no domingo.</em></h1></div>${paraHtml("dom")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · ${nomeCenario()}</div><h1>No útil, a redução<br><em>está no entrepico.</em></h1></div>${bannerReserva()}${ondeHtml("util", ["Entrepico","Entrepico e noite","Entrepico e tarde","Noite"], "u")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · sábados</div><h1>No sábado,<br><em>a partir das 14h.</em></h1></div>${ondeHtml("sab", ["Após as 14h","Após as 18h","Dia todo"], "s")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · domingos</div><h1>No domingo,<br><em>o dia todo.</em></h1></div>${ondeHtml("dom", ["Dia todo"], "d")}<article class="glass callout reveal"><div><div class="stat-k">Fora da redução</div><div class="stat-s">A linha 417 recebe viagens.</div></div><b>+58 viagens</b></article></section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · as duas propostas</div><h1>Antes, depois<br><em>e a escolha.</em></h1><p class="lead">O total corta tudo. O parcial deixa onze linhas do dia útil como estão. Sábado e domingo permanecem iguais.</p></div>
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis · ${nomeCenario()}</div><h1>O intervalo<br><em>fica maior.</em></h1></div>${espHtml("util")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis · ${nomeCenario()}</div><h1>O intervalo<br><em>fica maior.</em></h1><p class="lead">Linhas que param no período.</p></div>${paraHtml("util")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>O intervalo<br><em>fica maior.</em></h1></div>${espHtml("sab")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>O intervalo<br><em>fica maior.</em></h1><p class="lead">Linhas que param no sábado.</p></div>${paraHtml("sab")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · domingos</div><h1>O intervalo<br><em>fica maior.</em></h1></div>${espHtml("dom")}<article class="glass callout reveal"><div><div class="stat-k">Linha 417</div><div class="stat-s">Aumento de atendimento, de 13 para 71 viagens.</div></div><b>+58 viagens · +372,66 km</b></article></section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · domingos</div><h1>O intervalo<br><em>fica maior.</em></h1><p class="lead">Linhas que param no domingo.</p></div>${paraHtml("dom")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · dias úteis · ${nomeCenario()}</div><h1>Onde está<br><em>a redução.</em></h1></div>${ondeHtml("util", ["Entrepico","Entrepico e noite","Entrepico e tarde","Noite"], "u")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · sábados</div><h1>Onde está<br><em>a redução.</em></h1></div>${ondeHtml("sab", ["Após as 14h","Após as 18h","Dia todo"], "s")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · domingos</div><h1>Onde está<br><em>a redução.</em></h1></div>${ondeHtml("dom", ["Dia todo"], "d")}<article class="glass callout reveal"><div><div class="stat-k">Fora da redução</div><div class="stat-s">A linha 417 recebe viagens.</div></div><b>+58 viagens</b></article></section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · as duas propostas</div><h1>Antes, depois<br><em>e a escolha.</em></h1><p class="lead">O total corta tudo. O parcial deixa onze linhas do dia útil como estão.</p></div>
     <div class="tres">
       ${num("Programado hoje", progMes, `${fmt(viagensMes.antes)} viagens por mês`)}
       <article class="glass a reveal ${cenario===1?"pick":""}"><div class="stat-k">1 · Cenário total</div><div class="stat-v orange" data-count="${redMes[1]}">0</div><div class="stat-s">km a menos por mês · ficam ${fmt(progMes-redMes[1])} · ${fmt(viagensMes.corte1)} viagens a menos</div></article>
@@ -375,16 +360,16 @@ const slides = [
     </div>
     <article class="glass chart-slim reveal"><div class="stat-k">Km a menos no mês, por tipo de dia</div><canvas id="chartCenarios"></canvas></article>
   </section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">07 · veículos</div><h1>Veículos a menos<br><em>em cada dia.</em></h1><p class="lead">${cenario===1?"Redução total de frota.":"No parcial, sábado e domingo seguem iguais. As 11 linhas do dia útil continuam com o veículo de hoje."}</p></div>
+  () => `<section class="slide"><div class="reveal"><div class="kicker">07 · veículos</div><h1>Veículos a menos<br><em>em cada dia.</em></h1><p class="lead">${cenario===1?"Redução total de frota.":"No parcial, as 11 linhas do dia útil continuam com o veículo de hoje."}</p></div>
     <div class="kpi-3" style="flex:1">
       ${num("Dias úteis", 26, "veículos a menos", "cyan")}
       ${num("Sábados", 19, "veículos a menos", "orange")}
       ${num("Domingos", 15, "veículos a menos · 34 no fim de semana")}
     </div></section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">08 · dias úteis · ${nomeCenario()}</div><h1>Km na frente<br><em>de cada linha.</em></h1><p class="lead">↓ ${fmt(diaVista("util").km)} km neste dia.</p></div>${bannerReserva()}${kmHtml("util")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">08 · sábados</div><h1>Km na frente<br><em>de cada linha.</em></h1><p class="lead">↓ ${fmt(5003)} km neste dia. Igual nos dois cenários.</p></div>${kmHtml("sab")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">08 · domingos</div><h1>Km na frente<br><em>de cada linha.</em></h1><p class="lead">↓ ${fmt(3363)} km neste dia. Igual nos dois cenários.</p></div>${kmHtml("dom")}<article class="glass callout reveal"><div><div class="stat-k">Linha 417 soma km</div><div class="stat-s">13 → 71 viagens.</div></div><b>+372,66 km</b></article></section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">09 · saldo</div><h1>As duas propostas<br><em>lado a lado.</em></h1></div>
+  () => `<section class="slide"><div class="reveal"><div class="kicker">08 · dias úteis · ${nomeCenario()}</div><h1>Redução<br><em>por linha.</em></h1><p class="lead">↓ ${fmt(diaVista("util").km)} km neste dia.</p></div>${kmHtml("util")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">08 · sábados</div><h1>Redução<br><em>por linha.</em></h1><p class="lead">↓ ${fmt(5003)} km neste dia.</p></div>${kmHtml("sab")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">08 · domingos</div><h1>Redução<br><em>por linha.</em></h1><p class="lead">↓ ${fmt(3363)} km neste dia.</p></div>${kmHtml("dom")}<article class="glass callout reveal"><div><div class="stat-k">Linha 417 soma km</div><div class="stat-s">13 → 71 viagens.</div></div><b>+372,66 km</b></article></section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">09</div><h1>Saldo.</h1></div>
     <div class="pair-big">
       <article class="glass a reveal ${cenario===1?"pick":""}"><div class="stat-k">1 · Total</div><div class="stat-v orange" data-count="${redMes[1]}">0</div><div class="stat-s">km a menos por mês · ${fmt(ano[1])} no ano</div><div class="stat-v" style="font-size:clamp(36px,3vw,52px)" data-count="${progMes-redMes[1]}">0</div><div class="stat-s">km que ficam por mês · ${fmt(viagensMes.corte1)} viagens a menos</div></article>
       <article class="glass reveal ${cenario===2?"pick":""}"><div class="stat-k">2 · Parcial</div><div class="stat-v cyan" data-count="${redMes[2]}">0</div><div class="stat-s">km a menos por mês · ${fmt(ano[2])} no ano · ${fmt(reservaMes)} km ficam de fora</div><div class="stat-v" style="font-size:clamp(36px,3vw,52px)" data-count="${progMes-redMes[2]}">0</div><div class="stat-s">km que ficam por mês · ${fmt(viagensMes.corte2)} viagens a menos</div></article>
