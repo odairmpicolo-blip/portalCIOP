@@ -118,7 +118,7 @@
   .rank-kpis .glass{padding:10px 14px;min-width:140px}
   .rank-kpis b{font-family:Sora,sans-serif;font-size:40px}
   .cols{display:grid;grid-template-columns:1fr 1fr;gap:8px 28px;flex:1;align-content:start;overflow:auto}
-  .rank-row{display:grid;grid-template-columns:78px minmax(0,1fr) 62px 102px;gap:8px;align-items:center;padding:4px 0}
+  .rank-row{display:grid;grid-template-columns:78px minmax(0,1fr) 84px 108px;gap:8px;align-items:center;padding:4px 0}
   .rank-row .code{font-family:Sora,sans-serif;font-size:18px}
   .track{height:10px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden}
   .bar-fill{display:block;height:100%;width:var(--w);border-radius:99px;background:linear-gradient(90deg,#1a6cff,var(--cyan));box-shadow:0 0 12px rgba(61,225,255,.45);transform-origin:left center}
@@ -139,6 +139,30 @@
   .zrow .cut{color:#ff8b96;font-weight:800;font-size:16px;font-variant-numeric:tabular-nums}
   .callout{display:flex;justify-content:space-between;align-items:center;gap:12px;border-color:rgba(46,230,166,.4);background:linear-gradient(90deg,rgba(46,230,166,.14),rgba(8,18,36,.7))}
   .callout b{color:var(--green);font-family:Sora,sans-serif;font-size:40px}
+  .reserve-slide{gap:12px}
+  .reserve-slide h1{font-size:clamp(32px,3.6vw,52px)}
+  .reserve-slide .note b{font-size:32px}
+  .reserve{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .reserve .glass{padding:8px 12px}
+  .reserve .code{font-family:Sora,sans-serif;font-size:20px;letter-spacing:-.03em}
+  .reserve .km{font-family:Sora,sans-serif;font-size:16px;color:var(--green);margin-top:0}
+  .reserve .meta{color:var(--muted);font-size:12px;margin-top:0}
+  .choice-slide{gap:12px}
+  .choice-slide h1{font-size:clamp(36px,4vw,56px)}
+  .choice{display:grid;grid-template-columns:1fr 1fr;gap:16px;flex:1;min-height:0}
+  .choice .glass{display:flex;flex-direction:column;justify-content:center;padding:22px 28px}
+  .choice .stat-v{font-size:clamp(64px,6.2vw,104px)}
+  .facts{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;margin-top:14px}
+  .facts div{border-top:1px solid rgba(255,255,255,.08);padding-top:8px}
+  .facts b{display:block;font-family:Sora,sans-serif;font-size:clamp(22px,2vw,32px);letter-spacing:-.03em}
+  .facts span{color:var(--muted);font-size:15px}
+  .option-a{border-color:rgba(255,106,44,.55)}
+  .option-b{border-color:rgba(61,225,255,.55)}
+  .option-a:before{background:linear-gradient(90deg,var(--orange),transparent);width:200px}
+  .option-b:before{background:linear-gradient(90deg,var(--cyan),transparent);width:200px}
+  .reserve-tag{margin-top:14px;padding:12px 16px;border-radius:14px;background:rgba(46,230,166,.14);color:#d8ffe4;font-weight:800;font-size:18px}
+  .rank-row.hold .bar-fill{background:linear-gradient(90deg,#147a58,var(--green));box-shadow:0 0 12px rgba(46,230,166,.35)}
+  .rank-row.hold .num{color:var(--green);font-size:15px}
 
   .progress{position:relative;z-index:2;height:3px;background:rgba(255,255,255,.06)}
   .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--orange));box-shadow:0 0 12px var(--cyan)}
@@ -152,7 +176,7 @@
     body{overflow:auto}
     header{height:auto;padding:12px 16px;flex-wrap:wrap}
     .slide{height:auto;min-height:calc(100vh - 90px);padding:20px 16px 80px}
-    .hero,.split,.pair,.compare,.fleet,.fronts,.cols,.kpi-row,.where{grid-template-columns:1fr}
+    .hero,.split,.pair,.compare,.fleet,.fronts,.cols,.kpi-row,.where,.reserve,.choice,.facts{grid-template-columns:1fr}
     .chart-box{height:320px}
     .arrow{transform:rotate(90deg)}
     nav{display:none}
@@ -241,11 +265,49 @@ const ondeUtil = [
   { nome:"Entrepico e tarde", viagens:10, linhas:[["351",null,null,10]] },
   { nome:"Noite", viagens:7, linhas:[["101",30,60,7]] }
 ];
-const limiteDiaUtil = 30549;
-const kmUtilAtual = 54700;
-const kmUtilProposta = 51213;
+const reservaLinhas = [
+  ["110/111", 22, 207.15],
+  ["803", 15, 190.11],
+  ["404", 20, 132.44],
+  ["306", 20, 126.61],
+  ["106", 14, 116.16],
+  ["303", 9, 112.25],
+  ["501", 15, 108.29],
+  ["311", 12, 107.70],
+  ["405", 11, 107.31],
+  ["101", 7, 58.32],
+  ["351", 10, 33.50]
+].map(([linha, viagens, kmDia]) => ({
+  linha, viagens, kmDia, kmMes: Math.round(kmDia * 253 / 12)
+}));
+const reservaMes = reservaLinhas.reduce((s, r) => s + r.kmMes, 0);
+const reservaViagens = reservaLinhas.reduce((s, r) => s + r.viagens, 0);
+const reservaKmDia = reservaLinhas.reduce((s, r) => s + r.kmDia, 0);
+const reducaoTotalMes = 112971;
+const reducaoSemReserva = reducaoTotalMes - reservaMes;
+const kmAnoOp1 = 1355647;
+const kmAnoOp2 = reducaoSemReserva * 12;
+const viagensMesOp1 = 11618;
+const viagensMesOp2 = viagensMesOp1 - Math.round(reservaViagens * 253 / 12);
+const kmDiaUtilOp2 = Math.round(3487 - reservaKmDia);
+const viagensDiaUtilOp2 = 353 - reservaViagens;
+const sabMes = Math.round(5003 * 59 / 12);
+const domMes = Math.round(3363 * 53 / 12);
+const kmMesTipo = {
+  labels:["Dias úteis","Sábados","Domingos"],
+  op1:[reducaoTotalMes - sabMes - domMes, sabMes, domMes],
+  op2:[reducaoSemReserva - sabMes - domMes, sabMes, domMes]
+};
+const viagensSabMes = Math.round(463 * 59 / 12);
+const viagensUtilMes = Math.round(353 * 253 / 12);
+const viagensDomMes = viagensMesOp1 - viagensUtilMes - viagensSabMes;
+const viagensMesTipo = {
+  labels:["Dias úteis","Sábados","Domingos"],
+  op1:[viagensUtilMes, viagensSabMes, viagensDomMes],
+  op2:[viagensUtilMes - Math.round(reservaViagens * 253 / 12), viagensSabMes, viagensDomMes]
+};
 const navItems = [
-  ["Capa",0],["Resumo",1],["Viagens",2],["Espera",3],["Km",5],["Limite",7],["Frota",8],["Linhas",9],["Fecho",12]
+  ["Capa",0],["Opções",1],["Viagens",3],["Espera",4],["Km",6],["Reserva",8],["Frota",9],["Linhas",10],["Fecho",13]
 ];
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const app = document.querySelector("#app");
@@ -257,7 +319,7 @@ let charts = [];
 
 Chart.defaults.color = "#9fb0c8";
 Chart.defaults.font.family = "Outfit, sans-serif";
-Chart.defaults.font.size = 18;
+Chart.defaults.font.size = 20;
 Chart.defaults.animation.duration = reduce ? 0 : 900;
 
 function fmt(n, dec){
@@ -351,17 +413,69 @@ function grouped(id, rows, labelA, labelB){
   }));
 }
 
-function limitChart(){
-  const ctx = document.getElementById("chartLimite");
+function choiceChart(id, labels, a, b){
+  const ctx = document.getElementById(id);
   if (!ctx) return;
-  const valores = [kmUtilAtual, kmUtilProposta, limiteDiaUtil];
+  const series = [a, b];
   charts.push(new Chart(ctx, {
     type:"bar",
     data:{
-      labels:["Programação atual","Proposta","Limite"],
+      labels,
+      datasets:[
+        { label:"Opção 1", data:a, backgroundColor:"rgba(255,106,44,.92)", borderRadius:10, maxBarThickness:54 },
+        { label:"Opção 2", data:b, backgroundColor:"rgba(61,225,255,.92)", borderRadius:10, maxBarThickness:54 }
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{ padding:{ top:32 } },
+      plugins:{
+        legend:{ labels:{ boxWidth:12, boxHeight:12, usePointStyle:true, pointStyle:"circle", font:{ size:18, weight:"700" }, padding:18 } },
+        tooltip:{ callbacks:{ label:c => c.dataset.label + ": " + fmt(c.parsed.y) } }
+      },
+      scales:{
+        x:{ grid:{ display:false }, border:{ display:false }, ticks:{ font:{ size:18, weight:"700" } } },
+        y:{ grace:"38%", grid:{ color:"rgba(255,255,255,.06)" }, border:{ display:false }, ticks:{ callback:v => fmt(v) } }
+      }
+    },
+    plugins:[{
+      id:"choiceValue" + id,
+      afterDatasetsDraw(chart){
+        const { ctx } = chart;
+        const m0 = chart.getDatasetMeta(0);
+        const m1 = chart.getDatasetMeta(1);
+        ctx.save();
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#f3f7ff";
+        ctx.font = "800 22px Sora, sans-serif";
+        m0.data.forEach((bar, i) => {
+          const v0 = series[0][i];
+          const v1 = series[1][i];
+          const other = m1.data[i];
+          if (v0 === v1) ctx.fillText(fmt(v0), (bar.x + other.x) / 2, Math.min(bar.y, other.y) - 16);
+          else {
+            ctx.fillText(fmt(v0), bar.x, bar.y - 12);
+            ctx.fillText(fmt(v1), other.x, other.y - 12);
+          }
+        });
+        ctx.restore();
+      }
+    }]
+  }));
+}
+
+function limitChart(){
+  const ctx = document.getElementById("chartLimite");
+  if (!ctx) return;
+  const valores = [reducaoTotalMes, reducaoSemReserva, reservaMes];
+  charts.push(new Chart(ctx, {
+    type:"bar",
+    data:{
+      labels:["Opção 1","Opção 2","Reserva"],
       datasets:[{
         data: valores,
-        backgroundColor:["rgba(61,225,255,.9)","rgba(255,106,44,.92)","rgba(46,230,166,.92)"],
+        backgroundColor:["rgba(255,106,44,.92)","rgba(61,225,255,.92)","rgba(46,230,166,.92)"],
         borderRadius:12,
         maxBarThickness:88
       }]
@@ -384,8 +498,8 @@ function limitChart(){
           ctx.save();
           ctx.textAlign = "center";
           ctx.fillStyle = "#f3f7ff";
-          ctx.font = "800 22px Sora, sans-serif";
-          ctx.fillText(fmt(valores[i]), bar.x, bar.y - 12);
+          ctx.font = "800 26px Sora, sans-serif";
+          ctx.fillText(fmt(valores[i]), bar.x, bar.y - 14);
           ctx.restore();
         });
       }
@@ -402,12 +516,14 @@ function rankRows(day){
 function rankHtml(day){
   const rows = rankRows(day);
   const max = Math.max(...rows.map(r => r[3]));
+  const reserva = day === "Útil" ? new Set(reservaLinhas.map(r => r.linha)) : null;
   return `<div class="cols">${rows.map(r => {
     const gone = r[2] === 0;
-    return `<div class="rank-row ${gone ? "zero" : ""}">
+    const hold = reserva && reserva.has(r[0]);
+    return `<div class="rank-row ${gone ? "zero" : ""} ${hold ? "hold" : ""}">
       <span class="code">${r[0]}</span>
       <div class="track"><i class="bar-fill" style="--w:${(r[3] / max * 100).toFixed(1)}%"></i></div>
-      <span class="num">↓ ${r[3]}</span>
+      <span class="num">${hold ? "reserva" : "↓ " + r[3]}</span>
       <span class="km">${fmt(r[4], 2)} km</span>
     </div>`;
   }).join("")}</div>`;
@@ -416,21 +532,40 @@ function dots(n, cls){
   return `<div class="dots ${cls}">${Array.from({length:n}, () => "<i></i>").join("")}</div>`;
 }
 
-const slides = [
-  () => `<section class="slide hero">
-    <div>
-      <div class="kicker reveal">TCGL · mobilidade inteligente</div>
-      <h1 class="reveal">Plano de<br>redução<br><em>de oferta.</em></h1>
-      <p class="lead reveal">Cenário de redução e otimização operacional para 2026. A leitura parte da programação completa e mostra o efeito em viagens, quilômetros e frota.</p>
+function opcaoCard(nome, classe, kmMes, kmAno, viagensMes, kmDia, viagensDia, tag){
+  return `<article class="glass ${classe} reveal">
+    <div class="stat-k">${nome}</div>
+    <div class="stat-v ${classe === "option-a" ? "orange" : "cyan"}" data-count="${kmMes}">0</div>
+    <div class="stat-s">quilômetros a menos por mês</div>
+    <div class="facts">
+      <div><b>${fmt(kmAno)}</b><span>km a menos no ano</span></div>
+      <div><b>${fmt(viagensMes)}</b><span>viagens a menos no mês</span></div>
+      <div><b>${fmt(kmDia)} km</b><span>no dia útil · ${fmt(viagensDia)} viagens</span></div>
+      <div><b>5.003 km</b><span>no sábado · 463 viagens</span></div>
+      <div><b>3.363 km</b><span>no domingo · 430 viagens</span></div>
+      <div><b>19 + 15</b><span>veículos no fim de semana</span></div>
     </div>
-    <div class="hero-stats">
-      <article class="glass reveal"><div class="stat-k">Viagens reduzidas / mês</div><div class="stat-v red" data-count="11618">0</div><div class="stat-s">de 158.838 para 147.220 viagens produtivas</div></article>
-      <article class="glass reveal"><div class="stat-k">Queda sobre o total produtivo</div><div class="stat-v cyan" data-count="7.3" data-dec="1" data-suffix="%">0</div><div class="stat-s">11.618 ÷ 158.838 viagens mensais</div></article>
-      <article class="glass reveal"><div class="stat-k">Quilômetros reduzidos / mês</div><div class="stat-v orange" data-count="112971">0</div><div class="stat-s">1,36 milhão de km a menos por ano</div></article>
+    ${tag || ""}
+  </article>`;
+}
+
+const slides = [
+  () => `<section class="slide choice-slide">
+    <div class="reveal"><div class="kicker">TCGL · diretoria 2026</div><h1>Duas opções<br><em>de redução.</em></h1><p class="lead">Sábado e domingo são iguais. A diferença está em onze linhas do dia útil: na opção 2 elas ficam de reserva e dá para aumentar se precisar.</p></div>
+    <div class="choice">
+      ${opcaoCard("Opção 1 · redução total","option-a", reducaoTotalMes, kmAnoOp1, viagensMesOp1, 3487, 353, "")}
+      ${opcaoCard("Opção 2 · com reserva","option-b", reducaoSemReserva, kmAnoOp2, viagensMesOp2, kmDiaUtilOp2, viagensDiaUtilOp2, `<div class="reserve-tag">${reservaLinhas.length} linhas dá para aumentar · ${fmt(reservaMes)} km/mês</div>`)}
     </div>
   </section>`,
   () => `<section class="slide">
-    <div class="reveal"><div class="kicker">01 · visão executiva</div><h1>Impacto estimado<br><em>para decisão.</em></h1><p class="lead">A proposta combina redução de frequência, integração entre linhas e suspensão de trechos ou períodos com menor demanda.</p></div>
+    <div class="reveal"><div class="kicker">01 · onde está a diferença</div><h1>O fim de semana<br><em>não muda.</em></h1><p class="lead">Sábado e domingo repetem o mesmo número nas duas opções. Só o dia útil muda.</p></div>
+    <div class="pair">
+      <article class="glass chart-box reveal"><div class="stat-k">Quilômetros a menos no mês</div><canvas id="chartEscolhaKm"></canvas></article>
+      <article class="glass chart-box reveal"><div class="stat-k">Viagens a menos no mês</div><canvas id="chartEscolhaViagens"></canvas></article>
+    </div>
+  </section>`,
+  () => `<section class="slide">
+    <div class="reveal"><div class="kicker">02 · opção 1 em detalhe</div><h1>Impacto estimado<br><em>para decisão.</em></h1><p class="lead">A opção 1 combina redução de frequência, integração entre linhas e suspensão de trechos. Os slides seguintes abrem essa redução total. A opção 2 repete sábado e domingo.</p></div>
     <div class="kpi-row">
       <article class="glass kpi reveal"><div class="stat-k">Viagens atuais / mês</div><div class="stat-v" data-count="158838">0</div></article>
       <article class="glass kpi reveal"><div class="stat-k">Nova programação / mês</div><div class="stat-v cyan" data-count="147220">0</div></article>
@@ -446,7 +581,7 @@ const slides = [
   () => `<section class="slide">
     <div class="split">
       <div class="side-notes">
-        <div class="reveal"><div class="kicker">02 · viagens produtivas</div><h1>A queda cresce<br><em>no fim de semana.</em></h1></div>
+        <div class="reveal"><div class="kicker">03 · opção 1 · viagens</div><h1>A queda cresce<br><em>no fim de semana.</em></h1></div>
         ${trips.map(t => `<article class="glass note reveal"><b>↓ ${fmt(t.queda,1)}%</b><span>${t.dia}: ${fmt(t.antes)} → ${fmt(t.depois)}</span></article>`).join("")}
       </div>
       <article class="glass chart-box reveal"><canvas id="chartTrips"></canvas></article>
@@ -455,7 +590,7 @@ const slides = [
   () => `<section class="slide">
     <div class="split">
       <div class="side-notes">
-        <div class="reveal"><div class="kicker">03 · espera do cliente</div><h1>O intervalo<br><em>fica maior.</em></h1><p class="lead">Minutos até o próximo ônibus, no período da mudança. Média das linhas que seguem com horário.</p></div>
+        <div class="reveal"><div class="kicker">04 · opção 1 · espera</div><h1>O intervalo<br><em>fica maior.</em></h1><p class="lead">Minutos até o próximo ônibus, no período da mudança. Média das linhas que seguem com horário.</p></div>
         ${espera.map(t => `<article class="glass note reveal"><b>+ ${fmt(t.extra)} min</b><span>${t.dia}: ${fmt(t.antes)} → ${fmt(t.depois)} min</span></article>`).join("")}
       </div>
       <article class="glass chart-box reveal"><div class="stat-k">Minutos até o próximo ônibus</div><canvas id="chartWait"></canvas></article>
@@ -463,7 +598,7 @@ const slides = [
   </section>`,
   () => `<section class="slide">
     <div class="rank-head">
-      <div class="reveal"><div class="kicker">04 · onde reduz</div><h1 style="font-size:clamp(32px,3.4vw,48px)">A redução útil<br><em>está no entrepico.</em></h1><p class="lead" style="margin-top:4px">346 das 353 viagens saem desse período. Em cada linha, a espera até o próximo ônibus.</p></div>
+      <div class="reveal"><div class="kicker">05 · opção 1 · onde reduz</div><h1 style="font-size:clamp(32px,3.4vw,48px)">A redução útil<br><em>está no entrepico.</em></h1><p class="lead" style="margin-top:4px">346 das 353 viagens saem desse período. Em cada linha, a espera até o próximo ônibus.</p></div>
       <div class="rank-kpis">
         <article class="glass reveal"><div class="stat-k">Viagens no entrepico</div><b>346</b></article>
         <article class="glass reveal"><div class="stat-k">Fora do entrepico</div><b>7</b></article>
@@ -474,53 +609,54 @@ const slides = [
   () => `<section class="slide">
     <div class="split">
       <div class="side-notes">
-        <div class="reveal"><div class="kicker">05 · quilometragem</div><h1>Km retirados<br><em>em um dia típico.</em></h1><p class="lead">Média mensal anualizada: 112.971 km. No ano, 1.355.647 km.</p></div>
+        <div class="reveal"><div class="kicker">06 · opção 1 · quilometragem</div><h1>Km retirados<br><em>em um dia típico.</em></h1><p class="lead">Opção 1. Média mensal: 112.971 km. No ano, 1.355.647 km.</p></div>
         ${kms.map(t => `<article class="glass note reveal"><b>↓ ${fmt(t.diaKm)} km</b><span>${t.dia} · queda de ${fmt(t.queda,1)}%</span></article>`).join("")}
       </div>
       <article class="glass chart-box reveal"><canvas id="chartKm"></canvas></article>
     </div>
   </section>`,
   () => `<section class="slide">
-    <div class="reveal"><div class="kicker">06 · cenário mensal</div><h1>Antes e depois<br><em>da redução.</em></h1><p class="lead">Base anual: 253 dias úteis, 59 sábados e 53 domingos. A média mensal é a soma anual dividida por 12.</p></div>
+    <div class="reveal"><div class="kicker">07 · opção 1 · mês</div><h1>Antes e depois<br><em>da redução.</em></h1><p class="lead">Opção 1, a redução total. Base anual: 253 dias úteis, 59 sábados e 53 domingos.</p></div>
     <div class="compare">
       <article class="glass reveal"><div class="stat-k">Cenário atual</div><div class="stat-v" data-count="1419544">0</div><div class="stat-s">quilômetros por mês</div><div class="stat-v sub" data-count="158838">0</div><div class="stat-s">viagens produtivas por mês</div></article>
       <div class="arrow reveal">↓</div>
       <article class="glass reveal"><div class="stat-k">Após a redução</div><div class="stat-v orange" data-count="1306574">0</div><div class="stat-s">quilômetros por mês</div><span class="pct-pill">↓ 112.971 km · 8,0%</span><div class="stat-v sub cyan" data-count="147220">0</div><div class="stat-s">viagens produtivas por mês</div></article>
     </div>
   </section>`,
-  () => `<section class="slide">
+  () => `<section class="slide reserve-slide">
+    <div class="reveal"><div class="kicker">08 · opção 2 · reserva</div><h1>Dá para aumentar<br><em>se precisar.</em></h1><p class="lead">Estas onze linhas separam as opções. Na opção 2 elas ficam fora da redução. Se a operação precisar, a oferta aumenta nelas.</p></div>
+    <div class="reserve">
+      ${reservaLinhas.map(r => `<article class="glass reveal"><div class="code">${r.linha}</div><div class="km">${fmt(r.kmMes)} km/mês</div><div class="meta">${r.viagens} viagens/dia · ${fmt(r.kmDia, 2)} km</div></article>`).join("")}
+    </div>
     <div class="split">
       <div class="side-notes">
-        <div class="reveal"><div class="kicker">07 · limite à parte</div><h1>Teto de<br><em>30.549 km.</em></h1><p class="lead">Limite só dos dias úteis, separado da proposta. Em 253 dias, o teto soma 7.728.897 km.</p></div>
-        <article class="glass note reveal"><b>54.700 km</b><span>Programação atual do dia útil</span></article>
-        <article class="glass note reveal"><b>51.213 km</b><span>Proposta · ainda 20.664 km acima do limite</span></article>
-        <article class="glass note reveal"><b>↓ 24.151 km</b><span>Para encostar no teto · queda de 44,2%</span></article>
+        <article class="glass note reveal"><b>${fmt(reducaoTotalMes)} km</b><span>Opção 1 · redução total no mês</span></article>
+        <article class="glass note reveal"><b>${fmt(reducaoSemReserva)} km</b><span>Opção 2 · com a reserva fora</span></article>
+        <article class="glass note reveal"><b>${fmt(reservaMes)} km</b><span>Reserva · ${fmt(reservaViagens)} viagens por dia útil</span></article>
       </div>
-      <article class="glass chart-box reveal"><div class="stat-k">Quilômetros por dia útil</div><canvas id="chartLimite"></canvas></article>
+      <article class="glass chart-box reveal"><div class="stat-k">Quilômetros a menos no mês</div><canvas id="chartLimite"></canvas></article>
     </div>
   </section>`,
   () => `<section class="slide">
-    <div class="reveal"><div class="kicker">08 · frota</div><h1>Veículos concentrados<br><em>nos fins de semana.</em></h1><p class="lead">Cada tabela totalmente em vermelho na planilha indica uma linha com redução de veículo. A estimativa fica em cerca de 60 veículos.</p></div>
+    <div class="reveal"><div class="kicker">09 · frota</div><h1>Veículos concentrados<br><em>nos fins de semana.</em></h1><p class="lead">Cada tabela totalmente em vermelho na planilha indica uma linha com redução de veículo. A estimativa fica em cerca de 60 veículos.</p></div>
     <div class="fleet">
       <article class="glass reveal"><div><div class="stat-k">Dias úteis</div><div class="stat-v cyan" data-count="26">0</div><div class="stat-s">veículos reduzidos</div></div>${dots(26,"")}</article>
       <article class="glass reveal"><div><div class="stat-k">Sábados</div><div class="stat-v orange" data-count="19">0</div><div class="stat-s">veículos reduzidos</div></div>${dots(19,"sat")}</article>
       <article class="glass reveal"><div><div class="stat-k">Domingos</div><div class="stat-v red" data-count="15">0</div><div class="stat-s">veículos reduzidos · 34 no fim de semana</div></div>${dots(15,"sun")}</article>
     </div>
   </section>`,
-  () => lineSlide("Útil","09 · dias úteis","20 linhas ajustadas",353,"3.487"),
-  () => lineSlide("Sábado","10 · sábados","19 linhas ajustadas",463,"5.003"),
-  () => lineSlide("Domingo","11 · domingos","16 linhas ajustadas",430,"3.363", true),
+  () => lineSlide("Útil","10 · dias úteis · opção 1","Em verde, as 11 linhas que a opção 2 devolve",353,"3.487"),
+  () => lineSlide("Sábado","11 · sábados","19 linhas ajustadas · igual nas duas opções",463,"5.003"),
+  () => lineSlide("Domingo","12 · domingos","16 linhas ajustadas · igual nas duas opções",430,"3.363", true),
   () => `<section class="slide">
-    <div class="reveal"><div class="kicker">12 · resultado</div><h1>O saldo da<br><em>programação.</em></h1><p class="lead">A redução se concentra no fim de semana. A linha 417, no domingo, recebe 58 viagens como alternativa de atendimento.</p></div>
-    <div class="kpi-row">
-      <article class="glass kpi reveal"><div class="stat-k">Viagens a menos / mês</div><div class="stat-v red" data-count="11618">0</div><div class="stat-s">queda de 7,3%</div></article>
-      <article class="glass kpi reveal"><div class="stat-k">Km a menos / mês</div><div class="stat-v orange" data-count="112971">0</div><div class="stat-s">queda de 8,0%</div></article>
-      <article class="glass kpi reveal"><div class="stat-k">Km a menos / ano</div><div class="stat-v cyan" data-count="1355647">0</div><div class="stat-s">253 úteis · 59 sábados · 53 domingos</div></article>
-      <article class="glass kpi reveal"><div class="stat-k">Veículos no fim de semana</div><div class="stat-v" data-count="34">0</div><div class="stat-s">19 no sábado e 15 no domingo</div></article>
-    </div>
-    <div class="pair">
-      <article class="glass chart-box reveal"><div class="stat-k">Viagens a menos no mês · por tipo de dia</div><canvas id="chartShareTrips"></canvas></article>
-      <article class="glass chart-box reveal"><div class="stat-k">Quilômetros a menos no mês · por tipo de dia</div><canvas id="chartShareKm"></canvas></article>
+    <div class="reveal"><div class="kicker">13 · a escolha</div><h1>O saldo das<br><em>duas opções.</em></h1><p class="lead">Sábado e domingo permanecem iguais. A opção 2 devolve ${fmt(reservaMes)} km por mês em ${reservaLinhas.length} linhas do dia útil. No domingo, a linha 417 segue com 58 viagens a mais.</p></div>
+    <div class="split">
+      <div class="side-notes">
+        <article class="glass note reveal"><b>${fmt(reducaoTotalMes)} km</b><span>Opção 1 por mês · ${fmt(kmAnoOp1)} no ano</span></article>
+        <article class="glass note reveal"><b>${fmt(reducaoSemReserva)} km</b><span>Opção 2 por mês · ${fmt(kmAnoOp2)} no ano</span></article>
+        <article class="glass note reveal"><b>${fmt(viagensMesOp1)} · ${fmt(viagensMesOp2)}</b><span>Viagens a menos no mês · opção 1 e opção 2</span></article>
+      </div>
+      <article class="glass chart-box reveal"><div class="stat-k">Quilômetros a menos no mês</div><canvas id="chartFecho"></canvas></article>
     </div>
   </section>`
 ];
@@ -587,11 +723,13 @@ function render(){
   pager.textContent = String(page + 1).padStart(2,"0") + " / " + String(slides.length).padStart(2,"0");
   gsap.to(bar, { width: ((page + 1) / slides.length * 100) + "%", duration: reduce ? 0 : .45, ease:"power2.out" });
   document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", Number(b.dataset.go) === page || (b.dataset.span && page >= Number(b.dataset.go) && page <= Number(b.dataset.end))));
-  if (page === 2) grouped("chartTrips", trips, "Programação original", "Nova programação");
-  if (page === 3) grouped("chartWait", espera, "Espera atual", "Nova espera");
-  if (page === 5) grouped("chartKm", kms, "Cenário atual", "Após a redução");
-  if (page === 7) limitChart();
-  if (page === 12){ shareChart("chartShareTrips", shareTrips, 11618); shareChart("chartShareKm", shareKm, 112971); }
+  if (document.getElementById("chartEscolhaKm")) choiceChart("chartEscolhaKm", kmMesTipo.labels, kmMesTipo.op1, kmMesTipo.op2);
+  if (document.getElementById("chartEscolhaViagens")) choiceChart("chartEscolhaViagens", viagensMesTipo.labels, viagensMesTipo.op1, viagensMesTipo.op2);
+  if (document.getElementById("chartTrips")) grouped("chartTrips", trips, "Programação original", "Nova programação");
+  if (document.getElementById("chartWait")) grouped("chartWait", espera, "Espera atual", "Nova espera");
+  if (document.getElementById("chartKm")) grouped("chartKm", kms, "Cenário atual", "Após a redução");
+  if (document.getElementById("chartLimite")) limitChart();
+  if (document.getElementById("chartFecho")) choiceChart("chartFecho", kmMesTipo.labels, kmMesTipo.op1, kmMesTipo.op2);
   animateIn(app);
 }
 
