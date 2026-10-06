@@ -314,7 +314,10 @@ const DIAS_ANO = { util:253, sab:59, dom:53 };
 let cenaCache = null;
 function tetoAjuste(){
   const seq = totalSeq();
-  return coletiva ? Math.min(AJUSTE_MIN, seq) : seq;
+  if (!coletiva) return seq;
+  const linha107 = sequenciaKm().find(r => r.dia === "util" && r.linha === "107");
+  const com107 = linha107 ? linha107.acum : AJUSTE_MIN;
+  return Math.min(seq, Math.max(AJUSTE_MIN, com107));
 }
 function alvoAtual(){
   const teto = tetoAjuste();
@@ -598,8 +601,8 @@ function numAssinado(n, dec){
 function pintarFolha(){
   const body = document.getElementById("folhaBody");
   if (!body) return;
-  const teto = totalSeq();
-  const alvo = ajusteKm >= Math.round(teto) - 0.5 ? teto : ajusteKm;
+  const teto = tetoAjuste();
+  const alvo = ajusteKm == null || ajusteKm >= Math.round(teto) - 0.5 ? teto : ajusteKm;
   const base = sequenciaKm();
   const rows = base.map(item => ({ ...item, ...classificar(item, alvo) }));
   const sit = { in:"Sai", partial:"Parte", out:"Fica", reforco:"Reforço" };
@@ -641,11 +644,12 @@ function ligarAjusteCanto(){
   const input = document.getElementById("ajusteKm");
   const topo = Math.round(tetoAjuste());
   if (ajusteKm == null || ajusteKm < AJUSTE_MIN || ajusteKm > topo) ajusteKm = topo;
-  input.min = String(AJUSTE_MIN);
+  const piso = coletiva ? topo : AJUSTE_MIN;
+  input.min = String(piso);
   input.max = String(topo);
   input.step = "1";
-  input.value = String(ajusteKm);
-  input.hidden = topo <= AJUSTE_MIN;
+  input.value = String(Math.min(topo, Math.max(piso, ajusteKm)));
+  input.hidden = coletiva || topo <= AJUSTE_MIN;
   const sync = () => {
     const texto = fmt(ajusteKm, 0);
     document.getElementById("ajusteCantoOut").textContent = texto;
@@ -653,7 +657,7 @@ function ligarAjusteCanto(){
     if (grande) grande.textContent = texto;
   };
   input.addEventListener("input", () => {
-    ajusteKm = Math.min(topo, Math.max(AJUSTE_MIN, Number(input.value)));
+    ajusteKm = Math.min(topo, Math.max(piso, Number(input.value)));
     cenaCache = null;
     arrastando = true;
     sync();
@@ -722,7 +726,7 @@ const slides = [
       <article class="glass"><div class="stat-k">Domingo</div><div class="stat-v cyan" id="pillDom">0</div><div class="stat-s">km que saem</div></article>
       <article class="glass"><div class="stat-k">Sábado</div><div class="stat-v orange" id="pillSab">0</div><div class="stat-s">km que saem</div></article>
       <article class="glass"><div class="stat-k">Dia útil</div><div class="stat-v green" id="pillUtil">0</div><div class="stat-s">km que saem</div></article>
-      <article class="glass pick"><div class="stat-k">Total do ajuste</div><div class="stat-v" id="pillTot">0</div><div class="stat-s">mínimo de 70.000 km</div></article>
+      <article class="glass pick"><div class="stat-k">Total do ajuste</div><div class="stat-v" id="pillTot">0</div><div class="stat-s">${coletiva ? "a 107 entra por inteiro" : "mínimo de 70.000 km"}</div></article>
     </div>
     <div class="sheet-wrap" id="sheetWrap">
       <table class="folha soma">
