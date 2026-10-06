@@ -70,11 +70,14 @@
   .chart-slim{height:176px;flex:none;padding:10px 14px 6px;display:flex;flex-direction:column}
   .chart-slim canvas{width:100%!important;flex:1;min-height:0}
   .chart-slim .stat-k{margin-bottom:4px}
-  .esp-list,.km-list{display:grid;grid-template-columns:1fr 1fr;gap:2px 32px;align-content:start;flex:1;min-height:0}
+  .esp-list,.km-list{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2px 32px;align-content:start;flex:1;min-height:0}
   .esp-row,.km-row{display:grid;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07)}
   .esp-row{grid-template-columns:92px 1fr auto}
   .esp-row .code,.km-row .code{font-family:Sora,sans-serif;font-size:28px}
   .esp-row .mins{font-size:22px;color:#d5e6f8;font-variant-numeric:tabular-nums}
+  .esp-row{padding:4px 0;min-width:0}
+  .esp-row .mins{min-width:0}
+  .esp-row .hora{display:block;color:var(--cyan);font-size:16px;font-weight:800;line-height:1.2}
   .esp-row .plus{font-family:Sora,sans-serif;font-size:34px;color:var(--orange);font-variant-numeric:tabular-nums}
   .km-row{grid-template-columns:250px 140px minmax(0,1fr);padding:3px 0}
   .km-row b{font-family:Sora,sans-serif;font-size:42px;letter-spacing:-.03em;color:var(--orange);font-variant-numeric:tabular-nums}
@@ -275,11 +278,17 @@ function num(k, v, s, cls, dec){
 }
 function espHtml(dia){
   const rows = cortes(dia).filter(r => r.espA != null).sort((a,b) => (b.espD-b.espA) - (a.espD-a.espA));
-  return `<div class="esp-list">${rows.map(r => `<div class="esp-row reveal"><span class="code">${r.linha}</span><span class="mins">${r.espA} → ${r.espD} min</span><span class="plus">+${r.espD - r.espA}</span></div>`).join("")}</div>`;
+  return `<div class="esp-list">${rows.map(r => {
+    const hora = (horarios[dia] || {})[r.linha] || "";
+    return `<div class="esp-row reveal"><span class="code">${r.linha}</span><span class="mins">${hora ? `<span class="hora">${hora}</span>` : ""}${r.espA} → ${r.espD} min</span><span class="plus">+${r.espD - r.espA}</span></div>`;
+  }).join("")}</div>`;
 }
 function paraHtml(dia){
   const rows = cortes(dia).filter(r => r.espA == null);
-  return `<div class="esp-list">${rows.map(r => `<div class="esp-row reveal"><span class="code">${r.linha}</span><span class="mins">${r.periodo}</span><span class="stop">serviço suspenso</span></div>`).join("")}</div>`;
+  return `<div class="esp-list">${rows.map(r => {
+    const hora = (horarios[dia] || {})[r.linha] || r.periodo;
+    return `<div class="esp-row reveal"><span class="code">${r.linha}</span><span class="mins">${hora}</span><span class="stop">serviço suspenso</span></div>`;
+  }).join("")}</div>`;
 }
 function kmHtml(dia){
   const rows = cortes(dia).slice().sort((a,b) => b.km - a.km);
