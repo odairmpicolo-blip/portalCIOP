@@ -81,14 +81,18 @@
   .esp-list,.km-list{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2px 28px;align-content:start;flex:1;min-height:0}
   .esp-list.curta{grid-template-columns:minmax(0,860px)}
   .esp-row,.km-row{display:grid;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07)}
-  .esp-row{grid-template-columns:118px minmax(0,1fr) 168px;padding:4px 0;min-width:0}
+  .esp-row{grid-template-columns:108px minmax(0,1fr);padding:5px 0;min-width:0}
   .esp-row.para{grid-template-columns:118px minmax(0,1fr)}
   .esp-row .code,.km-row .code{font-family:Sora,sans-serif;font-size:26px}
   .esp-list.curta .code{font-size:34px}
-  .esp-row .mins{min-width:0;font-size:20px;color:#d5e6f8;font-variant-numeric:tabular-nums}
-  .esp-row .hora,.esp-row .de{display:block;color:var(--cyan);font-size:15px;font-weight:800;line-height:1.2;white-space:normal}
-  .esp-row .de{color:#d5e6f8;font-size:18px;margin-top:2px}
-  .esp-row .plus{font-family:Sora,sans-serif;font-size:32px;color:var(--orange);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  .esp-row .mins{min-width:0;color:#d5e6f8}
+  .esp-row .hora{display:block;color:var(--cyan);font-size:15px;font-weight:800;line-height:1.2}
+  .esp-row .troca{display:flex;align-items:baseline;gap:10px;margin-top:1px;white-space:nowrap}
+  .esp-row .troca i,.esp-row .seta{font-style:normal;font-size:16px;font-weight:800;color:#9fb0c8}
+  .esp-row .seta{color:var(--orange);font-size:20px}
+  .esp-row .antes b,.esp-row .depois b{font-family:Sora,sans-serif;font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+  .esp-row .antes b{font-size:30px;color:#fff}
+  .esp-row .depois b{font-size:46px;color:var(--orange)}
   .stop{display:block;margin-top:2px;color:var(--green);font-size:18px;font-weight:800}
   .km-row{grid-template-columns:250px 140px minmax(0,1fr);padding:3px 0}
   .km-row b{font-family:Sora,sans-serif;font-size:42px;letter-spacing:-.03em;color:var(--orange);font-variant-numeric:tabular-nums}
@@ -132,6 +136,8 @@
   .sheet-slide{gap:8px}
   .sheet-slide h1{font-size:clamp(32px,3.2vw,48px)}
   .sheet-head{display:flex;align-items:flex-end;justify-content:space-between;gap:28px}
+  .pax-mes{flex:none;text-align:right}
+  .pax-mes .stat-v{font-size:clamp(42px,4vw,68px);margin-top:2px}
   .sheet-head .lead{flex:1;min-width:0;margin:0 0 4px}
   .ajuste{flex:1;max-width:680px}
   .ajuste label{display:flex;align-items:baseline;justify-content:space-between;gap:12px;color:var(--muted);font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
@@ -387,7 +393,7 @@ function espHtml(dia){
   const curta = rows.length <= 4 ? " curta" : "";
   return `<div class="esp-list${curta}">${rows.map(r => {
     const hora = (horarios[dia] || {})[r.linha] || "";
-    return `<div class="esp-row reveal"><span class="code">${r.linha}</span><span class="mins">${hora ? `<span class="hora">${hora}</span>` : ""}<span class="de">de ${txtEspera(r.espA)} para</span></span><span class="plus">${txtEspera(r.espD)}</span></div>`;
+    return `<div class="esp-row reveal"><span class="code">${r.linha}</span><span class="mins">${hora ? `<span class="hora">${hora}</span>` : ""}<span class="troca"><span class="antes"><i>de</i> <b>${txtEspera(r.espA)}</b></span><span class="seta">para</span><span class="depois"><b>${txtEspera(r.espD)}</b></span></span></span></div>`;
   }).join("")}</div>`;
 }
 function paraHtml(dia){
@@ -727,10 +733,13 @@ const slides = [
       return `<tr class="${r.parcial ? "partial" : ""}"><td class="ln">${linha}</td><td class="num${pct < 1 ? " hot" : ""}">${fmt(pct, 2)}%</td><td class="num">${fmtFlex(carro)}</td><td class="num">${fmt(pass)}</td><td class="num">${fmtFlex(km)}</td><td class="num">${fmt(ipk, 2)}</td><td class="num">${atu}</td><td class="num">${prop}</td><td class="dim">${obs}</td></tr>`;
     }).join("");
     const tot = rows.reduce((s, r) => ({ pct:s.pct + r[1], carro:s.carro + r[2], pass:s.pass + r[3], atu:s.atu + r[6], prop:s.prop + r[7] }), { pct:0, carro:0, pass:0, atu:0, prop:0 });
+    const mesPass = Math.round(tot.pass * DIAS_ANO.util / 12 * 100) / 100;
+    const decMes = Number.isInteger(mesPass) ? 0 : 2;
     return `<section class="slide sheet-slide">
       <div class="sheet-head">
         <div><div class="kicker">Dia útil · 29/09/2026</div><h1>Passageiros<br><em>catracados.</em></h1></div>
         ${comNota("Percentual e quantidade de passageiros no entrepico.")}
+        <div class="pax-mes reveal"><div class="stat-k">No mês</div><div class="stat-v orange" data-count="${mesPass}" data-dec="${decMes}">0</div><div class="stat-s">${fmt(tot.pass)} no dia · ${DIAS_ANO.util} dias úteis</div></div>
       </div>
       <div class="sheet-wrap">
         <table class="folha densa">
