@@ -144,6 +144,7 @@
   .folha td.dom{color:var(--cyan);font-weight:800}
   .folha td.sab{color:var(--orange);font-weight:800}
   .folha td.util{color:var(--green);font-weight:800}
+  .folha .prio{display:inline-block;margin-left:8px;min-width:1.6em;padding:1px 7px;border-radius:99px;background:rgba(46,230,166,.18);color:var(--green);font-family:Sora,sans-serif;font-size:13px;font-weight:800;letter-spacing:.02em;text-align:center;vertical-align:2px}
   .folha tr.out td.dom,.folha tr.out td.sab,.folha tr.out td.util{color:inherit;font-weight:700}
   .progress{position:relative;z-index:2;height:3px;background:rgba(255,255,255,.06)}
   .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--orange))}
@@ -314,6 +315,8 @@ function slim(id, labels, series){
 const AJUSTE_MIN = 70000;
 const MULT = { dom:53/12, sab:59/12, util:253/12 };
 const ordemUtil = ["800","802","806","900","913","101","106","107","303","306","501","420","311","110/111","112","113","351","404","405","803"];
+const prioridadeRetirar = ["311","501","303","306","404","110/111","106","113","803"];
+const prioridadeNota = { "311":"1", "501":"2", "303":"3", "306":"4", "404":"5", "110/111":"6 e 7", "106":"8", "113":"9", "803":"10" };
 const tipoNome = { dom:"Domingo", sab:"Sábado", util:"Dia útil" };
 let ajusteKm = null;
 function totalSeq(){
@@ -328,7 +331,9 @@ function sequenciaKm(){
   });
   push("dom", pacote.dom);
   push("sab", pacote.sab);
-  push("util", ordemUtil.map(cod => pacote.util.find(r => r.linha === cod)).filter(Boolean));
+  const protegidas = new Set(prioridadeRetirar);
+  const ordemAjuste = ordemUtil.filter(cod => !protegidas.has(cod)).concat(prioridadeRetirar.slice().reverse());
+  push("util", ordemAjuste.map(cod => pacote.util.find(r => r.linha === cod)).filter(Boolean));
   let acc = 0;
   return lista.map(item => {
     const antes = acc;
@@ -350,13 +355,18 @@ function textoAjuste(rows, alvo){
   if (kmDia("dom") > 0.5) pedacos.push(`${fmt(kmDia("dom"), 0)} km no domingo`);
   if (kmDia("sab") > 0.5) pedacos.push(`${fmt(kmDia("sab"), 0)} km no sábado`);
   if (kmDia("util") > 0.5) pedacos.push(`${fmt(kmDia("util"), 0)} km no dia útil`);
-  const borda = ativos[ativos.length - 1];
-  const onde = borda.estado === "partial"
-    ? `A soma passa de ${fmt(alvo, 0)} km na linha ${borda.linha} (${tipoNome[borda.dia].toLowerCase()}): entram ${fmt(borda.entra, 0)} km dos ${fmt(borda.mes, 0)} dessa linha.`
-    : `A soma fecha na linha ${borda.linha} (${tipoNome[borda.dia].toLowerCase()}).`;
   const reforcoRow = rows.find(r => r.estado === "reforco");
   const reforco = reforcoRow ? ` A linha 417 devolve ${fmt(Math.abs(reforcoRow.entra), 0)} km, porque a oferta dela aumenta.` : "";
   const lista = pedacos.join(", ").replace(/, ([^,]*)$/, " e $1");
+  const ordem = prioridadeRetirar.filter(cod => rows.some(r => r.dia === "util" && r.linha === cod)).map(cod => cod === "110/111" ? "110 e 111" : cod);
+  const aviso = ordem.length ? ` Se o total descer, saem primeiro da redução: ${ordem.join(", ").replace(/, ([^,]*)$/, " e $1")}.` : "";
+  const cheia = Math.abs(alvo - totalSeq()) < 0.6;
+  if (cheia) return `Saem ${lista}. A soma fecha no total da proposta.${reforco}${aviso}`;
+  const borda = ativos[ativos.length - 1];
+  const nota = borda.dia === "util" && prioridadeNota[borda.linha] ? ` Prioridade ${prioridadeNota[borda.linha]} para sair da redução.` : "";
+  const onde = borda.estado === "partial"
+    ? `A soma passa de ${fmt(alvo, 0)} km na linha ${borda.linha} (${tipoNome[borda.dia].toLowerCase()}): entram ${fmt(borda.entra, 0)} km dos ${fmt(borda.mes, 0)} dessa linha.${nota}`
+    : `A soma fecha na linha ${borda.linha} (${tipoNome[borda.dia].toLowerCase()}).${nota}`;
   return `Saem ${lista}. ${onde}${reforco}`;
 }
 function pintarFolha(){
@@ -372,7 +382,8 @@ function pintarFolha(){
   body.innerHTML = rows.map((r,i) => {
     const km = r.mes < 0 ? "−" + fmt(Math.abs(r.mes), 2) : fmt(r.mes, 2);
     const situacao = r.estado === "partial" ? `Parte · ${fmt(r.entra, 0)} km` : sit[r.estado];
-    return `<tr class="${r.estado}" ${i === edge ? "id=\"folhaEdge\"" : ""}><td class="${r.dia}">${tipoNome[r.dia]}</td><td>${r.linha}</td><td>${r.periodo}</td><td class="num">${km}</td><td class="num">${fmt(r.acum, 2)}</td><td>${situacao}</td></tr>`;
+    const marca = r.dia === "util" && prioridadeNota[r.linha] ? ` <span class="prio" title="Prioridade para sair da redução">${prioridadeNota[r.linha]}</span>` : "";
+    return `<tr class="${r.estado}" ${i === edge ? "id=\"folhaEdge\"" : ""}><td class="${r.dia}">${tipoNome[r.dia]}</td><td class="ln">${r.linha}${marca}</td><td>${r.periodo}</td><td class="num">${km}</td><td class="num">${fmt(r.acum, 2)}</td><td>${situacao}</td></tr>`;
   }).join("");
   const net = { dom:0, sab:0, util:0 };
   rows.forEach(r => { net[r.dia] += r.entra; });
@@ -412,25 +423,25 @@ function ligarFolha(){
   pintarFolha();
 }
 const passageiros = [
-  ["800","para","Para das 9h às 16h",147,905],
-  ["802","para","Para das 9h às 16h",81,470],
-  ["806","para","Para das 9h às 16h",112,683],
-  ["900","para","Para das 9h às 16h. À noite, só a saída do shopping",76,576],
-  ["913","para","Para das 9h às 16h",111,1046],
+  ["800","para","Para das 9h41 às 15h10",147,905],
+  ["802","para","Para das 8h24 às 11h30",81,470],
+  ["806","para","Para das 9h26 às 12h02 e das 12h56 às 14h40. À noite, a última saída fica às 18h46",112,683],
+  ["900","para","Para das 9h56 às 12h44 e das 13h24 às 15h04. À noite, só a saída do shopping",76,576],
+  ["913","para","Para das 8h51 às 15h48",111,1046],
   ["101","um","1 veículo à noite, de 2 para 1",13,504],
   ["106","um","1 veículo no entrepico, de 6 para 5",303,2399],
-  ["107","para","Para das 9h às 16h e à noite. Saem 2 veículos. A 106 assume",146,710],
+  ["107","para","Para das 9h06 às 16h22. À noite, a última saída fica às 20h08. A 106 assume",115,710],
   ["303","um","1 veículo no entrepico, de 3 para 2",104,745],
   ["306","um","1 veículo no entrepico, de 2 para 1",142,544],
-  ["501","dois","1 no entrepico, de 4 para 3, e 1 à noite, de 3 para 2",222,1228],
-  ["420","dois","2 no entrepico, de 4 para 2, e 1 à noite, de 3 para 2",244,1120],
+  ["501","dois","1 no entrepico, de 4 para 3, e 1 à noite, de 3 para 2",172,1228],
+  ["420","dois","2 no entrepico, de 4 para 2, e 1 à noite, de 3 para 2",133,1120],
   ["311","um","1 veículo no entrepico, de 5 para 4",258,1780],
-  ["110/111","dois","2 veículos, 1 de cada linha, de 6 para 4",245,2396],
+  ["110/111","dois","2 veículos, 1 de cada linha, de 6 para 4",242,2396],
   ["112","um","1 veículo no entrepico, de 4 para 3",127,1175],
   ["113","um","1 veículo no entrepico, de 5 para 4",264,2130],
-  ["351","tarde","Começa mais tarde. Saem viagens do início da tarde",32,195],
+  ["351","tarde","A tarde volta às 16h15. Saem as viagens das 15h às 16h15",33,195],
   ["404","um","1 veículo no entrepico, de 2 para 1",94,831],
-  ["405","um","1 veículo no entrepico, de 4 para 3",163,1543],
+  ["405","um","1 veículo no entrepico da tarde, de 4 para 3",69,1543],
   ["803","um","1 veículo no entrepico, de 5 para 4. À noite, só a saída do shopping",332,2585]
 ];
 function paxLista(){ return passageiros.filter(r => !(coletiva && foraUtil.has(r[0]))); }
@@ -530,16 +541,16 @@ const slides = [
     return `<section class="slide sheet-slide">
       <div class="sheet-head">
         <div><div class="kicker">Dia útil · 29/09/2026</div><h1>Por<br><em>linha.</em></h1></div>
-        <p class="lead">Na maior parte sai 1 ou 2 veículos e o restante da linha continua. Onde a linha para, é das 9h às 16h, ou à noite. Os catracados são o movimento desse horário, não o total do dia.</p>
+        <p class="lead">Na maior parte sai 1 ou 2 veículos e o restante da linha continua. Onde a linha para, o horário é o dela. Os passageiros catracados são os do entrepico, não o total do dia.</p>
       </div>
       <div class="pills pax">
         <article class="glass"><div class="stat-k">1 veículo</div><div class="stat-v cyan" data-count="${n("um")}">0</div><div class="stat-s">linhas</div></article>
         <article class="glass"><div class="stat-k">2 veículos ou mais</div><div class="stat-v orange" data-count="${n("dois")}">0</div><div class="stat-s">linhas</div></article>
-        <article class="glass pick"><div class="stat-k">A linha para</div><div class="stat-v" data-count="${n("para")}">0</div><div class="stat-s">das 9h às 16h, ou à noite</div></article>
+        <article class="glass pick"><div class="stat-k">A linha para</div><div class="stat-v" data-count="${n("para")}">0</div><div class="stat-s">cada uma no seu horário</div></article>
       </div>
       <div class="sheet-wrap">
         <table class="folha">
-          <thead><tr><th>Linha</th><th>O que muda</th><th class="num">Catracados no horário</th><th class="num">No dia</th></tr></thead>
+          <thead><tr><th>Linha</th><th>O que muda</th><th class="num">Passageiros catracados</th><th class="num">No dia</th></tr></thead>
           <tbody>${body}</tbody>
         </table>
       </div>
