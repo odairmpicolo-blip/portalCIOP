@@ -93,7 +93,13 @@
   .zone li{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid rgba(255,255,255,.07);font-size:22px;list-style:none}
   .zone ul{margin:0;padding:0}
   .zone .ln{font-family:Sora,sans-serif;font-size:24px}
-  .zone .meta{color:#d5e6f8;font-variant-numeric:tabular-nums;font-size:18px}
+  .zone li{align-items:flex-start;padding:3px 0}
+  .zone .meta{color:#d5e6f8;font-variant-numeric:tabular-nums;font-size:15px;line-height:1.25;text-align:right}
+  .folha.densa td,.folha.densa th{padding:5px 8px}
+  .folha.densa td{font-size:15px}
+  .folha.densa th{font-size:11px}
+  .folha td.hot{color:var(--orange);font-weight:800}
+  .folha tr.total td{font-weight:800;color:#fff;border-top:1px solid var(--line)}
   .callout{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 16px;border-color:rgba(46,230,166,.45);background:linear-gradient(90deg,rgba(46,230,166,.14),rgba(8,18,36,.72))}
   .callout b{color:var(--green);font-family:Sora,sans-serif;font-size:30px}
   .banner{border-color:rgba(46,230,166,.4);color:#d8ffe4;font-size:20px;font-weight:700}
@@ -113,6 +119,7 @@
   .sheet-slide{gap:8px}
   .sheet-slide h1{font-size:clamp(32px,3.2vw,48px)}
   .sheet-head{display:flex;align-items:flex-end;justify-content:space-between;gap:28px}
+  .sheet-head .lead{flex:1;min-width:0;margin:0 0 4px}
   .ajuste{flex:1;max-width:680px}
   .ajuste label{display:flex;align-items:baseline;justify-content:space-between;gap:12px;color:var(--muted);font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
   .ajuste output{font-family:Sora,sans-serif;font-size:clamp(40px,4vw,64px);letter-spacing:-.04em;color:var(--orange);text-transform:none}
@@ -279,12 +286,35 @@ function kmHtml(dia){
   const max = Math.max(...rows.map(r => r.km));
   return `<div class="km-list">${rows.map(r => `<div class="km-row reveal"><b>${fmtKm(r.km)} km</b><span class="code">${r.linha}</span><i class="bar" style="--w:${(r.km / max * 100).toFixed(1)}%"></i></div>`).join("")}</div>`;
 }
+const horarios = {
+  util:{
+    "101":"20h30 à 0h05","106":"8h48 às 16h55","107":"9h06 às 16h22 e após 20h32",
+    "110/111":"111 das 9h34 às 16h28 · 110 das 10h08 às 15h50","112":"8h50 às 16h21","113":"9h07 às 16h34",
+    "303":"9h59 às 16h39","306":"9h18 às 16h33","311":"8h49 às 15h44","351":"15h às 16h25",
+    "404":"9h40 às 16h45","405":"12h07 às 17h03","420":"9h27 às 16h44 e 21h04 às 23h54","501":"9h32 às 17h03",
+    "800":"9h41 às 15h10","802":"8h24 às 11h30","803":"10h47 às 16h e 19h55 às 23h50",
+    "806":"9h26 às 12h02 e 12h56 às 14h40, e após 19h55","900":"9h56 às 12h44 e 13h24 às 15h04, e após 19h10","913":"8h51 às 15h48"
+  },
+  sab:{
+    "102":"14h17 às 19h42 e 22h22 às 23h47","104":"14h17 às 19h37 e 22h22 às 23h52","107":"5h25 à 0h27",
+    "112":"20h30 à 0h20","113":"16h55 à 0h","301":"19h20 às 20h05 e 22h20 às 23h50","302":"21h às 23h55",
+    "303":"18h40 à 0h42","310":"5h26 às 19h48","400":"18h35 à 0h05","402":"18h50 às 23h26","420":"14h25 à 0h",
+    "426":"19h15 às 23h50","800":"7h às 10h07","803":"6h às 22h56","804":"5h50 às 19h49","806":"6h13 às 23h49",
+    "900":"6h12 às 6h56 e 9h às 22h57","913":"5h59 às 22h41"
+  },
+  dom:{
+    "102":"5h25 à 0h20","104":"6h às 23h55","107":"5h25 à 0h27","301":"16h50 às 23h40",
+    "302":"5h30 às 5h50 e 14h40 às 23h55","303":"5h25 à 0h42","400":"14h21 às 23h33","402":"18h11 às 23h30",
+    "413":"15h04 às 23h54","420":"5h52 à 0h41","423":"15h29 às 23h55","425":"5h25 às 20h20","426":"17h45 às 23h55",
+    "803":"11h33 às 22h48","900":"8h54 às 21h14"
+  }
+};
 function ondeHtml(dia, periodos, cls){
   const blocos = periodos.map(p => {
     const rows = cortes(dia).filter(r => r.periodo === p).sort((a,b) => b.corta - a.corta);
     const itens = rows.map(r => {
-      const espera = r.espA == null ? "serviço suspenso" : `${r.espA} → ${r.espD} min`;
-      return `<li><span class="ln">${r.linha}</span><span class="meta">↓ ${r.corta} · ${espera}</span></li>`;
+      const hora = (horarios[dia] || {})[r.linha] || "";
+      return `<li><span class="ln">${r.linha}</span><span class="meta">${hora}${hora ? " · " : ""}↓ ${r.corta}</span></li>`;
     }).join("");
     return `<article class="glass zone reveal"><h2>${p}</h2><ul>${itens}</ul></article>`;
   }).join("");
@@ -422,29 +452,39 @@ function ligarFolha(){
   });
   pintarFolha();
 }
+function fmtFlex(n){
+  const r = Math.round(Number(n) * 100) / 100;
+  const dec = Number.isInteger(r) ? 0 : (Math.abs(r * 10 - Math.round(r * 10)) < 0.001 ? 1 : 2);
+  return fmt(r, dec);
+}
 const passageiros = [
-  ["800","para","Para das 9h41 às 15h10",147,905],
-  ["802","para","Para das 8h24 às 11h30",81,470],
-  ["806","para","Para das 9h26 às 12h02 e das 12h56 às 14h40. À noite, a última saída fica às 18h46",112,683],
-  ["900","para","Para das 9h56 às 12h44 e das 13h24 às 15h04. À noite, só a saída do shopping",76,576],
-  ["913","para","Para das 8h51 às 15h48",111,1046],
-  ["101","um","1 veículo à noite, de 2 para 1",13,504],
-  ["106","um","1 veículo no entrepico, de 6 para 5",303,2399],
-  ["107","para","Para das 9h06 às 16h22. À noite, a última saída fica às 20h08. A 106 assume",115,710],
-  ["303","um","1 veículo no entrepico, de 3 para 2",104,745],
-  ["306","um","1 veículo no entrepico, de 2 para 1",142,544],
-  ["501","dois","1 no entrepico, de 4 para 3, e 1 à noite, de 3 para 2",172,1228],
-  ["420","dois","2 no entrepico, de 4 para 2, e 1 à noite, de 3 para 2",133,1120],
-  ["311","um","1 veículo no entrepico, de 5 para 4",258,1780],
-  ["110/111","dois","2 veículos, 1 de cada linha, de 6 para 4",242,2396],
-  ["112","um","1 veículo no entrepico, de 4 para 3",127,1175],
-  ["113","um","1 veículo no entrepico, de 5 para 4",264,2130],
-  ["351","tarde","A tarde volta às 16h15. Saem as viagens das 15h às 16h15",33,195],
-  ["404","um","1 veículo no entrepico, de 2 para 1",94,831],
-  ["405","um","1 veículo no entrepico da tarde, de 4 para 3",69,1543],
-  ["803","um","1 veículo no entrepico, de 5 para 4. À noite, só a saída do shopping",332,2585]
+  ["351",0.27,16.5,33,33.5,0.99,2,2,"Corte de viagens"],
+  ["101",0.11,6.5,13,58.32,0.22,2,1,"Somente a noite"],
+  ["802",0.66,40.5,81,141.35,0.57,2,0,""],
+  ["404",0.76,47,94,132.44,0.71,2,1,""],
+  ["303",0.85,34.67,104,112.25,0.93,3,2,""],
+  ["806",0.91,56,112,194.73,0.58,2,0,""],
+  ["112",1.03,42.33,127,116.98,1.09,3,2,""],
+  ["900",0.62,25.33,76,427.55,0.18,3,0,""],
+  ["420",1.08,44.33,133,284.49,0.47,3,2,""],
+  ["405",0.56,17.25,69,107.31,0.64,4,3,"Entre pico da tarde"],
+  ["107",0.94,57.5,115,317.31,0.36,2,0,""],
+  ["913",0.90,55.5,111,229.65,0.48,2,0,""],
+  ["501",1.40,43,172,108.29,1.59,4,3,""],
+  ["306",1.15,71,142,126.61,1.12,2,1,""],
+  ["800",1.20,73.5,147,197.28,0.75,2,0,""],
+  ["311",2.10,51.6,258,107.7,2.40,5,4,""],
+  ["110",1.97,40.33,242,207.15,1.17,6,4,"Linha 110 e 111"],
+  ["113",2.15,52.8,264,277.85,0.95,5,4,""],
+  ["803",2.70,66.4,332,190.11,1.75,5,4,""]
 ];
-function paxLista(){ return passageiros.filter(r => !(coletiva && foraUtil.has(r[0]))); }
+function paxLista(){
+  return passageiros.filter(r => {
+    if (!coletiva) return true;
+    if (r[0] === "110") return !foraUtil.has("110/111");
+    return !foraUtil.has(r[0]);
+  });
+}
 const navItems = [
   ["Soma",0],["Mês",1],["Rede",2],["Viagens",3],["Intervalo",4],["Período",10],["Linhas",13],["Saldo",16],["Passageiros",17]
 ];
@@ -521,9 +561,9 @@ const slides = [
   () => `<section class="slide"><div class="reveal"><div class="kicker">05 · sábados</div><h1>Aumento<br><em>do intervalo.</em></h1><p class="lead">Serviço suspenso no sábado.</p></div>${paraHtml("sab")}</section>`,
   () => `<section class="slide"><div class="reveal"><div class="kicker">05 · domingos</div><h1>Aumento<br><em>do intervalo.</em></h1></div>${espHtml("dom")}<article class="glass callout reveal"><div><div class="stat-k">Linha 417</div><div class="stat-s">Reforço de oferta, de 13 para 71 viagens.</div></div><b>+58 viagens · +372,66 km</b></article></section>`,
   () => `<section class="slide"><div class="reveal"><div class="kicker">05 · domingos</div><h1>Aumento<br><em>do intervalo.</em></h1><p class="lead">Serviço suspenso no domingo.</p></div>${paraHtml("dom")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · dias úteis</div><h1>Período<br><em>da redução.</em></h1></div>${ondeHtml("util", ["Entrepico","Entrepico e noite","Entrepico e tarde","Noite"], "u")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · sábados</div><h1>Período<br><em>da redução.</em></h1></div>${ondeHtml("sab", ["Após as 14h","Após as 18h","Dia todo"], "s")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · domingos</div><h1>Período<br><em>da redução.</em></h1></div>${ondeHtml("dom", ["Dia todo"], "d")}<article class="glass callout reveal"><div><div class="stat-k">Fora da redução</div><div class="stat-s">A linha 417 recebe reforço de oferta.</div></div><b>+58 viagens</b></article></section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · dias úteis</div><h1>Período<br><em>da redução.</em></h1><p class="lead">Horário em que as viagens saem.</p></div>${ondeHtml("util", ["Entrepico","Entrepico e noite","Entrepico e tarde","Noite"], "u")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · sábados</div><h1>Período<br><em>da redução.</em></h1><p class="lead">Horário em que as viagens saem.</p></div>${ondeHtml("sab", ["Após as 14h","Após as 18h","Dia todo"], "s")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · domingos</div><h1>Período<br><em>da redução.</em></h1><p class="lead">Horário em que as viagens saem.</p></div>${ondeHtml("dom", ["Dia todo"], "d")}<article class="glass callout reveal"><div><div class="stat-k">Fora da redução</div><div class="stat-s">A linha 417 recebe reforço de oferta.</div></div><b>+58 viagens</b></article></section>`,
   () => `<section class="slide"><div class="reveal"><div class="kicker">09 · dias úteis</div><h1>Quilometragem<br><em>por linha.</em></h1><p class="lead">↓ ${fmtKm(diaVista("util").km)} km neste dia.</p></div>${kmHtml("util")}</section>`,
   () => `<section class="slide"><div class="reveal"><div class="kicker">09 · sábados</div><h1>Quilometragem<br><em>por linha.</em></h1><p class="lead">↓ ${fmtKm(diaKm.sab)} km neste dia.</p></div>${kmHtml("sab")}</section>`,
   () => `<section class="slide"><div class="reveal"><div class="kicker">09 · domingos</div><h1>Quilometragem<br><em>por linha.</em></h1><p class="lead">↓ ${fmtKm(diaKm.dom)} km neste dia. A linha 417 soma 372,66 km, de 13 para 71 viagens.</p></div>${kmHtml("dom")}</section>`,
@@ -536,22 +576,20 @@ const slides = [
   </section>`,
   () => {
     const rows = paxLista();
-    const n = tipo => rows.filter(r => r[1] === tipo).length;
-    const body = rows.map(r => `<tr class="${r[1]}"><td class="ln">${r[0]}</td><td>${r[2]}</td><td class="num">${fmt(r[3])}</td><td class="num">${fmt(r[4])}</td></tr>`).join("");
+    const body = rows.map(r => {
+      const [linha, pct, carro, pass, km, ipk, atu, prop, obs] = r;
+      return `<tr><td class="ln">${linha}</td><td class="num${pct < 1 ? " hot" : ""}">${fmt(pct, 2)}%</td><td class="num">${fmtFlex(carro)}</td><td class="num">${fmt(pass)}</td><td class="num">${fmtFlex(km)}</td><td class="num">${fmt(ipk, 2)}</td><td class="num">${atu}</td><td class="num">${prop}</td><td class="dim">${obs}</td></tr>`;
+    }).join("");
+    const tot = rows.reduce((s, r) => ({ pass:s.pass + r[3], atu:s.atu + r[6], prop:s.prop + r[7] }), { pass:0, atu:0, prop:0 });
     return `<section class="slide sheet-slide">
       <div class="sheet-head">
-        <div><div class="kicker">Dia útil · 29/09/2026</div><h1>Por<br><em>linha.</em></h1></div>
-        <p class="lead">Na maior parte sai 1 ou 2 veículos e o restante da linha continua. Onde a linha para, o horário é o dela. Os passageiros catracados são os do entrepico, não o total do dia.</p>
-      </div>
-      <div class="pills pax">
-        <article class="glass"><div class="stat-k">1 veículo</div><div class="stat-v cyan" data-count="${n("um")}">0</div><div class="stat-s">linhas</div></article>
-        <article class="glass"><div class="stat-k">2 veículos ou mais</div><div class="stat-v orange" data-count="${n("dois")}">0</div><div class="stat-s">linhas</div></article>
-        <article class="glass pick"><div class="stat-k">A linha para</div><div class="stat-v" data-count="${n("para")}">0</div><div class="stat-s">cada uma no seu horário</div></article>
+        <div><div class="kicker">Dia útil · 29/09/2026</div><h1>Passageiros<br><em>catracados.</em></h1></div>
+        <p class="lead">Percentual e quantidade de passageiros no entrepico.</p>
       </div>
       <div class="sheet-wrap">
-        <table class="folha">
-          <thead><tr><th>Linha</th><th>O que muda</th><th class="num">Passageiros catracados</th><th class="num">No dia</th></tr></thead>
-          <tbody>${body}</tbody>
+        <table class="folha densa">
+          <thead><tr><th>Linha</th><th class="num">%</th><th class="num">Pass./carro</th><th class="num">Passageiros</th><th class="num">Km</th><th class="num">IPK</th><th class="num">Carros</th><th class="num">Proposta</th><th>Obs</th></tr></thead>
+          <tbody>${body}<tr class="total"><td>Total</td><td></td><td></td><td class="num">${fmt(tot.pass)}</td><td></td><td></td><td class="num">${tot.atu}</td><td class="num">${tot.prop}</td><td></td></tr></tbody>
         </table>
       </div>
     </section>`;
