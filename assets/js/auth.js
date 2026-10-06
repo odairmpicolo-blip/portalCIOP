@@ -66,7 +66,7 @@ function liberarHtmlValidado() {
 
 function paginaEhPublica() {
   const file = (window.location.pathname.split("/").pop() || "").split("?")[0].toLowerCase();
-  return file === "performance-tempo-real.html" || file === "pontualidade-ao-vivo.html" || file === "apresentacao-km.html";
+  return file === "performance-tempo-real.html" || file === "pontualidade-ao-vivo.html" || file === "apresentacao-km.html" || file === "apresentacao-km-coletiva.html";
 }
 
 if (!PORTAL_NATIVE_EMBEDDED && !paginaEhPublica()) {
