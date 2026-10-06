@@ -110,6 +110,40 @@
   .facts b{display:block;font-family:Sora,sans-serif;font-size:clamp(22px,2vw,30px);letter-spacing:-.03em}
   .facts span{color:var(--muted);font-size:16px}
   .tag{margin-top:14px;padding:12px 14px;border-radius:14px;background:rgba(46,230,166,.14);color:#d8ffe4;font-weight:800;font-size:18px}
+  .sheet-slide{gap:8px}
+  .sheet-slide h1{font-size:clamp(32px,3.2vw,48px)}
+  .sheet-head{display:flex;align-items:flex-end;justify-content:space-between;gap:28px}
+  .ajuste{flex:1;max-width:680px}
+  .ajuste label{display:flex;align-items:baseline;justify-content:space-between;gap:12px;color:var(--muted);font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+  .ajuste output{font-family:Sora,sans-serif;font-size:clamp(40px,4vw,64px);letter-spacing:-.04em;color:var(--orange);text-transform:none}
+  .ajuste input[type=range]{width:100%;margin:6px 0 0;accent-color:#ff6a2c;height:26px;cursor:pointer}
+  .trilho{display:flex;height:16px;margin-top:8px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.08)}
+  .trilho i{display:block;height:100%;width:0}
+  .trilho i:nth-child(1){background:var(--cyan)}
+  .trilho i:nth-child(2){background:var(--orange)}
+  .trilho i:nth-child(3){background:var(--green)}
+  .frase{margin:8px 0 0;color:#d5e6f8;font-size:18px;line-height:1.35}
+  .pills{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .pills.pax{grid-template-columns:repeat(3,1fr)}
+  .pills .glass{padding:10px 14px}
+  .pills .stat-v{font-size:clamp(28px,2.6vw,44px);margin-top:2px}
+  .pills .stat-s{margin-top:2px;font-size:14px}
+  .sheet-wrap{flex:1;min-height:0;overflow:auto;border:1px solid var(--line);border-radius:16px;background:rgba(6,12,28,.55);padding-bottom:52px;scroll-padding-bottom:56px}
+  .folha{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  .folha th{position:sticky;top:0;z-index:1;background:#0c1830;color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase;text-align:left;padding:9px 12px;border-bottom:1px solid var(--line)}
+  .folha td{padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.06);font-size:17px}
+  .folha .num{text-align:right;font-family:Sora,sans-serif}
+  .folha tr.in td{background:rgba(255,106,44,.13)}
+  .folha tr.partial td{background:rgba(61,225,255,.18);font-weight:800}
+  .folha tr.reforco td{background:rgba(46,230,166,.14)}
+  .folha tr.out td{color:rgba(147,168,196,.42)}
+  .folha tr.para td{background:rgba(255,106,44,.1)}
+  .folha td.ln{font-family:Sora,sans-serif;font-weight:800;font-size:18px}
+  .folha td.dim{color:#d5e6f8;font-size:15px}
+  .folha td.dom{color:var(--cyan);font-weight:800}
+  .folha td.sab{color:var(--orange);font-weight:800}
+  .folha td.util{color:var(--green);font-weight:800}
+  .folha tr.out td.dom,.folha tr.out td.sab,.folha tr.out td.util{color:inherit;font-weight:700}
   .progress{position:relative;z-index:2;height:3px;background:rgba(255,255,255,.06)}
   .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--orange))}
   .hint{position:fixed;left:22px;bottom:12px;z-index:3;color:var(--muted);font-size:12px}
@@ -121,6 +155,9 @@
     header{flex-wrap:wrap;height:auto}
     nav{display:none}
     .slide{height:auto;min-height:calc(100vh - 120px);padding:18px 16px 80px}
+    .sheet-head{flex-direction:column;align-items:stretch}
+    .ajuste{max-width:none}
+    .pills{grid-template-columns:1fr 1fr}
     .quad,.kpi-row,.kpi-3,.tres,.pair-big,.fronts,.esp-list,.km-list,.onde.u,.onde.s,.onde.d,.rede,.choice,.facts{grid-template-columns:1fr}
     .chart-slim{height:220px}
   }
@@ -273,17 +310,144 @@ function slim(id, labels, series){
   }));
 }
 
+const TETO = 70000;
+const MULT = { dom:53/12, sab:59/12, util:253/12 };
+const ordemUtil = ["800","802","806","900","913","101","106","107","303","306","501","420","311","110/111","112","113","351","404","405","803"];
+const tipoNome = { dom:"Domingo", sab:"Sábado", util:"Dia útil" };
+let ajusteKm = TETO;
+function sequenciaKm(){
+  const lista = [];
+  const push = (dia, rows) => rows.forEach(r => {
+    if (coletiva && dia === "util" && foraUtil.has(r.linha)) return;
+    lista.push({ dia, linha:r.linha, periodo:r.linha === "417" ? "Oferta aumenta" : r.periodo, mes:r.km * MULT[dia] });
+  });
+  push("dom", pacote.dom);
+  push("sab", pacote.sab);
+  push("util", ordemUtil.map(cod => pacote.util.find(r => r.linha === cod)).filter(Boolean));
+  let acc = 0;
+  return lista.map(item => {
+    const antes = acc;
+    acc += item.mes;
+    return { ...item, antes, acum:acc };
+  });
+}
+function classificar(item, alvo){
+  if (item.mes < 0) return item.antes < alvo - 0.001 ? { estado:"reforco", entra:item.mes } : { estado:"out", entra:0 };
+  if (item.antes >= alvo - 0.001) return { estado:"out", entra:0 };
+  if (item.acum <= alvo + 0.001) return { estado:"in", entra:item.mes };
+  return { estado:"partial", entra:alvo - item.antes };
+}
+function textoAjuste(rows, alvo){
+  const ativos = rows.filter(r => r.estado === "in" || r.estado === "partial");
+  if (!ativos.length) return "Nada sai neste total. O controle sobe até 70.000 km no mês, na ordem da planilha: domingo, sábado e dia útil.";
+  const kmDia = dia => rows.filter(r => r.dia === dia && r.estado !== "out").reduce((s,r) => s + r.entra, 0);
+  const pedacos = [];
+  if (kmDia("dom") > 0.5) pedacos.push(`${fmt(kmDia("dom"), 0)} km no domingo`);
+  if (kmDia("sab") > 0.5) pedacos.push(`${fmt(kmDia("sab"), 0)} km no sábado`);
+  if (kmDia("util") > 0.5) pedacos.push(`${fmt(kmDia("util"), 0)} km no dia útil`);
+  const borda = ativos[ativos.length - 1];
+  const onde = borda.estado === "partial"
+    ? `A soma passa de ${fmt(alvo, 0)} km na linha ${borda.linha} (${tipoNome[borda.dia].toLowerCase()}): entram ${fmt(borda.entra, 0)} km dos ${fmt(borda.mes, 0)} dessa linha.`
+    : `A soma fecha na linha ${borda.linha} (${tipoNome[borda.dia].toLowerCase()}).`;
+  const reforcoRow = rows.find(r => r.estado === "reforco");
+  const reforco = reforcoRow ? ` A linha 417 devolve ${fmt(Math.abs(reforcoRow.entra), 0)} km, porque a oferta dela aumenta.` : "";
+  const lista = pedacos.join(", ").replace(/, ([^,]*)$/, " e $1");
+  return `Saem ${lista}. ${onde}${reforco}`;
+}
+function pintarFolha(){
+  const body = document.getElementById("folhaBody");
+  if (!body) return;
+  const alvo = ajusteKm;
+  const base = sequenciaKm();
+  const rows = base.map(item => ({ ...item, ...classificar(item, alvo) }));
+  const sit = { in:"Sai", partial:"Parte", out:"Fica", reforco:"Reforço" };
+  let edge = -1;
+  rows.forEach((r,i) => { if (r.estado !== "out") edge = i; });
+  body.innerHTML = rows.map((r,i) => {
+    const km = r.mes < 0 ? "−" + fmt(Math.abs(r.mes), 2) : fmt(r.mes, 2);
+    const situacao = r.estado === "partial" ? `Parte · ${fmt(r.entra, 0)} km` : sit[r.estado];
+    return `<tr class="${r.estado}" ${i === edge ? "id=\"folhaEdge\"" : ""}><td class="${r.dia}">${tipoNome[r.dia]}</td><td>${r.linha}</td><td>${r.periodo}</td><td class="num">${km}</td><td class="num">${fmt(r.acum, 2)}</td><td>${situacao}</td></tr>`;
+  }).join("");
+  const net = { dom:0, sab:0, util:0 };
+  rows.forEach(r => { net[r.dia] += r.entra; });
+  document.getElementById("pillDom").textContent = fmt(net.dom, 0);
+  document.getElementById("pillSab").textContent = fmt(net.sab, 0);
+  document.getElementById("pillUtil").textContent = fmt(net.util, 0);
+  document.getElementById("pillTot").textContent = fmt(alvo, 0);
+  document.getElementById("ajusteOut").textContent = fmt(alvo, 0);
+  document.getElementById("ajusteFrase").textContent = textoAjuste(rows, alvo);
+  document.getElementById("segDom").style.width = Math.max(0, net.dom) / TETO * 100 + "%";
+  document.getElementById("segSab").style.width = Math.max(0, net.sab) / TETO * 100 + "%";
+  document.getElementById("segUtil").style.width = Math.max(0, net.util) / TETO * 100 + "%";
+  const wrap = document.getElementById("sheetWrap");
+  const mark = document.getElementById("folhaEdge");
+  if (wrap && mark){
+    const er = mark.getBoundingClientRect();
+    const wr = wrap.getBoundingClientRect();
+    if (er.top < wr.top + 28 || er.bottom > wr.bottom - 8) wrap.scrollTop += er.top - wr.top - wr.height * 0.35;
+  }
+}
+function ligarFolha(){
+  const input = document.getElementById("ajusteKm");
+  if (!input) return;
+  input.value = String(ajusteKm);
+  input.addEventListener("input", () => {
+    ajusteKm = Number(input.value);
+    pintarFolha();
+  });
+  pintarFolha();
+}
+const passageiros = [
+  ["800","para","A linha para no entrepico",147,905],
+  ["802","para","A linha para no entrepico",81,470],
+  ["806","para","A linha para no entrepico",112,683],
+  ["900","para","Para no entrepico. À noite, só a saída do shopping",76,576],
+  ["913","para","A linha para no entrepico",111,1046],
+  ["101","um","1 veículo à noite, de 2 para 1",13,504],
+  ["106","um","1 veículo no entrepico, de 6 para 5",303,2399],
+  ["107","para","Para no entrepico e à noite. Saem 2 veículos. A 106 assume",146,710],
+  ["303","um","1 veículo no entrepico, de 3 para 2",104,745],
+  ["306","um","1 veículo no entrepico, de 2 para 1",142,544],
+  ["501","dois","1 no entrepico, de 4 para 3, e 1 à noite, de 3 para 2",222,1228],
+  ["420","dois","2 no entrepico, de 4 para 2, e 1 à noite, de 3 para 2",244,1120],
+  ["311","um","1 veículo no entrepico, de 5 para 4",258,1780],
+  ["110/111","dois","2 veículos, 1 de cada linha, de 6 para 4",245,2396],
+  ["112","um","1 veículo no entrepico, de 4 para 3",127,1175],
+  ["113","um","1 veículo no entrepico, de 5 para 4",264,2130],
+  ["351","tarde","Começa mais tarde. Saem viagens do início da tarde",32,195],
+  ["404","um","1 veículo no entrepico, de 2 para 1",94,831],
+  ["405","um","1 veículo no entrepico, de 4 para 3",163,1543],
+  ["803","um","1 veículo no entrepico, de 5 para 4. À noite, só a saída do shopping",332,2585]
+];
+function paxLista(){ return passageiros.filter(r => !(coletiva && foraUtil.has(r[0]))); }
 const navItems = [
-  ["Abertura",0],["Mês",1],["Rede",2],["Viagens",3],["Intervalo",4],["Período",10],["Linhas",13],["Saldo",16]
+  ["70 mil",0],["Mês",1],["Rede",2],["Viagens",3],["Intervalo",4],["Período",10],["Linhas",13],["Saldo",16],["Passageiros",17]
 ];
 const slides = [
-  () => `<section class="slide"><div class="reveal"><div class="kicker">TCGL · ${nomeProposta}</div><h1>Redução<br><em>da oferta.</em></h1><p class="lead">${coletiva ? "Onze linhas do dia útil ficam de fora: 110/111, 803, 404, 306, 106, 303, 501, 311, 405, 101 e 351. Sábado e domingo seguem a planilha." : "Todas as linhas da planilha entram na redução. O sábado concentra a maior retirada diária. No domingo, a linha 417 assume o atendimento da 425."}</p></div>
-    <div class="kpi-3">
-      ${num("Km no mês", mesTipo.total, nomeProposta, "orange", 2)}
-      ${num("Km no dia", diaKm.total, "Útil, sábado e domingo", "cyan", 2)}
-      ${num("Viagens no dia", viagensDia, "Nas linhas desta proposta")}
-    </div></section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">01 · planilha</div><h1>Quilometragem<br><em>do mês.</em></h1><p class="lead">Dia útil, sábado e domingo, como no resumo.</p></div>
+  () => `<section class="slide sheet-slide">
+    <div class="sheet-head">
+      <div><div class="kicker">TCGL · ${nomeProposta}</div><h1>Soma até<br><em>70 mil km.</em></h1></div>
+      <div class="ajuste">
+        <label for="ajusteKm">Total no mês <output id="ajusteOut">70.000</output></label>
+        <input id="ajusteKm" type="range" min="0" max="70000" step="10" value="${ajusteKm}" aria-label="Total de km no mês, até 70 mil">
+        <div class="trilho" aria-hidden="true"><i id="segDom"></i><i id="segSab"></i><i id="segUtil"></i></div>
+        <p class="frase" id="ajusteFrase"></p>
+      </div>
+    </div>
+    <div class="pills">
+      <article class="glass"><div class="stat-k">Domingo</div><div class="stat-v cyan" id="pillDom">0</div><div class="stat-s">km que saem</div></article>
+      <article class="glass"><div class="stat-k">Sábado</div><div class="stat-v orange" id="pillSab">0</div><div class="stat-s">km que saem</div></article>
+      <article class="glass"><div class="stat-k">Dia útil</div><div class="stat-v green" id="pillUtil">0</div><div class="stat-s">km que saem</div></article>
+      <article class="glass pick"><div class="stat-k">Total do ajuste</div><div class="stat-v" id="pillTot">0</div><div class="stat-s">teto de 70.000 km</div></article>
+    </div>
+    <div class="sheet-wrap" id="sheetWrap">
+      <table class="folha">
+        <thead><tr><th>Tipo de dia</th><th>Linha</th><th>Período</th><th class="num">Km no mês</th><th class="num">Km acumulado</th><th>Situação</th></tr></thead>
+        <tbody id="folhaBody"></tbody>
+      </table>
+    </div>
+  </section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">01 · planilha</div><h1>Quilometragem<br><em>do mês.</em></h1><p class="lead">Total da proposta completa, sem parar no ajuste de 70 mil.</p></div>
     <div class="quad">
       ${num("Mês", mesTipo.total, "Total", "orange", 2)}
       ${num("Dias úteis", mesTipo.util, `${fmtKm(diaKm.util)} km no dia`, "orange", 2)}
@@ -344,7 +508,29 @@ const slides = [
       <article class="glass reveal"><div class="stat-k">Mês</div><div class="stat-v cyan" data-count="${mesTipo.total}" data-dec="2">0</div><div class="stat-s">km · ${fmtKm(mesTipo.util)} úteis · ${fmtKm(mesTipo.sab)} sábados · ${fmtKm(mesTipo.dom)} domingos</div></article>
     </div>
     <article class="glass chart-slim reveal"><div class="stat-k">Km no mês, por tipo de dia</div><canvas id="chartSaldo"></canvas></article>
-  </section>`
+  </section>`,
+  () => {
+    const rows = paxLista();
+    const n = tipo => rows.filter(r => r[1] === tipo).length;
+    const body = rows.map(r => `<tr class="${r[1]}"><td class="ln">${r[0]}</td><td>${r[2]}</td><td class="num">${fmt(r[3])}</td><td class="num">${fmt(r[4])}</td></tr>`).join("");
+    return `<section class="slide sheet-slide">
+      <div class="sheet-head">
+        <div><div class="kicker">Dia útil · 29/09/2026</div><h1>Por<br><em>linha.</em></h1></div>
+        <p class="lead">Na maior parte sai 1 ou 2 veículos e o restante da linha continua. Onde a linha para, é no entrepico ou à noite. Os catracados são o movimento desse horário, não o total do dia.</p>
+      </div>
+      <div class="pills pax">
+        <article class="glass"><div class="stat-k">1 veículo</div><div class="stat-v cyan" data-count="${n("um")}">0</div><div class="stat-s">linhas</div></article>
+        <article class="glass"><div class="stat-k">2 veículos ou mais</div><div class="stat-v orange" data-count="${n("dois")}">0</div><div class="stat-s">linhas</div></article>
+        <article class="glass pick"><div class="stat-k">A linha para</div><div class="stat-v" data-count="${n("para")}">0</div><div class="stat-s">no entrepico ou à noite</div></article>
+      </div>
+      <div class="sheet-wrap">
+        <table class="folha">
+          <thead><tr><th>Linha</th><th>O que muda</th><th class="num">Catracados no horário</th><th class="num">No dia</th></tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>
+    </section>`;
+  }
 ];
 
 function killCharts(){ charts.splice(0).forEach(c => c.destroy()); }
@@ -381,6 +567,7 @@ function render(){
   document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", page >= Number(b.dataset.go) && page <= Number(b.dataset.end)));
   drawCharts();
   animateIn(app);
+  ligarFolha();
 }
 function go(n){
   const next = Math.max(0, Math.min(slides.length-1, n));
@@ -407,7 +594,8 @@ function alternarTelaCheia(){
   }
 }
 document.addEventListener("keydown", e => {
-  if ((e.key === "f" || e.key === "F") && !e.metaKey && !e.ctrlKey && !e.altKey){ e.preventDefault(); alternarTelaCheia(); }
+  if ((e.key === "f" || e.key === "F") && !e.metaKey && !e.ctrlKey && !e.altKey){ e.preventDefault(); alternarTelaCheia(); return; }
+  if (e.target.closest("input, textarea")) return;
   if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " ") { e.preventDefault(); go(page+1); }
   if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); go(page-1); }
 });
