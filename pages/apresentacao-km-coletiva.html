@@ -41,6 +41,8 @@
   .portal-back:hover{color:#fff}
   main{position:relative;z-index:1;flex:1;min-height:0}
   .slide{height:100%;padding:16px 36px 8px;display:flex;flex-direction:column;gap:10px}
+  .slide.capa{padding:0;gap:0}
+  .slide.capa img{width:100%;height:100%;object-fit:cover;object-position:center}
   .kicker{color:var(--cyan);font-size:13px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
   h1{font-family:Sora,sans-serif;font-weight:800;letter-spacing:-.045em;line-height:.96;margin:6px 0 0;font-size:clamp(40px,4.4vw,64px)}
   h1 em{font-style:normal;color:var(--cyan)}
@@ -71,20 +73,21 @@
   .chart-slim{height:176px;flex:none;padding:10px 14px 6px;display:flex;flex-direction:column}
   .chart-slim canvas{width:100%!important;flex:1;min-height:0}
   .chart-slim .stat-k{margin-bottom:4px}
-  .esp-list,.km-list{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2px 32px;align-content:start;flex:1;min-height:0}
+  .esp-list,.km-list{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2px 28px;align-content:start;flex:1;min-height:0}
+  .esp-list.curta{grid-template-columns:minmax(0,860px)}
   .esp-row,.km-row{display:grid;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07)}
-  .esp-row{grid-template-columns:92px 1fr auto}
-  .esp-row .code,.km-row .code{font-family:Sora,sans-serif;font-size:28px}
-  .esp-row .mins{font-size:22px;color:#d5e6f8;font-variant-numeric:tabular-nums}
-  .esp-row{padding:4px 0;min-width:0}
-  .esp-row .mins{min-width:0}
-  .esp-row .hora{display:block;color:var(--cyan);font-size:16px;font-weight:800;line-height:1.2}
-  .esp-row .plus{font-family:Sora,sans-serif;font-size:34px;color:var(--orange);font-variant-numeric:tabular-nums}
+  .esp-row{grid-template-columns:118px minmax(0,1fr) 78px;padding:4px 0;min-width:0}
+  .esp-row.para{grid-template-columns:118px minmax(0,1fr)}
+  .esp-row .code,.km-row .code{font-family:Sora,sans-serif;font-size:26px}
+  .esp-list.curta .code{font-size:34px}
+  .esp-row .mins{min-width:0;font-size:20px;color:#d5e6f8;font-variant-numeric:tabular-nums}
+  .esp-row .hora{display:block;color:var(--cyan);font-size:15px;font-weight:800;line-height:1.2;white-space:normal}
+  .esp-row .plus{font-family:Sora,sans-serif;font-size:32px;color:var(--orange);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  .stop{display:block;margin-top:2px;color:var(--green);font-size:18px;font-weight:800}
   .km-row{grid-template-columns:250px 140px minmax(0,1fr);padding:3px 0}
   .km-row b{font-family:Sora,sans-serif;font-size:42px;letter-spacing:-.03em;color:var(--orange);font-variant-numeric:tabular-nums}
   .km-row .code{font-size:36px}
   .bar{display:block;height:8px;width:var(--w);border-radius:99px;background:linear-gradient(90deg,#1a6cff,var(--cyan));transform-origin:left center}
-  .stop{color:var(--green);font-size:22px;font-weight:800}
   .onde,.rede{display:grid;gap:12px;flex:1;min-height:0}
   .rede{grid-template-columns:1fr 1fr 1fr}
   .rede li{display:block;padding:10px 0}
@@ -160,6 +163,7 @@
   .progress{position:relative;z-index:2;height:3px;background:rgba(255,255,255,.06)}
   .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--orange))}
   .hint{position:fixed;left:22px;bottom:12px;z-index:3;color:var(--muted);font-size:12px}
+  body.na-capa .hint,body.na-capa .nav-float{visibility:hidden}
   .hint kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:#d5e6f8}
   .nav-float{position:fixed;right:18px;bottom:12px;z-index:3;display:flex;gap:8px}
   .nav-float button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(6,12,28,.72);color:#fff;font-size:18px;cursor:pointer}
@@ -347,7 +351,8 @@ function vazioLinha(){ return `<article class="glass reveal"><div class="stat-s"
 function espHtml(dia){
   const rows = cortes(dia).filter(r => r.espA != null).sort((a,b) => (b.espD-b.espA) - (a.espD-a.espA));
   if (!rows.length) return vazioLinha();
-  return `<div class="esp-list">${rows.map(r => {
+  const curta = rows.length <= 4 ? " curta" : "";
+  return `<div class="esp-list${curta}">${rows.map(r => {
     const hora = (horarios[dia] || {})[r.linha] || "";
     return `<div class="esp-row reveal"><span class="code">${r.linha}</span><span class="mins">${hora ? `<span class="hora">${hora}</span>` : ""}${r.espA} → ${r.espD} min</span><span class="plus">+${r.espD - r.espA}</span></div>`;
   }).join("")}</div>`;
@@ -355,9 +360,10 @@ function espHtml(dia){
 function paraHtml(dia){
   const rows = cortes(dia).filter(r => r.espA == null);
   if (!rows.length) return vazioLinha();
-  return `<div class="esp-list">${rows.map(r => {
+  const curta = rows.length <= 4 ? " curta" : "";
+  return `<div class="esp-list${curta}">${rows.map(r => {
     const hora = (horarios[dia] || {})[r.linha] || r.periodo;
-    return `<div class="esp-row reveal"><span class="code">${r.linha}</span><span class="mins">${hora}</span><span class="stop">serviço suspenso</span></div>`;
+    return `<div class="esp-row para reveal"><span class="code">${r.linha}</span><span class="mins"><span class="hora">${hora}</span><span class="stop">Serviço suspenso</span></span></div>`;
   }).join("")}</div>`;
 }
 function kmHtml(dia){
@@ -576,9 +582,10 @@ function paxLista(){
   });
 }
 const navItems = [
-  ["Soma",0],["Mês",1],["Rede",2],["Viagens",3],["Intervalo",4],["Período",10],["Linhas",13],["Saldo",16],["Passageiros",17]
+  ["Capa",0],["Soma",1],["Mês",2],["Rede",3],["Viagens",4],["Espera",5],["Período",11],["Linhas",14],["Saldo",17],["Passageiros",18]
 ];
 const slides = [
+  () => `<section class="slide capa"><img src="../assets/img/capa-proposta-km.jpg" alt="Capa da proposta. Ônibus da TCGL em Londrina, com o lago e a cidade ao fundo."></section>`,
   () => `<section class="slide sheet-slide">
     <div class="sheet-head">
       <div><div class="kicker">TCGL · ${nomeProposta}</div><h1>Soma até<br><em>${fmt(Math.round(totalSeq()), 0)} km.</em></h1></div>
@@ -605,7 +612,7 @@ const slides = [
   () => {
     const mes = totaisMes();
     const dia = totaisDiaKm();
-    return `<section class="slide"><div class="reveal"><div class="kicker">01 · planilha</div><h1>Quilometragem<br><em>do mês.</em></h1>${comNota(cenario().cheia ? "Total da proposta." : "")}</div>
+    return `<section class="slide"><div class="reveal"><div class="kicker">01</div><h1>Quilometragem<br><em>do mês.</em></h1>${comNota(cenario().cheia ? "Total da proposta." : "")}</div>
     <div class="quad">
       ${num("Mês", mes.total, "Total", "orange", 2)}
       ${num("Dias úteis", mes.util, `${fmtKm(dia.util)} km no dia`, "orange", 2)}
@@ -638,7 +645,7 @@ const slides = [
       { linhas:["413","423"], t:"413 e 423", s:"Operam juntas o dia todo." },
       { linhas:["425/417"], t:"425 e 417", s:"A 425 sai e a 417 assume. Entra só a redução: o corte da 425 menos o aumento da 417." }
     ];
-    return `<section class="slide"><div class="reveal"><div class="kicker">03</div><h1>Integração<br><em>da rede.</em></h1>${comNota("Linhas que passam a operar juntas, ou que deixam o atendimento com outra linha.")}</div>
+    return `<section class="slide"><div class="reveal"><div class="kicker">02</div><h1>Integração<br><em>da rede.</em></h1>${comNota("Linhas que passam a operar juntas, ou que deixam o atendimento com outra linha.")}</div>
       <div class="rede">
         ${bloco("util", util)}
         ${bloco("sab", sab)}
@@ -647,7 +654,7 @@ const slides = [
   },
   () => {
     const u = diaVista("util"), s = diaVista("sab"), d = diaVista("dom");
-    return `<section class="slide"><div class="reveal"><div class="kicker">04</div><h1>Redução<br><em>de viagens.</em></h1>${comNota("")}</div>
+    return `<section class="slide"><div class="reveal"><div class="kicker">03</div><h1>Redução<br><em>de viagens.</em></h1>${comNota("")}</div>
       <div class="kpi-3">
         ${num(u.nome, u.corteV, `${fmt(u.viagensA)} → ${fmt(u.viagensD)} por dia`, "orange")}
         ${num(s.nome, s.corteV, `${fmt(s.viagensA)} → ${fmt(s.viagensD)} por dia`, "orange")}
@@ -656,23 +663,23 @@ const slides = [
       <article class="glass chart-slim reveal"><div class="stat-k">Viagens retiradas por dia</div><canvas id="chartViagens"></canvas></article>
     </section>`;
   },
-  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · dias úteis</div><h1>Aumento<br><em>do intervalo.</em></h1>${comNota("")}</div>${espHtml("util")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · dias úteis</div><h1>Aumento<br><em>do intervalo.</em></h1>${comNota("Serviço suspenso no período.")}</div>${paraHtml("util")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · sábados</div><h1>Aumento<br><em>do intervalo.</em></h1>${comNota("")}</div>${espHtml("sab")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · sábados</div><h1>Aumento<br><em>do intervalo.</em></h1>${comNota("Serviço suspenso no sábado.")}</div>${paraHtml("sab")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · domingos</div><h1>Aumento<br><em>do intervalo.</em></h1>${comNota("")}</div>${espHtml("dom")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · domingos</div><h1>Aumento<br><em>do intervalo.</em></h1>${comNota("Serviço suspenso no domingo.")}</div>${paraHtml("dom")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · dias úteis</div><h1>Período<br><em>da redução.</em></h1>${comNota("Horário em que as viagens saem.")}</div>${ondeHtml("util", ["Entrepico","Entrepico e noite","Entrepico e tarde","Noite"], "u")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · sábados</div><h1>Período<br><em>da redução.</em></h1>${comNota("Horário em que as viagens saem.")}</div>${ondeHtml("sab", ["Após as 14h","Após as 18h","Dia todo"], "s")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · domingos</div><h1>Período<br><em>da redução.</em></h1>${comNota("Horário em que as viagens saem.")}</div>${ondeHtml("dom", ["Dia todo"], "d")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">09 · dias úteis</div><h1>Quilometragem<br><em>por linha.</em></h1>${comNota(`↓ ${fmtKm(diaVista("util").km)} km neste dia.`)}</div>${kmHtml("util")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">09 · sábados</div><h1>Quilometragem<br><em>por linha.</em></h1>${comNota(`↓ ${fmtKm(diaVista("sab").km)} km neste dia.`)}</div>${kmHtml("sab")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">09 · domingos</div><h1>Quilometragem<br><em>por linha.</em></h1>${comNota(`↓ ${fmtKm(diaVista("dom").km)} km neste dia.`)}</div>${kmHtml("dom")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${comNota("")}</div>${espHtml("util")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${comNota("Serviço suspenso no período.")}</div>${paraHtml("util")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${comNota("")}</div>${espHtml("sab")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${comNota("Serviço suspenso no sábado.")}</div>${paraHtml("sab")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · domingos</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${comNota("")}</div>${espHtml("dom")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · domingos</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${comNota("Serviço suspenso no domingo.")}</div>${paraHtml("dom")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · dias úteis</div><h1>Período<br><em>da redução.</em></h1>${comNota("Horário em que as viagens saem.")}</div>${ondeHtml("util", ["Entrepico","Entrepico e noite","Entrepico e tarde","Noite"], "u")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · sábados</div><h1>Período<br><em>da redução.</em></h1>${comNota("Horário em que as viagens saem.")}</div>${ondeHtml("sab", ["Após as 14h","Após as 18h","Dia todo"], "s")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · domingos</div><h1>Período<br><em>da redução.</em></h1>${comNota("Horário em que as viagens saem.")}</div>${ondeHtml("dom", ["Dia todo"], "d")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · dias úteis</div><h1>Quilometragem<br><em>por linha.</em></h1>${comNota(`↓ ${fmtKm(diaVista("util").km)} km neste dia.`)}</div>${kmHtml("util")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · sábados</div><h1>Quilometragem<br><em>por linha.</em></h1>${comNota(`↓ ${fmtKm(diaVista("sab").km)} km neste dia.`)}</div>${kmHtml("sab")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · domingos</div><h1>Quilometragem<br><em>por linha.</em></h1>${comNota(`↓ ${fmtKm(diaVista("dom").km)} km neste dia.`)}</div>${kmHtml("dom")}</section>`,
   () => {
     const dia = totaisDiaKm();
     const mes = totaisMes();
     const u = diaVista("util"), s = diaVista("sab"), d = diaVista("dom");
-    return `<section class="slide"><div class="reveal"><div class="kicker">10</div><h1>Saldo.</h1>${comNota("")}</div>
+    return `<section class="slide"><div class="reveal"><div class="kicker">07</div><h1>Saldo.</h1>${comNota("")}</div>
     <div class="pair-big">
       <article class="glass reveal"><div class="stat-k">1 dia</div><div class="stat-v orange" data-count="${dia.total}" data-dec="2">0</div><div class="stat-s">km · ${fmt(u.corteV)} úteis · ${fmt(s.corteV)} sábados · ${fmt(d.corteV)} domingos</div></article>
       <article class="glass reveal"><div class="stat-k">Mês</div><div class="stat-v cyan" data-count="${mes.total}" data-dec="2">0</div><div class="stat-s">km · ${fmtKm(mes.util)} úteis · ${fmtKm(mes.sab)} sábados · ${fmtKm(mes.dom)} domingos</div></article>
@@ -737,6 +744,7 @@ function render(){
   const vivo = document.getElementById("ajusteVivo");
   vivo.hidden = cena.cheia;
   vivo.textContent = cena.cheia ? "" : fmt(Math.round(cena.alvo), 0) + " km";
+  document.body.classList.toggle("na-capa", page === 0);
   pager.textContent = String(page+1).padStart(2,"0") + " / " + String(slides.length).padStart(2,"0");
   gsap.to(bar, { width:((page+1)/slides.length*100)+"%", duration: reduce ? 0 : .4, ease:"power2.out" });
   document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", page >= Number(b.dataset.go) && page <= Number(b.dataset.end)));
