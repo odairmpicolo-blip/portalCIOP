@@ -76,12 +76,13 @@
   .esp-list,.km-list{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2px 28px;align-content:start;flex:1;min-height:0}
   .esp-list.curta{grid-template-columns:minmax(0,860px)}
   .esp-row,.km-row{display:grid;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07)}
-  .esp-row{grid-template-columns:118px minmax(0,1fr) 78px;padding:4px 0;min-width:0}
+  .esp-row{grid-template-columns:118px minmax(0,1fr) 168px;padding:4px 0;min-width:0}
   .esp-row.para{grid-template-columns:118px minmax(0,1fr)}
   .esp-row .code,.km-row .code{font-family:Sora,sans-serif;font-size:26px}
   .esp-list.curta .code{font-size:34px}
   .esp-row .mins{min-width:0;font-size:20px;color:#d5e6f8;font-variant-numeric:tabular-nums}
-  .esp-row .hora{display:block;color:var(--cyan);font-size:15px;font-weight:800;line-height:1.2;white-space:normal}
+  .esp-row .hora,.esp-row .de{display:block;color:var(--cyan);font-size:15px;font-weight:800;line-height:1.2;white-space:normal}
+  .esp-row .de{color:#d5e6f8;font-size:18px;margin-top:2px}
   .esp-row .plus{font-family:Sora,sans-serif;font-size:32px;color:var(--orange);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
   .stop{display:block;margin-top:2px;color:var(--green);font-size:18px;font-weight:800}
   .km-row{grid-template-columns:250px 140px minmax(0,1fr);padding:3px 0}
@@ -348,13 +349,35 @@ function num(k, v, s, cls, dec){
   return `<article class="glass reveal"><div class="stat-k">${k}</div><div class="stat-v ${cls||""}" data-count="${v}" data-dec="${d}">0</div>${s ? `<div class="stat-s">${s}</div>` : ""}</article>`;
 }
 function vazioLinha(){ return `<article class="glass reveal"><div class="stat-s">Nenhuma linha neste total.</div></article>`; }
+function txtEspera(min){
+  const n = Math.round(Number(min));
+  if (n < 60) return n + " min";
+  const h = Math.floor(n / 60);
+  const m = n % 60;
+  return m ? h + "h" + String(m).padStart(2, "0") + " min" : h + "h";
+}
+const sistemaLinhas = { util:90, sab:77, dom:60 };
+function pctLinhas(dia){
+  const pct = Math.round(linhasKm(dia).length / sistemaLinhas[dia] * 1000) / 10;
+  return fmt(pct, Number.isInteger(pct) ? 0 : 1) + "%";
+}
+function nLinhas(dia){
+  const n = linhasKm(dia).length;
+  return `${n} ${n === 1 ? "linha" : "linhas"} (${pctLinhas(dia)} do sistema)`;
+}
+function ondeDia(dia){
+  return dia === "util" ? "no dia útil" : dia === "sab" ? "no sábado" : "no domingo";
+}
+function leadDia(dia, texto){
+  return comNota(`${nLinhas(dia)} ${ondeDia(dia)}.${texto ? " " + texto : ""}`);
+}
 function espHtml(dia){
   const rows = cortes(dia).filter(r => r.espA != null).sort((a,b) => (b.espD-b.espA) - (a.espD-a.espA));
   if (!rows.length) return vazioLinha();
   const curta = rows.length <= 4 ? " curta" : "";
   return `<div class="esp-list${curta}">${rows.map(r => {
     const hora = (horarios[dia] || {})[r.linha] || "";
-    return `<div class="esp-row reveal"><span class="code">${r.linha}</span><span class="mins">${hora ? `<span class="hora">${hora}</span>` : ""}${r.espA} → ${r.espD} min</span><span class="plus">+${r.espD - r.espA}</span></div>`;
+    return `<div class="esp-row reveal"><span class="code">${r.linha}</span><span class="mins">${hora ? `<span class="hora">${hora}</span>` : ""}<span class="de">de ${txtEspera(r.espA)} para</span></span><span class="plus">${txtEspera(r.espD)}</span></div>`;
   }).join("")}</div>`;
 }
 function paraHtml(dia){
@@ -615,9 +638,9 @@ const slides = [
     return `<section class="slide"><div class="reveal"><div class="kicker">01</div><h1>Quilometragem<br><em>do mês.</em></h1>${comNota(cenario().cheia ? "Total da proposta." : "")}</div>
     <div class="quad">
       ${num("Mês", mes.total, "Total", "orange", 2)}
-      ${num("Dias úteis", mes.util, `${fmtKm(dia.util)} km no dia`, "orange", 2)}
-      ${num("Sábados", mes.sab, `${fmtKm(dia.sab)} km no dia`, "orange", 2)}
-      ${num("Domingos", mes.dom, `${fmtKm(dia.dom)} km no dia`, "orange", 2)}
+      ${num("Dias úteis", mes.util, `${fmtKm(dia.util)} km no dia · ${nLinhas("util")}`, "orange", 2)}
+      ${num("Sábados", mes.sab, `${fmtKm(dia.sab)} km no dia · ${nLinhas("sab")}`, "orange", 2)}
+      ${num("Domingos", mes.dom, `${fmtKm(dia.dom)} km no dia · ${nLinhas("dom")}`, "orange", 2)}
     </div></section>`;
   },
   () => {
@@ -656,25 +679,25 @@ const slides = [
     const u = diaVista("util"), s = diaVista("sab"), d = diaVista("dom");
     return `<section class="slide"><div class="reveal"><div class="kicker">03</div><h1>Redução<br><em>de viagens.</em></h1>${comNota("")}</div>
       <div class="kpi-3">
-        ${num(u.nome, u.corteV, `${fmt(u.viagensA)} → ${fmt(u.viagensD)} por dia`, "orange")}
-        ${num(s.nome, s.corteV, `${fmt(s.viagensA)} → ${fmt(s.viagensD)} por dia`, "orange")}
-        ${num(d.nome, d.corteV, `${fmt(d.viagensA)} → ${fmt(d.viagensD)} por dia`, "orange")}
+        ${num(u.nome, u.corteV, `${fmt(u.viagensA)} → ${fmt(u.viagensD)} por dia · ${nLinhas("util")}`, "orange")}
+        ${num(s.nome, s.corteV, `${fmt(s.viagensA)} → ${fmt(s.viagensD)} por dia · ${nLinhas("sab")}`, "orange")}
+        ${num(d.nome, d.corteV, `${fmt(d.viagensA)} → ${fmt(d.viagensD)} por dia · ${nLinhas("dom")}`, "orange")}
       </div>
       <article class="glass chart-slim reveal"><div class="stat-k">Viagens retiradas por dia</div><canvas id="chartViagens"></canvas></article>
     </section>`;
   },
-  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${comNota("")}</div>${espHtml("util")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${comNota("Serviço suspenso no período.")}</div>${paraHtml("util")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${comNota("")}</div>${espHtml("sab")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${comNota("Serviço suspenso no sábado.")}</div>${paraHtml("sab")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · domingos</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${comNota("")}</div>${espHtml("dom")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · domingos</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${comNota("Serviço suspenso no domingo.")}</div>${paraHtml("dom")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · dias úteis</div><h1>Período<br><em>da redução.</em></h1>${comNota("Horário em que as viagens saem.")}</div>${ondeHtml("util", ["Entrepico","Entrepico e noite","Entrepico e tarde","Noite"], "u")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · sábados</div><h1>Período<br><em>da redução.</em></h1>${comNota("Horário em que as viagens saem.")}</div>${ondeHtml("sab", ["Após as 14h","Após as 18h","Dia todo"], "s")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · domingos</div><h1>Período<br><em>da redução.</em></h1>${comNota("Horário em que as viagens saem.")}</div>${ondeHtml("dom", ["Dia todo"], "d")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · dias úteis</div><h1>Quilometragem<br><em>por linha.</em></h1>${comNota(`↓ ${fmtKm(diaVista("util").km)} km neste dia.`)}</div>${kmHtml("util")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · sábados</div><h1>Quilometragem<br><em>por linha.</em></h1>${comNota(`↓ ${fmtKm(diaVista("sab").km)} km neste dia.`)}</div>${kmHtml("sab")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · domingos</div><h1>Quilometragem<br><em>por linha.</em></h1>${comNota(`↓ ${fmtKm(diaVista("dom").km)} km neste dia.`)}</div>${kmHtml("dom")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("util")}</div>${espHtml("util")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("util", "Serviço suspenso no período.")}</div>${paraHtml("util")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("sab")}</div>${espHtml("sab")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("sab", "Serviço suspenso no sábado.")}</div>${paraHtml("sab")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · domingos</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("dom")}</div>${espHtml("dom")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · domingos</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("dom", "Serviço suspenso no domingo.")}</div>${paraHtml("dom")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · dias úteis</div><h1>Período<br><em>da redução.</em></h1>${leadDia("util", "Horário em que as viagens saem.")}</div>${ondeHtml("util", ["Entrepico","Entrepico e noite","Entrepico e tarde","Noite"], "u")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · sábados</div><h1>Período<br><em>da redução.</em></h1>${leadDia("sab", "Horário em que as viagens saem.")}</div>${ondeHtml("sab", ["Após as 14h","Após as 18h","Dia todo"], "s")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · domingos</div><h1>Período<br><em>da redução.</em></h1>${leadDia("dom", "Horário em que as viagens saem.")}</div>${ondeHtml("dom", ["Dia todo"], "d")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · dias úteis</div><h1>Quilometragem<br><em>por linha.</em></h1>${leadDia("util", "↓ " + fmtKm(diaVista("util").km) + " km neste dia.")}</div>${kmHtml("util")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · sábados</div><h1>Quilometragem<br><em>por linha.</em></h1>${leadDia("sab", "↓ " + fmtKm(diaVista("sab").km) + " km neste dia.")}</div>${kmHtml("sab")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">06 · domingos</div><h1>Quilometragem<br><em>por linha.</em></h1>${leadDia("dom", "↓ " + fmtKm(diaVista("dom").km) + " km neste dia.")}</div>${kmHtml("dom")}</section>`,
   () => {
     const dia = totaisDiaKm();
     const mes = totaisMes();
