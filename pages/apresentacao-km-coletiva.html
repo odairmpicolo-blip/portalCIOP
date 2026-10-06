@@ -399,12 +399,15 @@ function txtEspera(min){
   return m ? h + "h" + String(m).padStart(2, "0") + " min" : h + "h";
 }
 const sistemaLinhas = { util:90, sab:77, dom:60 };
+function contaLinhas(dia){
+  return linhasKm(dia).reduce((n, r) => n + (r.linha === "110/111" ? 2 : 1), 0);
+}
 function pctLinhas(dia){
-  const pct = Math.round(linhasKm(dia).length / sistemaLinhas[dia] * 1000) / 10;
+  const pct = Math.round(contaLinhas(dia) / sistemaLinhas[dia] * 1000) / 10;
   return fmt(pct, Number.isInteger(pct) ? 0 : 1) + "%";
 }
 function dadosLinhas(dia){
-  const n = linhasKm(dia).length;
+  const n = contaLinhas(dia);
   return { n, pct: pctLinhas(dia), tot: sistemaLinhas[dia], palavra: n === 1 ? "linha" : "linhas" };
 }
 function faixaLinhas(dia){
