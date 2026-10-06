@@ -163,13 +163,6 @@
   .trilho i.seg-dom{background:var(--cyan)}
   .trilho i.seg-sab{background:var(--orange)}
   .trilho i.seg-util{background:var(--green)}
-  .km-vivo{position:relative;z-index:2;display:flex;align-items:center;gap:16px;padding:8px 28px;border-bottom:1px solid var(--line);background:rgba(6,12,28,.88)}
-  .km-vivo b{flex:none;min-width:196px;font-family:Sora,sans-serif;font-size:32px;letter-spacing:-.04em;color:var(--orange);font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(255,106,44,.5)}
-  .km-vivo .trilho{flex:1;margin-top:0;height:16px;box-shadow:0 0 18px rgba(61,225,255,.35)}
-  .km-leg{flex:none;display:flex;gap:14px;color:#e8f2fc;font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
-  .km-leg i{display:inline-block;width:8px;height:8px;margin-right:5px;border-radius:99px;vertical-align:1px}
-  .km-leg .c{background:var(--cyan)} .km-leg .o{background:var(--orange)} .km-leg .g{background:var(--green)}
-  body.na-capa .km-vivo{display:none}
   .frase{margin:8px 0 0;color:#e8f2fc;font-size:20px;line-height:1.35}
   .pills{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
   .pills.pax{grid-template-columns:repeat(3,1fr)}
@@ -187,6 +180,9 @@
   .folha tr.out td{color:rgba(147,168,196,.42)}
   .folha tr.para td{background:rgba(255,106,44,.1)}
   .folha td.ln{font-family:Sora,sans-serif;font-weight:800;font-size:20px}
+  .folha.soma th{font-size:11px;letter-spacing:.03em;line-height:1.15;padding:8px 7px;white-space:normal}
+  .folha.soma td{font-size:15px;padding:6px 7px;white-space:nowrap}
+  .folha.soma td.ln{font-size:16px}
   .folha td.dim{color:#e8f2fc;font-size:16px}
   .folha td.dom{color:var(--cyan);font-weight:800}
   .folha td.sab{color:var(--orange);font-weight:800}
@@ -196,7 +192,12 @@
   .progress{position:relative;z-index:2;height:3px;background:rgba(255,255,255,.06)}
   .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--orange));box-shadow:0 0 10px rgba(61,225,255,.8)}
   .hint{position:fixed;left:22px;bottom:12px;z-index:3;color:var(--muted);font-size:12px}
-  body.na-capa .hint,body.na-capa .nav-float{visibility:hidden}
+  body.na-capa .hint,body.na-capa .nav-float,body.na-capa .ajuste-canto{visibility:hidden}
+  .ajuste-canto{display:flex;align-items:center;gap:8px;width:210px;padding:4px 10px 4px 12px;border-radius:999px;border:1px solid rgba(140,210,255,.35);background:rgba(6,12,28,.72);box-shadow:0 0 14px rgba(61,225,255,.16)}
+  .ajuste-canto label{display:flex;flex-direction:column;align-items:flex-start;gap:0;color:#d5e4f6;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;line-height:1}
+  .ajuste-canto output{font-family:Sora,sans-serif;font-size:16px;color:var(--orange);letter-spacing:-.03em;text-transform:none;text-shadow:0 0 12px rgba(255,106,44,.45)}
+  .ajuste-canto input{flex:1;min-width:0;margin:0;accent-color:#ff6a2c;height:16px;cursor:pointer}
+  .ajuste-canto input[hidden]{display:none}
   .hint kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:#d5e6f8}
   .nav-float{position:fixed;right:18px;bottom:12px;z-index:3;display:flex;gap:8px}
   .nav-float button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(6,12,28,.72);color:#fff;font-size:18px;cursor:pointer}
@@ -227,15 +228,14 @@
     <div style="display:flex;align-items:center;gap:12px">
       <a class="portal-back" id="outraProposta" href="apresentacao-km-coletiva.html">Coletiva</a>
       <a class="portal-back" href="../index.html">Portal</a>
+      <div class="ajuste-canto" id="ajusteCanto">
+        <label>Km <output id="ajusteCantoOut">0</output></label>
+        <input id="ajusteKm" type="range" min="70000" max="70000" step="1" aria-label="Total de km no mês, de 70 mil até o total da proposta">
+      </div>
       <div class="count" id="ajusteVivo" hidden></div>
       <div class="count" id="pager">01</div>
     </div>
   </header>
-  <div class="km-vivo" id="kmVivo">
-    <b data-km-tot>0</b>
-    <div class="trilho" aria-label="Km no mês: domingo, sábado e dia útil"><i class="piso" title="Mínimo de 70.000 km"></i><i class="seg-dom"></i><i class="seg-sab"></i><i class="seg-util"></i></div>
-    <div class="km-leg"><span><i class="c"></i>Domingo</span><span><i class="o"></i>Sábado</span><span><i class="g"></i>Dia útil</span></div>
-  </div>
   <main id="app"></main>
   <div class="progress" aria-hidden="true"><i id="bar"></i></div>
 </div>
@@ -517,18 +517,20 @@ function sequenciaKm(){
   const lista = [];
   const push = (dia, rows) => rows.forEach(r => {
     if (coletiva && dia === "util" && foraUtil.has(r.linha)) return;
-    lista.push({ dia, linha:r.linha, periodo:r.periodo, mes:r.km * MULT[dia] });
+    lista.push({ dia, linha:r.linha, periodo:r.periodo, mes:r.km * MULT[dia], viagensA:r.antes, viagensD:r.depois, corta:r.corta, espA:r.espA, espD:r.espD, kmDia:r.km });
   });
   push("dom", pacote.dom);
   push("sab", pacote.sab);
   const protegidas = new Set(prioridadeRetirar);
   const ordemAjuste = ordemUtil.filter(cod => !protegidas.has(cod)).concat(prioridadeRetirar.slice().reverse());
   push("util", ordemAjuste.map(cod => pacote.util.find(r => r.linha === cod)).filter(Boolean));
-  let acc = 0;
+  let acc = 0, accV = 0;
   return lista.map(item => {
     const antes = acc;
     acc += item.mes;
-    return { ...item, antes, acum:acc };
+    const vMes = item.corta * DIAS_ANO[item.dia] / 12;
+    accV += vMes;
+    return { ...item, antes, acum:acc, vMes, vAcum:accV };
   });
 }
 function classificar(item, alvo){
@@ -575,6 +577,21 @@ function pintarKmBar(){
     el.textContent = fmt(Math.round(alvo), 0) + " km";
   });
 }
+function freqCel(v){
+  if (v == null || v === "") return "—";
+  return txtEspera(v);
+}
+function freqDifTxt(a, b){
+  if (a == null || b == null) return "—";
+  const d = Math.round(b - a);
+  if (!d) return "0";
+  return (d > 0 ? "+" : "−") + txtEspera(Math.abs(d));
+}
+function numAssinado(n, dec){
+  const v = Number(n);
+  const t = fmt(Math.abs(v), dec);
+  return v < 0 ? "−" + t : t;
+}
 function pintarFolha(){
   const body = document.getElementById("folhaBody");
   if (!body) return;
@@ -587,9 +604,12 @@ function pintarFolha(){
   rows.forEach((r,i) => { if (r.estado !== "out") edge = i; });
   body.innerHTML = rows.map((r,i) => {
     const km = r.mes < 0 ? "−" + fmt(Math.abs(r.mes), 2) : fmt(r.mes, 2);
+    const kmDia = r.kmDia < 0 ? "−" + fmt(Math.abs(r.kmDia), 2) : fmt(r.kmDia, 2);
     const situacao = r.estado === "partial" ? `Parte · ${fmt(r.entra, 0)} km` : sit[r.estado];
     const marca = r.dia === "util" && prioridadeNota[r.linha] ? ` <span class="prio" title="Prioridade para sair da redução">${prioridadeNota[r.linha]}</span>` : "";
-    return `<tr class="${r.estado}" ${i === edge ? "id=\"folhaEdge\"" : ""}><td class="${r.dia}">${tipoNome[r.dia]}</td><td class="ln">${r.linha}${marca}</td><td>${r.periodo}</td><td class="num">${km}</td><td class="num">${fmt(r.acum, 2)}</td><td>${situacao}</td></tr>`;
+    const decV = Number.isInteger(Math.round(r.vMes * 100) / 100) ? 0 : 2;
+    const decA = Number.isInteger(Math.round(r.vAcum * 100) / 100) ? 0 : 2;
+    return `<tr class="${r.estado}" ${i === edge ? "id=\"folhaEdge\"" : ""}><td class="${r.dia}">${tipoNome[r.dia]}</td><td>${r.periodo}</td><td class="ln">${r.linha}${marca}</td><td class="num">${fmt(r.viagensA, 0)}</td><td class="num">${fmt(r.viagensD, 0)}</td><td class="num">${numAssinado(r.corta, 0)}</td><td class="num">${numAssinado(r.vMes, decV)}</td><td class="num">${numAssinado(r.vAcum, decA)}</td><td class="num">${freqCel(r.espA)}</td><td class="num">${freqCel(r.espD)}</td><td class="num">${freqDifTxt(r.espA, r.espD)}</td><td class="num">${kmDia}</td><td class="num">${km}</td><td class="num">${fmt(r.acum, 2)}</td><td>${situacao}</td></tr>`;
   }).join("");
   const net = { dom:0, sab:0, util:0 };
   rows.forEach(r => { net[r.dia] += r.entra; });
@@ -609,20 +629,37 @@ function pintarFolha(){
   }
 }
 function ligarFolha(){
+  const body = document.getElementById("folhaBody");
+  if (!body) return;
+  pintarFolha();
+}
+let arrastando = false;
+function ligarAjusteCanto(){
   const input = document.getElementById("ajusteKm");
-  if (!input) return;
   const topo = Math.round(tetoAjuste());
   if (ajusteKm == null || ajusteKm < AJUSTE_MIN || ajusteKm > topo) ajusteKm = topo;
   input.min = String(AJUSTE_MIN);
   input.max = String(topo);
   input.step = "1";
   input.value = String(ajusteKm);
+  input.hidden = topo <= AJUSTE_MIN;
+  const sync = () => {
+    const texto = fmt(ajusteKm, 0);
+    document.getElementById("ajusteCantoOut").textContent = texto;
+    const grande = document.getElementById("ajusteOut");
+    if (grande) grande.textContent = texto;
+  };
   input.addEventListener("input", () => {
     ajusteKm = Math.min(topo, Math.max(AJUSTE_MIN, Number(input.value)));
     cenaCache = null;
-    pintarFolha();
+    arrastando = true;
+    sync();
+    if (page === 1 && document.getElementById("folhaBody")) pintarFolha();
+    else render();
   });
-  pintarFolha();
+  input.addEventListener("pointerup", () => { arrastando = false; });
+  input.addEventListener("change", () => { arrastando = false; });
+  sync();
 }
 function fmtFlex(n){
   const r = Math.round(Number(n) * 100) / 100;
@@ -673,8 +710,7 @@ const slides = [
     <div class="sheet-head">
       <div><div class="kicker">TCGL · ${nomeProposta}</div><h1>Soma até<br><em>${fmt(Math.round(tetoAjuste()), 0)} km.</em></h1></div>
       <div class="ajuste">
-        <label for="ajusteKm">Total no mês <output id="ajusteOut">${fmt(Math.round(tetoAjuste()), 0)}</output></label>
-        <input id="ajusteKm" type="range" min="70000" max="${Math.round(tetoAjuste())}" step="1" aria-label="Total de km no mês, de 70 mil até o total da proposta"${Math.round(tetoAjuste()) <= AJUSTE_MIN ? " hidden" : ""}>
+        <label>Total no mês <output id="ajusteOut">${fmt(Math.round(tetoAjuste()), 0)}</output></label>
         <div class="trilho" aria-hidden="true"><i class="piso" id="pisoMin" title="Mínimo de 70.000 km"></i><i class="seg-dom" id="segDom"></i><i class="seg-sab" id="segSab"></i><i class="seg-util" id="segUtil"></i></div>
         <p class="frase" id="ajusteFrase"></p>
       </div>
@@ -686,8 +722,8 @@ const slides = [
       <article class="glass pick"><div class="stat-k">Total do ajuste</div><div class="stat-v" id="pillTot">0</div><div class="stat-s">mínimo de 70.000 km</div></article>
     </div>
     <div class="sheet-wrap" id="sheetWrap">
-      <table class="folha">
-        <thead><tr><th>Tipo de dia</th><th>Linha</th><th>Período</th><th class="num">Km no mês</th><th class="num">Km acumulado</th><th>Situação</th></tr></thead>
+      <table class="folha soma">
+        <thead><tr><th>Tipo de dia</th><th>Período</th><th>Linha</th><th class="num">Viagens anterior</th><th class="num">Viagens nova</th><th class="num">Viagens reduzidas</th><th class="num">Viagens reduz. (mês)</th><th class="num">Viag. acumul.</th><th class="num">Frequência anterior</th><th class="num">Frequência nova</th><th class="num">Dif.</th><th class="num">Km reduzido</th><th class="num">Km no mês</th><th class="num">Km acumulado</th><th>Situação</th></tr></thead>
         <tbody id="folhaBody"></tbody>
       </table>
     </div>
@@ -801,9 +837,12 @@ function animateIn(root){
     const end = Number(el.dataset.count);
     const dec = Number(el.dataset.dec || 0);
     const suffix = el.dataset.suffix || "";
-    if (reduce){ el.textContent = fmt(end, dec) + suffix; return; }
+    if (reduce || arrastando){ el.textContent = fmt(end, dec) + suffix; return; }
   });
-  if (reduce) return;
+  if (reduce || arrastando){
+    root.querySelectorAll(".reveal").forEach(el => { el.style.opacity = "1"; el.style.visibility = "visible"; });
+    return;
+  }
   slideTween = gsap.timeline({ defaults:{ ease:"power3.out" } });
   slideTween.from(root.querySelectorAll(".reveal"), { y:24, autoAlpha:0, duration:.62, stagger:{ each:.045, from:"start" } }, 0);
   slideTween.from(root.querySelectorAll(".bar"), { scaleX:0, duration:.7, stagger:.025, ease:"power2.out" }, .18);
@@ -828,8 +867,7 @@ function render(){
   app.innerHTML = slides[page]();
   const cena = cenario();
   const vivo = document.getElementById("ajusteVivo");
-  vivo.hidden = cena.cheia || (coletiva && Math.abs(cena.alvo - tetoAjuste()) < 1);
-  vivo.textContent = cena.cheia ? "" : fmt(Math.round(cena.alvo), 0) + " km";
+  vivo.hidden = true;
   document.body.classList.toggle("na-capa", page === 0);
   pintarKmBar();
   pager.textContent = String(page+1).padStart(2,"0") + " / " + String(slides.length).padStart(2,"0");
@@ -873,6 +911,7 @@ if (!reduce){
   gsap.to(".orb-a", { x:40, y:24, duration:9, yoyo:true, repeat:-1, ease:"sine.inOut" });
   gsap.to(".orb-b", { x:-30, y:-20, duration:11, yoyo:true, repeat:-1, ease:"sine.inOut" });
 }
+ligarAjusteCanto();
 render();
 </script>
 </body>
