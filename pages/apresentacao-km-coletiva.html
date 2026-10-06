@@ -55,6 +55,11 @@
   .stat-v{font-family:Sora,sans-serif;font-size:clamp(48px,4.6vw,76px);letter-spacing:-.04em;line-height:.92;margin-top:6px}
   .stat-v.orange{color:var(--orange)} .stat-v.cyan{color:var(--cyan)} .stat-v.green{color:var(--green)}
   .stat-s{color:#d5e6f8;margin-top:8px;font-size:18px;line-height:1.3}
+  .lead b{font-family:Sora,sans-serif;font-size:32px;letter-spacing:-.03em;color:var(--orange);font-weight:800;font-variant-numeric:tabular-nums}
+  .faixa-linhas{display:flex;flex-wrap:wrap;gap:4px 20px;align-items:baseline;margin-top:12px}
+  .faixa-linhas span{color:#d5e6f8;font-size:20px;font-weight:700}
+  .faixa-linhas b{font-family:Sora,sans-serif;font-size:clamp(40px,3.2vw,56px);letter-spacing:-.04em;line-height:1;color:var(--orange);font-weight:800;font-variant-numeric:tabular-nums}
+  .quad .faixa-linhas b{font-size:clamp(52px,4.4vw,72px)}
   .quad{display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;min-height:0}
   .quad .glass{display:flex;flex-direction:column;justify-content:center;padding:22px 28px}
   .quad .stat-v{font-size:clamp(64px,6.2vw,108px)}
@@ -361,15 +366,20 @@ function pctLinhas(dia){
   const pct = Math.round(linhasKm(dia).length / sistemaLinhas[dia] * 1000) / 10;
   return fmt(pct, Number.isInteger(pct) ? 0 : 1) + "%";
 }
-function nLinhas(dia){
+function dadosLinhas(dia){
   const n = linhasKm(dia).length;
-  return `${n} ${n === 1 ? "linha" : "linhas"} (${pctLinhas(dia)} do sistema)`;
+  return { n, pct: pctLinhas(dia), tot: sistemaLinhas[dia], palavra: n === 1 ? "linha" : "linhas" };
+}
+function faixaLinhas(dia){
+  const d = dadosLinhas(dia);
+  return `<div class="faixa-linhas"><span><b>${d.n}</b> ${d.palavra}</span><span><b>${d.pct}</b></span><span>de <b>${d.tot}</b> do sistema</span></div>`;
 }
 function ondeDia(dia){
   return dia === "util" ? "no dia útil" : dia === "sab" ? "no sábado" : "no domingo";
 }
 function leadDia(dia, texto){
-  return comNota(`${nLinhas(dia)} ${ondeDia(dia)}.${texto ? " " + texto : ""}`);
+  const d = dadosLinhas(dia);
+  return comNota(`<b>${d.n}</b> ${d.palavra} · <b>${d.pct}</b> de <b>${d.tot}</b> do sistema, ${ondeDia(dia)}.${texto ? " " + texto : ""}`);
 }
 function espHtml(dia){
   const rows = cortes(dia).filter(r => r.espA != null).sort((a,b) => (b.espD-b.espA) - (a.espD-a.espA));
@@ -638,9 +648,9 @@ const slides = [
     return `<section class="slide"><div class="reveal"><div class="kicker">01</div><h1>Quilometragem<br><em>do mês.</em></h1>${comNota(cenario().cheia ? "Total da proposta." : "")}</div>
     <div class="quad">
       ${num("Mês", mes.total, "Total", "orange", 2)}
-      ${num("Dias úteis", mes.util, `${fmtKm(dia.util)} km no dia · ${nLinhas("util")}`, "orange", 2)}
-      ${num("Sábados", mes.sab, `${fmtKm(dia.sab)} km no dia · ${nLinhas("sab")}`, "orange", 2)}
-      ${num("Domingos", mes.dom, `${fmtKm(dia.dom)} km no dia · ${nLinhas("dom")}`, "orange", 2)}
+      ${num("Dias úteis", mes.util, `${fmtKm(dia.util)} km no dia${faixaLinhas("util")}`, "orange", 2)}
+      ${num("Sábados", mes.sab, `${fmtKm(dia.sab)} km no dia${faixaLinhas("sab")}`, "orange", 2)}
+      ${num("Domingos", mes.dom, `${fmtKm(dia.dom)} km no dia${faixaLinhas("dom")}`, "orange", 2)}
     </div></section>`;
   },
   () => {
@@ -679,9 +689,9 @@ const slides = [
     const u = diaVista("util"), s = diaVista("sab"), d = diaVista("dom");
     return `<section class="slide"><div class="reveal"><div class="kicker">03</div><h1>Redução<br><em>de viagens.</em></h1>${comNota("")}</div>
       <div class="kpi-3">
-        ${num(u.nome, u.corteV, `${fmt(u.viagensA)} → ${fmt(u.viagensD)} por dia · ${nLinhas("util")}`, "orange")}
-        ${num(s.nome, s.corteV, `${fmt(s.viagensA)} → ${fmt(s.viagensD)} por dia · ${nLinhas("sab")}`, "orange")}
-        ${num(d.nome, d.corteV, `${fmt(d.viagensA)} → ${fmt(d.viagensD)} por dia · ${nLinhas("dom")}`, "orange")}
+        ${num(u.nome, u.corteV, `${fmt(u.viagensA)} → ${fmt(u.viagensD)} por dia${faixaLinhas("util")}`, "orange")}
+        ${num(s.nome, s.corteV, `${fmt(s.viagensA)} → ${fmt(s.viagensD)} por dia${faixaLinhas("sab")}`, "orange")}
+        ${num(d.nome, d.corteV, `${fmt(d.viagensA)} → ${fmt(d.viagensD)} por dia${faixaLinhas("dom")}`, "orange")}
       </div>
       <article class="glass chart-slim reveal"><div class="stat-k">Viagens retiradas por dia</div><canvas id="chartViagens"></canvas></article>
     </section>`;
