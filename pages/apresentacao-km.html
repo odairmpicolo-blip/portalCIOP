@@ -156,9 +156,14 @@
   .facts b{display:block;font-family:Sora,sans-serif;font-size:clamp(22px,2vw,30px);letter-spacing:-.03em}
   .facts span{color:var(--muted);font-size:16px}
   .tag{margin-top:14px;padding:12px 14px;border-radius:14px;background:rgba(46,230,166,.14);color:#d8ffe4;font-weight:800;font-size:18px}
-  .sheet-slide{gap:8px}
+  .soma-dia{gap:6px}
+  .soma-dia h1{font-size:clamp(32px,3vw,44px);margin:0}
+  .soma-dia .sheet-head{align-items:flex-end}
+  .soma-dia .sheet-wrap{padding-bottom:12px}
+  .soma-dia .folha td{padding:5px 6px}
   .sheet-slide h1{font-size:clamp(36px,3.4vw,52px)}
   .sheet-head{display:flex;align-items:flex-end;justify-content:space-between;gap:28px}
+  .pax-bases{display:flex;gap:22px;flex:none;align-items:flex-end}
   .pax-mes{flex:none;text-align:right}
   .pax-mes .stat-v{font-size:clamp(42px,4vw,68px);margin-top:2px}
   .sheet-head .lead{flex:1;min-width:0;margin:0 0 4px}
@@ -445,12 +450,13 @@ function numerar(rows, codDe){
     return { r, nro, peso };
   });
 }
-function espHtml(dia){
+function espHtml(dia, de, ate){
   const rows = cortes(dia).filter(r => r.espA != null).sort((a,b) => (b.espD-b.espA) - (a.espD-a.espA));
   if (!rows.length) return vazioLinha();
-  const itens = numerar(rows, r => r.linha);
+  const todos = numerar(rows, r => r.linha);
+  const itens = de == null ? todos : todos.slice(de, ate);
   const qtd = itens.reduce((s, x) => s + x.peso, 0);
-  const curta = rows.length <= 4 ? " curta" : "";
+  const curta = itens.length <= 4 ? " curta" : "";
   return `<div class="esp-list${curta}"><div class="lista-topo">${textoQtd(qtd)}</div>${itens.map(({ r, nro }) => {
     const hora = (horarios[dia] || {})[r.linha] || "";
     return `<div class="esp-row reveal"><span class="code"><span class="nro">${nro}</span>${r.linha}</span><span class="mins">${hora ? `<span class="hora">${hora}</span>` : ""}<span class="troca"><span class="antes"><i>de</i> <b>${txtEspera(r.espA)}</b></span><span class="seta">para</span><span class="depois"><b>${txtEspera(r.espD)}</b></span></span></span></div>`;
@@ -627,52 +633,61 @@ function numAssinado(n, dec){
   return v < 0 ? "−" + t : t;
 }
 function pintarFolha(){
-  const body = document.getElementById("folhaBody");
-  if (!body) return;
   const teto = tetoAjuste();
   const alvo = ajusteKm == null || ajusteKm >= Math.round(teto) - 0.5 ? teto : ajusteKm;
   const base = sequenciaKm();
   const rows = base.map(item => ({ ...item, ...classificar(item, alvo) }));
+  const net = { dom:0, sab:0, util:0 };
+  rows.forEach(r => { net[r.dia] += r.entra; });
+  const pillDom = document.getElementById("pillDom");
+  if (pillDom){
+    pillDom.textContent = fmt(net.dom, 0);
+    document.getElementById("pillSab").textContent = fmt(net.sab, 0);
+    document.getElementById("pillUtil").textContent = fmt(net.util, 0);
+    document.getElementById("pillTot").textContent = fmt(alvo, 0);
+    document.getElementById("ajusteOut").textContent = fmt(alvo, 0);
+    document.getElementById("ajusteFrase").textContent = textoAjuste(rows, alvo);
+    pintarKmBar();
+  }
+  const body = document.getElementById("folhaBody");
+  if (!body) return;
+  const diaFiltro = body.dataset.dia || "";
   const sit = { in:"Sai", partial:"Parte", out:"Fica", reforco:"Reforço" };
   let edge = -1;
   let n = 1;
   let saem = 0;
-  rows.forEach((r,i) => { if (r.estado !== "out") edge = i; });
-  body.innerHTML = rows.map((r,i) => {
+  const marcadas = rows.map((r,i) => {
+    const peso = pesoLinha(r.linha);
+    const a = String(n).padStart(2, "0");
+    const nro = peso === 1 ? a : a + "–" + String(n + peso - 1).padStart(2, "0");
+    if (r.estado === "in" || r.estado === "partial") saem += (!diaFiltro || r.dia === diaFiltro) ? peso : 0;
+    n += peso;
+    return { r, i, nro };
+  });
+  const visiveis = diaFiltro ? marcadas.filter(x => x.r.dia === diaFiltro) : marcadas;
+  visiveis.forEach((x,i) => { if (x.r.estado !== "out") edge = i; });
+  body.innerHTML = visiveis.map((x,i) => {
+    const r = x.r;
     const km = r.mes < 0 ? "−" + fmt(Math.abs(r.mes), 2) : fmt(r.mes, 2);
     const kmDia = r.kmDia < 0 ? "−" + fmt(Math.abs(r.kmDia), 2) : fmt(r.kmDia, 2);
     const situacao = r.estado === "partial" ? `Parte · ${fmt(r.entra, 0)} km` : sit[r.estado];
     const marca = r.dia === "util" && prioridadeNota[r.linha] ? ` <span class="prio" title="Prioridade para sair da redução">${prioridadeNota[r.linha]}</span>` : "";
     const decV = Number.isInteger(Math.round(r.vMes * 100) / 100) ? 0 : 2;
     const decA = Number.isInteger(Math.round(r.vAcum * 100) / 100) ? 0 : 2;
-    const peso = pesoLinha(r.linha);
-    const nro = peso === 1 ? String(n).padStart(2, "0") : String(n).padStart(2, "0") + "–" + String(n + peso - 1).padStart(2, "0");
-    if (r.estado === "in" || r.estado === "partial") saem += peso;
-    n += peso;
-    return `<tr class="${r.estado}" ${i === edge ? "id=\"folhaEdge\"" : ""}><td class="${r.dia}">${tipoNome[r.dia]}</td><td>${r.periodo}</td><td class="ln"><span class="nro">${nro}</span>${r.linha}${marca}</td><td class="num">${fmt(r.viagensA, 0)}</td><td class="num">${fmt(r.viagensD, 0)}</td><td class="num">${numAssinado(r.corta, 0)}</td><td class="num">${numAssinado(r.vMes, decV)}</td><td class="num">${numAssinado(r.vAcum, decA)}</td><td class="num">${freqCel(r.espA)}</td><td class="num">${freqCel(r.espD)}</td><td class="num">${freqDifTxt(r.espA, r.espD)}</td><td class="num">${kmDia}</td><td class="num">${km}</td><td class="num">${fmt(r.acum, 2)}</td><td>${situacao}</td></tr>`;
+    return `<tr class="${r.estado}" ${i === edge ? "id=\"folhaEdge\"" : ""}><td class="${r.dia}">${tipoNome[r.dia]}</td><td>${r.periodo}</td><td class="ln"><span class="nro">${x.nro}</span>${r.linha}${marca}</td><td class="num">${fmt(r.viagensA, 0)}</td><td class="num">${fmt(r.viagensD, 0)}</td><td class="num">${numAssinado(r.corta, 0)}</td><td class="num">${numAssinado(r.vMes, decV)}</td><td class="num">${numAssinado(r.vAcum, decA)}</td><td class="num">${freqCel(r.espA)}</td><td class="num">${freqCel(r.espD)}</td><td class="num">${freqDifTxt(r.espA, r.espD)}</td><td class="num">${kmDia}</td><td class="num">${km}</td><td class="num">${fmt(r.acum, 2)}</td><td>${situacao}</td></tr>`;
   }).join("");
-  const net = { dom:0, sab:0, util:0 };
-  rows.forEach(r => { net[r.dia] += r.entra; });
-  document.getElementById("pillDom").textContent = fmt(net.dom, 0);
-  document.getElementById("pillSab").textContent = fmt(net.sab, 0);
-  document.getElementById("pillUtil").textContent = fmt(net.util, 0);
-  document.getElementById("pillTot").textContent = fmt(alvo, 0);
-  document.getElementById("ajusteOut").textContent = fmt(alvo, 0);
-  document.getElementById("ajusteFrase").textContent = textoAjuste(rows, alvo);
   const qtdSoma = document.getElementById("qtdSoma");
   if (qtdSoma) qtdSoma.innerHTML = textoQtd(saem) + " na redução";
   pintarKmBar();
   const wrap = document.getElementById("sheetWrap");
   const mark = document.getElementById("folhaEdge");
-  if (wrap && mark && rows[edge] && rows[edge].estado === "partial"){
+  if (wrap && mark && visiveis[edge] && visiveis[edge].r.estado === "partial"){
     const er = mark.getBoundingClientRect();
     const wr = wrap.getBoundingClientRect();
     if (er.top < wr.top + 28 || er.bottom > wr.bottom - 8) wrap.scrollTop += er.top - wr.top - wr.height * 0.35;
   }
 }
 function ligarFolha(){
-  const body = document.getElementById("folhaBody");
-  if (!body) return;
   pintarFolha();
 }
 let arrastando = false;
@@ -730,6 +745,7 @@ const passageiros = [
   ["113",2.15,52.8,264,277.85,0.95,5,4,""],
   ["803",2.70,66.4,332,190.11,1.75,5,4,""]
 ];
+const BASE_ENTREPICO = 12296;
 function paxLista(){
   return passageiros.flatMap(r => {
     const cod = r[0] === "110" ? "110/111" : r[0];
@@ -745,8 +761,21 @@ function paxLista(){
   });
 }
 const navItems = [
-  ["Capa",0],["Soma",1],["Mês",2],["Rede",3],["Viagens",4],["Espera",5],["Período",11],["Linhas",14],["Saldo",17],["Passageiros",18]
+  ["Capa",0],["Soma",1],["Mês",5],["Rede",6],["Viagens",7],["Espera",8],["Período",15],["Linhas",18],["Saldo",21],["Passageiros",22]
 ];
+function slideSomaDia(dia, titulo){
+  return `<section class="slide sheet-slide soma-dia">
+    <div class="sheet-head">
+      <div><div class="kicker">Soma · ${titulo}</div><h1>${titulo}.</h1><p class="lista-topo" id="qtdSoma"></p></div>
+    </div>
+    <div class="sheet-wrap" id="sheetWrap">
+      <table class="folha soma">
+        <thead><tr><th>Tipo de dia</th><th>Período</th><th>Linha</th><th class="num">Viagens anterior</th><th class="num">Viagens nova</th><th class="num">Viagens reduzidas</th><th class="num">Viagens reduz. (mês)</th><th class="num">Viag. acumul.</th><th class="num">Frequência anterior</th><th class="num">Frequência nova</th><th class="num">Dif.</th><th class="num">Km reduzido</th><th class="num">Km no mês</th><th class="num">Km acumulado</th><th>Situação</th></tr></thead>
+        <tbody id="folhaBody" data-dia="${dia}"></tbody>
+      </table>
+    </div>
+  </section>`;
+}
 const slides = [
   () => `<section class="slide capa"><img src="../assets/img/capa-proposta-km.jpg" alt="Capa da proposta. Ônibus da TCGL em Londrina, com o lago e a cidade ao fundo."></section>`,
   () => `<section class="slide sheet-slide">
@@ -764,13 +793,10 @@ const slides = [
       <article class="glass"><div class="stat-k">Dia útil</div><div class="stat-v green" id="pillUtil">0</div><div class="stat-s">km que saem</div></article>
       <article class="glass pick"><div class="stat-k">Total do ajuste</div><div class="stat-v" id="pillTot">0</div><div class="stat-s">${coletiva ? "a 107 entra por inteiro" : "mínimo de 70.000 km"}</div></article>
     </div>
-    <div class="sheet-wrap" id="sheetWrap">
-      <table class="folha soma">
-        <thead><tr><th>Tipo de dia</th><th>Período</th><th>Linha</th><th class="num">Viagens anterior</th><th class="num">Viagens nova</th><th class="num">Viagens reduzidas</th><th class="num">Viagens reduz. (mês)</th><th class="num">Viag. acumul.</th><th class="num">Frequência anterior</th><th class="num">Frequência nova</th><th class="num">Dif.</th><th class="num">Km reduzido</th><th class="num">Km no mês</th><th class="num">Km acumulado</th><th>Situação</th></tr></thead>
-        <tbody id="folhaBody"></tbody>
-      </table>
-    </div>
   </section>`,
+  () => slideSomaDia("dom", "Domingo"),
+  () => slideSomaDia("sab", "Sábado"),
+  () => slideSomaDia("util", "Dia útil"),
   () => {
     const mes = totaisMes();
     const dia = totaisDiaKm();
@@ -833,7 +859,8 @@ const slides = [
       <article class="glass chart-slim reveal"><div class="stat-k">Viagens retiradas por dia</div><canvas id="chartViagens"></canvas></article>
     </section>`;
   },
-  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("util")}</div>${espHtml("util")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("util")}</div>${espHtml("util", 0, 8)}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("util", "Continuação.")}</div>${espHtml("util", 8)}</section>`,
   () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("util", "Serviço suspenso no período.")}</div>${paraHtml("util")}</section>`,
   () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("sab")}</div>${espHtml("sab")}</section>`,
   () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("sab", "Serviço suspenso no sábado.")}</div>${paraHtml("sab")}</section>`,
@@ -866,18 +893,17 @@ const slides = [
       return `<tr class="${r.parcial ? "partial" : ""}"><td class="ln"><span class="nro">${nro}</span>${linha}</td><td class="num${pct < 1 ? " hot" : ""}">${fmt(pct, 2)}%</td><td class="num">${fmtFlex(carro)}</td><td class="num">${fmt(pass)}</td><td class="num">${fmtFlex(km)}</td><td class="num">${fmt(ipk, 2)}</td><td class="num">${atu}</td><td class="num">${prop}</td><td class="dim">${obs}</td></tr>`;
     }).join("");
     const tot = rows.reduce((s, r) => ({ pct:s.pct + r[1], carro:s.carro + r[2], pass:s.pass + r[3], atu:s.atu + r[6], prop:s.prop + r[7] }), { pct:0, carro:0, pass:0, atu:0, prop:0 });
-    const mesPass = Math.round(tot.pass * DIAS_ANO.util / 12 * 100) / 100;
-    const decMes = Number.isInteger(mesPass) ? 0 : 2;
+    const pctBase = Math.round(tot.pass / BASE_ENTREPICO * 10000) / 100;
     return `<section class="slide sheet-slide">
       <div class="sheet-head">
         <div><div class="kicker">Dia útil · 29/09/2026</div><h1>Passageiros<br><em>catracados.</em></h1></div>
-        ${comNota(`<b>${qtd}</b> ${qtd === 1 ? "linha" : "linhas"}. Percentual e quantidade de passageiros no entrepico.`)}
-        <div class="pax-mes reveal"><div class="stat-k">No mês</div><div class="stat-v orange" data-count="${mesPass}" data-dec="${decMes}">0</div><div class="stat-s">${fmt(tot.pass)} no dia · ${DIAS_ANO.util} dias úteis</div></div>
+        ${comNota(`<b>${qtd}</b> ${qtd === 1 ? "linha" : "linhas"}. Cada percentual é a linha sobre a base do entrepico.`)}
+        <div class="pax-mes reveal"><div class="stat-k">Dia útil</div><div class="stat-v orange" data-count="${BASE_ENTREPICO}">0</div><div class="stat-s">base do entrepico · ${fmt(tot.pass)} afetados · ${fmt(pctBase, 2)}%</div></div>
       </div>
       <div class="sheet-wrap">
         <table class="folha densa">
           <thead><tr><th>Linha</th><th class="num">%</th><th class="num">Pass./carro</th><th class="num">Passageiros</th><th class="num">Km</th><th class="num">IPK</th><th class="num">Carros</th><th class="num">Proposta</th><th>Obs</th></tr></thead>
-          <tbody>${body}<tr class="total"><td>Total</td><td class="num">${fmt(tot.pct, 2)}%</td><td class="num">${fmtFlex(tot.carro)}</td><td class="num">${fmt(tot.pass)}</td><td></td><td></td><td class="num">${tot.atu}</td><td class="num">${tot.prop}</td><td></td></tr></tbody>
+          <tbody>${body}<tr class="total"><td>Total</td><td class="num">${fmt(pctBase, 2)}%</td><td class="num">${fmtFlex(tot.carro)}</td><td class="num">${fmt(tot.pass)}</td><td></td><td></td><td class="num">${tot.atu}</td><td class="num">${tot.prop}</td><td>de ${fmt(BASE_ENTREPICO)} no entrepico</td></tr></tbody>
         </table>
       </div>
     </section>`;
