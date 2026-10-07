@@ -163,9 +163,12 @@
   .soma-dia .folha td{padding:5px 6px}
   .sheet-slide h1{font-size:clamp(36px,3.4vw,52px)}
   .sheet-head{display:flex;align-items:flex-end;justify-content:space-between;gap:28px}
-  .pax-bases{display:flex;gap:22px;flex:none;align-items:flex-end}
-  .pax-mes{flex:none;text-align:right}
-  .pax-mes .stat-v{font-size:clamp(42px,4vw,68px);margin-top:2px}
+  .pax-painel{flex:none;width:min(420px,38vw);text-align:right}
+  .pax-par{display:flex;justify-content:flex-end;gap:22px}
+  .pax-painel .stat-v{font-size:clamp(36px,3.2vw,52px);margin-top:2px}
+  .pax-painel .stat-s{margin-top:6px}
+  .pax-trilho{height:8px;margin-top:8px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}
+  .pax-trilho .bar{height:8px;background:linear-gradient(90deg,#ff6a2c,#ffd0b4)}
   .sheet-head .lead{flex:1;min-width:0;margin:0 0 4px}
   .ajuste{flex:1;max-width:680px}
   .ajuste label{display:flex;align-items:baseline;justify-content:space-between;gap:12px;color:#d5e4f6;font-size:16px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
@@ -750,17 +753,20 @@ const passageiros = [
   ["803",2.70,66.4,332,190.11,1.75,5,4,""]
 ];
 const BASE_ENTREPICO = 12296;
+function pctDaBase(pass){
+  return Math.round(Number(pass) / BASE_ENTREPICO * 10000) / 100;
+}
 function paxLista(){
   return passageiros.flatMap(r => {
     const cod = r[0] === "110" ? "110/111" : r[0];
     if (coletiva && foraUtil.has(cod)) return [];
     const frac = fracaoItem(cenario().porDia.util.get(cod));
     if (frac <= 0) return [];
-    if (frac >= 0.999) return [r];
     const copy = r.slice();
     copy[3] = Math.round(r[3] * frac);
     copy[4] = Math.round(r[4] * frac * 100) / 100;
-    copy.parcial = true;
+    copy[1] = pctDaBase(copy[3]);
+    if (frac < 0.999) copy.parcial = true;
     return [copy];
   });
 }
@@ -901,8 +907,15 @@ const slides = [
     return `<section class="slide sheet-slide">
       <div class="sheet-head">
         <div><div class="kicker">Dia útil · 29/09/2026</div><h1>Passageiros<br><em>catracados.</em></h1></div>
-        ${comNota(`<b>${qtd}</b> ${qtd === 1 ? "linha" : "linhas"}. Cada percentual é a linha sobre a base do entrepico.`)}
-        <div class="pax-mes reveal"><div class="stat-k">Dia útil</div><div class="stat-v orange" data-count="${BASE_ENTREPICO}">0</div><div class="stat-s">base do entrepico · ${fmt(tot.pass)} afetados · ${fmt(pctBase, 2)}%</div></div>
+        ${comNota(`<b>${qtd}</b> ${qtd === 1 ? "linha" : "linhas"} nesta quilometragem.`)}
+        <div class="pax-painel reveal">
+          <div class="pax-par">
+            <div><div class="stat-k">Total do entrepico</div><div class="stat-v" data-count="${BASE_ENTREPICO}">0</div></div>
+            <div><div class="stat-k">Afetados</div><div class="stat-v orange" data-count="${pctBase}" data-dec="2" data-suffix="%">0</div></div>
+          </div>
+          <div class="stat-s">${fmt(tot.pass)} passageiros</div>
+          <div class="pax-trilho" aria-hidden="true"><i class="bar" style="--w:${pctBase}%"></i></div>
+        </div>
       </div>
       <div class="sheet-wrap">
         <table class="folha densa">
