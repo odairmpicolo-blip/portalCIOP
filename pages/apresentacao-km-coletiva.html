@@ -80,9 +80,9 @@
   .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;flex:1}
   .kpi-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;flex:1}
   .kpi-row .glass,.kpi-3 .glass{display:flex;flex-direction:column;justify-content:center}
-  .kpi-3 .glass{container-type:inline-size}
+  .kpi-row .glass,.kpi-3 .glass{container-type:inline-size}
   .kpi-3 .stat-v{font-size:clamp(44px,18cqi,108px);white-space:nowrap}
-  .kpi-row .stat-v{font-size:clamp(42px,3.6vw,64px)}
+  .kpi-row .stat-v{font-size:clamp(28px,15cqi,64px);white-space:nowrap}
   .tres{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;flex:1}
   .tres .glass,.pair-big .glass{display:flex;flex-direction:column;justify-content:center}
   .pair-big{display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1}
@@ -93,6 +93,8 @@
   .chart-slim canvas{width:100%!important;flex:1;min-height:0}
   .chart-slim .stat-k{margin-bottom:4px}
   .esp-list,.km-list{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2px 28px;align-content:start;flex:1;min-height:0}
+  .km-bloco{display:flex;flex-direction:column;flex:1;min-height:0}
+  .km-ord{grid-auto-flow:column;grid-template-rows:repeat(var(--rows),auto)}
   .esp-list.curta{grid-template-columns:minmax(0,860px)}
   .esp-row,.km-row{display:grid;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07)}
   .esp-row{grid-template-columns:176px minmax(0,1fr);padding:5px 0;min-width:0}
@@ -230,6 +232,7 @@
     .ajuste{max-width:none}
     .pills{grid-template-columns:1fr 1fr}
     .quad,.kpi-row,.kpi-3,.tres,.pair-big,.fronts,.esp-list,.km-list,.onde.u,.onde.s,.onde.d,.rede,.choice,.facts{grid-template-columns:1fr}
+    .km-ord{grid-auto-flow:row;grid-template-rows:none}
     .chart-slim{height:220px}
   }
   @media(prefers-reduced-motion:reduce){ .orb{display:none} }
@@ -444,6 +447,10 @@ function leadDia(dia, texto){
   const d = dadosLinhas(dia);
   return comNota(`<b>${d.n}</b> ${d.palavra} · <b>${d.pct}</b> de <b>${d.tot}</b> do sistema, ${ondeDia(dia)}.${texto ? " " + texto : ""}`);
 }
+function chaveLinha(cod){
+  const n = parseInt(String(cod), 10);
+  return Number.isFinite(n) ? n : 9999;
+}
 function pesoLinha(cod){ return cod === "110/111" || cod === "110" ? 2 : 1; }
 function textoQtd(n){ return `<b>${n}</b> ${n === 1 ? "linha" : "linhas"}`; }
 function numerar(rows, codDe){
@@ -456,8 +463,11 @@ function numerar(rows, codDe){
     return { r, nro, peso };
   });
 }
+function porLinha(a, b){
+  return chaveLinha(a.linha) - chaveLinha(b.linha) || String(a.linha).localeCompare(String(b.linha), "pt");
+}
 function espHtml(dia, de, ate){
-  const rows = cortes(dia).filter(r => r.espA != null).sort((a,b) => (b.espD-b.espA) - (a.espD-a.espA));
+  const rows = cortes(dia).filter(r => r.espA != null).sort(porLinha);
   if (!rows.length) return vazioLinha();
   const todos = numerar(rows, r => r.linha);
   const itens = de == null ? todos : todos.slice(de, ate);
@@ -470,7 +480,7 @@ function espHtml(dia, de, ate){
   }).join("")}</div>`;
 }
 function paraHtml(dia){
-  const rows = cortes(dia).filter(r => r.espA == null);
+  const rows = cortes(dia).filter(r => r.espA == null).sort(porLinha);
   if (!rows.length) return vazioLinha();
   const itens = numerar(rows, r => r.linha);
   const qtd = itens.reduce((s, x) => s + x.peso, 0);
@@ -481,12 +491,13 @@ function paraHtml(dia){
   }).join("")}</div>`;
 }
 function kmHtml(dia){
-  const rows = linhasKm(dia).slice().sort((a,b) => b.km - a.km);
+  const rows = linhasKm(dia).slice().sort((a,b) => b.km - a.km || chaveLinha(a.linha) - chaveLinha(b.linha));
   if (!rows.length) return vazioLinha();
   const itens = numerar(rows, r => r.linha);
   const qtd = itens.reduce((s, x) => s + x.peso, 0);
-  const max = Math.max(...rows.map(r => r.km));
-  return `<div class="km-list"><div class="lista-topo">${textoQtd(qtd)}</div>${itens.map(({ r, nro }) => `<div class="km-row reveal"><b>${fmtKm(r.km)} km</b><span class="code"><span class="nro">${nro}</span>${r.linha}</span><i class="bar" style="--w:${(r.km / max * 100).toFixed(1)}%"></i></div>`).join("")}</div>`;
+  const max = Math.max(...rows.map(r => r.km), 0);
+  const linhas = Math.ceil(itens.length / 2);
+  return `<div class="km-bloco"><div class="lista-topo">${textoQtd(qtd)}</div><div class="km-list km-ord" style="--rows:${linhas}">${itens.map(({ r, nro }) => `<div class="km-row reveal"><b>${fmtKm(r.km)} km</b><span class="code"><span class="nro">${nro}</span>${r.linha}</span><i class="bar" style="--w:${(max ? r.km / max * 100 : 0).toFixed(1)}%"></i></div>`).join("")}</div></div>`;
 }
 const horarios = {
   util:{
@@ -511,6 +522,24 @@ const horarios = {
     "803":"11h33 às 22h48","900":"8h54 às 21h14"
   }
 };
+function periodoCasa(periodo, faixa){
+  const p = String(periodo || "").toLowerCase();
+  if (faixa === "entrepico") return p.includes("entrepico");
+  if (faixa === "noite") return p.includes("noite");
+  return false;
+}
+function ondeFaixa(dia, faixa){
+  const rows = cortes(dia).filter(r => periodoCasa(r.periodo, faixa)).sort(porLinha);
+  if (!rows.length) return vazioLinha();
+  const itens = numerar(rows, r => r.linha);
+  const qtd = itens.reduce((s, x) => s + x.peso, 0);
+  const lis = itens.map(({ r, nro }) => {
+    const hora = (horarios[dia] || {})[r.linha] || "";
+    const nota = / e /i.test(r.periodo) ? r.periodo : "";
+    return `<div class="esp-row reveal"><span class="code"><span class="nro">${nro}</span>${r.linha}</span><span class="mins"><span class="hora">${hora || r.periodo}</span>${nota ? `<span class="troca"><i>${nota}</i></span>` : ""}</span></div>`;
+  }).join("");
+  return `<div class="esp-list"><div class="lista-topo">${textoQtd(qtd)}</div>${lis}</div>`;
+}
 function ondeHtml(dia, periodos, cls){
   const blocos = periodos.map(p => {
     const rows = cortes(dia).filter(r => r.periodo === p).sort((a,b) => b.corta - a.corta);
@@ -672,6 +701,16 @@ function pintarFolha(){
     return { r, i, nro };
   });
   const visiveis = diaFiltro ? marcadas.filter(x => x.r.dia === diaFiltro) : marcadas;
+  if (diaFiltro === "util"){
+    visiveis.sort((a,b) => chaveLinha(a.r.linha) - chaveLinha(b.r.linha) || String(a.r.linha).localeCompare(String(b.r.linha), "pt"));
+    let nroN = 1;
+    visiveis.forEach(x => {
+      const peso = pesoLinha(x.r.linha);
+      const a = String(nroN).padStart(2, "0");
+      x.nro = peso === 1 ? a : a + "–" + String(nroN + peso - 1).padStart(2, "0");
+      nroN += peso;
+    });
+  }
   visiveis.forEach((x,i) => { if (x.r.estado !== "out") edge = i; });
   body.innerHTML = visiveis.map((x,i) => {
     const r = x.r;
@@ -771,7 +810,7 @@ function paxLista(){
   });
 }
 const navItems = [
-  ["Capa",0],["Soma",1],["Mês",5],["Rede",6],["Viagens",7],["Espera",8],["Período",15],["Linhas",18],["Saldo",21],["Passageiros",22]
+  ["Capa",0],["Soma",1],["Mês",5],["Rede",6],["Viagens",7],["Espera",8],["Período",15],["Linhas",19],["Saldo",22],["Passageiros",23]
 ];
 function slideSomaDia(dia, titulo){
   return `<section class="slide sheet-slide soma-dia">
@@ -821,7 +860,11 @@ const slides = [
   () => {
     const titulo = { util:"Dias úteis", sab:"Sábados", dom:"Domingos" };
     const bloco = (dia, itens) => {
-      const vivos = itens.filter(item => item.linhas.every(cod => linhaAtiva(dia, cod)));
+      const vivos = itens.filter(item => item.linhas.every(cod => linhaAtiva(dia, cod))).sort((a,b) => {
+        const ka = Math.min(...a.linhas.map(chaveLinha));
+        const kb = Math.min(...b.linhas.map(chaveLinha));
+        return ka - kb;
+      });
       let n = 1;
       const lis = vivos.length
         ? vivos.map(item => {
@@ -876,7 +919,8 @@ const slides = [
   () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("sab", "Serviço suspenso no sábado.")}</div>${paraHtml("sab")}</section>`,
   () => `<section class="slide"><div class="reveal"><div class="kicker">04 · domingos</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("dom")}</div>${espHtml("dom")}</section>`,
   () => `<section class="slide"><div class="reveal"><div class="kicker">04 · domingos</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("dom", "Serviço suspenso no domingo.")}</div>${paraHtml("dom")}</section>`,
-  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · dias úteis</div><h1>Período<br><em>da redução.</em></h1>${leadDia("util", "Horário em que as viagens saem.")}</div>${ondeHtml("util", ["Entrepico","Entrepico e noite","Entrepico e tarde","Noite"], "u")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · dias úteis · entrepico</div><h1>Período<br><em>da redução.</em></h1>${leadDia("util", "Entrepico.")}</div>${ondeFaixa("util", "entrepico")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">05 · dias úteis · noite</div><h1>Período<br><em>da redução.</em></h1>${leadDia("util", "Noite.")}</div>${ondeFaixa("util", "noite")}</section>`,
   () => `<section class="slide"><div class="reveal"><div class="kicker">05 · sábados</div><h1>Período<br><em>da redução.</em></h1>${leadDia("sab", "Horário em que as viagens saem.")}</div>${ondeHtml("sab", ["Após as 14h","Após as 18h","Dia todo"], "s")}</section>`,
   () => `<section class="slide"><div class="reveal"><div class="kicker">05 · domingos</div><h1>Período<br><em>da redução.</em></h1>${leadDia("dom", "Horário em que as viagens saem.")}</div>${ondeHtml("dom", ["Dia todo"], "d")}</section>`,
   () => `<section class="slide"><div class="reveal"><div class="kicker">06 · dias úteis</div><h1>Quilometragem<br><em>por linha.</em></h1>${leadDia("util", "↓ " + fmtKm(diaVista("util").km) + " km neste dia.")}</div>${kmHtml("util")}</section>`,
@@ -887,9 +931,11 @@ const slides = [
     const mes = totaisMes();
     const u = diaVista("util"), s = diaVista("sab"), d = diaVista("dom");
     return `<section class="slide"><div class="reveal"><div class="kicker">07</div><h1>Saldo.</h1>${comNota("")}</div>
-    <div class="pair-big">
-      <article class="glass reveal"><div class="stat-k">1 dia</div><div class="stat-v orange" data-count="${dia.total}" data-dec="2">0</div><div class="stat-s">km · ${fmt(u.corteV)} úteis · ${fmt(s.corteV)} sábados · ${fmt(d.corteV)} domingos</div></article>
-      <article class="glass reveal"><div class="stat-k">Mês</div><div class="stat-v cyan" data-count="${mes.total}" data-dec="2">0</div><div class="stat-s">km · ${fmtKm(mes.util)} úteis · ${fmtKm(mes.sab)} sábados · ${fmtKm(mes.dom)} domingos</div></article>
+    <div class="kpi-row">
+      ${num("Dia útil", mes.util, `${fmtKm(dia.util)} km no dia · ${fmt(u.corteV)} viagens`, "orange", 2)}
+      ${num("Sábado", mes.sab, `${fmtKm(dia.sab)} km no dia · ${fmt(s.corteV)} viagens`, "orange", 2)}
+      ${num("Domingo", mes.dom, `${fmtKm(dia.dom)} km no dia · ${fmt(d.corteV)} viagens`, "orange", 2)}
+      <article class="glass pick reveal"><div class="stat-k">Total</div><div class="stat-v" data-count="${mes.total}" data-dec="2">0</div><div class="stat-s">${fmtKm(dia.total)} km no dia</div></article>
     </div>
     <article class="glass chart-slim reveal"><div class="stat-k">Km no mês, por tipo de dia</div><canvas id="chartSaldo"></canvas></article>
   </section>`;
