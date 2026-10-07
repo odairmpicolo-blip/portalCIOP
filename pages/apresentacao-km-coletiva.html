@@ -53,7 +53,7 @@
   .portal-back{color:var(--muted);font-size:15px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;text-decoration:none}
   .portal-back:hover{color:#fff}
   main{position:relative;z-index:1;flex:1;min-height:0}
-  .slide{height:100%;padding:16px 36px 8px;display:flex;flex-direction:column;gap:10px}
+  .slide{position:relative;height:100%;padding:16px 36px 8px;display:flex;flex-direction:column;gap:10px}
   .slide.capa{padding:0;gap:0}
   .slide.capa img{width:100%;height:100%;object-fit:cover;object-position:center}
   .kicker{color:var(--cyan);font-size:15px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
@@ -204,7 +204,10 @@
   .folha .prio{display:inline-block;margin-left:8px;min-width:1.6em;padding:1px 7px;border-radius:99px;background:rgba(46,230,166,.18);color:var(--green);font-family:Sora,sans-serif;font-size:15px;font-weight:800;letter-spacing:.02em;text-align:center;vertical-align:2px}
   .folha tr.out td.dom,.folha tr.out td.sab,.folha tr.out td.util{color:inherit;font-weight:700}
   .progress{position:relative;z-index:2;height:3px;background:rgba(255,255,255,.06)}
-  .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--orange));box-shadow:0 0 10px rgba(61,225,255,.8)}
+  .progress i{display:block;height:100%;width:100%;transform:scaleX(0);transform-origin:left center;background:linear-gradient(90deg,var(--cyan),var(--orange));box-shadow:0 0 10px rgba(61,225,255,.8);will-change:transform}
+  .bus-slot{position:absolute;z-index:0;right:28px;top:6px;width:400px;height:214px;overflow:hidden;pointer-events:none;mask-image:radial-gradient(ellipse at center, #000 42%, transparent 78%)}
+  .bus-fx{position:absolute;left:0;top:0;width:400px;height:214px;opacity:.8;will-change:transform}
+  .slide > :not(.bus-slot){position:relative;z-index:1}
   .hint{position:fixed;left:22px;bottom:12px;z-index:3;color:var(--muted);font-size:12px}
   body.na-capa .hint,body.na-capa .nav-float,body.na-capa .ajuste-canto{visibility:hidden}
   .ajuste-canto{display:flex;align-items:center;gap:8px;width:228px;padding:4px 10px 4px 12px;border-radius:999px;border:1px solid rgba(140,210,255,.35);background:rgba(6,12,28,.72);box-shadow:0 0 14px rgba(61,225,255,.16)}
@@ -450,13 +453,15 @@ function numerar(rows, codDe){
     return { r, nro, peso };
   });
 }
-function espHtml(dia){
+function espHtml(dia, de, ate){
   const rows = cortes(dia).filter(r => r.espA != null).sort((a,b) => (b.espD-b.espA) - (a.espD-a.espA));
   if (!rows.length) return vazioLinha();
-  const itens = numerar(rows, r => r.linha);
+  const todos = numerar(rows, r => r.linha);
+  const itens = de == null ? todos : todos.slice(de, ate);
   const qtd = itens.reduce((s, x) => s + x.peso, 0);
-  const curta = rows.length <= 4 ? " curta" : "";
-  return `<div class="esp-list${curta}"><div class="lista-topo">${textoQtd(qtd)}</div>${itens.map(({ r, nro }) => {
+  const faixa = itens.length < todos.length ? ` · ${itens[0].nro} a ${itens[itens.length - 1].nro}` : "";
+  const curta = itens.length <= 4 ? " curta" : "";
+  return `<div class="esp-list${curta}"><div class="lista-topo">${textoQtd(qtd)}${faixa}</div>${itens.map(({ r, nro }) => {
     const hora = (horarios[dia] || {})[r.linha] || "";
     return `<div class="esp-row reveal"><span class="code"><span class="nro">${nro}</span>${r.linha}</span><span class="mins">${hora ? `<span class="hora">${hora}</span>` : ""}<span class="troca"><span class="antes"><i>de</i> <b>${txtEspera(r.espA)}</b></span><span class="seta">para</span><span class="depois"><b>${txtEspera(r.espD)}</b></span></span></span></div>`;
   }).join("")}</div>`;
@@ -760,7 +765,7 @@ function paxLista(){
   });
 }
 const navItems = [
-  ["Capa",0],["Soma",1],["Mês",5],["Rede",6],["Viagens",7],["Espera",8],["Período",14],["Linhas",17],["Saldo",20],["Passageiros",21]
+  ["Capa",0],["Soma",1],["Mês",5],["Rede",6],["Viagens",7],["Espera",8],["Período",15],["Linhas",18],["Saldo",21],["Passageiros",22]
 ];
 function slideSomaDia(dia, titulo){
   return `<section class="slide sheet-slide soma-dia">
@@ -858,7 +863,8 @@ const slides = [
       <article class="glass chart-slim reveal"><div class="stat-k">Viagens retiradas por dia</div><canvas id="chartViagens"></canvas></article>
     </section>`;
   },
-  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("util")}</div>${espHtml("util")}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("util")}</div>${espHtml("util", 0, 8)}</section>`,
+  () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("util", "Continuação.")}</div>${espHtml("util", 8)}</section>`,
   () => `<section class="slide"><div class="reveal"><div class="kicker">04 · dias úteis</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("util", "Serviço suspenso no período.")}</div>${paraHtml("util")}</section>`,
   () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("sab")}</div>${espHtml("sab")}</section>`,
   () => `<section class="slide"><div class="reveal"><div class="kicker">04 · sábados</div><h1>Aumento da espera<br><em>do cliente.</em></h1>${leadDia("sab", "Serviço suspenso no sábado.")}</div>${paraHtml("sab")}</section>`,
@@ -923,6 +929,9 @@ function animateIn(root){
   slideTween = gsap.timeline({ defaults:{ ease:"power3.out" } });
   slideTween.from(root.querySelectorAll(".reveal"), { y:24, autoAlpha:0, duration:.62, stagger:{ each:.045, from:"start" } }, 0);
   slideTween.from(root.querySelectorAll(".bar"), { scaleX:0, duration:.7, stagger:.025, ease:"power2.out" }, .18);
+  slideTween.from(root.querySelectorAll(".depois b"), { scale:.82, duration:.45, stagger:.035, ease:"power2.out" }, .2);
+  const bus = root.querySelector(".bus-fx");
+  if (bus) slideTween.from(bus, { x:24, opacity:0, duration:.8, ease:"power2.out" }, 0);
   root.querySelectorAll("[data-count]").forEach(el => {
     const end = Number(el.dataset.count);
     const dec = Number(el.dataset.dec || 0);
@@ -942,13 +951,25 @@ function render(){
   killCharts();
   if (slideTween) slideTween.kill();
   app.innerHTML = slides[page]();
+  const slideEl = app.querySelector(".slide");
+  if (slideEl && !slideEl.classList.contains("capa") && !slideEl.classList.contains("sheet-slide")){
+    const slot = document.createElement("div");
+    slot.className = "bus-slot";
+    slot.setAttribute("aria-hidden", "true");
+    const fx = document.createElement("img");
+    fx.className = "bus-fx";
+    fx.src = "../assets/img/fx-onibus-tracos.svg?v=2";
+    fx.alt = "";
+    slot.appendChild(fx);
+    slideEl.prepend(slot);
+  }
   const cena = cenario();
   const vivo = document.getElementById("ajusteVivo");
   vivo.hidden = true;
   document.body.classList.toggle("na-capa", page === 0);
   pintarKmBar();
   pager.textContent = String(page+1).padStart(2,"0") + " / " + String(slides.length).padStart(2,"0");
-  gsap.to(bar, { width:((page+1)/slides.length*100)+"%", duration: reduce ? 0 : .4, ease:"power2.out" });
+  gsap.to(bar, { scaleX:(page+1)/slides.length, duration: reduce ? 0 : .4, ease:"power2.out" });
   document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", page >= Number(b.dataset.go) && page <= Number(b.dataset.end)));
   drawCharts();
   animateIn(app);
