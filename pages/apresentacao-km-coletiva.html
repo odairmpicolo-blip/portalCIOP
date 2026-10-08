@@ -250,7 +250,6 @@
     <nav id="nav"></nav>
     <div style="display:flex;align-items:center;gap:12px">
       <a class="portal-back" id="outraProposta" href="apresentacao-km-coletiva.html">Coletiva</a>
-      <a class="portal-back" href="../index.html">Portal</a>
       <div class="ajuste-canto" id="ajusteCanto">
         <label>Km <output id="ajusteCantoOut">0</output></label>
         <input id="ajusteKm" type="range" min="70000" max="70000" step="1" aria-label="Total de km no mês, de 70 mil até o total da proposta">
@@ -809,9 +808,19 @@ function paxLista(){
     return [copy];
   });
 }
-const navItems = [
-  ["Capa",0],["Soma",1],["Mês",5],["Rede",6],["Viagens",7],["Espera",8],["Período",15],["Linhas",19],["Saldo",22],["Passageiros",23]
-];
+function secaoDoSlide(html){
+  if (html.includes('class="slide capa"')) return "Capa";
+  if (html.includes("Soma até") || html.includes("Soma ·")) return "Soma";
+  if (html.includes("por linha.")) return "Linhas";
+  if (html.includes("do mês.")) return "Mês";
+  if (html.includes("Integração")) return "Rede";
+  if (html.includes("de viagens.")) return "Viagens";
+  if (html.includes("Aumento da espera")) return "Espera";
+  if (html.includes("Período")) return "Período";
+  if (html.includes(">Saldo.<")) return "Saldo";
+  if (html.includes("Passageiros")) return "Passageiros";
+  return "";
+}
 function slideSomaDia(dia, titulo){
   return `<section class="slide sheet-slide soma-dia">
     <div class="sheet-head">
@@ -825,7 +834,7 @@ function slideSomaDia(dia, titulo){
     </div>
   </section>`;
 }
-const slides = [
+let slides = [
   () => `<section class="slide capa"><img src="../assets/img/capa-proposta-km.jpg" alt="Capa da proposta. Ônibus da TCGL em Londrina, com o lago e a cidade ao fundo."></section>`,
   () => `<section class="slide sheet-slide">
     <div class="sheet-head">
@@ -972,6 +981,12 @@ const slides = [
     </section>`;
   }
 ];
+slides = slides.filter(fn => !fn().includes("Nenhuma linha neste total."));
+const navItems = [];
+slides.forEach((fn, i) => {
+  const nome = secaoDoSlide(fn());
+  if (nome && !navItems.some(item => item[0] === nome)) navItems.push([nome, i]);
+});
 
 function killCharts(){ charts.splice(0).forEach(c => c.destroy()); }
 function animateIn(root){
