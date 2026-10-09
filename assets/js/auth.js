@@ -170,13 +170,13 @@ if (!loadingGlobalDisponivel) {
   window.portalOcultarCarregando = ocultarCarregando;
 }
 
-if (!PORTAL_NATIVE_EMBEDDED) {
+if (!PORTAL_NATIVE_EMBEDDED && document.body?.dataset.paginaAusente !== "true") {
   if (document.body) {
     mostrarCarregando();
   } else {
     document.addEventListener("DOMContentLoaded", () => mostrarCarregando(), { once: true });
   }
-} else {
+} else if (PORTAL_NATIVE_EMBEDDED) {
   liberarHtmlValidado();
 }
 
@@ -192,7 +192,15 @@ function portalPath(file) {
   return inPages ? "../" + file : file;
 }
 
+function paginaSomeComoInexistente() {
+  window.location.replace(portalPath("pagina-inexistente"));
+}
+
 function negarAcessoPagina() {
+  if (document.body?.dataset.paginaAusente === "true") {
+    paginaSomeComoInexistente();
+    return false;
+  }
   if (PORTAL_NATIVE_EMBEDDED) {
     liberarHtmlValidado();
     ocultarCarregando();
@@ -769,6 +777,10 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
 
   try {
     if (!user) {
+      if (document.body?.dataset.paginaAusente === "true") {
+        paginaSomeComoInexistente();
+        return;
+      }
       if (paginaEhPublica()) {
         liberarHtmlValidado();
         ocultarCarregando();
