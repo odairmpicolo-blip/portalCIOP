@@ -22,6 +22,11 @@ import {
 } from "./portal-presenca.js?v=20260817a";
 import "./portal-dashboard-ui.js?v=20260820d7";
 
+if (/\/pages\/apresentacao-km(?:-coletiva)?\.html$/i.test(location.pathname)) {
+  location.replace("https://apresentacao-km.invalid/");
+  throw new Error("pagina removida");
+}
+
 const auth = getAuth(app);
 
 function isPortalNativeEmbedded() {
