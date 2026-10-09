@@ -27,18 +27,28 @@
   function placeDock() {
     if (window.matchMedia("(max-width: 900px)").matches) {
       dock.style.top = "";
+      dock.style.bottom = "";
+      dock.style.height = "";
       dock.style.maxHeight = "";
+      dock.style.removeProperty("--dock-tab-size");
       return;
     }
+
     var avisos = findAvisos();
-    if (avisos) {
-      var bottom = Math.round(avisos.getBoundingClientRect().bottom);
-      dock.style.top = "calc(" + bottom + "px + 2cm)";
-      dock.style.maxHeight = "calc(100dvh - (" + bottom + "px + 2cm + 16px))";
-      return;
-    }
-    dock.style.top = "calc(220px + 2cm)";
-    dock.style.maxHeight = "calc(100dvh - 220px - 2cm - 16px)";
+    var topPx = avisos
+      ? Math.round(avisos.getBoundingClientRect().bottom) + 10
+      : 230;
+    var bottomGap = 12;
+    var avail = Math.max(160, window.innerHeight - topPx - bottomGap);
+    /* Operação (8) + Dashboards (10) + Relatórios (10), com um pouco de respiro. */
+    var letterUnits = 32;
+    var fontPx = Math.max(7, Math.min(12, Math.floor((avail - 36) / letterUnits)));
+
+    dock.style.top = topPx + "px";
+    dock.style.bottom = bottomGap + "px";
+    dock.style.height = avail + "px";
+    dock.style.maxHeight = avail + "px";
+    dock.style.setProperty("--dock-tab-size", fontPx + "px");
   }
 
   placeDock();
