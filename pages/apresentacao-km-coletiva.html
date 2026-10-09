@@ -17,6 +17,9 @@
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Outfit,system-ui,sans-serif}
   body{overflow:hidden}
+  body.aguardando-acesso .stage,
+  body.aguardando-acesso .sky,
+  body.aguardando-acesso .hud{visibility:hidden}
   .stage{position:relative;height:100%;display:flex;flex-direction:column}
   .sky{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
   .sky .grid{position:absolute;inset:-20%;background-image:linear-gradient(rgba(61,225,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(61,225,255,.07) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse at 50% 30%,#000 20%,transparent 72%);opacity:.55}
@@ -237,8 +240,14 @@
   }
   @media(prefers-reduced-motion:reduce){ .orb{display:none} }
 </style>
+<script type="module" src="../assets/js/auth.js?v=20261009km"></script>
+<script>
+window.addEventListener("portal:usuario-validado", () => {
+  document.body.classList.remove("aguardando-acesso");
+});
+</script>
 </head>
-<body data-proposta="coletiva">
+<body data-proposta="coletiva" class="aguardando-acesso" data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
 <div class="sky" aria-hidden="true"><div class="grid"></div><div class="orb orb-a"></div><div class="orb orb-b"></div><div class="orb orb-c"></div></div>
 <div class="hud" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
 <div class="stage">
