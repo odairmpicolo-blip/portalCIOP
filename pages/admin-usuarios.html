@@ -736,7 +736,7 @@ h1 {
     
 
 <script src="../assets/js/theme-toggle.js?v=20260818logo6"></script>
-<script type="module" src="../assets/js/auth.js?v=20260821ui1"></script>
+<script type="module" src="../assets/js/auth.js?v=20261009audit"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260821hud">
 <link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260820bar4">
@@ -942,6 +942,7 @@ import {
     normalizarCadastro
 } from "../assets/js/portal-firestore.js";
 import { garantirUsuarioFirebaseAuth, excluirUsuarioPortalCompleto } from "../assets/js/portal-auth-admin.js";
+import { registrarAuditoria } from "../assets/js/portal-auditoria.js?v=20261009audit";
 import {
     MODULOS_PORTAL,
     normalizarEmailKey,
@@ -1297,6 +1298,11 @@ async function salvarUsuario(email, nome, perfil, registro, cargo, mensagem, ati
         usuariosEditados[usuario.email] = { ...usuario, ativo };
         renderUsuarios();
         atualizarStatus(mensagem);
+        registrarAuditoria({
+            acao: "usuario",
+            pagina: "admin-usuarios.html",
+            detalhe: (mensagem || "salvou") + " — " + (usuario.nome || email) + " (" + email + ")"
+        }).catch(() => null);
         return usuario;
     } catch (error) {
         status.className = "status erro";
@@ -1521,6 +1527,11 @@ window.salvarModulosUsuario = async function () {
         estadoAcessos = await salvarAcessosPerfis(proximo);
         herdarPerfilPendente = false;
         atualizarStatus("Módulos de " + (user.nome || email) + " atualizados.");
+        registrarAuditoria({
+            acao: "usuario-modulos",
+            pagina: "admin-usuarios.html",
+            detalhe: (user.nome || email) + " (" + email + ")"
+        }).catch(() => null);
         window.fecharModulosUsuario();
         mostrarModulosSalvo();
     } catch (error) {
@@ -1700,6 +1711,11 @@ window.excluirUsuario = async function (emailParam) {
             "Perfil removido do portal. Remova o login de " + email + " no Console Firebase: " +
             (resultado.consoleAuthUrl || "https://console.firebase.google.com/project/portal-ciop/authentication/users")
         );
+        registrarAuditoria({
+            acao: "usuario-excluiu",
+            pagina: "admin-usuarios.html",
+            detalhe: rotulo
+        }).catch(() => null);
     } catch (error) {
         console.error(error);
         status.className = "status erro";

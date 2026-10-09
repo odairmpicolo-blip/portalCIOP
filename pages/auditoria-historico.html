@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Histórico de auditoria | Portal CIOP</title>
+<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260821fx">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260828planilhas">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
+<script type="module" src="../assets/js/auth.js?v=20261009audit"></script>
+<style>
+body{margin:0;background:var(--bg,#f5f7fb);color:#101828;font-family:var(--font,Inter,sans-serif)}
+.container{max-width:1180px;margin:20px auto 48px;padding:0 18px}
+.intro{margin:0 0 16px;color:#3f4757;font-weight:600;line-height:1.45}
+.filtros{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 16px;align-items:end}
+.filtros label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:800;color:#06245c}
+.filtros select,.filtros input{
+  min-width:220px;border:1px solid #dfe5ef;border-radius:10px;padding:8px 10px;font:600 13px/1.2 inherit;background:#fff
+}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #dfe5ef;border-radius:12px;overflow:hidden}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #edf2f7;font-size:13px;vertical-align:top}
+th{background:#f8fafc;color:#06245c;font-size:11px;text-transform:uppercase}
+.fail{color:#b42318;font-weight:800}
+.muted{color:#667085}
+code{font-size:12px}
+.btn-portal{display:inline-flex;margin-bottom:14px;background:#06245c;color:#fff;text-decoration:none;padding:8px 14px;border-radius:10px;font-weight:800}
+a.ext{font-weight:700;color:#0b3a8a}
+</style>
+</head>
+<body data-require-usuarios="odair.marin@icloud.com" data-require-somente-usuarios="true">
+<header class="header">
+  <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP"><img class="portal-brand-art" src="../assets/img/logomarca-portalciop-tcgl-claro.png?v=20260818logo6" alt="Portal CIOP"></a>
+  <div class="title-wrap"><h1 style="margin:0;color:#06245c;font-size:22px">Histórico de auditoria</h1></div>
+  <div class="header-actions">
+    <div class="ciop-session">
+      <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+      <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+      <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+    </div>
+  </div>
+</header>
+<main class="container">
+  <a class="btn-portal" href="../index.html">Portal</a>
+  <p class="intro">O que cada pessoa fez no portal: entradas, páginas abertas, avisos e alterações de usuários. Só você vê esta tela. O histórico começa a partir de agora.</p>
+  <div class="filtros">
+    <label>Pessoa
+      <select id="filtroPessoa"><option value="">Todas</option></select>
+    </label>
+    <label>Buscar
+      <input id="filtroTexto" type="search" placeholder="Nome, e-mail, página ou ação" autocomplete="off">
+    </label>
+  </div>
+  <p id="statusAudit" class="intro">Carregando…</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Quando</th>
+        <th>Quem</th>
+        <th>Perfil</th>
+        <th>Ação</th>
+        <th>Página</th>
+        <th>Detalhe</th>
+      </tr>
+    </thead>
+    <tbody id="linhasAudit"></tbody>
+  </table>
+  <p class="intro"><a class="ext" href="auditoria.html">Auditoria da API</a> · <a class="ext" href="admin-usuarios.html">Gerenciar usuários</a></p>
+</main>
+<script type="module">
+import { listarAuditoria } from "../assets/js/portal-auditoria.js?v=20261009audit";
+
+const ACOES = {
+  entrou: "Entrou",
+  saiu: "Saiu",
+  pagina: "Abriu página",
+  aviso: "Aviso",
+  usuario: "Cadastro de usuário",
+  "usuario-modulos": "Módulos do usuário",
+  "usuario-excluiu": "Excluiu usuário"
+};
+
+let eventos = [];
+
+function fmtQuando(ms) {
+  const n = Number(ms);
+  if (!n) return "—";
+  return new Date(n).toLocaleString("pt-BR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit"
+  });
+}
+
+function escapeHtml(v) {
+  return String(v || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function render() {
+  const pessoa = document.getElementById("filtroPessoa").value;
+  const texto = document.getElementById("filtroTexto").value.trim().toLowerCase();
+  const filtrados = eventos.filter((ev) => {
+    if (pessoa && ev.email !== pessoa) return false;
+    if (!texto) return true;
+    const blob = [ev.nome, ev.email, ev.perfil, ev.acao, ev.pagina, ev.titulo, ev.detalhe]
+      .join(" ")
+      .toLowerCase();
+    return blob.includes(texto);
+  });
+  document.getElementById("statusAudit").textContent = filtrados.length
+    ? filtrados.length + " evento(s)."
+    : "Nenhum evento para este filtro.";
+  document.getElementById("linhasAudit").innerHTML = filtrados.map((ev) => {
+    const quem = escapeHtml(ev.nome || ev.email) +
+      "<div class=\"muted\">" + escapeHtml(ev.email) + "</div>";
+    return "<tr>" +
+      "<td>" + escapeHtml(fmtQuando(ev.createdMs)) + "</td>" +
+      "<td>" + quem + "</td>" +
+      "<td>" + escapeHtml(ev.perfil) + "</td>" +
+      "<td>" + escapeHtml(ACOES[ev.acao] || ev.acao) + "</td>" +
+      "<td><code>" + escapeHtml(ev.pagina) + "</code></td>" +
+      "<td>" + escapeHtml(ev.detalhe || ev.titulo) + "</td>" +
+      "</tr>";
+  }).join("");
+}
+
+function preencherPessoas() {
+  const select = document.getElementById("filtroPessoa");
+  const mapa = new Map();
+  eventos.forEach((ev) => {
+    if (!ev.email || mapa.has(ev.email)) return;
+    mapa.set(ev.email, ev.nome || ev.email);
+  });
+  const atual = select.value;
+  select.innerHTML = "<option value=\"\">Todas</option>" +
+    [...mapa.entries()]
+      .sort((a, b) => a[1].localeCompare(b[1], "pt-BR"))
+      .map(([email, nome]) => "<option value=\"" + escapeHtml(email) + "\">" + escapeHtml(nome) + " — " + escapeHtml(email) + "</option>")
+      .join("");
+  select.value = atual;
+}
+
+async function carregar() {
+  const status = document.getElementById("statusAudit");
+  try {
+    eventos = await listarAuditoria(500);
+    preencherPessoas();
+    render();
+  } catch (err) {
+    status.innerHTML = "<span class=\"fail\">" + escapeHtml(window.portalMensagemErro?.(err) || err.message) + "</span>";
+  }
+}
+
+document.getElementById("filtroPessoa").addEventListener("change", render);
+document.getElementById("filtroTexto").addEventListener("input", render);
+
+if (window.portalUsuarioValidado) carregar();
+else window.addEventListener("portal:usuario-validado", carregar, { once: true });
+</script>
+</body>
+</html>

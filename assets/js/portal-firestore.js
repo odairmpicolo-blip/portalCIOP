@@ -293,7 +293,18 @@ export async function salvarAvisoFirestore(aviso) {
       .map((emailUsuario) => deleteDoc(doc(db, COLECAO_AVISOS_USUARIO, emailUsuario, "itens", id)))
   ]);
 
+  registrarAuditoriaAviso(aviso?.id ? "editou aviso" : "enviou aviso", titulo);
   return { id, ...payload };
+}
+
+function registrarAuditoriaAviso(acao, titulo) {
+  import("./portal-auditoria.js?v=20261009audit")
+    .then((m) => m.registrarAuditoria({
+      acao: "aviso",
+      pagina: "index.html",
+      detalhe: acao + ": " + String(titulo || "").slice(0, 160)
+    }))
+    .catch(() => null);
 }
 
 export async function excluirAvisoFirestore(id) {
@@ -306,4 +317,5 @@ export async function excluirAvisoFirestore(id) {
     deleteDoc(avisoRef),
     ...usuarios.map((emailUsuario) => deleteDoc(doc(db, COLECAO_AVISOS_USUARIO, emailUsuario, "itens", avisoId)))
   ]);
+  registrarAuditoriaAviso("excluiu aviso", snap.exists() ? normalizarAviso(avisoId, snap.data()).titulo : avisoId);
 }

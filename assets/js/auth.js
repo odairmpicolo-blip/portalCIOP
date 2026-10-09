@@ -21,6 +21,7 @@ import {
   marcarPresencaOffline
 } from "./portal-presenca.js?v=20260817a";
 import "./portal-dashboard-ui.js?v=20260820d7";
+import { registrarAuditoria } from "./portal-auditoria.js?v=20261009audit";
 
 if (/\/pages\/apresentacao-km(?:-coletiva)?\.html$/i.test(location.pathname)) {
   location.replace("https://apresentacao-km.invalid/");
@@ -376,6 +377,9 @@ function notificarPortalPronto() {
   if (typeof window.iniciarAvisosPortal === "function") {
     window.iniciarAvisosPortal();
   }
+  const arquivo = (location.pathname.split("/").pop() || "index.html").split("?")[0];
+  const acaoAudit = (!arquivo || arquivo === "index.html") ? "entrou" : "pagina";
+  registrarAuditoria({ acao: acaoAudit }).catch(() => null);
 }
 
 function garantirMarcaPortal() {
@@ -605,9 +609,11 @@ window.logout = function () {
   try { localStorage.removeItem(CADASTRO_CACHE_KEY); } catch (_) {}
   const email = window.portalUsuario?.email;
   pararHeartbeatPresenca();
-  Promise.resolve(marcarPresencaOffline(email)).finally(() => {
-    signOut(auth).finally(() => {
-      window.location.href = portalPath("login.html");
+  Promise.resolve(registrarAuditoria({ acao: "saiu" })).finally(() => {
+    Promise.resolve(marcarPresencaOffline(email)).finally(() => {
+      signOut(auth).finally(() => {
+        window.location.href = portalPath("login.html");
+      });
     });
   });
 };

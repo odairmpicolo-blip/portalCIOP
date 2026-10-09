@@ -81,6 +81,16 @@ service cloud.firestore {
       allow write: if donoPortal();
     }
 
+    match /auditoriaPortal/{eventoId} {
+      allow create: if signedIn()
+        && request.resource.data.email == email()
+        && request.resource.data.acao is string
+        && request.resource.data.pagina is string
+        && request.resource.data.createdMs is number;
+      allow read: if donoPortal();
+      allow update, delete: if donoPortal();
+    }
+
     match /performanceHoras/{diaId} {
       allow read, write: if signedIn() && perfilAtual() == 'Administrador';
     }
