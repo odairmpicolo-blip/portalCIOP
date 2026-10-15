@@ -778,7 +778,7 @@ function fmtFlex(n){
   const dec = Number.isInteger(r) ? 0 : (Math.abs(r * 10 - Math.round(r * 10)) < 0.001 ? 1 : 2);
   return fmt(r, dec);
 }
-const paxBase = { util:12296, sab:6780, dom:3164 };
+const paxBase = { util:12296, sab:26378, dom:9981 };
 const passageiros = {
   util:[
     ["351",0,16.5,33,53.68,0.61,2,2,"Corte de viagens"],
@@ -803,35 +803,35 @@ const passageiros = {
   sab:[
     ["102",0,null,55,84.67,0.65,null,null,"Após as 14h"],
     ["104",0,null,68,107.53,0.63,null,null,"Após as 14h"],
-    ["107",0,null,25,426.81,0.06,null,null,"Dia todo"],
-    ["112",0,null,88,117.96,0.75,null,null,"Após as 14h"],
-    ["113",0,null,131,149.09,0.88,null,null,"Após as 14h"],
+    ["107",0,null,215,426.81,0.50,null,null,"Dia todo"],
+    ["112",0,null,95,117.96,0.81,null,null,"Após as 14h"],
+    ["113",0,null,301,149.09,2.02,null,null,"Após as 14h"],
     ["301",0,null,16,26.88,0.60,null,null,"Após as 18h"],
     ["302",0,null,67,47.61,1.41,null,null,"Após as 18h"],
-    ["303",0,null,46,99.10,0.46,null,null,"Após as 18h"],
+    ["303",0,null,22,99.10,0.22,null,null,"Após as 18h"],
     ["310",0,null,75,221.24,0.34,null,null,"Dia todo"],
     ["400",0,null,42,38.65,1.09,null,null,"Após as 18h"],
-    ["420",0,null,69,139.02,0.50,null,null,"Após as 14h"],
-    ["800",0,null,4,63.13,0.06,null,null,"Dia todo"],
-    ["803",0,null,175,783.42,0.22,null,null,"Dia todo"],
+    ["420",0,null,144,139.02,1.04,null,null,"Após as 14h"],
+    ["800",0,null,20,63.13,0.32,null,null,"Dia todo"],
+    ["803",0,null,907,783.42,1.16,null,null,"Dia todo"],
     ["804",0,null,115,429.22,0.27,null,null,"Dia todo"],
-    ["806",0,null,74,681.21,0.11,null,null,"Dia todo"],
-    ["900",0,null,37,886.63,0.04,null,null,"Dia todo"],
-    ["913",0,null,53,632.06,0.08,null,null,"Dia todo"]
+    ["806",0,null,387,681.21,0.57,null,null,"Dia todo"],
+    ["900",0,null,335,886.63,0.38,null,null,"Dia todo"],
+    ["913",0,null,276,632.06,0.44,null,null,"Dia todo"]
   ],
   dom:[
     ["102",0,null,91,130.63,0.70,null,null,"Dia todo"],
     ["104",0,null,74,145.88,0.51,null,null,"Dia todo"],
-    ["107",0,null,18,340.57,0.05,null,null,"Dia todo"],
+    ["107",0,null,88,340.57,0.26,null,null,"Dia todo"],
     ["301",0,null,41,84.13,0.49,null,null,"Dia todo"],
     ["302",0,null,86,157.57,0.55,null,null,"Dia todo"],
-    ["303",0,null,19,379.93,0.05,null,null,"Dia todo"],
+    ["303",0,null,97,379.93,0.26,null,null,"Dia todo"],
     ["413",0,null,77,130.32,0.59,null,null,"Dia todo"],
-    ["420",0,null,33,394.29,0.08,null,null,"Dia todo"],
+    ["420",0,null,215,394.29,0.55,null,null,"Dia todo"],
     ["423",0,null,176,145.06,1.21,null,null,"Dia todo"],
     ["426",0,null,114,69.30,1.65,null,null,"Dia todo"],
-    ["803",0,null,17,571.75,0.03,null,null,"Dia todo"],
-    ["900",0,null,21,687.72,0.03,null,null,"Dia todo"]
+    ["803",0,null,229,571.75,0.40,null,null,"Dia todo"],
+    ["900",0,null,170,687.72,0.25,null,null,"Dia todo"]
   ]
 };
 function pctDaBase(pass, dia){
@@ -859,9 +859,15 @@ function slidePax(dia, kicker){
   const rows = paxLista(dia);
   const itens = numerar(rows, r => r[0]);
   const qtd = itens.reduce((s, x) => s + x.peso, 0);
+  const rotulo = dia === "util"
+    ? { titulo:"Total do entrepico", nota:"no entrepico" }
+    : { titulo:"Total do dia", nota:"no dia" };
+  const temCarro = rows.some(r => r[6] != null);
   const body = itens.map(({ r, nro }) => {
     const [linha, pct, carro, pass, km, ipk, atu, prop, obs] = r;
-    return `<tr class="${r.parcial ? "partial" : ""}"><td class="ln"><span class="nro">${nro}</span>${linha}</td><td class="num${pct < 1 ? " hot" : ""}">${fmt(pct, 2)}%</td><td class="num">${celPax(carro)}</td><td class="num">${fmt(pass)}</td><td class="num">${fmtFlex(km)}</td><td class="num">${fmt(ipk, 2)}</td><td class="num">${celPax(atu)}</td><td class="num">${celPax(prop)}</td><td class="dim">${obs || ""}</td></tr>`;
+    const carros = temCarro ? `<td class="num">${celPax(carro)}</td>` : "";
+    const frota = temCarro ? `<td class="num">${celPax(atu)}</td><td class="num">${celPax(prop)}</td>` : "";
+    return `<tr class="${r.parcial ? "partial" : ""}"><td class="ln"><span class="nro">${nro}</span>${linha}</td><td class="num${pct < 1 ? " hot" : ""}">${fmt(pct, 2)}%</td>${carros}<td class="num">${fmt(pass)}</td><td class="num">${fmtFlex(km)}</td><td class="num">${fmt(ipk, 2)}</td>${frota}<td class="dim">${obs || ""}</td></tr>`;
   }).join("");
   const tot = rows.reduce((s, r) => ({
     carro:s.carro + (Number(r[2]) || 0),
@@ -871,14 +877,17 @@ function slidePax(dia, kicker){
   }), { carro:0, pass:0, atu:0, prop:0 });
   const base = paxBase[dia];
   const pctBase = Math.round(tot.pass / base * 10000) / 100;
-  const temCarro = rows.some(r => r[6] != null);
+  const headCarro = temCarro ? `<th class="num">Pass./carro</th>` : "";
+  const headFrota = temCarro ? `<th class="num">Carros</th><th class="num">Proposta</th>` : "";
+  const totCarro = temCarro ? `<td class="num">${fmtFlex(tot.carro)}</td>` : "";
+  const totFrota = temCarro ? `<td class="num">${tot.atu}</td><td class="num">${tot.prop}</td>` : "";
   return `<section class="slide sheet-slide">
       <div class="sheet-head">
         <div><div class="kicker">${kicker}</div><h1>Passageiros<br><em>catracados.</em></h1></div>
         ${comNota(`<b>${qtd}</b> ${qtd === 1 ? "linha" : "linhas"} nesta quilometragem.`)}
         <div class="pax-painel reveal">
           <div class="pax-par">
-            <div><div class="stat-k">Total do entrepico</div><div class="stat-v" data-count="${base}">0</div></div>
+            <div><div class="stat-k">${rotulo.titulo}</div><div class="stat-v" data-count="${base}">0</div></div>
             <div><div class="stat-k">Afetados</div><div class="stat-v orange" data-count="${pctBase}" data-dec="2" data-suffix="%">0</div></div>
           </div>
           <div class="stat-s">${fmt(tot.pass)} passageiros</div>
@@ -887,8 +896,8 @@ function slidePax(dia, kicker){
       </div>
       <div class="sheet-wrap">
         <table class="folha densa">
-          <thead><tr><th>Linha</th><th class="num">%</th><th class="num">Pass./carro</th><th class="num">Passageiros</th><th class="num">Km</th><th class="num">IPK</th><th class="num">Carros</th><th class="num">Proposta</th><th>Obs</th></tr></thead>
-          <tbody>${body}<tr class="total"><td>Total</td><td class="num">${fmt(pctBase, 2)}%</td><td class="num">${temCarro ? fmtFlex(tot.carro) : "—"}</td><td class="num">${fmt(tot.pass)}</td><td></td><td></td><td class="num">${temCarro ? tot.atu : "—"}</td><td class="num">${temCarro ? tot.prop : "—"}</td><td>de ${fmt(base)} no entrepico</td></tr></tbody>
+          <thead><tr><th>Linha</th><th class="num">%</th>${headCarro}<th class="num">Passageiros</th><th class="num">Km</th><th class="num">IPK</th>${headFrota}<th>Obs</th></tr></thead>
+          <tbody>${body}<tr class="total"><td>Total</td><td class="num">${fmt(pctBase, 2)}%</td>${totCarro}<td class="num">${fmt(tot.pass)}</td><td></td><td></td>${totFrota}<td>de ${fmt(base)} ${rotulo.nota}</td></tr></tbody>
         </table>
       </div>
     </section>`;
