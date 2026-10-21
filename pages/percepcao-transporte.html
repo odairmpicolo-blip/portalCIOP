@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transporte público na percepção · 2020–2025</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&family=Sora:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#030814; --ink:#f4f8ff; --muted:#93a4bd; --line:rgba(140,190,255,.16);
+    --cyan:#3de1ff; --orange:#ff6a2c; --green:#3dffb0; --blue:#4c8dff; --gray:#b7c0cc;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Outfit,sans-serif}
+  body{overflow:hidden}
+  button,a{font-family:inherit}
+  .sky{position:fixed;inset:0;background:
+    radial-gradient(900px 480px at 12% -10%, rgba(61,225,255,.16), transparent 60%),
+    radial-gradient(800px 500px at 100% 0%, rgba(76,141,255,.18), transparent 55%),
+    radial-gradient(700px 420px at 80% 110%, rgba(255,106,44,.12), transparent 50%),
+    var(--bg)}
+  .sky .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(120,170,255,.05) 1px, transparent 1px),linear-gradient(90deg, rgba(120,170,255,.05) 1px, transparent 1px);background-size:72px 72px;mask-image:radial-gradient(circle at 50% 40%, #000 20%, transparent 78%)}
+  .stage{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+  header{position:relative;min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(6,12,28,.82),rgba(6,12,28,.4));backdrop-filter:blur(16px)}
+  header:after{content:"";position:absolute;left:8%;right:8%;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,var(--gray),var(--blue),transparent)}
+  .brand{display:flex;align-items:center;gap:10px;min-width:220px}
+  .brand img{width:42px;height:42px;object-fit:contain;background:#fff;border-radius:12px;padding:4px;box-shadow:0 0 0 1px rgba(76,141,255,.45),0 0 18px rgba(76,141,255,.28)}
+  .brand strong{display:block;font-family:Sora,sans-serif;letter-spacing:.12em;font-size:13px}
+  .brand small{color:var(--muted);letter-spacing:.14em;font-size:12px}
+  nav{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+  nav button{font:700 15px/1 Outfit,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid transparent;border-radius:999px;padding:9px 12px;cursor:pointer}
+  nav button.on,nav button:hover{color:#fff;border-color:rgba(76,141,255,.5);background:rgba(76,141,255,.16)}
+  #pager{padding:7px 11px;border:1px solid rgba(76,141,255,.5);border-radius:999px;color:var(--cyan);font-weight:800;letter-spacing:.08em}
+  main{flex:1;min-height:0}
+  .slide{height:100%;padding:18px 40px 36px;display:flex;flex-direction:column;gap:14px}
+  .kicker{color:var(--cyan);font-size:15px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+  .kicker:before{content:"";display:inline-block;width:8px;height:8px;margin-right:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);vertical-align:1px}
+  h1{font-family:Sora,sans-serif;font-weight:800;letter-spacing:-.045em;line-height:.96;margin:4px 0 0;font-size:clamp(40px,4.4vw,64px)}
+  h1 em{font-style:normal;color:var(--cyan)}
+  .lead{max-width:1180px;color:#e8f2fc;font-size:22px;line-height:1.35;margin:0}
+  .fonte{margin-top:auto;color:var(--muted);font-size:14px;letter-spacing:.02em}
+  .progress{height:3px;background:rgba(255,255,255,.06)}
+  .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gray),var(--blue));box-shadow:0 0 12px var(--blue)}
+  .hint{position:fixed;left:22px;bottom:14px;z-index:3;color:var(--muted);font-size:13px;letter-spacing:.04em}
+  kbd{font:700 12px/1 Outfit,sans-serif;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:3px 6px;color:#fff}
+  .nav-float{position:fixed;right:22px;bottom:14px;z-index:3;display:flex;gap:8px}
+  .nav-float button{width:44px;height:44px;border-radius:50%;border:1px solid rgba(76,141,255,.45);background:rgba(6,12,28,.72);color:#fff;font-size:18px;cursor:pointer}
+  .capa{justify-content:flex-end;padding-bottom:64px;background:
+    linear-gradient(180deg, rgba(3,8,20,.15), rgba(3,8,20,.82)),
+    url("../assets/img/fx-onibus-neon.jpg") center/cover no-repeat}
+  .capa h1{font-size:clamp(56px,6vw,92px);max-width:1100px}
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:18px;flex:1;min-height:0}
+  .card{position:relative;overflow:hidden;border-radius:24px;padding:28px 30px;display:flex;flex-direction:column;gap:10px;border:1px solid rgba(140,210,255,.28);background:linear-gradient(160deg,rgba(18,40,78,.72),rgba(6,12,28,.78))}
+  .card.neg{border-color:rgba(183,192,204,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+  .card.pos{border-color:rgba(76,141,255,.55);box-shadow:0 0 28px rgba(76,141,255,.12), inset 0 1px 0 rgba(255,255,255,.12)}
+  .swatch{width:64px;height:8px;border-radius:99px}
+  .card.neg .swatch{background:var(--gray);box-shadow:0 0 14px rgba(183,192,204,.7)}
+  .card.pos .swatch{background:var(--blue);box-shadow:0 0 14px rgba(76,141,255,.8)}
+  .card h2{margin:8px 0 0;font-family:Sora,sans-serif;font-size:34px;letter-spacing:-.03em;line-height:1.05}
+  .card p{margin:0;font-size:20px;line-height:1.4;color:#d7e4f5}
+  .trilha{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:auto}
+  .trilha div{border-radius:14px;padding:12px 10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+  .trilha b{display:block;font-family:Sora,sans-serif;font-size:16px}
+  .trilha span{display:block;font-family:Sora,sans-serif;font-size:28px;letter-spacing:-.04em;line-height:1.1;margin-top:6px}
+  .trilha small{color:var(--muted);font-size:14px}
+  .tempo{display:grid;grid-template-columns:340px 1fr;gap:22px;flex:1;min-height:0}
+  .vivo{display:flex;flex-direction:column;gap:12px}
+  .vivo .card{flex:1;padding:18px 22px}
+  .lugar{font-family:Sora,sans-serif;font-size:64px;letter-spacing:-.04em;line-height:.9}
+  .pct{font-family:Sora,sans-serif;font-size:36px;letter-spacing:-.03em}
+  .card.neg .lugar,.card.neg .pct{color:#e7edf4}
+  .card.pos .lugar,.card.pos .pct{color:#d7e6ff}
+  .abs{color:var(--muted);font-size:16px}
+  .chart-box{position:relative;border-radius:24px;border:1px solid rgba(140,210,255,.28);background:linear-gradient(180deg,rgba(10,18,36,.9),rgba(4,8,18,.92));padding:12px 12px 8px;display:flex;flex-direction:column;min-height:0}
+  .chart-box svg{width:100%;height:100%;display:block}
+  .anos{display:flex;gap:8px;padding:4px 8px 8px}
+  .anos button{flex:1;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:var(--muted);padding:10px 0 8px;cursor:pointer}
+  .anos button.on{color:#fff;border-color:rgba(76,141,255,.7);background:rgba(76,141,255,.16);box-shadow:0 0 18px rgba(76,141,255,.25)}
+  .anos button.pass{color:#d5deea;border-color:rgba(255,255,255,.16)}
+  .anos b{display:block;font-family:Sora,sans-serif;font-size:18px}
+  .anos small{font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+  .leg{display:flex;gap:18px;padding:0 12px 4px;color:var(--muted);font-size:14px;font-weight:700}
+  .leg i{display:inline-block;width:22px;height:4px;border-radius:99px;margin-right:6px;vertical-align:middle}
+  .leg .g{background:var(--gray)}
+  .leg .b{background:var(--blue)}
+  .vira{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch;flex:1}
+  .vira .card{justify-content:center;gap:6px}
+  .vira .card h2{font-size:22px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin:0}
+  .vira .big{font-family:Sora,sans-serif;font-size:64px;letter-spacing:-.04em;line-height:.95}
+  .vira .sub{font-size:22px;color:#d7e4f5}
+  .vira .seta{font-family:Sora,sans-serif;font-size:36px;color:var(--cyan);margin:10px 0}
+  table{width:100%;border-collapse:collapse;font-size:20px}
+  th,td{text-align:right;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--muted);font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+  td.ano{font-family:Sora,sans-serif;font-size:26px}
+  tr.on td{background:rgba(76,141,255,.1)}
+  .negc{color:#d5dde6}
+  .posc{color:#9ec0ff}
+  .off{opacity:.28}
+  @media (prefers-reduced-motion: reduce){
+    .progress i{transition:none}
+  }
+</style>
+</head>
+<body>
+<div class="sky" aria-hidden="true"><div class="grid"></div></div>
+<div class="stage">
+  <header>
+    <div class="brand">
+      <img src="../assets/img/LOGO_TCGL.png" alt="TCGL">
+      <div><strong>TCGL</strong><small>PERCEPÇÃO · LONDRINA</small></div>
+    </div>
+    <nav id="nav"></nav>
+    <div id="pager">01</div>
+  </header>
+  <main id="app"></main>
+  <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+</div>
+<div class="hint"><kbd>F</kbd> tela cheia · <kbd>←</kbd> <kbd>→</kbd> acende o ano e segue</div>
+<div class="nav-float">
+  <button id="prev" aria-label="Anterior">←</button>
+  <button id="next" aria-label="Próximo">→</button>
+</div>
+<script>
+const serie = [
+  {ano:2020, neg:11.0, nLugar:10, nAbs:66,  pos:3.0,  pLugar:16, pAbs:18},
+  {ano:2021, neg:16.7, nLugar:8,  nAbs:100, pos:7.0,  pLugar:14, pAbs:42},
+  {ano:2022, neg:12.0, nLugar:9,  nAbs:72,  pos:13.8, pLugar:9,  pAbs:83},
+  {ano:2023, neg:16.2, nLugar:9,  nAbs:97,  pos:17.7, pLugar:9,  pAbs:106},
+  {ano:2024, neg:6.3,  nLugar:18, nAbs:38,  pos:21.8, pLugar:4,  pAbs:131},
+  {ano:2025, neg:5.0,  nLugar:19, nAbs:30,  pos:22.5, pLugar:5,  pAbs:135}
+];
+const nomes = ["Capa","Perguntas","Linha do tempo","Virada","Série"];
+const pct = n => n.toFixed(1).replace(".", ",") + "%";
+const ord = n => n + "º";
+const fonte = "Pesquisa de Percepção da População, Fórum Desenvolve Londrina. Base de 600 entrevistas. O percentual é quem mencionou transporte público. De 2020 a 2023 a pergunta pedia até 3 itens; em 2024 e 2025 a redação mudou e a base continuou a mesma.";
+
+const slides = [
+  () => `<section class="slide capa">
+    <div class="kicker">Fórum Desenvolve Londrina · 2020 a 2025</div>
+    <h1>Transporte público na <em>percepção</em>.</h1>
+    <p class="lead">A posição do transporte entre o que mais preocupa e o que a cidade tem de mais positivo, ano a ano.</p>
+  </section>`,
+  () => `<section class="slide">
+    <div class="kicker">As duas perguntas</div>
+    <h1>A mesma lista, <em>dois lados</em>.</h1>
+    <div class="duo">
+      <article class="card neg">
+        <div class="swatch"></div>
+        <h2>O que mais preocupa</h2>
+        <p>Quais aspectos lhe causam mais preocupação. Linha cinza. O 1º lugar é o aspecto mais citado. Quanto mais longe do topo, menos o transporte aparece como problema.</p>
+        <div class="trilha">${serie.map(s => `<div><b>${s.ano}</b><span>${ord(s.nLugar)}</span><small>${pct(s.neg)}</small></div>`).join("")}</div>
+      </article>
+      <article class="card pos">
+        <div class="swatch"></div>
+        <h2>O que é mais positivo</h2>
+        <p>Quais aspectos você considera mais positivos na cidade de Londrina. Linha azul. Quanto mais perto do 1º lugar, mais o transporte é citado como qualidade da cidade.</p>
+        <div class="trilha">${serie.map(s => `<div><b>${s.ano}</b><span>${ord(s.pLugar)}</span><small>${pct(s.pos)}</small></div>`).join("")}</div>
+      </article>
+    </div>
+    <p class="fonte">${fonte}</p>
+  </section>`,
+  () => `<section class="slide" id="tempo">
+    <div class="kicker">Linha do tempo</div>
+    <h1>Cada ano <em>acende</em>.</h1>
+    <div class="tempo">
+      <div class="vivo">
+        <article class="card neg">
+          <div class="swatch"></div>
+          <div class="abs">Preocupação</div>
+          <div class="lugar" id="nLugar">—</div>
+          <div class="pct" id="nPct">—</div>
+          <div class="abs" id="nAbs"></div>
+        </article>
+        <article class="card pos">
+          <div class="swatch"></div>
+          <div class="abs">Positivo</div>
+          <div class="lugar" id="pLugar">—</div>
+          <div class="pct" id="pPct">—</div>
+          <div class="abs" id="pAbs"></div>
+        </article>
+      </div>
+      <div class="chart-box">
+        <div class="leg"><span><i class="g"></i>Preocupação</span><span><i class="b"></i>Positivo</span><span id="anoVivo" style="margin-left:auto;color:#fff"></span></div>
+        <svg id="grafico" viewBox="0 0 960 420" role="img" aria-label="Transporte público de 2020 a 2025"></svg>
+        <div class="anos" id="anos"></div>
+      </div>
+    </div>
+  </section>`,
+  () => `<section class="slide">
+    <div class="kicker">De 2020 para 2025</div>
+    <h1>Saiu da lista de <em>problema</em>.</h1>
+    <div class="vira">
+      <article class="card neg">
+        <h2>Preocupação</h2>
+        <div class="big">${ord(serie[0].nLugar)} · ${pct(serie[0].neg)}</div>
+        <div class="sub">2020 · ${serie[0].nAbs} pessoas</div>
+        <div class="seta">↓</div>
+        <div class="big">${ord(serie[5].nLugar)} · ${pct(serie[5].neg)}</div>
+        <div class="sub">2025 · ${serie[5].nAbs} pessoas</div>
+      </article>
+      <article class="card pos">
+        <h2>Positivo</h2>
+        <div class="big">${ord(serie[0].pLugar)} · ${pct(serie[0].pos)}</div>
+        <div class="sub">2020 · ${serie[0].pAbs} pessoas</div>
+        <div class="seta">↑</div>
+        <div class="big">${ord(serie[5].pLugar)} · ${pct(serie[5].pos)}</div>
+        <div class="sub">2025 · ${serie[5].pAbs} pessoas</div>
+      </article>
+    </div>
+    <p class="fonte">${fonte}</p>
+  </section>`,
+  () => `<section class="slide">
+    <div class="kicker">A série inteira</div>
+    <h1>Ano a <em>ano</em>.</h1>
+    <div class="card" style="flex:1">
+      <table>
+        <thead><tr><th>Ano</th><th>Preocupação</th><th>Lugar</th><th>Pessoas</th><th>Positivo</th><th>Lugar</th><th>Pessoas</th></tr></thead>
+        <tbody>
+          ${serie.map(s => `<tr>
+            <td class="ano">${s.ano}</td>
+            <td class="negc">${pct(s.neg)}</td><td class="negc">${ord(s.nLugar)}</td><td class="negc">${s.nAbs}</td>
+            <td class="posc">${pct(s.pos)}</td><td class="posc">${ord(s.pLugar)}</td><td class="posc">${s.pAbs}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+    <p class="fonte">${fonte}</p>
+  </section>`
+];
+
+const Y0 = 28, Y1 = 340, X0 = 78, X1 = 880, YMAX = 30;
+const reduz = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let idx = 0, cursor = 0, timer = 0;
+
+function xOf(i){ return X0 + (serie.length < 2 ? 0 : i * (X1 - X0) / (serie.length - 1)); }
+function yOf(v){ return Y1 - (v / YMAX) * (Y1 - Y0); }
+
+function desenharBase(){
+  const svg = document.getElementById("grafico");
+  if (!svg) return;
+  const grades = [0, 10, 20, 30].map(v => {
+    const y = yOf(v);
+    return `<line x1="${X0}" y1="${y}" x2="${X1}" y2="${y}" stroke="rgba(255,255,255,.08)"/>
+      <text x="8" y="${y + 5}" fill="#93a4bd" font-size="13" font-family="Outfit,sans-serif">${v}%</text>`;
+  }).join("");
+  svg.innerHTML = `
+    <defs>
+      <filter id="glowG"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <filter id="glowB"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    ${grades}
+    <polyline id="linhaNeg" fill="none" stroke="#d5dde6" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" filter="url(#glowG)"/>
+    <polyline id="linhaPos" fill="none" stroke="#4c8dff" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" filter="url(#glowB)"/>
+    <g id="pontos"></g>`;
+  const box = document.getElementById("anos");
+  box.innerHTML = serie.map((s, i) => `<button type="button" data-i="${i}"><b>${s.ano}</b><small>acender</small></button>`).join("");
+  box.onclick = ev => {
+    const b = ev.target.closest("button");
+    if (!b) return;
+    parar();
+    acender(+b.dataset.i, true);
+  };
+}
+
+function pontos(chave, ate){
+  return serie.slice(0, ate + 1).map((s, i) => `${xOf(i).toFixed(1)},${yOf(s[chave]).toFixed(1)}`).join(" ");
+}
+
+function acender(ate, animar){
+  cursor = Math.max(0, Math.min(serie.length - 1, ate));
+  const s = serie[cursor];
+  document.getElementById("nLugar").textContent = ord(s.nLugar);
+  document.getElementById("nPct").textContent = pct(s.neg);
+  document.getElementById("nAbs").textContent = s.nAbs + " de 600 pessoas";
+  document.getElementById("pLugar").textContent = ord(s.pLugar);
+  document.getElementById("pPct").textContent = pct(s.pos);
+  document.getElementById("pAbs").textContent = s.pAbs + " de 600 pessoas";
+  document.getElementById("anoVivo").textContent = String(s.ano);
+  document.querySelectorAll("#anos button").forEach((b, i) => {
+    b.classList.toggle("on", i === cursor);
+    b.classList.toggle("pass", i < cursor);
+    b.querySelector("small").textContent = i < cursor ? "aceso" : i === cursor ? "agora" : "à frente";
+  });
+  const neg = document.getElementById("linhaNeg");
+  const pos = document.getElementById("linhaPos");
+  neg.setAttribute("points", pontos("neg", cursor));
+  pos.setAttribute("points", pontos("pos", cursor));
+  const g = document.getElementById("pontos");
+  g.innerHTML = serie.map((item, i) => {
+    if (i > cursor) return "";
+    const ativo = i === cursor;
+    const x = xOf(i), ny = yOf(item.neg), py = yOf(item.pos);
+    const ancora = i === 0 ? "start" : i === serie.length - 1 ? "end" : "middle";
+    const dx = i === 0 ? 10 : i === serie.length - 1 ? -10 : 0;
+    const negAbaixo = ny >= py;
+    return `
+      <circle cx="${x}" cy="${ny}" r="${ativo ? 8 : 5.5}" fill="#e8eef5"/>
+      <circle cx="${x}" cy="${py}" r="${ativo ? 8 : 5.5}" fill="#4c8dff"/>
+      ${ativo ? `<circle cx="${x}" cy="${ny}" r="16" fill="none" stroke="#e8eef5" stroke-width="2"/>
+                  <circle cx="${x}" cy="${py}" r="16" fill="none" stroke="#7eb0ff" stroke-width="2"/>` : ""}
+      <text x="${x + dx}" y="${negAbaixo ? ny + 22 : ny - 12}" text-anchor="${ancora}" fill="${ativo ? "#fff" : "#c5ced8"}" font-size="14" font-family="Outfit,sans-serif" font-weight="700">${pct(item.neg)}</text>
+      <text x="${x + dx}" y="${negAbaixo ? py - 12 : py + 22}" text-anchor="${ancora}" fill="${ativo ? "#d7e6ff" : "#8eb4ff"}" font-size="14" font-family="Outfit,sans-serif" font-weight="700">${pct(item.pos)}</text>`;
+  }).join("");
+  if (animar && !reduz){
+    [neg, pos].forEach(linha => {
+      const len = linha.getTotalLength ? linha.getTotalLength() : 0;
+      if (!len) return;
+      linha.style.transition = "none";
+      linha.style.strokeDasharray = String(len);
+      linha.style.strokeDashoffset = String(len);
+      linha.getBoundingClientRect();
+      linha.style.transition = "stroke-dashoffset .7s ease";
+      linha.style.strokeDashoffset = "0";
+    });
+  }
+}
+
+function parar(){ clearInterval(timer); timer = 0; }
+function tocar(){
+  parar();
+  if (reduz){ acender(serie.length - 1, false); return; }
+  acender(0, true);
+  timer = setInterval(() => {
+    if (cursor >= serie.length - 1){ parar(); return; }
+    acender(cursor + 1, true);
+  }, 1300);
+}
+
+function go(n){
+  parar();
+  idx = (n + slides.length) % slides.length;
+  document.getElementById("app").innerHTML = slides[idx]();
+  document.getElementById("pager").textContent = String(idx + 1).padStart(2, "0");
+  document.getElementById("bar").style.width = ((idx + 1) / slides.length * 100) + "%";
+  document.querySelectorAll("#nav button").forEach((b, i) => b.classList.toggle("on", i === idx));
+  if (nomes[idx] === "Linha do tempo"){
+    desenharBase();
+    tocar();
+  }
+}
+
+document.getElementById("nav").innerHTML = nomes.map((nome, i) => `<button type="button" data-i="${i}">${nome}</button>`).join("");
+document.getElementById("nav").onclick = ev => {
+  const b = ev.target.closest("button");
+  if (b) go(+b.dataset.i);
+};
+document.getElementById("prev").onclick = () => passo(-1);
+document.getElementById("next").onclick = () => passo(1);
+
+function passo(dir){
+  if (nomes[idx] === "Linha do tempo" && !reduz){
+    const prox = cursor + dir;
+    if (prox >= 0 && prox < serie.length){
+      parar();
+      acender(prox, true);
+      return;
+    }
+  }
+  go(idx + dir);
+}
+
+addEventListener("keydown", ev => {
+  const tag = document.activeElement && document.activeElement.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA") return;
+  if (ev.key === "ArrowRight" || ev.key === " "){ ev.preventDefault(); passo(1); }
+  else if (ev.key === "ArrowLeft"){ ev.preventDefault(); passo(-1); }
+  else if (ev.key === "f" || ev.key === "F"){
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  }
+  else if (ev.key === "Home") go(0);
+  else if (ev.key === "End") go(slides.length - 1);
+});
+
+go(0);
+</script>
+</body>
+</html>
