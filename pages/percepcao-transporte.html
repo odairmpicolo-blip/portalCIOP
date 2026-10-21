@@ -99,6 +99,17 @@
   .vira .big{font-family:Sora,sans-serif;font-size:64px;letter-spacing:-.04em;line-height:.95}
   .vira .sub{font-size:22px;color:#d7e4f5}
   .vira .seta{font-family:Sora,sans-serif;font-size:36px;color:var(--cyan);margin:10px 0}
+  .salto{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .salto .card{padding:16px 22px 18px;gap:4px}
+  .salto h2{margin:0;font-size:18px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .delta{font-family:Sora,sans-serif;font-size:84px;letter-spacing:-.05em;line-height:.88}
+  .delta span{display:block;margin-top:6px;font-family:Outfit,sans-serif;font-size:26px;font-weight:800;letter-spacing:.02em}
+  .card.neg .delta{color:#f2f5f8}
+  .card.pos .delta{color:#d7e6ff}
+  .rota{font-size:22px;color:#d7e4f5}
+  .serie{padding:8px 18px 4px}
+  .serie table{font-size:18px}
+  .serie th,.serie td{padding:7px 14px}
   table{width:100%;border-collapse:collapse;font-size:20px}
   th,td{text-align:right;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
   th:first-child,td:first-child{text-align:left}
@@ -142,16 +153,20 @@
 </div>
 <script>
 const serie = [
-  {ano:2020, neg:11.0, nLugar:10, nAbs:66,  pos:3.0,  pLugar:16, pAbs:18},
-  {ano:2021, neg:16.7, nLugar:8,  nAbs:100, pos:7.0,  pLugar:14, pAbs:42},
-  {ano:2022, neg:12.0, nLugar:9,  nAbs:72,  pos:13.8, pLugar:9,  pAbs:83},
-  {ano:2023, neg:16.2, nLugar:9,  nAbs:97,  pos:17.7, pLugar:9,  pAbs:106},
-  {ano:2024, neg:6.3,  nLugar:18, nAbs:38,  pos:21.8, pLugar:4,  pAbs:131},
-  {ano:2025, neg:5.0,  nLugar:19, nAbs:30,  pos:22.5, pLugar:5,  pAbs:135}
+  {ano:2020, neg:11.0, nLugar:10, pos:3.0,  pLugar:16},
+  {ano:2021, neg:16.7, nLugar:8,  pos:7.0,  pLugar:14},
+  {ano:2022, neg:12.0, nLugar:9,  pos:13.8, pLugar:9},
+  {ano:2023, neg:16.2, nLugar:9,  pos:17.7, pLugar:9},
+  {ano:2024, neg:6.3,  nLugar:18, pos:21.8, pLugar:4},
+  {ano:2025, neg:5.0,  nLugar:19, pos:22.5, pLugar:5}
 ];
-const nomes = ["Capa","Perguntas","Linha do tempo","Virada","Série"];
+const nomes = ["Capa","Perguntas","Linha do tempo","Virada","Posições"];
 const pct = n => n.toFixed(1).replace(".", ",") + "%";
 const ord = n => n + "º";
+const ini = serie[0];
+const fim = serie[serie.length - 1];
+const caiu = fim.nLugar - ini.nLugar;
+const subiu = ini.pLugar - fim.pLugar;
 
 const slides = [
   () => `<section class="slide capa">
@@ -188,14 +203,12 @@ const slides = [
           <div class="abs">Preocupação</div>
           <div class="lugar" id="nLugar">—</div>
           <div class="pct" id="nPct">—</div>
-          <div class="abs" id="nAbs"></div>
         </article>
         <article class="card pos">
           <div class="swatch"></div>
           <div class="abs">Positivo</div>
           <div class="lugar" id="pLugar">—</div>
           <div class="pct" id="pPct">—</div>
-          <div class="abs" id="pAbs"></div>
         </article>
       </div>
       <div class="chart-box">
@@ -212,32 +225,48 @@ const slides = [
       <article class="card neg">
         <h2>Preocupação</h2>
         <div class="big">${ord(serie[0].nLugar)} · ${pct(serie[0].neg)}</div>
-        <div class="sub">2020 · ${serie[0].nAbs} pessoas</div>
+        <div class="sub">2020</div>
         <div class="seta">↓</div>
+        <div class="sub">Caiu ${caiu} posições</div>
         <div class="big">${ord(serie[5].nLugar)} · ${pct(serie[5].neg)}</div>
-        <div class="sub">2025 · ${serie[5].nAbs} pessoas</div>
+        <div class="sub">2025</div>
       </article>
       <article class="card pos">
         <h2>Positivo</h2>
         <div class="big">${ord(serie[0].pLugar)} · ${pct(serie[0].pos)}</div>
-        <div class="sub">2020 · ${serie[0].pAbs} pessoas</div>
+        <div class="sub">2020</div>
         <div class="seta">↑</div>
+        <div class="sub">Subiu ${subiu} posições</div>
         <div class="big">${ord(serie[5].pLugar)} · ${pct(serie[5].pos)}</div>
-        <div class="sub">2025 · ${serie[5].pAbs} pessoas</div>
+        <div class="sub">2025</div>
       </article>
     </div>
   </section>`,
   () => `<section class="slide">
-    <div class="kicker">A série inteira</div>
-    <h1>Ano a <em>ano</em>.</h1>
-    <div class="card" style="flex:1">
+    <div class="kicker">De 2020 para 2025</div>
+    <h1>Subiu no positivo. <em>Baixou</em> na preocupação.</h1>
+    <div class="salto">
+      <article class="card neg">
+        <div class="swatch"></div>
+        <h2>Preocupação · baixou</h2>
+        <div class="delta">${caiu}<span>posições que caiu</span></div>
+        <div class="rota">${ord(ini.nLugar)} em 2020 → ${ord(fim.nLugar)} em 2025</div>
+      </article>
+      <article class="card pos">
+        <div class="swatch"></div>
+        <h2>Positivo · subiu</h2>
+        <div class="delta">${subiu}<span>posições que subiu</span></div>
+        <div class="rota">${ord(ini.pLugar)} em 2020 → ${ord(fim.pLugar)} em 2025</div>
+      </article>
+    </div>
+    <div class="card serie">
       <table>
-        <thead><tr><th>Ano</th><th>Preocupação</th><th>Lugar</th><th>Pessoas</th><th>Positivo</th><th>Lugar</th><th>Pessoas</th></tr></thead>
+        <thead><tr><th>Ano</th><th>Preocupação</th><th>Lugar</th><th>Positivo</th><th>Lugar</th></tr></thead>
         <tbody>
-          ${serie.map(s => `<tr>
+          ${serie.map((s, i) => `<tr${i === 0 || i === serie.length - 1 ? ' class="on"' : ""}>
             <td class="ano">${s.ano}</td>
-            <td class="negc">${pct(s.neg)}</td><td class="negc">${ord(s.nLugar)}</td><td class="negc">${s.nAbs}</td>
-            <td class="posc">${pct(s.pos)}</td><td class="posc">${ord(s.pLugar)}</td><td class="posc">${s.pAbs}</td>
+            <td class="negc">${pct(s.neg)}</td><td class="negc">${ord(s.nLugar)}</td>
+            <td class="posc">${pct(s.pos)}</td><td class="posc">${ord(s.pLugar)}</td>
           </tr>`).join("")}
         </tbody>
       </table>
@@ -288,10 +317,8 @@ function acender(ate, animar){
   const s = serie[cursor];
   document.getElementById("nLugar").textContent = ord(s.nLugar);
   document.getElementById("nPct").textContent = pct(s.neg);
-  document.getElementById("nAbs").textContent = s.nAbs + " de 600 pessoas";
   document.getElementById("pLugar").textContent = ord(s.pLugar);
   document.getElementById("pPct").textContent = pct(s.pos);
-  document.getElementById("pAbs").textContent = s.pAbs + " de 600 pessoas";
   document.getElementById("anoVivo").textContent = String(s.ano);
   document.querySelectorAll("#anos button").forEach((b, i) => {
     b.classList.toggle("on", i === cursor);
