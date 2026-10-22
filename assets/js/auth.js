@@ -12,7 +12,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { app, buscarUsuarioFirestore, normalizarCadastro } from "./portal-firestore.js";
 import { usuarios } from "./usuarios.js";
-import { aplicarSaudacaoHero } from "./portal-saudacao.js?v=20260704a";
+import { aplicarSaudacaoHero } from "./portal-saudacao.js?v=20261022home3";
 import { carregarAcessosPerfis, usuarioTemModulo } from "./portal-perfis-acesso.js?v=20260901cartao";
 import "./portal-mfa.js?v=20260820mfa";
 import {
@@ -407,8 +407,7 @@ function garantirCssLiquidGlass() {
 
 function paginaSemWallpaperIos() {
   const file = (window.location.pathname.split("/").pop() || "").split("?")[0];
-  if (/^painel-tv|^login\.html$/.test(file)) return true;
-  if (document.getElementById("kiosk")) return true;
+  if (/^login\.html$/.test(file)) return true;
   if (document.body && document.body.classList.contains("login-v2")) return true;
   return false;
 }
@@ -429,7 +428,7 @@ function garantirCssVisualUltimo() {
   if (!link) {
     link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = portalPath("assets/css/portal-visual.css?v=20261022ios27");
+    link.href = portalPath("assets/css/portal-visual.css?v=20261022home5");
     link.dataset.portalVisual = "1";
     document.head.appendChild(link);
     return;
@@ -440,7 +439,6 @@ function garantirCssVisualUltimo() {
 function garantirWallpaperIos() {
   if (paginaSemWallpaperIos()) return;
   if (!document.body) return;
-  if (!document.querySelector(".header") && !document.querySelector(".bg-wall")) return;
   if (document.querySelector(".bg-wall, .body-bg-wall")) return;
   const wall = document.createElement("div");
   wall.className = "body-bg-wall";
@@ -451,7 +449,7 @@ function garantirWallpaperIos() {
 function garantirThemeToggle() {
   if (document.querySelector("script[src*='theme-toggle.js']")) return;
   const script = document.createElement("script");
-  script.src = portalPath("assets/js/theme-toggle.js?v=20260818logo6");
+  script.src = portalPath("assets/js/theme-toggle.js?v=20261022home4");
   document.head.appendChild(script);
 }
 
@@ -505,7 +503,7 @@ function garantirPwa() {
   if (!document.querySelector("link[rel=\"apple-touch-icon\"]")) {
     const icon = document.createElement("link");
     icon.rel = "apple-touch-icon";
-    icon.href = portalPath("assets/img/logomarca-portalciop-tcgl-claro.png?v=20260818logo6");
+    icon.href = portalPath("assets/img/logomarca-portalciop-tcgl-claro.png?v=20261022logo");
     document.head.appendChild(icon);
   }
 }

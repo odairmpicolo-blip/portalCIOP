@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="portal-home-2026">
 <head>
 <meta charset="UTF-8">
 <script>
@@ -1608,12 +1608,12 @@ h1 {
     inset:0;
     z-index:-1;
     background:#f2f1ed;
-    background-image:url('assets/img/portal-bg-onibus.jpg?v=20260718j');
+    background-image:url('assets/img/portal-bg-onibus.jpg?v=20261022mov');
     background-size:cover;
     background-position:center;
     background-repeat:no-repeat;
   }
-body{
+html:not(.portal-home-2026) body{
     background:#f2f1ed !important;
 }
 .toolbar{
@@ -1894,7 +1894,7 @@ body{
 </style>
 
 <script src="assets/js/loading.js?v=20260718d"></script>
-<script type="module" src="assets/js/auth.js?v=20261022ios27"></script>
+<script type="module" src="assets/js/auth.js?v=20261022home4"></script>
   <script type="module" src="assets/js/incidentes-alerta.js?v=20260708a"></script>
 <link rel="stylesheet" href="assets/css/portal-senha.css?v=20260718e">
 <link rel="stylesheet" href="assets/css/portal-titulos.css?v=20260720y">
@@ -2331,15 +2331,17 @@ html.dk-dark .card-desc{
 }
 </style>
 <link rel="stylesheet" href="assets/css/portal-glass-desktop.css?v=20260930v1">
-<link rel="stylesheet" href="assets/css/portal-futuristic.css?v=20261022ios27">
+<link rel="stylesheet" href="assets/css/portal-futuristic.css?v=20261022home5">
 <link rel="stylesheet" href="assets/css/portal-tokens.css?v=20260930v1">
-<link rel="stylesheet" href="assets/css/portal-unify.css?v=20260930v1">
-<link rel="stylesheet" href="assets/css/portal-ciop-home.css?v=20261009dock">
-<link rel="stylesheet" href="assets/css/portal-liquid-glass.css?v=20260930v1">
-<link rel="stylesheet" href="assets/css/portal-visual.css?v=20261022ios27">
+<link rel="stylesheet" href="assets/css/portal-unify.css?v=20261022home5">
+<link rel="stylesheet" href="assets/css/portal-ciop-home.css?v=20261022home5">
+<link rel="stylesheet" href="assets/css/portal-liquid-glass.css?v=20261022home5">
+<link rel="stylesheet" href="assets/css/portal-visual.css?v=20261022home5">
+<link rel="stylesheet" href="assets/css/portal-home-2026.css?v=20261022home7">
 <link rel="stylesheet" href="assets/css/portal-launchpad.css?v=20261009dock">
-<script src="assets/js/theme-toggle.js?v=20260818logo6"></script>
-<script src="assets/js/portal-futuristic.js?v=20261022ios27" defer></script>
+<script src="assets/js/theme-toggle.js?v=20261022home4"></script>
+<script src="assets/js/portal-futuristic.js?v=20261022home" defer></script>
+<script src="assets/js/portal-home-2026.js?v=20261022home7" defer></script>
 <script src="assets/js/portal-ciop-home.js?v=20261009dock" defer></script>
 <script src="assets/js/portal-senha.js" defer></script>
 <script src="assets/js/portal-footer.js" defer></script>
@@ -2536,7 +2538,7 @@ html.dk-dark .card-desc{
         <div class="dk-theme-picker-options">
             <button type="button" class="dk-theme-opt" data-dk-pref="light" aria-label="Tema claro" title="Tema claro">☀</button>
             <button type="button" class="dk-theme-opt" data-dk-pref="dark" aria-label="Tema escuro" title="Tema escuro">☾</button>
-            <button type="button" class="dk-theme-opt" data-dk-pref="auto" aria-label="Tema automático" title="Automático (18h–6h)">◐</button>
+            <button type="button" class="dk-theme-opt" data-dk-pref="auto" aria-label="Tema automático" title="Automático (preferência do sistema)">◐</button>
         </div>
     </div>
 
@@ -4284,32 +4286,40 @@ if (window.portalUsuarioValidado) {
 (function () {
     "use strict";
     const CHAVE = "portalCiopAbaAtiva";
-    const abas = Array.prototype.slice.call(document.querySelectorAll(".portal-aba"));
-    if (!abas.length) return;
-    const secoes = abas.map((b) => document.getElementById(b.dataset.alvo)).filter(Boolean);
-    if (secoes.length !== abas.length) return;
+    function todasAbas() {
+        return Array.prototype.slice.call(document.querySelectorAll(".portal-aba"));
+    }
+    const abasIniciais = todasAbas();
+    if (!abasIniciais.length) return;
     let atual = "secaoOperacao";
 
     document.body.classList.add("portal-abas-ativo");
 
     function mostrar(id, guardar) {
         atual = id;
-        abas.forEach((b) => {
+        const todos = id === "todos";
+        todasAbas().forEach((b) => {
             const ativa = b.dataset.alvo === id;
             b.setAttribute("aria-selected", ativa ? "true" : "false");
             const sec = document.getElementById(b.dataset.alvo);
-            if (!sec) return;
-            sec.hidden = !ativa;
-            /* O portal guardava secoes recolhidas em localStorage. Com abas isso deixa
-               de fazer sentido e a classe so atrapalharia: a secao ficaria em branco. */
+            if (!sec || sec.id === "todos") return;
+            sec.hidden = todos ? false : !ativa;
             const corpo = sec.querySelector(".card-section-corpo");
             if (corpo) corpo.classList.remove("portal-secao-fechada");
         });
         if (guardar) { try { localStorage.removeItem(CHAVE); } catch (_) {} }
         moverIndicador();
+        if (todos) {
+            ["secaoOperacao", "secaoDashboards", "secaoRelatorios"].forEach((sid) => {
+                const sec = document.getElementById(sid);
+                if (sec && !sec.hidden) animarEntrada(sec);
+            });
+            return;
+        }
         const sec = document.getElementById(id);
         if (sec && !sec.hidden) animarEntrada(sec);
     }
+    window.portalMostrarAbaHome = mostrar;
 
     const indicador = document.getElementById("portalAbaIndicador");
 
@@ -4317,7 +4327,7 @@ if (window.portalUsuarioValidado) {
        aba fica ativa (as areas aparecem todas), entao ele desaparece. */
     function moverIndicador() {
         if (!indicador) return;
-        const ativa = abas.find((b) => b.getAttribute("aria-selected") === "true");
+        const ativa = todasAbas().find((b) => b.getAttribute("aria-selected") === "true");
         if (!ativa) { indicador.style.opacity = "0"; return; }
         indicador.style.width = ativa.offsetWidth + "px";
         indicador.style.transform = "translateX(" + ativa.offsetLeft + "px)";
@@ -4343,7 +4353,10 @@ if (window.portalUsuarioValidado) {
     window.addEventListener("resize", moverIndicador);
 
 
-    abas.forEach((b) => b.addEventListener("click", () => mostrar(b.dataset.alvo, true)));
+    document.getElementById("portalAbas").addEventListener("click", (ev) => {
+        const b = ev.target.closest(".portal-aba");
+        if (b && b.dataset.alvo) mostrar(b.dataset.alvo, true);
+    });
 
     /* Busca x abas: o campo do topo procura em todos os modulos, mas o resultado podia
        cair numa aba fechada — o usuario digitava e nao via nada. Enquanto ha texto na
@@ -4356,9 +4369,9 @@ if (window.portalUsuarioValidado) {
     function sincronizar() {
         const procurando = !!(busca && busca.value.trim());
         if (!procurando) { mostrar(abaAtiva(), false); return; }
-        abas.forEach((b) => {
+        todasAbas().forEach((b) => {
             const sec = document.getElementById(b.dataset.alvo);
-            if (!sec) return;
+            if (!sec || sec.id === "todos") return;
             const n = achados(sec);
             sec.hidden = n === 0;
             const corpo = sec.querySelector(".card-section-corpo");
