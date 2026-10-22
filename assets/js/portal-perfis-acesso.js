@@ -46,6 +46,7 @@ export const MODULOS_PORTAL = [
   { id: "relatorios", label: "Relatórios", grupo: "Operação" },
   { id: "consulta-decreto", label: "Consulta do Decreto", grupo: "Operação" },
   { id: "consulta-veiculo", label: "Consulta de veículo", grupo: "Operação" },
+  { id: "consulta-funcionario", label: "Consulta de funcionário", grupo: "Operação" },
   { id: "dashboard-servico", label: "Dashboard de Serviço", grupo: "Indicadores" },
   { id: "ipv", label: "IPV", grupo: "Indicadores" },
   { id: "performance-comparacao", label: "Comparação de performance", grupo: "Indicadores" },

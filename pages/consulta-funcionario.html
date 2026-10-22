@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.classList.add("portal-auth-pending");</script>
+<style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consulta de funcionário | Portal CIOP</title>
+<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260930v1">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260930v1">
+<link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
+<link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260930v1">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260930v1">
+<link rel="stylesheet" href="../assets/css/portal-visual.css?v=20260930v2">
+<script type="module" src="../assets/js/auth.js?v=20261009audit"></script>
+<style>
+body{margin:0;background:var(--fundo,#f5f7fb);color:#101828;font-family:var(--font,Inter,sans-serif);min-height:100vh}
+.title-wrap h1{margin:0;font-size:22px;font-weight:800;color:#06245c}
+.container{max-width:720px;margin:20px auto 40px;padding:0 18px}
+.intro{margin:0 0 16px;color:#3f4757;font-weight:600;line-height:1.45}
+.cv-panel{
+  background:#fff;border:1px solid #dfe5ef;border-radius:12px;padding:20px 18px 22px;
+}
+.cv-panel h2{margin:0 0 8px;color:#06245c;font-size:16px}
+.cv-busca-wrap{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
+.cv-busca-wrap input{
+  flex:1;min-width:200px;min-height:44px;border:1px solid #dfe5ef;border-radius:10px;
+  padding:10px 14px;font-size:15px;font-weight:700;color:#06245c;background:#fff;
+}
+.cv-status{margin:12px 0 0;font-size:13px;font-weight:700;color:#3f4757;min-height:1.2em}
+.cv-status[data-tipo="erro"]{color:#b42318}
+.cv-qtd{margin:14px 0 8px;font-size:14px;font-weight:800;color:#06245c}
+.cv-lista{list-style:none;margin:0;padding:0;max-height:min(52vh,420px);overflow:auto;border:1px solid #dfe5ef;border-radius:10px}
+.cv-lista li{margin:0;border-bottom:1px solid #eef2f7}
+.cv-lista li:last-child{border-bottom:0}
+.cv-item{
+  display:grid;grid-template-columns:88px 1fr;gap:2px 12px;width:100%;text-align:left;
+  border:0;background:#fff;padding:10px 12px;cursor:pointer;font:inherit
+}
+.cv-item:hover,.cv-item:focus-visible{background:#eef4ff;outline:none}
+.cv-item strong{grid-column:1;grid-row:1 / span 2;align-self:center;font-size:18px;color:#06245c}
+.cv-item span{grid-column:2;font-size:13px;font-weight:700;color:#344054}
+.cv-item em{grid-column:2;font-style:normal;font-size:12px;font-weight:600;color:#667085}
+dialog.cv-popup{border:0;padding:0;border-radius:16px;max-width:min(560px,94vw);width:100%;box-shadow:0 24px 64px rgba(16,24,40,.28)}
+dialog.cv-popup::backdrop{background:rgba(16,24,40,.45)}
+.cv-popup-inner{background:#fff;border-radius:16px;overflow:hidden}
+.cv-popup-body{padding:16px 18px 18px}
+.cv-popup-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+.cv-popup-head h2{margin:0;font-size:22px;color:#06245c}
+.cv-fechar{border:0;background:#e8edf6;border-radius:10px;min-height:36px;padding:0 12px;font-weight:800;color:#06245c;cursor:pointer}
+.cv-dl{display:grid;grid-template-columns:110px 1fr;gap:8px 12px;margin:0;font-size:14px}
+.cv-dl dt{margin:0;color:#667085;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding-top:4px}
+.cv-dl dd{margin:0;font-weight:800;color:#101828}
+@media (min-width:721px){
+  body{background:transparent !important}
+  .body-bg-wall{
+    position:fixed;inset:0;z-index:-3;
+    background-image:url('../assets/img/portal-bg-onibus.jpg?v=20260718j');
+    background-size:cover;background-position:center;background-repeat:no-repeat
+  }
+  .body-bg-stain{
+    position:fixed;inset:0;z-index:-2;pointer-events:none;
+    background:linear-gradient(180deg, rgba(6,20,50,.30) 0%, rgba(6,20,50,.55) 100%)
+  }
+  html:not(.dk-dark) .header{
+    background:var(--ciop-light-grad-fx, var(--ciop-light-grad)) !important;
+    backdrop-filter:blur(28px) saturate(180%) !important;
+    -webkit-backdrop-filter:blur(28px) saturate(180%) !important;
+    border-bottom:1px solid rgba(255,255,255,.55) !important;
+    box-shadow:0 8px 24px -18px rgba(20,20,40,.22) !important
+  }
+  html.dk-dark .header{
+    background:
+      radial-gradient(120% 160% at 92% 0%, #3d6aa8 0%, transparent 46%),
+      linear-gradient(135deg, #0b1628 0%, #152a4a 52%, #1c3d66 100%) !important;
+    border-bottom:1px solid rgba(120,170,220,.22) !important
+  }
+  html:not(.dk-dark) .cv-panel{
+    background:rgba(255,255,255,.78);
+    backdrop-filter:blur(16px) saturate(180%);
+    -webkit-backdrop-filter:blur(16px) saturate(180%)
+  }
+  html.dk-dark .cv-panel{
+    background:rgba(16,24,40,.82);
+    backdrop-filter:blur(16px) saturate(180%);
+    -webkit-backdrop-filter:blur(16px) saturate(180%);
+    border-color:rgba(186,210,230,.28)
+  }
+  html.dk-dark .intro,
+  html.dk-dark .cv-panel h2,
+  html.dk-dark .cv-status,
+  html.dk-dark .cv-qtd{color:#e8eef6}
+  html.dk-dark .cv-lista{border-color:rgba(186,210,230,.28)}
+  html.dk-dark .cv-lista li{border-bottom-color:rgba(186,210,230,.16)}
+  html.dk-dark .cv-item{background:transparent}
+  html.dk-dark .cv-item:hover,html.dk-dark .cv-item:focus-visible{background:rgba(255,255,255,.08)}
+  html.dk-dark .cv-item strong{color:#f8fafc}
+  html.dk-dark .cv-item span{color:#d5deea}
+  html.dk-dark .cv-item em{color:#9aa8b8}
+  html.dk-dark .cv-busca-wrap input{
+    background:rgba(255,255,255,.1);color:#f8fafc;border-color:rgba(186,210,230,.35)
+  }
+  html.dk-dark dialog.cv-popup .cv-popup-inner{background:#1a2434}
+  html.dk-dark .cv-popup-head h2,
+  html.dk-dark .cv-dl dd{color:#f8fafc}
+  html.dk-dark .cv-dl dt,
+  html.dk-dark .cv-fechar{color:#c5ced8;background:#243044}
+}
+</style>
+</head>
+<body>
+<div class="body-bg-wall" aria-hidden="true"></div>
+<div class="body-bg-stain" aria-hidden="true"></div>
+<header class="header">
+  <a class="portal-brand-mark" href="../index.html" aria-label="Portal CIOP"><img class="portal-brand-art" src="../assets/img/logomarca-portalciop-tcgl-claro.png?v=20260818logo6" alt="Portal CIOP"></a>
+  <div class="title-wrap"><h1>Consulta de funcionário</h1></div>
+  <div class="header-actions">
+    <div class="ciop-session">
+      <span id="usuarioLogado" class="ciop-session-user">Usuário</span>
+      <span id="perfilUsuario" class="ciop-session-cargo" hidden></span>
+      <button onclick="logout()" class="btn-logout" type="button">Sair</button>
+    </div>
+  </div>
+</header>
+<main class="container">
+  <a class="btn-portal" href="../index.html" style="display:inline-flex;margin-bottom:14px;background:#06245c;color:#fff;text-decoration:none;padding:8px 14px;border-radius:10px;font-weight:800">Portal</a>
+  <p class="intro">Busque por registro, nome completo ou função. A listagem é a mesma do criar relatório.</p>
+  <section class="cv-panel">
+    <h2>Buscar funcionário</h2>
+    <div class="cv-busca-wrap">
+      <input id="cvBusca" type="search" autocomplete="off" placeholder="Ex.: 9061, Odair, motorista" aria-label="Buscar funcionário">
+      <button type="button" class="btn-portal" id="cvConsultar" style="background:#06245c;color:#fff;border:0;border-radius:10px;padding:8px 16px;font-weight:800;cursor:pointer">Consultar</button>
+    </div>
+    <p class="cv-status" id="cvStatus" role="status"></p>
+    <p class="cv-qtd" id="cvQtd" hidden></p>
+    <ul class="cv-lista" id="cvLista" hidden></ul>
+  </section>
+</main>
+
+<dialog class="cv-popup" id="cvPopup" aria-labelledby="cvRegistro">
+  <div class="cv-popup-inner">
+    <div class="cv-popup-body">
+      <div class="cv-popup-head">
+        <h2 id="cvRegistro">—</h2>
+        <button type="button" class="cv-fechar" id="cvFechar">Fechar</button>
+      </div>
+      <dl class="cv-dl">
+        <dt>Nome</dt><dd id="cvNome">—</dd>
+        <dt>Função</dt><dd id="cvFuncao">—</dd>
+      </dl>
+    </div>
+  </div>
+</dialog>
+
+<script src="../assets/js/funcionarios-dados.js?v=20261022a"></script>
+<script src="../assets/js/consulta-funcionario.js?v=20261022a"></script>
+</body>
+</html>
