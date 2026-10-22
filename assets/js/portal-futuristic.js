@@ -36,6 +36,133 @@
     });
   }
 
+  function reduzirMovimento() {
+    return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function pintarKpi(el, n, casas, sufixo) {
+    var txt = casas > 0 ? n.toFixed(casas).replace(".", ",") : String(Math.round(n));
+    el.textContent = txt + sufixo;
+  }
+
+  if (typeof window.portalContarNumero !== "function") {
+    window.portalContarNumero = function (el, alvo, opts) {
+      if (!el) return;
+      opts = opts || {};
+      var fim = Number(alvo);
+      var sufixo = opts.suffix || "";
+      var casas = Number(opts.decimals);
+      if (!Number.isFinite(casas) || casas < 0) casas = 0;
+      if (!Number.isFinite(fim)) {
+        el.textContent = String(alvo == null ? "—" : alvo);
+        return;
+      }
+      var chave = fim.toFixed(casas) + "|" + sufixo;
+      if (el.dataset.countTo === chave) return;
+      el.dataset.countTo = chave;
+      var bruto = String(el.textContent || "").replace(/[^\d,-]/g, "").replace(",", ".");
+      var inicio = Number(bruto);
+      if (!Number.isFinite(inicio) || !bruto) inicio = 0;
+      if (reduzirMovimento() || Math.abs(fim - inicio) < (casas ? Math.pow(10, -casas) : 1)) {
+        pintarKpi(el, fim, casas, sufixo);
+        return;
+      }
+      if (el._countRaf) cancelAnimationFrame(el._countRaf);
+      var t0 = performance.now();
+      var dur = (opts.duration || Math.min(1.2, 0.55 + Math.abs(fim - inicio) * 0.02)) * 1000;
+      function tick(now) {
+        var p = Math.min(1, (now - t0) / dur);
+        var ease = 1 - Math.pow(1 - p, 3);
+        pintarKpi(el, inicio + (fim - inicio) * ease, casas, sufixo);
+        if (p < 1) el._countRaf = requestAnimationFrame(tick);
+        else {
+          pintarKpi(el, fim, casas, sufixo);
+          el._countRaf = 0;
+        }
+      }
+      el._countRaf = requestAnimationFrame(tick);
+    };
+  }
+
+  function setKpiNumero(el, n, opts) {
+    if (!el) return;
+    if (!Number.isFinite(n)) {
+      el.textContent = "—";
+      delete el.dataset.countTo;
+      return;
+    }
+    window.portalContarNumero(el, n, opts);
+  }
+
+  function parseKpiTexto(txt) {
+    var s = String(txt || "").trim();
+    if (!s || s === "—" || s === "-" || s === "–") return null;
+    if (/^\d{1,2}:\d{2}/.test(s)) return null;
+    if (/\d{1,2}\/\d{1,2}/.test(s)) return null;
+    if (/[A-Za-zÀ-ú]{3,}/.test(s) && !/%/.test(s)) return null;
+    var m = s.match(/^(-?\d{1,3}(?:\.\d{3})*(?:,\d+)?|-?\d+(?:[.,]\d+)?)(\s*%|°|)$/);
+    if (!m) return null;
+    var raw = m[1];
+    var suffix = m[2] || "";
+    var n;
+    if (raw.indexOf(",") >= 0) n = Number(raw.replace(/\./g, "").replace(",", "."));
+    else if (/^\d{1,3}(?:\.\d{3})+$/.test(raw)) n = Number(raw.replace(/\./g, ""));
+    else n = Number(raw);
+    if (!Number.isFinite(n) || Math.abs(n) > 1e9) return null;
+    var dec = 0;
+    var frac = raw.split(/[.,]/)[1];
+    if (frac) dec = frac.length;
+    return { n: n, suffix: suffix, decimals: dec };
+  }
+
+  function ligarContagemPagina() {
+    var sel = ".kpi-value, .kpi-card .val, .stat-card .val, .card-value, .ciop-kpi-num";
+    var skip = { ciopKpiHora: 1, ciopKpiData: 1 };
+    function aplicar(el) {
+      if (!el || skip[el.id]) return;
+      if (el.closest && el.closest(".paper, .leaflet-container")) return;
+      if (el._countRaf || el._countTween || (el.classList && el.classList.contains("is-counting"))) return;
+      var parsed = parseKpiTexto(el.textContent);
+      if (!parsed) return;
+      window.portalContarNumero(el, parsed.n, {
+        suffix: parsed.suffix,
+        decimals: parsed.decimals
+      });
+    }
+    function varrer(root) {
+      (root.querySelectorAll ? root : document).querySelectorAll(sel).forEach(aplicar);
+    }
+    varrer(document);
+    if (!window.MutationObserver) return;
+    var obs = new MutationObserver(function (muts) {
+      muts.forEach(function (m) {
+        if (m.type === "characterData" && m.target && m.target.parentElement) aplicar(m.target.parentElement);
+        if (m.type === "childList") {
+          if (m.target && m.target.matches && m.target.matches(sel)) aplicar(m.target);
+          Array.prototype.forEach.call(m.addedNodes || [], function (n) {
+            if (n.nodeType !== 1) return;
+            if (n.matches && n.matches(sel)) aplicar(n);
+            if (n.querySelectorAll) n.querySelectorAll(sel).forEach(aplicar);
+          });
+        }
+      });
+    });
+    obs.observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+
+  function garantirWallpaper() {
+    if (document.getElementById("kiosk")) return;
+    if (document.body.classList.contains("login-v2")) return;
+    var file = (location.pathname.split("/").pop() || "").split("?")[0];
+    if (/^painel-tv|^login\.html$/.test(file)) return;
+    if (!document.querySelector(".header") && !document.querySelector(".bg-wall")) return;
+    if (document.querySelector(".bg-wall, .body-bg-wall")) return;
+    var wall = document.createElement("div");
+    wall.className = "body-bg-wall";
+    wall.setAttribute("aria-hidden", "true");
+    document.body.insertBefore(wall, document.body.firstChild);
+  }
+
   function atualizarCommandCenter() {
     const data = document.getElementById("ciopKpiData");
     const hora = document.getElementById("ciopKpiHora");
@@ -50,13 +177,14 @@
       data.title = dataCompletaLabel();
     }
     if (hora) hora.textContent = horaLabel();
-    if (mods) mods.textContent = String(countVisibleCards());
+    setKpiNumero(mods, countVisibleCards(), { delay: 0 });
 
     if (avisos) {
       const contador = document.getElementById("avisosContador");
       const raw = contador ? String(contador.textContent || "").trim() : "";
       const n = Number.parseInt(raw, 10);
-      avisos.textContent = Number.isFinite(n) ? String(n) : raw || "—";
+      if (Number.isFinite(n)) setKpiNumero(avisos, n, { delay: 0.18 });
+      else avisos.textContent = raw || "—";
     }
 
     if (online) {
@@ -72,7 +200,7 @@
     if (!el) return;
     const n = Array.isArray(lista) ? lista.length : 0;
     el.dataset.live = "1";
-    el.textContent = String(n);
+    setKpiNumero(el, n, { delay: 0.09 });
     el.title = n === 1 ? "1 usuário ativo agora" : n + " usuários ativos agora";
   }
 
@@ -180,7 +308,10 @@
     if (!root || !data) return;
 
     var meta = climaPorCodigo(data.code);
-    if (tempEl) tempEl.textContent = grauLabel(data.temp);
+    if (tempEl) {
+      if (Number.isFinite(data.temp)) setKpiNumero(tempEl, Math.round(data.temp), { suffix: "°", delay: 0.05 });
+      else tempEl.textContent = grauLabel(data.temp);
+    }
     if (rangeEl) rangeEl.textContent = grauLabel(data.max) + "/" + grauLabel(data.min);
     if (iconEl) iconEl.innerHTML = iconeClimaSvg(meta.kind);
     root.title =
@@ -506,6 +637,7 @@
   }
 
   function init() {
+    garantirWallpaper();
     ensureIconGradient();
     enhanceDuotoneIcons();
     ensureHud();
@@ -514,6 +646,7 @@
     staggerCards();
     bindRipples();
     bindFlashSalvar();
+    ligarContagemPagina();
     setInterval(atualizarCommandCenter, 1000);
     iniciarClimaCommandCenter();
     iniciarKpiPresenca();

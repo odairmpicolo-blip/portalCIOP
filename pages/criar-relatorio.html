@@ -334,7 +334,7 @@ select:disabled{
 }
 .paper{
     width:210mm;
-    max-width:100%;
+    max-width:210mm;
     min-height:297mm;
     margin:0 auto;
     background:#fff;
@@ -570,36 +570,82 @@ select:disabled{
 .signature strong{display:block;font-size:13px;font-weight:800;color:#06245c}
 .signature span{display:block;font-size:11.5px;margin-top:2px;color:#475467}
 .print-only{display:none}
+#pdfExportHost{
+    position:fixed;
+    left:0;
+    top:0;
+    z-index:-1;
+    width:210mm;
+    background:#fff;
+    pointer-events:none;
+}
+#pdfExportHost .paper,
+#pdfExportHost .paper.is-pdf-sheet,
+.paper.is-pdf-sheet,
+body.pdf-exporting .paper{
+    width:210mm !important;
+    max-width:210mm !important;
+    min-height:297mm !important;
+    border:0 !important;
+    box-shadow:none !important;
+    padding:0 0 14mm !important;
+    background:#fff !important;
+    color:#1a2332 !important;
+}
+#pdfExportHost .report-head,
+.paper.is-pdf-sheet .report-head{
+    grid-template-columns:88px 1fr 88px !important;
+    padding:11mm 16mm 9mm !important;
+}
+#pdfExportHost .report-sheet,
+.paper.is-pdf-sheet .report-sheet{
+    padding:8mm 16mm 0 !important;
+}
+#pdfExportHost .report-title,
+.paper.is-pdf-sheet .report-title,
+body.pdf-exporting .report-title{
+    display:grid !important;
+    grid-template-columns:minmax(138px,1fr) auto minmax(138px,1fr) !important;
+    justify-items:stretch !important;
+}
+#pdfExportHost .report-title-spacer,
+.paper.is-pdf-sheet .report-title-spacer{display:block !important}
+#pdfExportHost .report-protocolo,
+.paper.is-pdf-sheet .report-protocolo,
+body.pdf-exporting .report-protocolo{
+    grid-column:3 !important;
+    justify-self:end !important;
+}
+#pdfExportHost .report-meta-grid,
+.paper.is-pdf-sheet .report-meta-grid,
+body.pdf-exporting .report-meta-grid{
+    grid-template-columns:1fr 1fr !important;
+}
+#pdfExportHost .report-body,
+.paper.is-pdf-sheet .report-body,
+body.pdf-exporting .report-body{display:none !important}
+#pdfExportHost .report-body-print,
+.paper.is-pdf-sheet .report-body-print,
+body.pdf-exporting .report-body-print{display:block !important}
 body.pdf-exporting .paper-wrap{
     border:0;
     padding:0;
     background:#fff;
     overflow:visible;
 }
-body.pdf-exporting .paper{
-    width:210mm;
-    max-width:none;
-    min-height:297mm;
-    border:0;
-    box-shadow:none;
-    padding:0 0 14mm;
-    background:#fff;
-}
-body.pdf-exporting .report-body{display:none}
-body.pdf-exporting .report-body-print{display:block}
 @media (max-width:980px){
     .header{grid-template-columns:1fr;justify-items:center;text-align:center}
     .header > a:first-child{justify-self:center}
     .header-actions{justify-self:center;min-width:0;flex-wrap:wrap}
     
     .workspace{grid-template-columns:1fr}
-    .paper{padding:0 0 18px;min-height:auto}
-    .report-head{grid-template-columns:72px 1fr 72px;padding:16px 16px 12px}
-    .report-sheet{padding:12px 16px 0}
-    .report-title{grid-template-columns:1fr;justify-items:center}
-    .report-title-spacer{display:none}
-    .report-protocolo{grid-column:1;justify-self:center}
-    .report-meta-grid{grid-template-columns:1fr}
+    .paper:not(.is-pdf-sheet){padding:0 0 18px;min-height:auto}
+    .paper:not(.is-pdf-sheet) .report-head{grid-template-columns:72px 1fr 72px;padding:16px 16px 12px}
+    .paper:not(.is-pdf-sheet) .report-sheet{padding:12px 16px 0}
+    .paper:not(.is-pdf-sheet) .report-title{grid-template-columns:1fr;justify-items:center}
+    .paper:not(.is-pdf-sheet) .report-title-spacer{display:none}
+    .paper:not(.is-pdf-sheet) .report-protocolo{grid-column:1;justify-self:center}
+    .paper:not(.is-pdf-sheet) .report-meta-grid{grid-template-columns:1fr}
 }
 /* O "papel" (.paper) simula documento impresso: nunca deve herdar o
    texto branco forçado pelo modo escuro global (html.dk-dark h1/h2/h3/label). */
@@ -761,8 +807,8 @@ html.dk-dark .paper label{
   }
 
   .paper{
-    width:100%;
-    max-width:none;
+    width:210mm;
+    max-width:210mm;
   }
 
   .header{
@@ -858,10 +904,10 @@ html.dk-dark .paper label{
 </style>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
-<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260821hud">
-<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260820bar4">
-<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260821fx">
-<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260828planilhas">
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260930v1">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260930v1">
+<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260930v1">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260930v1">
 </head>
 <body>
 <div class="body-bg-wall" aria-hidden="true"></div>
@@ -1049,11 +1095,12 @@ html.dk-dark .paper label{
 <link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
 <link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
     <link rel="stylesheet" href="../assets/css/dashboard-kit.css">
+<link rel="stylesheet" href="../assets/css/portal-visual.css?v=20261022ios27">
     
 
 <script src="../assets/js/theme-toggle.js?v=20260818logo6"></script>
 <script src="../assets/js/loading.js?v=20260718d"></script>
-<script type="module" src="../assets/js/auth.js?v=20261009audit"></script>
+<script type="module" src="../assets/js/auth.js?v=20261022ios27"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 <script type="module">
 import { buscarUsuarioFirestore, normalizarCadastro } from "../assets/js/portal-firestore.js";
@@ -1528,7 +1575,7 @@ function aplicarImagemAssinatura(registro) {
         img.alt = "";
         return;
     }
-    const url = "../assets/img/assinaturas/" + id + ".png";
+    const url = "../assets/img/assinaturas/" + id + ".png?v=20260929d";
     img.onload = () => img.classList.add("is-on");
     img.onerror = () => {
         img.classList.remove("is-on");
@@ -1960,36 +2007,66 @@ async function construirPdfRelatorio() {
     }
 
     await aguardarImagensPdf(folha);
-    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
-
-    const canvas = await html2canvas(folha, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        logging: false,
-        useCORS: true,
-        windowWidth: folha.scrollWidth,
-        windowHeight: folha.scrollHeight
-    });
-
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const imgData = canvas.toDataURL("image/jpeg", 0.72);
-    const imgH = (canvas.height * pageW) / canvas.width;
-
-    let y = 0;
-    let restante = imgH;
-    pdf.addImage(imgData, "JPEG", 0, y, pageW, imgH, undefined, "FAST");
-    restante -= pageH;
-    while (restante > 1) {
-        pdf.addPage();
-        y = restante - imgH;
-        pdf.addImage(imgData, "JPEG", 0, y, pageW, imgH, undefined, "FAST");
-        restante -= pageH;
+    if (document.fonts?.ready) {
+        try { await document.fonts.ready; } catch (_) {}
     }
 
-    return pdf;
+    const host = document.createElement("div");
+    host.id = "pdfExportHost";
+    const clone = folha.cloneNode(true);
+    clone.classList.add("is-pdf-sheet");
+    clone.style.width = "210mm";
+    clone.style.maxWidth = "210mm";
+    clone.style.minHeight = "297mm";
+    clone.style.background = "#fff";
+    const textareaClone = clone.querySelector(".report-body");
+    if (textareaClone) textareaClone.remove();
+    const printClone = clone.querySelector(".report-body-print");
+    if (printClone) {
+        printClone.textContent = corpoRelatorio.value || "";
+        printClone.style.display = "block";
+    }
+    host.appendChild(clone);
+    document.body.appendChild(host);
+
+    await aguardarImagensPdf(clone);
+    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+    try {
+        const canvas = await html2canvas(clone, {
+            scale: 2,
+            backgroundColor: "#ffffff",
+            logging: false,
+            useCORS: true,
+            allowTaint: true,
+            width: clone.scrollWidth,
+            height: clone.scrollHeight,
+            windowWidth: 1400,
+            windowHeight: Math.max(clone.scrollHeight + 80, 1400)
+        });
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+        const imgData = canvas.toDataURL("image/jpeg", 0.92);
+        const imgH = (canvas.height * pageW) / canvas.width;
+
+        let y = 0;
+        let restante = imgH;
+        pdf.addImage(imgData, "JPEG", 0, y, pageW, imgH, undefined, "FAST");
+        restante -= pageH;
+        while (restante > 1) {
+            pdf.addPage();
+            y = restante - imgH;
+            pdf.addImage(imgData, "JPEG", 0, y, pageW, imgH, undefined, "FAST");
+            restante -= pageH;
+        }
+
+        return pdf;
+    } finally {
+        host.remove();
+    }
 }
 
 // ==== Envio do relatório (registro na planilha + PDF + e-mail, botão único ENVIAR) ====
@@ -2226,7 +2303,7 @@ if (window.portalUsuarioValidado) {
     window.addEventListener("portal:usuario-validado", iniciarRelatorio, { once: true });
 }
 </script>
-<script src="../assets/js/portal-futuristic.js?v=20260718am" defer></script>
+<script src="../assets/js/portal-futuristic.js?v=20261022ios27" defer></script>
 <div id="emailEnviadoOverlay" class="email-enviado-overlay" aria-hidden="true" role="status" aria-live="polite">
   <div class="email-enviado-box" role="dialog" aria-label="E-mail enviado">
     <div class="email-enviado-check" aria-hidden="true">

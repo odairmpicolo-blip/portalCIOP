@@ -405,6 +405,49 @@ function garantirCssLiquidGlass() {
   document.head.appendChild(link);
 }
 
+function paginaSemWallpaperIos() {
+  const file = (window.location.pathname.split("/").pop() || "").split("?")[0];
+  if (/^painel-tv|^login\.html$/.test(file)) return true;
+  if (document.getElementById("kiosk")) return true;
+  if (document.body && document.body.classList.contains("login-v2")) return true;
+  return false;
+}
+
+function garantirCssGlassDesktop() {
+  if (document.querySelector("link[href*='portal-glass-desktop.css']")) return;
+  if (paginaSemWallpaperIos()) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = portalPath("assets/css/portal-glass-desktop.css?v=20261022ios27");
+  link.dataset.portalGlassDesktop = "1";
+  document.head.appendChild(link);
+}
+
+function garantirCssVisualUltimo() {
+  if (paginaSemWallpaperIos()) return;
+  let link = document.querySelector("link[href*='portal-visual.css']");
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = portalPath("assets/css/portal-visual.css?v=20261022ios27");
+    link.dataset.portalVisual = "1";
+    document.head.appendChild(link);
+    return;
+  }
+  document.head.appendChild(link);
+}
+
+function garantirWallpaperIos() {
+  if (paginaSemWallpaperIos()) return;
+  if (!document.body) return;
+  if (!document.querySelector(".header") && !document.querySelector(".bg-wall")) return;
+  if (document.querySelector(".bg-wall, .body-bg-wall")) return;
+  const wall = document.createElement("div");
+  wall.className = "body-bg-wall";
+  wall.setAttribute("aria-hidden", "true");
+  document.body.insertBefore(wall, document.body.firstChild);
+}
+
 function garantirThemeToggle() {
   if (document.querySelector("script[src*='theme-toggle.js']")) return;
   const script = document.createElement("script");
@@ -491,7 +534,14 @@ garantirCssSessao();
 garantirCssMarca();
 garantirCssHeader();
 garantirCssLiquidGlass();
+garantirCssGlassDesktop();
+garantirCssVisualUltimo();
 garantirCssUi();
+if (document.body) {
+  garantirWallpaperIos();
+} else {
+  document.addEventListener("DOMContentLoaded", garantirWallpaperIos);
+}
 garantirThemeToggle();
 garantirMarcaPortal();
 garantirNavIncidentes();

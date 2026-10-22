@@ -1,5 +1,95 @@
 /* Entrada do portal com GSAP. Respeita prefers-reduced-motion. */
 (function () {
+  function reduzirMovimento() {
+    return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  window.portalContarNumero = function (el, alvo, opts) {
+    if (!el) return;
+    opts = opts || {};
+    var fim = Number(alvo);
+    var sufixo = opts.suffix || "";
+    var casas = Number(opts.decimals);
+    if (!Number.isFinite(casas) || casas < 0) casas = 0;
+    var kpi = el.closest ? el.closest(".ciop-kpi") : null;
+    if (!Number.isFinite(fim)) {
+      el.textContent = String(alvo == null ? "—" : alvo);
+      return;
+    }
+    var chave = fim.toFixed(casas) + "|" + sufixo;
+    if (el.dataset.countTo === chave) return;
+    el.dataset.countTo = chave;
+
+    var bruto = String(el.textContent || "").replace(/[^\d,-]/g, "").replace(",", ".");
+    var inicio = Number(bruto);
+    if (!Number.isFinite(inicio) || !bruto) inicio = 0;
+    var primeiro = !bruto;
+
+    function pintar(n) {
+      var txt = casas > 0 ? n.toFixed(casas).replace(".", ",") : String(Math.round(n));
+      el.textContent = txt + sufixo;
+    }
+
+    function encerrar() {
+      pintar(fim);
+      el.classList.remove("is-counting");
+      el.classList.add("is-settled");
+      if (kpi) kpi.classList.remove("is-counting");
+      if (kpi) kpi.style.setProperty("--kpi-meter", "1");
+      window.setTimeout(function () {
+        el.classList.remove("is-settled");
+      }, 700);
+    }
+
+    if (!window.gsap || reduzirMovimento() || Math.abs(fim - inicio) < 1) {
+      encerrar();
+      return;
+    }
+
+    if (el._countTween) el._countTween.kill();
+    el.classList.add("is-counting");
+    if (kpi) {
+      kpi.classList.add("is-counting");
+      kpi.style.setProperty("--kpi-meter", "0");
+    }
+
+    var obj = { n: inicio };
+    var dur = opts.duration || Math.min(1.35, 0.7 + Math.abs(fim - inicio) * 0.035);
+    var delay = Number(opts.delay) || 0;
+    el._countTween = gsap.timeline({ delay: delay, defaults: { ease: "expo.out" } });
+    if (primeiro) {
+      el._countTween.fromTo(
+        el,
+        { y: 4, autoAlpha: 0.72 },
+        { y: 0, autoAlpha: 1, duration: 0.32, ease: "power3.out" },
+        0
+      );
+    }
+    el._countTween.to(
+      obj,
+      {
+        n: fim,
+        duration: dur,
+        ease: "expo.out",
+        onUpdate: function () {
+          pintar(obj.n);
+        }
+      },
+      0
+    );
+    if (kpi) {
+      el._countTween.to(
+        kpi,
+        { "--kpi-meter": 1, duration: dur, ease: "power3.out" },
+        0
+      );
+    }
+    el._countTween.eventCallback("onComplete", function () {
+      encerrar();
+      el._countTween = null;
+    });
+  };
+
   if (!window.gsap) return;
 
   var motionOk = false;

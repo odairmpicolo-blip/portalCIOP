@@ -143,13 +143,14 @@ canvas{max-width:100%}
 <link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
 <link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
 <script src="../assets/js/loading.js?v=20260718d"></script>
-<script type="module" src="../assets/js/auth.js?v=20261009audit"></script>
+<script type="module" src="../assets/js/auth.js?v=20261022ios27"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260821hud">
-<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260820bar4">
-<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260821fx">
-<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260828planilhas">
+<link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260930v1">
+<link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260930v1">
+<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260930v1">
+<link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260930v1">
+<link rel="stylesheet" href="../assets/css/portal-visual.css?v=20261022ios27">
 <style>
 /* Selo de atualizacao: mostra ate quando os dados vao e destaca quando o agregado
    passa de 48h sem rodar. Fica depois do portal-glass/futuristic para nao ser
@@ -311,7 +312,7 @@ tr.det-ponto.aberta>td,tr.det-horario.aberta>td{background:rgba(31,111,235,.12)}
      do cache antes do download do fonte.js, retomava com Fonte ainda indefinida.
      Uma corrida que so aparecia quando o script nao estava em cache. -->
 <script src="../assets/js/cr0108-serie.js?v=20260817q"></script>
-<script src="../assets/js/cr0108-fonte.js?v=20260910-empty1"></script>
+<script src="../assets/js/cr0108-fonte.js?v=20260824lin110"></script>
 
 <script>
 "use strict";
@@ -772,11 +773,12 @@ function temDados(lista){
 }
 
 async function pintar(dados, origem){
-    /* Arrays vazios são resultados válidos. null indica indisponibilidade do recorte. */
+    /* A 1ª passada (arquivo) aplica o recorte novo, mesmo vazio.
+       A 2ª (banco) só substitui se veio dado: [] é truthy em JS e apagava a tela. */
     const doBanco = origem === "banco";
-    if (!doBanco || Array.isArray(dados.serie)) estado.serie = dados.serie;
-    if (!doBanco || Array.isArray(dados.hora)) estado.hora = dados.hora;
-    if (!doBanco || dados.serieAnterior === null || Array.isArray(dados.serieAnterior)) {
+    if (!doBanco || temDados(dados.serie)) estado.serie = dados.serie;
+    if (!doBanco || temDados(dados.hora)) estado.hora = dados.hora;
+    if (!doBanco || dados.serieAnterior === null || temDados(dados.serieAnterior)) {
         estado.serieAnterior = dados.serieAnterior;
     }
     renderKpis();
@@ -808,7 +810,7 @@ async function renderTudo(){
             if (!(await Fonte.disponivel())) return;
             const dados = await buscarTudo(filtro, p);
             if (seq !== renderSeq) return;          // os filtros mudaram no meio do caminho
-            if (Array.isArray(dados.serie) || Array.isArray(dados.hora)) await pintar(dados, "banco");
+            if (temDados(dados.serie) || temDados(dados.hora)) await pintar(dados, "banco");
         } catch (err){
             console.info("CR-0108: banco nao respondeu; a tela segue com os arquivos.", err && err.message);
         }
