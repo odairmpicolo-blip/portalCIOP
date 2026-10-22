@@ -11,6 +11,7 @@
   function dataCompletaLabel() {
     const d = new Date();
     const texto = d.toLocaleDateString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -21,9 +22,9 @@
 
   function dataCurtaLabel() {
     const d = new Date();
-    const weekday = d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(/\./g, "");
-    const day = d.getDate();
-    const month = d.toLocaleDateString("pt-BR", { month: "short" }).replace(/\./g, "");
+    const weekday = d.toLocaleDateString("pt-BR", { weekday: "short", timeZone: "America/Sao_Paulo" }).replace(/\./g, "");
+    const day = d.toLocaleDateString("pt-BR", { day: "numeric", timeZone: "America/Sao_Paulo" });
+    const month = d.toLocaleDateString("pt-BR", { month: "short", timeZone: "America/Sao_Paulo" }).replace(/\./g, "");
     const wd = weekday.charAt(0).toUpperCase() + weekday.slice(1);
     const mo = month.charAt(0).toLowerCase() + month.slice(1);
     return wd + ", " + day + " " + mo;
@@ -31,6 +32,7 @@
 
   function horaLabel() {
     return new Date().toLocaleTimeString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -151,11 +153,9 @@
   }
 
   function garantirWallpaper() {
-    if (document.getElementById("kiosk")) return;
     if (document.body.classList.contains("login-v2")) return;
     var file = (location.pathname.split("/").pop() || "").split("?")[0];
-    if (/^painel-tv|^login\.html$/.test(file)) return;
-    if (!document.querySelector(".header") && !document.querySelector(".bg-wall")) return;
+    if (/^login\.html$/.test(file)) return;
     if (document.querySelector(".bg-wall, .body-bg-wall")) return;
     var wall = document.createElement("div");
     wall.className = "body-bg-wall";
@@ -225,13 +225,13 @@
   }
 
   function isNoiteLocal() {
-    var h = new Date().getHours();
+    var h = Number(new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "numeric", hourCycle: "h23" }).format(new Date()));
     return h < 6 || h >= 18;
   }
 
-  function climaPorCodigo(code) {
+  function climaPorCodigo(code, isDay) {
     var c = Number(code);
-    var noite = isNoiteLocal();
+    var noite = typeof isDay === "boolean" ? !isDay : isNoiteLocal();
     if (c === 0) {
       return {
         desc: noite ? "Céu limpo" : "Ensolarado",
@@ -244,7 +244,7 @@
         kind: noite ? "clear-night" : "clear",
       };
     }
-    if (c === 2) return { desc: "Parcialmente nublado", kind: "partly" };
+    if (c === 2) return { desc: "Parcialmente nublado", kind: noite ? "partly-night" : "partly" };
     if (c === 3) return { desc: "Nublado", kind: "cloudy" };
     if (c === 45 || c === 48) return { desc: "Neblina", kind: "fog" };
     if (c >= 51 && c <= 57) return { desc: "Garoa", kind: "drizzle" };
@@ -262,6 +262,9 @@
     }
     if (kind === "clear-night") {
       return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#E2E8F0" d="M14.5 3.2a8.6 8.6 0 1 0 6.3 14.1A7.2 7.2 0 0 1 14.5 3.2z"/></svg>';
+    }
+    if (kind === "partly-night") {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#c9dbf9" d="M10 2a6 6 0 1 0 6 8 5 5 0 0 1-6-8Z"/><path fill="#94a9bf" d="M8 20h10a4 4 0 0 0 0-8 5 5 0 0 0-9-1 4.5 4.5 0 0 0-1 9Z"/></svg>';
     }
     if (kind === "partly") {
       return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9.2" cy="9" r="3.2" fill="#FBBF24"/><path fill="#E2E8F0" d="M8.5 18.5h9.2a3.6 3.6 0 0 0 .4-7.2 4.6 4.6 0 0 0-8.7 1.4 3.3 3.3 0 0 0-.9 5.8z"/></svg>';
@@ -307,7 +310,7 @@
     var iconEl = document.getElementById("ciopClimaIcon");
     if (!root || !data) return;
 
-    var meta = climaPorCodigo(data.code);
+    var meta = climaPorCodigo(data.code, data.isDay);
     if (tempEl) {
       if (Number.isFinite(data.temp)) setKpiNumero(tempEl, Math.round(data.temp), { suffix: "°", delay: 0.05 });
       else tempEl.textContent = grauLabel(data.temp);
@@ -344,7 +347,7 @@
       CLIMA_LAT +
       "&longitude=" +
       CLIMA_LON +
-      "&current=temperature_2m,weather_code" +
+      "&current=temperature_2m,weather_code,is_day" +
       "&daily=temperature_2m_max,temperature_2m_min" +
       "&timezone=America%2FSao_Paulo&forecast_days=1";
 
@@ -357,6 +360,7 @@
         var data = {
           temp: Number(json?.current?.temperature_2m),
           code: Number(json?.current?.weather_code),
+          isDay: json?.current?.is_day === 1 ? true : json?.current?.is_day === 0 ? false : undefined,
           max: Number(json?.daily?.temperature_2m_max?.[0]),
           min: Number(json?.daily?.temperature_2m_min?.[0]),
         };
@@ -634,6 +638,10 @@
     window.addEventListener("portal:usuario-validado", function () {
       setTimeout(aplicar, 50);
     });
+  }
+
+  function forcarFundoClaro() {
+    /* Tema claro/escuro fica a cargo do theme-toggle. */
   }
 
   function init() {

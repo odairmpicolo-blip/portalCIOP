@@ -17,6 +17,11 @@
     outros: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>'
   };
 
+  function logoHome() {
+    var img = document.querySelector('.home-logo');
+    if (img) img.src = 'assets/img/portal-logo-clean-' + (document.documentElement.classList.contains('dk-dark') ? 'dark' : 'light') + '.png';
+  }
+
   function primeiroNome() {
     var el = document.getElementById("heroNomeUsuario");
     var t = el ? String(el.textContent || "").trim() : "";
@@ -35,7 +40,10 @@
 
   function marcarNav(alvo) {
     document.querySelectorAll(".home-nav-btn").forEach(function (btn) {
-      btn.classList.toggle("is-active", btn.getAttribute("data-home-nav") === alvo);
+      var active = btn.getAttribute("data-home-nav") === alvo;
+      btn.classList.toggle("is-active", active);
+      if (active) btn.setAttribute("aria-current", "page");
+      else btn.removeAttribute("aria-current");
     });
   }
 
@@ -67,7 +75,7 @@
     var brand = document.createElement("div");
     brand.className = "home-brand";
     brand.innerHTML =
-      '<img class="portal-brand-art" src="assets/img/logomarca-portalciop-tcgl-claro.png?v=20261022logo" alt="Portal CIOP TCGL Operações">' +
+      '<img class="home-logo" src="assets/img/portal-logo-clean-light.png" alt="Portal CIOP TCGL Operações">' +
       '<span class="home-brand-copy"><b>Portal CIOP</b><small>TCGL · Operações</small></span>';
     var nav = document.createElement("nav");
     nav.className = "home-nav";
@@ -79,7 +87,7 @@
       '<button type="button" class="home-nav-btn" data-home-nav="secaoRelatorios">' + ICO.relatorios + " Relatórios</button>" +
       '<a class="home-nav-btn" data-home-nav="admin" data-modulo="gerenciar-usuarios" data-perfis="Administrador,Supervisor,Gerência,Gerencia,Secretária,Secretaria" href="pages/admin-usuarios.html">' +
       ICO.admin + " Administração</a>" +
-      '<button type="button" class="home-nav-btn home-outros-btn" data-home-nav="outros" aria-expanded="false" aria-controls="homeOutros">' +
+      '<button type="button" class="home-nav-btn home-outros-btn" data-home-nav="outros" aria-expanded="false" aria-controls="homeOtherPanel">' +
       ICO.outros + ' Outros<span class="home-outros-chevron" aria-hidden="true"></span></button>';
     var wrap = document.createElement("div");
     wrap.className = "home-side-links";
@@ -112,17 +120,24 @@
       if (!btn || btn.tagName === "A") return;
       var alvo = btn.getAttribute("data-home-nav");
       if (alvo === "outros") {
-        var aberto = !wrap.hidden;
-        wrap.hidden = aberto;
-        btn.setAttribute("aria-expanded", aberto ? "false" : "true");
-        marcarNav(aberto ? "inicio" : "outros");
+        document.body.classList.add("home-show-others");
+        montarOutrosCards();
+        btn.setAttribute("aria-expanded", "true");
+        marcarNav("outros");
+        side.classList.remove("active");
+        document.getElementById("overlay")?.classList.remove("active");
         return;
       }
+      document.body.classList.remove("home-show-others");
       wrap.hidden = true;
       var outrosBtn = nav.querySelector('[data-home-nav="outros"]');
       if (outrosBtn) outrosBtn.setAttribute("aria-expanded", "false");
       if (alvo === "inicio") mostrarTodos();
       else clicarAba(alvo);
+      if (window.matchMedia("(max-width: 900px)").matches) {
+        side.classList.remove("active");
+        document.getElementById("overlay")?.classList.remove("active");
+      }
     });
     if (window.dkSwapBrandLogos) window.dkSwapBrandLogos(!!window.dkIsDark && window.dkIsDark());
     sincronizarOutros();
@@ -138,10 +153,44 @@
       return st.display !== "none" && st.visibility !== "hidden";
     });
     btn.hidden = !visivel;
+    if (document.getElementById("homeOtherPanel")) montarOutrosCards();
     if (!visivel) {
       wrap.hidden = true;
       btn.setAttribute("aria-expanded", "false");
     }
+  }
+
+  function montarOutrosCards() {
+    var container = document.querySelector(".container");
+    if (!container) return;
+    var panel = document.getElementById("homeOtherPanel");
+    if (!panel) {
+      panel = document.createElement("section");
+      panel.id = "homeOtherPanel";
+      panel.setAttribute("aria-label", "Outros acessos operacionais");
+      panel.innerHTML = '<div class="home-mods-head"><h2>Outros acessos</h2></div><p class="home-other-lead">Ferramentas e sistemas para o seu dia a dia.</p><div class="home-other-grid grid"></div>';
+      container.insertBefore(panel, container.firstChild);
+    }
+    var grid = panel.querySelector(".home-other-grid");
+    grid.replaceChildren();
+    document.querySelectorAll("#homeOutros .side-link").forEach(function (source) {
+      if (source.hidden || source.style.display === "none" || (source.matches("[data-perfis], [data-usuarios], [data-modulo]") && !source.classList.contains("portal-card-visivel"))) return;
+      var card = source.cloneNode(true);
+      card.removeAttribute("id");
+      card.className = "home-other-card portal-card-visivel";
+      card.querySelectorAll("[id]").forEach(function (el) { el.removeAttribute("id"); });
+      if (source.tagName === "BUTTON") card.addEventListener("click", function () { source.click(); });
+      grid.appendChild(card);
+    });
+    filtrarOutros();
+  }
+
+  function filtrarOutros() {
+    var search = document.getElementById("ciopBuscaModulos");
+    var value = (search?.value || "").toLocaleLowerCase("pt-BR");
+    document.querySelectorAll(".home-other-card").forEach(function (card) {
+      card.hidden = !card.textContent.toLocaleLowerCase("pt-BR").includes(value);
+    });
   }
 
   function montarTopo() {
@@ -155,17 +204,40 @@
     var bell = document.createElement("button");
     bell.type = "button";
     bell.className = "home-bell";
-    bell.setAttribute("aria-label", "Ir para avisos");
+    bell.setAttribute("aria-label", "Ver meus avisos");
+    bell.setAttribute("aria-haspopup", "dialog");
     bell.innerHTML = ICO.sino + '<span class="home-bell-count" id="homeBellCount" data-empty="1"></span>';
     bell.addEventListener("click", function () {
-      var n = document.querySelector(".notice-board");
-      if (n) n.scrollIntoView({ block: "start" });
+      if (window.portalHomeSettings?.openNotices) window.portalHomeSettings.openNotices();
+      else document.querySelector(".notice-board")?.scrollIntoView({ block: "start" });
     });
-    if (lock) bar.appendChild(lock);
+    if (lock) {
+      var menu = lock.querySelector(".menu-toggle");
+      if (menu) {
+        menu.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
+        menu.setAttribute("aria-controls", "sidebar");
+        menu.setAttribute("aria-expanded", "false");
+        new MutationObserver(function () { menu.setAttribute("aria-expanded", String(document.getElementById("sidebar").classList.contains("active"))); }).observe(document.getElementById("sidebar"), { attributes: true, attributeFilter: ["class"] });
+      }
+      bar.appendChild(lock);
+    }
     bar.appendChild(search);
     bar.appendChild(bell);
     if (actions) bar.appendChild(actions);
     header.insertBefore(bar, header.firstChild);
+  }
+
+  function montarIndicadoresNoHeader() {
+    var hero = document.getElementById("headerHero");
+    if (!hero || hero.querySelector(".home-header-stats")) return;
+    var stats = document.createElement("div");
+    stats.className = "home-header-stats ciop-zone-status";
+    stats.setAttribute("aria-label", "Resumo da operação");
+    ["ciopKpiModulos", "ciopKpiUsuarios", "ciopKpiAvisos"].forEach(function (id) {
+      var card = document.getElementById(id)?.closest(".ciop-kpi");
+      if (card) stats.appendChild(card);
+    });
+    hero.insertBefore(stats, hero.querySelector(".home-meta"));
   }
 
   function montarMeta() {
@@ -173,8 +245,10 @@
     if (!hero || hero.querySelector(".home-meta")) return;
     var meta = document.createElement("div");
     meta.className = "home-meta";
+    var hora = document.querySelector(".ciop-kpi-hora");
     var data = document.querySelector(".ciop-kpi-data");
     var clima = document.querySelector(".ciop-kpi-clima");
+    if (hora) meta.appendChild(hora);
     if (data) meta.appendChild(data);
     if (clima) meta.appendChild(clima);
     hero.appendChild(meta);
@@ -189,9 +263,10 @@
     var ribbon = document.getElementById("heroRibbon");
     var nome = ((mes && mes.textContent) || "") + " " + ((destaq && destaq.textContent) || "");
     var texto = (cons && cons.textContent) || "";
-    if (!nome.trim() && !texto.trim()) return;
+    if ((!nome.trim() && !texto.trim()) || /carregando/i.test(texto)) { dest.hidden = true; return; }
+    dest.hidden = false;
     dest.innerHTML =
-      (ribbon && ribbon.innerHTML ? ribbon.innerHTML : "") +
+      (ribbon && ribbon.innerHTML ? '<span class="home-campaign-ribbon">' + ribbon.innerHTML + '</span>' : '<span class="home-campaign-ribbon" aria-hidden="true"><svg viewBox="0 0 32 48"><path d="M8 7C11-1 23-1 26 7c3 9-5 21-17 39L2 37C13 23 21 12 19 7c-1-2-4-2-5 0-3 6 6 20 16 30l-7 9C10 30 3 17 8 7Z" fill="currentColor"/></svg></span>') +
       "<div><strong>" +
       nome.trim() +
       "</strong><br>" +
@@ -225,6 +300,7 @@
     var abas = document.getElementById("portalAbas");
     if (!abas || !abas.parentNode) return;
     var wrap = document.createElement("div");
+    wrap.className = "home-modules-overview";
     wrap.innerHTML =
       '<div class="home-quick-head"><h2>Acessos rápidos</h2></div>' +
       '<section class="home-quick" id="homeQuick">' +
@@ -235,6 +311,18 @@
       "</section>" +
       '<div class="home-mods-head"><h2>Módulos da operação</h2></div>';
     abas.parentNode.insertBefore(wrap, abas);
+    wrap.querySelector(".home-mods-head").appendChild(abas);
+  }
+
+  // Atalhos reflect the original module visibility; they must never expose a restricted entry.
+  function sincronizarAtalhos() {
+    if (window.portalHomeSettings) { window.portalHomeSettings.refresh(); return; }
+    document.querySelectorAll("#homeQuick a").forEach(function (link) {
+      var source = Array.prototype.find.call(document.querySelectorAll(".card-section a.card"), function (card) {
+        return card.getAttribute("href") === link.getAttribute("href");
+      });
+      link.hidden = !source || source.hidden || source.style.display === "none" || (source.matches("[data-perfis], [data-usuarios], [data-modulo]") && !source.classList.contains("portal-card-visivel"));
+    });
   }
 
   function montarAbaTodos() {
@@ -267,8 +355,8 @@
 
   function kpiLabels() {
     var map = {
-      ciopKpiModulos: { t: "Módulos disponíveis", i: ICO.monitoramento },
-      ciopKpiUsuarios: { t: "Ativos agora", i: ICO.admin },
+      ciopKpiModulos: { t: "Módulos", i: ICO.monitoramento },
+      ciopKpiUsuarios: { t: "Usuários ativos", i: ICO.admin },
       ciopKpiAvisos: { t: "Avisos", i: ICO.sino }
     };
     Object.keys(map).forEach(function (id) {
@@ -303,11 +391,15 @@
 
   function iniciar() {
     montarNav();
+    logoHome();
     montarSheet();
     montarTopo();
     montarMeta();
+    montarIndicadoresNoHeader();
     lead();
     montarAtalhos();
+    window.portalHomeSettings?.init();
+    sincronizarAtalhos();
     montarAbaTodos();
     kpiLabels();
     ola();
@@ -320,6 +412,7 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", iniciar);
   else iniciar();
   window.addEventListener("portal:usuario-validado", function () {
+    sincronizarAtalhos();
     ola();
     atualizarCampanhaSide();
     atualizarOnlineSide();
@@ -327,6 +420,7 @@
     sincronizarOutros();
   });
   window.addEventListener("dk-theme-change", function () {
+    logoHome();
     if (window.dkSwapBrandLogos) window.dkSwapBrandLogos(!!window.dkIsDark && window.dkIsDark());
   });
   function observar() {
@@ -343,6 +437,24 @@
     });
   }
   observar();
+  var cardsObserver = new MutationObserver(sincronizarAtalhos);
+  document.querySelectorAll(".card-section a.card").forEach(function (card) {
+    cardsObserver.observe(card, { attributes: true, attributeFilter: ["hidden", "style", "class"] });
+  });
+  document.querySelectorAll("#homeOutros .side-link").forEach(function (link) {
+    cardsObserver.observe(link, { attributes: true, attributeFilter: ["hidden", "style", "class"] });
+  });
+  var linksObserver = new MutationObserver(sincronizarOutros);
+  document.querySelectorAll("#homeOutros .side-link").forEach(function (link) {
+    linksObserver.observe(link, { attributes: true, attributeFilter: ["hidden", "style", "class"] });
+  });
+  document.getElementById("ciopBuscaModulos")?.addEventListener("input", filtrarOutros);
+  document.getElementById("ciopBuscaLimpar")?.addEventListener("click", function () { setTimeout(filtrarOutros, 0); });
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    document.getElementById("sidebar")?.classList.remove("active");
+    document.getElementById("overlay")?.classList.remove("active");
+  });
   setTimeout(ola, 600);
   setTimeout(ola, 1600);
   setTimeout(atualizarCampanhaSide, 800);
