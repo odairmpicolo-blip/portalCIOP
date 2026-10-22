@@ -189,7 +189,9 @@
     var search = document.getElementById("ciopBuscaModulos");
     var value = (search?.value || "").toLocaleLowerCase("pt-BR");
     document.querySelectorAll(".home-other-card").forEach(function (card) {
-      card.hidden = !card.textContent.toLocaleLowerCase("pt-BR").includes(value);
+      var hit = card.textContent.toLocaleLowerCase("pt-BR").includes(value);
+      card.hidden = !hit;
+      card.classList.toggle("ciop-search-hit", !!(value && hit));
     });
   }
 

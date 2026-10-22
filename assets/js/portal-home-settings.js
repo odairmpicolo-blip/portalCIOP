@@ -95,6 +95,22 @@
       else status.textContent = '';
     };
   }
+  function avisarSalvo(texto) {
+    var toast = document.getElementById('homeSettingsToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'homeSettingsToast';
+      toast.setAttribute('role', 'status');
+      toast.setAttribute('aria-live', 'polite');
+      document.body.appendChild(toast);
+    }
+    toast.textContent = texto;
+    toast.classList.remove('is-visible');
+    void toast.offsetWidth;
+    toast.classList.add('is-visible');
+    clearTimeout(avisarSalvo.timer);
+    avisarSalvo.timer = setTimeout(function () { toast.classList.remove('is-visible'); }, 3500);
+  }
   function open() {
     if (!dialog || dialog.open) return;
     renderChooser(); status.textContent = '';
@@ -152,8 +168,15 @@
       if (!account()) { status.textContent = 'Aguarde a identificação da sua conta para salvar.'; return; }
       var allowed = modules();
       var values = Array.from(chooser.querySelectorAll('input:checked')).map(function (input) { return input.value; }).filter(function (href) { return allowed.has(href); }).slice(0, 6);
-      try { localStorage.setItem(key(), JSON.stringify(values)); refresh(); status.textContent = 'Acessos rápidos salvos.'; }
-      catch (_) { status.textContent = 'Não foi possível salvar neste navegador. Verifique se o armazenamento está permitido.'; }
+      try {
+        localStorage.setItem(key(), JSON.stringify(values));
+        refresh();
+        status.textContent = '';
+        dialog.close();
+        avisarSalvo('Acessos rápidos salvos.');
+      } catch (_) {
+        status.textContent = 'Não foi possível salvar neste navegador. Verifique se o armazenamento está permitido.';
+      }
     });
     var button = document.createElement('button'); button.type = 'button'; button.className = 'home-nav-btn'; button.setAttribute('aria-haspopup', 'dialog');
     button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3-.6 2.3-2 .9-2-.7L2.5 9l1.6 1.7v2.6L2.5 15l1.9 3.5 2-.7 2 .9L9 21h6l.6-2.3 2-.9 2 .7 1.9-3.5-1.6-1.7v-2.6L21.5 9l-1.9-3.5-2 .7-2-.9L15 3Z"/><circle cx="12" cy="12" r="3"/></svg>Configurações';

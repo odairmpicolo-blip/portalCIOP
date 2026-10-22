@@ -582,6 +582,36 @@
       return true;
     }
 
+    function marcarTrecho(el, q) {
+      if (!el) return;
+      if (el.dataset.searchOrig == null) el.dataset.searchOrig = el.textContent || "";
+      var orig = el.dataset.searchOrig;
+      if (!q) {
+        el.textContent = orig;
+        return;
+      }
+      var map = [];
+      var flat = "";
+      for (var i = 0; i < orig.length; i++) {
+        var n = orig.charAt(i).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        for (var j = 0; j < n.length; j++) map.push(i);
+        flat += n;
+      }
+      var at = flat.indexOf(q);
+      el.textContent = "";
+      if (at < 0) {
+        el.appendChild(document.createTextNode(orig));
+        return;
+      }
+      var start = map[at];
+      var end = map[at + q.length - 1] + 1;
+      el.appendChild(document.createTextNode(orig.slice(0, start)));
+      var mark = document.createElement("mark");
+      mark.textContent = orig.slice(start, end);
+      el.appendChild(mark);
+      el.appendChild(document.createTextNode(orig.slice(end)));
+    }
+
     function aplicar() {
       limparAutofillIndevido();
       const q = norm(input.value);
@@ -589,10 +619,15 @@
 
       document.querySelectorAll(".grid .card").forEach(function (card) {
         if (card.hidden && !card.classList.contains("ciop-search-hidden")) return;
-        const title = card.querySelector(".card-title")?.textContent || "";
-        const desc = card.querySelector(".card-desc")?.textContent || "";
+        const titleEl = card.querySelector(".card-title");
+        const descEl = card.querySelector(".card-desc");
+        const title = titleEl?.textContent || "";
+        const desc = descEl?.textContent || "";
         const hit = !q || norm(title + " " + desc).includes(q);
         card.classList.toggle("ciop-search-hidden", !hit);
+        card.classList.toggle("ciop-search-hit", !!(q && hit));
+        marcarTrecho(titleEl, q);
+        marcarTrecho(descEl, q);
       });
 
       document.querySelectorAll(".card-section").forEach(function (sec) {
