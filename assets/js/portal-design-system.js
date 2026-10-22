@@ -11,7 +11,7 @@
   if (!document.body.id) document.body.id = 'portal-page-content';
   var style = document.createElement('link');
   style.rel = 'stylesheet';
-  style.href = new URL('assets/css/portal-design-system.css?v=20261022legivel1', root).href;
+  style.href = new URL('assets/css/portal-design-system.css?v=20261022legivel4', root).href;
   style.dataset.portalDesign = '1';
   document.head.appendChild(style);
   function brand() {

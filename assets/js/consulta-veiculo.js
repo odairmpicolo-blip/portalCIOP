@@ -199,7 +199,8 @@
     document.getElementById("cvPrefixo").textContent = v.prefixo;
     document.getElementById("cvPlaca").textContent = v.placa || "—";
     document.getElementById("cvTec").textContent = v.tecnologia || "—";
-    document.getElementById("cvSistema").textContent = v.sistema || "—";
+    var sistemaEl = document.getElementById("cvSistema");
+    if (sistemaEl) sistemaEl.textContent = v.sistema || "—";
     document.getElementById("cvModelo").textContent = v.modelo || "—";
     const tamDt = document.getElementById("cvTamDt");
     const tamDd = document.getElementById("cvTamanho");

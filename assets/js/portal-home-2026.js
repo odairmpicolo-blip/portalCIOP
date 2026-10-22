@@ -85,6 +85,7 @@
       '<button type="button" class="home-nav-btn" data-home-nav="secaoOperacao">' + ICO.operacao + " Operação</button>" +
       '<button type="button" class="home-nav-btn" data-home-nav="secaoDashboards">' + ICO.monitoramento + " Monitoramento</button>" +
       '<button type="button" class="home-nav-btn" data-home-nav="secaoRelatorios">' + ICO.relatorios + " Relatórios</button>" +
+      '<button type="button" class="home-nav-btn" data-home-nav="secaoTv">' + ICO.monitor + " TV</button>" +
       '<a class="home-nav-btn" data-home-nav="admin" data-modulo="gerenciar-usuarios" data-perfis="Administrador,Supervisor,Gerência,Gerencia,Secretária,Secretaria" href="pages/admin-usuarios.html">' +
       ICO.admin + " Administração</a>" +
       '<button type="button" class="home-nav-btn home-outros-btn" data-home-nav="outros" aria-expanded="false" aria-controls="homeOtherPanel">' +
