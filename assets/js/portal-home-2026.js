@@ -243,6 +243,50 @@
     hero.insertBefore(stats, hero.querySelector(".home-meta"));
   }
 
+  var PERF_API = "https://londrisul.online/relatorios/mapa/api.php?chave=" + encodeURIComponent("Pontualidade@2026");
+  var perfTimer = 0;
+  function fmtPct(v) {
+    var n = Number(v);
+    if (!Number.isFinite(n)) return "—";
+    return n.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "%";
+  }
+  function setPerfTxt(id, v) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = fmtPct(v);
+  }
+  function isTcgl(g) {
+    var n = String(g && g.nome || "").toUpperCase();
+    return n.includes("TCGL") || Number(g && g.id) === 9;
+  }
+  function carregarPerfTcgl() {
+    fetch(PERF_API + "&t=" + Date.now(), { cache: "no-store" }).then(function (res) {
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    }).then(function (payload) {
+      var garagens = Array.isArray(payload && payload.garagens) ? payload.garagens : [];
+      var tcgl = garagens.find(isTcgl) || {};
+      setPerfTxt("homePerfOk", tcgl.onTimePercent);
+      setPerfTxt("homePerfEarly", tcgl.earlyPercent);
+      setPerfTxt("homePerfLate", tcgl.latePercent);
+      var block = document.getElementById("homePerfKpis");
+      if (block) {
+        block.setAttribute("aria-label", "Performance TCGL: " + fmtPct(tcgl.onTimePercent) + " no horário, " + fmtPct(tcgl.earlyPercent) + " adiantado, " + fmtPct(tcgl.latePercent) + " atrasado");
+      }
+    }).catch(function () {});
+  }
+  function montarPerformanceNoHeader() {
+    var hero = document.getElementById("headerHero");
+    var block = document.getElementById("homePerfKpis");
+    if (!hero || !block) return;
+    var meta = hero.querySelector(".home-meta");
+    if (block.parentNode !== hero) {
+      if (meta) hero.insertBefore(block, meta);
+      else hero.appendChild(block);
+    }
+    carregarPerfTcgl();
+    if (!perfTimer) perfTimer = setInterval(carregarPerfTcgl, 15000);
+  }
+
   function montarMeta() {
     var hero = document.getElementById("headerHero");
     if (!hero || hero.querySelector(".home-meta")) return;
@@ -399,6 +443,7 @@
     montarTopo();
     montarMeta();
     montarIndicadoresNoHeader();
+    montarPerformanceNoHeader();
     lead();
     montarAtalhos();
     window.portalHomeSettings?.init();
