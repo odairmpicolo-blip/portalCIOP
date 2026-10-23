@@ -96,87 +96,203 @@
   overflow: hidden;
   border-radius: inherit;
 }
-.wx-fx.is-sun {
-  background: radial-gradient(ellipse 48% 42% at 16% 28%, rgba(250, 204, 21, .32), transparent 70%);
-  animation: wx-sky-glow 3.4s ease-in-out infinite;
-}
-.wx-fx.is-cloud::before,
-.wx-fx.is-partly::before {
-  content: "";
-  position: absolute;
-  width: 46%;
-  height: 34%;
-  left: -8%;
-  top: 10%;
-  border-radius: 50%;
-  background: rgba(186, 230, 253, .16);
-  filter: blur(22px);
-  animation: wx-drift 16s ease-in-out infinite;
-}
-.wx-fx.is-cloud::after,
-.wx-fx.is-partly::after {
-  content: "";
-  position: absolute;
-  width: 38%;
-  height: 26%;
-  right: -6%;
-  top: 22%;
-  border-radius: 50%;
-  background: rgba(148, 163, 184, .16);
-  filter: blur(20px);
-  animation: wx-drift 13s ease-in-out infinite reverse;
-}
-.wx-fx.is-rain::before,
-.wx-fx.is-storm::before,
-.wx-fx.is-drizzle::before {
-  content: "";
-  position: absolute;
-  inset: -30%;
-  background-image: repeating-linear-gradient(
-    105deg,
-    transparent 0 16px,
-    rgba(125, 211, 252, .2) 16px 17px
-  );
-  animation: wx-rain-sheet .55s linear infinite;
-}
-.wx-fx.is-storm::after {
-  content: "";
+.wx-sky {
   position: absolute;
   inset: 0;
-  animation: wx-sky-flash 4.6s ease-in-out infinite;
 }
-.wx-fx.is-fog {
-  background: linear-gradient(180deg, rgba(203, 213, 225, .12), rgba(148, 163, 184, .08));
+.wx-fx.is-sun .wx-sky {
+  background:
+    radial-gradient(ellipse 70% 55% at 82% 12%, rgba(255, 214, 102, .55), transparent 58%),
+    linear-gradient(180deg, #1d5fa8 0%, #3b97dc 36%, #f0c56a 72%, #e0893a 100%);
 }
-.wx-fx.is-fog::before {
-  content: "";
+.wx-fx.is-partly .wx-sky {
+  background:
+    radial-gradient(ellipse 50% 42% at 86% 8%, rgba(255, 220, 140, .4), transparent 60%),
+    linear-gradient(180deg, #3a6fa8 0%, #6b93b8 42%, #9eb4c8 100%);
+}
+.wx-fx.is-cloud .wx-sky {
+  background: linear-gradient(180deg, #445870 0%, #62758c 40%, #8a9aab 100%);
+}
+.wx-fx.is-rain .wx-sky {
+  background: linear-gradient(180deg, #152338 0%, #1e334f 46%, #274a6e 100%);
+}
+.wx-fx.is-storm .wx-sky {
+  background: linear-gradient(180deg, #0c1224 0%, #1a1f3c 42%, #2a2450 100%);
+}
+.wx-fx.is-fog .wx-sky {
+  background: linear-gradient(180deg, #6b7788 0%, #8b97a6 50%, #c5ccd4 100%);
+}
+.wx-fx.is-snow .wx-sky {
+  background: linear-gradient(180deg, #4d6480 0%, #7b91a8 48%, #d5e3f0 100%);
+}
+
+.wx-sun {
   position: absolute;
-  inset: 18% -10% 40%;
-  background: rgba(226, 232, 240, .16);
-  filter: blur(18px);
-  animation: wx-drift 10s ease-in-out infinite;
+  width: min(32vw, 320px);
+  height: min(32vw, 320px);
+  right: 7%;
+  top: 4%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 36%, #fff8e1 0%, #ffe082 28%, #f5b942 58%, rgba(245, 158, 11, 0) 72%);
+  box-shadow: 0 0 90px 36px rgba(250, 204, 21, .28);
+  animation: wx-pulse 4.2s ease-in-out infinite;
 }
-.wx-fx.is-snow::before {
-  content: "";
+.wx-sun.is-soft {
+  width: min(22vw, 210px);
+  height: min(22vw, 210px);
+  opacity: .85;
+  filter: saturate(.9);
+}
+.wx-sun-rays-bg {
+  position: absolute;
+  width: 85vmax;
+  height: 85vmax;
+  right: -28%;
+  top: -42%;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 224, 130, .16) 0 7deg, transparent 7deg 20deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0 26%, transparent 64%);
+  mask-image: radial-gradient(circle, #000 0 26%, transparent 64%);
+  animation: wx-spin 56s linear infinite;
+}
+.wx-sun-rays-bg.is-soft { opacity: .45; }
+
+.wx-cloud-soft,
+.wx-cloud-mass,
+.wx-fog-bank {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(30px);
+  animation: wx-drift 22s ease-in-out infinite;
+}
+.wx-cloud-soft {
+  background: rgba(255, 255, 255, .22);
+}
+.wx-cloud-soft.c1 { width: 38%; height: 22%; left: -6%; bottom: 18%; animation-duration: 26s; }
+.wx-cloud-soft.c2 { width: 26%; height: 16%; right: 22%; bottom: 8%; animation-duration: 19s; animation-direction: reverse; }
+.wx-cloud-mass {
+  background: rgba(244, 248, 255, .34);
+}
+.wx-fx.is-cloud .wx-cloud-mass,
+.wx-fx.is-rain .wx-cloud-mass,
+.wx-fx.is-storm .wx-cloud-mass {
+  background: rgba(210, 222, 236, .38);
+}
+.wx-cloud-mass.c1 { width: 52%; height: 36%; left: -10%; top: -6%; }
+.wx-cloud-mass.c2 { width: 42%; height: 30%; right: -8%; top: 8%; animation-duration: 18s; animation-direction: reverse; }
+.wx-cloud-mass.c3 { width: 34%; height: 22%; left: 22%; top: 16%; animation-duration: 24s; }
+.wx-cloud-mass.c4 { width: 46%; height: 28%; right: 10%; bottom: 12%; animation-duration: 28s; animation-direction: reverse; background: rgba(160, 178, 198, .3); }
+
+.wx-fog-bank {
+  background: rgba(236, 241, 246, .42);
+}
+.wx-fog-bank.b1 { width: 70%; height: 40%; left: -12%; top: 8%; }
+.wx-fog-bank.b2 { width: 60%; height: 34%; right: -14%; top: 28%; animation-duration: 16s; animation-direction: reverse; }
+.wx-fog-bank.b3 { width: 80%; height: 36%; left: 4%; bottom: 6%; animation-duration: 21s; }
+
+.wx-rain {
+  position: absolute;
+  inset: -8% 0 -20%;
+}
+.wx-raindrop {
+  position: absolute;
+  top: -12%;
+  width: 2px;
+  border-radius: 99px;
+  background: linear-gradient(180deg, transparent, rgba(186, 230, 253, .9));
+  transform: rotate(12deg);
+  animation: wx-fall linear infinite;
+}
+.wx-rain.is-heavy .wx-raindrop {
+  width: 2.4px;
+  background: linear-gradient(180deg, transparent, rgba(224, 242, 254, .95));
+}
+
+.wx-lightning {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 68% 12%, rgba(255, 255, 255, .42), transparent 46%);
+  mix-blend-mode: screen;
+  animation: wx-sky-flash 5.2s ease-in-out infinite;
+}
+.wx-snow {
   position: absolute;
   inset: -20%;
-  background-image: radial-gradient(circle, rgba(255,255,255,.7) 1px, transparent 1.6px);
-  background-size: 28px 28px;
-  animation: wx-rain-sheet 1.4s linear infinite;
+  background-image: radial-gradient(circle, rgba(255,255,255,.8) 1.2px, transparent 1.8px);
+  background-size: 32px 32px;
+  animation: wx-rain-sheet 2.2s linear infinite;
+  opacity: .7;
+}
+.wx-haze {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 110%, rgba(4, 10, 24, .38), transparent 70%),
+    linear-gradient(180deg, rgba(4, 10, 24, .08) 0%, transparent 34%, rgba(4, 10, 24, .28) 100%);
+}
+.wx-fx.is-sun .wx-haze {
+  background: linear-gradient(180deg, transparent 46%, rgba(90, 42, 8, .22) 100%);
+}
+
+.wx[data-wx="sun"],
+.tv-card-weather[data-wx="sun"] { --accent:#f5c542; --accent-glow:rgba(245,197,66,.45); }
+.wx[data-wx="partly"],
+.tv-card-weather[data-wx="partly"] { --accent:#7dd3fc; --accent-glow:rgba(125,211,252,.35); }
+.wx[data-wx="cloud"],
+.tv-card-weather[data-wx="cloud"] { --accent:#cbd5e1; --accent-glow:rgba(203,213,225,.28); }
+.wx[data-wx="rain"],
+.tv-card-weather[data-wx="rain"] { --accent:#38bdf8; --accent-glow:rgba(56,189,248,.4); }
+.wx[data-wx="storm"],
+.tv-card-weather[data-wx="storm"] { --accent:#facc15; --accent-glow:rgba(250,204,21,.4); }
+.wx[data-wx="fog"],
+.tv-card-weather[data-wx="fog"] { --accent:#e2e8f0; --accent-glow:rgba(226,232,240,.28); }
+.wx[data-wx="snow"],
+.tv-card-weather[data-wx="snow"] { --accent:#e0f2fe; --accent-glow:rgba(224,242,254,.35); }
+
+.wx[data-wx] {
+  background: #102033;
+  transition: background .6s ease;
+}
+.wx[data-wx="sun"] .wx-temp {
+  color: #fff8e1;
+  text-shadow: 0 8px 36px rgba(245, 158, 11, .5);
+}
+.wx[data-wx="sun"] .wx-icon {
+  filter: drop-shadow(0 0 26px rgba(250, 204, 21, .55));
+}
+.wx[data-wx="rain"] .wx-icon,
+.wx[data-wx="storm"] .wx-icon {
+  filter: drop-shadow(0 0 22px rgba(56, 189, 248, .5));
+}
+.wx[data-wx] .wx-chip,
+.wx[data-wx] .wx-day {
+  background: rgba(8, 18, 34, .42);
+  border-color: rgba(255, 255, 255, .16);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.tv-card-weather[data-wx] .tv-chip,
+.tv-card-weather[data-wx] .tv-forecast-day {
+  background: rgba(8, 18, 34, .42);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 @keyframes wx-sky-glow {
   50% { opacity: .72; }
 }
 @keyframes wx-drift {
-  50% { transform: translateX(18%); }
+  50% { transform: translateX(10%); }
 }
 @keyframes wx-rain-sheet {
   to { transform: translate(18px, 36px); }
 }
 @keyframes wx-sky-flash {
-  0%, 84%, 92%, 100% { background: transparent; }
-  87%, 89% { background: rgba(255, 255, 255, .16); }
+  0%, 84%, 92%, 100% { opacity: 0; }
+  87%, 89% { opacity: 1; }
+}
+@keyframes wx-fall {
+  from { transform: translate3d(0, -10%, 0) rotate(12deg); }
+  to { transform: translate3d(18px, 780%, 0) rotate(12deg); }
 }
 
 html#portal-home.portal-home-2026 .home-meta .ciop-clima-icon {
@@ -196,7 +312,15 @@ html#portal-home.portal-home-2026 .home-meta .ciop-clima-icon {
   .wx-flake,
   .wx-fx,
   .wx-fx::before,
-  .wx-fx::after {
+  .wx-fx::after,
+  .wx-sun,
+  .wx-sun-rays-bg,
+  .wx-cloud-soft,
+  .wx-cloud-mass,
+  .wx-fog-bank,
+  .wx-raindrop,
+  .wx-lightning,
+  .wx-snow {
     animation: none !important;
   }
 }
