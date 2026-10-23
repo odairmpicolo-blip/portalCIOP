@@ -75,6 +75,10 @@ service cloud.firestore {
       allow delete: if signedIn() && (userEmail == email() || donoPortal());
     }
 
+    match /preferenciasUsuario/{userEmail} {
+      allow read, create, update, delete: if signedIn() && userEmail == email();
+    }
+
     match /config/{docId} {
       // cadAds tem sessão do Dynamic Scheduling — só o dono lê.
       allow read: if signedIn() && (docId != "cadAds" || donoPortal());

@@ -8,7 +8,7 @@ let dialog, slide = 0, busy = false, stylesReady;
 const slides = [
   ['Seu portal evoluiu', 'Uma experiência mais leve para sua operação.', 'O PortalCiOP ganhou um visual de vidro, melhor organização e uma interface que se adapta ao computador, tablet e celular.', 'visual'],
   ['Tudo no seu lugar', 'Mais espaço para o que você usa todos os dias.', 'Na página inicial, os módulos estão organizados por categoria. A quantidade de módulos, usuários ativos e avisos fica entre a saudação e a data.', 'modules'],
-  ['Seu portal, do seu jeito', 'As preferências estão em Configurações.', 'Alterar senha é a primeira opção. Você também pode escolher o tema claro, escuro ou automático e personalizar até 6 acessos rápidos na página inicial. As opções administrativas aparecem conforme sua permissão.', 'settings'],
+  ['Seu portal, do seu jeito', 'As preferências estão em Ajustes.', 'Alterar senha é a primeira opção. Você também pode escolher o tema claro, escuro ou automático e personalizar até 6 acessos rápidos na página inicial. As opções administrativas aparecem conforme sua permissão.', 'settings'],
   ['Avisos ao seu alcance', 'Um toque no sino. Todos os seus avisos.', 'Na página inicial, o sininho abre seus avisos em uma lista. A campanha do mês fica na lateral, com sua própria cor e o laço de conscientização.', 'notices'],
   ['Pronto para começar', 'A mesma identidade em todo o portal.', 'As páginas seguem o novo padrão visual, com seu nome e cargo, melhor leitura e um carregamento com a marca PortalCiOP. Seus acessos continuam seguindo as permissões da sua conta.', 'ready']
 ];

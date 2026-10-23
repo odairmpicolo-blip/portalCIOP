@@ -1,9 +1,78 @@
 /* Personal preferences never grant access: every shortcut is checked against the original module. */
 (function () {
-  var dialog, chooser, status, noticesDialog, initialized = false;
+  var dialog, chooser, status, noticesDialog, initialized = false, memoryList = null, saving = false, lastEmail = '';
   var defaults = ['pages/monitoramento.html', 'pages/Folhadeservico1.html', 'pages/liberacao-lancamento.html', 'pages/criar-relatorio.html'];
   function account() { return String(window.portalUsuario?.email || '').trim().toLowerCase(); }
   function key() { return 'ciop-home-shortcuts-v1:' + encodeURIComponent(account()); }
+  function sanitize(list) {
+    if (!Array.isArray(list)) return [];
+    return list.filter(function (v) {
+      return typeof v === 'string' && v.length <= 500 && /^(pages\/|https?:\/\/)/i.test(v);
+    }).slice(0, 6);
+  }
+  function localSelected() {
+    try {
+      if (!account()) return null;
+      var value = JSON.parse(localStorage.getItem(key()));
+      return Array.isArray(value) ? sanitize(value) : null;
+    } catch (_) { return null; }
+  }
+  function persistLocal(values) {
+    if (!account()) return;
+    localStorage.setItem(key(), JSON.stringify(values));
+    memoryList = values;
+  }
+  function firestoreApi() {
+    return Promise.all([
+      import('./portal-firestore.js'),
+      import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js')
+    ]).then(function (mods) {
+      return { db: mods[0].db, doc: mods[1].doc, getDoc: mods[1].getDoc, setDoc: mods[1].setDoc, serverTimestamp: mods[1].serverTimestamp };
+    });
+  }
+  function lerNuvem() {
+    var email = account();
+    if (!email) return Promise.resolve(null);
+    return firestoreApi().then(function (api) {
+      return api.getDoc(api.doc(api.db, 'preferenciasUsuario', email)).then(function (pref) {
+        if (pref.exists() && Array.isArray(pref.data().acessosRapidos)) return sanitize(pref.data().acessosRapidos);
+        return null;
+      }).catch(function () { return null; }).then(function (fromPref) {
+        if (fromPref !== null) return fromPref;
+        return api.getDoc(api.doc(api.db, 'presenca', email)).then(function (pres) {
+          if (pres.exists() && Array.isArray(pres.data().acessosRapidos)) return sanitize(pres.data().acessosRapidos);
+          return null;
+        });
+      });
+    });
+  }
+  function salvarNuvem(values) {
+    var email = account();
+    if (!email) return Promise.reject(new Error('sem conta'));
+    return firestoreApi().then(function (api) {
+      var payload = { acessosRapidos: values, acessosRapidosEm: api.serverTimestamp() };
+      return api.setDoc(api.doc(api.db, 'preferenciasUsuario', email), payload, { merge: true }).then(function () {
+        return api.setDoc(api.doc(api.db, 'presenca', email), payload, { merge: true }).catch(function () {});
+      }).catch(function () {
+        return api.setDoc(api.doc(api.db, 'presenca', email), payload, { merge: true });
+      });
+    });
+  }
+  function carregarNuvem() {
+    if (!account()) return;
+    if (account() !== lastEmail) { memoryList = null; lastEmail = account(); }
+    lerNuvem().then(function (cloud) {
+      if (cloud !== null) {
+        persistLocal(cloud);
+        refresh();
+        return;
+      }
+      var local = localSelected();
+      if (local && local.length) return salvarNuvem(local);
+    }).catch(function (error) {
+      console.warn('[portal-home-settings] nuvem', error);
+    });
+  }
   function modules() {
     var result = new Map();
     document.querySelectorAll('.card-section a.card').forEach(function (card) {
@@ -15,12 +84,9 @@
     return result;
   }
   function selected() {
-    try {
-      if (account()) {
-        var value = JSON.parse(localStorage.getItem(key()));
-        if (Array.isArray(value)) return value.filter(function (v) { return typeof v === 'string'; }).slice(0, 6);
-      }
-    } catch (_) {}
+    if (Array.isArray(memoryList)) return memoryList;
+    var local = localSelected();
+    if (Array.isArray(local)) return local;
     return defaults;
   }
   function refresh() {
@@ -123,7 +189,7 @@
     initialized = true;
     dialog = document.createElement('dialog'); dialog.id = 'homeSettingsDialog';
     dialog.setAttribute('aria-labelledby', 'homeSettingsTitle');
-    dialog.innerHTML = '<div class="home-settings-top"><div><p class="home-settings-eyebrow">SEU PORTAL, DO SEU JEITO</p><h2 id="homeSettingsTitle">Configurações</h2></div><button type="button" class="home-settings-close" aria-label="Fechar configurações">×</button></div><section class="home-settings-section home-settings-security"><details id="homeSettingsPassword"><summary><span class="home-settings-lock" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v3"/></svg></span><span><strong>Alterar senha</strong><small>Atualize sua senha de acesso.</small></span></summary><div id="homeSettingsPasswordSlot"></div></details></section><section class="home-settings-section home-settings-admin" hidden><h3>Administração</h3><div class="home-settings-admin-actions"></div></section><section class="home-settings-section"><h3>Aparência</h3><p>Escolha o tema que combina com você.</p><div id="homeSettingsTheme"></div></section><section class="home-settings-section"><h3>Acessos rápidos</h3><p>Escolha até 6 módulos para ter sempre à mão.</p><div id="homeSettingsModules"></div></section><p id="homeSettingsStatus" role="status" aria-live="polite"></p><div class="home-settings-footer"><small>Preferências salvas neste navegador para sua conta.</small><button type="button" class="home-settings-save">Salvar acessos</button></div>';
+    dialog.innerHTML = '<div class="home-settings-top"><div><p class="home-settings-eyebrow">CONFIGURAÇÕES</p><h2 id="homeSettingsTitle">Ajustes</h2></div><button type="button" class="home-settings-close" aria-label="Fechar ajustes">×</button></div><section class="home-settings-section home-settings-security"><details id="homeSettingsPassword"><summary><span class="home-settings-lock" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v3"/></svg></span><span><strong>Alterar senha</strong><small>Atualize sua senha de acesso.</small></span></summary><div id="homeSettingsPasswordSlot"></div></details></section><section class="home-settings-section home-settings-admin" hidden><h3>Administração</h3><div class="home-settings-admin-actions"></div></section><section class="home-settings-section"><h3>Aparência</h3><p>Escolha o tema que combina com você.</p><div id="homeSettingsTheme"></div></section><section class="home-settings-section"><h3>Acessos rápidos</h3><p>Escolha até 6 módulos para ter sempre à mão. Eles ficam na sua conta e abrem em qualquer computador ou celular.</p><div id="homeSettingsModules"></div></section><p id="homeSettingsStatus" role="status" aria-live="polite"></p><div class="home-settings-footer"><small>Salvos na sua conta, em qualquer lugar.</small><button type="button" class="home-settings-save">Salvar acessos</button></div>';
     var novidades = document.createElement('section'); novidades.className = 'home-settings-section';
     novidades.innerHTML = '<h3>Sobre o portal</h3><button type="button" class="home-settings-action">Rever novidades do portal</button>';
     novidades.querySelector('button').onclick = function () { dialog.close(); window.portalNovidades?.abrir(); };
@@ -166,24 +232,38 @@
     dialog.querySelector('.home-settings-close').addEventListener('click', function () { dialog.close(); });
     dialog.querySelector('.home-settings-save').addEventListener('click', function () {
       if (!account()) { status.textContent = 'Aguarde a identificação da sua conta para salvar.'; return; }
+      if (saving) return;
       var allowed = modules();
       var values = Array.from(chooser.querySelectorAll('input:checked')).map(function (input) { return input.value; }).filter(function (href) { return allowed.has(href); }).slice(0, 6);
-      try {
-        localStorage.setItem(key(), JSON.stringify(values));
-        refresh();
+      var buttonSave = dialog.querySelector('.home-settings-save');
+      try { persistLocal(values); } catch (_) {
+        status.textContent = 'Não foi possível salvar neste navegador. Verifique se o armazenamento está permitido.';
+        return;
+      }
+      refresh();
+      saving = true;
+      buttonSave.disabled = true;
+      status.textContent = 'Salvando na sua conta...';
+      salvarNuvem(values).then(function () {
         status.textContent = '';
         dialog.close();
-        avisarSalvo('Acessos rápidos salvos.');
-      } catch (_) {
-        status.textContent = 'Não foi possível salvar neste navegador. Verifique se o armazenamento está permitido.';
-      }
+        avisarSalvo('Acessos rápidos salvos na sua conta. Disponíveis em qualquer lugar.');
+      }).catch(function () {
+        status.textContent = 'Salvo neste aparelho. Não deu para sincronizar na nuvem agora.';
+        avisarSalvo('Salvo neste aparelho. Tente de novo para usar em outro local.');
+      }).then(function () {
+        saving = false;
+        buttonSave.disabled = false;
+      });
     });
     var button = document.createElement('button'); button.type = 'button'; button.className = 'home-nav-btn'; button.setAttribute('aria-haspopup', 'dialog');
-    button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3-.6 2.3-2 .9-2-.7L2.5 9l1.6 1.7v2.6L2.5 15l1.9 3.5 2-.7 2 .9L9 21h6l.6-2.3 2-.9 2 .7 1.9-3.5-1.6-1.7v-2.6L21.5 9l-1.9-3.5-2 .7-2-.9L15 3Z"/><circle cx="12" cy="12" r="3"/></svg>Configurações';
+    button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3-.6 2.3-2 .9-2-.7L2.5 9l1.6 1.7v2.6L2.5 15l1.9 3.5 2-.7 2 .9L9 21h6l.6-2.3 2-.9 2 .7 1.9-3.5-1.6-1.7v-2.6L21.5 9l-1.9-3.5-2 .7-2-.9L15 3Z"/><circle cx="12" cy="12" r="3"/></svg>Ajustes';
     button.addEventListener('click', open); document.querySelector('.home-nav')?.appendChild(button);
     var personalize = document.createElement('button'); personalize.type = 'button'; personalize.className = 'home-personalize'; personalize.textContent = 'Personalizar'; personalize.addEventListener('click', open);
     document.querySelector('.home-quick-head')?.appendChild(personalize);
     refresh();
+    carregarNuvem();
+    window.addEventListener('portal:usuario-validado', carregarNuvem);
   }
   window.portalHomeSettings = { init: init, refresh: refresh, openNotices: openNotices };
 })();
