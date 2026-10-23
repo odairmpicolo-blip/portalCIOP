@@ -250,9 +250,24 @@
     if (!Number.isFinite(n)) return "—";
     return n.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "%";
   }
-  function setPerfTxt(id, v) {
+  function animarPct(id, v, delayMs) {
     var el = document.getElementById(id);
-    if (el) el.textContent = fmtPct(v);
+    if (!el) return;
+    var n = Number(v);
+    if (!Number.isFinite(n)) {
+      el.textContent = "—";
+      return;
+    }
+    var casas = Math.round(n * 100) % 100 === 0 ? 0 : 2;
+    function run() {
+      if (typeof window.portalContarNumero === "function") {
+        window.portalContarNumero(el, n, { suffix: "%", decimals: casas, duration: 0.9 });
+      } else {
+        el.textContent = fmtPct(n);
+      }
+    }
+    if (delayMs) setTimeout(run, delayMs);
+    else run();
   }
   function isTcgl(g) {
     var n = String(g && g.nome || "").toUpperCase();
@@ -265,9 +280,9 @@
     }).then(function (payload) {
       var garagens = Array.isArray(payload && payload.garagens) ? payload.garagens : [];
       var tcgl = garagens.find(isTcgl) || {};
-      setPerfTxt("homePerfOk", tcgl.onTimePercent);
-      setPerfTxt("homePerfEarly", tcgl.earlyPercent);
-      setPerfTxt("homePerfLate", tcgl.latePercent);
+      animarPct("homePerfOk", tcgl.onTimePercent, 0);
+      animarPct("homePerfEarly", tcgl.earlyPercent, 90);
+      animarPct("homePerfLate", tcgl.latePercent, 180);
       var block = document.getElementById("homePerfKpis");
       if (block) {
         block.setAttribute("aria-label", "Performance TCGL: " + fmtPct(tcgl.onTimePercent) + " no horário, " + fmtPct(tcgl.earlyPercent) + " adiantado, " + fmtPct(tcgl.latePercent) + " atrasado");
