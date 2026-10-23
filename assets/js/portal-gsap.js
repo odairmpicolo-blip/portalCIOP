@@ -211,7 +211,7 @@
     if (!document.body || !document.body.classList.contains("login-v2")) return;
     loginFeito = true;
     var marca = document.querySelector(".login-brand-v2");
-    var card = document.querySelector(".login-card-v2");
+    var card = document.querySelector(".login-glass") || document.querySelector(".login-card-v2");
     var campos = document.querySelectorAll(
       ".login-card-v2 label, .login-card-v2 input, .login-card-v2 .btn-primary, .login-card-v2 .btn-link"
     );

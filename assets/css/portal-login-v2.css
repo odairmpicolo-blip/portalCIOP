@@ -9,30 +9,36 @@
   --sombra: 0 12px 32px rgba(6, 36, 92, 0.08);
 }
 
-body.login-v2 {
+html body.login-v2 {
   margin: 0;
   min-height: 100vh;
+  color-scheme: light !important;
   font-family: Inter, Arial, Helvetica, sans-serif;
-  background: #1a1a1c;
+  background-color: #14273a !important;
+  background-image: url("../img/portal-bg-onibus.jpg?v=20261022mov") !important;
+  background-size: cover !important;
+  background-position: center 30% !important;
+  background-repeat: no-repeat !important;
   color: var(--texto);
 }
-body.login-v2::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(233, 241, 249, 0.16), rgba(11, 29, 48, 0.12) 72%);
+.login-bg-photo{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center 30%;
+  z-index:0;
+  pointer-events:none;
 }
-
-.bg-wall{
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  background-image: url("../img/portal-bg-onibus.jpg?v=20261022mov");
-  background-size: cover;
-  background-position: center 30%;
-  background-repeat: no-repeat;
+.login-brand-v2,
+.login-page-v2{
+  position:relative;
+  z-index:1;
+}
+.bg-wall,
+.bg-wall-shade{
+  display:none !important;
 }
 
 html.dk-dark .bg-wall{
@@ -41,16 +47,7 @@ html.dk-dark .bg-wall{
 }
 
 html.dk-dark body.login-v2{
-  background: #12151a;
   color: #f4f6f8;
-}
-
-html.dk-dark .login-card-v2{
-  background: rgba(10, 28, 48, 0.28) !important;
-  border: 1px solid rgba(191, 219, 246, 0.28) !important;
-  box-shadow:
-    0 24px 60px -20px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
 }
 
 html.dk-dark .login-card-v2 input{
@@ -81,26 +78,47 @@ html.dk-dark .login-card-v2 input{
   justify-items: stretch;
 }
 
-.login-card-v2 {
+.login-glass {
+  position: relative;
   width: min(440px, 100%);
   justify-self: center;
   align-self: center;
-  background: rgba(255, 255, 255, 0.18) !important;
-  backdrop-filter: blur(18px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.55) !important;
+  border-radius: 24px;
+}
+.login-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 24px 60px rgba(8, 24, 48, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(18px) saturate(170%);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+}
+html.dk-dark .login-glass::before {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+.login-card-v2 {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  justify-self: center;
+  align-self: center;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 0 !important;
   border-radius: 22px;
   padding: 28px 26px;
-  box-shadow:
-    0 24px 60px -24px rgba(12, 38, 69, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+  box-shadow: none !important;
   display: grid;
   gap: 10px;
   box-sizing: border-box;
-  position: relative;
-  transform: none;
-  filter: none;
-  will-change: auto;
 }
 
 .login-brand-v2 {
