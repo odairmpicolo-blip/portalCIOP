@@ -319,7 +319,10 @@
     if (rangeEl) rangeEl.textContent = grauLabel(data.max) + "/" + grauLabel(data.min);
     if (descEl) descEl.textContent = meta.desc;
     if (iconEl) {
-      iconEl.classList.add("wx-live");
+      var grupo = String(meta.kind || "cloudy").replace("-night", "");
+      if (grupo === "partly") grupo = "cloudy";
+      if (grupo === "drizzle") grupo = "rain";
+      iconEl.className = "ciop-clima-icon wx-live is-" + grupo;
       iconEl.innerHTML = iconeClimaSvg(meta.kind);
     }
     root.setAttribute("aria-label", "Previsão do tempo em Londrina: " + meta.desc);
