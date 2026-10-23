@@ -434,6 +434,19 @@
   @media (prefers-reduced-motion:reduce){
     .campanha img.bg{ animation:none !important; transform:scale(1.06); }
   }
+  .campanha.is-arte{
+    background:#f03d8d;
+    border:none;
+    border-radius:0;
+  }
+  .campanha.is-arte::before{ display:none; }
+  .campanha.is-arte img.bg{
+    object-fit:contain; object-position:center;
+    transform:none; filter:none; animation:none;
+  }
+  .campanha.is-arte .campanha-wash,
+  .campanha.is-arte .ov,
+  .campanha.is-arte .logo{ display:none; }
 
   /* ===== Capa CIOP ===== */
   .scene{ position:relative; width:100%; height:100%; overflow:hidden; background:#020617; }
@@ -841,7 +854,7 @@ const CAMPANHAS = [
   { nome: "Julho Amarelo", causa: "Prevenção das hepatites virais", titulo: "Hepatites têm prevenção e tratamento", sub: "Vacina, diagnóstico e cuidado. Informação protege a operação e a família.", img: "../assets/img/painel-tv-jul-amarelo.jpg", cor: "#fde047" },
   { nome: "Agosto Lilás", causa: "Combate à violência contra a mulher", titulo: "Você não está sozinha", sub: "Mês de combate à violência contra a mulher. Denuncie. Peça ajuda.", img: "../assets/img/painel-tv-agosto-lilas.jpg", cor: "#c084fc" },
   { nome: "Setembro Amarelo", causa: "Prevenção ao suicídio e valorização da vida", titulo: "Você não está sozinho", sub: "Fale com alguém. O CVV atende 24h pelo 188, de forma gratuita e sigilosa.", img: "../assets/img/painel-tv-set-amarelo.jpg", cor: "#facc15" },
-  { nome: "Outubro Rosa", causa: "Conscientização sobre o câncer de mama", titulo: "Cuidar de si é um ato de coragem", sub: "O diagnóstico precoce muda o caminho. Faça o exame. Cuide de você e de quem você ama.", img: "../assets/img/painel-tv-out-rosa.jpg", cor: "#e11d73" },
+  { nome: "Outubro Rosa", causa: "Mês de conscientização sobre o câncer de mama", titulo: "Cuidar de si é um ato de coragem", sub: "O diagnóstico precoce muda o caminho. Faça o exame. Cuide de você e de quem você ama.", img: "../assets/img/campanha-outubro-rosa.jpg?v=2", cor: "#e11d73", arte: true },
   { nome: "Novembro Azul", causa: "Combate ao câncer de próstata", titulo: "Prevenir também é coisa de homem", sub: "Exame no tempo certo. Saúde não espera a dor chegar.", img: "../assets/img/painel-tv-nov-azul.jpg", cor: "#3b82f6" },
   { nome: "Dezembro Vermelho", causa: "Prevenção às IST, HIV e AIDS", titulo: "Informação protege", sub: "Prevenção, teste e respeito. Cuidar de si é cuidar de todos.", img: "../assets/img/painel-tv-dez-vermelho.jpg", cor: "#ef4444" }
 ];
@@ -1225,7 +1238,9 @@ function aplicarCampanha() {
   document.getElementById("campanhaCausa").textContent = c.causa;
   document.getElementById("campanhaTitulo").textContent = c.titulo;
   document.getElementById("campanhaSub").textContent = c.sub;
-  document.getElementById("campanhaScene").style.setProperty("--campanha-cor", c.cor);
+  const scene = document.getElementById("campanhaScene");
+  scene.style.setProperty("--campanha-cor", c.cor);
+  scene.classList.toggle("is-arte", !!c.arte);
 }
 
 const SEMANA = semanaIpv();
@@ -1269,7 +1284,9 @@ function aplicarDiaTipo(tipo, n) {
 function mostrarSlide(id) {
   document.querySelectorAll(".slide").forEach((el) => el.classList.remove("ativo"));
   document.getElementById("slide-" + id).classList.add("ativo");
-  document.getElementById("kiosk").classList.toggle("modo-capa", id === "capa");
+  const arte = id === "campanha" && document.getElementById("campanhaScene").classList.contains("is-arte");
+  document.getElementById("kiosk").classList.toggle("modo-capa", id === "capa" || arte);
+  document.getElementById("slide-campanha").classList.toggle("slide-full", arte);
   if (id === "capa") tocarCapa();
 }
 
