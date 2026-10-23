@@ -217,7 +217,7 @@
     );
     var tl = gsap.timeline({ defaults: { ease: "power3.out" } });
     if (marca) tl.from(marca, { y: -18, autoAlpha: 0, duration: 0.55 }, 0);
-    if (card) tl.from(card, { y: 22, autoAlpha: 0, duration: 0.6 }, 0.08);
+    if (card) tl.from(card, { autoAlpha: 0, duration: 0.55 }, 0.08);
     if (campos.length) {
       tl.from(
         campos,
@@ -233,6 +233,11 @@
     }
     tl.eventCallback("onComplete", function () {
       limpar([marca, card]);
+      if (card) {
+        card.style.transform = "none";
+        card.style.filter = "none";
+        card.style.willChange = "auto";
+      }
     });
   }
 
