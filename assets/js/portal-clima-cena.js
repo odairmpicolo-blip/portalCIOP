@@ -113,6 +113,8 @@
     var scene = fx && (fx.closest(".wx") || fx.closest(".tv-card-weather"));
     if (scene) scene.setAttribute("data-wx", grupo);
     if (!fx) return;
+    if (fx.dataset.grupo === grupo) return;
+    fx.dataset.grupo = grupo;
     fx.className = "wx-fx is-" + grupo;
     fx.innerHTML = cenaHtml(grupo);
   };

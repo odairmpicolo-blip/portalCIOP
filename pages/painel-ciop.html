@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&display=swap">
 <link rel="stylesheet" href="../assets/css/portal-clima-anim.css?v=20261023cena1">
-<script src="../assets/js/portal-clima-cena.js?v=20261023cena1"></script>
+<script src="../assets/js/portal-clima-cena.js?v=20261023hora1"></script>
 <style>
   :root{
     --bg-1:#04060f;
@@ -294,7 +294,8 @@
 
   /* ===== Clima (igual painel TV) ===== */
   .wx{
-    --accent:#0ea5e9; --accent-glow:rgba(14,165,233,.35);
+    --accent:#38bdf8; --accent-hi:#e0f2fe; --accent-deep:#0369a1;
+    --accent-glow:rgba(56,189,248,.45);
     height:100%; min-height:0; border-radius:32px;
     padding:clamp(16px,2vh,28px) clamp(22px,2.6vw,40px);
     background:#122033;
@@ -329,15 +330,17 @@
   .wx-icon svg, .tv-wx svg{ width:1em; height:1em; display:block; }
   .wx-temp{
     font-size:clamp(110px,12.5vw,200px); font-weight:900; letter-spacing:-.05em; line-height:.86;
-    color:var(--accent); text-shadow:0 0 40px var(--accent-glow);
     font-variant-numeric:tabular-nums;
+    background:linear-gradient(180deg, #bae6fd 0%, #38bdf8 42%, #0369a1 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    -webkit-text-fill-color:transparent;
   }
   .wx-hero-side{ display:flex; flex-direction:column; gap:10px; padding-bottom:clamp(10px,1.4vh,20px); }
   .wx-label{ font-size:clamp(24px,2.4vw,38px); font-weight:800; color:var(--ink); }
   .wx-minmax{ font-size:clamp(22px,2.2vw,34px); font-weight:800; color:#e2eaf8; }
   .wx-chips{
-    display:grid; grid-template-columns:repeat(4,1fr); gap:clamp(10px,1.4vw,18px);
-    position:relative; z-index:1; flex:0 0 auto;
+    display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:clamp(10px,1.4vw,18px);
+    position:relative; z-index:1; flex:0 0 auto; width:100%;
   }
   .wx-chip{
     background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14);
@@ -356,15 +359,65 @@
   }
   .wx-chip-value{
     font-size:clamp(36px,4.4vw,68px); font-weight:900; font-variant-numeric:tabular-nums;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#fff; padding-left:10px;
+    white-space:nowrap; padding-left:10px;
+    background:linear-gradient(180deg, #bae6fd 0%, #38bdf8 42%, #0369a1 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    -webkit-text-fill-color:transparent;
   }
   .wx-chart-title{
     font-size:clamp(18px,1.6vw,24px); font-weight:800; letter-spacing:.14em; text-transform:uppercase;
     color:#e2eaf8; position:relative; z-index:1;
   }
+  .wx-hours{
+    display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:clamp(8px,1.1vw,14px);
+    position:relative; z-index:1; flex:0 0 auto; width:100%;
+  }
+  .wx-hour{
+    position:relative; overflow:hidden; isolation:isolate;
+    border:1px solid rgba(255,255,255,.16); border-radius:18px;
+    padding:clamp(10px,1.4vh,16px) 6px; text-align:center;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
+    min-height:clamp(108px,16vh,150px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.14), 0 10px 22px rgba(0,0,0,.18);
+  }
+  .wx-hour::before{
+    content:""; position:absolute; inset:0; z-index:0;
+  }
+  .wx-hour[data-wx="sun"]::before{
+    background:linear-gradient(180deg,#1d5fa8 0%,#3b97dc 42%,#f0c56a 100%);
+  }
+  .wx-hour[data-wx="partly"]::before{
+    background:linear-gradient(180deg,#3a6fa8 0%,#6b93b8 48%,#c5d4e0 100%);
+  }
+  .wx-hour[data-wx="cloud"]::before{
+    background:linear-gradient(180deg,#445870 0%,#62758c 50%,#8a9aab 100%);
+  }
+  .wx-hour[data-wx="rain"]::before{
+    background:linear-gradient(180deg,#152338 0%,#1e334f 50%,#274a6e 100%);
+  }
+  .wx-hour[data-wx="storm"]::before{
+    background:linear-gradient(180deg,#0c1224 0%,#1a1f3c 48%,#2a2450 100%);
+  }
+  .wx-hour[data-wx="fog"]::before{
+    background:linear-gradient(180deg,#6b7788 0%,#8b97a6 55%,#c5ccd4 100%);
+  }
+  .wx-hour[data-wx="snow"]::before{
+    background:linear-gradient(180deg,#4d6480 0%,#7b91a8 50%,#d5e3f0 100%);
+  }
+  .wx-hour > *{ position:relative; z-index:1; text-shadow:0 2px 10px rgba(0,0,0,.45); }
+  .wx-hour.is-now{ box-shadow:0 0 0 2px rgba(255,255,255,.55), 0 12px 26px rgba(0,0,0,.28); }
+  .wx-hour-name{ font-size:clamp(14px,1.25vw,18px); text-transform:uppercase; color:#fff; font-weight:800; letter-spacing:.1em; }
+  .wx-hour-icon.tv-wx, .wx-hour .tv-wx{ font-size:clamp(28px,3vw,42px); }
+  .wx-hour-temp{ font-size:clamp(22px,2.3vw,34px); font-weight:900; font-variant-numeric:tabular-nums; color:#fff; }
+  .wx-hour-rain{
+    font-size:clamp(13px,1.2vw,17px); font-weight:800;
+    background:linear-gradient(180deg,#bae6fd 0%,#38bdf8 50%,#0369a1 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    -webkit-text-fill-color:transparent;
+  }
   .wx-days{
-    display:grid; grid-template-columns:repeat(5,1fr); gap:clamp(8px,1.2vw,16px);
-    position:relative; z-index:1; flex:1; min-height:0; align-content:stretch;
+    display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:clamp(8px,1.2vw,16px);
+    position:relative; z-index:1; flex:1; min-height:0; align-content:stretch; width:100%;
   }
   .wx-day{
     background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); border-radius:20px;
@@ -376,9 +429,15 @@
   .wx-day-icon.tv-wx, .wx-day .tv-wx{ font-size:clamp(34px,3.6vw,52px); }
   .wx-day-max{ font-size:clamp(28px,2.8vw,42px); font-weight:900; font-variant-numeric:tabular-nums; color:#fff; }
   .wx-day-min{ font-size:clamp(18px,1.7vw,26px); font-weight:800; color:#c9d6ef; font-variant-numeric:tabular-nums; }
-  .wx-day-rain{ font-size:clamp(16px,1.5vw,22px); font-weight:800; color:#7dd3fc; }
+  .wx-day-rain{
+    font-size:clamp(16px,1.5vw,22px); font-weight:800;
+    background:linear-gradient(180deg,#bae6fd 0%,#38bdf8 50%,#0369a1 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    -webkit-text-fill-color:transparent;
+  }
   @media (max-aspect-ratio: 4/3){
     .wx-chips{ grid-template-columns:repeat(2,1fr); }
+    .wx-hours{ grid-template-columns:repeat(3,1fr); }
     .wx-days{ grid-template-columns:repeat(2,1fr); }
     .wx-temp{ font-size:clamp(72px,16vw,110px); }
     .wx-label{ font-size:clamp(18px,4vw,28px); }
@@ -778,6 +837,8 @@
           <div class="wx-chip"><span class="wx-chip-label">Vento</span><span class="wx-chip-value" id="wxVento">-- km/h</span></div>
           <div class="wx-chip"><span class="wx-chip-label">Chance de chuva</span><span class="wx-chip-value" id="wxChuva">--%</span></div>
         </div>
+        <div class="wx-chart-title">Próximas horas</div>
+        <div class="wx-hours" id="wxHoras"></div>
         <div class="wx-chart-title">Próximos dias</div>
         <div class="wx-days" id="wxDias"></div>
       </div>
@@ -831,7 +892,7 @@ const LS_IPV_URL = "https://londrisul.online/relatorios/tvs/pontualidade/api.php
 const LS_ICV_URL = "https://londrisul.online/relatorios/tvs/pontualidade/api.php?token=" + encodeURIComponent("IPV@2026");
 const TCGL_IPV_URL = "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com/cr0108/share/ipv?token=" + encodeURIComponent("IPV@2026");
 const TCGL_ICV_URL = "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com/cr0108/share/icv?token=" + encodeURIComponent("IPV@2026");
-const CLIMA_URL = "https://api.open-meteo.com/v1/forecast?latitude=-23.3045&longitude=-51.1696&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=America%2FSao_Paulo&forecast_days=6";
+const CLIMA_URL = "https://api.open-meteo.com/v1/forecast?latitude=-23.3045&longitude=-51.1696&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=America%2FSao_Paulo&forecast_days=6";
 const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
 const DIAS_ABREV = ["dom","seg","ter","qua","qui","sex","sáb"];
 const DIAS_NOME = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
@@ -848,6 +909,7 @@ const CAPA_MS = 8000;
 const DIA_MS = Math.round(30000 / 7);
 const IPV_MS = 30000;
 const ICV_MS = 30000;
+const HORAS_TV = 5;
 
 const CAMPANHAS = [
   { nome: "Janeiro", causa: "Branco · saúde mental · Roxo · hanseníase", titulo: "Cuidado e informação para começar o ano.", sub: "Cuidado e informação para começar o ano.", img: "../assets/img/campanha-ciop-01-janeiro.jpg", cor: "#7c3aed", fundo: "#faf4f4", arte: true },
@@ -1193,6 +1255,37 @@ async function carregarLondrisulIcv() {
   return carregarLondrisulPorMes(LS_ICV_URL, "api londrisul icv");
 }
 
+function montarHorasClima(hourly) {
+  const times = hourly.time || [];
+  const agora = Date.now();
+  const out = [];
+  for (let i = 0; i < times.length && out.length < HORAS_TV; i++) {
+    const t = new Date(String(times[i]).replace(" ", "T"));
+    if (Number.isNaN(t.getTime()) || t.getTime() + 50 * 60 * 1000 < agora) continue;
+    out.push({
+      label: String(t.getHours()).padStart(2, "0") + "h",
+      temp: hourly.temperature_2m?.[i],
+      feel: hourly.apparent_temperature?.[i],
+      hum: hourly.relative_humidity_2m?.[i],
+      wind: hourly.wind_speed_10m?.[i],
+      code: hourly.weather_code?.[i],
+      rain: hourly.precipitation_probability?.[i]
+    });
+  }
+  return out;
+}
+
+function pintarHorasClima() {
+  document.getElementById("wxHoras").innerHTML = climaHoras.map((h, i) =>
+    `<div class="wx-hour${i === 0 ? " is-now" : ""}" data-wx="${grupoClima(h.code)}">
+      <span class="wx-hour-name">${i === 0 ? "Agora" : h.label}</span>
+      ${climaSvg(h.code, "wx-hour-icon")}
+      <span class="wx-hour-temp">${h.temp != null ? Math.round(h.temp) + "°" : "--"}</span>
+      <span class="wx-hour-rain">${h.rain ?? 0}%</span>
+    </div>`
+  ).join("");
+}
+
 async function carregarClima() {
   const data = await (await fetch(CLIMA_URL, { cache: "no-store" })).json();
   const cur = data.current || {};
@@ -1215,6 +1308,9 @@ async function carregarClima() {
   document.getElementById("wxUmi").textContent = cur.relative_humidity_2m != null ? Math.round(cur.relative_humidity_2m) + "%" : "--";
   document.getElementById("wxVento").textContent = cur.wind_speed_10m != null ? Math.round(cur.wind_speed_10m) + " km/h" : "--";
   document.getElementById("wxChuva").textContent = (daily.precipitation_probability_max?.[0] ?? 0) + "%";
+
+  climaHoras = montarHorasClima(data.hourly || {});
+  pintarHorasClima();
 
   const dias = daily.time || [];
   let html = "";
@@ -1276,6 +1372,7 @@ const CICLO = [
 
 let idx = 0;
 let diaIpv = 0;
+let climaHoras = [];
 let ipvTimer = null;
 let rotacaoId = null;
 let modoFixo = false;
