@@ -143,7 +143,7 @@
     display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(16px,2vw,28px);
   }
   .firm{
-    --accent:#38bdf8; --glow:rgba(56,189,248,.45);
+    --accent:#38bdf8; --accent-hi:#e0f2fe; --accent-deep:#0369a1; --glow:rgba(56,189,248,.45);
     position:relative; min-height:0; overflow:hidden;
     border-radius:32px;
     padding:clamp(22px,2.8vh,36px) clamp(22px,2.2vw,34px) clamp(18px,2.2vh,28px);
@@ -193,8 +193,9 @@
   .firm-week-pct{
     font-size:clamp(72px,8.6vw,136px); font-weight:900; letter-spacing:-.075em; line-height:.86;
     font-variant-numeric:tabular-nums;
-    background:linear-gradient(180deg, #fff 20%, color-mix(in srgb, var(--accent) 55%, #fff));
+    background:linear-gradient(180deg, var(--accent-hi) 0%, var(--accent) 48%, var(--accent-deep) 100%);
     -webkit-background-clip:text; background-clip:text; color:transparent;
+    -webkit-text-fill-color:transparent;
     filter:drop-shadow(0 14px 36px var(--glow));
   }
   .firm-week-row, .firm-pct-row{
@@ -221,8 +222,9 @@
   .firm-pct{
     font-size:clamp(36px,4vw,62px); font-weight:900; letter-spacing:-.045em; line-height:.92;
     font-variant-numeric:tabular-nums;
-    background:linear-gradient(180deg, #fff 20%, color-mix(in srgb, var(--accent) 55%, #fff));
+    background:linear-gradient(180deg, var(--accent-hi) 0%, var(--accent) 48%, var(--accent-deep) 100%);
     -webkit-background-clip:text; background-clip:text; color:transparent;
+    -webkit-text-fill-color:transparent;
     filter:drop-shadow(0 8px 22px var(--glow));
   }
   .firm-pct.pop{ animation:pctPop .45s cubic-bezier(.2,.8,.2,1); }
@@ -244,7 +246,7 @@
   .firm-load i{
     display:block; height:100%; width:0;
     border-radius:inherit;
-    background:linear-gradient(90deg, transparent, var(--accent) 38%, #fff);
+    background:linear-gradient(90deg, var(--accent-deep), var(--accent) 42%, var(--accent-hi));
     box-shadow:0 0 20px var(--accent), 0 0 32px var(--glow);
     position:relative;
   }
@@ -270,9 +272,18 @@
   .firm-ticks b.on{ background:var(--accent); box-shadow:0 0 10px var(--accent); }
   .firm-ticks b.now{ background:#fff; box-shadow:0 0 12px #fff; }
 
-  .ipv-tcgl{ --accent:#38bdf8; --glow:rgba(56,189,248,.45); }
-  .ipv-ls{ --accent:#fb923c; --glow:rgba(251,146,60,.45); }
-  .ipv-ciop{ --accent:#e44a1c; --glow:rgba(228,74,28,.45); }
+  .ipv-tcgl{
+    --accent:#38bdf8; --accent-hi:#e0f2fe; --accent-deep:#0369a1;
+    --glow:rgba(56,189,248,.5);
+  }
+  .ipv-ls{
+    --accent:#fb923c; --accent-hi:#ffedd5; --accent-deep:#c2410c;
+    --glow:rgba(251,146,60,.5);
+  }
+  .ipv-ciop{
+    --accent:#e2e8f0; --accent-hi:#ffffff; --accent-deep:#94a3b8;
+    --glow:rgba(226,232,240,.42);
+  }
 
   @media (max-aspect-ratio: 4/3){
     .board-grid{ grid-template-columns:1fr; }
@@ -434,12 +445,6 @@
   @media (prefers-reduced-motion:reduce){
     .campanha img.bg{ animation:none !important; transform:scale(1.06); }
   }
-  .campanha.is-arte{
-    background:#f03d8d;
-    border:none;
-    border-radius:0;
-  }
-  .campanha.is-arte::before{ display:none; }
   .campanha.is-arte img.bg{
     object-fit:contain; object-position:center;
     transform:none; filter:none; animation:none;
@@ -845,18 +850,18 @@ const IPV_MS = 30000;
 const ICV_MS = 30000;
 
 const CAMPANHAS = [
-  { nome: "Janeiro Branco", causa: "Cuidar da mente é cuidar da vida", titulo: "Cuidar da mente também é segurança", sub: "Fale, ouça e peça ajuda. Ninguém na operação precisa enfrentar isso sozinho.", img: "../assets/img/painel-tv-jan-branco.jpg", cor: "#e2e8f0" },
-  { nome: "Fevereiro Laranja", causa: "Conscientização sobre leucemia e doação de medula", titulo: "Laranja da vida", sub: "Conscientização sobre leucemia e o valor de doar medula e esperança.", img: "../assets/img/painel-tv-fev-laranja.jpg", cor: "#fb923c" },
-  { nome: "Março Lilás", causa: "Prevenção ao câncer de colo do útero", titulo: "Prevenir é cuidar", sub: "O exame periódico detecta cedo e salva vidas. Informação também é cuidado.", img: "../assets/img/painel-tv-mar-lilas.jpg", cor: "#c084fc" },
-  { nome: "Abril Verde", causa: "Saúde e segurança no trabalho", titulo: "A segurança começa no pátio", sub: "Cada viagem segura nasce de um cuidado antes de sair da garagem.", img: "../assets/img/painel-tv-abr-verde.jpg", cor: "#4ade80" },
-  { nome: "Maio Amarelo", causa: "Conscientização pela paz no trânsito", titulo: "No trânsito, enxergar o outro é salvar vidas", sub: "Pedestre, moto, bike e ônibus compartilham a mesma rua.", img: "../assets/img/painel-tv-mai-amarelo.jpg", cor: "#facc15" },
-  { nome: "Junho Vermelho", causa: "Doação de sangue", titulo: "Uma doação, várias vidas", sub: "Doe sangue. O estoque dos hemocentros depende de quem decide ajudar hoje.", img: "../assets/img/painel-tv-jun-vermelho.jpg", cor: "#f87171" },
-  { nome: "Julho Amarelo", causa: "Prevenção das hepatites virais", titulo: "Hepatites têm prevenção e tratamento", sub: "Vacina, diagnóstico e cuidado. Informação protege a operação e a família.", img: "../assets/img/painel-tv-jul-amarelo.jpg", cor: "#fde047" },
-  { nome: "Agosto Lilás", causa: "Combate à violência contra a mulher", titulo: "Você não está sozinha", sub: "Mês de combate à violência contra a mulher. Denuncie. Peça ajuda.", img: "../assets/img/painel-tv-agosto-lilas.jpg", cor: "#c084fc" },
-  { nome: "Setembro Amarelo", causa: "Prevenção ao suicídio e valorização da vida", titulo: "Você não está sozinho", sub: "Fale com alguém. O CVV atende 24h pelo 188, de forma gratuita e sigilosa.", img: "../assets/img/painel-tv-set-amarelo.jpg", cor: "#facc15" },
-  { nome: "Outubro Rosa", causa: "Mês de conscientização sobre o câncer de mama", titulo: "Cuidar de si é um ato de coragem", sub: "O diagnóstico precoce muda o caminho. Faça o exame. Cuide de você e de quem você ama.", img: "../assets/img/campanha-outubro-rosa.jpg?v=2", cor: "#e11d73", arte: true },
-  { nome: "Novembro Azul", causa: "Combate ao câncer de próstata", titulo: "Prevenir também é coisa de homem", sub: "Exame no tempo certo. Saúde não espera a dor chegar.", img: "../assets/img/painel-tv-nov-azul.jpg", cor: "#3b82f6" },
-  { nome: "Dezembro Vermelho", causa: "Prevenção às IST, HIV e AIDS", titulo: "Informação protege", sub: "Prevenção, teste e respeito. Cuidar de si é cuidar de todos.", img: "../assets/img/painel-tv-dez-vermelho.jpg", cor: "#ef4444" }
+  { nome: "Janeiro", causa: "Branco · saúde mental · Roxo · hanseníase", titulo: "Cuidado e informação para começar o ano.", sub: "Cuidado e informação para começar o ano.", img: "../assets/img/campanha-ciop-01-janeiro.jpg", cor: "#7c3aed", fundo: "#faf4f4", arte: true },
+  { nome: "Fevereiro", causa: "Roxo · lúpus, fibromialgia e Alzheimer · Laranja · leucemia", titulo: "Acolher e informar também é cuidar.", sub: "Acolher e informar também é cuidar.", img: "../assets/img/campanha-ciop-02-fevereiro.jpg", cor: "#fb923c", fundo: "#ecaeed", arte: true },
+  { nome: "Março", causa: "Azul-marinho · câncer colorretal · Lilás · câncer do colo do útero", titulo: "Informação e cuidado em cada fase da vida.", sub: "Informação e cuidado em cada fase da vida.", img: "../assets/img/campanha-ciop-03-marco.jpg", cor: "#7c3aed", fundo: "#d4e4fd", arte: true },
+  { nome: "Abril", causa: "Azul · autismo · Verde · segurança e saúde no trabalho", titulo: "Respeito, inclusão e proteção todos os dias.", sub: "Respeito, inclusão e proteção todos os dias.", img: "../assets/img/campanha-ciop-04-abril.jpg", cor: "#22c55e", fundo: "#e1f1fe", arte: true },
+  { nome: "Maio", causa: "Amarelo · trânsito · Laranja · proteção de crianças · Roxo · DII · Vermelho · câncer de boca", titulo: "Proteger vidas é compromisso de todos.", sub: "Proteger vidas é compromisso de todos.", img: "../assets/img/campanha-ciop-05-maio.jpg", cor: "#facc15", fundo: "#fef8ec", arte: true },
+  { nome: "Junho", causa: "Vermelho · doação de sangue · Laranja · anemia e leucemia · Violeta · violência contra a pessoa idosa", titulo: "Solidariedade e respeito fazem a diferença.", sub: "Solidariedade e respeito fazem a diferença.", img: "../assets/img/campanha-ciop-06-junho.jpg", cor: "#ef4444", fundo: "#fe9b9e", arte: true },
+  { nome: "Julho", causa: "Amarelo · hepatites virais · Verde · câncer de cabeça e pescoço", titulo: "Conhecimento que inspira cuidado.", sub: "Conhecimento que inspira cuidado.", img: "../assets/img/campanha-ciop-07-julho.jpg", cor: "#eab308", fundo: "#feef94", arte: true },
+  { nome: "Agosto", causa: "Dourado · aleitamento materno · Lilás · violência contra a mulher · Laranja · esclerose múltipla", titulo: "Acolher, apoiar e respeitar.", sub: "Acolher, apoiar e respeitar.", img: "../assets/img/campanha-ciop-08-agosto.jpg", cor: "#c084fc", fundo: "#fddb91", arte: true },
+  { nome: "Setembro", causa: "Amarelo · valorização da vida · Verde · doação de órgãos · Dourado · câncer infantojuvenil", titulo: "Cada vida merece cuidado e acolhimento.", sub: "Cada vida merece cuidado e acolhimento.", img: "../assets/img/campanha-ciop-09-setembro.jpg", cor: "#eab308", fundo: "#e6af16", arte: true },
+  { nome: "Outubro Rosa", causa: "Mês de conscientização sobre o câncer de mama", titulo: "Mês de conscientização sobre o câncer de mama", sub: "Mês de conscientização sobre o câncer de mama", img: "../assets/img/campanha-ciop-10-outubro.jpg", cor: "#e11d73", fundo: "#f44f93", arte: true },
+  { nome: "Novembro Azul", causa: "Saúde do homem · câncer de próstata · diabetes", titulo: "Cuidar da saúde também é atitude.", sub: "Cuidar da saúde também é atitude.", img: "../assets/img/campanha-ciop-11-novembro.jpg", cor: "#3b82f6", fundo: "#54b9fd", arte: true },
+  { nome: "Dezembro", causa: "Vermelho · HIV e outras ISTs · Laranja · câncer de pele", titulo: "Informação, respeito e cuidado para todos.", sub: "Informação, respeito e cuidado para todos.", img: "../assets/img/campanha-ciop-12-dezembro.jpg", cor: "#ef4444", fundo: "#fb7762", arte: true }
 ];
 
 const iso = (d) => d.toISOString().slice(0, 10);
@@ -1229,8 +1234,14 @@ async function carregarClima() {
   document.getElementById("wxDias").innerHTML = html;
 }
 
+function campanhaDoMes() {
+  const q = Number(new URLSearchParams(location.search).get("mes"));
+  const idx = Number.isInteger(q) && q >= 1 && q <= 12 ? q - 1 : new Date().getMonth();
+  return CAMPANHAS[idx];
+}
+
 function aplicarCampanha() {
-  const c = CAMPANHAS[new Date().getMonth()];
+  const c = campanhaDoMes();
   const img = document.getElementById("campanhaImg");
   img.src = c.img;
   img.alt = c.nome + " — " + c.causa;
@@ -1240,6 +1251,7 @@ function aplicarCampanha() {
   document.getElementById("campanhaSub").textContent = c.sub;
   const scene = document.getElementById("campanhaScene");
   scene.style.setProperty("--campanha-cor", c.cor);
+  scene.style.setProperty("--campanha-fundo", c.fundo || c.cor);
   scene.classList.toggle("is-arte", !!c.arte);
 }
 
@@ -1259,7 +1271,7 @@ const CICLO = [
   { id: "ipv13", ms: IPV_MS, titulo: "Pontualidade −1 +3 min", tag: "−1 min e +3 min" },
   { id: "icv", ms: ICV_MS, titulo: "Cumprimento de Viagem", tag: "TCGL · LondriSul · Sistema" },
   { id: "tempo", ms: 10000, titulo: "Previsão do Tempo", tag: "Clima · Londrina/PR" },
-  { id: "campanha", ms: 10000, titulo: CAMPANHAS[new Date().getMonth()].nome, tag: "Campanha do mês · CIOP" }
+  { id: "campanha", ms: 10000, titulo: campanhaDoMes().nome, tag: "Campanha do mês · CIOP" }
 ];
 
 let idx = 0;
@@ -1284,9 +1296,7 @@ function aplicarDiaTipo(tipo, n) {
 function mostrarSlide(id) {
   document.querySelectorAll(".slide").forEach((el) => el.classList.remove("ativo"));
   document.getElementById("slide-" + id).classList.add("ativo");
-  const arte = id === "campanha" && document.getElementById("campanhaScene").classList.contains("is-arte");
-  document.getElementById("kiosk").classList.toggle("modo-capa", id === "capa" || arte);
-  document.getElementById("slide-campanha").classList.toggle("slide-full", arte);
+  document.getElementById("kiosk").classList.toggle("modo-capa", id === "capa");
   if (id === "capa") tocarCapa();
 }
 
