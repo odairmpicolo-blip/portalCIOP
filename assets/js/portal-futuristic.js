@@ -258,30 +258,30 @@
 
   function iconeClimaSvg(kind) {
     if (kind === "clear") {
-      return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="#FBBF24"/><g stroke="#FBBF24" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.8v2.2M12 19v2.2M2.8 12h2.2M19 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></g></svg>';
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><g class="wx-sun-rays" stroke="#FBBF24" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.8v2.2M12 19v2.2M2.8 12h2.2M19 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></g><circle class="wx-sun-core" cx="12" cy="12" r="4.2" fill="#FBBF24"/></svg>';
     }
     if (kind === "clear-night") {
-      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#E2E8F0" d="M14.5 3.2a8.6 8.6 0 1 0 6.3 14.1A7.2 7.2 0 0 1 14.5 3.2z"/></svg>';
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle class="wx-star" cx="6" cy="7" r="1" fill="#E2E8F0"/><circle class="wx-star" cx="19" cy="6" r=".8" fill="#E2E8F0"/><path class="wx-moon" fill="#E2E8F0" d="M14.5 3.2a8.6 8.6 0 1 0 6.3 14.1A7.2 7.2 0 0 1 14.5 3.2z"/></svg>';
     }
     if (kind === "partly-night") {
-      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#c9dbf9" d="M10 2a6 6 0 1 0 6 8 5 5 0 0 1-6-8Z"/><path fill="#94a9bf" d="M8 20h10a4 4 0 0 0 0-8 5 5 0 0 0-9-1 4.5 4.5 0 0 0-1 9Z"/></svg>';
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="wx-moon" fill="#c9dbf9" d="M10 2a6 6 0 1 0 6 8 5 5 0 0 1-6-8Z"/><path class="wx-cloud" fill="#94a9bf" d="M8 20h10a4 4 0 0 0 0-8 5 5 0 0 0-9-1 4.5 4.5 0 0 0-1 9Z"/></svg>';
     }
     if (kind === "partly") {
-      return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9.2" cy="9" r="3.2" fill="#FBBF24"/><path fill="#E2E8F0" d="M8.5 18.5h9.2a3.6 3.6 0 0 0 .4-7.2 4.6 4.6 0 0 0-8.7 1.4 3.3 3.3 0 0 0-.9 5.8z"/></svg>';
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><g class="wx-sun-rays" stroke="#FBBF24" stroke-width="1.5" stroke-linecap="round"><path d="M9.2 2.6v1.6M3.2 9h1.6M4.4 4.4l1.2 1.2"/></g><circle class="wx-sun-core" cx="9.2" cy="9" r="3.2" fill="#FBBF24"/><path class="wx-cloud" fill="#E2E8F0" d="M8.5 18.5h9.2a3.6 3.6 0 0 0 .4-7.2 4.6 4.6 0 0 0-8.7 1.4 3.3 3.3 0 0 0-.9 5.8z"/></svg>';
     }
     if (kind === "rain" || kind === "drizzle") {
-      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#E2E8F0" d="M7.8 15.2h9.4a3.5 3.5 0 0 0 .3-7 4.5 4.5 0 0 0-8.6 1.2 3.2 3.2 0 0 0-1.1 5.8z"/><g stroke="#93C5FD" stroke-width="1.6" stroke-linecap="round"><path d="M9 17.2v2.2M12 17.8v2.2M15 17.2v2.2"/></g></svg>';
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="wx-cloud" fill="#E2E8F0" d="M7.8 15.2h9.4a3.5 3.5 0 0 0 .3-7 4.5 4.5 0 0 0-8.6 1.2 3.2 3.2 0 0 0-1.1 5.8z"/><g stroke="#93C5FD" stroke-width="1.6" stroke-linecap="round"><path class="wx-drop" d="M9 17.2v2.2"/><path class="wx-drop" d="M12 17.8v2.2"/><path class="wx-drop" d="M15 17.2v2.2"/></g></svg>';
     }
     if (kind === "storm") {
-      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#CBD5E1" d="M7.5 13.8h9.2a3.3 3.3 0 0 0 .3-6.6 4.3 4.3 0 0 0-8.3 1.1A3.1 3.1 0 0 0 7.5 13.8z"/><path fill="#FBBF24" d="M12.8 14.2 10.2 18h2.1l-1.5 3.6 4.4-5.2h-2.2l1.8-2.2z"/></svg>';
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="wx-cloud" fill="#CBD5E1" d="M7.5 13.8h9.2a3.3 3.3 0 0 0 .3-6.6 4.3 4.3 0 0 0-8.3 1.1A3.1 3.1 0 0 0 7.5 13.8z"/><path class="wx-bolt" fill="#FBBF24" d="M12.8 14.2 10.2 18h2.1l-1.5 3.6 4.4-5.2h-2.2l1.8-2.2z"/></svg>';
     }
     if (kind === "snow") {
-      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#E2E8F0" d="M7.8 14.5h9.4a3.5 3.5 0 0 0 .3-7 4.5 4.5 0 0 0-8.6 1.2 3.2 3.2 0 0 0-1.1 5.8z"/><g stroke="#BFDBFE" stroke-width="1.5" stroke-linecap="round"><path d="M9.2 17.2v2M12 16.8v2.4M14.8 17.2v2"/></g></svg>';
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="wx-cloud" fill="#E2E8F0" d="M7.8 14.5h9.4a3.5 3.5 0 0 0 .3-7 4.5 4.5 0 0 0-8.6 1.2 3.2 3.2 0 0 0-1.1 5.8z"/><g fill="#BFDBFE"><circle class="wx-flake" cx="9.2" cy="18.4" r="1"/><circle class="wx-flake" cx="12" cy="19.2" r="1.1"/><circle class="wx-flake" cx="14.8" cy="18.4" r="1"/></g></svg>';
     }
     if (kind === "fog") {
-      return '<svg viewBox="0 0 24 24" aria-hidden="true"><g stroke="#E2E8F0" stroke-width="1.8" stroke-linecap="round"><path d="M4 9.5h16M5 12.5h14M6 15.5h12"/></g></svg>';
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><g stroke="#E2E8F0" stroke-width="1.8" stroke-linecap="round"><path class="wx-fog-line" d="M4 9.5h16"/><path class="wx-fog-line" d="M5 12.5h14"/><path class="wx-fog-line" d="M6 15.5h12"/></g></svg>';
     }
-    return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#E2E8F0" d="M7.5 17h10a3.8 3.8 0 0 0 .4-7.5 5 5 0 0 0-9.5 1.4A3.5 3.5 0 0 0 7.5 17z"/></svg>';
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="wx-cloud" fill="#E2E8F0" d="M7.5 17h10a3.8 3.8 0 0 0 .4-7.5 5 5 0 0 0-9.5 1.4A3.5 3.5 0 0 0 7.5 17z"/></svg>';
   }
 
   function lerCacheClima() {
@@ -308,6 +308,7 @@
     var tempEl = document.getElementById("ciopClimaTemp");
     var rangeEl = document.getElementById("ciopClimaRange");
     var iconEl = document.getElementById("ciopClimaIcon");
+    var descEl = document.getElementById("ciopClimaDesc");
     if (!root || !data) return;
 
     var meta = climaPorCodigo(data.code, data.isDay);
@@ -316,12 +317,17 @@
       else tempEl.textContent = grauLabel(data.temp);
     }
     if (rangeEl) rangeEl.textContent = grauLabel(data.max) + "/" + grauLabel(data.min);
-    if (iconEl) iconEl.innerHTML = iconeClimaSvg(meta.kind);
+    if (descEl) descEl.textContent = meta.desc;
+    if (iconEl) {
+      iconEl.classList.add("wx-live");
+      iconEl.innerHTML = iconeClimaSvg(meta.kind);
+    }
+    root.setAttribute("aria-label", "Previsão do tempo em Londrina: " + meta.desc);
     root.title =
       "Londrina · " +
-      grauLabel(data.temp) +
-      " · " +
       meta.desc +
+      " · " +
+      grauLabel(data.temp) +
       " · Máx " +
       grauLabel(data.max) +
       " Mín " +
