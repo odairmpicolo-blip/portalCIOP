@@ -438,23 +438,39 @@
   }
 
   function montarSheet() {
-    if (document.querySelector(".home-sheet")) return;
+    var existing = document.querySelector(".home-sheet");
+    if (existing) {
+      if (!existing.id) existing.id = "homeConteudo";
+      return;
+    }
     var header = document.querySelector("header.header");
     var toolbar = document.querySelector(".toolbar");
     var container = document.querySelector(".container");
     if (!header || !container || !header.parentNode) return;
     var sheet = document.createElement("div");
     sheet.className = "home-sheet";
+    sheet.id = "homeConteudo";
+    sheet.setAttribute("tabindex", "-1");
     header.parentNode.insertBefore(sheet, header);
     sheet.appendChild(header);
     if (toolbar) sheet.appendChild(toolbar);
     sheet.appendChild(container);
   }
 
+  function pularParaConteudo() {
+    if (document.querySelector(".home-skip")) return;
+    var skip = document.createElement("a");
+    skip.className = "home-skip";
+    skip.href = "#homeConteudo";
+    skip.textContent = "Ir para o conteúdo";
+    document.body.insertBefore(skip, document.body.firstChild);
+  }
+
   function iniciar() {
     montarNav();
     logoHome();
     montarSheet();
+    pularParaConteudo();
     montarTopo();
     montarMeta();
     montarIndicadoresNoHeader();
