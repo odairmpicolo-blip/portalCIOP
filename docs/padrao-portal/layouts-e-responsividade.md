@@ -16,13 +16,15 @@ Breakpoints **efetivos** no CSS atual (não inventar uma escala nova). Conferên
 
 ## Home
 
-- Padding do `body`: `24px 24px 48px calc(var(--home-side) + 48px)`.
-- `--home-side`: 240 px; 210 px em `max-width: 1200px`.
-- Sheet max 1720 px, radius 28 px.
-- Grid de módulos: 3 colunas; 4 col ≥1280; 5 ≥1600; 6 ≥2200; 2 ≤1200; 1 ≤600.
-- Atalhos: `minmax(160px, 1fr)`, min-height ~108–128 px (descrição com 2 linhas).
-- Hero: saudação + clima; comando (KPI + performance) na linha de baixo ≥720 px.
-- ≤900 px: sidebar vira drawer; dock fixo; padding-bottom `calc(108px + env(safe-area-inset-bottom))`.
+- Padding do `body`: `20px 20px 40px calc(var(--home-side) + 36px)`.
+- `--home-side`: **204 px** (~15% abaixo de 240); **184 px** em `max-width: 1200px`.
+- `.home-sheet` **sem vidro** (fundo transparente, sem blur): a fotografia aparece entre os componentes.
+- Grid de módulos (catálogo): **linhas compactas** 2 colunas; 3 col ≥1600; 1 col ≤900. Ícone 20 px, seta afastada (`right: 12px`), min-height 58 px — distinto dos favoritos.
+- Atalhos (6 favoritos): **3 colunas** por padrão; **6** ≥1400 px; **2** ≤899 px; **1** ≤419 px. Títulos completos; descrições curtas sem reticências.
+- Ícones ICV (prancheta + visto) e Incidentes CAD (lista com pontos) — não reutilizar o gráfico de barras.
+- Hero: saudação à esquerda; widget `.home-now` à direita (hora+data | clima), com folga antes da linha de performance. Performance (`flex: 2`) à frente das contagens; barra `.home-perf-bar`. ≤900 px o widget desce; ≤520 px hora e clima empilham.
+- Avisos: faixa baixa; rótulo pequeno; detalhe laranja de 2 px à esquerda; botão “Ver aviso”.
+- ≤900 px: sidebar vira drawer em vidro (`--home-nav`); dock fixo; padding-bottom `calc(108px + env(safe-area-inset-bottom))`.
 - ≤600 px: busca em 100% da largura; KPI em uma coluna.
 
 ## Dashboard / formulário / consulta

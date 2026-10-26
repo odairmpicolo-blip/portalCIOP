@@ -29,7 +29,7 @@ Ver [temas-e-tokens.md](temas-e-tokens.md). Conferir:
 
 Alvos 44×44 (exceções antigas ≤600 px na home ainda apertam alguns controles — não copiar isso em página nova).
 
-`prefers-reduced-motion: reduce`: `--portal-duration: 0.01ms`; home/DS `animation: none`; KPI sem tween; clima da home deve parar (respeitar o media nas animações novas).
+`prefers-reduced-motion: reduce`: `--portal-duration: 0.01ms`; home/DS `animation: none`; KPI sem tween. O widget de clima da home **não** anima o ícone (nem no movimento completo). O sol usa poço navy + traço para contraste sobre a fotografia.
 
 ## Gráficos
 

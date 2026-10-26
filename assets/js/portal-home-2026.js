@@ -391,6 +391,21 @@
       var block = document.getElementById("homePerfKpis");
       if (block) {
         block.setAttribute("aria-label", "Performance TCGL: " + fmtPct(tcgl.onTimePercent) + " no horário, " + fmtPct(tcgl.earlyPercent) + " adiantado, " + fmtPct(tcgl.latePercent) + " atrasado");
+        var bar = block.querySelector(".home-perf-bar");
+        if (!bar) {
+          bar = document.createElement("span");
+          bar.className = "home-perf-bar";
+          bar.setAttribute("aria-hidden", "true");
+          bar.innerHTML = '<i class="is-ok"></i><i class="is-early"></i><i class="is-late"></i>';
+          block.appendChild(bar);
+        }
+        var ok = Math.max(0, Number(tcgl.onTimePercent) || 0);
+        var early = Math.max(0, Number(tcgl.earlyPercent) || 0);
+        var late = Math.max(0, Number(tcgl.latePercent) || 0);
+        var segs = bar.querySelectorAll("i");
+        if (segs[0]) segs[0].style.flexGrow = String(ok);
+        if (segs[1]) segs[1].style.flexGrow = String(early);
+        if (segs[2]) segs[2].style.flexGrow = String(late);
       }
     }).catch(function () {});
   }
@@ -416,8 +431,8 @@
     var wrap = document.createElement("div");
     wrap.className = "home-command";
     wrap.setAttribute("aria-label", "Central de comando");
-    if (stats) wrap.appendChild(stats);
     if (perf) wrap.appendChild(perf);
+    if (stats) wrap.appendChild(stats);
     var meta = hero.querySelector(".home-meta");
     if (meta && meta.nextSibling) hero.insertBefore(wrap, meta.nextSibling);
     else hero.appendChild(wrap);
@@ -427,13 +442,19 @@
     var hero = document.getElementById("headerHero");
     if (!hero || hero.querySelector(".home-meta")) return;
     var meta = document.createElement("div");
-    meta.className = "home-meta";
+    meta.className = "home-meta home-now";
+    var time = document.createElement("div");
+    time.className = "home-now-time";
     var hora = document.querySelector(".ciop-kpi-hora");
     var data = document.querySelector(".ciop-kpi-data");
     var clima = document.querySelector(".ciop-kpi-clima");
-    if (hora) meta.appendChild(hora);
-    if (data) meta.appendChild(data);
-    if (clima) meta.appendChild(clima);
+    if (hora) time.appendChild(hora);
+    if (data) time.appendChild(data);
+    meta.appendChild(time);
+    if (clima) {
+      clima.classList.add("home-now-wx");
+      meta.appendChild(clima);
+    }
     hero.appendChild(meta);
   }
 
@@ -487,10 +508,10 @@
     wrap.innerHTML =
       '<div class="home-quick-head"><h2>Acessos rápidos</h2></div>' +
       '<section class="home-quick" id="homeQuick">' +
-      '<a href="pages/monitoramento.html">' + ICO.monitor + "<strong>Monitoramento</strong><span>Acompanhe a operação</span></a>" +
-      '<a href="pages/Folhadeservico1.html">' + ICO.servico + "<strong>Lançar serviço</strong><span>Registre um novo serviço</span></a>" +
-      '<a href="pages/liberacao-lancamento.html">' + ICO.liberacao + "<strong>Liberação</strong><span>Acompanhe as liberações</span></a>" +
-      '<a href="pages/criar-relatorio.html">' + ICO.relatorio + "<strong>Criar relatório</strong><span>Gere relatórios operacionais</span></a>" +
+      '<a href="pages/monitoramento.html">' + ICO.monitor + "<strong>Monitoramento</strong><span>Operação ao vivo</span></a>" +
+      '<a href="pages/Folhadeservico1.html">' + ICO.servico + "<strong>Lançar serviço</strong><span>Novo lançamento</span></a>" +
+      '<a href="pages/liberacao-lancamento.html">' + ICO.liberacao + "<strong>Liberação</strong><span>Fila de liberações</span></a>" +
+      '<a href="pages/criar-relatorio.html">' + ICO.relatorio + "<strong>Criar relatório</strong><span>Novo relatório</span></a>" +
       "</section>" +
       '<div class="home-mods-head"><h2>Módulos da operação</h2></div>';
     abas.parentNode.insertBefore(wrap, abas);
@@ -654,6 +675,19 @@
   document.querySelectorAll("#homeOutros .side-link").forEach(function (link) {
     linksObserver.observe(link, { attributes: true, attributeFilter: ["hidden", "style", "class"] });
   });
+  function compactarAvisos() {
+    var board = document.querySelector(".notice-board");
+    if (!board || board.querySelector(".notice-open")) return;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "notice-open";
+    btn.textContent = "Ver aviso";
+    btn.addEventListener("click", function () {
+      if (window.portalHomeSettings && window.portalHomeSettings.openNotices) window.portalHomeSettings.openNotices();
+    });
+    board.appendChild(btn);
+  }
+  compactarAvisos();
   document.getElementById("ciopBuscaModulos")?.addEventListener("input", filtrarOutros);
   document.getElementById("ciopBuscaLimpar")?.addEventListener("click", function () { setTimeout(filtrarOutros, 0); });
   document.addEventListener("keydown", function (event) {

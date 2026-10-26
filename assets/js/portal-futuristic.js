@@ -22,20 +22,28 @@
 
   function dataCurtaLabel() {
     const d = new Date();
-    const weekday = d.toLocaleDateString("pt-BR", { weekday: "short", timeZone: "America/Sao_Paulo" }).replace(/\./g, "");
+    const weekday = d.toLocaleDateString("pt-BR", { weekday: "long", timeZone: "America/Sao_Paulo" });
     const day = d.toLocaleDateString("pt-BR", { day: "numeric", timeZone: "America/Sao_Paulo" });
-    const month = d.toLocaleDateString("pt-BR", { month: "short", timeZone: "America/Sao_Paulo" }).replace(/\./g, "");
+    const month = d.toLocaleDateString("pt-BR", { month: "long", timeZone: "America/Sao_Paulo" });
     const wd = weekday.charAt(0).toUpperCase() + weekday.slice(1);
-    const mo = month.charAt(0).toLowerCase() + month.slice(1);
-    return wd + ", " + day + " " + mo;
+    return wd + ", " + day + " de " + month;
   }
 
   function horaLabel() {
-    return new Date().toLocaleTimeString("pt-BR", {
+    var parts = new Intl.DateTimeFormat("pt-BR", {
       timeZone: "America/Sao_Paulo",
       hour: "2-digit",
       minute: "2-digit",
+      hour12: false,
+      hourCycle: "h23",
+    }).formatToParts(new Date());
+    var h = "00";
+    var m = "00";
+    parts.forEach(function (p) {
+      if (p.type === "hour") h = p.value.padStart(2, "0");
+      if (p.type === "minute") m = p.value.padStart(2, "0");
     });
+    return h + ":" + m;
   }
 
   function reduzirMovimento() {
@@ -121,7 +129,7 @@
 
   function ligarContagemPagina() {
     var sel = ".kpi-value, .kpi-card .val, .stat-card .val, .card-value, .ciop-kpi-num";
-    var skip = { ciopKpiHora: 1, ciopKpiData: 1 };
+    var skip = { ciopKpiHora: 1, ciopKpiData: 1, ciopClimaTemp: 1 };
     function aplicar(el) {
       if (!el || skip[el.id]) return;
       if (el.closest && el.closest(".paper, .leaflet-container")) return;
@@ -286,14 +294,28 @@
     return '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="wx-cloud" fill="#E2E8F0" d="M7.5 17h10a3.8 3.8 0 0 0 .4-7.5 5 5 0 0 0-9.5 1.4A3.5 3.5 0 0 0 7.5 17z"/></svg>';
   }
 
-  function lerCacheClima() {
+  function horaCurtaDeIso(iso) {
+    var m = String(iso || "").match(/T(\d{2}):(\d{2})/);
+    if (m) return m[1] + ":" + m[2];
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleTimeString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      hourCycle: "h23",
+    });
+  }
+
+  function lerPacoteClima() {
     try {
       var raw = sessionStorage.getItem(CLIMA_CACHE_KEY);
       if (!raw) return null;
       var parsed = JSON.parse(raw);
-      if (!parsed || !parsed.ts || !parsed.data) return null;
-      if (Date.now() - parsed.ts > CLIMA_TTL_MS) return null;
-      return parsed.data;
+      if (!parsed || !parsed.data) return null;
+      return parsed;
     } catch (_) {
       return null;
     }
@@ -305,19 +327,41 @@
     } catch (_) {}
   }
 
-  function aplicarClima(data) {
+  function marcarClimaIndisponivel() {
+    var root = document.getElementById("ciopKpiClima");
+    var tempEl = document.getElementById("ciopClimaTemp");
+    var rangeEl = document.getElementById("ciopClimaRange");
+    var descEl = document.getElementById("ciopClimaDesc");
+    var stampEl = document.getElementById("ciopClimaStamp");
+    var iconEl = document.getElementById("ciopClimaIcon");
+    if (!root) return;
+    root.classList.add("is-unavailable");
+    root.dataset.live = "0";
+    if (tempEl) tempEl.textContent = "—";
+    if (rangeEl) rangeEl.textContent = "";
+    if (descEl) descEl.textContent = "Clima indisponível";
+    if (stampEl) stampEl.textContent = "";
+    if (iconEl) {
+      iconEl.className = "ciop-clima-icon wx-live is-off";
+      iconEl.innerHTML = iconeClimaSvg("cloudy");
+    }
+    root.setAttribute("aria-label", "Abrir previsão completa do tempo em Londrina. Clima indisponível no momento.");
+  }
+
+  function aplicarClima(data, opts) {
     var root = document.getElementById("ciopKpiClima");
     var tempEl = document.getElementById("ciopClimaTemp");
     var rangeEl = document.getElementById("ciopClimaRange");
     var iconEl = document.getElementById("ciopClimaIcon");
     var descEl = document.getElementById("ciopClimaDesc");
+    var stampEl = document.getElementById("ciopClimaStamp");
     if (!root || !data) return;
 
     var meta = climaPorCodigo(data.code, data.isDay);
-    if (tempEl) {
-      if (Number.isFinite(data.temp)) setKpiNumero(tempEl, Math.round(data.temp), { suffix: "°", delay: 0.05 });
-      else tempEl.textContent = grauLabel(data.temp);
-    }
+    var stale = !!(opts && opts.stale);
+    root.classList.toggle("is-unavailable", false);
+    root.classList.toggle("is-stale", stale);
+    if (tempEl) tempEl.textContent = Number.isFinite(data.temp) ? Math.round(data.temp) + "°" : "—";
     if (rangeEl) {
       rangeEl.innerHTML =
         '<span class="ciop-clima-min"><small>Mín</small><b>' +
@@ -335,30 +379,30 @@
       iconEl.className = "ciop-clima-icon wx-live is-" + grupo;
       iconEl.innerHTML = iconeClimaSvg(meta.kind);
     }
-    root.setAttribute("aria-label", "Previsão do tempo em Londrina: " + meta.desc);
-    root.title =
-      "Londrina · " +
-      meta.desc +
-      " · " +
-      grauLabel(data.temp) +
-      " · Máx " +
-      grauLabel(data.max) +
-      " Mín " +
-      grauLabel(data.min);
-    root.dataset.live = "1";
+    var horaObs = horaCurtaDeIso(data.observedAt);
+    if (stampEl) {
+      if (stale && horaObs) stampEl.textContent = "Última atualização às " + horaObs;
+      else if (horaObs) stampEl.textContent = "Atualizado às " + horaObs;
+      else stampEl.textContent = stale ? "Dados antigos" : "";
+    }
+    var frase = "Abrir previsão completa do tempo em Londrina. Agora: " + meta.desc + ", " + grauLabel(data.temp);
+    if (stale && horaObs) frase += ". Última atualização às " + horaObs;
+    root.setAttribute("aria-label", frase);
+    root.title = frase;
+    root.dataset.live = stale ? "stale" : "1";
   }
 
   function buscarClimaLondrina(force) {
     var root = document.getElementById("ciopKpiClima");
     if (!root) return Promise.resolve();
+    var pacote = lerPacoteClima();
+    var fresco = pacote && pacote.ts && Date.now() - pacote.ts <= CLIMA_TTL_MS;
 
-    if (!force) {
-      var cached = lerCacheClima();
-      if (cached) {
-        aplicarClima(cached);
-        return Promise.resolve(cached);
-      }
+    if (!force && fresco) {
+      aplicarClima(pacote.data, { stale: false });
+      return Promise.resolve(pacote.data);
     }
+    if (pacote && pacote.data) aplicarClima(pacote.data, { stale: !fresco });
 
     var url =
       "https://api.open-meteo.com/v1/forecast" +
@@ -376,21 +420,26 @@
         return res.json();
       })
       .then(function (json) {
+        var current = json && json.current;
+        if (!current || !Number.isFinite(Number(current.temperature_2m))) throw new Error("clima sem observação atual");
         var data = {
-          temp: Number(json?.current?.temperature_2m),
-          code: Number(json?.current?.weather_code),
-          isDay: json?.current?.is_day === 1 ? true : json?.current?.is_day === 0 ? false : undefined,
+          temp: Number(current.temperature_2m),
+          code: Number(current.weather_code),
+          isDay: current.is_day === 1 ? true : current.is_day === 0 ? false : undefined,
           max: Number(json?.daily?.temperature_2m_max?.[0]),
           min: Number(json?.daily?.temperature_2m_min?.[0]),
+          observedAt: current.time || null,
         };
         gravarCacheClima(data);
-        aplicarClima(data);
+        aplicarClima(data, { stale: false });
         return data;
       })
       .catch(function () {
-        if (root.dataset.live === "1") return null;
-        var rangeEl = document.getElementById("ciopClimaRange");
-        if (rangeEl) rangeEl.textContent = "—";
+        if (pacote && pacote.data) {
+          aplicarClima(pacote.data, { stale: true });
+          return pacote.data;
+        }
+        marcarClimaIndisponivel();
         return null;
       });
   }
@@ -448,6 +497,7 @@
 
   function enhanceDuotoneIcons() {
     if (document.body.classList.contains("oa-page")) return;
+    if (document.documentElement.classList.contains("portal-home-2026")) return;
     const ns = "http://www.w3.org/2000/svg";
 
     document.querySelectorAll(".grid .card-figure svg").forEach(function (svg, index) {

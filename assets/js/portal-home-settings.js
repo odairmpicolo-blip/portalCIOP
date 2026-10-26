@@ -104,9 +104,28 @@
       var icon = source.querySelector('.card-figure svg');
       if (icon) link.appendChild(icon.cloneNode(true));
       var title = document.createElement('strong');
-      title.textContent = source.querySelector('.card-title')?.textContent.trim() || 'Abrir módulo';
+      var titleText = source.querySelector('.card-title')?.textContent.trim() || 'Abrir módulo';
+      title.textContent = titleText;
       var description = document.createElement('span');
-      description.textContent = source.querySelector('.card-desc')?.textContent.trim() || 'Acessar módulo';
+      var SHORT = {
+        'ICV': 'Cumprimento de viagem',
+        'Incidentes CAD': 'Relatório CAD',
+        'Monitoramento': 'Operação ao vivo',
+        'Monitoramento Ao Vivo': 'Operação ao vivo',
+        'Lançar serviço': 'Novo lançamento',
+        'Lançar Serviço': 'Novo lançamento',
+        'Liberação': 'Fila de liberações',
+        'Criar relatório': 'Novo relatório',
+        'Criar Relatório': 'Novo relatório',
+        'IPV': 'Pontualidade das viagens',
+        'Autuações': 'Consulta de autuações',
+        'Dashboard de Serviço': 'Indicadores da folha',
+        'pages/criar-relatorio.html': 'Novo relatório',
+        'pages/criar-relatoriov2.html': 'Novo relatório'
+      };
+      var raw = source.querySelector('.card-desc')?.textContent.replace(/\s+/g, ' ').trim() || 'Acessar módulo';
+      var hrefKey = (source.getAttribute('href') || '').replace(/^\.\.\//, '');
+      description.textContent = SHORT[titleText] || SHORT[hrefKey] || (raw.length > 42 ? raw.slice(0, raw.lastIndexOf(' ', 40) || 40) : raw);
       link.append(title, description);
       quick.appendChild(link);
     });

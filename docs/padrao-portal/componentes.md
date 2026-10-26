@@ -28,7 +28,7 @@ Voltar ao Portal: `.btn-portal` / `.portal-return` / `data-portal-voltar`. Se a 
 
 ## Menu lateral e navegação móvel
 
-**Só a home.** Sidebar fixa (`--home-side`: 240 px, 210 px ≤1200 px). Abaixo de 900 px: drawer + dock inferior (`.home-dock`, padding inferior `108px + env(safe-area-inset-bottom)`).
+**Só a home.** Sidebar fixa (`--home-side`: 204 px, 184 px ≤1200 px), vidro `--home-nav` (não opaco). Logo ≤148×78, proporção preservada. Só a área atual `.is-active`. Hover, `:focus-visible` e seleção são estados distintos. Campanha compacta; indicador “sistema online” permanece. Abaixo de 900 px: drawer + dock inferior (`.home-dock`, padding inferior `108px + env(safe-area-inset-bottom)`).
 
 Hamburger `.menu-toggle` 44×44, SVG de três linhas. Overlay `#overlay`.
 
@@ -44,7 +44,7 @@ Consultas (veículo/funcionário/SEI): campo da própria página + classes `.cv-
 
 ## Cards de módulos e favoritos
 
-Home: `a.card` (módulos) e `.home-quick a` (atalhos / favoritos pessoais, até 6, gravados no diálogo de ajustes — `portal-home-settings.js`). Visibilidade: `data-modulo`, `data-perfis`, `data-usuarios`; `auth.js` aplica `.portal-card-visivel`.
+Home: `a.card` (catálogo em linha compacta) e `.home-quick a` (atalhos / favoritos pessoais, até 6, gravados no diálogo de ajustes — `portal-home-settings.js`). Descrições dos favoritos são encurtadas no `refresh()`; títulos permanecem completos. Visibilidade: `data-modulo`, `data-perfis`, `data-usuarios`; `auth.js` aplica `.portal-card-visivel`.
 
 Não inventar card na home sem permissão.
 
@@ -62,9 +62,24 @@ Padrão de markup (ICV, IPV, dashboards):
 
 Home: `.ciop-kpi` / `.home-header-stats` / `.home-perf-item`. Números `white-space: nowrap` + `tabular-nums` no DS. Adiantado/atrasado: [cores-operacionais.md](cores-operacionais.md).
 
+## Widget hora e clima (home)
+
+Um único vidro `.home-meta.home-now` à direita da saudação (`montarMeta` em `portal-home-2026.js`).
+
+| Bloco | Conteúdo |
+| --- | --- |
+| `.home-now-time` | Hora `HH:mm` (`#ciopKpiHora`, `America/Sao_Paulo`, sem segundos, `tabular-nums`, largura fixa `5.6ch`) e data por extenso (`#ciopKpiData`: “Segunda-feira, 26 de outubro”) |
+| `.home-now-wx` | Link para a previsão Climatempo (`aria-label` “Abrir previsão completa…”). Rótulo “Clima agora · Londrina”, ícone + temperatura atual, descrição, mín/máx do dia, horário da observação |
+
+Fonte: Open-Meteo já usada (`current.temperature_2m`, `current.weather_code`, `current.is_day`; `daily` só para mín/máx). Não tratar a previsão diária como o valor “agora”.
+
+Estados: dado fresco (“Atualizado às HH:mm”); cache antigo (`.is-stale`, “Última atualização às HH:mm”); falha sem cache (`.is-unavailable`, “Clima indisponível”). Ícone do sol com poço escuro e traço, para contrastar com a foto alaranjada. Sem animação contínua no widget.
+
+Responsivo: ≤900 px o widget vai para baixo da saudação; ≤520 px os dois blocos empilham. A busca e a sessão no topo não entram nesse grid.
+
 ## Avisos e notificações
 
-Home: `.notice-board` + carrossel `.notice-item`; sino `.home-bell` + `#homeNoticesDialog`. Toast `#homeSettingsToast`. Não usar o laranja de aviso no lugar de Atrasado.
+Home: `.notice-board` compacto (título + mensagem no centro; rótulo “Avisos” reduzido) + carrossel `.notice-item`; acento laranja de 2 px, não moldura. Botão `.notice-open` (“Ver aviso”) abre `#homeNoticesDialog`. Sino `.home-bell`. Toast `#homeSettingsToast`. Não usar o laranja de aviso no lugar de Atrasado.
 
 ## Botões e links
 

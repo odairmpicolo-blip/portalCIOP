@@ -13,7 +13,7 @@
 | Rodapé texto | `portal-footer.js` | |
 | Esta documentação | `docs/padrao-portal/` | Índice + catálogo se o componente mudou |
 
-Bump de cache vigente na modernização: `?v=20261026liquid1` (tokens) e `liquid2` (DS / toggle / home). Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no `script.src` do inject (`theme-toggle.js`, `portal-design-system.js`, `auth.js`).
+Bump de cache vigente: tokens `?v=20261026liquid1`; home CSS `?v=20261026now3`, JS `now1`. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no `script.src` do inject (`theme-toggle.js`, `portal-design-system.js`, `auth.js`).
 
 ## Impacto
 
@@ -35,7 +35,9 @@ Bump de cache vigente na modernização: `?v=20261026liquid1` (tokens) e `liquid
 | --- | --- | --- |
 | 2026-08 | Fase 6: Inter, tokens iniciais, TV sem login | `docs/fase-6-interface.md` |
 | 2026-10 | Chrome único: logo limpo, hamburger 44 px, botões, contraste | commit `50cd12c7`; `docs/interface/` |
-| 2026-10 | Liquid Glass: tokens semânticos, três temas, foto visível, op-early/late, DS nas internas, ICV, fallback blur | working tree `portal-teste` (não publicado até a redação deste guia) |
+| 2026-10 | Liquid Glass: tokens semânticos, três temas, foto visível, op-early/late, DS nas internas, ICV, fallback blur | publicado em teste `8403790d` / prod `b601e8147` |
+| 2026-10 | Home rodada 2: sheet transparente, vidro só em nav/cards/avisos, blur 8 px, sidebar 204 px, catálogo em linhas, ICV/CAD ícones próprios, barra de performance | `portal-teste` (não publicar sem pedido) |
+| 2026-10 | Widget hora+clima: um vidro, data por extenso, observação Open-Meteo atual vs mín/máx, estados indisponível/antigo | `portal-teste` |
 
 ## Responsável
 
