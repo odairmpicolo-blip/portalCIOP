@@ -407,6 +407,22 @@
     if (!perfTimer) perfTimer = setInterval(carregarPerfTcgl, 15000);
   }
 
+  function montarCommandStrip() {
+    var hero = document.getElementById("headerHero");
+    if (!hero || hero.querySelector(".home-command")) return;
+    var stats = hero.querySelector(".home-header-stats");
+    var perf = hero.querySelector(".home-perf");
+    if (!stats && !perf) return;
+    var wrap = document.createElement("div");
+    wrap.className = "home-command";
+    wrap.setAttribute("aria-label", "Central de comando");
+    if (stats) wrap.appendChild(stats);
+    if (perf) wrap.appendChild(perf);
+    var meta = hero.querySelector(".home-meta");
+    if (meta && meta.nextSibling) hero.insertBefore(wrap, meta.nextSibling);
+    else hero.appendChild(wrap);
+  }
+
   function montarMeta() {
     var hero = document.getElementById("headerHero");
     if (!hero || hero.querySelector(".home-meta")) return;
@@ -585,6 +601,7 @@
     montarMeta();
     montarIndicadoresNoHeader();
     montarPerformanceNoHeader();
+    montarCommandStrip();
     lead();
     montarAtalhos();
     window.portalHomeSettings?.init();
