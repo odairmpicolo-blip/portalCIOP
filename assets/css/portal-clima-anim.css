@@ -102,13 +102,30 @@
 }
 .wx-fx.is-sun .wx-sky {
   background:
-    radial-gradient(ellipse 70% 55% at 82% 12%, rgba(255, 214, 102, .55), transparent 58%),
-    linear-gradient(180deg, #1d5fa8 0%, #3b97dc 36%, #f0c56a 72%, #e0893a 100%);
+    radial-gradient(ellipse 42% 38% at 86% 10%, rgba(255, 214, 102, .28), transparent 58%),
+    linear-gradient(180deg, #1a6bb8 0%, #3b97dc 42%, #7eb7e4 100%);
+}
+.wx-fx.is-sun.is-night .wx-sky {
+  background:
+    radial-gradient(ellipse 36% 28% at 84% 12%, rgba(226, 232, 240, .16), transparent 55%),
+    linear-gradient(180deg, #070b22 0%, #12183a 48%, #1a2150 100%);
 }
 .wx-fx.is-partly .wx-sky {
   background:
-    radial-gradient(ellipse 50% 42% at 86% 8%, rgba(255, 220, 140, .4), transparent 60%),
-    linear-gradient(180deg, #3a6fa8 0%, #6b93b8 42%, #9eb4c8 100%);
+    radial-gradient(ellipse 36% 30% at 86% 8%, rgba(255, 220, 140, .22), transparent 60%),
+    linear-gradient(180deg, #2f6aa6 0%, #5b8fbc 48%, #8aa9c4 100%);
+}
+.wx-fx.is-partly.is-night .wx-sky {
+  background:
+    radial-gradient(ellipse 30% 24% at 84% 10%, rgba(226, 232, 240, .1), transparent 58%),
+    linear-gradient(180deg, #0a1028 0%, #1a2448 52%, #243056 100%);
+}
+.wx-fx.is-night.is-cloud .wx-sky,
+.wx-fx.is-night.is-rain .wx-sky,
+.wx-fx.is-night.is-storm .wx-sky,
+.wx-fx.is-night.is-fog .wx-sky,
+.wx-fx.is-night.is-snow .wx-sky {
+  filter: brightness(.78);
 }
 .wx-fx.is-cloud .wx-sky {
   background: linear-gradient(180deg, #445870 0%, #62758c 40%, #8a9aab 100%);
@@ -128,33 +145,46 @@
 
 .wx-sun {
   position: absolute;
-  width: min(32vw, 320px);
-  height: min(32vw, 320px);
-  right: 7%;
-  top: 4%;
+  width: min(18vw, 168px);
+  height: min(18vw, 168px);
+  right: 8%;
+  top: 6%;
   border-radius: 50%;
   background: radial-gradient(circle at 38% 36%, #fff8e1 0%, #ffe082 28%, #f5b942 58%, rgba(245, 158, 11, 0) 72%);
-  box-shadow: 0 0 90px 36px rgba(250, 204, 21, .28);
-  animation: wx-pulse 4.2s ease-in-out infinite;
+  box-shadow: 0 0 36px 10px rgba(250, 204, 21, .18);
+  opacity: .82;
 }
 .wx-sun.is-soft {
-  width: min(22vw, 210px);
-  height: min(22vw, 210px);
-  opacity: .85;
-  filter: saturate(.9);
+  width: min(14vw, 128px);
+  height: min(14vw, 128px);
+  opacity: .7;
+  filter: saturate(.85);
 }
-.wx-sun-rays-bg {
+.wx-moon-disc {
   position: absolute;
-  width: 85vmax;
-  height: 85vmax;
-  right: -28%;
-  top: -42%;
-  background: repeating-conic-gradient(from 0deg, rgba(255, 224, 130, .16) 0 7deg, transparent 7deg 20deg);
-  -webkit-mask-image: radial-gradient(circle, #000 0 26%, transparent 64%);
-  mask-image: radial-gradient(circle, #000 0 26%, transparent 64%);
-  animation: wx-spin 56s linear infinite;
+  width: min(12vw, 112px);
+  height: min(12vw, 112px);
+  right: 9%;
+  top: 8%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 32%, #f8fafc 0%, #cbd5e1 42%, #94a3b8 70%, rgba(148, 163, 184, 0) 72%);
+  box-shadow: 0 0 28px 8px rgba(226, 232, 240, .16);
+  opacity: .88;
 }
-.wx-sun-rays-bg.is-soft { opacity: .45; }
+.wx-moon-disc.is-soft { opacity: .62; width: min(10vw, 96px); height: min(10vw, 96px); }
+.wx-stars {
+  position: absolute;
+  inset: 0;
+  opacity: .55;
+  background-image:
+    radial-gradient(1.2px 1.2px at 12% 18%, rgba(255,255,255,.85), transparent),
+    radial-gradient(1px 1px at 28% 32%, rgba(255,255,255,.55), transparent),
+    radial-gradient(1.4px 1.4px at 63% 14%, rgba(255,255,255,.7), transparent),
+    radial-gradient(1px 1px at 78% 28%, rgba(255,255,255,.45), transparent),
+    radial-gradient(1.2px 1.2px at 88% 48%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1px 1px at 42% 8%, rgba(255,255,255,.4), transparent);
+}
+.wx-sun-rays-bg { display: none; }
 
 .wx-cloud-soft,
 .wx-cloud-mass,
@@ -254,7 +284,11 @@
 }
 .wx[data-wx="sun"] .wx-temp {
   color: #fff8e1;
-  text-shadow: 0 8px 36px rgba(245, 158, 11, .5);
+  text-shadow: 0 4px 18px rgba(0, 0, 0, .45);
+}
+.wx[data-period="night"] .wx-temp {
+  color: #f8fafc;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, .55);
 }
 .wx[data-wx="sun"] .wx-icon {
   filter: drop-shadow(0 0 26px rgba(250, 204, 21, .55));
@@ -294,6 +328,21 @@
   from { transform: translate3d(0, -10%, 0) rotate(12deg); }
   to { transform: translate3d(18px, 780%, 0) rotate(12deg); }
 }
+
+.wx .wx-sun-rays,
+.wx .wx-sun-core,
+.tv-card-weather .wx-sun-rays,
+.tv-card-weather .wx-sun-core,
+.wx-fx .wx-sun,
+.wx-fx .wx-cloud-soft,
+.wx-fx .wx-cloud-mass,
+.wx-fx .wx-fog-bank,
+.wx-fx .wx-raindrop,
+.wx-fx .wx-lightning,
+.wx-fx .wx-snow {
+  animation: none;
+}
+.wx-fx .wx-raindrop { opacity: .5; }
 
 html#portal-home.portal-home-2026 .home-meta .ciop-clima-icon {
   width: 1.55rem;

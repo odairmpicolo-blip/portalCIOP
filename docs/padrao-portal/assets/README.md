@@ -18,5 +18,8 @@ Imagens do [catálogo](../catalogo.html) com **dados fictícios** (linha 999, pr
 | `home-now-claro-desktop.png` | Widget hora + clima agora, tema claro |
 | `seletor-modelo-claro.png` | Seletor de modelo aberto (criar relatório), tema claro |
 | `seletor-modelo-escuro.png` | O mesmo seletor no tema escuro (seleção azul, texto claro) |
+| `pontualidade-kpi-claro.png` | Pontualidade: KPIs, seletor 2/6–1/3 e tabela, tema claro |
+| `pontualidade-kpi-escuro.png` | O mesmo recorte no tema escuro (fill = color; Adiantado vermelho, Atrasado âmbar) |
+| `painel-ciop-clima-noite.png` | Painel CIOP TV: céu limpo à noite com lua genérica, colunas horárias e “Agora” |
 
 Ao mudar o padrão visual compartilhado, recapturar estas imagens e atualizar o `.md` correspondente.

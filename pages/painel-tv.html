@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&display=swap">
-<link rel="stylesheet" href="../assets/css/portal-clima-anim.css?v=20261023cena1">
-<script src="../assets/js/portal-clima-cena.js?v=20261023cena1"></script>
+<link rel="stylesheet" href="../assets/css/portal-clima-anim.css?v=20261026wx1">
+<script src="../assets/js/portal-clima-cena.js?v=20261026wx1"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
   :root{
@@ -298,7 +298,7 @@
   /* ===== Previsão do Tempo ===== */
   .tv-wx{ display:inline-flex; align-items:center; justify-content:center; line-height:0; }
   .tv-wx svg{ width:1em; height:1em; display:block; }
-  .tv-weather-today-icon.tv-wx{ font-size:clamp(52px,6vw,84px); filter:drop-shadow(0 0 22px rgba(14,165,233,.45)); }
+  .tv-weather-today-icon.tv-wx{ font-size:clamp(40px,4.6vw,64px); filter:drop-shadow(0 4px 12px rgba(0,0,0,.35)); }
   .tv-forecast-day-icon.tv-wx{ font-size:clamp(24px,2.6vw,36px); }
   .kiosk-footer-weather-icon.tv-wx{ font-size:clamp(20px,1.7vw,28px); }
   .tv-forecast-days{ display:grid; grid-template-columns:repeat(5,1fr); gap:clamp(8px,1.2vw,16px); margin-top:clamp(16px,2.4vh,26px); }
@@ -956,7 +956,7 @@ const MESES_COMPLETOS = ["janeiro","fevereiro","março","abril","maio","junho","
 const ANO_FIXO = "2026";
 
 const CLIMA_LAT = -23.3045, CLIMA_LON = -51.1696;
-const CLIMA_URL = `https://api.open-meteo.com/v1/forecast?latitude=${CLIMA_LAT}&longitude=${CLIMA_LON}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo&forecast_days=1`;
+const CLIMA_URL = `https://api.open-meteo.com/v1/forecast?latitude=${CLIMA_LAT}&longitude=${CLIMA_LON}&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=America%2FSao_Paulo&forecast_days=1`;
 const CLIMA_REFRESH_MS = 15 * 60 * 1000;
 const CLIMA_ICONES = {
   0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",
@@ -984,29 +984,15 @@ function formatInt(v) {
 function formatKm(v) {
   return Math.round(Number(v) || 0).toLocaleString("pt-BR") + " km";
 }
-function grupoClima(code) {
-  const c = Number(code);
-  if (c === 0 || c === 1) return "sun";
-  if (c === 2 || c === 3) return "cloud";
-  if (c === 45 || c === 48) return "fog";
-  if ([71, 73, 75, 77, 85, 86].includes(c)) return "snow";
-  if ([82, 95, 96, 99].includes(c)) return "storm";
-  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81].includes(c)) return "rain";
-  return "cloud";
+function climaSvg(code, extraClass, isDay) {
+  if (window.portalClimaSvg) return window.portalClimaSvg(code, extraClass, isDay);
+  return "";
 }
-function climaSvg(code, extraClass) {
-  const icons = {
-    sun: '<svg viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="1.8" stroke-linecap="round"><g class="wx-sun-rays"><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g><circle class="wx-sun-core" cx="12" cy="12" r="4" fill="rgba(250,204,21,.4)"/></svg>',
-    cloud: '<svg viewBox="0 0 24 24" fill="rgba(186,230,253,.2)" stroke="#7dd3fc" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path class="wx-cloud" d="M7 18h10a4 4 0 0 0 0-8 6 6 0 0 0-11.3-1.5A3.5 3.5 0 0 0 7 18z"/></svg>',
-    rain: '<svg viewBox="0 0 24 24" fill="none" stroke="#7dd3fc" stroke-width="1.8" stroke-linecap="round"><path class="wx-cloud" d="M7 16h10a4 4 0 0 0 0-8 6 6 0 0 0-11.3-1.5A3.5 3.5 0 0 0 7 16z" fill="rgba(186,230,253,.18)"/><path class="wx-drop" d="M8 19v2" stroke="#38bdf8"/><path class="wx-drop" d="M12 18v3" stroke="#38bdf8"/><path class="wx-drop" d="M16 19v2" stroke="#38bdf8"/></svg>',
-    storm: '<svg viewBox="0 0 24 24" fill="none" stroke="#7dd3fc" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path class="wx-cloud" d="M7 15h10a4 4 0 0 0 0-8 6 6 0 0 0-11.3-1.5A3.5 3.5 0 0 0 7 15z" fill="rgba(186,230,253,.18)"/><path class="wx-bolt" d="M11 15l-2 4h3l-1 3" stroke="#facc15"/></svg>',
-    fog: '<svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round"><path class="wx-fog-line" d="M4 10h16"/><path class="wx-fog-line" d="M6 14h12"/><path class="wx-fog-line" d="M8 18h8"/></svg>',
-    snow: '<svg viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="1.8" stroke-linecap="round"><path class="wx-cloud" d="M7 14h10a4 4 0 0 0 0-8 6 6 0 0 0-11.3-1.5A3.5 3.5 0 0 0 7 14z" fill="rgba(226,232,240,.2)"/><circle class="wx-flake" cx="8.5" cy="18.5" r="1" fill="#e2e8f0"/><circle class="wx-flake" cx="12" cy="19.5" r="1.1" fill="#e2e8f0"/><circle class="wx-flake" cx="15.5" cy="18.5" r="1" fill="#e2e8f0"/></svg>'
-  };
-  return `<span class="tv-wx wx-live ${extraClass || ""}">${icons[grupoClima(code)]}</span>`;
+function marcarCenaClima(code, fxId, isDay) {
+  if (window.portalMarcarCenaClima) window.portalMarcarCenaClima(code, fxId, isDay);
 }
-function marcarCenaClima(code, fxId) {
-  if (window.portalMarcarCenaClima) window.portalMarcarCenaClima(code, fxId);
+function climaEhDia(opts) {
+  return window.portalClimaEhDia ? window.portalClimaEhDia(opts) : true;
 }
 function labelMes(chaveAnoMes) {
   const [y, m] = String(chaveAnoMes).split("-");
@@ -1172,7 +1158,14 @@ async function carregarClima() {
     if (temp == null) throw new Error("sem dados de clima");
     const label = CLIMA_LABEL[cod] || "";
     const detalhe = (max != null && min != null) ? `${label} · máx ${Math.round(max)}° mín ${Math.round(min)}°` : label;
-    if (el) el.innerHTML = climaSvg(cod, "kiosk-footer-weather-icon") + `<span>${Math.round(temp)}°C <span class="kiosk-footer-weather-detalhe">${detalhe}</span></span>`;
+    const dia = climaEhDia({
+      isDay: data?.current?.is_day,
+      atMs: Date.now(),
+      dates: data?.daily?.time,
+      sunrises: data?.daily?.sunrise,
+      sunsets: data?.daily?.sunset
+    });
+    if (el) el.innerHTML = climaSvg(cod, "kiosk-footer-weather-icon", dia) + `<span>${Math.round(temp)}°C <span class="kiosk-footer-weather-detalhe">${detalhe}</span></span>`;
     if (elHud) elHud.textContent = `${Math.round(temp)}°C`;
   } catch (err) {
     if (el) el.innerHTML = `<span>Clima indisponível</span>`;
@@ -1726,7 +1719,7 @@ const LIVE = (function () {
    Módulo Previsão do Tempo
 ============================================================ */
 const WEATHER = (function () {
-  const URL = `https://api.open-meteo.com/v1/forecast?latitude=${CLIMA_LAT}&longitude=${CLIMA_LON}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=America%2FSao_Paulo&forecast_days=6`;
+  const URL = `https://api.open-meteo.com/v1/forecast?latitude=${CLIMA_LAT}&longitude=${CLIMA_LON}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&timezone=America%2FSao_Paulo&forecast_days=6`;
   const REFRESH_MS = 15 * 60 * 1000;
   const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -1739,8 +1732,32 @@ const WEATHER = (function () {
 
       const cod = cur.weather_code;
       const label = CLIMA_LABEL[cod] || "";
-      document.getElementById("tempoHojeIcone").innerHTML = climaSvg(cod, "tv-weather-today-icon");
-      marcarCenaClima(cod, "tempoFx");
+      const dia = climaEhDia({
+        isDay: cur.is_day,
+        atMs: Date.now(),
+        dates: daily.time,
+        sunrises: daily.sunrise,
+        sunsets: daily.sunset
+      });
+      document.getElementById("tempoHojeIcone").innerHTML = climaSvg(cod, "tv-weather-today-icon", dia);
+      marcarCenaClima(cod, "tempoFx", dia);
+      if (window.portalClimaGuardarPayload) window.portalClimaGuardarPayload(data);
+      if (window.portalClimaAgendarPeriodo) {
+        window.portalClimaAgendarPeriodo(daily, () => {
+          const c = (window.portalClimaUltimoPayload && window.portalClimaUltimoPayload()?.current) || {};
+          const d = (window.portalClimaUltimoPayload && window.portalClimaUltimoPayload()?.daily) || {};
+          const nowDay = climaEhDia({
+            isDay: c.is_day,
+            atMs: Date.now(),
+            dates: d.time,
+            sunrises: d.sunrise,
+            sunsets: d.sunset
+          });
+          const icone = document.getElementById("tempoHojeIcone");
+          if (icone) icone.innerHTML = climaSvg(c.weather_code, "tv-weather-today-icon", nowDay);
+          marcarCenaClima(c.weather_code, "tempoFx", nowDay);
+        });
+      }
       document.getElementById("tempoHojeTemp").textContent = Math.round(cur.temperature_2m) + "°";
       document.getElementById("tempoHojeLabel").textContent = "Hoje · " + (label || "--");
       const maxHoje = daily.temperature_2m_max?.[0];

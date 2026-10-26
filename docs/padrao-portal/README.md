@@ -33,6 +33,7 @@ Não redesenhar a marca. Não inventar KPI, fórmula ou paleta por página.
 | Página nova, passo a passo | [guia-novas-paginas.md](guia-novas-paginas.md) |
 | Matriz de testes e pendências | [validacao.md](validacao.md) |
 | Onde editar sem quebrar o resto | [manutencao.md](manutencao.md) |
+| Clima na TV (dia/noite, ícones) | [clima-tv.md](clima-tv.md) |
 | Exemplos clicáveis (dados fictícios) | [catalogo.html](catalogo.html) |
 | Capturas de demonstração | [assets/](assets/) |
 

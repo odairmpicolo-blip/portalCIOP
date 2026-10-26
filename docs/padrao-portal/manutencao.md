@@ -12,8 +12,9 @@
 | ICV vidro desktop | `portal-liquid-icv.css` + `icv-dashboard.js` | |
 | Rodapé texto | `portal-footer.js` | |
 | Esta documentação | `docs/padrao-portal/` | Índice + catálogo se o componente mudou |
+| Clima TV (ícone, dia/noite, cena) | `portal-clima-cena.js` + `portal-clima-anim.css` | Não copiar SVG WMO nas páginas |
 
-Bump de cache vigente: tokens `?v=20261026sel1`; DS `sel1`; visual `sel1` nas internas; home CSS/JS `ops1`; `theme-toggle.js` `read1`. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no `script.src` do inject (`theme-toggle.js`, `portal-design-system.js`, `auth.js`).
+Bump de cache vigente: tokens `?v=20261026ipv1`; DS `ipv1`; visual `ipv1`; clima TV `wx1`; home CSS/JS `ops1`; `theme-toggle.js` `read1`. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no `script.src` do inject (`theme-toggle.js`, `portal-design-system.js`, `auth.js`).
 
 ## Impacto
 

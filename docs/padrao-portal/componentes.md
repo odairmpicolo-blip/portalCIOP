@@ -2,7 +2,7 @@
 
 Só o que existe no portal clássico. Adaptação permitida: layout do módulo (grid, colunas da tabela). **Não permitido:** novo logo, nova paleta, segundo seletor de tema, copiar CSS de botão de outro HTML.
 
-Classes globais: `assets/css/portal-design-system.css`. Home: `portal-home-2026.css`. Auth: `assets/js/auth.js`.
+Classes globais: `assets/css/portal-design-system.css`. Home: `portal-home-2026.css`. Auth: `assets/js/auth.js`. Clima da TV: [clima-tv.md](clima-tv.md).
 
 ## Estrutura da página
 
@@ -63,6 +63,8 @@ Padrão de markup (ICV, IPV, dashboards):
   <div class="kpi-sub">período 01/10 a 26/10</div>
 </article>
 ```
+
+`.kpi-value` precisa de `color` **e** `-webkit-text-fill-color` no mesmo token: no WebKit o fill pinta o glifo. Adiantado `.is-early` / Atrasado `.is-late`. Célula `.highlight-cell`: fundo misturado com `--portal-op-ontime` e o mesmo token no texto. Seletor `.scenario-button:not(.active)` usa `--portal-on-option` sobre `--portal-field`, não branco com texto claro.
 
 Home: performance em faixa própria (`.home-perf` + `.home-perf-bar`), depois da saudação e do clima. Contagens de módulos/usuários/avisos **no bloco da saudação** (`.home-header-stats` sem vidro). Adiantado vermelho, Atrasado âmbar: [cores-operacionais.md](cores-operacionais.md).
 
