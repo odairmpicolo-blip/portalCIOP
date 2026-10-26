@@ -1,68 +1,129 @@
-/* Portal CIOP — tokens + tipografia (Inter). Carregar antes de portal-unify.css. */
+/* Portal CIOP — source of truth for color, glass, type and motion.
+   Alias legacy names (--texto, --muted, --lg-*) so existing pages keep working. */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
-:root {
-  --font: "Inter", system-ui, -apple-system, "Segoe UI", Arial, Helvetica, sans-serif;
+html {
+  --portal-font: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --portal-text: #102c53;
+  --portal-text-secondary: #3a5270;
+  --portal-text-aux: #4a6180;
+  --portal-text-disabled: #7a8aa0;
+  --portal-glass-light: rgba(255, 255, 255, 0.22);
+  --portal-glass-mid: rgba(255, 255, 255, 0.46);
+  --portal-glass-dense: rgba(248, 252, 255, 0.78);
+  --portal-field: rgba(255, 255, 255, 0.58);
+  --portal-menu: rgba(248, 252, 255, 0.84);
+  --portal-table: rgba(255, 255, 255, 0.72);
+  --portal-tooltip: rgba(12, 32, 54, 0.94);
+  --portal-modal: rgba(248, 252, 255, 0.82);
+  --portal-border: rgba(255, 255, 255, 0.5);
+  --portal-border-strong: rgba(18, 70, 130, 0.16);
+  --portal-reflect: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --portal-shadow-sm: 0 4px 14px rgba(12, 38, 69, 0.07);
+  --portal-shadow-mid: 0 10px 28px rgba(12, 38, 69, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  --portal-shadow-lg: 0 28px 80px rgba(8, 24, 48, 0.28);
+  --portal-focus: #1265c2;
+  --portal-selection: rgba(18, 101, 194, 0.2);
+  --portal-accent: #1265c2;
+  --portal-accent-warn: #d95508;
+  --portal-op-ontime: #15803d;
+  --portal-op-early: #dc2626;
+  --portal-op-late: #ca8a04;
+  --portal-space-1: 4px;
+  --portal-space-2: 8px;
+  --portal-space-3: 12px;
+  --portal-space-4: 16px;
+  --portal-space-5: 24px;
+  --portal-radius-sm: 8px;
+  --portal-radius: 12px;
+  --portal-radius-lg: 18px;
+  --portal-radius-xl: 26px;
+  --portal-duration: 180ms;
+  --portal-ease: ease;
+  --portal-blur-light: blur(10px) saturate(140%);
+  --portal-blur-mid: blur(16px) saturate(150%);
+  --portal-blur-dense: blur(22px) saturate(160%);
+  --portal-fallback: #eef3f8;
+  --portal-photo-veil: linear-gradient(180deg, rgba(233, 241, 249, 0.08), rgba(241, 247, 252, 0.02) 62%, rgba(11, 29, 48, 0.08));
+  --portal-icon-size: 20px;
+  --portal-icon-stroke: 1.8;
+  --portal-paper: #fff;
+
+  --font: var(--portal-font);
   --azul: #06245c;
   --azul-hover: #0b3a8a;
   --laranja: #ff6b00;
   --teal: #0f766e;
-  --fundo: #f3f5f9;
-  --surface: #ffffff;
-  --borda: #e2e8f0;
-  --texto: #0f172a;
-  --muted: #64748b;
-  --radius: 12px;
-  --radius-sm: 8px;
-  --space: 8px;
-  --shadow: 0 10px 28px -18px rgba(15, 23, 42, 0.28);
+  --fundo: transparent;
+  --surface: var(--portal-glass-mid);
+  --borda: var(--portal-border-strong);
+  --texto: var(--portal-text);
+  --muted: var(--portal-text-secondary);
+  --radius: var(--portal-radius);
+  --radius-sm: var(--portal-radius-sm);
+  --space: var(--portal-space-2);
+  --shadow: var(--portal-shadow-mid);
   --accent-op: var(--azul);
   --accent-dash: var(--laranja);
   --accent-rel: var(--teal);
-  --lg-blur: blur(32px) saturate(190%);
-  --lg-blur-soft: blur(24px) saturate(175%);
-  --lg-fill:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(226, 240, 255, 0.12) 42%, rgba(255, 244, 235, 0.16) 100%);
-  --ciop-light-grad: linear-gradient(135deg, #6ea6d4 0%, #b4d4ee 36%, #e4f1fa 72%, #f8fbfe 100%);
-  --ciop-light-grad-y: linear-gradient(180deg, #6ea6d4 0%, #b4d4ee 40%, #e4f1fa 76%, #f8fbfe 100%);
-  --ciop-light-grad-fx:
-    repeating-linear-gradient(-28deg, transparent 0 52px, rgba(6, 36, 92, 0.055) 52px 53px),
-    linear-gradient(135deg, #6ea6d4 0%, #b4d4ee 36%, #e4f1fa 72%, #f8fbfe 100%);
-  --lg-fill-header: var(--ciop-light-grad-fx);
-  --lg-fill-data: var(--ciop-light-grad);
-  --lg-border: rgba(255, 255, 255, 0.48);
-  --lg-shadow:
-    0 16px 40px -24px rgba(6, 36, 92, 0.32),
-    inset 0 1px 0 rgba(255, 255, 255, 0.62),
-    inset 0 -1px 0 rgba(6, 36, 92, 0.05);
+  --lg-blur: var(--portal-blur-dense);
+  --lg-blur-soft: var(--portal-blur-mid);
+  --lg-fill: var(--portal-glass-mid);
+  --lg-fill-header: var(--portal-glass-dense);
+  --lg-fill-data: var(--portal-table);
+  --lg-border: var(--portal-border);
+  --lg-shadow: var(--portal-shadow-mid);
+  --ciop-light-grad: var(--portal-glass-mid);
+  --ciop-light-grad-y: var(--portal-glass-mid);
+  --ciop-light-grad-fx: var(--portal-glass-mid);
+  color-scheme: light;
 }
 
 html.dk-dark {
-  --fundo: #12151a;
-  --surface: #1a1e24;
-  --borda: rgba(168, 178, 188, 0.28);
-  --texto: #f4f6f8;
-  --muted: #c5ced8;
-  --shadow: 0 10px 28px -16px rgba(0, 0, 0, 0.45);
-  --lg-fill:
-    linear-gradient(135deg, rgba(56, 189, 248, 0.10) 0%, rgba(20, 24, 32, 0.28) 46%, rgba(255, 107, 0, 0.08) 100%);
-  --lg-fill-header:
-    radial-gradient(120% 160% at 92% 0%, #3d6aa8 0%, transparent 46%),
-    linear-gradient(135deg, #0b1628 0%, #152a4a 52%, #1c3d66 100%);
-  --lg-fill-data:
-    radial-gradient(120% 160% at 92% 0%, #3d6aa8 0%, transparent 46%),
-    linear-gradient(135deg, #0b1628 0%, #152a4a 52%, #1c3d66 100%);
-  --lg-border: rgba(186, 210, 230, 0.28);
-  --lg-shadow:
-    0 16px 40px -22px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  --portal-text: #f5f8ff;
+  --portal-text-secondary: #d5e3f4;
+  --portal-text-aux: #b7c9de;
+  --portal-text-disabled: #8aa0b8;
+  --portal-glass-light: rgba(8, 26, 46, 0.28);
+  --portal-glass-mid: rgba(12, 36, 62, 0.52);
+  --portal-glass-dense: rgba(8, 24, 44, 0.82);
+  --portal-field: rgba(255, 255, 255, 0.08);
+  --portal-menu: rgba(8, 24, 44, 0.9);
+  --portal-table: rgba(8, 26, 46, 0.78);
+  --portal-tooltip: rgba(6, 16, 30, 0.94);
+  --portal-modal: rgba(8, 24, 44, 0.88);
+  --portal-border: rgba(191, 219, 246, 0.18);
+  --portal-border-strong: rgba(179, 212, 243, 0.22);
+  --portal-reflect: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --portal-shadow-sm: 0 4px 14px rgba(0, 8, 20, 0.28);
+  --portal-shadow-mid: 0 10px 28px rgba(0, 10, 25, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --portal-shadow-lg: 0 28px 80px rgba(0, 0, 0, 0.45);
+  --portal-focus: #82c4ff;
+  --portal-selection: rgba(130, 196, 255, 0.22);
+  --portal-accent: #82c4ff;
+  --portal-accent-warn: #ffab66;
+  --portal-op-ontime: #4ade80;
+  --portal-op-early: #f87171;
+  --portal-op-late: #facc15;
+  --portal-fallback: #10253c;
+  --portal-photo-veil: linear-gradient(180deg, rgba(4, 15, 30, 0.28), rgba(4, 15, 30, 0.12) 70%, rgba(4, 15, 30, 0.2));
+  --portal-paper: #fff;
+  --fundo: transparent;
+  --surface: var(--portal-glass-mid);
+  --borda: var(--portal-border);
+  --texto: var(--portal-text);
+  --muted: var(--portal-text-secondary);
+  --shadow: var(--portal-shadow-mid);
+  color-scheme: dark;
 }
+
+html.dk-light { color-scheme: light; }
+
+::selection { background: var(--portal-selection); color: var(--portal-text); }
 
 html,
 body {
-  font-family: var(--font);
-  color: var(--texto);
+  font-family: var(--portal-font);
 }
 
 button,
@@ -75,4 +136,28 @@ textarea,
 .filter-select,
 .ciop-search-input {
   font-family: inherit;
+}
+
+.portal-nums,
+.ciop-kpi-value,
+.kpi-value,
+.home-perf-item b {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    --portal-duration: 0.01ms;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html {
+    --portal-glass-light: var(--portal-fallback);
+    --portal-glass-mid: var(--portal-fallback);
+    --portal-glass-dense: var(--portal-fallback);
+    --portal-modal: var(--portal-fallback);
+    --portal-table: var(--portal-fallback);
+    --portal-field: var(--portal-fallback);
+  }
 }

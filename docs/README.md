@@ -1,13 +1,12 @@
 # Documentação do Portal CIOP
 
-Pasta de referência para alterações futuras. Comece por **interface** se for logo, menu, botão, tema ou texto ilegível.
+Pasta de referência para alterações futuras. Comece pelo **padrão visual** se for logo, tema, vidro, botão ou texto ilegível.
 
-## Interface (padrão vigente)
+## Padrão visual e de interface (vigente)
 
-- [`interface/README.md`](interface/README.md) — índice do chrome
-- [`interface/padrao-visual.md`](interface/padrao-visual.md) — logo, hamburger, botões
-- [`interface/contraste.md`](interface/contraste.md) — texto no claro e no escuro
-- [`interface/como-alterar.md`](interface/como-alterar.md) — onde mexer sem quebrar o resto
+- [`padrao-portal/README.md`](padrao-portal/README.md) — índice
+- [`padrao-portal/catalogo.html`](padrao-portal/catalogo.html) — exemplos com dados fictícios
+- [`interface/README.md`](interface/README.md) — atalhos para não quebrar links antigos
 
 ## Publicação
 

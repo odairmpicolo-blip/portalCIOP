@@ -1,6 +1,18 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="icv-page">
 <head>
+<script>
+(function () {
+  try {
+    var stored = localStorage.getItem("dk-theme");
+    if (stored !== "dark" && stored !== "light" && stored !== "auto") stored = "auto";
+    var dark = stored === "dark" || (stored === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.classList.add(dark ? "dk-dark" : "dk-light");
+    document.documentElement.setAttribute("data-dk-pref", stored);
+    document.documentElement.setAttribute("data-dk-resolved", dark ? "dark" : "light");
+  } catch (e) {}
+})();
+</script>
 <script>document.documentElement.classList.add("portal-auth-pending");</script>
 <style id="portalAuthBootStyle">.portal-auth-pending body > :not(#portalLoadingOverlay){pointer-events:none!important;}</style>
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
@@ -464,7 +476,7 @@ td:first-child, th:first-child { text-align:left; }
     <link rel="stylesheet" href="../assets/css/dashboard-kit.css?v=20260720p">
     
 
-<script src="../assets/js/theme-toggle.js?v=20261026legivel1"></script>
+<script src="../assets/js/theme-toggle.js?v=20261026liquid2"></script>
 <script type="module" src="../assets/js/auth.js?v=20261022intro1"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 <style>
@@ -576,7 +588,8 @@ td:first-child, th:first-child { text-align:left; }
 </style>
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260930v1">
 <link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260930v1">
-<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260930v1">
+<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20261026liquid1">
+<link rel="stylesheet" href="../assets/css/portal-liquid-icv.css?v=20261026liquid1">
 <link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260930v1">
 <link rel="stylesheet" href="../assets/css/portal-visual.css?v=20261022home">
 </head>
@@ -703,7 +716,7 @@ td:first-child, th:first-child { text-align:left; }
     </div>
 </div>
 <script type="module">
-import { iniciarIcvDashboard } from "../assets/js/icv-dashboard.js?v=20260818mes";
+import { iniciarIcvDashboard } from "../assets/js/icv-dashboard.js?v=20261026liquid1";
 import { exportarPdfIcv } from "../assets/js/icv-relatorio-export.js?v=20260702d";
 window.exportarPdfIcv = exportarPdfIcv;
 window.onload = () => window.portalAguardarUsuario?.(iniciarIcvDashboard);

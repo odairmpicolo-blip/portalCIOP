@@ -14,15 +14,21 @@ const brData = (iso) => {
 async function carregar() {
   const de = $("fDe").value;
   const ate = $("fAte").value;
-  $("status").textContent = "Consultando banco…";
+  $("status").textContent = "Carregando período…";
   await initPortalAwsRuntime();
   if (!awsApiEnabled()) {
-    $("status").textContent = "API AWS indisponível.";
+    $("status").textContent = "Serviço temporariamente indisponível.";
     return;
   }
   const token = await firebaseIdToken();
   const r = await awsFetch(`/cr0108/ipv-ajustado?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`, { token });
-  if (!r?.ok) throw new Error(r?.erro || "Falha na API");
+  if (!r?.ok) {
+    const bruto = String(r?.erro || "");
+    const amigavel = /rota não encontrada/i.test(bruto)
+      ? "Este indicador ainda não está disponível neste ambiente."
+      : (bruto || "Não foi possível carregar os dados.");
+    throw new Error(amigavel);
+  }
   pintar(r);
 }
 

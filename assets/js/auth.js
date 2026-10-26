@@ -139,8 +139,8 @@ function mostrarCarregando(texto = "Carregando portal") {
   overlay.setAttribute("aria-live", "polite");
   overlay.innerHTML = `<div class="portal-loading-box">
  <div class="portal-loading-art" aria-hidden="true">
-  <img class="portal-loading-logo portal-loading-logo-light" src="${logoLight}" alt="" decoding="async">
-  <img class="portal-loading-logo portal-loading-logo-dark" src="${logoDark}" alt="" decoding="async">
+  <img class="portal-loading-logo portal-loading-logo-light" src="${logoLight}" alt="" decoding="async" onerror="this.onerror=null;this.src=this.src.replace('portal-logo-clean-light.png','logomarca-portalciop-tcgl-claro.png')">
+  <img class="portal-loading-logo portal-loading-logo-dark" src="${logoDark}" alt="" decoding="async" onerror="this.onerror=null;this.src=this.src.replace('portal-logo-clean-dark.png','logomarca-portalciop-tcgl-escuro.png')">
  </div>
  <p class="portal-loading-title"></p>
  <p class="portal-loading-sub">Só um instante. Estamos preparando tudo.</p>
@@ -286,7 +286,10 @@ function aplicarEstiloBotaoPortal(a) {
   a.classList.add("btn-portal");
   a.classList.remove("portal-voltar-auto");
   a.dataset.portalVoltar = "1";
-  if (!a.querySelector(".btn-icon")) {
+  const icones = a.querySelectorAll(".btn-icon, svg");
+  if (icones.length > 1) {
+    icones.forEach((el, i) => { if (i > 0 && el.classList.contains("btn-icon")) el.remove(); });
+  } else if (!a.querySelector(".btn-icon") && !a.querySelector("svg")) {
     a.insertAdjacentHTML("afterbegin", PORTAL_BTN_ICON);
   }
 }
@@ -441,7 +444,7 @@ function garantirWallpaperIos() {
 function garantirThemeToggle() {
   if (document.querySelector("script[src*='theme-toggle.js']")) return;
   const script = document.createElement("script");
-  script.src = portalPath("assets/js/theme-toggle.js?v=20261022legivel4");
+  script.src = portalPath("assets/js/theme-toggle.js?v=20261026liquid2");
   document.head.appendChild(script);
 }
 

@@ -26,6 +26,12 @@ Complementam o sistema:
 | **AWS (Aurora DSQL + Lambda)** | Armazena snapshots de dados operacionais (folha de serviço, pontualidade, autuações, liberação) para consulta via `backend/`. O `backend/` também pode rodar como Lambda (`aws/portal-api`). |
 | **GitHub Actions** | Além do deploy, roda os workflows agendados que baixam dados de planilhas/Apps Script e publicam JSONs estáticos consumidos pelo portal. |
 
+## Padrão visual e de interface
+
+Referência para criar e manter páginas do portal clássico: [`docs/padrao-portal/README.md`](docs/padrao-portal/README.md).
+
+Catálogo com dados fictícios (sem login, sem gravação): servir a pasta do repositório e abrir `/docs/padrao-portal/catalogo.html`. Novas telas reutilizam tokens (`assets/css/portal-tokens.css`) e o chrome compartilhado, e precisam ser conferidas no tema claro e no escuro.
+
 ## Como rodar localmente
 
 ### Portal clássico

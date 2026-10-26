@@ -22,6 +22,18 @@ const fullMonthNames = {
 let rawData = [];
 let chartInstance = null;
 let icvExportState = { linhas: [] };
+let lastChartVisual = null;
+
+function icvChartTheme() {
+  const dark = document.documentElement.classList.contains("dk-dark");
+  const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  return {
+    tick: dark ? "#d5e3f4" : "#3a5270",
+    grid: dark ? "rgba(179,212,243,.16)" : "rgba(16,44,83,.12)",
+    title: dark ? "#f5f8ff" : "#102c53",
+    duration: reduce ? 0 : 200
+  };
+}
 
 function pick(row, keys) {
   for (const key of keys) {
@@ -457,10 +469,12 @@ function renderizarTabela(visual) {
 }
 
 function renderChart(visual) {
+  lastChartVisual = visual;
   document.getElementById("chartDynamicTitle").innerText = visual.tituloGrafico;
   const ctx = document.getElementById("barChartCanvas").getContext("2d");
   if (chartInstance) chartInstance.destroy();
   if (!visual.chartLabels.length) return;
+  const theme = icvChartTheme();
 
   const maxSupressao = visual.chartPctSupressao?.length
     ? Math.max(...visual.chartPctSupressao)
@@ -504,7 +518,7 @@ function renderChart(visual) {
       responsive: true,
       maintainAspectRatio: false,
       interaction: { mode: "index", intersect: false },
-      animation: { duration: 650, easing: "easeOutQuart" },
+      animation: { duration: theme.duration, easing: "easeOutQuart" },
       scales: {
         y: {
           position: "left",
@@ -518,8 +532,10 @@ function renderChart(visual) {
             font: { weight: "700", size: 11 }
           },
           ticks: {
+            color: theme.tick,
             callback: (v) => `${v}%`
-          }
+          },
+          grid: { color: theme.grid }
         },
         y1: {
           position: "right",
@@ -533,10 +549,12 @@ function renderChart(visual) {
             font: { weight: "700", size: 11 }
           },
           ticks: {
+            color: theme.tick,
             callback: (v) => `${Number(v).toFixed(1)}%`
           }
         },
         x: {
+          ticks: { color: theme.tick },
           grid: { display: false }
         }
       },
@@ -548,6 +566,7 @@ function renderChart(visual) {
           labels: {
             boxWidth: 12,
             boxHeight: 12,
+            color: theme.title,
             font: { size: 11, weight: "700" }
           }
         },
@@ -798,4 +817,7 @@ export function iniciarIcvDashboard() {
     });
   });
   loadDashboardData();
+  window.addEventListener("dk-theme-change", () => {
+    if (lastChartVisual) renderChart(lastChartVisual);
+  });
 }

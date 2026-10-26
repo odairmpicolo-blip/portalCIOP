@@ -39,8 +39,8 @@
   function buildMarkup() {
     return `<div class="portal-loading-box">
  <div class="portal-loading-art" aria-hidden="true">
-  <img class="portal-loading-logo portal-loading-logo-light" src="${logoLight}" alt="" decoding="async">
-  <img class="portal-loading-logo portal-loading-logo-dark" src="${logoDark}" alt="" decoding="async">
+  <img class="portal-loading-logo portal-loading-logo-light" src="${logoLight}" alt="" decoding="async" onerror="this.onerror=null;this.src=this.src.replace('portal-logo-clean-light.png','logomarca-portalciop-tcgl-claro.png')">
+  <img class="portal-loading-logo portal-loading-logo-dark" src="${logoDark}" alt="" decoding="async" onerror="this.onerror=null;this.src=this.src.replace('portal-logo-clean-dark.png','logomarca-portalciop-tcgl-escuro.png')">
  </div>
  <p class="portal-loading-title"></p>
  <p class="portal-loading-sub">Só um instante. Estamos preparando tudo.</p>

@@ -1,3 +1,18 @@
+/* Apply the stored theme before paint when this file is in <head>. */
+(function dkEarlyBoot() {
+  try {
+    var key = "dk-theme";
+    var stored = localStorage.getItem(key);
+    if (stored !== "dark" && stored !== "light" && stored !== "auto") stored = "auto";
+    var dark = stored === "dark" || (stored === "auto" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    var html = document.documentElement;
+    html.classList.remove("dk-light", "dk-dark");
+    html.classList.add(dark ? "dk-dark" : "dk-light");
+    html.setAttribute("data-dk-pref", stored);
+    html.setAttribute("data-dk-resolved", dark ? "dark" : "light");
+  } catch (e) {}
+})();
+
 var DK_KEY = "dk-theme";
 var DK_BRAND_LIGHT = "portal-logo-clean-light.png";
 var DK_BRAND_DARK = "portal-logo-clean-dark.png";
@@ -132,14 +147,12 @@ function dkSetPref(pref) {
 }
 
 (function dkBoot() {
-  var stored = localStorage.getItem(DK_KEY);
-  if (stored == null) {
-    stored = "auto";
-    localStorage.setItem(DK_KEY, stored);
-  }
-  var mode = dkNormalize(stored);
-  if (stored !== mode) localStorage.setItem(DK_KEY, mode);
-  dkApply(mode);
+  var stored = dkStoredPref();
+  try {
+    if (localStorage.getItem(DK_KEY) == null) localStorage.setItem(DK_KEY, stored);
+  } catch (e) {}
+  dkApply(stored, true);
+  dkScheduleAuto();
 })();
 
 function dkOnOptClick(ev) {
@@ -178,7 +191,7 @@ window.dkSwapBrandLogos = dkSwapBrandLogos;
   var current = document.currentScript;
   if (!current?.src) return;
   var script = document.createElement('script');
-  script.src = new URL('portal-design-system.js?v=20261026legivel1', current.src).href;
+  script.src = new URL('portal-design-system.js?v=20261026liquid2', current.src).href;
   script.dataset.portalDesignSystem = '1';
   script.defer = true;
   document.head.appendChild(script);

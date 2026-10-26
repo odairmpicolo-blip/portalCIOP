@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR" id="portal-page-glass" class="portal-glass-system">
+<head>
+  <script>
+  (function () {
+    try {
+      var stored = localStorage.getItem("dk-theme");
+      if (stored !== "dark" && stored !== "light" && stored !== "auto") stored = "auto";
+      var dark = stored === "dark" || (stored === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.classList.add(dark ? "dk-dark" : "dk-light");
+      document.documentElement.setAttribute("data-dk-pref", stored);
+      document.documentElement.setAttribute("data-dk-resolved", dark ? "dark" : "light");
+    } catch (e) {}
+  })();
+  </script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catálogo visual — padrão Portal CIOP</title>
+  <link rel="stylesheet" href="../../assets/css/portal-tokens.css?v=20261026liquid1" data-portal-tokens="1">
+  <script src="../../assets/js/theme-toggle.js?v=20261026liquid2"></script>
+  <style>
+    body#portal-page-content {
+      margin: 0;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      color: var(--portal-text);
+      font-family: var(--portal-font);
+    }
+    .cat-wrap { width: min(1120px, calc(100% - 32px)); margin: 20px auto 48px; display: grid; gap: 20px; }
+    .cat-banner {
+      padding: 16px 18px;
+      border-radius: var(--portal-radius-lg);
+      background: var(--portal-glass-mid);
+      border: 1px solid var(--portal-border);
+      box-shadow: var(--portal-shadow-mid);
+      backdrop-filter: var(--portal-blur-mid);
+      -webkit-backdrop-filter: var(--portal-blur-mid);
+    }
+    .cat-banner p { margin: 8px 0 0; color: var(--portal-text-secondary); font-size: 14px; line-height: 1.5; }
+    .cat-section {
+      padding: 20px;
+      border-radius: var(--portal-radius-lg);
+      background: var(--portal-glass-mid);
+      border: 1px solid var(--portal-border);
+      box-shadow: var(--portal-shadow-mid);
+      backdrop-filter: var(--portal-blur-mid);
+      -webkit-backdrop-filter: var(--portal-blur-mid);
+    }
+    .cat-section h2 { margin: 0 0 12px; font-size: 18px; font-weight: 650; }
+    .cat-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .glass-demo {
+      flex: 1 1 160px; min-height: 88px; padding: 14px;
+      border: 1px solid var(--portal-border); border-radius: var(--portal-radius);
+      color: var(--portal-text);
+    }
+    .glass-demo strong { display: block; font-size: 13px; }
+    .glass-demo span { font-size: 12px; color: var(--portal-text-secondary); }
+    .g-light { background: var(--portal-glass-light); backdrop-filter: var(--portal-blur-light); -webkit-backdrop-filter: var(--portal-blur-light); }
+    .g-mid { background: var(--portal-glass-mid); backdrop-filter: var(--portal-blur-mid); -webkit-backdrop-filter: var(--portal-blur-mid); }
+    .g-dense { background: var(--portal-glass-dense); backdrop-filter: var(--portal-blur-dense); -webkit-backdrop-filter: var(--portal-blur-dense); }
+    .type-sample { display: grid; gap: 8px; }
+    .type-sample .t-xl { font-size: 28px; font-weight: 750; letter-spacing: -0.03em; }
+    .type-sample .t-h { font-size: 18px; font-weight: 650; }
+    .type-sample .t-body { font-size: 14px; }
+    .type-sample .t-muted { font-size: 12px; color: var(--portal-text-secondary); }
+    .type-sample .t-num { font-size: 24px; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .btn-row .btn-primary[disabled], .btn-row .btn-secondary[disabled] { opacity: 0.55; cursor: not-allowed; }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+    .kpi-card { padding: 14px; border-radius: var(--portal-radius-lg); background: var(--portal-table); border: 1px solid var(--portal-border); }
+    .kpi-title { font-size: 12px; color: var(--portal-text-secondary); font-weight: 500; }
+    .kpi-value { font-size: 26px; font-weight: 750; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .kpi-sub { font-size: 12px; color: var(--portal-text-secondary); }
+    .is-ok { color: var(--portal-op-ontime); }
+    .is-early { color: var(--portal-op-early); }
+    .is-late { color: var(--portal-op-late); }
+    .table-wrap { overflow: auto; max-width: 100%; border-radius: 14px; }
+    table { width: 100%; border-collapse: collapse; background: var(--portal-table); color: var(--portal-text); }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--portal-border); }
+    thead th { position: sticky; top: 0; background: var(--portal-glass-dense); }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .campo { display: flex; flex-direction: column; gap: 6px; flex: 1 1 160px; min-width: 160px; font-size: 13px; font-weight: 650; }
+    .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 12px; }
+    .state { padding: 12px 14px; border-radius: var(--portal-radius); border: 1px solid var(--portal-border); background: var(--portal-glass-light); font-size: 14px; }
+    .state[hidden] { display: none !important; }
+    .chart-box { height: 220px; }
+    .paper {
+      background: var(--portal-paper); color: #102c53; padding: 16px; border-radius: 8px;
+      max-width: 420px; box-shadow: var(--portal-shadow-sm);
+    }
+    footer.portal-site-footer { margin-top: auto; padding: 16px; text-align: center; font-size: 12px; color: var(--portal-text-secondary); }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body id="portal-page-content">
+  <header class="header">
+    <img class="portal-brand-art" src="../../assets/img/portal-logo-clean-light.png" alt="Portal CIOP TCGL Operações" height="54" width="180">
+    <div class="title-wrap">
+      <h1>Catálogo visual</h1>
+      <p class="subtitle">Dados fictícios · sem gravação · Portal CIOP</p>
+    </div>
+    <div class="header-actions">
+      <a class="btn-secondary" href="README.md">Índice do padrão</a>
+    </div>
+  </header>
+
+  <div class="cat-wrap">
+    <div class="cat-banner">
+      <strong>Ambiente de referência</strong>
+      <p>
+        Esta página não entra na home, não chama API e não envia relatório.
+        Use Claro / Auto / Escuro no cabeçalho. Foto de Londrina no fundo.
+      </p>
+    </div>
+
+    <section class="cat-section" aria-labelledby="t-vidro">
+      <h2 id="t-vidro">Níveis de vidro</h2>
+      <div class="cat-row">
+        <div class="glass-demo g-light"><strong>Light</strong><span>nav, chip, rodapé</span></div>
+        <div class="glass-demo g-mid"><strong>Mid</strong><span>card, filtro, KPI</span></div>
+        <div class="glass-demo g-dense"><strong>Dense</strong><span>header, thead, menu</span></div>
+      </div>
+    </section>
+
+    <section class="cat-section" aria-labelledby="t-tipo">
+      <h2 id="t-tipo">Tipografia e ícones</h2>
+      <div class="type-sample">
+        <div class="t-xl">Bom dia, operação</div>
+        <div class="t-h">Índice de exemplo</div>
+        <p class="t-body">Corpo Inter 14. Texto principal usa <code>--portal-text</code>.</p>
+        <p class="t-muted">Secundário: período 01/10/2026 a 26/10/2026 · fonte fictícia</p>
+        <p class="t-num">91,40%</p>
+        <p class="cat-row">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+          <span class="t-muted">SVG 20×20, traço 1.8, currentColor</span>
+        </p>
+      </div>
+    </section>
+
+    <section class="cat-section" aria-labelledby="t-btn">
+      <h2 id="t-btn">Botões e campos</h2>
+      <div class="cat-row btn-row">
+        <button type="button" class="btn-primary">Primário</button>
+        <button type="button" class="btn-secondary">Secundário</button>
+        <button type="button" class="btn-danger">Destrutivo (demo)</button>
+        <button type="button" class="btn-primary" disabled>Desabilitado</button>
+        <a class="btn-link" href="#t-btn">Link</a>
+      </div>
+      <form class="filters" style="margin-top:16px" onsubmit="return false">
+        <label class="campo">Linha
+          <input name="linha" value="999" autocomplete="off">
+        </label>
+        <label class="campo">De
+          <input type="date" name="de" value="2026-10-01">
+        </label>
+        <label class="campo">Até
+          <input type="date" name="ate" value="2026-10-26">
+        </label>
+        <label class="campo">Sentido
+          <select>
+            <option>Ida</option>
+            <option>Volta</option>
+          </select>
+        </label>
+        <label class="campo">Somente leitura
+          <input value="Prefixo 0000" readonly>
+        </label>
+      </form>
+    </section>
+
+    <section class="cat-section" aria-labelledby="t-kpi">
+      <h2 id="t-kpi">Indicadores e cores operacionais</h2>
+      <div class="kpis">
+        <article class="kpi-card">
+          <div class="kpi-title">No horário</div>
+          <div class="kpi-value is-ok">84,0%</div>
+          <div class="kpi-sub">110 de 131 viagens (fictício)</div>
+        </article>
+        <article class="kpi-card">
+          <div class="kpi-title">Adiantado</div>
+          <div class="kpi-value is-early">12,2%</div>
+          <div class="kpi-sub">vermelho · maior gravidade</div>
+        </article>
+        <article class="kpi-card">
+          <div class="kpi-title">Atrasado</div>
+          <div class="kpi-value is-late">3,8%</div>
+          <div class="kpi-sub">amarelo / âmbar</div>
+        </article>
+        <article class="kpi-card">
+          <div class="kpi-title">Sem dado</div>
+          <div class="kpi-value">—</div>
+          <div class="kpi-sub">ausência, não zero</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="cat-section" aria-labelledby="t-tab">
+      <h2 id="t-tab">Tabela e gráfico de exemplo</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Linha</th>
+              <th>Situação</th>
+              <th class="num">Viagens</th>
+              <th class="num">IPV</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>999</td>
+              <td><span class="is-ok">No horário</span></td>
+              <td class="num">40</td>
+              <td class="num">96,10%</td>
+            </tr>
+            <tr>
+              <td>998</td>
+              <td><span class="is-early">Adiantado</span></td>
+              <td class="num">12</td>
+              <td class="num">88,00%</td>
+            </tr>
+            <tr>
+              <td>997</td>
+              <td><span class="is-late">Atrasado</span></td>
+              <td class="num">8</td>
+              <td class="num">91,25%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="chart-box" style="margin-top:16px">
+        <canvas id="catChart" aria-label="Gráfico fictício de no horário, adiantado e atrasado"></canvas>
+      </div>
+    </section>
+
+    <section class="cat-section" aria-labelledby="t-est">
+      <h2 id="t-est">Avisos e estados</h2>
+      <div class="cat-row">
+        <button type="button" class="btn-secondary" id="btnLoad">Mostrar carregando</button>
+        <button type="button" class="btn-secondary" id="btnEmpty">Mostrar vazio</button>
+        <button type="button" class="btn-secondary" id="btnErr">Mostrar erro</button>
+        <button type="button" class="btn-secondary" id="btnOk">Mostrar sucesso</button>
+      </div>
+      <p class="state" id="stLoad" hidden>Carregando período…</p>
+      <p class="state" id="stEmpty" hidden>Sem dados neste recorte.</p>
+      <p class="state" id="stErr" hidden>Não foi possível carregar os dados. Nada foi gravado.</p>
+      <p class="state" id="stOk">01/10/2026 a 26/10/2026 · 3 linhas fictícias · atualizado às 15:00</p>
+      <p style="margin:16px 0 8px;font-size:13px;color:var(--portal-text-secondary)">Prévia de documento (papel branco nos dois temas)</p>
+      <div class="paper">
+        <strong>Ocorrência demonstrativa</strong>
+        <p style="margin:8px 0 0;font-size:13px;line-height:1.5">Veículo 0000, linha 999. Texto de papel permanece #102c53 sobre branco.</p>
+      </div>
+    </section>
+  </div>
+
+  <footer class="portal-site-footer">
+    <div class="footer-inner"><span class="footer-text">Catálogo de documentação · © 2026 CIOP · dados fictícios</span></div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script>
+    (function () {
+      var chart;
+      function theme() {
+        var dark = document.documentElement.classList.contains("dk-dark");
+        return {
+          tick: dark ? "#d5e3f4" : "#3a5270",
+          grid: dark ? "rgba(179,212,243,.16)" : "rgba(16,44,83,.12)",
+          title: dark ? "#f5f8ff" : "#102c53"
+        };
+      }
+      function paint() {
+        var el = document.getElementById("catChart");
+        if (!el || !window.Chart) return;
+        var t = theme();
+        var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (chart) chart.destroy();
+        chart = new Chart(el, {
+          type: "doughnut",
+          data: {
+            labels: ["No horário", "Adiantado", "Atrasado"],
+            datasets: [{
+              data: [110, 16, 5],
+              backgroundColor: [
+                getComputedStyle(document.documentElement).getPropertyValue("--portal-op-ontime").trim(),
+                getComputedStyle(document.documentElement).getPropertyValue("--portal-op-early").trim(),
+                getComputedStyle(document.documentElement).getPropertyValue("--portal-op-late").trim()
+              ]
+            }]
+          },
+          options: {
+            animation: { duration: reduce ? 0 : 200 },
+            plugins: {
+              legend: { labels: { color: t.title } },
+              title: { display: true, text: "Distribuição fictícia (131 viagens)", color: t.title }
+            }
+          }
+        });
+      }
+      window.addEventListener("dk-theme-change", paint);
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", paint);
+      else paint();
+
+      function show(id) {
+        ["stLoad", "stEmpty", "stErr", "stOk"].forEach(function (k) {
+          document.getElementById(k).hidden = k !== id;
+        });
+      }
+      document.getElementById("btnLoad").onclick = function () { show("stLoad"); };
+      document.getElementById("btnEmpty").onclick = function () { show("stEmpty"); };
+      document.getElementById("btnErr").onclick = function () { show("stErr"); };
+      document.getElementById("btnOk").onclick = function () { show("stOk"); };
+    })();
+  </script>
+</body>
+</html>

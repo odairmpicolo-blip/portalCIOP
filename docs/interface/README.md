@@ -1,11 +1,15 @@
-# Interface — pasta para futuras alterações
+# Interface
 
-Tudo que for visual compartilhado (logo, menu, botões, tema, contraste) entra **aqui**. Não espalhar regras novas em CSS de um módulo só, salvo layout exclusivo daquela tela.
+O padrão vigente mudou para **[`docs/padrao-portal/`](../padrao-portal/README.md)** (Liquid Glass, tokens, componentes, validação).
 
-| Arquivo | Uso |
+Os três arquivos abaixo ficam só como atalho, para não quebrar links antigos. Em caso de conflito, vale `docs/padrao-portal/`.
+
+| Atalho | Destino |
 | --- | --- |
-| [padrao-visual.md](padrao-visual.md) | Logo, hamburger, botões, arquivos JS/CSS |
-| [contraste.md](contraste.md) | Texto legível no claro e no escuro |
-| [como-alterar.md](como-alterar.md) | Passo a passo ao criar ou ajustar página |
+| [padrao-visual.md](padrao-visual.md) | identidade + componentes |
+| [contraste.md](contraste.md) | temas e acessibilidade |
+| [como-alterar.md](como-alterar.md) | manutenção + página nova |
 
-CIOP TV / kiosk não seguem este chrome. Home usa os mesmos tokens de marca, com CSS próprio (`portal-home-2026.css`).
+Catálogo (dados fictícios): [`../padrao-portal/catalogo.html`](../padrao-portal/catalogo.html).
+
+CIOP TV / kiosk não usam o chrome das internas. Home: `portal-home-2026.css`.

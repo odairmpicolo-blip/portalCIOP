@@ -1,22 +1,26 @@
 /* Shared PortalCiOP visual language. No grid, chart, map or permission rewrites. */
 html#portal-page-glass:has(body#portal-page-content).portal-glass-system {
- --portal-ink:#102c53;--portal-muted:#3a5270;--portal-surface:rgba(251,253,255,.96);
+ --portal-ink:var(--portal-text,#102c53);--portal-muted:var(--portal-text-secondary,#3a5270);--portal-surface:rgba(251,253,255,.96);
  --portal-panel:rgba(255,255,255,.94);--portal-solid:#f5f8fc;--portal-line:rgba(125,161,197,.25);
- --portal-blue:#1265c2;--portal-shadow:0 8px 26px rgba(13,41,75,.09),inset 0 1px 0 rgba(255,255,255,.65);
+ --portal-blue:var(--portal-accent,#1265c2);--portal-shadow:var(--portal-shadow-mid,0 8px 26px rgba(13,41,75,.09),inset 0 1px 0 rgba(255,255,255,.65));
  --text:var(--portal-ink);--muted:var(--portal-muted);--border:var(--portal-line);--bg:var(--portal-solid);--ink:var(--portal-ink);
  color-scheme:light;
 }
 html#portal-page-glass:has(body#portal-page-content).portal-glass-system.dk-dark {
- --portal-ink:#f5f8ff;--portal-muted:#d5e3f4;--portal-surface:rgba(8,26,46,.96);
+ --portal-ink:var(--portal-text,#f5f8ff);--portal-muted:var(--portal-text-secondary,#d5e3f4);--portal-surface:rgba(8,26,46,.96);
  --portal-panel:rgba(18,43,70,.96);--portal-solid:#11253c;--portal-line:rgba(179,212,243,.18);
- --portal-shadow:0 8px 26px rgba(0,9,22,.17),inset 0 1px 0 rgba(255,255,255,.08);color-scheme:dark;
+ --portal-shadow:var(--portal-shadow-mid,0 8px 26px rgba(0,9,22,.17),inset 0 1px 0 rgba(255,255,255,.08));color-scheme:dark;
 }
 html#portal-page-glass:has(body#portal-page-content).portal-glass-system body:not(.login-v2) {
  background:linear-gradient(rgba(238,244,250,.77),rgba(238,244,250,.88)),url('../img/portal-londrina-fundo.png') center bottom/cover fixed!important;
- color:var(--portal-ink)!important;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+ color:var(--portal-ink)!important;font-family:var(--portal-font,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif);
 }
 html#portal-page-glass:has(body#portal-page-content).portal-glass-system.dk-dark body:not(.login-v2) {
  background:linear-gradient(rgba(3,17,33,.83),rgba(3,17,33,.91)),url('../img/portal-londrina-fundo.png') center bottom/cover fixed!important;
+}
+html#portal-page-glass.icv-page.portal-glass-system body:not(.login-v2),
+html#portal-page-glass.icv-page.portal-glass-system.dk-dark body:not(.login-v2) {
+ background:transparent!important;
 }
 html#portal-page-glass:has(body#portal-page-content).portal-glass-system :is(.bg-wall,.body-bg-wall,.bg-blobs,.bg-blob-mid,.portal-hud-overlay,.portal-hud-scan) {display:none!important}
 html#portal-page-glass:has(body#portal-page-content).portal-glass-system .header {
@@ -188,4 +192,100 @@ html#portal-page-glass:has(body#portal-page-content).portal-glass-system :is(.bt
 }
 html#portal-page-glass:has(body#portal-page-content).portal-glass-system .btn-danger {
  background:#b42318!important;color:#fff!important;-webkit-text-fill-color:#fff!important;border:1px solid rgba(255,255,255,.16)!important;
+}
+
+/* Liquid Glass propagation: chrome, data, forms. Kiosk screens stay on portal-glass-kiosk. */
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system {
+ --portal-surface:var(--portal-glass-dense,rgba(248,252,255,.78));
+ --portal-panel:var(--portal-glass-mid,rgba(255,255,255,.46));
+ --portal-solid:var(--portal-table,rgba(255,255,255,.72));
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system.dk-dark {
+ --portal-surface:var(--portal-glass-dense,rgba(8,24,44,.82));
+ --portal-panel:var(--portal-glass-mid,rgba(12,36,62,.52));
+ --portal-solid:var(--portal-table,rgba(8,26,46,.78));
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system body:not(.login-v2) {
+ background:var(--portal-photo-veil,linear-gradient(rgba(238,244,250,.14),rgba(238,244,250,.22))),url('../img/portal-londrina-fundo.png') center bottom/cover fixed!important;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system.dk-dark body:not(.login-v2) {
+ background:var(--portal-photo-veil,linear-gradient(rgba(3,17,33,.32),rgba(3,17,33,.42))),url('../img/portal-londrina-fundo.png') center bottom/cover fixed!important;
+}
+html#portal-page-glass.icv-page.portal-glass-system body:not(.login-v2),
+html#portal-page-glass.icv-page.portal-glass-system.dk-dark body:not(.login-v2) {
+ background:transparent!important;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system body:has(> footer.portal-site-footer),
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system body:has(> .page-footer) {
+ min-height:100dvh;display:flex;flex-direction:column;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system :is(footer.portal-site-footer,.page-footer) {
+ margin-top:auto;background:var(--portal-glass-light)!important;color:var(--portal-text-secondary)!important;border-color:var(--portal-border)!important;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system .header {
+ min-height:72px!important;padding:10px 16px!important;align-items:center;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system .header :is(.title-wrap,.icv-title-wrap,.pa-title-wrap,.pontualidade-title-wrap) {
+ min-width:0;max-width:100%;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system .header :is(h1,.header-title,.page-title) {
+ overflow-wrap:anywhere;font-size:clamp(16px,2vw,22px)!important;font-weight:650!important;line-height:1.25;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system .dk-theme-picker {
+ display:inline-flex;gap:4px;padding:4px;border:1px solid var(--portal-line);border-radius:12px;background:var(--portal-glass-light);
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system .dk-theme-opt {
+ min-height:36px;padding:6px 10px;border:0;border-radius:9px;background:transparent;color:var(--portal-ink);font:600 12px Inter,sans-serif;cursor:pointer;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system .dk-theme-opt.is-active {
+ background:color-mix(in srgb,var(--portal-accent) 18%,transparent);color:var(--portal-accent);
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system .btn-portal .btn-icon:nth-of-type(n+2) {display:none!important}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system :is(.filters,.filter-panel,.portal-filters-bar,.pa-filtros) {
+ display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system :is(.campo,.filter-group) {
+ flex:1 1 160px;min-width:160px;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system :is(.kpi-value,.kpi-card .val,.stat-card .val,.card-value,.ciop-kpi-num,.icv-cell) {
+ font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--portal-ink)!important;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system :is(.kpi-title,.kpi-label,.kpi-sub,.card-desc) {
+ color:var(--portal-muted)!important;font-weight:500!important;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system :is(.kpi-container,.kpis) {
+ display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system :is(.table-wrap,.table-wrapper,.tabela-wrap,.table-container,.table-scroll) {
+ overflow:auto;max-width:100%;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system thead th {
+ position:sticky;top:0;z-index:1;background:var(--portal-surface)!important;color:var(--portal-ink)!important;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system td.num,html#portal-page-glass:has(body#portal-page-content).portal-glass-system th.num {
+ text-align:right;font-variant-numeric:tabular-nums;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system :is(input,select,textarea)[readonly],
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system :is(input,select,textarea):disabled {
+ opacity:.7;background:var(--portal-glass-light)!important;cursor:not-allowed;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system.dk-light .ai-console {
+ background:var(--portal-glass-dense)!important;color:var(--portal-ink)!important;border:1px solid var(--portal-line)!important;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system.dk-light .ai-console-title {
+ background:none!important;color:var(--portal-ink)!important;-webkit-text-fill-color:var(--portal-ink)!important;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system.dk-light :is(.ai-chat,.ai-chat-input) {
+ background:var(--portal-field)!important;color:var(--portal-ink)!important;-webkit-text-fill-color:var(--portal-ink)!important;border-color:var(--portal-line)!important;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system.dk-light .ai-console :is(p,span,li,small,strong,em,label,h3,a,div,.ai-console-desc,.ai-chat-bot,.ai-chat-user) {
+ color:var(--portal-ink)!important;-webkit-text-fill-color:var(--portal-ink)!important;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system.dk-light .ai-console-hint,
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system.dk-light .ai-console :is(.muted,.ai-chat-topbar span) {
+ color:var(--portal-muted)!important;-webkit-text-fill-color:var(--portal-muted)!important;
+}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system .leaflet-container {filter:none!important}
+html#portal-page-glass:has(body#portal-page-content).portal-glass-system :is(.leaflet-control,.map-legenda,.oa-float) {
+ background:var(--portal-glass-dense)!important;color:var(--portal-ink)!important;border:1px solid var(--portal-line)!important;backdrop-filter:var(--portal-blur-mid);
 }

@@ -70,8 +70,9 @@
         return;
       }
       if (el._countRaf) cancelAnimationFrame(el._countRaf);
+      el.dataset.counting = "1";
       var t0 = performance.now();
-      var dur = (opts.duration || Math.min(1.2, 0.55 + Math.abs(fim - inicio) * 0.02)) * 1000;
+      var dur = (opts.duration || 0.85) * 1000;
       function tick(now) {
         var p = Math.min(1, (now - t0) / dur);
         var ease = 1 - Math.pow(1 - p, 3);
@@ -80,6 +81,7 @@
         else {
           pintarKpi(el, fim, casas, sufixo);
           el._countRaf = 0;
+          delete el.dataset.counting;
         }
       }
       el._countRaf = requestAnimationFrame(tick);
@@ -123,7 +125,7 @@
     function aplicar(el) {
       if (!el || skip[el.id]) return;
       if (el.closest && el.closest(".paper, .leaflet-container")) return;
-      if (el._countRaf || el._countTween || (el.classList && el.classList.contains("is-counting"))) return;
+      if (el._countRaf || el._countTween || el.dataset.counting === "1" || (el.classList && el.classList.contains("is-counting"))) return;
       var parsed = parseKpiTexto(el.textContent);
       if (!parsed) return;
       window.portalContarNumero(el, parsed.n, {

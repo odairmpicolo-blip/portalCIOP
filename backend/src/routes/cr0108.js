@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { query } from "../db.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
+import { intervaloDatas } from "../lib/validar.js";
 
 /**
  * CR-0108, ICV e IPV lidos direto do Aurora DSQL.
