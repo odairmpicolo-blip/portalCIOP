@@ -21,5 +21,7 @@ Imagens do [catálogo](../catalogo.html) com **dados fictícios** (linha 999, pr
 | `pontualidade-kpi-claro.png` | Pontualidade: KPIs, seletor 2/6–1/3 e tabela, tema claro |
 | `pontualidade-kpi-escuro.png` | O mesmo recorte no tema escuro (fill = color; Adiantado vermelho, Atrasado âmbar) |
 | `painel-ciop-clima-noite.png` | Painel CIOP TV: céu limpo à noite com lua genérica, colunas horárias e “Agora” |
+| `terminais-proximas-claro.png` | Terminais Agora: Próxima troca e lista Próximas, tema claro |
+| `terminais-proximas-escuro.png` | O mesmo recorte no tema escuro (linhas escuras, nome/horário claros) |
 
 Ao mudar o padrão visual compartilhado, recapturar estas imagens e atualizar o `.md` correspondente.

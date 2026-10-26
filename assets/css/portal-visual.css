@@ -134,13 +134,13 @@ html:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) :
   background: var(--lg-fill-hover) !important;
 }
 
-html:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) :is(
+html:not(.dk-dark):not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) :is(
   h1, h2, h3, h4,
   .page-title, .page-title-art, .header-title, .panel-title, .group-title,
   .card-title, .chart-title, .kpi-value, .stat-card .val, .kpi-card .val,
   .card-value, .ciop-session-user, .hero-pro-nome, .hero-pro-saudacao-label,
   .ciop-kpi-value, .ciop-kpi-num
-):not(.ai-console *):not(.ai-console) {
+):not(.ai-console *):not(.ai-console):not(.is-early):not(.is-late):not(#kpiAdiantado):not(#kpiAtrasado) {
   color: #1c1c1e !important;
   -webkit-text-fill-color: #1c1c1e !important;
   text-shadow: none !important;
@@ -155,15 +155,23 @@ html:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) :
   -webkit-text-fill-color: #2c2c2e !important;
 }
 
-html:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) :is(
+html:not(.dk-dark):not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) :is(
   .kpi-value, .stat-card .val, .kpi-card .val, .card-value, .ciop-kpi-num
-) {
+):not(.is-early):not(.is-late):not(#kpiAdiantado):not(#kpiAtrasado) {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1, "lnum" 1;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: #111113 !important;
   -webkit-text-fill-color: #111113 !important;
+}
+html:not(.dk-dark):not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) :is(#kpiAdiantado, .kpi-value.is-early) {
+  color: var(--portal-op-early, #dc2626) !important;
+  -webkit-text-fill-color: var(--portal-op-early, #dc2626) !important;
+}
+html:not(.dk-dark):not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) :is(#kpiAtrasado, .kpi-value.is-late) {
+  color: var(--portal-op-late, #ca8a04) !important;
+  -webkit-text-fill-color: var(--portal-op-late, #ca8a04) !important;
 }
 
 html:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) :is(
@@ -349,7 +357,7 @@ html.dk-light:not(.dk-dark):not(.portal-home-2026):not(:has(#kiosk)) body:has(.h
 
 html.dk-light:not(.dk-dark):not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) :is(
   .hero-pro-nome, .card-title, .header-title, .page-title, .ciop-kpi-num, .kpi-value
-) {
+):not(.is-early):not(.is-late):not(#kpiAdiantado):not(#kpiAtrasado) {
   background: none !important;
   background-image: none !important;
   -webkit-background-clip: border-box !important;
@@ -482,6 +490,12 @@ html:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header) :is(.leaflet-con
   }
 }
 
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) {
+  --lg-text: var(--portal-text, #f5f8ff);
+  --lg-label: var(--portal-text-secondary, #d5e3f4);
+  --lg-muted: var(--portal-text-aux, #b7c9de);
+  --texto: var(--portal-text, #f5f8ff);
+}
 html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) {
   color: #f4f7fb;
   background-color: #071018;
@@ -491,7 +505,8 @@ html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.log
   .card, .toolbar-whatsapp, .menu-toggle, .ciop-session, .portal-abas,
   .panel, .kpi-card, .stat-card, .chart-card, .table-card, .filters-panel,
   .topbar, .toolbar, .cv-panel, .hero-pro-panel, .table-wrap, .chart-box,
-  .sidebar, footer.portal-site-footer
+  .sidebar, footer.portal-site-footer, .exchange-card, .terminal-card,
+  .terminal-kpi-card, .fiscal-lead-card
 ) {
   background: linear-gradient(180deg, rgba(18, 32, 54, 0.72) 0%, rgba(8, 16, 28, 0.58) 100%) !important;
   background-image: linear-gradient(180deg, rgba(18, 32, 54, 0.72) 0%, rgba(8, 16, 28, 0.58) 100%) !important;
@@ -501,11 +516,101 @@ html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.log
 }
 html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2):not(.cad-page):not(.fb-page):not(.autuacoes-page) :is(
   h1, h2, h3, h4, h5, p, li, td, th, label, small, .card-title,
-  .page-title, .header-title, .ciop-session-user, .hero-pro-nome, .ciop-kpi-num
-):not(.btn-primary):not(.btn-portal):not(.btn-logout):not(.card-btn):not(.firm-pct):not(.firm-week-pct):not(.ai-console *):not(.ai-console):not(.line-chip):not(.scenario-title):not(.scenario-desc) {
-  color: #f4f7fb !important;
-  -webkit-text-fill-color: #f4f7fb !important;
+  .page-title, .header-title, .ciop-session-user, .hero-pro-nome, .ciop-kpi-num,
+  .kpi-value, .stat-card .val, .kpi-card .val, .card-value, .ciop-kpi-value
+):not(.btn-primary):not(.btn-portal):not(.btn-logout):not(.card-btn):not(.firm-pct):not(.firm-week-pct):not(.ai-console *):not(.ai-console):not(.line-chip):not(.scenario-title):not(.scenario-desc):not(#kpiAdiantado):not(#kpiAtrasado):not(.highlight-cell):not(.is-early):not(.is-late) {
+  color: var(--portal-on-elevated, #f5f8ff) !important;
+  -webkit-text-fill-color: var(--portal-on-elevated, #f5f8ff) !important;
   text-shadow: none !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) :is(
+  .kpi-value, .stat-card .val, .kpi-card .val, .card-value, .ciop-kpi-num, .ciop-kpi-value
+):not(#kpiAdiantado):not(#kpiAtrasado) {
+  background: none !important;
+  background-image: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  mix-blend-mode: normal !important;
+  opacity: 1 !important;
+  filter: none !important;
+  -webkit-text-fill-color: var(--portal-on-elevated, #f5f8ff) !important;
+  color: var(--portal-on-elevated, #f5f8ff) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) #kpiAdiantado,
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .kpi-value.is-early {
+  color: var(--portal-op-early, #f87171) !important;
+  -webkit-text-fill-color: var(--portal-op-early, #f87171) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) #kpiAtrasado,
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .kpi-value.is-late {
+  color: var(--portal-op-late, #facc15) !important;
+  -webkit-text-fill-color: var(--portal-op-late, #facc15) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .scenario-toggle {
+  background: var(--portal-field, rgba(255, 255, 255, 0.08)) !important;
+  border-color: var(--portal-border, rgba(191, 219, 246, 0.18)) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .scenario-button:not(.active) {
+  background: transparent !important;
+  color: var(--portal-on-option, #f5f8ff) !important;
+  -webkit-text-fill-color: var(--portal-on-option, #f5f8ff) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .scenario-button:not(.active) :is(.scenario-title, .scenario-desc, span) {
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .scenario-button:not(.active):hover,
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .scenario-button:not(.active):focus-visible {
+  background: var(--portal-option-hover) !important;
+  color: var(--portal-on-option, #f5f8ff) !important;
+  -webkit-text-fill-color: var(--portal-on-option, #f5f8ff) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .scenario-button.active,
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .scenario-button.active :is(.scenario-title, .scenario-desc, span) {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .highlight-cell {
+  background: color-mix(in srgb, var(--portal-op-ontime, #4ade80) 18%, transparent) !important;
+  color: var(--portal-op-ontime, #4ade80) !important;
+  -webkit-text-fill-color: var(--portal-op-ontime, #4ade80) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) tr:hover td {
+  background: var(--portal-option-hover, rgba(130, 196, 255, 0.14)) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) tr:hover td.highlight-cell,
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) tr:focus-visible td.highlight-cell {
+  background: color-mix(in srgb, var(--portal-op-ontime, #4ade80) 26%, transparent) !important;
+  color: var(--portal-op-ontime, #4ade80) !important;
+  -webkit-text-fill-color: var(--portal-op-ontime, #4ade80) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .tabela-dia td {
+  background: color-mix(in srgb, var(--portal-table, rgba(8, 26, 46, 0.78)) 70%, transparent) !important;
+  color: var(--portal-text-secondary, #d5e3f4) !important;
+  -webkit-text-fill-color: var(--portal-text-secondary, #d5e3f4) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .tabela-dia td.highlight-cell {
+  color: var(--portal-op-ontime, #4ade80) !important;
+  -webkit-text-fill-color: var(--portal-op-ontime, #4ade80) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .tabela-mes:focus-visible {
+  outline: 2px solid var(--portal-focus, #82c4ff);
+  outline-offset: -2px;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .table-card,
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .table-card-header {
+  background: var(--portal-table, rgba(8, 26, 46, 0.78)) !important;
+  color: var(--portal-on-elevated, #f5f8ff) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) th {
+  background: color-mix(in srgb, var(--portal-table, #10253c) 88%, #fff) !important;
+  color: var(--portal-text-secondary, #d5e3f4) !important;
+  -webkit-text-fill-color: var(--portal-text-secondary, #d5e3f4) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) th.highlight-cell {
+  background: color-mix(in srgb, var(--portal-op-ontime, #4ade80) 18%, transparent) !important;
+  color: var(--portal-op-ontime, #4ade80) !important;
+  -webkit-text-fill-color: var(--portal-op-ontime, #4ade80) !important;
 }
 html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) :is(
   .card-desc, .muted, .help-text, .kpi-label, .ciop-kpi-label, .subtitle, .small, .status
@@ -519,4 +624,69 @@ html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.log
   color: #f4f7fb !important;
   background: rgba(255, 255, 255, 0.08) !important;
   border-color: rgba(255, 255, 255, 0.14) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) :is(
+  .exchange-item, .time-chip, .terminal-kpi-time, .count-pill, .segmented
+) {
+  background: var(--portal-field, rgba(255, 255, 255, 0.08)) !important;
+  color: var(--portal-on-field, #f5f8ff) !important;
+  -webkit-text-fill-color: var(--portal-on-field, #f5f8ff) !important;
+  border-color: var(--portal-border, rgba(191, 219, 246, 0.18)) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .exchange-item:hover,
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .exchange-item:focus-visible {
+  background: var(--portal-option-hover, rgba(130, 196, 255, 0.22)) !important;
+  color: var(--portal-on-option, #f5f8ff) !important;
+  -webkit-text-fill-color: var(--portal-on-option, #f5f8ff) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) :is(
+  .exchange-time, .exchange-person, .terminal-kpi-name, .fiscal-lead-name, .person-line b
+) {
+  color: var(--portal-on-elevated, #f5f8ff) !important;
+  -webkit-text-fill-color: var(--portal-on-elevated, #f5f8ff) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) :is(
+  .exchange-kind, .exchange-terminal, .exchange-meta, .person-line small,
+  .terminal-kpi-registro, .fiscal-lead-reg, .count-pill
+) {
+  color: var(--portal-text-secondary, #d5e3f4) !important;
+  -webkit-text-fill-color: var(--portal-text-secondary, #d5e3f4) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .status-badge.status-now {
+  background: color-mix(in srgb, var(--portal-op-ontime, #4ade80) 22%, transparent) !important;
+  color: var(--portal-op-ontime, #4ade80) !important;
+  -webkit-text-fill-color: var(--portal-op-ontime, #4ade80) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .status-badge.status-next,
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .status-badge.status-reserve,
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .count-pill.reserve {
+  background: color-mix(in srgb, var(--portal-accent-warn, #ffab66) 22%, transparent) !important;
+  color: var(--portal-accent-warn, #ffab66) !important;
+  -webkit-text-fill-color: var(--portal-accent-warn, #ffab66) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .status-badge.status-today {
+  background: color-mix(in srgb, var(--portal-accent, #82c4ff) 22%, transparent) !important;
+  color: var(--portal-accent, #82c4ff) !important;
+  -webkit-text-fill-color: var(--portal-accent, #82c4ff) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .status-badge.status-ended {
+  background: var(--portal-field, rgba(255, 255, 255, 0.08)) !important;
+  color: var(--portal-text-secondary, #d5e3f4) !important;
+  -webkit-text-fill-color: var(--portal-text-secondary, #d5e3f4) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .segmented button {
+  color: var(--portal-on-option, #f5f8ff) !important;
+  -webkit-text-fill-color: var(--portal-on-option, #f5f8ff) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) :is(
+  .segmented button.active, .segmented button[aria-pressed="true"]
+) {
+  background: var(--portal-option-selected, #1d6fbf) !important;
+  color: var(--portal-on-option-selected, #f5f8ff) !important;
+  -webkit-text-fill-color: var(--portal-on-option-selected, #f5f8ff) !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .error-box {
+  background: color-mix(in srgb, var(--portal-op-early, #f87171) 16%, var(--portal-field, #10253c)) !important;
+  color: var(--portal-op-early, #f87171) !important;
+  -webkit-text-fill-color: var(--portal-op-early, #f87171) !important;
 }

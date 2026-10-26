@@ -70,7 +70,44 @@ Os filhos (`span`, SVG) usam `color: inherit` e `fill: currentColor`. Não pinta
 
 No escuro a seleção é azul com texto claro — nunca mint `#effcfb` com texto `--portal-text`. Prévia `.paper` permanece branca com `#102c53`.
 
-Páginas internas: o design system remapeia `--text` / `--muted` / `--ink` para esses pares. `.kpi .value`, `.bar-label`, `.terminal-name` e equivalentes herdam `--portal-on-elevated`. Exceções: `.paper`, `.report-sheet`, `.pdf-sheet`.
+Páginas internas: o design system remapeia `--text` / `--muted` / `--ink` para esses pares. `.kpi .value`, `.kpi-value`, `.bar-label`, `.terminal-name` e equivalentes herdam `--portal-on-elevated` **e** `-webkit-text-fill-color` igual à `color` (o fill sozinho deixava o número escuro no tema escuro). Exceções: `.paper`, `.report-sheet`, `.pdf-sheet`.
+
+### KPI, seletor 2/6–1/3 e célula destacada
+
+| Superfície | Fundo | Texto / fill |
+| --- | --- | --- |
+| `.kpi-value` | painel | `--portal-on-elevated` (clip `border-box`, sem mistura) |
+| Adiantado (`.is-early`, `#kpiAdiantado`) | painel | `--portal-op-early` |
+| Atrasado (`.is-late`, `#kpiAtrasado`) | painel | `--portal-op-late` |
+| `.scenario-toggle` | `--portal-field` | — |
+| `.scenario-button` inativo | transparente | `--portal-on-option` |
+| `.scenario-button.active` | marca / azul | `#fff` |
+| `.highlight-cell` | mistura de `--portal-op-ontime` | `--portal-op-ontime` (nunca mint `#f2faf4` com texto claro) |
+
+### Linhas operacionais (próximas trocas, fiscais, chips)
+
+Não deixar a linha branca se o tema escuro já pintou o nome de claro. Cada filho tem o par da superfície — não basta o contêiner.
+
+| Superfície | Fundo | Texto / fill |
+| --- | --- | --- |
+| `.exchange-card`, `.terminal-card`, `.fiscal-lead-card` | `--portal-glass-mid` | `--portal-on-elevated` |
+| `.exchange-item` | `--portal-field` | `--portal-on-field` |
+| Nome / horário (`.exchange-person`, `.exchange-time`) | linha | `--portal-on-elevated` |
+| Terminal / tipo (`.exchange-terminal`, `.exchange-kind`) | linha | `--portal-text-secondary` |
+| Hover / foco da linha | `--portal-option-hover` | `--portal-on-option` |
+| `.time-chip`, `.terminal-kpi-time`, `.count-pill` | `--portal-field` | `--portal-on-field` |
+| `.status-badge.status-now` | mistura de `--portal-op-ontime` | `--portal-op-ontime` |
+| `.status-badge.status-next` / reserva | mistura de `--portal-accent-warn` | `--portal-accent-warn` |
+| `.segmented button` inativo | transparente sobre `--portal-field` | `--portal-on-option` |
+| `.segmented button.active` | `--portal-option-selected` | `--portal-on-option-selected` |
+| `.error-box` | mistura de `--portal-op-early` | `--portal-op-early` |
+| `.paper` / PDF | `--portal-paper` | `#102c53` (não herda o texto claro do tema) |
+
+`.terminal-kpi-card` no escuro usa mistura do acento do terminal com `--portal-glass-mid`, não o degradê até `#fff`.
+
+![Próximas trocas no tema claro](assets/terminais-proximas-claro.png)
+
+![Próximas trocas no tema escuro](assets/terminais-proximas-escuro.png)
 
 ### Texto e ação
 

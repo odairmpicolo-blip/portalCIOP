@@ -1465,6 +1465,64 @@ h1 {
     border: 1px solid rgba(255,255,255,.6) !important;
     border-radius: 999px !important;
   }
+
+  html.dk-dark .scenario-toggle{
+    background: var(--portal-field, rgba(255,255,255,.08)) !important;
+    border-color: var(--portal-border, rgba(191,219,246,.18)) !important;
+  }
+  html.dk-dark .scenario-button:not(.active),
+  html.dk-dark .scenario-button:not(.active) .scenario-title,
+  html.dk-dark .scenario-button:not(.active) .scenario-desc{
+    color: var(--portal-on-option, #f5f8ff) !important;
+    -webkit-text-fill-color: var(--portal-on-option, #f5f8ff) !important;
+    background: transparent !important;
+  }
+  html.dk-dark .kpi-card,
+  html.dk-dark .kpi-card.highlight{
+    background: var(--portal-glass-mid, rgba(12,36,62,.52)) !important;
+  }
+  html.dk-dark .kpi-value{
+    color: var(--portal-on-elevated, #f5f8ff) !important;
+    -webkit-text-fill-color: var(--portal-on-elevated, #f5f8ff) !important;
+    background: none !important;
+    -webkit-background-clip: border-box !important;
+    background-clip: border-box !important;
+    mix-blend-mode: normal !important;
+  }
+  html.dk-dark #kpiAdiantado{
+    color: var(--portal-op-early, #f87171) !important;
+    -webkit-text-fill-color: var(--portal-op-early, #f87171) !important;
+  }
+  html.dk-dark #kpiAtrasado{
+    color: var(--portal-op-late, #facc15) !important;
+    -webkit-text-fill-color: var(--portal-op-late, #facc15) !important;
+  }
+  html.dk-dark .table-card,
+  html.dk-dark .table-card-header{
+    background: var(--portal-table, rgba(8,26,46,.78)) !important;
+  }
+  html.dk-dark th{
+    background: rgba(255,255,255,.06) !important;
+    color: var(--portal-text-secondary, #d5e3f4) !important;
+    -webkit-text-fill-color: var(--portal-text-secondary, #d5e3f4) !important;
+  }
+  html.dk-dark td{
+    color: var(--portal-on-elevated, #f5f8ff) !important;
+    -webkit-text-fill-color: var(--portal-on-elevated, #f5f8ff) !important;
+  }
+  html.dk-dark .highlight-cell{
+    background-color: color-mix(in srgb, var(--portal-op-ontime, #4ade80) 18%, transparent) !important;
+    color: var(--portal-op-ontime, #4ade80) !important;
+    -webkit-text-fill-color: var(--portal-op-ontime, #4ade80) !important;
+  }
+  html.dk-dark tr:hover{
+    background: var(--portal-option-hover, rgba(130,196,255,.14)) !important;
+  }
+  html.dk-dark .tabela-dia td{
+    background: rgba(255,255,255,.03) !important;
+    color: var(--portal-text-secondary, #d5e3f4) !important;
+    -webkit-text-fill-color: var(--portal-text-secondary, #d5e3f4) !important;
+  }
 }
 </style>
 <script src="../assets/js/loading.js?v=20261022loading1"></script>
@@ -1482,15 +1540,15 @@ h1 {
 <link rel="stylesheet" href="../assets/css/dashboard-kit.css?v=20260720p">
     
 
-<script src="../assets/js/theme-toggle.js?v=20261026read1"></script>
+<script src="../assets/js/theme-toggle.js?v=20261026row1"></script>
 <script type="module" src="../assets/js/auth.js?v=20261022legivel3"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260930v1">
 <link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260930v1">
-<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260930v1">
+<link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20261026ipv1">
 <link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260930v1">
-<link rel="stylesheet" href="../assets/css/portal-visual.css?v=20261026sel1">
+<link rel="stylesheet" href="../assets/css/portal-visual.css?v=20261026row1">
 </head>
 <body>
 <div class="body-bg-wall" aria-hidden="true"></div>
@@ -1556,11 +1614,11 @@ h1 {
             </div>
             <div class="kpi-card" style="border-left: 4px solid var(--red);">
                 <div class="kpi-title">🔴 Adiantado</div>
-                <div class="kpi-value" id="kpiAdiantado" style="color: var(--red);">-</div>
+                <div class="kpi-value is-early" id="kpiAdiantado">-</div>
             </div>
             <div class="kpi-card" style="border-left: 4px solid var(--yellow);">
                 <div class="kpi-title">🟡 Atrasado</div>
-                <div class="kpi-value" id="kpiAtrasado" style="color: var(--yellow);">-</div>
+                <div class="kpi-value is-late" id="kpiAtrasado">-</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-title">Media 2025</div>
@@ -2190,8 +2248,8 @@ function renderizarTabelaFiltrada(visual) {
     tbody.innerHTML = visual.linhas.map((row) => {
         const dias = Array.isArray(row.dias) ? row.dias : [];
         const celulas = (item, classeTd) => `<td class="${classeTd || ''}">${item.no_horario.toFixed(2)}%</td>
-            <td style="color: var(--red); font-weight: 500;">${item.adiantado.toFixed(2)}%</td>
-            <td style="color: var(--yellow); font-weight: 500;">${item.atrasado.toFixed(2)}%</td>`;
+            <td class="is-early" style="font-weight: 500;">${item.adiantado.toFixed(2)}%</td>
+            <td class="is-late" style="font-weight: 500;">${item.atrasado.toFixed(2)}%</td>`;
         if (!dias.length) {
             return `<tr>
             <td>${row.periodo}</td>

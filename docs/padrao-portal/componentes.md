@@ -106,6 +106,10 @@ Filtros: `.filters`, `.filter-panel`, `.portal-filters-bar`, `.pa-filtros` em fl
 
 Date `type="date"` nativo. Placeholder = `--portal-text-secondary`.
 
+## Linhas operacionais (próximas trocas)
+
+`.exchange-item` (lista “Próximas” em Terminais Agora) e chips `.time-chip` / `.terminal-kpi-time` usam `--portal-field` + `--portal-on-field`. Nome e horário: `--portal-on-elevated`. Terminal e tipo: `--portal-text-secondary`. Status: par próprio (`--portal-op-*` / aviso), nunca texto claro em fundo pastel. Hover e `:focus-visible` usam `--portal-option-hover`. No escuro o card `.exchange-card` e `.terminal-kpi-card` não ficam brancos. Pares: [temas-e-tokens.md](temas-e-tokens.md).
+
 ## Abas e segmentados
 
 Home (≤900 px): `.portal-abas` / `.portal-aba` com `aria-selected`. Picker de tema: `.dk-theme-picker`. Incidentes/mapas: `.cad-views`, `.st-subtabs`, `.mn-abas` — item `.ativo` com texto branco.
