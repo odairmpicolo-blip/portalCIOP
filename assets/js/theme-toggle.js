@@ -1,6 +1,6 @@
 var DK_KEY = "dk-theme";
-var DK_BRAND_LIGHT = "logomarca-portalciop-tcgl-claro.png";
-var DK_BRAND_DARK = "logomarca-portalciop-tcgl-escuro.png";
+var DK_BRAND_LIGHT = "portal-logo-clean-light.png";
+var DK_BRAND_DARK = "portal-logo-clean-dark.png";
 var DK_AUTO_TIMER = null;
 var DK_SYSTEM_MQ = null;
 
@@ -41,21 +41,21 @@ function dkIsDark(pref) {
 
 function dkTcglPath(img, fileName) {
   var src = img.getAttribute("src") || "";
-  if (src.indexOf("-login.png") !== -1) {
-    fileName = fileName.replace(".png", "-login.png");
-  }
-  if (src.indexOf("../assets/") !== -1) return "../assets/img/" + fileName + "?v=20261022logo";
-  if (src.indexOf("assets/") !== -1) return "assets/img/" + fileName + "?v=20261022logo";
+  if (src.indexOf("../assets/") !== -1) return "../assets/img/" + fileName + "?v=20261026chrome1";
+  if (src.indexOf("assets/") !== -1) return "assets/img/" + fileName + "?v=20261026chrome1";
   return fileName;
 }
 
 function dkSwapBrandLogos(isDark) {
   var fileName = isDark ? DK_BRAND_DARK : DK_BRAND_LIGHT;
   var imgs = document.querySelectorAll(
-    "img.portal-brand-art, img[src*='logomarca-portalciop-tcgl'], img[src*='titulo-portal-ciop']"
+    "img.portal-brand-art, img.home-logo, img[src*='portal-logo-clean-'], img[src*='logomarca-portalciop-tcgl']"
   );
   for (var i = 0; i < imgs.length; i++) {
     var img = imgs[i];
+    var src = img.getAttribute("src") || "";
+    if (/titulo-portal-ciop|campanha|cartao-aniversario|print-only|pdf-/.test(src)) continue;
+    if (img.closest(".pdf-sheet-top, .pdf-doc-brand, .pdf-print, .print-only, [data-print-brand]")) continue;
     img.setAttribute("src", dkTcglPath(img, fileName));
     img.setAttribute("alt", "Portal CIOP TCGL Operações");
   }
@@ -178,7 +178,7 @@ window.dkSwapBrandLogos = dkSwapBrandLogos;
   var current = document.currentScript;
   if (!current?.src) return;
   var script = document.createElement('script');
-  script.src = new URL('portal-design-system.js?v=20261023glass5', current.src).href;
+  script.src = new URL('portal-design-system.js?v=20261026legivel1', current.src).href;
   script.dataset.portalDesignSystem = '1';
   script.defer = true;
   document.head.appendChild(script);

@@ -7,10 +7,10 @@
 
   function brandImgSrc() {
     var dark = document.documentElement.classList.contains("dk-dark");
-    var file = dark ? "logomarca-portalciop-tcgl-escuro.png" : "logomarca-portalciop-tcgl-claro.png";
+    var file = dark ? "portal-logo-clean-dark.png" : "portal-logo-clean-light.png";
     return window.location.pathname.includes("/pages/")
-      ? "../assets/img/" + file + "?v=20260818logo6"
-      : "assets/img/" + file + "?v=20260818logo6";
+      ? "../assets/img/" + file + "?v=20261026chrome1"
+      : "assets/img/" + file + "?v=20261026chrome1";
   }
 
   function brandInnerHtml() {

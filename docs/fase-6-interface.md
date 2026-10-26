@@ -1,5 +1,7 @@
 # Fase 6 — Interface (20/08/2026)
 
+Padrão vigente: [`docs/interface/`](interface/README.md) (logo, menu, botões, contraste).
+
 Não redesenhei a home. A base já existia: tokens (`portal-tokens.css`), vidro (`portal-unify.css` + `portal-liquid-glass.css`), cabeçalho/sessão (`portal-header.css`, `portal-session.css`) e overlay de login em `auth.js`.
 
 ## Padronizar cores, fonte e botões
