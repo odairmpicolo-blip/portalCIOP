@@ -318,11 +318,11 @@
     }
     if (rangeEl) {
       rangeEl.innerHTML =
-        '<span class="ciop-clima-max"><small>Máx</small><b>' +
-        grauLabel(data.max) +
-        "</b></span>" +
         '<span class="ciop-clima-min"><small>Mín</small><b>' +
         grauLabel(data.min) +
+        "</b></span>" +
+        '<span class="ciop-clima-max"><small>Máx</small><b>' +
+        grauLabel(data.max) +
         "</b></span>";
     }
     if (descEl) descEl.textContent = meta.desc;
