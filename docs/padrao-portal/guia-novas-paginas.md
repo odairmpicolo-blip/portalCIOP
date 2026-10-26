@@ -57,6 +57,7 @@ Colocar em `pages/meu-modulo.html`. Caminhos `../assets/…`.
   <script>document.documentElement.classList.add("portal-auth-pending");</script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="../assets/img/portal-favicon.png?v=20261026fav1">
   <title>Meu módulo - Portal CIOP</title>
   <script src="../assets/js/theme-toggle.js?v=20261026liquid2"></script>
 </head>

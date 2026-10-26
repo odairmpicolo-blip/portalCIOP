@@ -354,15 +354,19 @@
 
   function montarIndicadoresNoHeader() {
     var hero = document.getElementById("headerHero");
-    if (!hero || hero.querySelector(".home-header-stats")) return;
-    var stats = document.createElement("div");
-    stats.className = "home-header-stats ciop-zone-status";
-    stats.setAttribute("aria-label", "Resumo da operação");
-    ["ciopKpiModulos", "ciopKpiUsuarios", "ciopKpiAvisos"].forEach(function (id) {
-      var card = document.getElementById(id)?.closest(".ciop-kpi");
-      if (card) stats.appendChild(card);
-    });
-    hero.insertBefore(stats, hero.querySelector(".home-meta"));
+    if (!hero) return;
+    var stats = hero.querySelector(".home-header-stats");
+    if (!stats) {
+      stats = document.createElement("div");
+      stats.className = "home-header-stats ciop-zone-status";
+      stats.setAttribute("aria-label", "Resumo da operação");
+      ["ciopKpiModulos", "ciopKpiUsuarios", "ciopKpiAvisos"].forEach(function (id) {
+        var card = document.getElementById(id)?.closest(".ciop-kpi");
+        if (card) stats.appendChild(card);
+      });
+    }
+    var inner = hero.querySelector(".hero-pro-copy") || hero.querySelector(".header-hero-inner");
+    if (inner && stats.parentNode !== inner) inner.appendChild(stats);
   }
 
   var PERF_API = "https://londrisul.online/relatorios/mapa/api.php?chave=" + encodeURIComponent("Pontualidade@2026");
@@ -430,29 +434,25 @@
     var hero = document.getElementById("headerHero");
     var block = document.getElementById("homePerfKpis");
     if (!hero || !block) return;
-    var meta = hero.querySelector(".home-meta");
-    if (block.parentNode !== hero) {
-      if (meta) hero.insertBefore(block, meta);
-      else hero.appendChild(block);
-    }
+    if (block.parentNode !== hero) hero.appendChild(block);
     carregarPerfTcgl();
     if (!perfTimer) perfTimer = setInterval(carregarPerfTcgl, 15000);
   }
 
   function montarCommandStrip() {
     var hero = document.getElementById("headerHero");
-    if (!hero || hero.querySelector(".home-command")) return;
-    var stats = hero.querySelector(".home-header-stats");
-    var perf = hero.querySelector(".home-perf");
-    if (!stats && !perf) return;
-    var wrap = document.createElement("div");
-    wrap.className = "home-command";
-    wrap.setAttribute("aria-label", "Central de comando");
-    if (perf) wrap.appendChild(perf);
-    if (stats) wrap.appendChild(stats);
+    if (!hero) return;
+    var wrap = hero.querySelector(".home-command");
+    if (wrap) {
+      while (wrap.firstChild) hero.appendChild(wrap.firstChild);
+      wrap.remove();
+    }
+    var inner = hero.querySelector(".header-hero-inner");
     var meta = hero.querySelector(".home-meta");
-    if (meta && meta.nextSibling) hero.insertBefore(wrap, meta.nextSibling);
-    else hero.appendChild(wrap);
+    var perf = hero.querySelector(".home-perf");
+    if (inner) hero.appendChild(inner);
+    if (meta) hero.appendChild(meta);
+    if (perf) hero.appendChild(perf);
   }
 
   function montarMeta() {
@@ -639,10 +639,10 @@
     pularParaConteudo();
     montarTopo();
     montarMeta();
+    lead();
     montarIndicadoresNoHeader();
     montarPerformanceNoHeader();
     montarCommandStrip();
-    lead();
     montarAtalhos();
     window.portalHomeSettings?.init();
     sincronizarAtalhos();

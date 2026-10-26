@@ -5,7 +5,7 @@ Implementação no portal clássico, inspirada em superfícies translúcidas (ti
 ## Como está no código
 
 1. Tokens de preenchimento, blur, reflexo e sombra em `portal-tokens.css`.
-2. Home: a fotografia (`.bg-wall`) é **suavizada** (`blur` ~12 px + véu), sem `filter` em texto ou ícone. O painel `.home-sheet` volta a ser vidro translúcido (`--home-sheet` ~40% claro / 50% fumê + blur 22 px). Cards, widget, performance e avisos usam `--home-card` mais denso (vidro fosco). Transparência só no `background`, nunca `opacity` no bloco.
+2. Home: a fotografia (`.bg-wall`) é **suavizada** (`blur` ~12 px + véu), sem `filter` em texto ou ícone. O painel `.home-sheet` é vidro translúcido (`--home-sheet` ~30% claro / 46% fumê + blur 22 px). Cards, widget, performance e avisos usam `--home-card` (~40% / 56%), sem o branco opaco. Saudação, contagens e títulos de seção ficam **no painel**, sem caixa extra. Transparência só no `background`, nunca `opacity` no bloco.
 3. Páginas internas: `theme-toggle.js` injeta `portal-design-system.js`, que marca `html.portal-glass-system` + `html#portal-page-glass` + `body#portal-page-content` e carrega `portal-design-system.css`.
 4. Home (`html.portal-home-2026`) **não** entra no design system das internas.
 5. Kiosk (`#kiosk`, `.kiosk`) recebe só `portal-glass-kiosk` — blur leve em painel, **sem** redesenhar o quadro 16:9.

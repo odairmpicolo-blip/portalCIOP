@@ -13,6 +13,19 @@
   } catch (e) {}
 })();
 
+(function dkFavicon() {
+  if (document.querySelector('link[rel="icon"], link[rel="shortcut icon"]')) return;
+  var current = document.currentScript;
+  var href = "assets/img/portal-favicon.png?v=20261026fav1";
+  if (current && current.src) href = new URL("../img/portal-favicon.png?v=20261026fav1", current.src).href;
+  var link = document.createElement("link");
+  link.rel = "icon";
+  link.type = "image/png";
+  link.sizes = "32x32";
+  link.href = href;
+  document.head.appendChild(link);
+})();
+
 var DK_KEY = "dk-theme";
 var DK_BRAND_LIGHT = "portal-logo-clean-light.png";
 var DK_BRAND_DARK = "portal-logo-clean-dark.png";

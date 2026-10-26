@@ -13,6 +13,8 @@ Arquivos oficiais — **não redesenhar**, não sobrepor outra marca, não aplic
 
 Uso: `img.portal-brand-art` (páginas) e `img.home-logo` (home). O texto “TCGL · Operações” já está no PNG. A classe `.portal-brand-meta` fica **oculta** no design system.
 
+Favicon da aba: recorte quadrado do ônibus da marca oficial sobre `#06245c` (`assets/img/portal-favicon.png` e `portal-favicon-192.png`). `index.html` / `login.html` apontam no `<head>`; as internas recebem o mesmo via `theme-toggle.js` e `auth.js`. Não redesenhar o traço.
+
 Quem troca o arquivo no claro/escuro: `dkSwapBrandLogos` em `theme-toggle.js` e o `brand()` de `portal-design-system.js`.
 
 `alt` padrão: `Portal CIOP TCGL Operações`.

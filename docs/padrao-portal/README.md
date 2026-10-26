@@ -50,11 +50,11 @@ Cores operacionais no claro (Adiantado vermelho, Atrasado âmbar, ausência como
 
 ![Indicadores fictícios no catálogo](assets/catalogo-kpis-claro.png)
 
-Home (foto suavizada, painel translúcido, cards foscos):
+Home (topo compacto, foto suavizada, vidro translúcido):
 
-![Home clara, desktop](assets/home-frost-claro-desktop.png)
+![Home clara, desktop](assets/home-compact-claro-desktop.png)
 
-![Home escura, desktop](assets/home-frost-escuro-desktop.png)
+![Home escura, desktop](assets/home-compact-escuro-desktop.png)
 
 Widget de hora e clima (observação atual Open-Meteo, não a previsão no lugar do “agora”):
 
