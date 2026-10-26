@@ -448,11 +448,50 @@
       wrap.remove();
     }
     var inner = hero.querySelector(".header-hero-inner");
-    var meta = hero.querySelector(".home-meta");
-    var perf = hero.querySelector(".home-perf");
     if (inner) hero.appendChild(inner);
-    if (meta) hero.appendChild(meta);
-    if (perf) hero.appendChild(perf);
+    montarOpsPanel();
+  }
+
+  function montarOpsPanel() {
+    var hero = document.getElementById("headerHero");
+    if (!hero) return;
+    var perf = document.getElementById("homePerfKpis");
+    var meta = hero.querySelector(".home-now, .home-meta");
+    if (!perf) return;
+    var ops = hero.querySelector(".home-ops");
+    if (!ops) {
+      ops = document.createElement("section");
+      ops.className = "home-ops";
+      ops.setAttribute("aria-label", "Performance, horário e clima");
+    }
+    var kicker = perf.querySelector(".home-perf-kicker");
+    if (kicker) kicker.textContent = "Performance · TCGL";
+    perf.classList.add("home-ops-perf");
+    if (perf.getAttribute("href") && !perf.hasAttribute("data-ops-link")) {
+      perf.setAttribute("data-ops-link", "perf");
+    }
+    var time = meta && meta.querySelector(".home-now-time");
+    var wx = meta && (meta.querySelector(".home-now-wx") || meta.querySelector(".ciop-kpi-clima"));
+    if (!time && meta) {
+      time = document.createElement("div");
+      time.className = "home-now-time";
+      var hora = meta.querySelector(".ciop-kpi-hora");
+      var data = meta.querySelector(".ciop-kpi-data");
+      if (hora) time.appendChild(hora);
+      if (data) time.appendChild(data);
+    }
+    if (time) {
+      time.classList.add("home-ops-time");
+      ops.appendChild(time);
+    }
+    ops.insertBefore(perf, ops.firstChild);
+    if (wx) {
+      wx.classList.add("home-ops-wx", "home-now-wx");
+      ops.appendChild(wx);
+    }
+    if (meta && meta.parentNode) meta.remove();
+    if (ops.parentNode !== hero) hero.appendChild(ops);
+    else hero.appendChild(ops);
   }
 
   function montarMeta() {

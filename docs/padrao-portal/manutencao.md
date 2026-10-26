@@ -13,7 +13,7 @@
 | Rodapé texto | `portal-footer.js` | |
 | Esta documentação | `docs/padrao-portal/` | Índice + catálogo se o componente mudou |
 
-Bump de cache vigente: tokens `?v=20261026liquid1`; home CSS/JS `?v=20261026compact2`; `theme-toggle.js` `liquid3` (favicon). Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no `script.src` do inject (`theme-toggle.js`, `portal-design-system.js`, `auth.js`).
+Bump de cache vigente: tokens `?v=20261026read1`; home CSS/JS `?v=20261026ops1`; DS `read1`; `theme-toggle.js` `read1`. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no `script.src` do inject (`theme-toggle.js`, `portal-design-system.js`, `auth.js`).
 
 ## Impacto
 

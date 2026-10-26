@@ -184,6 +184,13 @@
     });
     if (values.indexOf(cur) >= 0) el.value = cur;
   }
+  function msgCad(s) {
+    s = String(s || "");
+    if (/intervaloDatas is not defined/i.test(s)) {
+      return "A leitura ao vivo do CAD deste mês não está disponível no servidor. Mostrando o histórico salvo.";
+    }
+    return s;
+  }
   function setStatus(txt, cls) {
     $("statusLine").textContent = txt;
     $("statusDot").className = "status-dot " + (cls || "");
@@ -511,7 +518,7 @@
     try {
       var banco = await carregarBanco();
       if (banco && banco.ok === false && !linhasDe(banco).length) {
-        throw new Error(banco.erro || "API CAD recusou a leitura");
+        throw new Error(msgCad(banco.erro || "API CAD recusou a leitura"));
       }
       var bruto = banco ? linhasDe(banco) : [];
       var nMes = bruto.length;
@@ -522,11 +529,11 @@
       } else if (state.all.length) {
         setStatus("Histórico JSON · " + num(state.all.length) + " · mês atual ainda sem linhas no banco", "ok");
       } else {
-        setStatus((banco && banco.erro) ? banco.erro : "Sem histórico no JSON e cr_0002 vazio neste mês. Atualize depois da carga.", "load");
+        setStatus((banco && banco.erro) ? msgCad(banco.erro) : "Sem histórico no JSON e cr_0002 vazio neste mês. Atualize depois da carga.", "load");
       }
     } catch (e2) {
-      if (!state.all.length) setStatus("Não foi possível ler o CAD. " + (e2.message || e2), "erro");
-      else setStatus("Histórico JSON · banco do mês indisponível (" + (e2.message || e2) + ")", "ok");
+      if (!state.all.length) setStatus("Não foi possível ler o CAD. " + msgCad(e2.message || e2), "erro");
+      else setStatus("Histórico JSON · banco do mês indisponível (" + msgCad(e2.message || e2) + ")", "ok");
     }
     state.carregando = false;
     window.portalOcultarCarregando?.();

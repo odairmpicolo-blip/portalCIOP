@@ -68,10 +68,19 @@ function dkIsDark(pref) {
 }
 
 function dkTcglPath(img, fileName) {
-  var src = img.getAttribute("src") || "";
-  if (src.indexOf("../assets/") !== -1) return "../assets/img/" + fileName + "?v=20261026chrome1";
-  if (src.indexOf("assets/") !== -1) return "assets/img/" + fileName + "?v=20261026chrome1";
-  return fileName;
+  try {
+    var resolved = img.currentSrc || img.src || img.getAttribute("src") || "";
+    var u = new URL(resolved, location.href);
+    u.pathname = u.pathname.replace(/[^/]+$/, fileName);
+    u.search = "v=20261026chrome2";
+    return u.href;
+  } catch (e) {
+    var src = img.getAttribute("src") || "";
+    if (src.indexOf("../assets/") !== -1) return "../assets/img/" + fileName + "?v=20261026chrome2";
+    if (src.charAt(0) === "/" || src.indexOf("http") === 0) return src.replace(/[^/]+(\?.*)?$/, fileName + "?v=20261026chrome2");
+    if (src.indexOf("assets/") !== -1) return "assets/img/" + fileName + "?v=20261026chrome2";
+    return fileName;
+  }
 }
 
 function dkSwapBrandLogos(isDark) {
@@ -82,6 +91,8 @@ function dkSwapBrandLogos(isDark) {
   for (var i = 0; i < imgs.length; i++) {
     var img = imgs[i];
     var src = img.getAttribute("src") || "";
+    if (img.classList.contains("portal-loading-logo")) continue;
+    if (img.closest(".portal-loading-overlay, #portalLoading, .portal-loading")) continue;
     if (/titulo-portal-ciop|campanha|cartao-aniversario|print-only|pdf-/.test(src)) continue;
     if (img.closest(".pdf-sheet-top, .pdf-doc-brand, .pdf-print, .print-only, [data-print-brand]")) continue;
     img.setAttribute("src", dkTcglPath(img, fileName));
@@ -204,7 +215,7 @@ window.dkSwapBrandLogos = dkSwapBrandLogos;
   var current = document.currentScript;
   if (!current?.src) return;
   var script = document.createElement('script');
-  script.src = new URL('portal-design-system.js?v=20261026liquid2', current.src).href;
+  script.src = new URL('portal-design-system.js?v=20261026read1', current.src).href;
   script.dataset.portalDesignSystem = '1';
   script.defer = true;
   document.head.appendChild(script);

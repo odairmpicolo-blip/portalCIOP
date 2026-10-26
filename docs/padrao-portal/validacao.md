@@ -11,7 +11,7 @@ Legenda: **Navegador** = exercitado com servidor local; **Código** = tokens/DS/
 | Página | Papel | Temas | 390–1920 | Estados | Notas |
 | --- | --- | --- | --- | --- | --- |
 | `login.html` | Acesso | Navegador | Navegador 1920/390 | Formulário | Foto nos dois temas |
-| `index.html` | Home | Navegador (compact2, claro+escuro, 390/768/1366/1920) | Navegador | Login cobre sessão; CSS da home conferido | Saudação no painel; clima à direita ≥1101 px; 100% da largura ≤1100; dock 108 px |
+| `index.html` | Home | Navegador (ops1, claro+escuro, 1440; código 390/768/1366/1920) | Navegador + CSS | Login cobre sessão | `.home-ops` ~50/22/28; hora HH:mm; Adiantado rgb(220,38,38) / Atrasado rgb(202,138,4); welcome `#102c53` / `#f5f8ff` |
 | `pages/icv.html` | Dashboard | Código | Código | Login | Gráfico reage a `dk-theme-change` |
 | `pages/pontualidade.html` | IPV | Código | Código | Login | |
 | `pages/pontualidade-ajustada.html` | Dashboard | Código | Código | Erro amigável | API `/ipv-ajustado` ausente |
@@ -56,7 +56,7 @@ Ver canvas interno de validação e o relatório da rodada: foto; vidro; contras
 
 Capturas versionadas (catálogo, dados fictícios): [`assets/catalogo-claro.png`](assets/catalogo-claro.png), [`assets/catalogo-escuro.png`](assets/catalogo-escuro.png), [`assets/catalogo-kpis-claro.png`](assets/catalogo-kpis-claro.png).
 
-Home compacta (prévia sem Firebase, 2026-10-26): [`assets/home-compact-claro-desktop.png`](assets/home-compact-claro-desktop.png), [`assets/home-compact-escuro-desktop.png`](assets/home-compact-escuro-desktop.png). Recortes extras: [`assets/home-compact-claro-1920.png`](assets/home-compact-claro-1920.png), [`assets/home-compact-claro-390.png`](assets/home-compact-claro-390.png).
+Home unificada (prévia sem Firebase, 2026-10-26): [`assets/home-ops-claro-desktop.png`](assets/home-ops-claro-desktop.png), [`assets/home-ops-escuro-desktop.png`](assets/home-ops-escuro-desktop.png).
 
 Widget hora+clima (2026-10-26): desktop claro conferido no navegador (data por extenso, 25 °C atual vs mín/máx, “Atualizado às”, ícone do sol em poço escuro). Escuro: tokens `--home-ink` `#f5f8ff` e vidro `rgba(8,24,42,.48)` no computed. ≤900 px o widget desce da saudação; ≤520 px os blocos empilham. Busca permanece 42 px.
 
@@ -68,10 +68,10 @@ Não há banco de “antes” da home autenticada. O catálogo serve de **depois
 
 | Item | Tipo | Status |
 | --- | --- | --- |
-| `intervaloDatas` em `/cr0108/cad` | Confirmado | Corrigido (import) |
+| `intervaloDatas` em `/cr0108/cad` | Confirmado | Import no backend ok; front traduz a mensagem se a Lambda antiga ainda falhar |
 | Front chama `/cr0108/ipv-ajustado` | Confirmado | Rota não implementada; mensagem humana |
 | KPI reiniciava no meio da anima | Confirmado | `dataset.counting` |
-| Logo overlay 404 | Confirmado | Fallback PNG antigo |
+| Logo overlay 404 | Confirmado | `dkTcglPath` usa URL absoluta; loading logos excluídos da troca |
 | Decreto sempre escuro no claro | Confirmado | Override `dk-light .ai-console` |
 | Ícone Portal duplicado | Confirmado | Dedupe |
 | Flash de tema (páginas só com auth.js) | Confirmado (mecanismo) | Proposta: script no head |

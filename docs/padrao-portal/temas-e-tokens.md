@@ -37,6 +37,25 @@ A home e o ICV repetem o mesmo boot inline no primeiro script do HTML (defesa ex
 
 Aliases legado (`--texto`, `--muted`, `--lg-*`, `--surface`…) apontam para os tokens abaixo. Preferir `--portal-*` em código novo.
 
+### Pares superfície / conteúdo
+
+Usar o token da **escrita** da superfície, não uma cor global de “texto branco”.
+
+| Par | Superfície | Conteúdo |
+| --- | --- | --- |
+| Página / painel | `--portal-glass-mid` / `--portal-glass-dense` | `--portal-on-surface` (= `--portal-text`) |
+| Card elevado | `--portal-glass-mid` | `--portal-on-elevated` |
+| Campo | `--portal-field` | `--portal-on-field` |
+| Tooltip | `--portal-tooltip` | `--portal-on-tooltip` (`#f5f8ff` nos dois temas) |
+| Seleção | `--portal-selection` | `--portal-on-selection` |
+| Status operacional | — | `--portal-op-ontime` / `--early` / `--late` (não o texto do painel) |
+| Desabilitado | campo com `--portal-glass-light` | `--portal-text-disabled` (sem `opacity` no bloco inteiro) |
+| Documento / PDF | `--portal-paper` `#fff` | `#102c53` (mesmo no tema escuro da interface) |
+
+`--azul` e `--portal-fill-brand` servem a **preenchimento** de marca (botão, thead navy). Não usar `--azul` como cor de KPI no escuro.
+
+Páginas internas: o design system remapeia `--text` / `--muted` / `--ink` para esses pares. `.kpi .value`, `.bar-label`, `.terminal-name` e equivalentes herdam `--portal-on-elevated`. Exceções: `.paper`, `.report-sheet`, `.pdf-sheet`.
+
 ### Texto e ação
 
 | Token | Finalidade | Claro | Escuro |

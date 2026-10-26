@@ -444,7 +444,7 @@ function garantirWallpaperIos() {
 function garantirThemeToggle() {
   if (document.querySelector("script[src*='theme-toggle.js']")) return;
   const script = document.createElement("script");
-  script.src = portalPath("assets/js/theme-toggle.js?v=20261026liquid3");
+  script.src = portalPath("assets/js/theme-toggle.js?v=20261026read1");
   document.head.appendChild(script);
 }
 
