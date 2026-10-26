@@ -316,7 +316,14 @@
       if (Number.isFinite(data.temp)) setKpiNumero(tempEl, Math.round(data.temp), { suffix: "°", delay: 0.05 });
       else tempEl.textContent = grauLabel(data.temp);
     }
-    if (rangeEl) rangeEl.textContent = grauLabel(data.max) + "/" + grauLabel(data.min);
+    if (rangeEl) {
+      rangeEl.innerHTML =
+        '<span class="ciop-clima-max">máx ' +
+        grauLabel(data.max) +
+        '</span><span class="ciop-clima-min">mín ' +
+        grauLabel(data.min) +
+        "</span>";
+    }
     if (descEl) descEl.textContent = meta.desc;
     if (iconEl) {
       var grupo = String(meta.kind || "cloudy").replace("-night", "");
