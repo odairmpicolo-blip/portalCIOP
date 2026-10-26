@@ -38,13 +38,53 @@
     if (n) n.textContent = primeiroNome();
   }
 
+  var HASH_ALVO = {
+    inicio: "inicio",
+    operacao: "secaoOperacao",
+    monitoramento: "secaoDashboards",
+    relatorios: "secaoRelatorios",
+    tv: "secaoTv",
+    outros: "outros"
+  };
+  var ALVO_HASH = {
+    inicio: "inicio",
+    secaoOperacao: "operacao",
+    secaoDashboards: "monitoramento",
+    secaoRelatorios: "relatorios",
+    secaoTv: "tv",
+    outros: "outros"
+  };
+
+  function fecharMenu() {
+    document.getElementById("sidebar")?.classList.remove("active");
+    document.getElementById("overlay")?.classList.remove("active");
+    var menu = document.querySelector(".menu-toggle");
+    if (menu) menu.setAttribute("aria-expanded", "false");
+  }
+
+  function abrirMenu() {
+    document.getElementById("sidebar")?.classList.add("active");
+    document.getElementById("overlay")?.classList.add("active");
+    var menu = document.querySelector(".menu-toggle");
+    if (menu) menu.setAttribute("aria-expanded", "true");
+  }
+
   function marcarNav(alvo) {
-    document.querySelectorAll(".home-nav-btn").forEach(function (btn) {
-      var active = btn.getAttribute("data-home-nav") === alvo;
+    var dockAlvo = alvo === "secaoTv" || alvo === "admin" || alvo === "outros" ? "mais" : alvo;
+    document.querySelectorAll(".home-nav-btn, .home-dock-btn").forEach(function (btn) {
+      var chave = btn.getAttribute("data-home-nav");
+      var active = chave === alvo || (btn.classList.contains("home-dock-btn") && chave === dockAlvo);
       btn.classList.toggle("is-active", active);
       if (active) btn.setAttribute("aria-current", "page");
       else btn.removeAttribute("aria-current");
     });
+  }
+
+  function gravarHash(alvo) {
+    var hash = ALVO_HASH[alvo];
+    if (!hash) return;
+    if ((location.hash || "").replace(/^#/, "") === hash) return;
+    history.replaceState(null, "", "#" + hash);
   }
 
   function mostrarTodos() {
@@ -81,11 +121,13 @@
     nav.className = "home-nav";
     nav.setAttribute("aria-label", "Áreas do portal");
     nav.innerHTML =
+      '<p class="home-nav-label">Áreas</p>' +
       '<button type="button" class="home-nav-btn is-active" data-home-nav="inicio">' + ICO.inicio + " Início</button>" +
       '<button type="button" class="home-nav-btn" data-home-nav="secaoOperacao">' + ICO.operacao + " Operação</button>" +
       '<button type="button" class="home-nav-btn" data-home-nav="secaoDashboards">' + ICO.monitoramento + " Monitoramento</button>" +
       '<button type="button" class="home-nav-btn" data-home-nav="secaoRelatorios">' + ICO.relatorios + " Relatórios</button>" +
       '<button type="button" class="home-nav-btn" data-home-nav="secaoTv">' + ICO.monitor + " TV</button>" +
+      '<p class="home-nav-label">Conta</p>' +
       '<a class="home-nav-btn" data-home-nav="admin" data-modulo="gerenciar-usuarios" data-perfis="Administrador,Supervisor,Gerência,Gerencia,Secretária,Secretaria" href="pages/admin-usuarios.html">' +
       ICO.admin + " Administração</a>" +
       '<button type="button" class="home-nav-btn home-outros-btn" data-home-nav="outros" aria-expanded="false" aria-controls="homeOtherPanel">' +
@@ -125,8 +167,8 @@
         montarOutrosCards();
         btn.setAttribute("aria-expanded", "true");
         marcarNav("outros");
-        side.classList.remove("active");
-        document.getElementById("overlay")?.classList.remove("active");
+        gravarHash("outros");
+        fecharMenu();
         return;
       }
       document.body.classList.remove("home-show-others");
@@ -135,10 +177,8 @@
       if (outrosBtn) outrosBtn.setAttribute("aria-expanded", "false");
       if (alvo === "inicio") mostrarTodos();
       else clicarAba(alvo);
-      if (window.matchMedia("(max-width: 900px)").matches) {
-        side.classList.remove("active");
-        document.getElementById("overlay")?.classList.remove("active");
-      }
+      gravarHash(alvo);
+      fecharMenu();
     });
     if (window.dkSwapBrandLogos) window.dkSwapBrandLogos(!!window.dkIsDark && window.dkIsDark());
     sincronizarOutros();
@@ -196,6 +236,66 @@
     });
   }
 
+  function montarFecharMenu() {
+    var side = document.getElementById("sidebar");
+    if (!side || side.querySelector(".home-side-close")) return;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "home-side-close";
+    btn.setAttribute("aria-label", "Fechar menu");
+    btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+    btn.addEventListener("click", fecharMenu);
+    side.insertBefore(btn, side.firstChild);
+  }
+
+  function montarDock() {
+    if (document.querySelector(".home-dock")) return;
+    var dock = document.createElement("nav");
+    dock.className = "home-dock";
+    dock.setAttribute("aria-label", "Navegação principal");
+    dock.innerHTML =
+      '<button type="button" class="home-dock-btn is-active" data-home-nav="inicio">' + ICO.inicio + "<span>Início</span></button>" +
+      '<button type="button" class="home-dock-btn" data-home-nav="secaoOperacao">' + ICO.operacao + "<span>Operação</span></button>" +
+      '<button type="button" class="home-dock-btn" data-home-nav="secaoDashboards">' + ICO.monitoramento + "<span>Monitor</span></button>" +
+      '<button type="button" class="home-dock-btn" data-home-nav="secaoRelatorios">' + ICO.relatorios + "<span>Relatórios</span></button>" +
+      '<button type="button" class="home-dock-btn" data-home-nav="mais" aria-controls="sidebar" aria-expanded="false">' + ICO.outros + "<span>Mais</span></button>";
+    dock.addEventListener("click", function (ev) {
+      var btn = ev.target.closest("[data-home-nav]");
+      if (!btn) return;
+      var alvo = btn.getAttribute("data-home-nav");
+      if (alvo === "mais") {
+        var aberto = document.getElementById("sidebar")?.classList.contains("active");
+        if (aberto) fecharMenu();
+        else abrirMenu();
+        btn.setAttribute("aria-expanded", String(!aberto));
+        return;
+      }
+      document.body.classList.remove("home-show-others");
+      if (alvo === "inicio") mostrarTodos();
+      else clicarAba(alvo);
+      gravarHash(alvo);
+      fecharMenu();
+    });
+    document.body.appendChild(dock);
+  }
+
+  function aplicarHash() {
+    var chave = (location.hash || "").replace(/^#/, "").toLowerCase();
+    var alvo = HASH_ALVO[chave];
+    if (!alvo) return;
+    if (alvo === "outros") {
+      document.body.classList.add("home-show-others");
+      montarOutrosCards();
+      var outrosBtn = document.querySelector('[data-home-nav="outros"]');
+      if (outrosBtn) outrosBtn.setAttribute("aria-expanded", "true");
+      marcarNav("outros");
+      return;
+    }
+    document.body.classList.remove("home-show-others");
+    if (alvo === "inicio") mostrarTodos();
+    else clicarAba(alvo);
+  }
+
   function montarTopo() {
     var header = document.querySelector("header.header");
     var search = document.querySelector(".ciop-search");
@@ -220,7 +320,12 @@
         menu.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
         menu.setAttribute("aria-controls", "sidebar");
         menu.setAttribute("aria-expanded", "false");
-        new MutationObserver(function () { menu.setAttribute("aria-expanded", String(document.getElementById("sidebar").classList.contains("active"))); }).observe(document.getElementById("sidebar"), { attributes: true, attributeFilter: ["class"] });
+        new MutationObserver(function () {
+          var aberto = document.getElementById("sidebar").classList.contains("active");
+          menu.setAttribute("aria-expanded", String(aberto));
+          var mais = document.querySelector('.home-dock-btn[data-home-nav="mais"]');
+          if (mais) mais.setAttribute("aria-expanded", String(aberto));
+        }).observe(document.getElementById("sidebar"), { attributes: true, attributeFilter: ["class"] });
       }
       bar.appendChild(lock);
     }
@@ -403,7 +508,10 @@
     if (ind && ind.nextSibling) list.insertBefore(btn, ind.nextSibling);
     else list.insertBefore(btn, list.firstChild);
     btn.addEventListener("click", mostrarTodos);
-    setTimeout(mostrarTodos, 0);
+    setTimeout(function () {
+      if (HASH_ALVO[(location.hash || "").replace(/^#/, "").toLowerCase()]) aplicarHash();
+      else mostrarTodos();
+    }, 0);
   }
 
   function lead() {
@@ -468,6 +576,8 @@
 
   function iniciar() {
     montarNav();
+    montarFecharMenu();
+    montarDock();
     logoHome();
     montarSheet();
     pularParaConteudo();
@@ -531,9 +641,9 @@
   document.getElementById("ciopBuscaLimpar")?.addEventListener("click", function () { setTimeout(filtrarOutros, 0); });
   document.addEventListener("keydown", function (event) {
     if (event.key !== "Escape") return;
-    document.getElementById("sidebar")?.classList.remove("active");
-    document.getElementById("overlay")?.classList.remove("active");
+    fecharMenu();
   });
+  window.addEventListener("hashchange", aplicarHash);
   setTimeout(ola, 600);
   setTimeout(ola, 1600);
   setTimeout(atualizarCampanhaSide, 800);
