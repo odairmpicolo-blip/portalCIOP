@@ -5,7 +5,7 @@ Implementação no portal clássico, inspirada em superfícies translúcidas (ti
 ## Como está no código
 
 1. Tokens de preenchimento, blur, reflexo e sombra em `portal-tokens.css`.
-2. Home (rodada 2): o painel `.home-sheet` **não** usa vidro. `--home-nav` (lateral, busca, sessão) é um pouco mais denso que `--home-card` (favoritos, catálogo, avisos). Blur da home: **8 px**. Borda 1 px baixa opacidade + `--home-reflect` + sombra curta. Véu da foto mais leve.
+2. Home: a fotografia (`.bg-wall`) é **suavizada** (`blur` ~12 px + véu), sem `filter` em texto ou ícone. O painel `.home-sheet` volta a ser vidro translúcido (`--home-sheet` ~40% claro / 50% fumê + blur 22 px). Cards, widget, performance e avisos usam `--home-card` mais denso (vidro fosco). Transparência só no `background`, nunca `opacity` no bloco.
 3. Páginas internas: `theme-toggle.js` injeta `portal-design-system.js`, que marca `html.portal-glass-system` + `html#portal-page-glass` + `body#portal-page-content` e carrega `portal-design-system.css`.
 4. Home (`html.portal-home-2026`) **não** entra no design system das internas.
 5. Kiosk (`#kiosk`, `.kiosk`) recebe só `portal-glass-kiosk` — blur leve em painel, **sem** redesenhar o quadro 16:9.
@@ -39,16 +39,16 @@ Não empilhar mid + dense + modal + mapa com blur ao mesmo tempo na mesma área.
 ```
 
 - **Transparência:** o rgba do token, não `opacity` no container (isso apagaria o texto).
-- **Desfoque:** só no vidro, não na fotografia (`filter` no Leaflet está `none`).
+- **Desfoque:** no fundo da home (foto) e no vidro (`backdrop-filter`). Texto e ícones ficam nítidos. Mapas Leaflet: `filter: none`.
 - **Reflexo:** `--portal-reflect` (`inset 0 1px 0` branco 70% no claro, 10% no escuro).
 - **Borda:** `--portal-border` clara no claro, linha fria no escuro.
 - **Sombra:** `--portal-shadow-sm|mid|lg` — profundidade discreta.
 
 ## Leitura sobre a fotografia
 
-A foto permanece **reconhecível**. O véu `--portal-photo-veil` é leve de propósito. Texto **nunca** vai direto na foto: vai sobre vidro mid/dense, ou overline da home com `--home-card`.
+Na home a foto fica **reconhecível e suave**: cores e silhuetas da cidade e dos ônibus, sem nitidez que dispute com o conteúdo. O véu `--portal-photo-veil` e o blur do `.bg-wall` fazem esse papel. Texto **nunca** vai direto na foto crua: vai sobre `.home-sheet` ou `--home-card`.
 
-Se um rótulo falhar contraste, subir o nível de vidro daquele bloco — não aumentar o véu global até a foto sumir.
+Se um rótulo falhar contraste, subir a opacidade do vidro daquele bloco — não remover o tratamento do painel nem tornar a foto nítida de novo.
 
 ## Claro e escuro
 
@@ -80,7 +80,7 @@ Já implementado em tokens, home e design system:
 }
 ```
 
-Home: `--home-card` e `--home-nav` viram `--home-solid` (`--portal-fallback`). `.home-sheet` permanece transparente.
+Home: `--home-sheet`, `--home-card` e `--home-nav` viram `--home-solid` (`--portal-fallback`). Sem `backdrop-filter`, o blur da foto também some.
 
 ## Desempenho e movimento
 

@@ -28,7 +28,7 @@ Voltar ao Portal: `.btn-portal` / `.portal-return` / `data-portal-voltar`. Se a 
 
 ## Menu lateral e navegação móvel
 
-**Só a home.** Sidebar fixa (`--home-side`: 204 px, 184 px ≤1200 px), vidro `--home-nav` (não opaco). Logo ≤148×78, proporção preservada. Só a área atual `.is-active`. Hover, `:focus-visible` e seleção são estados distintos. Campanha compacta; indicador “sistema online” permanece. Abaixo de 900 px: drawer + dock inferior (`.home-dock`, padding inferior `108px + env(safe-area-inset-bottom)`).
+**Só a home.** Painel `.home-sheet` translúcido sobre a fotografia suavizada. Sidebar fixa (`--home-side`: 204 px, 184 px ≤1200 px), vidro `--home-nav`. Logo ≤148×78, proporção preservada. Só a área atual `.is-active`. Hover, `:focus-visible` e seleção são estados distintos. Campanha compacta; indicador “sistema online” permanece. Abaixo de 900 px: drawer + dock inferior (`.home-dock`, padding inferior `108px + env(safe-area-inset-bottom)`).
 
 Hamburger `.menu-toggle` 44×44, SVG de três linhas. Overlay `#overlay`.
 
@@ -60,7 +60,7 @@ Padrão de markup (ICV, IPV, dashboards):
 </article>
 ```
 
-Home: `.ciop-kpi` / `.home-header-stats` / `.home-perf-item`. Números `white-space: nowrap` + `tabular-nums` no DS. Adiantado/atrasado: [cores-operacionais.md](cores-operacionais.md).
+Home: performance em faixa própria (`.home-perf` + `.home-perf-bar`). Contagens de módulos/usuários/avisos em **linha seguinte** (`.home-header-stats` um vidro, itens em fila, fonte 20 px — não espremidos à direita). Adiantado vermelho, Atrasado âmbar: [cores-operacionais.md](cores-operacionais.md).
 
 ## Widget hora e clima (home)
 

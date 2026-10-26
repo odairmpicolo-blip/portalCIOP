@@ -50,11 +50,11 @@ Cores operacionais no claro (Adiantado vermelho, Atrasado âmbar, ausência como
 
 ![Indicadores fictícios no catálogo](assets/catalogo-kpis-claro.png)
 
-Home após a rodada 2 (fotografia entre os componentes, vidro só em nav/cards/avisos):
+Home (foto suavizada, painel translúcido, cards foscos):
 
-![Home clara, desktop](assets/home-r2-claro-desktop.png)
+![Home clara, desktop](assets/home-frost-claro-desktop.png)
 
-![Home escura, desktop](assets/home-r2-escuro-desktop.png)
+![Home escura, desktop](assets/home-frost-escuro-desktop.png)
 
 Widget de hora e clima (observação atual Open-Meteo, não a previsão no lugar do “agora”):
 
@@ -80,6 +80,6 @@ Widget de hora e clima (observação atual Open-Meteo, não a previsão no lugar
 
 ## Implementado vs. pendência
 
-**Implementado:** tokens, três temas, foto visível, vidro light/mid/dense, picker Claro/Auto/Escuro, cores operacionais nos tokens, fallback sem `backdrop-filter`, reduced motion no token de duração, overlay de login, rodapé `portal-footer.js`. Home rodada 2: sheet transparente, vidro só em navegação/cards/avisos, sidebar 204 px, catálogo em linhas, barra de performance.
+**Implementado:** tokens, três temas, foto visível e **suavizada** na home, vidro light/mid/dense, painel `.home-sheet` translúcido, picker Claro/Auto/Escuro, cores operacionais nos tokens, fallback sem `backdrop-filter`, reduced motion no token de duração, overlay de login, rodapé `portal-footer.js`. Home: widget hora/data/clima à direita da saudação, sidebar 204 px, catálogo em linhas no painel, barra de performance, Adiantado vermelho / Atrasado âmbar.
 
 **Pendências (não tratar como padrão pronto):** rota `GET /cr0108/ipv-ajustado`; flash de tema em páginas que só injetam `theme-toggle.js` depois do `auth.js`; botão sol/lua em `gerenciapatio.html`; catálogo e várias telas internas ainda não validadas com sessão. Detalhe em [validacao.md](validacao.md).

@@ -69,8 +69,24 @@
     if (menu) menu.setAttribute("aria-expanded", "true");
   }
 
+  var TITULO_AREA = {
+    inicio: "Módulos da operação",
+    secaoOperacao: "Operação",
+    secaoDashboards: "Monitoramento",
+    secaoRelatorios: "Relatórios",
+    secaoTv: "Painéis de TV",
+    outros: "Outros acessos"
+  };
+
+  function atualizarTituloArea(alvo) {
+    var h = document.querySelector(".home-mods-head h2");
+    if (h) h.textContent = TITULO_AREA[alvo] || TITULO_AREA.inicio;
+    var tvTab = document.querySelector('.portal-aba[data-alvo="secaoTv"]');
+    if (tvTab) tvTab.textContent = "Painéis de TV";
+  }
+
   function marcarNav(alvo) {
-    var dockAlvo = alvo === "secaoTv" || alvo === "admin" || alvo === "outros" ? "mais" : alvo;
+    var dockAlvo = alvo === "admin" || alvo === "outros" ? "mais" : alvo;
     document.querySelectorAll(".home-nav-btn, .home-dock-btn").forEach(function (btn) {
       var chave = btn.getAttribute("data-home-nav");
       var active = chave === alvo || (btn.classList.contains("home-dock-btn") && chave === dockAlvo);
@@ -78,6 +94,7 @@
       if (active) btn.setAttribute("aria-current", "page");
       else btn.removeAttribute("aria-current");
     });
+    atualizarTituloArea(alvo);
   }
 
   function gravarHash(alvo) {
@@ -534,6 +551,8 @@
     if (!list || list.querySelector('[data-alvo="todos"]')) return;
     var dash = list.querySelector('[data-alvo="secaoDashboards"]');
     if (dash) dash.textContent = "Monitoramento";
+    var tv = list.querySelector('[data-alvo="secaoTv"]');
+    if (tv) tv.textContent = "Painéis de TV";
     var btn = document.createElement("button");
     btn.type = "button";
     btn.className = "portal-aba";
@@ -688,6 +707,13 @@
     board.appendChild(btn);
   }
   compactarAvisos();
+  document.getElementById("portalAbas")?.addEventListener("click", function (ev) {
+    var aba = ev.target.closest(".portal-aba");
+    if (!aba) return;
+    var alvo = aba.getAttribute("data-alvo");
+    if (alvo === "todos") marcarNav("inicio");
+    else if (alvo) marcarNav(alvo);
+  });
   document.getElementById("ciopBuscaModulos")?.addEventListener("input", filtrarOutros);
   document.getElementById("ciopBuscaLimpar")?.addEventListener("click", function () { setTimeout(filtrarOutros, 0); });
   document.addEventListener("keydown", function (event) {

@@ -13,7 +13,7 @@
 | Rodapé texto | `portal-footer.js` | |
 | Esta documentação | `docs/padrao-portal/` | Índice + catálogo se o componente mudou |
 
-Bump de cache vigente: tokens `?v=20261026liquid1`; home CSS `?v=20261026now3`, JS `now1`. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no `script.src` do inject (`theme-toggle.js`, `portal-design-system.js`, `auth.js`).
+Bump de cache vigente: tokens `?v=20261026liquid1`; home CSS `?v=20261026frost3`, JS `now4`. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no `script.src` do inject (`theme-toggle.js`, `portal-design-system.js`, `auth.js`).
 
 ## Impacto
 
@@ -38,6 +38,7 @@ Bump de cache vigente: tokens `?v=20261026liquid1`; home CSS `?v=20261026now3`, 
 | 2026-10 | Liquid Glass: tokens semânticos, três temas, foto visível, op-early/late, DS nas internas, ICV, fallback blur | publicado em teste `8403790d` / prod `b601e8147` |
 | 2026-10 | Home rodada 2: sheet transparente, vidro só em nav/cards/avisos, blur 8 px, sidebar 204 px, catálogo em linhas, ICV/CAD ícones próprios, barra de performance | `portal-teste` (não publicar sem pedido) |
 | 2026-10 | Widget hora+clima: um vidro, data por extenso, observação Open-Meteo atual vs mín/máx, estados indisponível/antigo | `portal-teste` |
+| 2026-10 | Foto da home suavizada; painel `.home-sheet` translúcido de novo; cards foscos; textos nítidos | `portal-teste` |
 
 ## Responsável
 

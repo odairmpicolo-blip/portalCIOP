@@ -11,7 +11,7 @@ Legenda: **Navegador** = exercitado com servidor local; **Código** = tokens/DS/
 | Página | Papel | Temas | 390–1920 | Estados | Notas |
 | --- | --- | --- | --- | --- | --- |
 | `login.html` | Acesso | Navegador | Navegador 1920/390 | Formulário | Foto nos dois temas |
-| `index.html` | Home | Navegador (rodada 2, claro+escuro, 1920 e 390) | Navegador | Login cobre sessão; CSS da home conferido | Sheet transparente; dock com padding 108 px |
+| `index.html` | Home | Navegador (frost3, claro+escuro, 1920 e 390) | Navegador | Login cobre sessão; CSS da home conferido | Foto suavizada; sheet translúcido; dock 108 px |
 | `pages/icv.html` | Dashboard | Código | Código | Login | Gráfico reage a `dk-theme-change` |
 | `pages/pontualidade.html` | IPV | Código | Código | Login | |
 | `pages/pontualidade-ajustada.html` | Dashboard | Código | Código | Erro amigável | API `/ipv-ajustado` ausente |
@@ -56,9 +56,11 @@ Ver canvas interno de validação e o relatório da rodada: foto; vidro; contras
 
 Capturas versionadas (catálogo, dados fictícios): [`assets/catalogo-claro.png`](assets/catalogo-claro.png), [`assets/catalogo-escuro.png`](assets/catalogo-escuro.png), [`assets/catalogo-kpis-claro.png`](assets/catalogo-kpis-claro.png).
 
-Home rodada 2 (prévia sem Firebase, 2026-10-26): [`assets/home-r2-claro-desktop.png`](assets/home-r2-claro-desktop.png), [`assets/home-r2-escuro-desktop.png`](assets/home-r2-escuro-desktop.png).
+Home com foto suavizada e painel translúcido (prévia sem Firebase, 2026-10-26): [`assets/home-frost-claro-desktop.png`](assets/home-frost-claro-desktop.png), [`assets/home-frost-escuro-desktop.png`](assets/home-frost-escuro-desktop.png).
 
 Widget hora+clima (2026-10-26): desktop claro conferido no navegador (data por extenso, 25 °C atual vs mín/máx, “Atualizado às”, ícone do sol em poço escuro). Escuro: tokens `--home-ink` `#f5f8ff` e vidro `rgba(8,24,42,.48)` no computed. ≤900 px o widget desce da saudação; ≤520 px os blocos empilham. Busca permanece 42 px.
+
+Contraste (frost3): foto com blur ~12 px; `.home-sheet` ~40% claro / 50% fumê + blur 22 px; cards foscos ~64–72%. `opacity` só fora dos textos. Contadores em linha própria. Título do catálogo acompanha a área (inclui “Painéis de TV”). Widget hora/data/clima à direita da saudação. Adiantado vermelho, Atrasado âmbar.
 
 Não há banco de “antes” da home autenticada. O catálogo serve de **depois** controlado.
 

@@ -18,11 +18,11 @@ Breakpoints **efetivos** no CSS atual (não inventar uma escala nova). Conferên
 
 - Padding do `body`: `20px 20px 40px calc(var(--home-side) + 36px)`.
 - `--home-side`: **204 px** (~15% abaixo de 240); **184 px** em `max-width: 1200px`.
-- `.home-sheet` **sem vidro** (fundo transparente, sem blur): a fotografia aparece entre os componentes.
+- `.home-sheet`: painel translúcido (vidro esbranquiçado no claro, fumê no escuro) sobre a foto suavizada. Cards em vidro fosco por cima.
 - Grid de módulos (catálogo): **linhas compactas** 2 colunas; 3 col ≥1600; 1 col ≤900. Ícone 20 px, seta afastada (`right: 12px`), min-height 58 px — distinto dos favoritos.
 - Atalhos (6 favoritos): **3 colunas** por padrão; **6** ≥1400 px; **2** ≤899 px; **1** ≤419 px. Títulos completos; descrições curtas sem reticências.
 - Ícones ICV (prancheta + visto) e Incidentes CAD (lista com pontos) — não reutilizar o gráfico de barras.
-- Hero: saudação à esquerda; widget `.home-now` à direita (hora+data | clima), com folga antes da linha de performance. Performance (`flex: 2`) à frente das contagens; barra `.home-perf-bar`. ≤900 px o widget desce; ≤520 px hora e clima empilham.
+- Hero: saudação (vidro local) à esquerda; widget `.home-now` à direita, com mais padding entre relógio e clima. Performance em 100% da largura; contadores na linha de baixo. Acessos rápidos: 3 colunas (6 só ≥1800 px). Catálogo: 2 colunas em um painel de vidro, linhas internas sem caixa própria. Título do catálogo segue a área (`Módulos da operação`, `Operação`, `Monitoramento`, `Relatórios`, `Painéis de TV`). ≤900 px o widget desce; ≤520 px hora e clima empilham.
 - Avisos: faixa baixa; rótulo pequeno; detalhe laranja de 2 px à esquerda; botão “Ver aviso”.
 - ≤900 px: sidebar vira drawer em vidro (`--home-nav`); dock fixo; padding-bottom `calc(108px + env(safe-area-inset-bottom))`.
 - ≤600 px: busca em 100% da largura; KPI em uma coluna.
