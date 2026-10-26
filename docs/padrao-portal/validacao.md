@@ -24,7 +24,7 @@ Legenda: **Navegador** = exercitado com servidor local; **Código** = tokens/DS/
 | `pages/autuacoes.html` | Dashboard | Código | Código | Login | KPI counting |
 | `pages/liberacao-*.html` | Lib. | Código | Código | Login | Papel branco no relatório |
 | `pages/Folhadeservico.html` | Dashboard | Código | Código | Login | Arquivo pesado |
-| `pages/criar-relatorio*.html` | Form | Código | Código | Login | Não clicar Enviar |
+| `pages/criar-relatorio*.html` | Form | Navegador (seletor claro+escuro; página real redireciona sem sessão) | Código | Login / overlay | Não clicar Enviar; spans do botão = cor do botão; opção ativa azul |
 | `pages/consulta-decreto.html` | Assistente | Código | Código | Login | Chat claro no `dk-light` |
 | `pages/consulta-veiculo.html` | Consulta | Auth injeta tema | Código | Login | Risco de flash |
 | `pages/consulta-funcionario.html` | Consulta | Auth injeta tema | Código | Login | Flash |
@@ -57,6 +57,8 @@ Ver canvas interno de validação e o relatório da rodada: foto; vidro; contras
 Capturas versionadas (catálogo, dados fictícios): [`assets/catalogo-claro.png`](assets/catalogo-claro.png), [`assets/catalogo-escuro.png`](assets/catalogo-escuro.png), [`assets/catalogo-kpis-claro.png`](assets/catalogo-kpis-claro.png).
 
 Home unificada (prévia sem Firebase, 2026-10-26): [`assets/home-ops-claro-desktop.png`](assets/home-ops-claro-desktop.png), [`assets/home-ops-escuro-desktop.png`](assets/home-ops-escuro-desktop.png).
+
+Seletor de modelo aberto (2026-10-26): [`assets/seletor-modelo-claro.png`](assets/seletor-modelo-claro.png), [`assets/seletor-modelo-escuro.png`](assets/seletor-modelo-escuro.png). Computed: claro, botão/span/SVG `rgb(16,44,83)`, ativa `rgb(18,101,194)` / `#fff`, status `rgb(58,82,112)`. Escuro: botão/span/SVG `rgb(245,248,255)`, ativa `rgb(29,111,191)` / `rgb(245,248,255)`, status `rgb(213,227,244)`.
 
 Widget hora+clima (2026-10-26): desktop claro conferido no navegador (data por extenso, 25 °C atual vs mín/máx, “Atualizado às”, ícone do sol em poço escuro). Escuro: tokens `--home-ink` `#f5f8ff` e vidro `rgba(8,24,42,.48)` no computed. ≤900 px o widget desce da saudação; ≤520 px os blocos empilham. Busca permanece 42 px.
 

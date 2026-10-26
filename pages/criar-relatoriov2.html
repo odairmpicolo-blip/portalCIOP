@@ -201,8 +201,8 @@ input,select,textarea{
 textarea{resize:none;overflow:hidden;line-height:1.55}
 input[readonly],
 select:disabled{
-    background:#f8fafc;
-    color:#344054;
+    background:var(--portal-field,#f8fafc);
+    color:var(--portal-text-secondary,#344054);
 }
 #numeroRelatorio{
     color:var(--red);
@@ -215,36 +215,46 @@ select:disabled{
     border:1px solid var(--border);
     border-radius:6px;
     padding:9px 10px;
-    background:#f8fafc;
-    color:#344054;
+    background:var(--portal-field,#f8fafc);
+    color:var(--portal-text-secondary,#344054);
     font-size:14px;
     font-weight:700;
 }
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:flex-start}
 .modelo-wrap{position:relative;flex:1 1 100%}
-.modelo-btn{width:100%;justify-content:space-between}
+.modelo-btn{width:100%;justify-content:space-between;color:var(--portal-on-field,var(--text))}
+.modelo-btn span,.modelo-btn svg{color:inherit;-webkit-text-fill-color:inherit;fill:currentColor}
 .modelo-menu{
     position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;
-    background:#fff;border:1px solid var(--border);border-radius:8px;
+    background:var(--portal-menu,#fff);border:1px solid var(--portal-border,var(--border));border-radius:8px;
     box-shadow:0 12px 28px rgba(16,24,40,.14);padding:6px;max-height:280px;overflow:auto;
+    color:var(--portal-on-option,var(--text));
 }
 .modelo-menu[hidden]{display:none!important}
 .modelo-item{
-    display:block;width:100%;border:0;background:transparent;border-radius:6px;
+    display:block;width:100%;border:0;background:var(--portal-option,transparent);border-radius:6px;
     padding:9px 10px;font:inherit;font-size:12px;font-weight:700;text-align:left;
-    color:var(--blue);cursor:pointer;
+    color:var(--portal-on-option,var(--text));cursor:pointer;
 }
-.modelo-item:hover,.modelo-item.active{background:#effcfb}
-.modelo-item.active{color:var(--blue)}
+.modelo-item:hover,.modelo-item:focus-visible{
+    background:var(--portal-option-hover,rgba(18,101,194,.16));
+    color:var(--portal-on-option,var(--text));
+}
+.modelo-item.active,.modelo-item[aria-selected="true"]{
+    background:var(--portal-option-selected,#1265c2);
+    color:var(--portal-on-option-selected,#fff);
+    -webkit-text-fill-color:var(--portal-on-option-selected,#fff);
+}
+.modelo-item:disabled{color:var(--portal-text-disabled,#7a8aa0);cursor:not-allowed}
 .ia-actions{display:flex;gap:8px;flex-wrap:wrap;width:100%}
 .ia-actions .btn{flex:1 1 calc(50% - 4px);min-width:140px}
 .bloco-funcionario.oculto{display:none!important}
 .preview-funcionario.oculto{display:none!important}
 .report-title-informativo{font-size:17px}
 .status.ia{color:var(--blue)}
-.status{min-height:18px;margin-top:10px;font-size:12px;font-weight:700;color:var(--muted)}
+.status{min-height:18px;margin-top:10px;font-size:12px;font-weight:700;color:var(--portal-text-secondary,var(--muted))}
 .status.erro{color:var(--red)}
-.status.ok{color:var(--green)}
+.status.ok{color:var(--portal-text-secondary,var(--muted))}
 
 /* Confirmação central após envio de e-mail */
 .email-enviado-overlay{
@@ -727,10 +737,11 @@ html.dk-dark .paper label{
   }
   input[readonly],select:disabled{background:color-mix(in srgb, var(--glass-bg) 60%, transparent) !important;color:var(--ink-faint) !important;}
   .cargo-vinculado,.assinatura-vinculada{background:var(--glass-bg-strong) !important;border:1px solid var(--glass-border) !important;color:var(--ink-faint) !important;}
-  .modelo-menu{background:#18182a !important;border:1px solid var(--glass-border) !important;}
-  html.native-light .modelo-menu{background:#fff !important;}
-  .modelo-item{color:var(--ink) !important;}
-  .status{color:var(--ink-faint) !important;}
+  .modelo-menu{background:var(--portal-menu,#18182a);border:1px solid var(--glass-border);}
+  html.native-light .modelo-menu{background:var(--portal-menu,#fff);}
+  .modelo-item{color:var(--portal-on-option,var(--ink));}
+  .modelo-item.active,.modelo-item[aria-selected="true"]{background:var(--portal-option-selected,#1265c2);color:var(--portal-on-option-selected,#fff);}
+  .status{color:var(--portal-text-secondary,var(--ink-faint));}
   .paper-wrap{background:var(--glass-bg) !important;border:1px solid var(--glass-border) !important;padding:12px !important;}
 }
 
@@ -809,10 +820,10 @@ html.dk-dark .paper label{
   /* session container: portal-session.css?v=20260818open */
 
   .modelo-menu{
-    background:rgba(255,255,255,.85);
+    background:var(--portal-menu,rgba(255,255,255,.85));
     backdrop-filter:blur(16px) saturate(190%);
     -webkit-backdrop-filter:blur(16px) saturate(190%);
-    border:1px solid rgba(255,255,255,.5);
+    border:1px solid var(--portal-border,rgba(255,255,255,.5));
   }
 
   .btn-link,.btn-portal,.btn-primary{
@@ -984,7 +995,7 @@ body.pdf-exporting .report-foot{
             <div class="modelo-wrap">
                 <button type="button" class="btn btn-secondary modelo-btn" id="modeloBtn" aria-haspopup="listbox" aria-expanded="false">
                     <span id="modeloBtnLabel">Selecione o modelo</span>
-                    <span aria-hidden="true">▾</span>
+                    <svg class="modelo-btn-caret" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M5.2 7.4 10 12.1l4.8-4.7 1.4 1.4L10 15 3.8 8.8z"/></svg>
                 </button>
                 <div class="modelo-menu" id="modeloMenu" role="listbox" hidden></div>
             </div>
@@ -1507,7 +1518,7 @@ function contextoRelatorio() {
 function montarMenuModelos() {
     if (!modeloMenu) return;
     modeloMenu.innerHTML = Object.values(TIPOS_RELATORIO).map((tipo) =>
-        "<button type=\"button\" class=\"modelo-item" + (tipoRelatorio === tipo.id ? " active" : "") + "\" data-tipo=\"" + tipo.id + "\" role=\"option\">" + escapeOption(tipo.label) + "</button>"
+        "<button type=\"button\" class=\"modelo-item" + (tipoRelatorio === tipo.id ? " active" : "") + "\" data-tipo=\"" + tipo.id + "\" role=\"option\" aria-selected=\"" + (tipoRelatorio === tipo.id ? "true" : "false") + "\">" + escapeOption(tipo.label) + "</button>"
     ).join("");
     modeloMenu.querySelectorAll(".modelo-item").forEach((btn) => {
         btn.addEventListener("click", () => selecionarModelo(btn.dataset.tipo));

@@ -16,5 +16,7 @@ Imagens do [catálogo](../catalogo.html) com **dados fictícios** (linha 999, pr
 | `home-compact-claro-1920.png` | Home compacta em 1920 px, tema claro |
 | `home-compact-claro-390.png` | Home compacta em 390 px, tema claro |
 | `home-now-claro-desktop.png` | Widget hora + clima agora, tema claro |
+| `seletor-modelo-claro.png` | Seletor de modelo aberto (criar relatório), tema claro |
+| `seletor-modelo-escuro.png` | O mesmo seletor no tema escuro (seleção azul, texto claro) |
 
 Ao mudar o padrão visual compartilhado, recapturar estas imagens e atualizar o `.md` correspondente.

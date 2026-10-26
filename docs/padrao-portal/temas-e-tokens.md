@@ -54,6 +54,22 @@ Usar o token da **escrita** da superfície, não uma cor global de “texto bran
 
 `--azul` e `--portal-fill-brand` servem a **preenchimento** de marca (botão, thead navy). Não usar `--azul` como cor de KPI no escuro.
 
+### Seletor de modelo (`.modelo-btn` / `.modelo-item`)
+
+Os filhos (`span`, SVG) usam `color: inherit` e `fill: currentColor`. Não pintar `span` de painel com hex fixo — isso foi a origem do navy/branco invertido.
+
+| Estado | Fundo | Texto |
+| --- | --- | --- |
+| Botão fechado | `--portal-field` | `--portal-on-field` (filhos herdam) |
+| Menu | `--portal-menu` | `--portal-on-option` |
+| Opção | `--portal-option` (transparente) | `--portal-on-option` |
+| Hover / foco | `--portal-option-hover` | `--portal-on-option` |
+| Selecionada | `--portal-option-selected` (azul) | `--portal-on-option-selected` (claro) |
+| Desabilitada | — | `--portal-text-disabled` |
+| Mensagem “Modelo selecionado” | painel | `--portal-text-secondary` |
+
+No escuro a seleção é azul com texto claro — nunca mint `#effcfb` com texto `--portal-text`. Prévia `.paper` permanece branca com `#102c53`.
+
 Páginas internas: o design system remapeia `--text` / `--muted` / `--ink` para esses pares. `.kpi .value`, `.bar-label`, `.terminal-name` e equivalentes herdam `--portal-on-elevated`. Exceções: `.paper`, `.report-sheet`, `.pdf-sheet`.
 
 ### Texto e ação

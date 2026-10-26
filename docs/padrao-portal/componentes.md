@@ -18,6 +18,10 @@ Classes globais: `assets/css/portal-design-system.css`. Home: `portal-home-2026.
 
 O JS marca `html#portal-page-glass.portal-glass-system` e `body#portal-page-content`. Home usa `html#portal-home.portal-home-2026`.
 
+## Seletor de modelo
+
+`.modelo-btn` + `.modelo-menu` / `.modelo-item` (criar relatório). Filhos do botão herdam a cor (`inherit` / `currentColor`). Opção ativa: fundo `--portal-option-selected`, texto `--portal-on-option-selected`. Não usar mint `#effcfb` com texto claro. Mensagens `.status` usam `--portal-text-secondary`. Detalhe dos pares: [temas-e-tokens.md](temas-e-tokens.md).
+
 ## Cabeçalho e sessão
 
 `.header` em flex, min-height ~72 px, logo `.portal-brand-art` (max 180×54), `.title-wrap` no centro, `.header-actions` à direita.

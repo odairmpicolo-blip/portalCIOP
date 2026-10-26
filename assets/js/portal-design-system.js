@@ -14,11 +14,11 @@
   if (!document.querySelector('link[data-portal-tokens]')) {
     var tokens = document.createElement('link');
     tokens.rel = 'stylesheet';
-    tokens.href = new URL('assets/css/portal-tokens.css?v=20261026read1', root).href;
+    tokens.href = new URL('assets/css/portal-tokens.css?v=20261026sel1', root).href;
     tokens.dataset.portalTokens = '1';
     document.head.appendChild(tokens);
   }
-  style.href = new URL('assets/css/portal-design-system.css?v=20261026read1', root).href;
+  style.href = new URL('assets/css/portal-design-system.css?v=20261026sel1', root).href;
   style.dataset.portalDesign = '1';
   document.head.appendChild(style);
   function brand() {

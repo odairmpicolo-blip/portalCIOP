@@ -56,6 +56,12 @@ Home (painel unificado de performance + hora + clima):
 
 ![Home escura, desktop](assets/home-ops-escuro-desktop.png)
 
+Seletor de modelo (criar relatório): filhos herdam a cor do botão; opção ativa azul com texto claro.
+
+![Seletor aberto, tema claro](assets/seletor-modelo-claro.png)
+
+![Seletor aberto, tema escuro](assets/seletor-modelo-escuro.png)
+
 Widget de hora e clima (observação atual Open-Meteo, não a previsão no lugar do “agora”):
 
 ![Hora e clima na home, tema claro](assets/home-now-claro-desktop.png)
