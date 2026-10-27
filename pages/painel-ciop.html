@@ -995,7 +995,7 @@ function toPct(v) {
   return n > 1.5 ? n : n * 100;
 }
 
-function formatPct(v, dec = 1) {
+function formatPct(v, dec = 2) {
   if (v == null || !Number.isFinite(v)) return "—";
   return v.toLocaleString("pt-BR", { minimumFractionDigits: dec, maximumFractionDigits: dec }) + "%";
 }
@@ -1032,14 +1032,14 @@ function pintarDelta(id, atual, anterior) {
     return;
   }
   const d = atual - anterior;
-  if (Math.abs(d) < 0.05) {
+  if (Math.abs(d) < 0.005) {
     el.classList.add("flat");
-    el.innerHTML = `<b>▸</b> 0,0 p.p.`;
+    el.innerHTML = `<b>▸</b> 0,00 p.p.`;
     return;
   }
   const up = d > 0;
   el.classList.add(up ? "up" : "down");
-  const txt = Math.abs(d).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const txt = Math.abs(d).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   el.innerHTML = `<b>${up ? "▲" : "▼"}</b> ${up ? "+" : "−"}${txt} p.p.`;
 }
 
