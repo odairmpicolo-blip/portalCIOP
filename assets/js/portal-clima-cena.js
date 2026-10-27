@@ -3,6 +3,8 @@
   var FALLBACK_DAY_START = 6;
   var FALLBACK_DAY_END = 18;
   var periodoTimer = 0;
+  var pulsoTimer = 0;
+  var ultimoFlip = null;
   var ultimoPayload = null;
 
   function grupoClima(code) {
@@ -71,8 +73,6 @@
 
   function ehDia(opts) {
     opts = opts || {};
-    var flagged = flagDia(opts.isDay != null ? opts.isDay : opts.is_day);
-    if (flagged !== null) return flagged;
     var at = opts.atMs != null ? opts.atMs : Date.now();
     var rise = opts.sunriseMs != null ? opts.sunriseMs : NaN;
     var set = opts.sunsetMs != null ? opts.sunsetMs : NaN;
@@ -81,7 +81,11 @@
       rise = pair.rise;
       set = pair.set;
     }
+    /* Nascer e pôr do sol mandam. O is_day da hora inteira ainda diz "dia"
+       depois das 18:35, e a cena de sol ficava na tela. */
     if (rise > 0 && set > 0) return at >= rise && at < set;
+    var flagged = flagDia(opts.isDay != null ? opts.isDay : opts.is_day);
+    if (flagged !== null) return flagged;
     var parts = wallParts(at);
     var minutes = parts.hour * 60 + parts.minute;
     return minutes >= FALLBACK_DAY_START * 60 && minutes < FALLBACK_DAY_END * 60;
@@ -267,11 +271,17 @@
   }
 
   function agendarPeriodo(daily, onFlip) {
+    if (typeof onFlip === "function") ultimoFlip = onFlip;
     if (periodoTimer) w.clearTimeout(periodoTimer);
+    if (!pulsoTimer) {
+      pulsoTimer = w.setInterval(function () {
+        if (typeof ultimoFlip === "function") ultimoFlip();
+      }, 30 * 1000);
+    }
     if (!daily || typeof onFlip !== "function") return;
     var next = proximosSolares(daily.time, daily.sunrise, daily.sunset);
     if (!next) return;
-    var wait = Math.min(Math.max(next - Date.now(), 8000), 15 * 60 * 1000);
+    var wait = Math.max(next - Date.now(), 1000);
     periodoTimer = w.setTimeout(function () {
       onFlip();
       agendarPeriodo(daily, onFlip);

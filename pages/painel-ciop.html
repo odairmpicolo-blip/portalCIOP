@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;600;700;800;900&display=swap">
 <link rel="stylesheet" href="../assets/css/portal-clima-anim.css?v=20261026wx1">
-<script src="../assets/js/portal-clima-cena.js?v=20261026wx1"></script>
+<script src="../assets/js/portal-clima-cena.js?v=20261027wx2"></script>
 <style>
   :root{
     --bg-1:#04060f;
@@ -1341,6 +1341,7 @@ function montarHorasClima(hourly, daily) {
     const t = parseMs(times[i]);
     if (!Number.isFinite(t) || t + 50 * 60 * 1000 < agora) continue;
     const hora = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", hourCycle: "h23" }).format(new Date(t));
+    const noAgora = agora >= t && agora < t + 60 * 60 * 1000;
     out.push({
       time: t,
       label: hora + "h",
@@ -1349,7 +1350,7 @@ function montarHorasClima(hourly, daily) {
       rain: hourly.precipitation_probability?.[i],
       isDay: climaEhDia({
         isDay: hourly.is_day?.[i],
-        atMs: t,
+        atMs: noAgora ? agora : t,
         dates: daily?.time,
         sunrises: daily?.sunrise,
         sunsets: daily?.sunset
