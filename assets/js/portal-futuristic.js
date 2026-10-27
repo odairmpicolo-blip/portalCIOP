@@ -381,8 +381,8 @@
     }
     var horaObs = horaCurtaDeIso(data.observedAt);
     if (stampEl) {
-      if (stale && horaObs) stampEl.textContent = "Última atualização às " + horaObs;
-      else if (horaObs) stampEl.textContent = "Atualizado às " + horaObs;
+      if (stale && horaObs) stampEl.textContent = "Última atualização às\u00a0" + horaObs;
+      else if (horaObs) stampEl.textContent = "Atualizado às\u00a0" + horaObs;
       else stampEl.textContent = stale ? "Dados antigos" : "";
     }
     var frase = "Abrir previsão completa do tempo em Londrina. Agora: " + meta.desc + ", " + grauLabel(data.temp);

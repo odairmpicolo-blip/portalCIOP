@@ -79,7 +79,7 @@ Um único vidro `.home-meta.home-now` à direita da saudação (`montarMeta` em 
 
 Fonte: Open-Meteo já usada (`current.temperature_2m`, `current.weather_code`, `current.is_day`; `daily` só para mín/máx). Não tratar a previsão diária como o valor “agora”.
 
-Estados: dado fresco (“Atualizado às HH:mm”); cache antigo (`.is-stale`, “Última atualização às HH:mm”); falha sem cache (`.is-unavailable`, “Clima indisponível”). Ícone do sol com poço escuro e traço, para contrastar com a foto alaranjada. Sem animação contínua no widget.
+Estados: dado fresco (“Atualizado às HH:mm” em linha própria, junto com o horário); cache antigo (`.is-stale`, “Última atualização às HH:mm”); falha sem cache (`.is-unavailable`, “Clima indisponível”). Ícone do sol com poço escuro e traço, para contrastar com a foto alaranjada. Sem animação contínua no widget.
 
 Responsivo: ≤900 px o widget vai para baixo da saudação; ≤520 px os dois blocos empilham. A busca e a sessão no topo não entram nesse grid.
 
@@ -104,11 +104,13 @@ Todos no DS: min-height 44 px, radius 12 px, Inter 650. Foco: outline 3 px `--po
 
 Filtros: `.filters`, `.filter-panel`, `.portal-filters-bar`, `.pa-filtros` em flex wrap; `.campo` / `.filter-group` `flex: 1 1 160px; min-width: 160px` — evita data cortada.
 
+Terminais Agora: `.controls-terminais` — coluna do `#terminalFiltro` com `min-width: 18.5rem` para caber “Todos os terminais” na fonte de 15 px (não reduzir o tipo). Abaixo de 1100 px o grid vira duas colunas; abaixo de 720 px, uma. Select usa `--portal-field` / `--portal-on-field`.
+
 Date `type="date"` nativo. Placeholder = `--portal-text-secondary`.
 
 ## Linhas operacionais (próximas trocas)
 
-`.exchange-item` (lista “Próximas” em Terminais Agora) e chips `.time-chip` / `.terminal-kpi-time` usam `--portal-field` + `--portal-on-field`. Nome e horário: `--portal-on-elevated`. Terminal e tipo: `--portal-text-secondary`. Status: par próprio (`--portal-op-*` / aviso), nunca texto claro em fundo pastel. Hover e `:focus-visible` usam `--portal-option-hover`. No escuro o card `.exchange-card` e `.terminal-kpi-card` não ficam brancos. Pares: [temas-e-tokens.md](temas-e-tokens.md).
+`.exchange-item` (lista “Próximas” em Terminais Agora) e chips `.time-chip` / `.terminal-kpi-time` usam `--portal-field` + `--portal-on-field`. Nome e horário: `--portal-on-elevated` e negrito. Terminal, tipo, registro, início/fim e “Atualizado…”: `--portal-text-secondary`, ~12–13 px, peso 500 (não 800). Status: par próprio (`--portal-op-*` / aviso). Hover e `:focus-visible` usam `--portal-option-hover`. No escuro o card `.exchange-card` e `.terminal-kpi-card` não ficam brancos. Pares: [temas-e-tokens.md](temas-e-tokens.md).
 
 ## Abas e segmentados
 
