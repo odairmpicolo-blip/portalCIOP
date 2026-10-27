@@ -14,7 +14,7 @@
 | Esta documentação | `docs/padrao-portal/` | Índice + catálogo se o componente mudou |
 | Clima TV (ícone, dia/noite, cena) | `portal-clima-cena.js` + `portal-clima-anim.css` | Não copiar SVG WMO nas páginas |
 
-Bump de cache vigente: tokens `?v=20261027term2`; DS `term2`; visual `term2` (Terminais Agora); clima TV `wx1`; home CSS `ops4` / JS `ops3`; `theme-toggle.js` `term2`. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no `script.src` do inject (`theme-toggle.js`, `portal-design-system.js`, `auth.js`).
+Bump de cache vigente: tokens `?v=20261027term2`; DS `auto1`; visual `term2` (Terminais Agora); clima TV `wx1`; home CSS `ops4` / JS `ops3`; `theme-toggle.js` `auto1`. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no `script.src` do inject (`theme-toggle.js`, `portal-design-system.js`, `auth.js`).
 
 ## Impacto
 

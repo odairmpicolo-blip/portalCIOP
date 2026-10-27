@@ -7,7 +7,15 @@
   try {
     var stored = localStorage.getItem("dk-theme");
     if (stored !== "dark" && stored !== "light" && stored !== "auto") stored = "auto";
-    var dark = stored === "dark" || (stored === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    var dark = stored === "dark";
+    if (stored === "auto") {
+      var p = {};
+      new Intl.DateTimeFormat("en-GB", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).forEach(function (x) { if (x.type !== "literal") p[x.type] = +x.value; });
+      var doy = Math.floor((Date.UTC(p.year, p.month - 1, p.day) - Date.UTC(p.year, 0, 0)) / 864e5);
+      var k = Math.cos((doy - 172) / 365 * 2 * Math.PI);
+      var hrs = p.hour + p.minute / 60;
+      dark = hrs < 6.15 + 0.8 * k || hrs >= 18.35 - 0.55 * k;
+    }
     document.documentElement.classList.add(dark ? "dk-dark" : "dk-light");
     document.documentElement.setAttribute("data-dk-pref", stored);
     document.documentElement.setAttribute("data-dk-resolved", dark ? "dark" : "light");
@@ -2335,7 +2343,7 @@ html.dk-dark .card-desc{
 <link rel="stylesheet" href="assets/css/portal-home-2026.css?v=20261027ops4">
 <link rel="stylesheet" href="assets/css/portal-clima-anim.css?v=20261023wx3">
 
-<script src="assets/js/theme-toggle.js?v=20261026row1"></script>
+<script src="assets/js/theme-toggle.js?v=20261027auto1"></script>
 <script src="assets/js/portal-futuristic.js?v=20261027ops2" defer></script>
 <script src="assets/js/portal-home-settings.js?v=20261026home2c" defer></script>
 <script src="assets/js/portal-home-2026.js?v=20261027ops3" defer></script>
@@ -2535,7 +2543,7 @@ html.dk-dark .card-desc{
         <div class="dk-theme-picker-options">
             <button type="button" class="dk-theme-opt" data-dk-pref="light" aria-label="Tema claro" title="Tema claro">☀</button>
             <button type="button" class="dk-theme-opt" data-dk-pref="dark" aria-label="Tema escuro" title="Tema escuro">☾</button>
-            <button type="button" class="dk-theme-opt" data-dk-pref="auto" aria-label="Tema automático" title="Automático (preferência do sistema)">◐</button>
+            <button type="button" class="dk-theme-opt" data-dk-pref="auto" aria-label="Tema automático" title="Automático (claro de dia, escuro à noite)">◐</button>
         </div>
     </div>
 

@@ -48,7 +48,7 @@ Três níveis no máximo na tela. Sem blur em cada `td`. Fallback opaco se não 
 
 ## Como verificar
 
-1. DevTools → Rendering → `prefers-color-scheme` e `prefers-reduced-motion`.
+1. DevTools → Rendering → `prefers-reduced-motion`. Tema Auto segue o sol em Londrina, não o `prefers-color-scheme`.
 2. Lighthouse / contraste no seletor de tema Claro e Escuro (não só no Auto).
 3. Tab do login ao botão Entrar; Esc no `<dialog>`.
 4. 390 px: dock vs. conteúdo.

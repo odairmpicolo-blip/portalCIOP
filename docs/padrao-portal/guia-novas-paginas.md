@@ -6,7 +6,7 @@ Passo a passo para um módulo no **portal clássico**. Não vale para `portal-ap
 
 | Peça | Caminho |
 | --- | --- |
-| Boot + tema | `assets/js/theme-toggle.js?v=20261026row1` no **`<head>`** |
+| Boot + tema | `assets/js/theme-toggle.js?v=20261027auto1` no **`<head>`** |
 | Tokens (opcional explícito) | `assets/css/portal-tokens.css?v=20261026liquid1` — o DS também injeta |
 | Marca | `img.portal-brand-art` |
 | Auth | `assets/js/auth.js` (sessão, overlay, permissões, voltar Portal) |
@@ -47,7 +47,15 @@ Colocar em `pages/meu-modulo.html`. Caminhos `../assets/…`.
     try {
       var stored = localStorage.getItem("dk-theme");
       if (stored !== "dark" && stored !== "light" && stored !== "auto") stored = "auto";
-      var dark = stored === "dark" || (stored === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
+      var dark = stored === "dark";
+      if (stored === "auto") {
+        var p = {};
+        new Intl.DateTimeFormat("en-GB", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).forEach(function (x) { if (x.type !== "literal") p[x.type] = +x.value; });
+        var doy = Math.floor((Date.UTC(p.year, p.month - 1, p.day) - Date.UTC(p.year, 0, 0)) / 864e5);
+        var k = Math.cos((doy - 172) / 365 * 2 * Math.PI);
+        var hrs = p.hour + p.minute / 60;
+        dark = hrs < 6.15 + 0.8 * k || hrs >= 18.35 - 0.55 * k;
+      }
       document.documentElement.classList.add(dark ? "dk-dark" : "dk-light");
       document.documentElement.setAttribute("data-dk-pref", stored);
       document.documentElement.setAttribute("data-dk-resolved", dark ? "dark" : "light");
@@ -59,7 +67,7 @@ Colocar em `pages/meu-modulo.html`. Caminhos `../assets/…`.
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/png" href="../assets/img/portal-favicon.png?v=20261026fav1">
   <title>Meu módulo - Portal CIOP</title>
-  <script src="../assets/js/theme-toggle.js?v=20261026row1"></script>
+  <script src="../assets/js/theme-toggle.js?v=20261027auto1"></script>
 </head>
 <body>
   <header class="header">

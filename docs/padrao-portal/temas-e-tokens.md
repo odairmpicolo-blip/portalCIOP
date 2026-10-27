@@ -8,7 +8,7 @@ Fonte de verdade: `assets/css/portal-tokens.css`. Não inventar hex paralelo.
 | --- | --- | --- |
 | `light` | `html.dk-light` | Sempre claro |
 | `dark` | `html.dk-dark` | Sempre escuro (navy fumê) |
-| `auto` (padrão) | `dk-light` ou `dk-dark` | Segue `prefers-color-scheme` |
+| `auto` (padrão) | `dk-light` ou `dk-dark` | Claro de dia e escuro à noite em Londrina (`America/Sao_Paulo`, nascer/pôr do sol) |
 
 Atributos: `data-dk-pref` (o que o usuário escolheu) e `data-dk-resolved` (`light` ou `dark`).
 
@@ -21,7 +21,7 @@ Picker: `.dk-theme-opt[data-dk-pref]` (Claro / Auto / Escuro), `aria-pressed`. N
 1. Chave global: `localStorage['dk-theme']`.
 2. Depois do login, chave por e-mail: `dk-theme:` + e-mail (`dkPreferenceKey` em `theme-toggle.js`). Lê a chave do usuário; se vazia, cai na global.
 3. Valor inválido vira `auto`.
-4. `auto` reage a `matchMedia('(prefers-color-scheme: dark)')` e a `visibilitychange`.
+4. `auto` usa o nascer/pôr do sol em Londrina (`theme-toggle.js`), reagenda a troca e reaplica em `visibilitychange`. Não segue o tema do sistema.
 
 A preferência **sobrevive** à navegação entre páginas e ao recarregar (validado no login e no Painel TV).
 
@@ -93,7 +93,7 @@ Não deixar a linha branca se o tema escuro já pintou o nome de claro. Cada fil
 | `.exchange-card`, `.terminal-card`, `.fiscal-lead-card` | `--portal-glass-mid` | `--portal-on-elevated` |
 | `.exchange-item` | `--portal-field` | `--portal-on-field` |
 | Nome / horário (`.exchange-person`, `.exchange-time`) | linha | `--portal-on-elevated` |
-| Terminal / tipo (`.exchange-terminal`, `.exchange-kind`) | linha | `--portal-text-secondary` |
+| Terminal / tipo / registro / atualização | linha | `--portal-text-secondary`, 12–13 px, peso 500 |
 | Hover / foco da linha | `--portal-option-hover` | `--portal-on-option` |
 | `.time-chip`, `.terminal-kpi-time`, `.count-pill` | `--portal-field` | `--portal-on-field` |
 | `.status-badge.status-now` | mistura de `--portal-op-ontime` | `--portal-op-ontime` |
@@ -108,6 +108,10 @@ Não deixar a linha branca se o tema escuro já pintou o nome de claro. Cada fil
 ![Próximas trocas no tema claro](assets/terminais-proximas-claro.png)
 
 ![Próximas trocas no tema escuro](assets/terminais-proximas-escuro.png)
+
+![Terminais Agora no tema claro: logo cheia e filtro](assets/terminais-chrome-claro.png)
+
+![Terminais Agora no tema escuro: logo clara e filtro](assets/terminais-chrome-escuro.png)
 
 ### Texto e ação
 

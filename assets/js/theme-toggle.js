@@ -1,10 +1,88 @@
+var DK_LAT = -23.3104;
+var DK_LON = -51.1628;
+var DK_TZ = "America/Sao_Paulo";
+
+function dkSpParts(at) {
+  var map = {};
+  new Intl.DateTimeFormat("en-GB", {
+    timeZone: DK_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(at || new Date()).forEach(function (part) {
+    if (part.type !== "literal") map[part.type] = Number(part.value);
+  });
+  return map;
+}
+
+function dkSolarMinutes(year, month, day, rising) {
+  var n1 = Math.floor((275 * month) / 9);
+  var n2 = Math.floor((month + 9) / 12);
+  var n3 = 1 + Math.floor((year - 4 * Math.floor(year / 4) + 2) / 3);
+  var n = n1 - n2 * n3 + day - 30;
+  var lngHour = DK_LON / 15;
+  var t = n + ((rising ? 6 : 18) - lngHour) / 24;
+  var M = 0.9856 * t - 3.289;
+  var L = M + 1.916 * Math.sin((M * Math.PI) / 180) + 0.02 * Math.sin((2 * M * Math.PI) / 180) + 282.634;
+  L = ((L % 360) + 360) % 360;
+  var RA = (Math.atan(0.91764 * Math.tan((L * Math.PI) / 180)) * 180) / Math.PI;
+  RA = ((RA % 360) + 360) % 360;
+  RA = RA + (Math.floor(L / 90) * 90 - Math.floor(RA / 90) * 90);
+  RA = RA / 15;
+  var sinDec = 0.39782 * Math.sin((L * Math.PI) / 180);
+  var cosDec = Math.cos(Math.asin(sinDec));
+  var cosH =
+    (Math.cos((90.833 * Math.PI) / 180) - sinDec * Math.sin((DK_LAT * Math.PI) / 180)) /
+    (cosDec * Math.cos((DK_LAT * Math.PI) / 180));
+  if (cosH > 1) return 6 * 60;
+  if (cosH < -1) return 18 * 60;
+  var H = rising ? 360 - (Math.acos(cosH) * 180) / Math.PI : (Math.acos(cosH) * 180) / Math.PI;
+  H = H / 15;
+  var UT = H + RA - 0.06571 * t - 6.622 - lngHour;
+  var local = ((UT - 3) % 24 + 24) % 24;
+  return Math.round(local * 60);
+}
+
+function dkPreferDarkBySun(at) {
+  try {
+    var p = dkSpParts(at);
+    var now = p.hour * 60 + p.minute;
+    var rise = dkSolarMinutes(p.year, p.month, p.day, true);
+    var set = dkSolarMinutes(p.year, p.month, p.day, false);
+    if (!Number.isFinite(rise) || !Number.isFinite(set)) return p.hour < 6 || p.hour >= 18;
+    return now < rise || now >= set;
+  } catch (e) {
+    try {
+      var h = Number(new Intl.DateTimeFormat("en-GB", { timeZone: DK_TZ, hour: "numeric", hourCycle: "h23" }).format(at || new Date()));
+      return h < 6 || h >= 18;
+    } catch (e2) {
+      return false;
+    }
+  }
+}
+
+function dkMsUntilSunSwitch(at) {
+  var p = dkSpParts(at);
+  var now = p.hour * 60 + p.minute;
+  var rise = dkSolarMinutes(p.year, p.month, p.day, true);
+  var set = dkSolarMinutes(p.year, p.month, p.day, false);
+  var next = now < rise ? rise : now < set ? set : rise + 24 * 60;
+  var waitMin = next - now;
+  var waitMs = waitMin * 60 * 1000 - p.second * 1000;
+  return Math.min(Math.max(waitMs + 800, 1000), 6 * 60 * 60 * 1000);
+}
+
 /* Apply the stored theme before paint when this file is in <head>. */
 (function dkEarlyBoot() {
   try {
     var key = "dk-theme";
     var stored = localStorage.getItem(key);
     if (stored !== "dark" && stored !== "light" && stored !== "auto") stored = "auto";
-    var dark = stored === "dark" || (stored === "auto" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    var dark = stored === "dark" || (stored === "auto" && dkPreferDarkBySun());
     var html = document.documentElement;
     html.classList.remove("dk-light", "dk-dark");
     html.classList.add(dark ? "dk-dark" : "dk-light");
@@ -27,10 +105,9 @@
 })();
 
 var DK_KEY = "dk-theme";
-var DK_BRAND_LIGHT = "portal-logo-clean-light.png";
+var DK_BRAND_LIGHT = "logomarca-portalciop-tcgl-claro.png";
 var DK_BRAND_DARK = "portal-logo-clean-dark.png";
 var DK_AUTO_TIMER = null;
-var DK_SYSTEM_MQ = null;
 
 function dkNormalize(pref) {
   if (pref === "dark" || pref === "auto") return pref;
@@ -49,17 +126,9 @@ function dkStoredPref() {
   return dkNormalize(stored);
 }
 
-function dkPreferDarkBySystem() {
-  try {
-    return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
-  } catch (e) {
-    return false;
-  }
-}
-
 function dkResolveMode(pref) {
   var p = dkNormalize(pref);
-  if (p === "auto") return dkPreferDarkBySystem() ? "dark" : "light";
+  if (p === "auto") return dkPreferDarkBySun() ? "dark" : "light";
   return p;
 }
 
@@ -106,7 +175,7 @@ function dkSwapTcglLogos(isDark) {
 
 function dkPrefLabel(pref) {
   if (pref === "dark") return "Tema escuro";
-  if (pref === "auto") return "Automático (sistema)";
+  if (pref === "auto") return "Automático (dia/noite)";
   return "Tema claro";
 }
 
@@ -128,24 +197,20 @@ function dkSyncPicker(pref) {
 
 function dkClearAutoTimer() {
   if (DK_AUTO_TIMER) {
-    window.clearInterval(DK_AUTO_TIMER);
+    window.clearTimeout(DK_AUTO_TIMER);
     DK_AUTO_TIMER = null;
   }
 }
 
 function dkScheduleAuto() {
   dkClearAutoTimer();
-  try {
-    if (!DK_SYSTEM_MQ && window.matchMedia) {
-      DK_SYSTEM_MQ = window.matchMedia("(prefers-color-scheme: dark)");
-      var onSys = function () {
-        if (dkStoredPref() === "auto") dkApply("auto", true);
-      };
-      if (DK_SYSTEM_MQ.addEventListener) DK_SYSTEM_MQ.addEventListener("change", onSys);
-      else if (DK_SYSTEM_MQ.addListener) DK_SYSTEM_MQ.addListener(onSys);
-    }
-  } catch (e) {}
   if (dkStoredPref() !== "auto") return;
+  try {
+    DK_AUTO_TIMER = window.setTimeout(function () {
+      DK_AUTO_TIMER = null;
+      if (dkStoredPref() === "auto") dkApply("auto");
+    }, dkMsUntilSunSwitch());
+  } catch (e) {}
 }
 
 function dkApply(pref, silent) {
@@ -215,7 +280,7 @@ window.dkSwapBrandLogos = dkSwapBrandLogos;
   var current = document.currentScript;
   if (!current?.src) return;
   var script = document.createElement('script');
-  script.src = new URL('portal-design-system.js?v=20261026row1', current.src).href;
+  script.src = new URL('portal-design-system.js?v=20261027auto1', current.src).href;
   script.dataset.portalDesignSystem = '1';
   script.defer = true;
   document.head.appendChild(script);
