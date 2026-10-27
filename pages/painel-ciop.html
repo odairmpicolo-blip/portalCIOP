@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;600;700;800;900&display=swap">
-<link rel="stylesheet" href="../assets/css/portal-clima-anim.css?v=20261026wx1">
-<script src="../assets/js/portal-clima-cena.js?v=20261027wx3"></script>
+<link rel="stylesheet" href="../assets/css/portal-clima-anim.css?v=20261027tv1">
+<script src="../assets/js/portal-clima-cena.js?v=20261027tv1"></script>
 <style>
   :root{
     --bg-1:#04060f;
@@ -35,7 +35,7 @@
       linear-gradient(180deg, var(--bg-1), var(--bg-2) 58%, #050814);
   }
   body::before{
-    content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.18;
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.08;
     background-image:
       linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
@@ -55,89 +55,75 @@
   @keyframes spin{ to{ transform:rotate(360deg); } }
 
   .kiosk{
-    position:relative; z-index:1; width:100vw; height:100vh;
+    position:relative; z-index:1; width:100vw; height:100vh; overflow:hidden;
     display:flex; flex-direction:column;
-    padding:clamp(12px,1.6vh,24px) clamp(18px,2.2vw,40px);
-    gap:clamp(8px,1.2vh,16px);
+    padding:clamp(16px,2vh,28px) clamp(28px,2.6vw,48px) clamp(18px,2vh,28px);
+    gap:clamp(8px,1.1vh,14px);
   }
   .kiosk.modo-capa .hdr, .kiosk.modo-capa .ftr{ opacity:0; pointer-events:none; }
+  .kiosk.modo-capa #slide-campanha.ativo{
+    position:fixed; inset:0; z-index:20;
+  }
+  .kiosk.modo-capa #slide-campanha.ativo .campanha{ border-radius:0; height:100%; }
   .hdr{
-    display:flex; align-items:center; justify-content:space-between; flex:0 0 auto;
-    transition:opacity .35s;
+    display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,.8fr); align-items:center;
+    gap:24px; flex:0 0 auto; min-height:clamp(52px,6.4vh,72px);
+    transition:opacity .28s;
   }
-  .brand{ display:flex; align-items:center; gap:16px; min-width:0; }
-  .brand img{ height:clamp(40px,4.6vh,58px); width:auto; filter:drop-shadow(0 4px 10px rgba(0,0,0,.7)) drop-shadow(0 10px 22px rgba(0,0,0,.45)); }
+  .brand{ display:flex; align-items:center; gap:14px; min-width:0; }
+  .brand img{ height:clamp(36px,4.4vh,52px); width:auto; }
+  .brand-kicker{
+    font-size:clamp(13px,1vw,16px); font-weight:800; letter-spacing:.16em; text-transform:uppercase;
+    color:#9fb4d8;
+  }
   .brand-title{
-    font-size:clamp(30px,3.4vw,52px); font-weight:900; letter-spacing:-.045em;
-    white-space:nowrap; line-height:.92;
-    text-shadow:0 0 24px rgba(56,189,248,.45);
+    font-size:clamp(26px,2.35vw,40px); font-weight:800; letter-spacing:-.03em;
+    white-space:nowrap; line-height:1.05; overflow:hidden; text-overflow:ellipsis;
   }
-  .brand-sub{ font-size:clamp(12px,.95vw,15px); color:var(--muted); font-weight:700; letter-spacing:.04em; }
-  .hdr-right{
-    display:flex; align-items:center; gap:10px;
-    font-weight:800; letter-spacing:.14em; text-transform:uppercase;
-    font-size:clamp(12px,1vw,15px); color:var(--ink);
-    padding:8px 14px 8px 12px; border-radius:999px;
-    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+  .hdr-period{
+    justify-self:end; text-align:right; min-width:0;
+    font-size:clamp(20px,1.9vw,32px); font-weight:700; letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums; white-space:nowrap;
   }
-  .live-dot{ width:9px; height:9px; border-radius:50%; background:#22c55e; box-shadow:0 0 12px #22c55e; animation:pulse 2.2s ease-in-out infinite; }
-  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
 
   .viewport{ flex:1 1 auto; min-height:0; position:relative; }
   .slide{
-    position:absolute; inset:0; opacity:0; pointer-events:none;
-    transform:translateY(12px) scale(.985);
-    transition:opacity .55s ease, transform .55s ease;
+    position:absolute; inset:0; opacity:0; visibility:hidden; pointer-events:none;
   }
-  .slide.ativo{ opacity:1; pointer-events:auto; transform:none; }
+  .slide.ativo{
+    opacity:1; visibility:visible; pointer-events:auto;
+    transition:opacity .22s ease;
+  }
   .slide-full{ position:fixed !important; inset:0 !important; z-index:20; border-radius:0; }
 
   .ftr{
-    display:flex; align-items:center; justify-content:space-between; gap:12px;
-    flex:0 0 auto; font-size:clamp(12px,1vw,15px); color:var(--muted); font-weight:700;
-    transition:opacity .35s;
+    display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+    align-items:center; gap:16px;
+    flex:0 0 auto; min-height:clamp(28px,3.4vh,40px);
+    font-size:clamp(16px,1.15vw,20px); color:#d5e0f2; font-weight:650;
+    font-variant-numeric:tabular-nums;
+    transition:opacity .28s;
   }
-  .ftr-mid{
-    display:flex; gap:10px; align-items:center; font-variant-numeric:tabular-nums; color:var(--ink);
-    padding:6px 14px; border-radius:999px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
-  }
+  .ftr-status{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ftr-mid{ justify-self:center; display:flex; gap:10px; align-items:center; color:#fff; }
+  .ftr-atual{ justify-self:end; color:#b7c6de; }
   .ciclo{
-    position:absolute; left:0; right:0; bottom:0; height:5px;
-    background:rgba(255,255,255,.07); overflow:hidden;
+    position:absolute; left:clamp(28px,2.6vw,48px); right:clamp(28px,2.6vw,48px); bottom:8px; height:3px;
+    background:rgba(255,255,255,.12); overflow:hidden; z-index:30; border-radius:99px;
   }
   .ciclo-bar{
-    height:100%; width:0;
-    background:linear-gradient(90deg,#38bdf8, #818cf8, #e44a1c);
-    box-shadow:0 0 18px rgba(56,189,248,.7);
-    position:relative;
-  }
-  .ciclo-bar::after{
-    content:""; position:absolute; right:0; top:-6px; bottom:-6px; width:18px;
-    background:linear-gradient(90deg, transparent, rgba(255,255,255,.85));
-    filter:blur(2px);
+    height:100%; width:0; border-radius:inherit;
+    background:#7dd3fc;
   }
   .kiosk:not(.modo-fixo) .ciclo-bar.anim{ animation:ciclo var(--ciclo-ms,25s) linear forwards; }
   @keyframes ciclo{ from{ width:0; } to{ width:100%; } }
 
   /* ===== IPV 3 cards ===== */
   .board{ height:100%; display:flex; flex-direction:column; gap:clamp(10px,1.4vh,18px); min-height:0; }
-  .board-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex:0 0 auto; }
-  .board-kicker{ font-size:clamp(13px,1.05vw,16px); font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:#7dd3fc; }
-  .board-icv .board-kicker{ color:#5eead4; }
-  .board-period{ font-size:clamp(24px,2.4vw,38px); font-weight:900; margin-top:2px; letter-spacing:-.035em; }
-  .hud-week{ display:flex; gap:8px; align-items:center; }
-  .hud-seg{
-    width:clamp(34px,3.6vw,56px); height:11px; border-radius:99px;
-    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14);
-    position:relative; overflow:hidden;
-  }
-  .hud-seg.on{ background:linear-gradient(90deg,#38bdf8,#e44a1c); box-shadow:0 0 14px rgba(56,189,248,.55); }
-  .hud-seg.now{
-    box-shadow:0 0 16px rgba(228,74,28,.75);
-    animation:hudPulse 1.2s ease-in-out infinite;
-  }
-  @keyframes hudPulse{ 50%{ filter:brightness(1.35); } }
+  .board-head{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex:0 0 auto; }
+  .board-kicker{ font-size:clamp(14px,1.05vw,17px); font-weight:750; letter-spacing:.12em; text-transform:uppercase; color:#9ec8ea; }
+  .board-icv .board-kicker{ color:#8ee4d6; }
+  .board-note{ font-size:clamp(15px,1.15vw,18px); font-weight:650; color:#c5d3e8; }
   .board-grid{
     flex:1; min-height:0;
     display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(16px,2vw,28px);
@@ -147,36 +133,25 @@
     position:relative; min-height:0; overflow:hidden;
     border-radius:32px;
     padding:clamp(22px,2.8vh,36px) clamp(22px,2.2vw,34px) clamp(18px,2.2vh,28px);
-    background:
-      radial-gradient(120% 80% at 100% 0%, var(--glow), transparent 55%),
-      linear-gradient(165deg, rgba(255,255,255,.14), rgba(255,255,255,.04) 42%, rgba(8,12,28,.62));
-    border:1px solid rgba(255,255,255,.2);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.28),
-      inset 0 -1px 0 rgba(0,0,0,.28),
-      0 28px 56px rgba(0,0,0,.4);
-    backdrop-filter:blur(18px);
+    background:linear-gradient(180deg, rgba(18,28,52,.72), rgba(8,12,28,.78));
+    border:1px solid rgba(255,255,255,.16);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+    backdrop-filter:blur(16px);
     display:grid;
-    grid-template-rows:auto auto 1fr auto auto;
-    gap:clamp(12px,1.8vh,22px);
-  }
-  .firm::before{
-    content:""; position:absolute; width:320px; height:320px; right:-100px; top:-110px; border-radius:50%;
-    background:radial-gradient(circle, var(--glow), transparent 70%); pointer-events:none; opacity:.9;
+    grid-template-rows:auto auto minmax(64px,1fr) auto auto;
+    gap:clamp(8px,1.2vh,14px);
   }
   .firm::after{
-    content:""; position:absolute; left:18px; right:18px; top:0; height:3px;
-    background:linear-gradient(90deg, transparent, var(--accent), transparent);
-    box-shadow:0 0 18px var(--accent); opacity:.9;
+    content:""; position:absolute; left:22px; right:22px; top:0; height:2px;
+    background:var(--accent); opacity:.85;
   }
   .firm-top{ position:relative; display:flex; flex-direction:column; gap:6px; }
   .firm-kicker{
     font-size:clamp(14px,1.15vw,18px); font-weight:800; letter-spacing:.22em; text-transform:uppercase;
-    color:var(--accent); text-shadow:0 0 18px var(--glow);
+    color:var(--accent);
   }
   .firm h2{
-    margin:0; font-size:clamp(40px,4.2vw,68px); font-weight:900; letter-spacing:-.045em; line-height:.92;
-    text-shadow:0 8px 28px rgba(0,0,0,.35);
+    margin:0; font-size:clamp(36px,3.4vw,56px); font-weight:800; letter-spacing:-.04em; line-height:.95;
   }
   .firm-block{
     position:relative;
@@ -191,13 +166,12 @@
     color:#c9d6ef; margin-bottom:8px;
   }
   .firm-week-pct{
-    font-size:clamp(42px,8.6vw,136px); font-weight:900; letter-spacing:-.05em; line-height:1;
-    font-variant-numeric:tabular-nums;
+    font-size:clamp(42px,8.6vw,136px); font-weight:800; letter-spacing:-.045em; line-height:.92;
+    font-variant-numeric:tabular-nums; color:#fff;
     flex:1 1 100%; min-width:0; max-width:100%; white-space:nowrap;
-    background:linear-gradient(180deg, #ffffff 8%, #e8eef6 58%, #c5d0e0 100%);
-    -webkit-background-clip:text; background-clip:text; color:transparent;
-    -webkit-text-fill-color:transparent;
-    filter:drop-shadow(0 10px 22px rgba(8,12,24,.4));
+  }
+  .firm-note{
+    margin-top:6px; font-size:clamp(14px,1.05vw,17px); font-weight:650; color:#b7c6de; letter-spacing:.01em;
   }
   .firm-block, .firm-hero, .firm-week-row, .firm-pct-row{ width:100%; min-width:0; }
   .firm-week-row, .firm-pct-row{
@@ -215,8 +189,9 @@
     white-space:nowrap;
   }
   .firm-delta b{ font-size:1.05em; }
-  .firm-delta.up{ color:#4ade80; background:rgba(34,197,94,.16); border-color:rgba(74,222,128,.35); }
-  .firm-delta.down{ color:#fb7185; background:rgba(239,68,68,.16); border-color:rgba(251,113,133,.35); }
+  /* Comparação do indicador: verde sobe, azul-ardósia desce. Não é Adiantado/Atrasado. */
+  .firm-delta.is-compare.up{ color:#86efac; background:rgba(34,197,94,.14); border-color:rgba(134,239,172,.4); }
+  .firm-delta.is-compare.down{ color:#93c5fd; background:rgba(59,130,246,.14); border-color:rgba(147,197,253,.4); }
   .firm-delta.flat{ color:#d7e2f6; }
   .firm-delta-lg{ font-size:clamp(18px,1.8vw,28px); align-self:center; }
   .firm-hero{
@@ -225,58 +200,36 @@
     padding:clamp(8px,1vh,14px) 0;
   }
   .firm-pct{
-    font-size:clamp(22px,4vw,62px); font-weight:900; letter-spacing:-.04em; line-height:1;
-    font-variant-numeric:tabular-nums;
+    font-size:clamp(22px,4vw,62px); font-weight:800; letter-spacing:-.03em; line-height:1;
+    font-variant-numeric:tabular-nums; color:#fff;
     min-width:0; max-width:100%; white-space:nowrap;
-    background:linear-gradient(180deg, #ffffff 8%, #e8eef6 58%, #c5d0e0 100%);
-    -webkit-background-clip:text; background-clip:text; color:transparent;
-    -webkit-text-fill-color:transparent;
-    filter:drop-shadow(0 8px 18px rgba(8,12,24,.35));
   }
-  .firm-pct.pop{ animation:pctPop .45s cubic-bezier(.2,.8,.2,1); }
-  @keyframes pctPop{
-    0%{ transform:translateY(14px) scale(.92); opacity:.25; }
-    100%{ transform:none; opacity:1; }
+  .firm-evo{
+    display:flex; align-items:flex-end; gap:clamp(4px,.5vw,8px);
+    min-height:0; height:100%; padding:0 2px 2px;
   }
+  .firm-evo i{
+    flex:1 1 0; height:var(--h, 0%); min-height:3px; border-radius:4px 4px 2px 2px;
+    background:color-mix(in srgb, var(--accent) 78%, white); opacity:.45;
+  }
+  .firm-evo i.is-now{ opacity:1; }
+  .firm-evo i.is-empty{ height:3px; opacity:.22; background:rgba(255,255,255,.35); }
   .firm-day{
     font-size:clamp(22px,2.2vw,34px); font-weight:800; letter-spacing:.08em; text-transform:uppercase;
     color:var(--ink);
   }
-  .firm-load{
-    height:14px; border-radius:99px;
-    background:rgba(2,6,18,.55);
-    border:1px solid rgba(255,255,255,.16);
-    position:relative; overflow:hidden;
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.04), 0 0 22px var(--glow);
-  }
-  .firm-load i{
-    display:block; height:100%; width:0;
-    border-radius:inherit;
-    background:linear-gradient(90deg, var(--accent-deep), var(--accent) 42%, var(--accent-hi));
-    box-shadow:0 0 20px var(--accent), 0 0 32px var(--glow);
-    position:relative;
-  }
-  .firm-load i::after{
-    content:""; position:absolute; right:-2px; top:-9px; bottom:-9px; width:20px;
-    background:radial-gradient(circle, #fff 0 28%, transparent 70%);
-    filter:blur(1px);
-  }
-  .firm-load.anim i{ animation:loadDay var(--dia-ms,3600ms) linear forwards; }
-  @keyframes loadDay{ from{ width:0; } to{ width:100%; } }
-  .firm-load::after{
-    content:""; position:absolute; inset:0;
-    background:linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent);
-    background-size:28% 100%;
-    animation:scanLoad 1.15s linear infinite;
-    pointer-events:none; mix-blend-mode:screen; opacity:.75;
-  }
-  @keyframes scanLoad{ from{ background-position:-40% 0; } to{ background-position:140% 0; } }
+  .firm-load{ display:none; }
   .firm-ticks{ display:flex; gap:6px; position:relative; }
   .firm-ticks b{
-    flex:1; height:6px; border-radius:99px; background:rgba(255,255,255,.14);
+    flex:1; min-width:0; height:auto; padding:6px 0 4px;
+    border-radius:8px; background:rgba(255,255,255,.06);
+    display:flex; flex-direction:column; align-items:center; gap:1px;
+    font-size:clamp(14px,1.05vw,16px); font-weight:750; letter-spacing:.04em; text-transform:uppercase;
+    color:#9fb0c8; font-style:normal;
   }
-  .firm-ticks b.on{ background:var(--accent); box-shadow:0 0 10px var(--accent); }
-  .firm-ticks b.now{ background:#fff; box-shadow:0 0 12px #fff; }
+  .firm-ticks b span{ font-size:clamp(13px,1.05vw,16px); font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:0; text-transform:none; }
+  .firm-ticks b.on{ background:color-mix(in srgb, var(--accent) 22%, transparent); color:#e8eef8; }
+  .firm-ticks b.now{ background:rgba(255,255,255,.16); color:#fff; }
 
   .ipv-tcgl{
     --accent:#38bdf8; --accent-hi:#e0f2fe; --accent-deep:#0369a1;
@@ -298,38 +251,34 @@
     .firm-week-pct{ font-size:clamp(52px,11vw,88px); }
   }
 
-  /* ===== Clima (estilo iOS 16:9) ===== */
+  /* ===== Clima ===== */
   .wx{
     --accent:#7dd3fc;
-    height:100%; min-height:0; border-radius:32px;
-    padding:clamp(12px,1.5vh,18px) clamp(16px,1.8vw,28px);
+    height:100%; min-height:0; border-radius:28px;
+    padding:clamp(14px,1.6vh,22px) clamp(16px,1.6vw,26px);
     background:transparent;
     border:1px solid rgba(255,255,255,.14);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.16), 0 24px 50px rgba(0,0,0,.28);
     display:grid;
-    grid-template-rows:auto auto minmax(0,1fr);
-    gap:clamp(10px,1.2vh,14px);
+    grid-template-rows:auto auto minmax(0,1fr) auto auto;
+    gap:clamp(8px,1vh,12px);
     position:relative; overflow:hidden;
   }
   .wx-glass{
     position:relative; z-index:1;
-    background:rgba(36,48,68,.38);
-    backdrop-filter:blur(28px) saturate(1.35);
-    -webkit-backdrop-filter:blur(28px) saturate(1.35);
-    border:1px solid rgba(255,255,255,.16);
-    border-radius:22px;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.2);
+    background:rgba(10,16,32,.42);
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:16px;
   }
   .wx-hero{
-    display:flex; flex-direction:row; align-items:baseline; justify-content:flex-start;
-    gap:clamp(12px,1.6vw,28px); flex-wrap:wrap;
+    display:flex; flex-direction:row; align-items:flex-end; justify-content:flex-start;
+    gap:clamp(16px,1.8vw,28px);
     text-align:left; position:relative; z-index:1;
-    min-width:0; padding:0 clamp(8px,1vw,18px);
-    text-shadow:0 6px 20px rgba(0,0,0,.4);
+    min-width:0; padding:4px 120px 4px 8px;
   }
   .wx-city{
-    font-size:clamp(28px,2.6vw,42px); font-weight:600; letter-spacing:.01em; color:#fff;
+    font-size:clamp(18px,1.4vw,24px); font-weight:650; color:rgba(255,255,255,.82);
   }
+  .wx-hero-copy{ display:flex; flex-direction:column; gap:4px; min-width:0; }
   .tv-wx svg{ width:1em; height:1em; display:block; }
   .wx-temp{
     font-size:clamp(72px,7.4vw,120px); font-weight:300; letter-spacing:-.06em; line-height:.86;
@@ -364,20 +313,14 @@
   }
   .wx-hour.is-sunset .wx-hour-temp{ font-size:clamp(12px,1.05vw,15px); font-weight:700; white-space:nowrap; }
   .wx-sunset-mark{ font-size:clamp(22px,2.1vw,30px); line-height:1; }
-  .wx-body{
+  .wx-aux{
     display:grid;
-    grid-template-columns:minmax(240px,.82fr) minmax(0,1.35fr) minmax(280px,.95fr);
-    gap:clamp(10px,1.1vw,14px);
-    min-height:0; position:relative; z-index:1;
+    grid-template-columns:1.15fr 1fr 1fr 1.25fr .9fr .72fr;
+    gap:clamp(8px,.7vw,12px);
+    position:relative; z-index:1; min-width:0;
   }
-  .wx-col{
-    display:grid; grid-template-rows:minmax(0,1.15fr) minmax(0,.85fr);
-    gap:clamp(8px,1vw,12px); min-height:0;
-  }
-  .wx-col-quad{
-    display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr;
-    gap:clamp(8px,1vw,12px); min-height:0;
-  }
+  .wx-aux .wx-mini.is-quiet .wx-chip-value{ font-size:clamp(20px,1.6vw,28px); color:#d5e0f2; }
+  .wx-aux .wx-mini.is-next{ border-color:rgba(125,211,252,.55); }
   .wx-mini{
     padding:clamp(12px,1.4vh,18px) clamp(12px,1.3vw,18px);
     display:flex; flex-direction:column; justify-content:space-between; gap:6px; min-width:0; min-height:0;
@@ -387,14 +330,19 @@
     letter-spacing:.1em; font-weight:700;
   }
   .wx-chip-value{
-    font-size:clamp(28px,2.8vw,46px); font-weight:300; font-variant-numeric:tabular-nums;
+    font-size:clamp(22px,2vw,34px); font-weight:650; font-variant-numeric:tabular-nums;
     color:#fff; white-space:nowrap;
   }
   .wx-chip-sub{ font-size:clamp(14px,1.25vw,18px); font-weight:600; color:rgba(255,255,255,.7); }
   .wx-wind-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:0; }
+  .wx-fonte{
+    position:relative; z-index:1;
+    font-size:clamp(14px,1vw,16px); font-weight:650; color:rgba(255,255,255,.72);
+    font-variant-numeric:tabular-nums; padding:0 6px;
+  }
   .wx-compass{
     position:relative; flex:0 0 auto;
-    width:clamp(78px,7.4vw,108px); height:clamp(78px,7.4vw,108px);
+    width:clamp(52px,4.2vw,68px); height:clamp(52px,4.2vw,68px);
     border-radius:50%; border:1px solid rgba(255,255,255,.22);
     background:radial-gradient(circle at 50% 50%, rgba(255,255,255,.08), transparent 62%);
   }
@@ -419,9 +367,9 @@
   }
   .wx-days{ display:flex; flex-direction:column; flex:1 1 auto; min-height:0; justify-content:space-between; }
   .wx-day{
-    display:grid; grid-template-columns:4.6rem 2rem 3.2rem 2.8rem minmax(64px,1fr) 3rem;
+    display:grid; grid-template-columns:4.8rem 1.8rem 3.2rem 2.6rem minmax(80px,1fr) 3rem;
     align-items:center; gap:10px; min-height:0;
-    padding:clamp(4px,.55vh,8px) 0;
+    padding:2px 0;
   }
   .wx-day + .wx-day{ border-top:1px solid rgba(255,255,255,.1); }
   .wx-day-name{ font-size:clamp(18px,1.6vw,24px); font-weight:600; color:#fff; }
@@ -440,12 +388,9 @@
     background:linear-gradient(90deg,#60a5fa,#fde047,#fb923c);
   }
   @media (max-aspect-ratio: 4/3){
-    .wx{ display:flex; flex-direction:column; }
-    .wx-hero{ flex-direction:column; align-items:center; gap:2px; }
-    .wx-temp{ font-size:clamp(64px,14vw,96px); }
-    .wx-body{ grid-template-columns:1fr; flex:1; }
-    .wx-col, .wx-col-quad{ display:grid; grid-template-columns:1fr 1fr; grid-template-rows:auto; }
-    .wx-day{ grid-template-columns:3.4rem 1.4rem 2.2rem 2rem minmax(40px,1fr) 2.2rem; }
+    .board-grid{ grid-template-columns:1fr; }
+    .wx-aux{ grid-template-columns:1fr 1fr 1fr; }
+    .wx-day{ grid-template-columns:3.4rem 1.4rem 2.4rem 2rem minmax(40px,1fr) 2.2rem; }
   }
 
   /* ===== Campanha ===== */
@@ -459,13 +404,8 @@
     background:linear-gradient(90deg, var(--campanha-cor), color-mix(in srgb, var(--campanha-cor) 40%, #fff));
   }
   .campanha img.bg{
-    position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:72% 50%;
-    transform:scale(1.06); filter:saturate(1.12) contrast(1.04);
-    animation:campKen 22s ease-in-out infinite alternate;
-  }
-  @keyframes campKen{
-    from{ transform:scale(1.06) translate(0,0); }
-    to{ transform:scale(1.14) translate(-2.2%, 1.4%); }
+    position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center;
+    background:var(--campanha-fundo, #140810);
   }
   .campanha-wash{
     position:absolute; inset:0; z-index:2; pointer-events:none;
@@ -507,7 +447,7 @@
   }
   .campanha p{ margin:0; max-width:38ch; color:#eadfe8; font-weight:650; font-size:clamp(16px,1.45vw,22px); line-height:1.35; }
   @media (prefers-reduced-motion:reduce){
-    .campanha img.bg{ animation:none !important; transform:scale(1.06); }
+    .campanha img.bg{ animation:none !important; transform:none; }
     .campanha.is-arte img.bg{ transform:none !important; }
   }
   .campanha.is-arte{
@@ -527,32 +467,11 @@
   .scene{ position:relative; width:100%; height:100%; overflow:hidden; background:#020617; }
   .scene-photo{
     position:absolute; inset:0; width:100%; height:100%;
-    object-fit:cover; object-position:center center;
-    transform:scale(1.02);
-    filter:saturate(1.08) contrast(1.04);
+    object-fit:contain; object-position:center center;
+    background:#061018;
   }
-  .scene.tocar .scene-photo{ animation:busKen 8s ease-out forwards; }
-  @keyframes busKen{
-    0%{ transform:scale(1.02) translateY(0); }
-    100%{ transform:scale(1.08) translateY(-1.2%); }
-  }
-  .scene-overlay{
-    position:absolute; inset:0;
-    background:
-      radial-gradient(ellipse 55% 42% at 0% 0%, rgba(0,0,0,.55), transparent 70%),
-      radial-gradient(ellipse 55% 42% at 100% 0%, rgba(0,0,0,.4), transparent 70%),
-      linear-gradient(180deg, rgba(2,6,23,.22) 0%, transparent 24%, transparent 70%, rgba(2,6,23,.58) 100%);
-    pointer-events:none;
-  }
-  .scene-ciop{
-    position:absolute; top:clamp(16px,2.8vh,36px); left:clamp(18px,2.4vw,40px); z-index:6;
-    height:clamp(52px,7.2vh,96px); width:auto;
-    filter:
-      drop-shadow(0 2px 0 rgba(0,0,0,.55))
-      drop-shadow(0 8px 18px rgba(0,0,0,.85))
-      drop-shadow(0 18px 36px rgba(0,0,0,.55))
-      drop-shadow(0 0 22px rgba(43,52,128,.45));
-  }
+  .scene-overlay{ display:none; }
+  .scene-ciop{ display:none; }
 </style>
 <link rel="stylesheet" href="../assets/css/portal-visual.css?v=20261026row1">
 <script src="../assets/js/theme-toggle.js?v=20261027auto1" defer></script>
@@ -569,22 +488,19 @@
     <div class="brand">
       <img src="../assets/img/logo-ciop.png" alt="CIOP">
       <div>
+        <div class="brand-kicker">CIOP · Londrina</div>
         <div class="brand-title" id="slideTitle">Pontualidade −2 +6 min</div>
-        <div class="brand-sub">CIOP — Centro de Inteligência Operacional de Londrina</div>
       </div>
     </div>
-    <div class="hdr-right"><span class="live-dot"></span><span id="slideTag">Área 1 · Área 2 · Sistema</span></div>
+    <div class="hdr-period" id="hdrPeriod">—</div>
   </header>
 
   <main class="viewport">
     <section class="slide" id="slide-ipv">
       <div class="board">
         <div class="board-head">
-          <div>
-            <div class="board-kicker">domingo a sábado</div>
-            <div class="board-period" id="periodoBoard">—</div>
-          </div>
-          <div class="hud-week" id="hudWeek"></div>
+          <div class="board-kicker">Tolerância −2 min / +6 min</div>
+          <div class="board-note">Três áreas · mesma escala nos sete dias</div>
         </div>
         <div class="board-grid">
           <article class="firm ipv-tcgl" id="card-tcgl">
@@ -594,6 +510,7 @@
             </div>
             <div class="firm-block">
               <div class="firm-label">Média da semana</div>
+              <div class="firm-note">em pontos percentuais, contra a semana anterior</div>
               <div class="firm-week-row">
                 <div class="firm-week-pct" id="weekTcgl">—</div>
                 <div class="firm-delta firm-delta-lg flat" id="weekDeltaTcgl">—</div>
@@ -617,6 +534,7 @@
             </div>
             <div class="firm-block">
               <div class="firm-label">Média da semana</div>
+              <div class="firm-note">em pontos percentuais, contra a semana anterior</div>
               <div class="firm-week-row">
                 <div class="firm-week-pct" id="weekLs">—</div>
                 <div class="firm-delta firm-delta-lg flat" id="weekDeltaLs">—</div>
@@ -640,6 +558,7 @@
             </div>
             <div class="firm-block">
               <div class="firm-label">Média das áreas</div>
+              <div class="firm-note">média simples de TCGL e LondriSul, em p.p.</div>
               <div class="firm-week-row">
                 <div class="firm-week-pct" id="weekCiop">—</div>
                 <div class="firm-delta firm-delta-lg flat" id="weekDeltaCiop">—</div>
@@ -663,11 +582,8 @@
     <section class="slide" id="slide-ipv13">
       <div class="board">
         <div class="board-head">
-          <div>
-            <div class="board-kicker">domingo a sábado</div>
-            <div class="board-period" id="periodoBoard13">—</div>
-          </div>
-          <div class="hud-week" id="hudWeek13"></div>
+          <div class="board-kicker">Tolerância −1 min / +3 min</div>
+          <div class="board-note">Medição distinta da faixa −2 / +6</div>
         </div>
         <div class="board-grid">
           <article class="firm ipv-tcgl">
@@ -677,6 +593,7 @@
             </div>
             <div class="firm-block">
               <div class="firm-label">Média da semana</div>
+              <div class="firm-note">em pontos percentuais, contra a semana anterior</div>
               <div class="firm-week-row">
                 <div class="firm-week-pct" id="week13Tcgl">—</div>
                 <div class="firm-delta firm-delta-lg flat" id="weekDelta13Tcgl">—</div>
@@ -700,6 +617,7 @@
             </div>
             <div class="firm-block">
               <div class="firm-label">Média da semana</div>
+              <div class="firm-note">em pontos percentuais, contra a semana anterior</div>
               <div class="firm-week-row">
                 <div class="firm-week-pct" id="week13Ls">—</div>
                 <div class="firm-delta firm-delta-lg flat" id="weekDelta13Ls">—</div>
@@ -723,6 +641,7 @@
             </div>
             <div class="firm-block">
               <div class="firm-label">Média das áreas</div>
+              <div class="firm-note">média simples de TCGL e LondriSul, em p.p.</div>
               <div class="firm-week-row">
                 <div class="firm-week-pct" id="week13Ciop">—</div>
                 <div class="firm-delta firm-delta-lg flat" id="weekDelta13Ciop">—</div>
@@ -746,11 +665,8 @@
     <section class="slide" id="slide-icv">
       <div class="board board-icv">
         <div class="board-head">
-          <div>
-            <div class="board-kicker">domingo a sábado</div>
-            <div class="board-period" id="periodoBoardIcv">—</div>
-          </div>
-          <div class="hud-week" id="hudWeekIcv"></div>
+          <div class="board-kicker">Viagens realizadas / programadas</div>
+          <div class="board-note">Três áreas · mesma escala nos sete dias</div>
         </div>
         <div class="board-grid">
           <article class="firm ipv-tcgl" id="card-icv-tcgl">
@@ -760,6 +676,7 @@
             </div>
             <div class="firm-block">
               <div class="firm-label">Média da semana</div>
+              <div class="firm-note">em pontos percentuais, contra a semana anterior</div>
               <div class="firm-week-row">
                 <div class="firm-week-pct" id="weekIcvTcgl">—</div>
                 <div class="firm-delta firm-delta-lg flat" id="weekDeltaIcvTcgl">—</div>
@@ -783,6 +700,7 @@
             </div>
             <div class="firm-block">
               <div class="firm-label">Média da semana</div>
+              <div class="firm-note">em pontos percentuais, contra a semana anterior</div>
               <div class="firm-week-row">
                 <div class="firm-week-pct" id="weekIcvLs">—</div>
                 <div class="firm-delta firm-delta-lg flat" id="weekDeltaIcvLs">—</div>
@@ -806,6 +724,7 @@
             </div>
             <div class="firm-block">
               <div class="firm-label">Média das áreas</div>
+              <div class="firm-note">média simples de TCGL e LondriSul, em p.p.</div>
               <div class="firm-week-row">
                 <div class="firm-week-pct" id="weekIcvCiop">—</div>
                 <div class="firm-delta firm-delta-lg flat" id="weekDeltaIcvCiop">—</div>
@@ -830,52 +749,55 @@
       <div class="wx">
         <div class="wx-fx" id="wxFx" aria-hidden="true"></div>
         <div class="wx-hero">
-          <div class="wx-city">Londrina</div>
           <div class="wx-temp" id="wxTemp">--°</div>
-          <div class="wx-cond" id="wxLabel">--</div>
-          <div class="wx-minmax" id="wxMinMax">Máx.: --°  Mín.: --°</div>
+          <div class="wx-hero-copy">
+            <div class="wx-cond" id="wxLabel">--</div>
+            <div class="wx-city">Londrina</div>
+            <div class="wx-minmax" id="wxMinMax">Máx. —° · Mín. —°</div>
+          </div>
         </div>
         <div class="wx-glass wx-hours-card">
-          <div class="wx-card-head">Condições</div>
+          <div class="wx-card-head">Próximas horas</div>
           <div class="wx-hours" id="wxHoras"></div>
         </div>
-        <div class="wx-body">
-          <div class="wx-col">
-            <div class="wx-glass wx-mini">
-              <span class="wx-chip-label">Vento</span>
-              <div class="wx-wind-row">
-                <div>
-                  <div class="wx-chip-value" id="wxVento">-- km/h</div>
-                  <div class="wx-chip-sub" id="wxRajada">Rajadas --</div>
-                  <div class="wx-chip-sub" id="wxDir">--</div>
-                </div>
-                <div class="wx-compass" aria-hidden="true">
-                  <span class="n">N</span><span class="l">L</span><span class="s">S</span><span class="o">O</span>
-                  <i id="wxAgulha"></i>
-                </div>
+        <div class="wx-glass wx-days-card">
+          <div class="wx-card-head">Oito dias · mesma escala de temperatura</div>
+          <div class="wx-days" id="wxDias"></div>
+        </div>
+        <div class="wx-aux">
+          <div class="wx-glass wx-mini">
+            <span class="wx-chip-label">Vento</span>
+            <div class="wx-wind-row">
+              <div>
+                <div class="wx-chip-value" id="wxVento">—</div>
+                <div class="wx-chip-sub" id="wxRajada">Rajadas —</div>
+                <div class="wx-chip-sub" id="wxDir">—</div>
+              </div>
+              <div class="wx-compass" aria-hidden="true">
+                <span class="n">N</span><span class="l">L</span><span class="s">S</span><span class="o">O</span>
+                <i id="wxAgulha"></i>
               </div>
             </div>
-            <div class="wx-glass wx-mini">
-              <span class="wx-chip-label">Pôr do sol</span>
-              <span class="wx-chip-value" id="wxPorSol">--:--</span>
-              <span class="wx-chip-sub" id="wxNascer">Nascer --:--</span>
-            </div>
           </div>
-          <div class="wx-glass wx-days-card">
-            <div class="wx-card-head">Previsão de 8 dias</div>
-            <div class="wx-days" id="wxDias"></div>
+          <div class="wx-glass wx-mini"><span class="wx-chip-label">Sensação</span><span class="wx-chip-value" id="wxSens">—</span></div>
+          <div class="wx-glass wx-mini"><span class="wx-chip-label">Umidade</span><span class="wx-chip-value" id="wxUmi">—</span></div>
+          <div class="wx-glass wx-mini">
+            <span class="wx-chip-label">Chance de chuva</span>
+            <span class="wx-chip-value" id="wxChuva">—</span>
+            <span class="wx-chip-sub" id="wxChuvaMm">volume —</span>
           </div>
-          <div class="wx-col-quad">
-            <div class="wx-glass wx-mini"><span class="wx-chip-label">Sensação</span><span class="wx-chip-value" id="wxSens">--°</span></div>
-            <div class="wx-glass wx-mini"><span class="wx-chip-label">Umidade</span><span class="wx-chip-value" id="wxUmi">--%</span></div>
-            <div class="wx-glass wx-mini">
-              <span class="wx-chip-label">Chuva</span>
-              <span class="wx-chip-value" id="wxChuva">--%</span>
-              <span class="wx-chip-sub" id="wxChuvaMm">-- mm hoje</span>
-            </div>
-            <div class="wx-glass wx-mini"><span class="wx-chip-label">Pressão</span><span class="wx-chip-value" id="wxPressao">--</span></div>
+          <div class="wx-glass wx-mini" id="wxSolCard">
+            <span class="wx-chip-label" id="wxSolRotulo">Pôr do sol</span>
+            <span class="wx-chip-value" id="wxPorSol">—</span>
+            <span class="wx-chip-sub" id="wxNascer">Nascer —</span>
+          </div>
+          <div class="wx-glass wx-mini is-quiet">
+            <span class="wx-chip-label">Pressão</span>
+            <span class="wx-chip-value" id="wxPressao">—</span>
+            <span class="wx-chip-sub">hPa</span>
           </div>
         </div>
+        <div class="wx-fonte" id="wxFonte">Open-Meteo · Londrina</div>
       </div>
     </section>
 
@@ -914,11 +836,11 @@
   </main>
 
   <footer class="ftr">
-    <span id="tvStatus">Carregando dados…</span>
-    <div class="ftr-mid"><span id="tvData">--</span><span>·</span><span id="tvHora">--:--:--</span></div>
-    <span>CIOP · Centro de Inteligência Operacional de Londrina</span>
-    <div class="ciclo" aria-hidden="true"><div class="ciclo-bar" id="cicloBar"></div></div>
+    <span class="ftr-status" id="tvStatus">Semana —</span>
+    <div class="ftr-mid"><span id="tvData">—</span><span>·</span><span id="tvHora">—</span></div>
+    <span class="ftr-atual" id="tvAtualizacao"></span>
   </footer>
+  <div class="ciclo" aria-hidden="true"><div class="ciclo-bar" id="cicloBar"></div></div>
 </div>
 
 <script type="module">
@@ -1022,7 +944,7 @@ function montarDias(de, ate) {
     out.push({
       iso: iso(t),
       rotulo: DIAS_ABREV[t.getDay()] + " " + String(t.getDate()).padStart(2, "0"),
-      nome: DIAS_NOME[t.getDay()] + " " + String(t.getDate()).padStart(2, "0")
+      nome: DIAS_NOME[t.getDay()] + ", " + t.getDate() + " " + MESES[t.getMonth()].slice(0, 3)
     });
   }
   return out;
@@ -1036,34 +958,34 @@ function seriePorDia(serie, dias = DIAS) {
   });
 }
 
-function pintarDelta(id, atual, anterior) {
+function pintarDelta(id, atual, anterior, contra) {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.remove("up", "down", "flat");
+  el.classList.add("is-compare");
+  const ref = contra || "o período anterior";
+  el.title = "Diferença em pontos percentuais contra " + ref + ". Não é classificação de adiantado ou atrasado.";
   if (atual == null || anterior == null || !Number.isFinite(atual) || !Number.isFinite(anterior)) {
     el.classList.add("flat");
-    el.innerHTML = "—";
+    el.textContent = "—";
     return;
   }
   const d = atual - anterior;
   if (Math.abs(d) < 0.005) {
     el.classList.add("flat");
-    el.innerHTML = `<b>▸</b> 0,00 p.p.`;
+    el.textContent = "0,00 p.p.";
     return;
   }
   const up = d > 0;
   el.classList.add(up ? "up" : "down");
   const txt = Math.abs(d).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  el.innerHTML = `<b>${up ? "▲" : "▼"}</b> ${up ? "+" : "−"}${txt} p.p.`;
+  el.textContent = (up ? "+" : "−") + txt + " p.p.";
 }
 
 function setPct(id, v) {
   const el = document.getElementById(id);
   if (!el) return;
   el.textContent = formatPct(v);
-  el.classList.remove("pop");
-  void el.offsetWidth;
-  el.classList.add("pop");
   agendarEncaixe();
 }
 
@@ -1100,8 +1022,9 @@ function encaixarPct(el, maxPx, minPx, limite) {
 
 function encaixarFontes() {
   const curto = window.matchMedia("(max-aspect-ratio: 4/3)").matches;
-  const semanaMax = curto ? 88 : 136;
-  const diaMax = curto ? 44 : 62;
+  const escala = Math.max(0.72, window.innerWidth / 1920);
+  const semanaMax = Math.round((curto ? 88 : 136) * escala);
+  const diaMax = Math.round((curto ? 44 : 62) * escala);
   document.querySelectorAll(".firm-week-pct").forEach((el) => {
     encaixarPct(el, semanaMax, 36, larguraDoCard(el));
   });
@@ -1135,7 +1058,10 @@ function reiniciarLoad(id) {
 function pintarTicks(id, n) {
   const el = document.getElementById(id);
   if (!el) return;
-  el.innerHTML = DIAS.map((_, i) => `<b class="${i < n ? "on" : ""} ${i === n ? "now" : ""}"></b>`).join("");
+  el.innerHTML = DIAS.map((d, i) => {
+    const partes = d.rotulo.split(" ");
+    return `<b class="${i < n ? "on" : ""} ${i === n ? "now" : ""}">${partes[0]}<span>${partes[1]}</span></b>`;
+  }).join("");
 }
 
 function pintarHud(n, id = "hudWeek") {
@@ -1144,9 +1070,9 @@ function pintarHud(n, id = "hudWeek") {
   el.innerHTML = DIAS.map((d, i) => `<span class="hud-seg ${i < n ? "on" : ""} ${i === n ? "now" : ""}" title="${d.nome}"></span>`).join("");
 }
 
-const IPV_IDS = { pct: "pct", dayDelta: "dayDelta", day: "day", load: "load", ticks: "ticks", hud: "hudWeek", week: "week", weekDelta: "weekDelta" };
-const IPV13_IDS = { pct: "pct13", dayDelta: "dayDelta13", day: "day13", load: "load13", ticks: "ticks13", hud: "hudWeek13", week: "week13", weekDelta: "weekDelta13" };
-const ICV_IDS = { pct: "pctIcv", dayDelta: "dayDeltaIcv", day: "dayIcv", load: "loadIcv", ticks: "ticksIcv", hud: "hudWeekIcv", week: "weekIcv", weekDelta: "weekDeltaIcv" };
+const IPV_IDS = { pct: "pct", dayDelta: "dayDelta", day: "day", load: "load", ticks: "ticks", hud: "hudWeek", week: "week", weekDelta: "weekDelta", evo: "evo" };
+const IPV13_IDS = { pct: "pct13", dayDelta: "dayDelta13", day: "day13", load: "load13", ticks: "ticks13", hud: "hudWeek13", week: "week13", weekDelta: "weekDelta13", evo: "evo13" };
+const ICV_IDS = { pct: "pctIcv", dayDelta: "dayDeltaIcv", day: "dayIcv", load: "loadIcv", ticks: "ticksIcv", hud: "hudWeekIcv", week: "weekIcv", weekDelta: "weekDeltaIcv", evo: "evoIcv" };
 
 function aplicarDiaEm(n, est, ids) {
   const d = DIAS[n] || DIAS[0];
@@ -1159,9 +1085,9 @@ function aplicarDiaEm(n, est, ids) {
   setPct(ids.pct + "Tcgl", a);
   setPct(ids.pct + "Ls", b);
   setPct(ids.pct + "Ciop", t);
-  pintarDelta(ids.dayDelta + "Tcgl", a, a0);
-  pintarDelta(ids.dayDelta + "Ls", b, b0);
-  pintarDelta(ids.dayDelta + "Ciop", t, t0);
+  pintarDelta(ids.dayDelta + "Tcgl", a, a0, "o mesmo dia da semana anterior");
+  pintarDelta(ids.dayDelta + "Ls", b, b0, "o mesmo dia da semana anterior");
+  pintarDelta(ids.dayDelta + "Ciop", t, t0, "o mesmo dia da semana anterior");
   [ids.day + "Tcgl", ids.day + "Ls", ids.day + "Ciop"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.textContent = d.nome;
@@ -1190,8 +1116,50 @@ function pintarArea(prefix, bloco, ant, ids = IPV_IDS) {
   if (week) week.textContent = formatPct(bloco?.ipv);
   if (bloco) bloco.byDay = seriePorDia(bloco.serie, DIAS);
   if (ant) ant.byDay = seriePorDia(ant.serie, DIAS_ANT);
-  pintarDelta(ids.weekDelta + prefix, bloco?.ipv, ant?.ipv);
+  pintarDelta(ids.weekDelta + prefix, bloco?.ipv, ant?.ipv, "a semana anterior");
   agendarEncaixe();
+}
+
+function serieDia(bloco) {
+  if (!bloco) return DIAS.map(() => null);
+  if (!bloco.byDay) bloco.byDay = seriePorDia(bloco.serie, DIAS);
+  return bloco.byDay;
+}
+
+function pintarEvolucao(est, ids) {
+  const tcgl = serieDia(est.tcgl);
+  const ls = serieDia(est.ls);
+  const total = DIAS.map((_, i) => {
+    const a = tcgl[i];
+    const b = ls[i];
+    if (a != null && b != null) return (a + b) / 2;
+    return a ?? b ?? null;
+  });
+  const vals = tcgl.concat(ls).filter((v) => v != null);
+  const min = vals.length ? Math.min(...vals) : 0;
+  const max = vals.length ? Math.max(...vals) : 1;
+  const span = Math.max(max - min, 0.5);
+  const series = { Tcgl: tcgl, Ls: ls, Ciop: total };
+  Object.entries(series).forEach(([prefix, serie]) => {
+    const ancora = document.getElementById(ids.day + prefix);
+    const card = ancora && ancora.closest(".firm");
+    if (!card) return;
+    let el = document.getElementById(ids.evo + prefix);
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "firm-evo";
+      el.id = ids.evo + prefix;
+      el.setAttribute("aria-hidden", "true");
+      const hero = ancora.closest(".firm-hero");
+      if (hero) hero.before(el);
+    }
+    el.innerHTML = DIAS.map((d, i) => {
+      const v = serie[i];
+      if (v == null) return `<i class="is-empty" title="${d.nome}"></i>`;
+      const h = 16 + ((v - min) / span) * 84;
+      return `<i class="${i === diaIpv ? "is-now" : ""}" style="--h:${h.toFixed(1)}%" title="${d.nome}: ${formatPct(v)}"></i>`;
+    }).join("");
+  });
 }
 
 function climaSvg(code, extraClass, isDay) {
@@ -1326,7 +1294,7 @@ function horaCurta(d) {
   return d.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", hour12: false });
 }
 function dirVento(deg) {
-  if (deg == null || Number.isNaN(Number(deg))) return "--";
+  if (deg == null || Number.isNaN(Number(deg))) return "—";
   const pts = ["N", "NE", "L", "SE", "S", "SO", "O", "NO"];
   return pts[Math.round((Number(deg) % 360) / 45) % 8];
 }
@@ -1350,6 +1318,7 @@ function montarHorasClima(hourly, daily) {
       rain: hourly.precipitation_probability?.[i],
       isDay: climaEhDia({
         isDay: hourly.is_day?.[i],
+        horaCheia: !noAgora,
         atMs: noAgora ? agora : t,
         dates: daily?.time,
         sunrises: daily?.sunrise,
@@ -1357,38 +1326,60 @@ function montarHorasClima(hourly, daily) {
       })
     });
   }
-  const sunsetIso = daily?.sunset?.[0];
-  if (sunsetIso && out.length) {
-    const st = parseMs(sunsetIso);
-    if (Number.isFinite(st) && st > out[0].time && st < out[out.length - 1].time) {
-      const idx = out.findIndex((h) => h.time > st);
-      if (idx > 0) {
-        out.splice(idx, 0, { sunset: true, label: horaCurta(new Date(st)) });
-        if (out.length > HORAS_TV + 1) out.pop();
-      }
-    }
-  }
   return out;
 }
 
 function pintarHorasClima() {
   document.getElementById("wxHoras").innerHTML = climaHoras.map((h, i) => {
-    if (h.sunset) {
-      return `<div class="wx-hour is-sunset">
-        <span class="wx-hour-name">${h.label}</span>
-        <span class="wx-hour-rain"></span>
-        <span class="wx-sunset-mark">☀</span>
-        <span class="wx-hour-temp">Pôr do Sol</span>
-      </div>`;
-    }
-    const chuva = Number(h.rain) || 0;
+    const chuva = h.rain == null || h.rain === "" ? null : Number(h.rain);
+    const chuvaTxt = Number.isFinite(chuva) && chuva >= 10 ? chuva + "%" : "";
     return `<div class="wx-hour${i === 0 ? " is-now" : ""}">
       <span class="wx-hour-name">${i === 0 ? "Agora" : h.label}</span>
-      <span class="wx-hour-rain">${chuva >= 10 ? chuva + "%" : ""}</span>
+      <span class="wx-hour-rain">${chuvaTxt}</span>
       ${climaSvg(h.code, "wx-hour-icon", h.isDay)}
-      <span class="wx-hour-temp">${h.temp != null ? Math.round(h.temp) + "°" : "--"}</span>
+      <span class="wx-hour-temp">${h.temp != null ? Math.round(h.temp) + "°" : "—"}</span>
     </div>`;
   }).join("");
+}
+
+function dataCurtaIso(iso) {
+  if (!iso) return "";
+  const d = new Date(String(iso).slice(0, 10) + "T12:00:00");
+  return DIAS_CURTO[d.getDay()] + " " + d.getDate() + " " + MESES[d.getMonth()].slice(0, 3);
+}
+
+function pintarSol(daily) {
+  const parseMs = window.portalClimaParseIso
+    ? (iso) => window.portalClimaParseIso(iso)
+    : (iso) => new Date(String(iso || "").replace(" ", "T")).getTime();
+  const agora = Date.now();
+  const porMs = parseMs(daily.sunset?.[0]);
+  const nascerHoje = parseMs(daily.sunrise?.[0]);
+  const nascerAmanha = parseMs(daily.sunrise?.[1]);
+  const card = document.getElementById("wxSolCard");
+  const rotulo = document.getElementById("wxSolRotulo");
+  const valor = document.getElementById("wxPorSol");
+  const sub = document.getElementById("wxNascer");
+  if (!card || !rotulo || !valor || !sub) return;
+  card.classList.remove("is-next");
+  const aposPor = Number.isFinite(porMs) && agora >= porMs;
+  if (aposPor && Number.isFinite(nascerAmanha)) {
+    card.classList.add("is-next");
+    rotulo.textContent = "Próximo nascer";
+    valor.textContent = horaCurta(new Date(nascerAmanha));
+    sub.textContent = dataCurtaIso(daily.time?.[1]);
+    return;
+  }
+  if (Number.isFinite(nascerHoje) && agora < nascerHoje) {
+    card.classList.add("is-next");
+    rotulo.textContent = "Nascer do sol";
+    valor.textContent = horaCurta(new Date(nascerHoje));
+    sub.textContent = Number.isFinite(porMs) ? "Pôr " + horaCurta(new Date(porMs)) : dataCurtaIso(daily.time?.[0]);
+    return;
+  }
+  rotulo.textContent = "Pôr do sol";
+  valor.textContent = Number.isFinite(porMs) ? horaCurta(new Date(porMs)) : "—";
+  sub.textContent = Number.isFinite(nascerHoje) ? "Nasceu " + horaCurta(new Date(nascerHoje)) : "Nascer —";
 }
 
 async function carregarClima() {
@@ -1415,20 +1406,23 @@ async function carregarClima() {
     (maxHoje != null && minHoje != null)
       ? `Máx.: ${Math.round(maxHoje)}°  Mín.: ${Math.round(minHoje)}°`
       : "--";
-  document.getElementById("wxSens").textContent = cur.apparent_temperature != null ? Math.round(cur.apparent_temperature) + "°" : "--";
-  document.getElementById("wxUmi").textContent = cur.relative_humidity_2m != null ? Math.round(cur.relative_humidity_2m) + "%" : "--";
-  document.getElementById("wxVento").textContent = cur.wind_speed_10m != null ? Math.round(cur.wind_speed_10m) + " km/h" : "--";
-  document.getElementById("wxRajada").textContent = cur.wind_gusts_10m != null ? "Rajadas " + Math.round(cur.wind_gusts_10m) + " km/h" : "Rajadas --";
+  document.getElementById("wxSens").textContent = cur.apparent_temperature != null ? Math.round(cur.apparent_temperature) + "°" : "—";
+  document.getElementById("wxUmi").textContent = cur.relative_humidity_2m != null ? Math.round(cur.relative_humidity_2m) + "%" : "—";
+  document.getElementById("wxVento").textContent = cur.wind_speed_10m != null ? Math.round(cur.wind_speed_10m) + " km/h" : "—";
+  document.getElementById("wxRajada").textContent = cur.wind_gusts_10m != null ? "Rajadas " + Math.round(cur.wind_gusts_10m) + " km/h" : "Rajadas —";
   document.getElementById("wxDir").textContent = dirVento(cur.wind_direction_10m);
   document.getElementById("wxAgulha").style.setProperty("--dir", (Number(cur.wind_direction_10m) || 0) + "deg");
-  document.getElementById("wxChuva").textContent = (daily.precipitation_probability_max?.[0] ?? 0) + "%";
+  const chance = daily.precipitation_probability_max?.[0];
+  document.getElementById("wxChuva").textContent = chance == null ? "—" : chance + "%";
   const mm = daily.precipitation_sum?.[0];
-  document.getElementById("wxChuvaMm").textContent = mm != null ? Math.round(mm * 10) / 10 + " mm hoje" : "-- mm hoje";
-  document.getElementById("wxPressao").textContent = cur.pressure_msl != null ? Math.round(cur.pressure_msl) : "--";
-  const nascer = daily.sunrise?.[0] ? new Date(String(daily.sunrise[0]).replace(" ", "T")) : null;
-  const por = daily.sunset?.[0] ? new Date(String(daily.sunset[0]).replace(" ", "T")) : null;
-  document.getElementById("wxPorSol").textContent = por && !Number.isNaN(por.getTime()) ? horaCurta(por) : "--:--";
-  document.getElementById("wxNascer").textContent = nascer && !Number.isNaN(nascer.getTime()) ? "Nascer " + horaCurta(nascer) : "Nascer --:--";
+  document.getElementById("wxChuvaMm").textContent = mm == null ? "volume —" : "volume " + (Math.round(mm * 10) / 10) + " mm";
+  document.getElementById("wxPressao").textContent = cur.pressure_msl != null ? String(Math.round(cur.pressure_msl)) : "—";
+  pintarSol(daily);
+  const fonte = document.getElementById("wxFonte");
+  if (fonte) {
+    const hh = new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+    fonte.textContent = "Open-Meteo · Londrina · atualizado " + hh;
+  }
 
   climaHoras = montarHorasClima(data.hourly || {}, daily);
   pintarHorasClima();
@@ -1463,16 +1457,16 @@ async function carregarClima() {
     const d = new Date(dias[i] + "T12:00:00");
     const maxD = daily.temperature_2m_max?.[i];
     const minD = daily.temperature_2m_min?.[i];
-    const chuvaD = daily.precipitation_probability_max?.[i] ?? 0;
+    const chuvaD = daily.precipitation_probability_max?.[i];
     const left = minD != null ? ((minD - globMin) / span) * 100 : 0;
     const width = minD != null && maxD != null ? Math.max(((maxD - minD) / span) * 100, 10) : 10;
     html += `<div class="wx-day">
       <span class="wx-day-name">${i === 0 ? "Hoje" : DIAS_CURTO[d.getDay()]}</span>
       ${climaSvg(daily.weather_code?.[i], "wx-day-icon")}
-      <span class="wx-day-rain">${chuvaD >= 10 ? chuvaD + "%" : ""}</span>
-      <span class="wx-day-min">${minD != null ? Math.round(minD) + "°" : "--"}</span>
+      <span class="wx-day-rain" title="Chance de chuva">${chuvaD == null ? "" : chuvaD + "%"}</span>
+      <span class="wx-day-min">${minD != null ? Math.round(minD) + "°" : "—"}</span>
       <div class="wx-bar"><i style="left:${left}%;width:${width}%"></i></div>
-      <span class="wx-day-max">${maxD != null ? Math.round(maxD) + "°" : "--"}</span>
+      <span class="wx-day-max">${maxD != null ? Math.round(maxD) + "°" : "—"}</span>
     </div>`;
   }
   document.getElementById("wxDias").innerHTML = html;
@@ -1513,9 +1507,9 @@ function aplicarJanela() {
   ROTULO = rotuloFaixa(SEMANA.de, SEMANA.ate);
   DIAS = montarDias(SEMANA.de, SEMANA.ate);
   DIAS_ANT = montarDias(SEMANA_ANT.de, SEMANA_ANT.ate);
-  document.getElementById("periodoBoard").textContent = ROTULO;
-  document.getElementById("periodoBoard13").textContent = ROTULO;
-  document.getElementById("periodoBoardIcv").textContent = ROTULO;
+  const periodo = document.getElementById("hdrPeriod");
+  const titulo = document.getElementById("slideTitle");
+  if (periodo && titulo && /Pontualidade|Cumprimento/.test(titulo.textContent || "")) periodo.textContent = ROTULO;
   return mudou;
 }
 
@@ -1554,7 +1548,8 @@ function aplicarDiaTipo(tipo, n) {
 function mostrarSlide(id) {
   document.querySelectorAll(".slide").forEach((el) => el.classList.remove("ativo"));
   document.getElementById("slide-" + id).classList.add("ativo");
-  document.getElementById("kiosk").classList.toggle("modo-capa", id === "capa");
+  const arte = id === "campanha" && document.getElementById("campanhaScene").classList.contains("is-arte");
+  document.getElementById("kiosk").classList.toggle("modo-capa", id === "capa" || arte);
   if (id === "capa") tocarCapa();
 }
 
@@ -1593,7 +1588,11 @@ function iniciarDiasBoard(tipo, { loop = false } = {}) {
 
 function aplicarInfo(bloco) {
   document.getElementById("slideTitle").textContent = bloco.titulo;
-  document.getElementById("slideTag").textContent = bloco.tag;
+  const periodo = document.getElementById("hdrPeriod");
+  if (!periodo) return;
+  if (boardDeDias(bloco.id)) periodo.textContent = ROTULO;
+  else if (bloco.id === "tempo") periodo.textContent = "Londrina";
+  else periodo.textContent = "";
 }
 
 function avancar() {
@@ -1616,8 +1615,10 @@ function agendar() {
 
 function atualizarRelogio() {
   const now = new Date();
-  document.getElementById("tvHora").textContent = now.toLocaleTimeString("pt-BR");
-  document.getElementById("tvData").textContent = now.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
+  const hora = now.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const data = now.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", day: "2-digit", month: "long" });
+  document.getElementById("tvHora").textContent = hora;
+  document.getElementById("tvData").textContent = data;
 }
 atualizarRelogio();
 setInterval(atualizarRelogio, 1000);
@@ -1635,24 +1636,46 @@ function pintarTotal(est, ids, diaN) {
   else total0 = a0 ?? b0 ?? null;
   const week = document.getElementById(ids.week + "Ciop");
   if (week) week.textContent = formatPct(total);
-  pintarDelta(ids.weekDelta + "Ciop", total, total0);
+  pintarDelta(ids.weekDelta + "Ciop", total, total0, "a semana anterior");
   aplicarDiaEm(diaN, est, ids);
+  pintarEvolucao(est, ids);
   agendarEncaixe();
 }
 
+let atualizadoAs = null;
+let leituraIncompleta = false;
+
 function atualizarStatus() {
-  const ipvTcgl = estadoIpv.tcgl ? "IPV TCGL" : "IPV TCGL indisponível";
-  const ipvLs = estadoIpv.ls ? "IPV LondriSul" : "IPV LondriSul indisponível";
-  const ipv13Tcgl = estadoIpv13.tcgl ? "−1/+3 TCGL" : "−1/+3 TCGL indisponível";
-  const ipv13Ls = estadoIpv13.ls ? "−1/+3 LondriSul" : "−1/+3 LondriSul indisponível";
-  const icvTcgl = estadoIcv.tcgl ? "ICV TCGL" : "ICV TCGL indisponível";
-  const icvLs = estadoIcv.ls ? "ICV LondriSul" : "ICV LondriSul indisponível";
-  document.getElementById("tvStatus").textContent = `Semana ${ROTULO} · ${ipvTcgl} · ${ipvLs} · ${ipv13Tcgl} · ${ipv13Ls} · ${icvTcgl} · ${icvLs}`;
+  const status = document.getElementById("tvStatus");
+  const nota = document.getElementById("tvAtualizacao");
+  if (status) status.textContent = ROTULO ? "Semana " + ROTULO : "Semana —";
+  if (!nota) return;
+  if (!atualizadoAs && leituraIncompleta) {
+    nota.textContent = "sem atualização";
+    return;
+  }
+  if (!atualizadoAs) {
+    nota.textContent = "";
+    return;
+  }
+  const hh = atualizadoAs.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+  nota.textContent = (leituraIncompleta ? "leitura incompleta · " : "atualizado ") + hh;
+}
+
+function leituraOk() {
+  atualizadoAs = new Date();
+  atualizarStatus();
+}
+
+function leituraFalhou() {
+  leituraIncompleta = true;
+  atualizarStatus();
 }
 
 document.getElementById("boot").style.display = "none";
 atualizarStatus();
 agendarEncaixe();
+window.addEventListener("resize", agendarEncaixe);
 if (window.ResizeObserver) {
   const vistas = new Map();
   document.querySelectorAll(".board-grid").forEach((grade) => {
@@ -1670,61 +1693,47 @@ carregarLondrisulIpv().then((payload) => {
   estadoIpv.lsAnt = agregarLondrisul(payload, SEMANA_ANT.de, SEMANA_ANT.ate);
   pintarArea("Ls", estadoIpv.ls, estadoIpv.lsAnt, IPV_IDS);
   pintarTotal(estadoIpv, IPV_IDS, diaIpv);
-  atualizarStatus();
-}).catch((err) => {
-  document.getElementById("tvStatus").textContent = "LondriSul IPV: " + (err.message || err);
-});
+  leituraOk();
+}).catch(() => leituraFalhou());
 carregarLondrisulIcv().then((payload) => {
   estadoIcv.ls = agregarIcv(payload.dias || [], SEMANA.de, SEMANA.ate, "londrisul");
   estadoIcv.lsAnt = agregarIcv(payload.dias || [], SEMANA_ANT.de, SEMANA_ANT.ate, "londrisul");
   pintarArea("Ls", estadoIcv.ls, estadoIcv.lsAnt, ICV_IDS);
   pintarTotal(estadoIcv, ICV_IDS, diaIpv);
-  atualizarStatus();
-}).catch((err) => {
-  console.info("LondriSul ICV:", err.message || err);
-  atualizarStatus();
+  leituraOk();
+}).catch(() => leituraFalhou());
+carregarClima().catch(() => {
+  const fonte = document.getElementById("wxFonte");
+  if (fonte && fonte.textContent.indexOf("atualizado") < 0) fonte.textContent = "Open-Meteo · sem atualização";
 });
-carregarClima().catch(() => {});
 carregarTcglIpv().then((dias) => {
   estadoIpv.tcgl = agregarTcgl(dias, SEMANA.de, SEMANA.ate);
   estadoIpv.tcglAnt = agregarTcgl(dias, SEMANA_ANT.de, SEMANA_ANT.ate);
   pintarArea("Tcgl", estadoIpv.tcgl, estadoIpv.tcglAnt, IPV_IDS);
   pintarTotal(estadoIpv, IPV_IDS, diaIpv);
-  atualizarStatus();
-}).catch((err) => {
-  console.info("TCGL IPV:", err.message || err);
-  atualizarStatus();
-});
+  leituraOk();
+}).catch(() => leituraFalhou());
 carregarTcglIpv13().then((dias) => {
   estadoIpv13.tcgl = agregarTcgl(dias, SEMANA.de, SEMANA.ate);
   estadoIpv13.tcglAnt = agregarTcgl(dias, SEMANA_ANT.de, SEMANA_ANT.ate);
   pintarArea("Tcgl", estadoIpv13.tcgl, estadoIpv13.tcglAnt, IPV13_IDS);
   pintarTotal(estadoIpv13, IPV13_IDS, diaIpv);
-  atualizarStatus();
-}).catch((err) => {
-  console.info("TCGL −1/+3:", err.message || err);
-  atualizarStatus();
-});
+  leituraOk();
+}).catch(() => leituraFalhou());
 carregarLdsulIpv13().then((dias) => {
   estadoIpv13.ls = agregarTcgl(dias, SEMANA.de, SEMANA.ate);
   estadoIpv13.lsAnt = agregarTcgl(dias, SEMANA_ANT.de, SEMANA_ANT.ate);
   pintarArea("Ls", estadoIpv13.ls, estadoIpv13.lsAnt, IPV13_IDS);
   pintarTotal(estadoIpv13, IPV13_IDS, diaIpv);
-  atualizarStatus();
-}).catch((err) => {
-  console.info("LondriSul −1/+3:", err.message || err);
-  atualizarStatus();
-});
+  leituraOk();
+}).catch(() => leituraFalhou());
 carregarTcglIcv().then((dias) => {
   estadoIcv.tcgl = agregarIcv(dias, SEMANA.de, SEMANA.ate, "tcgl");
   estadoIcv.tcglAnt = agregarIcv(dias, SEMANA_ANT.de, SEMANA_ANT.ate, "tcgl");
   pintarArea("Tcgl", estadoIcv.tcgl, estadoIcv.tcglAnt, ICV_IDS);
   pintarTotal(estadoIcv, ICV_IDS, diaIpv);
-  atualizarStatus();
-}).catch((err) => {
-  console.info("TCGL ICV:", err.message || err);
-  atualizarStatus();
-});
+  leituraOk();
+}).catch(() => leituraFalhou());
 
 const telaFixa = PARAMS.get("tela");
 if (telaFixa && ["capa", "ipv", "ipv13", "icv", "tempo", "campanha"].includes(telaFixa)) {
@@ -1755,50 +1764,54 @@ document.addEventListener("keydown", (e) => {
 });
 
 setInterval(() => {
+  leituraIncompleta = false;
   if (aplicarJanela()) diaIpv = 0;
   carregarLondrisulIpv().then((payload) => {
     estadoIpv.ls = agregarLondrisul(payload, SEMANA.de, SEMANA.ate);
     estadoIpv.lsAnt = agregarLondrisul(payload, SEMANA_ANT.de, SEMANA_ANT.ate);
     pintarArea("Ls", estadoIpv.ls, estadoIpv.lsAnt, IPV_IDS);
     pintarTotal(estadoIpv, IPV_IDS, diaIpv);
-    atualizarStatus();
-  }).catch(() => {});
+    leituraOk();
+  }).catch(() => leituraFalhou());
   carregarLondrisulIcv().then((payload) => {
     estadoIcv.ls = agregarIcv(payload.dias || [], SEMANA.de, SEMANA.ate, "londrisul");
     estadoIcv.lsAnt = agregarIcv(payload.dias || [], SEMANA_ANT.de, SEMANA_ANT.ate, "londrisul");
     pintarArea("Ls", estadoIcv.ls, estadoIcv.lsAnt, ICV_IDS);
     pintarTotal(estadoIcv, ICV_IDS, diaIpv);
-    atualizarStatus();
-  }).catch(() => {});
+    leituraOk();
+  }).catch(() => leituraFalhou());
   carregarLdsulIpv13().then((dias) => {
     estadoIpv13.ls = agregarTcgl(dias, SEMANA.de, SEMANA.ate);
     estadoIpv13.lsAnt = agregarTcgl(dias, SEMANA_ANT.de, SEMANA_ANT.ate);
     pintarArea("Ls", estadoIpv13.ls, estadoIpv13.lsAnt, IPV13_IDS);
     pintarTotal(estadoIpv13, IPV13_IDS, diaIpv);
-    atualizarStatus();
-  }).catch(() => {});
+    leituraOk();
+  }).catch(() => leituraFalhou());
   carregarTcglIpv().then((dias) => {
     estadoIpv.tcgl = agregarTcgl(dias, SEMANA.de, SEMANA.ate);
     estadoIpv.tcglAnt = agregarTcgl(dias, SEMANA_ANT.de, SEMANA_ANT.ate);
     pintarArea("Tcgl", estadoIpv.tcgl, estadoIpv.tcglAnt, IPV_IDS);
     pintarTotal(estadoIpv, IPV_IDS, diaIpv);
-    atualizarStatus();
-  }).catch(() => {});
+    leituraOk();
+  }).catch(() => leituraFalhou());
   carregarTcglIpv13().then((dias) => {
     estadoIpv13.tcgl = agregarTcgl(dias, SEMANA.de, SEMANA.ate);
     estadoIpv13.tcglAnt = agregarTcgl(dias, SEMANA_ANT.de, SEMANA_ANT.ate);
     pintarArea("Tcgl", estadoIpv13.tcgl, estadoIpv13.tcglAnt, IPV13_IDS);
     pintarTotal(estadoIpv13, IPV13_IDS, diaIpv);
-    atualizarStatus();
-  }).catch(() => {});
+    leituraOk();
+  }).catch(() => leituraFalhou());
   carregarTcglIcv().then((dias) => {
     estadoIcv.tcgl = agregarIcv(dias, SEMANA.de, SEMANA.ate, "tcgl");
     estadoIcv.tcglAnt = agregarIcv(dias, SEMANA_ANT.de, SEMANA_ANT.ate, "tcgl");
     pintarArea("Tcgl", estadoIcv.tcgl, estadoIcv.tcglAnt, ICV_IDS);
     pintarTotal(estadoIcv, ICV_IDS, diaIpv);
-    atualizarStatus();
-  }).catch(() => {});
-  carregarClima().catch(() => {});
+    leituraOk();
+  }).catch(() => leituraFalhou());
+  carregarClima().catch(() => {
+    const fonte = document.getElementById("wxFonte");
+    if (fonte && fonte.textContent.indexOf("atualizado") < 0) fonte.textContent = "Open-Meteo · sem atualização";
+  });
 }, 10 * 60 * 1000);
 </script>
 </body>

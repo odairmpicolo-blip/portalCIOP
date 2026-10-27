@@ -34,6 +34,7 @@ Não redesenhar a marca. Não inventar KPI, fórmula ou paleta por página.
 | Matriz de testes e pendências | [validacao.md](validacao.md) |
 | Onde editar sem quebrar o resto | [manutencao.md](manutencao.md) |
 | Clima na TV (dia/noite, ícones) | [clima-tv.md](clima-tv.md) |
+| Painel CIOP em TV 16:9 | [ciop-tv.md](ciop-tv.md) |
 | Exemplos clicáveis (dados fictícios) | [catalogo.html](catalogo.html) |
 | Capturas de demonstração | [assets/](assets/) |
 

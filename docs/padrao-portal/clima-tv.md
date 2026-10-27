@@ -8,9 +8,10 @@ Período meteorológico **não** é o tema claro/escuro da interface.
 
 Ordem para saber se um instante é dia:
 
-1. `is_day` da Open-Meteo (`current` no herói; `hourly.is_day` em cada coluna horária).
-2. Se faltar o flag, comparar o instante com `sunrise`/`sunset` **daquela data** em `America/Sao_Paulo` (meia-noite usa o nascer do calendário seguinte).
-3. Fallback documentado, só sem dados solares: dia entre 06:00 e 18:00 no mesmo fuso. Londrina está em UTC−3 o ano todo desde 2019.
+1. Coluna de uma hora prevista (`horaCheia`): `hourly.is_day` da Open-Meteo, quando vier. Esse flag descreve o início da hora.
+2. O “Agora” e o cenário comparam o relógio com `sunrise`/`sunset` **daquela data** em `America/Sao_Paulo`. Sem isso, a hora das 18h continua “dia” depois do pôr (18:35). Meia-noite usa o nascer do calendário daquele instante.
+3. Se não houver horário solar, usa `is_day`.
+4. Fallback, só sem dados solares: dia entre 06:00 e 18:00 no mesmo fuso. Londrina está em UTC−3 o ano todo desde 2019.
 
 Lua genérica (crescente estilizada). **Não** inventar fase lunar.
 

@@ -85,10 +85,12 @@
       rise = pair.rise;
       set = pair.set;
     }
-    /* Nascer e pôr do sol mandam. O is_day da hora inteira ainda diz "dia"
-       depois das 18:35, e a cena de sol ficava na tela. */
-    if (rise > 0 && set > 0) return at >= rise && at < set;
+    /* Coluna de uma hora: o is_day da Open-Meteo vale para o início daquela hora.
+       O instante "agora" e a cena usam nascer/pôr da data, senão o sol fica
+       na tela depois das 18:35 enquanto a hora 18 ainda vem marcada como dia. */
     var flagged = flagDia(opts.isDay != null ? opts.isDay : opts.is_day);
+    if (opts.horaCheia && flagged !== null) return flagged;
+    if (rise > 0 && set > 0) return at >= rise && at < set;
     if (flagged !== null) return flagged;
     var parts = wallParts(at);
     var minutes = parts.hour * 60 + parts.minute;
