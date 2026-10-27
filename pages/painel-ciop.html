@@ -975,8 +975,7 @@ function hojeSp(ref = new Date()) {
   return new Date(partes + "T12:00:00");
 }
 
-/* Semana operacional domingo–sábado. Na segunda ela já entra: é a semana
-   que fechou no sábado, a mesma faixa do relatório. */
+/* Semana operacional domingo–sábado. A nova semana entra na terça. */
 function semanaIpv(ref = new Date()) {
   const qDe = PARAMS.get("de");
   const qAte = PARAMS.get("ate");
@@ -985,11 +984,11 @@ function semanaIpv(ref = new Date()) {
   }
   const d = hojeSp(ref);
   const day = d.getDay();
-  const daysSinceMon = day === 0 ? 6 : day - 1;
-  const mon = new Date(d);
-  mon.setDate(mon.getDate() - daysSinceMon);
-  const ate = new Date(mon);
-  ate.setDate(ate.getDate() - 2);
+  const daysSinceTue = day >= 2 ? day - 2 : day + 5;
+  const tue = new Date(d);
+  tue.setDate(tue.getDate() - daysSinceTue);
+  const ate = new Date(tue);
+  ate.setDate(ate.getDate() - 3);
   const de = new Date(ate);
   de.setDate(de.getDate() - 6);
   return { de: iso(de), ate: iso(ate) };
