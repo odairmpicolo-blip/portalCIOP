@@ -513,8 +513,10 @@
     }
     var copy = hero.querySelector(".hero-pro-copy") || hero.querySelector(".header-hero-inner");
     if (!copy) return;
+    var leadEl = copy.querySelector(".home-lead");
     var welcome = copy.querySelector(".hero-pro-welcome");
-    if (welcome) welcome.insertAdjacentElement("afterend", stats);
+    if (leadEl) leadEl.insertAdjacentElement("afterend", stats);
+    else if (welcome) welcome.insertAdjacentElement("afterend", stats);
     else if (stats.parentNode !== copy) copy.appendChild(stats);
   }
 
@@ -834,9 +836,9 @@
 
   function kpiLabels() {
     var map = {
-      ciopKpiModulos: { t: "Módulos", i: ICO.monitoramento },
-      ciopKpiUsuarios: { t: "Usuários ativos", i: ICO.admin },
-      ciopKpiAvisos: { t: "Avisos", i: ICO.sino }
+      ciopKpiModulos: { t: "módulos", i: ICO.monitoramento },
+      ciopKpiUsuarios: { t: "usuários ativos", i: ICO.admin },
+      ciopKpiAvisos: { t: "avisos", i: ICO.sino }
     };
     Object.keys(map).forEach(function (id) {
       var num = document.getElementById(id);
@@ -851,6 +853,28 @@
         ico.innerHTML = map[id].i;
         kpi.insertBefore(ico, kpi.firstChild);
       }
+    });
+    atualizarKpiPlural();
+  }
+
+  function kpiNumero(id) {
+    var raw = String(document.getElementById(id)?.textContent || "").replace(/[^\d]/g, "");
+    if (!raw) return null;
+    var n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function atualizarKpiPlural() {
+    var pares = [
+      { id: "ciopKpiModulos", um: "módulo", muitos: "módulos" },
+      { id: "ciopKpiUsuarios", um: "usuário ativo", muitos: "usuários ativos" },
+      { id: "ciopKpiAvisos", um: "aviso", muitos: "avisos" }
+    ];
+    pares.forEach(function (par) {
+      var lab = document.getElementById(par.id)?.closest(".ciop-kpi")?.querySelector(".ciop-kpi-label");
+      if (!lab) return;
+      var n = kpiNumero(par.id);
+      lab.textContent = n === 1 ? par.um : par.muitos;
     });
   }
 
@@ -921,6 +945,7 @@
     atualizarOnlineSide();
     atualizarVersaoSide();
     atualizarSino();
+    atualizarKpiPlural();
     sincronizarOutros();
   });
   window.addEventListener("dk-theme-change", function () {
@@ -929,11 +954,12 @@
   });
   function observar() {
     if (!window.MutationObserver) return;
-    var ids = ["avisosContador", "ciopKpiAvisos", "ciopOnlineChip", "heroMesConsciencia", "heroRibbon"];
+    var ids = ["avisosContador", "ciopKpiAvisos", "ciopKpiModulos", "ciopKpiUsuarios", "ciopOnlineChip", "heroMesConsciencia", "heroRibbon"];
     var obs = new MutationObserver(function () {
       atualizarCampanhaSide();
       atualizarOnlineSide();
       atualizarSino();
+      atualizarKpiPlural();
     });
     ids.forEach(function (id) {
       var el = document.getElementById(id);

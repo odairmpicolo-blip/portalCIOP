@@ -32,7 +32,7 @@ Voltar ao Portal: `.btn-portal` / `.portal-return` / `data-portal-voltar`. Se a 
 
 ## Menu lateral e navegação móvel
 
-**Só a home.** Painel `.home-sheet` translúcido sobre a fotografia suavizada. Sidebar fixa (`--home-side`: 204 px, 184 px ≤1200 px), vidro `--home-nav`. Logo ≤148×78, proporção preservada. Só a área atual `.is-active`. Hover, `:focus-visible` e seleção são estados distintos. Campanha compacta; indicador “sistema online” permanece, com a versão **Portal CIOP · vX.Y.Z** logo abaixo (`meta[name=portal-ciop-version]`, igual a `package.json`; hoje `1.0.0`). No celular a versão fica no drawer, não no dock. A home não tem rodapé de copyright. Abaixo de 900 px: drawer + dock inferior (`.home-dock`, padding inferior `108px + env(safe-area-inset-bottom)`). Saudação sem card; módulos, usuários e avisos em linha **logo após** o “Olá”, antes do subtítulo. Nomes curtos iguais no menu, no dock e no título da área: **Início**, **Operação**, **Indicadores**, **Relatórios**, **Painéis de TV**.
+**Só a home.** Painel `.home-sheet` translúcido sobre a fotografia suavizada. Sidebar fixa (`--home-side`: 204 px, 184 px ≤1200 px), vidro `--home-nav`. Logo ≤148×78, proporção preservada. Só a área atual `.is-active`. Hover, `:focus-visible` e seleção são estados distintos. Campanha compacta; indicador “sistema online” permanece, com a versão **Portal CIOP · vX.Y.Z** logo abaixo (`meta[name=portal-ciop-version]`, igual a `package.json`; hoje `1.0.0`). No celular a versão fica no drawer, não no dock. A home não tem rodapé de copyright. Abaixo de 900 px: drawer + dock inferior (`.home-dock`, padding inferior `108px + env(safe-area-inset-bottom)`). Saudação compacta “Olá, Nome”; subtítulo logo abaixo; módulos, usuários e avisos em linha discreta à **direita** no desktop (abaixo em telas estreitas), com singular/plural. Nomes curtos iguais no menu, no dock e no título da área: **Início**, **Operação**, **Indicadores**, **Relatórios**, **Painéis de TV**.
 
 Hamburger `.menu-toggle` 44×44, SVG de três linhas. Overlay `#overlay`.
 
@@ -48,7 +48,7 @@ Consultas (veículo/funcionário/SEI): campo da própria página + classes `.cv-
 
 ## Cards de módulos e favoritos
 
-Home: `a.card` (catálogo compacto por área) e `.home-quick a` (somente os até 6 favoritos do usuário — `portal-home-settings.js`). Favoritos são cards maiores, com ícone destacado. O catálogo: ícone à esquerda, bloco `.card-copy` (título acima, descrição curta abaixo) e seta à direita — sem duas colunas de texto. Títulos completos (inclusive CR-0108); `overflow-wrap: break-word` sem partir palavra. Áreas: **Operação**, **Indicadores** (inclui monitoramento), **Relatórios**, **Painéis de TV**. Descrições dos favoritos são encurtadas no `refresh()`; títulos permanecem completos. Visibilidade: `data-modulo`, `data-perfis`, `data-usuarios`; `auth.js` aplica `.portal-card-visivel`.
+Home: `a.card` (catálogo compacto por área) e `.home-quick a` (somente os até 6 favoritos do usuário — `portal-home-settings.js`). Favoritos: ícone + título na mesma linha, descrição editorial curta abaixo, seta à direita. O catálogo: ícone à esquerda, bloco `.card-copy` (título acima, descrição curta abaixo) e seta à direita. Títulos completos (inclusive CR-0108); `overflow-wrap: break-word` sem partir palavra. Áreas: **Operação**, **Indicadores** (inclui monitoramento), **Relatórios**, **Painéis de TV**. Visibilidade: `data-modulo`, `data-perfis`, `data-usuarios`; `auth.js` aplica `.portal-card-visivel`.
 
 Não inventar card na home sem permissão.
 
@@ -66,7 +66,7 @@ Padrão de markup (ICV, IPV, dashboards):
 
 `.kpi-value` precisa de `color` **e** `-webkit-text-fill-color` no mesmo token: no WebKit o fill pinta o glifo. Adiantado `.is-early` / Atrasado `.is-late`. Célula `.highlight-cell`: fundo misturado com `--portal-op-ontime` e o mesmo token no texto. Seletor `.scenario-button:not(.active)` usa `--portal-on-option` sobre `--portal-field`, não branco com texto claro.
 
-Home: performance em faixa própria (`.home-perf` + `.home-perf-bar`), depois da saudação e do clima. Contagens de módulos/usuários/avisos **no bloco da saudação** (`.home-header-stats` sem vidro). Adiantado vermelho, Atrasado âmbar: [cores-operacionais.md](cores-operacionais.md).
+Home: performance em faixa própria (`.home-perf` + `.home-perf-bar`), depois da saudação e do clima. Contagens de módulos/usuários/avisos à direita da saudação no desktop (`.home-header-stats` sem vidro), com “1 aviso” / “2 avisos”. Adiantado vermelho, Atrasado âmbar: [cores-operacionais.md](cores-operacionais.md).
 
 ## Widget hora e clima (home)
 
@@ -75,7 +75,7 @@ Um único vidro `.home-meta.home-now` à direita da saudação (`montarMeta` em 
 | Bloco | Conteúdo |
 | --- | --- |
 | `.home-now-time` | Hora `HH:mm` (`#ciopKpiHora`, `America/Sao_Paulo`, sem segundos, `tabular-nums`, largura fixa `5.6ch`) e data por extenso (`#ciopKpiData`: “Segunda-feira, 26 de outubro”) |
-| `.home-now-wx` | Link para a previsão Climatempo (`aria-label` “Abrir previsão completa…”). Rótulo “Clima agora · Londrina”, ícone + temperatura atual, descrição, mín/máx do dia, horário da observação. No `.home-ops`, o bloco fica **centralizado**. |
+| `.home-now-wx` | Link para a previsão Climatempo (`aria-label` “Abrir previsão completa…”). Rótulo “Clima agora · Londrina”, ícone + temperatura e condição; na linha seguinte `Mín. 13° · Máx. 23°`; horário da observação em tamanho secundário. No `.home-ops`, o bloco fica **centralizado**. |
 
 Fonte: Open-Meteo já usada (`current.temperature_2m`, `current.weather_code`, `current.is_day`; `daily` só para mín/máx). Não tratar a previsão diária como o valor “agora”.
 

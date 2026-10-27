@@ -363,13 +363,17 @@
     root.classList.toggle("is-stale", stale);
     if (tempEl) tempEl.textContent = Number.isFinite(data.temp) ? Math.round(data.temp) + "°" : "—";
     if (rangeEl) {
-      rangeEl.innerHTML =
-        '<span class="ciop-clima-min"><small>Mín</small><b>' +
-        grauLabel(data.min) +
-        "</b></span>" +
-        '<span class="ciop-clima-max"><small>Máx</small><b>' +
-        grauLabel(data.max) +
-        "</b></span>";
+      if (document.documentElement.classList.contains("portal-home-2026")) {
+        rangeEl.textContent = "Mín. " + grauLabel(data.min) + " · Máx. " + grauLabel(data.max);
+      } else {
+        rangeEl.innerHTML =
+          '<span class="ciop-clima-min"><small>Mín</small><b>' +
+          grauLabel(data.min) +
+          "</b></span>" +
+          '<span class="ciop-clima-max"><small>Máx</small><b>' +
+          grauLabel(data.max) +
+          "</b></span>";
+      }
     }
     if (descEl) descEl.textContent = meta.desc;
     if (iconEl) {
