@@ -967,20 +967,29 @@ function shiftIso(s, n) {
   return iso(d);
 }
 
+function hojeSp(ref = new Date()) {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric", month: "2-digit", day: "2-digit"
+  }).format(ref);
+  return new Date(partes + "T12:00:00");
+}
+
+/* Semana operacional domingo–sábado. Na segunda ela já entra: é a semana
+   que fechou no sábado, a mesma faixa do relatório. */
 function semanaIpv(ref = new Date()) {
   const qDe = PARAMS.get("de");
   const qAte = PARAMS.get("ate");
   if (/^\d{4}-\d{2}-\d{2}$/.test(qDe || "") && /^\d{4}-\d{2}-\d{2}$/.test(qAte || "")) {
     return { de: qDe, ate: qAte };
   }
-  const d = new Date(ref);
-  d.setHours(12, 0, 0, 0);
+  const d = hojeSp(ref);
   const day = d.getDay();
-  const daysSinceTue = day >= 2 ? day - 2 : day + 5;
-  const tue = new Date(d);
-  tue.setDate(tue.getDate() - daysSinceTue);
-  const ate = new Date(tue);
-  ate.setDate(ate.getDate() - 3);
+  const daysSinceMon = day === 0 ? 6 : day - 1;
+  const mon = new Date(d);
+  mon.setDate(mon.getDate() - daysSinceMon);
+  const ate = new Date(mon);
+  ate.setDate(ate.getDate() - 2);
   const de = new Date(ate);
   de.setDate(de.getDate() - 6);
   return { de: iso(de), ate: iso(ate) };
@@ -1490,14 +1499,27 @@ function aplicarCampanha() {
   scene.classList.toggle("is-arte", !!c.arte);
 }
 
-const SEMANA = semanaIpv();
-const SEMANA_ANT = { de: shiftIso(SEMANA.de, -7), ate: shiftIso(SEMANA.ate, -7) };
-const ROTULO = rotuloFaixa(SEMANA.de, SEMANA.ate);
-const DIAS = montarDias(SEMANA.de, SEMANA.ate);
-const DIAS_ANT = montarDias(SEMANA_ANT.de, SEMANA_ANT.ate);
-document.getElementById("periodoBoard").textContent = ROTULO;
-document.getElementById("periodoBoard13").textContent = ROTULO;
-document.getElementById("periodoBoardIcv").textContent = ROTULO;
+let SEMANA = { de: "", ate: "" };
+let SEMANA_ANT = { de: "", ate: "" };
+let ROTULO = "";
+let DIAS = [];
+let DIAS_ANT = [];
+
+function aplicarJanela() {
+  const nova = semanaIpv();
+  const mudou = nova.de !== SEMANA.de || nova.ate !== SEMANA.ate;
+  SEMANA = nova;
+  SEMANA_ANT = { de: shiftIso(SEMANA.de, -7), ate: shiftIso(SEMANA.ate, -7) };
+  ROTULO = rotuloFaixa(SEMANA.de, SEMANA.ate);
+  DIAS = montarDias(SEMANA.de, SEMANA.ate);
+  DIAS_ANT = montarDias(SEMANA_ANT.de, SEMANA_ANT.ate);
+  document.getElementById("periodoBoard").textContent = ROTULO;
+  document.getElementById("periodoBoard13").textContent = ROTULO;
+  document.getElementById("periodoBoardIcv").textContent = ROTULO;
+  return mudou;
+}
+
+aplicarJanela();
 aplicarCampanha();
 
 const CICLO = [
@@ -1733,6 +1755,7 @@ document.addEventListener("keydown", (e) => {
 });
 
 setInterval(() => {
+  if (aplicarJanela()) diaIpv = 0;
   carregarLondrisulIpv().then((payload) => {
     estadoIpv.ls = agregarLondrisul(payload, SEMANA.de, SEMANA.ate);
     estadoIpv.lsAnt = agregarLondrisul(payload, SEMANA_ANT.de, SEMANA_ANT.ate);
