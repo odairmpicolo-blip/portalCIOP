@@ -36,16 +36,20 @@
       day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
+      second: "2-digit",
       hourCycle: "h23"
     });
     var map = {};
     fmt.formatToParts(new Date(ms)).forEach(function (p) {
       if (p.type !== "literal") map[p.type] = p.value;
     });
+    var hour = Number(map.hour);
+    if (hour === 24) hour = 0;
     return {
       date: map.year + "-" + map.month + "-" + map.day,
-      hour: Number(map.hour),
-      minute: Number(map.minute)
+      hour: hour,
+      minute: Number(map.minute),
+      second: Number(map.second)
     };
   }
 
@@ -302,4 +306,36 @@
   w.portalClimaUltimoPayload = function () {
     return ultimoPayload;
   };
+
+  /* A TV fica aberta o dia inteiro. À meia-noite de Londrina a página
+     recarrega com um endereço novo, para pegar o HTML e o script atuais. */
+  function agendarViradaDoDia() {
+    var diaAberto = wallParts(Date.now()).date;
+    var recarregando = false;
+    function virar(agora) {
+      if (recarregando) return false;
+      var dia = wallParts(agora == null ? Date.now() : agora).date;
+      if (dia === diaAberto) return false;
+      recarregando = true;
+      try {
+        var u = new URL(w.location.href);
+        u.searchParams.set("_d", dia);
+        w.location.replace(u.href);
+      } catch (e) {
+        w.location.reload();
+      }
+      return true;
+    }
+    function armar() {
+      var parts = wallParts(Date.now());
+      var passados = ((parts.hour * 60 + parts.minute) * 60 + parts.second) * 1000;
+      var falta = 24 * 60 * 60 * 1000 - passados;
+      w.setTimeout(function () {
+        if (!virar()) armar();
+      }, Math.max(falta, 1000));
+    }
+    w.setInterval(function () { virar(); }, 15000);
+    armar();
+  }
+  agendarViradaDoDia();
 })(window);
