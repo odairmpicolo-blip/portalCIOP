@@ -32,7 +32,7 @@ Voltar ao Portal: `.btn-portal` / `.portal-return` / `data-portal-voltar`. Se a 
 
 ## Menu lateral e navegação móvel
 
-**Só a home.** Painel `.home-sheet` translúcido sobre a fotografia suavizada. Sidebar fixa (`--home-side`: 204 px, 184 px ≤1200 px), vidro `--home-nav`. Logo ≤148×78, proporção preservada. Só a área atual `.is-active`. Hover, `:focus-visible` e seleção são estados distintos. Campanha compacta; indicador “sistema online” permanece. Abaixo de 900 px: drawer + dock inferior (`.home-dock`, padding inferior `108px + env(safe-area-inset-bottom)`). Saudação sem card; resumo operacional em linha sob o “Olá”.
+**Só a home.** Painel `.home-sheet` translúcido sobre a fotografia suavizada. Sidebar fixa (`--home-side`: 204 px, 184 px ≤1200 px), vidro `--home-nav`. Logo ≤148×78, proporção preservada. Só a área atual `.is-active`. Hover, `:focus-visible` e seleção são estados distintos. Campanha compacta; indicador “sistema online” permanece. Abaixo de 900 px: drawer + dock inferior (`.home-dock`, padding inferior `108px + env(safe-area-inset-bottom)`). Saudação sem card; módulos, usuários e avisos em linha **logo após** o “Olá”, antes do subtítulo.
 
 Hamburger `.menu-toggle` 44×44, SVG de três linhas. Overlay `#overlay`.
 
@@ -75,7 +75,7 @@ Um único vidro `.home-meta.home-now` à direita da saudação (`montarMeta` em 
 | Bloco | Conteúdo |
 | --- | --- |
 | `.home-now-time` | Hora `HH:mm` (`#ciopKpiHora`, `America/Sao_Paulo`, sem segundos, `tabular-nums`, largura fixa `5.6ch`) e data por extenso (`#ciopKpiData`: “Segunda-feira, 26 de outubro”) |
-| `.home-now-wx` | Link para a previsão Climatempo (`aria-label` “Abrir previsão completa…”). Rótulo “Clima agora · Londrina”, ícone + temperatura atual, descrição, mín/máx do dia, horário da observação |
+| `.home-now-wx` | Link para a previsão Climatempo (`aria-label` “Abrir previsão completa…”). Rótulo “Clima agora · Londrina”, ícone + temperatura atual, descrição, mín/máx do dia, horário da observação. No `.home-ops`, o bloco fica **centralizado**. |
 
 Fonte: Open-Meteo já usada (`current.temperature_2m`, `current.weather_code`, `current.is_day`; `daily` só para mín/máx). Não tratar a previsão diária como o valor “agora”.
 

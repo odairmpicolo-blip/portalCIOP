@@ -365,8 +365,11 @@
         if (card) stats.appendChild(card);
       });
     }
-    var inner = hero.querySelector(".hero-pro-copy") || hero.querySelector(".header-hero-inner");
-    if (inner && stats.parentNode !== inner) inner.appendChild(stats);
+    var copy = hero.querySelector(".hero-pro-copy") || hero.querySelector(".header-hero-inner");
+    if (!copy) return;
+    var welcome = copy.querySelector(".hero-pro-welcome");
+    if (welcome) welcome.insertAdjacentElement("afterend", stats);
+    else if (stats.parentNode !== copy) copy.appendChild(stats);
   }
 
   var PERF_API = "https://londrisul.online/relatorios/mapa/api.php?chave=" + encodeURIComponent("Pontualidade@2026");
