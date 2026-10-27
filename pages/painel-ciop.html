@@ -191,18 +191,23 @@
     color:#c9d6ef; margin-bottom:8px;
   }
   .firm-week-pct{
-    font-size:clamp(72px,8.6vw,136px); font-weight:900; letter-spacing:-.05em; line-height:.86;
+    font-size:clamp(42px,8.6vw,136px); font-weight:900; letter-spacing:-.05em; line-height:1;
     font-variant-numeric:tabular-nums;
+    flex:1 1 100%; min-width:0; max-width:100%; white-space:nowrap;
     background:linear-gradient(180deg, #ffffff 8%, #e8eef6 58%, #c5d0e0 100%);
     -webkit-background-clip:text; background-clip:text; color:transparent;
     -webkit-text-fill-color:transparent;
     filter:drop-shadow(0 10px 22px rgba(8,12,24,.4));
   }
+  .firm-block, .firm-hero, .firm-week-row, .firm-pct-row{ width:100%; min-width:0; }
   .firm-week-row, .firm-pct-row{
-    display:flex; align-items:baseline; gap:clamp(10px,1.2vw,16px); flex-wrap:wrap;
+    display:flex; align-items:center; gap:clamp(10px,1.2vw,16px); flex-wrap:wrap;
+    min-width:0; max-width:100%;
   }
+  .board-grid > .firm{ min-width:0; }
   .firm-delta{
     display:inline-flex; align-items:center; gap:6px;
+    flex:0 0 auto;
     font-size:clamp(15px,1.35vw,22px); font-weight:800; letter-spacing:.02em;
     padding:6px 12px; border-radius:999px;
     border:1px solid rgba(255,255,255,.14);
@@ -220,8 +225,9 @@
     padding:clamp(8px,1vh,14px) 0;
   }
   .firm-pct{
-    font-size:clamp(36px,4vw,62px); font-weight:900; letter-spacing:-.04em; line-height:.92;
+    font-size:clamp(22px,4vw,62px); font-weight:900; letter-spacing:-.04em; line-height:1;
     font-variant-numeric:tabular-nums;
+    min-width:0; max-width:100%; white-space:nowrap;
     background:linear-gradient(180deg, #ffffff 8%, #e8eef6 58%, #c5d0e0 100%);
     -webkit-background-clip:text; background-clip:text; color:transparent;
     -webkit-text-fill-color:transparent;
@@ -1050,6 +1056,63 @@ function setPct(id, v) {
   el.classList.remove("pop");
   void el.offsetWidth;
   el.classList.add("pop");
+  agendarEncaixe();
+}
+
+/* O percentual cabe dentro do card. A semana usa a largura toda e a variação
+   desce. No dia, a variação fica ao lado e o número encolhe para não cobri-la. */
+function larguraDoCard(el) {
+  const card = el.closest(".firm");
+  if (!card || card.clientWidth < 40) return 0;
+  const cs = getComputedStyle(card);
+  let livre = card.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const block = el.closest(".firm-block");
+  if (block) {
+    const bs = getComputedStyle(block);
+    livre -= parseFloat(bs.paddingLeft) + parseFloat(bs.paddingRight);
+    livre -= parseFloat(bs.borderLeftWidth) + parseFloat(bs.borderRightWidth);
+  }
+  return Math.max(40, Math.floor(livre));
+}
+
+function encaixarPct(el, maxPx, minPx, limite) {
+  if (!limite) return;
+  el.style.maxWidth = limite + "px";
+  let lo = minPx;
+  let hi = maxPx;
+  let cabe = minPx;
+  while (lo <= hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    el.style.fontSize = mid + "px";
+    if (el.scrollWidth <= limite) { cabe = mid; lo = mid + 1; }
+    else hi = mid - 1;
+  }
+  el.style.fontSize = cabe + "px";
+}
+
+function encaixarFontes() {
+  const curto = window.matchMedia("(max-aspect-ratio: 4/3)").matches;
+  const semanaMax = curto ? 88 : 136;
+  const diaMax = curto ? 44 : 62;
+  document.querySelectorAll(".firm-week-pct").forEach((el) => {
+    encaixarPct(el, semanaMax, 36, larguraDoCard(el));
+  });
+  document.querySelectorAll(".firm-pct-row").forEach((row) => {
+    const pct = row.querySelector(".firm-pct");
+    const delta = row.querySelector(".firm-delta");
+    if (!pct) return;
+    const reserva = (delta ? delta.offsetWidth : 0) + 16;
+    encaixarPct(pct, diaMax, 20, Math.max(40, larguraDoCard(pct) - reserva));
+  });
+}
+
+let encaixeAgendado = 0;
+function agendarEncaixe() {
+  if (encaixeAgendado) return;
+  encaixeAgendado = requestAnimationFrame(() => {
+    encaixeAgendado = 0;
+    encaixarFontes();
+  });
 }
 
 function reiniciarLoad(id) {
@@ -1120,6 +1183,7 @@ function pintarArea(prefix, bloco, ant, ids = IPV_IDS) {
   if (bloco) bloco.byDay = seriePorDia(bloco.serie, DIAS);
   if (ant) ant.byDay = seriePorDia(ant.serie, DIAS_ANT);
   pintarDelta(ids.weekDelta + prefix, bloco?.ipv, ant?.ipv);
+  agendarEncaixe();
 }
 
 function climaSvg(code, extraClass, isDay) {
@@ -1549,6 +1613,7 @@ function pintarTotal(est, ids, diaN) {
   if (week) week.textContent = formatPct(total);
   pintarDelta(ids.weekDelta + "Ciop", total, total0);
   aplicarDiaEm(diaN, est, ids);
+  agendarEncaixe();
 }
 
 function atualizarStatus() {
@@ -1563,6 +1628,18 @@ function atualizarStatus() {
 
 document.getElementById("boot").style.display = "none";
 atualizarStatus();
+agendarEncaixe();
+if (window.ResizeObserver) {
+  const vistas = new Map();
+  document.querySelectorAll(".board-grid").forEach((grade) => {
+    new ResizeObserver(() => {
+      const w = Math.round(grade.getBoundingClientRect().width);
+      if (vistas.get(grade) === w) return;
+      vistas.set(grade, w);
+      agendarEncaixe();
+    }).observe(grade);
+  });
+}
 
 carregarLondrisulIpv().then((payload) => {
   estadoIpv.ls = agregarLondrisul(payload, SEMANA.de, SEMANA.ate);
