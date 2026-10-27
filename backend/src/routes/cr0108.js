@@ -526,14 +526,16 @@ async function consultarIpv(req) {
   if (tipoDia) cond.push(tipoDia);
   const r = await query(
     `SELECT data_ref::text AS data,
-            ${numero(f.ipv)} AS ipv
+            ${numero(f.ipv)} AS ipv,
+            ${numero(f.pontos)} AS pontos
      FROM ${f.tabela} ${cond.length ? `WHERE ${cond.join(" AND ")}` : ""}
      ORDER BY data_ref`,
     par
   );
   const dias = r.rows.map((x) => ({
     data: String(x.data || "").slice(0, 10),
-    ipv: x.ipv == null ? null : Number(x.ipv)
+    ipv: x.ipv == null ? null : Number(x.ipv),
+    pontos: x.pontos == null ? null : Number(x.pontos)
   }));
   return { fonte: chave, dias };
 }

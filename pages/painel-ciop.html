@@ -1240,17 +1240,19 @@ async function carregarTcglIcv() {
 
 function agregarTcgl(itens, de, ate) {
   const serie = [];
-  let soma = 0;
+  let peso = 0, somaPeso = 0, soma = 0;
   for (const x of itens) {
     const data = String(x.data || "").slice(0, 10);
     if (data < de || data > ate) continue;
     const ipv = toPct(x.ipv);
     if (ipv == null) continue;
     serie.push({ data, ipv });
+    const pts = Number(x.pontos);
+    if (pts > 0) { peso += pts; somaPeso += ipv * pts; }
     soma += ipv;
   }
   if (!serie.length) return { ipv: null, serie: [], origem: "tcgl" };
-  return { ipv: soma / serie.length, serie, origem: "tcgl" };
+  return { ipv: peso ? somaPeso / peso : soma / serie.length, serie, origem: "tcgl" };
 }
 
 function agregarLondrisul(payload, de, ate) {
@@ -1269,7 +1271,7 @@ function agregarLondrisul(payload, de, ate) {
     if (ipv == null) continue;
     visto.add(data);
     serie.push({ data, ipv });
-    const pts = Number(d.timepoints_processados) || 0;
+    const pts = Number(d.pontos ?? d.timepoints_processados) || 0;
     if (pts > 0) {
       peso += pts;
       somaPeso += ipv * pts;
