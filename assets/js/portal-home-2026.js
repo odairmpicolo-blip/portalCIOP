@@ -199,12 +199,16 @@
     var online = document.createElement("div");
     online.className = "home-online";
     online.id = "homeOnlineSide";
+    var versao = document.createElement("p");
+    versao.className = "home-side-version";
+    versao.id = "homeSideVersion";
     var picker = side.querySelector(".dk-theme-picker");
     side.insertBefore(brand, side.firstChild);
     side.insertBefore(nav, brand.nextSibling);
     nav.appendChild(wrap);
     side.appendChild(campanha);
     side.appendChild(online);
+    side.appendChild(versao);
     if (picker) side.appendChild(picker);
     nav.addEventListener("click", function (ev) {
       var btn = ev.target.closest("[data-home-nav]");
@@ -679,11 +683,30 @@
       "</div>";
   }
 
+  function versaoPortal() {
+    var meta = document.querySelector('meta[name="portal-ciop-version"]');
+    var v = String((meta && meta.getAttribute("content")) || "").trim();
+    return /^\d+\.\d+\.\d+$/.test(v) ? v : "";
+  }
+
   function atualizarOnlineSide() {
     var dest = document.getElementById("homeOnlineSide");
     var chip = document.getElementById("ciopOnlineChip");
     if (!dest || !chip) return;
     dest.innerHTML = chip.innerHTML.replace("Online", "Sistema online").replace("Offline", "Sistema offline");
+  }
+
+  function atualizarVersaoSide() {
+    var dest = document.getElementById("homeSideVersion");
+    if (!dest) return;
+    var v = versaoPortal();
+    if (!v) {
+      dest.hidden = true;
+      dest.textContent = "";
+      return;
+    }
+    dest.hidden = false;
+    dest.textContent = "Portal CIOP · v" + v;
   }
 
   function atualizarSino() {
@@ -884,6 +907,7 @@
     ola();
     atualizarCampanhaSide();
     atualizarOnlineSide();
+    atualizarVersaoSide();
     atualizarSino();
     sincronizarOutros();
   }
@@ -895,6 +919,7 @@
     ola();
     atualizarCampanhaSide();
     atualizarOnlineSide();
+    atualizarVersaoSide();
     atualizarSino();
     sincronizarOutros();
   });

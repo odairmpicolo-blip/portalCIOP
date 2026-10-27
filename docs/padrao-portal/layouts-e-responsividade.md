@@ -16,7 +16,7 @@ Breakpoints **efetivos** no CSS atual (não inventar uma escala nova). Conferên
 
 ## Home
 
-- Padding do `body`: `20px 20px 40px calc(var(--home-side) + 36px)`.
+- Padding do `body`: `20px 20px 20px calc(var(--home-side) + 36px)` (sem folga extra de rodapé).
 - `--home-side`: **204 px** (~15% abaixo de 240); **184 px** em `max-width: 1200px`.
 - `.home-sheet`: painel translúcido (vidro esbranquiçado no claro, fumê no escuro) sobre a foto suavizada. Cards em vidro fosco por cima.
 - **Início** e **catálogo de área** são vistas distintas (`data-home-view`). Início: saudação, painel unificado (performance/hora/clima), avisos e até 6 favoritos — sem catálogo. Operação, Indicadores, Relatórios e Painéis de TV: um título da área + busca + só aquele catálogo. Sem repetir resumo, clima, avisos ou favoritos. Trocar de área faz `scroll` ao topo, fecha o menu móvel e sincroniza hash (`#inicio`, `#operacao`, `#indicadores`, `#relatorios`, `#tv`) com histórico do navegador.
@@ -63,7 +63,7 @@ Scroll no **wrapper**, não na `body` se a tabela for o bloco principal. Thead s
 
 ## Rodapé
 
-`assets/js/portal-footer.js` padroniza `footer.portal-site-footer`: “© 2026 CIOP - Todos os direitos reservados”. O DS faz `margin-top: auto` em `body:has(> footer)` para colar o rodapé embaixo.
+`assets/js/portal-footer.js` padroniza `footer.portal-site-footer`: “© 2026 CIOP - Todos os direitos reservados”. O DS faz `margin-top: auto` em `body:has(> footer)` para colar o rodapé embaixo. A **home** (`portal-home-2026`) não usa esse rodapé: o script remove a faixa, não reinsere e não reserva espaço. A versão do portal vai no menu lateral, abaixo de “Sistema online”. Internas e CIOP TV mantêm o rodapé próprio.
 
 Kiosk: rodapé próprio (data, hora, clima).
 

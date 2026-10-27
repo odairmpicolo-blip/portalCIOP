@@ -11,7 +11,7 @@ Classes globais: `assets/css/portal-design-system.css`. Home: `portal-home-2026.
   <body>
     <header class="header">…</header>
     <main class="container">…</main>
-    <!-- rodapé injetado por portal-footer.js se faltar -->
+    <!-- rodapé injetado por portal-footer.js se faltar (exceto na home) -->
   </body>
 </html>
 ```
@@ -32,7 +32,7 @@ Voltar ao Portal: `.btn-portal` / `.portal-return` / `data-portal-voltar`. Se a 
 
 ## Menu lateral e navegação móvel
 
-**Só a home.** Painel `.home-sheet` translúcido sobre a fotografia suavizada. Sidebar fixa (`--home-side`: 204 px, 184 px ≤1200 px), vidro `--home-nav`. Logo ≤148×78, proporção preservada. Só a área atual `.is-active`. Hover, `:focus-visible` e seleção são estados distintos. Campanha compacta; indicador “sistema online” permanece. Abaixo de 900 px: drawer + dock inferior (`.home-dock`, padding inferior `108px + env(safe-area-inset-bottom)`). Saudação sem card; módulos, usuários e avisos em linha **logo após** o “Olá”, antes do subtítulo. Nomes curtos iguais no menu, no dock e no título da área: **Início**, **Operação**, **Indicadores**, **Relatórios**, **Painéis de TV**.
+**Só a home.** Painel `.home-sheet` translúcido sobre a fotografia suavizada. Sidebar fixa (`--home-side`: 204 px, 184 px ≤1200 px), vidro `--home-nav`. Logo ≤148×78, proporção preservada. Só a área atual `.is-active`. Hover, `:focus-visible` e seleção são estados distintos. Campanha compacta; indicador “sistema online” permanece, com a versão **Portal CIOP · vX.Y.Z** logo abaixo (`meta[name=portal-ciop-version]`, igual a `package.json`; hoje `1.0.0`). No celular a versão fica no drawer, não no dock. A home não tem rodapé de copyright. Abaixo de 900 px: drawer + dock inferior (`.home-dock`, padding inferior `108px + env(safe-area-inset-bottom)`). Saudação sem card; módulos, usuários e avisos em linha **logo após** o “Olá”, antes do subtítulo. Nomes curtos iguais no menu, no dock e no título da área: **Início**, **Operação**, **Indicadores**, **Relatórios**, **Painéis de TV**.
 
 Hamburger `.menu-toggle` 44×44, SVG de três linhas. Overlay `#overlay`.
 

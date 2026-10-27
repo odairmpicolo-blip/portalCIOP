@@ -15,7 +15,7 @@
 | Clima TV (ícone, dia/noite, cena) | `portal-clima-cena.js` + `portal-clima-anim.css` | Não copiar SVG WMO nas páginas |
 | Composição do Painel CIOP | `pages/painel-ciop.html` | Ver [ciop-tv.md](ciop-tv.md). Não alterar a média nem o Total |
 
-Bump de cache vigente: tokens `?v=20261027term2`; DS `auto1`; visual `term2` (Terminais Agora); clima TV no Painel CIOP `tv1` (Painel TV ainda em `wx1` até a próxima edição); home CSS `ops6` / JS `ops5`; `theme-toggle.js` `auto1`. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no `script.src` do inject (`theme-toggle.js`, `portal-design-system.js`, `auth.js`).
+Bump de cache vigente: tokens `?v=20261027term2`; DS `auto1`; visual `term2` (Terminais Agora); clima TV no Painel CIOP `tv1` (Painel TV ainda em `wx1` até a próxima edição); home CSS `ops10` / JS `ops7`; `theme-toggle.js` `auto1`. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no `script.src` do inject (`theme-toggle.js`, `portal-design-system.js`, `auth.js`).
 
 ## Impacto
 
@@ -43,6 +43,7 @@ Bump de cache vigente: tokens `?v=20261027term2`; DS `auto1`; visual `term2` (Te
 | 2026-10 | Foto da home suavizada; painel `.home-sheet` translúcido de novo; cards foscos; textos nítidos | `portal-teste` |
 | 2026-10 | Home compacta: saudação no painel, clima à direita, sem faixa extra de contagens | `portal-teste` |
 | 2026-10 | Home: Início separado do catálogo de área; um título; cards ícone+texto; Indicadores no menu/dock; busca por área | `portal-teste` (não publicar sem pedido) |
+| 2026-10 | Home sem rodapé de copyright; versão no menu abaixo de Sistema online (`package.json` / meta `1.0.0`) | `portal-teste` |
 
 ## Responsável
 

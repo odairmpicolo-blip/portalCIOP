@@ -214,7 +214,10 @@
     novidades.querySelector('button').onclick = function () { dialog.close(); window.portalNovidades?.abrir(); };
     dialog.querySelector('.home-settings-footer').before(novidades);
     var version = document.createElement('p'); version.className = 'home-settings-version';
-    version.textContent = 'PortalCiOP · Versão 2.0';
+    var verMeta = document.querySelector('meta[name="portal-ciop-version"]');
+    var verNum = String((verMeta && verMeta.getAttribute('content')) || '').trim();
+    version.textContent = /^\d+\.\d+\.\d+$/.test(verNum) ? ('Portal CIOP · v' + verNum) : '';
+    if (!version.textContent) version.hidden = true;
     dialog.appendChild(version);
     document.body.appendChild(dialog);
     chooser = dialog.querySelector('#homeSettingsModules'); status = dialog.querySelector('#homeSettingsStatus');

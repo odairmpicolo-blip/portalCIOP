@@ -17,6 +17,12 @@
   }
 
   function padronizarRodape() {
+    if (document.documentElement.classList.contains("portal-home-2026")) {
+      document.querySelectorAll("body > footer, .portal-site-footer").forEach(function (el) {
+        el.remove();
+      });
+      return;
+    }
     ensureCss();
     const footers = document.querySelectorAll("body footer");
     if (footers.length) {
