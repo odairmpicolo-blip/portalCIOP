@@ -19,11 +19,11 @@ Breakpoints **efetivos** no CSS atual (não inventar uma escala nova). Conferên
 - Padding do `body`: `20px 20px 40px calc(var(--home-side) + 36px)`.
 - `--home-side`: **204 px** (~15% abaixo de 240); **184 px** em `max-width: 1200px`.
 - `.home-sheet`: painel translúcido (vidro esbranquiçado no claro, fumê no escuro) sobre a foto suavizada. Cards em vidro fosco por cima.
-- Grid de módulos (catálogo): **linhas compactas** 2 colunas; 3 col ≥1600; 1 col ≤560. Ícone ~18 px à esquerda, seta, altura automática (sem corte de texto). Gap **18 px** no desktop, **12 px** ≤900, **10 px** no celular.
-- Atalhos (só os 6 favoritos): cards **maiores**; **3 colunas** por padrão; **6** ≥1600 px; **2** ≤900 px; **1** ≤560 px. Títulos completos; descrições curtas.
-- Seções do catálogo com título visível e **28–32 px** entre grupos (20 px ≤900, 16 px no celular). Cada card tem superfície e borda próprias; a seção não é um vidro único.
+- **Início** e **catálogo de área** são vistas distintas (`data-home-view`). Início: saudação, painel unificado (performance/hora/clima), avisos e até 6 favoritos — sem catálogo. Operação, Indicadores, Relatórios e Painéis de TV: um título da área + busca + só aquele catálogo. Sem repetir resumo, clima, avisos ou favoritos. Trocar de área faz `scroll` ao topo, fecha o menu móvel e sincroniza hash (`#inicio`, `#operacao`, `#indicadores`, `#relatorios`, `#tv`) com histórico do navegador.
+- Grid de módulos (catálogo): 1 coluna abaixo de 1100 px de viewport (títulos longos, p.ex. CR-0108, não espremem); 2 colunas a partir de 1100 px; no máximo **3** a partir de 1680 px. Ícone à esquerda, texto empilhado, seta; altura automática. Gap **12–18 px**. Sem título duplicado (nada de “Operação” + “OPERAÇÃO”).
+- Atalhos (só os 6 favoritos, só no Início): cards **maiores**; **3 colunas** por padrão; **6** ≥1600 px; **2** ≤900 px; **1** ≤560 px. Títulos completos; descrições curtas.
 - Ícones ICV (prancheta + visto) e Incidentes CAD (lista com pontos) — não reutilizar o gráfico de barras.
-- Sequência: busca/conta → saudação + resumo → painel unificado (performance + hora + clima) → aviso → acessos rápidos → módulos.
+- Sequência no Início: busca/conta → saudação + resumo → painel unificado (performance + hora + clima) → aviso → acessos rápidos. Nas áreas: busca/conta → título → catálogo.
 - Hero: saudação e subtítulo **no painel** (sem card próprio). Contagens em texto compacto abaixo da saudação. Um único `.home-ops` de vidro com três regiões (~50% performance, ~22% hora/data, ~28% clima). Sem cards internos; só divisórias. Performance e previsão são links separados. ≤1100 px: performance na primeira linha, hora e clima na segunda. ≤560 px: uma coluna, sem rolagem horizontal. Acessos rápidos: 3 colunas (6 só ≥1800 px).
 - Avisos: faixa baixa; rótulo pequeno; detalhe laranja de 2 px à esquerda; botão “Ver aviso”.
 - ≤900 px: sidebar vira drawer em vidro (`--home-nav`); dock fixo; padding-bottom `calc(108px + env(safe-area-inset-bottom))`.

@@ -13,8 +13,9 @@
 | Rodapé texto | `portal-footer.js` | |
 | Esta documentação | `docs/padrao-portal/` | Índice + catálogo se o componente mudou |
 | Clima TV (ícone, dia/noite, cena) | `portal-clima-cena.js` + `portal-clima-anim.css` | Não copiar SVG WMO nas páginas |
+| Composição do Painel CIOP | `pages/painel-ciop.html` | Ver [ciop-tv.md](ciop-tv.md). Não alterar a média nem o Total |
 
-Bump de cache vigente: tokens `?v=20261027term2`; DS `auto1`; visual `term2` (Terminais Agora); clima TV `wx1`; home CSS `ops5` / JS `ops4`; `theme-toggle.js` `auto1`. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no `script.src` do inject (`theme-toggle.js`, `portal-design-system.js`, `auth.js`).
+Bump de cache vigente: tokens `?v=20261027term2`; DS `auto1`; visual `term2` (Terminais Agora); clima TV no Painel CIOP `tv1` (Painel TV ainda em `wx1` até a próxima edição); home CSS `ops6` / JS `ops5`; `theme-toggle.js` `auto1`. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no `script.src` do inject (`theme-toggle.js`, `portal-design-system.js`, `auth.js`).
 
 ## Impacto
 
@@ -41,6 +42,7 @@ Bump de cache vigente: tokens `?v=20261027term2`; DS `auto1`; visual `term2` (Te
 | 2026-10 | Widget hora+clima: um vidro, data por extenso, observação Open-Meteo atual vs mín/máx, estados indisponível/antigo | `portal-teste` |
 | 2026-10 | Foto da home suavizada; painel `.home-sheet` translúcido de novo; cards foscos; textos nítidos | `portal-teste` |
 | 2026-10 | Home compacta: saudação no painel, clima à direita, sem faixa extra de contagens | `portal-teste` |
+| 2026-10 | Home: Início separado do catálogo de área; um título; cards ícone+texto; Indicadores no menu/dock; busca por área | `portal-teste` (não publicar sem pedido) |
 
 ## Responsável
 

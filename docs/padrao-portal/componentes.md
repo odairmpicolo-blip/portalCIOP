@@ -32,7 +32,7 @@ Voltar ao Portal: `.btn-portal` / `.portal-return` / `data-portal-voltar`. Se a 
 
 ## Menu lateral e navegação móvel
 
-**Só a home.** Painel `.home-sheet` translúcido sobre a fotografia suavizada. Sidebar fixa (`--home-side`: 204 px, 184 px ≤1200 px), vidro `--home-nav`. Logo ≤148×78, proporção preservada. Só a área atual `.is-active`. Hover, `:focus-visible` e seleção são estados distintos. Campanha compacta; indicador “sistema online” permanece. Abaixo de 900 px: drawer + dock inferior (`.home-dock`, padding inferior `108px + env(safe-area-inset-bottom)`). Saudação sem card; módulos, usuários e avisos em linha **logo após** o “Olá”, antes do subtítulo.
+**Só a home.** Painel `.home-sheet` translúcido sobre a fotografia suavizada. Sidebar fixa (`--home-side`: 204 px, 184 px ≤1200 px), vidro `--home-nav`. Logo ≤148×78, proporção preservada. Só a área atual `.is-active`. Hover, `:focus-visible` e seleção são estados distintos. Campanha compacta; indicador “sistema online” permanece. Abaixo de 900 px: drawer + dock inferior (`.home-dock`, padding inferior `108px + env(safe-area-inset-bottom)`). Saudação sem card; módulos, usuários e avisos em linha **logo após** o “Olá”, antes do subtítulo. Nomes curtos iguais no menu, no dock e no título da área: **Início**, **Operação**, **Indicadores**, **Relatórios**, **Painéis de TV**.
 
 Hamburger `.menu-toggle` 44×44, SVG de três linhas. Overlay `#overlay`.
 
@@ -42,13 +42,13 @@ Kiosk: sem este menu.
 
 ## Busca
 
-Home: `.ciop-search` + `.ciop-search-input` (altura 46 px, 16 px de fonte). Filtra cards (`ciop-search-hit` / `ciop-search-hidden`). Não é busca global do backend.
+Home: `.ciop-search` + `.ciop-search-input` (altura 46 px, 16 px de fonte). No **Início** filtra os favoritos; nas áreas filtra **só o catálogo visível**. Placeholder e `aria-description` dizem o recorte. Vazio: `.home-search-empty` com texto, **Limpar busca** e lembrete de que os demais módulos estão nas outras áreas. Não é busca global do backend.
 
 Consultas (veículo/funcionário/SEI): campo da própria página + classes `.cv-panel` cobertas pelo DS.
 
 ## Cards de módulos e favoritos
 
-Home: `a.card` (catálogo compacto por área) e `.home-quick a` (somente os até 6 favoritos do usuário — `portal-home-settings.js`). Favoritos são cards maiores, com ícone destacado. O catálogo tem ícone à esquerda, título, descrição e seta. Áreas: **Operação**, **Monitoramento e indicadores**, **Relatórios**, **Painéis de TV**. Descrições dos favoritos são encurtadas no `refresh()`; títulos permanecem completos. Visibilidade: `data-modulo`, `data-perfis`, `data-usuarios`; `auth.js` aplica `.portal-card-visivel`.
+Home: `a.card` (catálogo compacto por área) e `.home-quick a` (somente os até 6 favoritos do usuário — `portal-home-settings.js`). Favoritos são cards maiores, com ícone destacado. O catálogo: ícone à esquerda, bloco `.card-copy` (título acima, descrição curta abaixo) e seta à direita — sem duas colunas de texto. Títulos completos (inclusive CR-0108); `overflow-wrap: break-word` sem partir palavra. Áreas: **Operação**, **Indicadores** (inclui monitoramento), **Relatórios**, **Painéis de TV**. Descrições dos favoritos são encurtadas no `refresh()`; títulos permanecem completos. Visibilidade: `data-modulo`, `data-perfis`, `data-usuarios`; `auth.js` aplica `.portal-card-visivel`.
 
 Não inventar card na home sem permissão.
 

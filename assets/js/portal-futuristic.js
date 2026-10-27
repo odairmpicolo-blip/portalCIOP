@@ -688,6 +688,13 @@
 
       document.querySelectorAll(".grid .card").forEach(function (card) {
         if (card.hidden && !card.classList.contains("ciop-search-hidden")) return;
+        const sec = card.closest(".card-section");
+        if (document.documentElement.classList.contains("portal-home-2026") && sec && sec.hidden) {
+          card.classList.remove("ciop-search-hidden", "ciop-search-hit");
+          marcarTrecho(card.querySelector(".card-title"), "");
+          marcarTrecho(card.querySelector(".card-desc"), "");
+          return;
+        }
         const titleEl = card.querySelector(".card-title");
         const descEl = card.querySelector(".card-desc");
         const title = titleEl?.textContent || "";

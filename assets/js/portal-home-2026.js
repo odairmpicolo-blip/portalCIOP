@@ -42,6 +42,7 @@
     inicio: "inicio",
     operacao: "secaoOperacao",
     monitoramento: "secaoDashboards",
+    indicadores: "secaoDashboards",
     relatorios: "secaoRelatorios",
     tv: "secaoTv",
     outros: "outros"
@@ -49,10 +50,18 @@
   var ALVO_HASH = {
     inicio: "inicio",
     secaoOperacao: "operacao",
-    secaoDashboards: "monitoramento",
+    secaoDashboards: "indicadores",
     secaoRelatorios: "relatorios",
     secaoTv: "tv",
     outros: "outros"
+  };
+  var NOMES_AREA = {
+    inicio: "Início",
+    secaoOperacao: "Operação",
+    secaoDashboards: "Indicadores",
+    secaoRelatorios: "Relatórios",
+    secaoTv: "Painéis de TV",
+    outros: "Outros"
   };
 
   function fecharMenu() {
@@ -69,20 +78,36 @@
     if (menu) menu.setAttribute("aria-expanded", "true");
   }
 
-  var TITULO_AREA = {
-    inicio: "",
-    secaoOperacao: "Operação",
-    secaoDashboards: "Monitoramento e indicadores",
-    secaoRelatorios: "Relatórios",
-    secaoTv: "Painéis de TV",
-    outros: "Outros acessos"
-  };
+  function nomeArea(alvo) {
+    return NOMES_AREA[alvo] || "Início";
+  }
 
-  function atualizarTituloArea(alvo) {
-    var h = document.querySelector(".home-mods-head h2");
-    if (h) h.textContent = TITULO_AREA[alvo] || TITULO_AREA.inicio;
+  function irAoTopoConteudo() {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    var sheet = document.getElementById("homeConteudo");
+    if (sheet) sheet.scrollTop = 0;
+  }
+
+  function atualizarTituloArea() {
+    var h = document.querySelector(".home-modules-overview > .home-mods-head h2");
+    if (h) h.textContent = "";
+    var dashTab = document.querySelector('.portal-aba[data-alvo="secaoDashboards"]');
+    if (dashTab) dashTab.textContent = "Indicadores";
     var tvTab = document.querySelector('.portal-aba[data-alvo="secaoTv"]');
     if (tvTab) tvTab.textContent = "Painéis de TV";
+  }
+
+  function aplicarVista(alvo) {
+    var view = alvo === "inicio" ? "inicio" : alvo === "outros" ? "outros" : "area";
+    document.documentElement.setAttribute("data-home-view", view);
+    document.documentElement.setAttribute("data-home-area", alvo || "inicio");
+    document.body.classList.toggle("home-view-inicio", view === "inicio");
+    document.body.classList.toggle("home-view-area", view === "area");
+    document.body.classList.toggle("home-view-outros", view === "outros");
+    atualizarTituloArea();
+    atualizarBuscaUi(alvo);
   }
 
   function marcarNav(alvo) {
@@ -94,17 +119,22 @@
       if (active) btn.setAttribute("aria-current", "page");
       else btn.removeAttribute("aria-current");
     });
-    atualizarTituloArea(alvo);
   }
 
-  function gravarHash(alvo) {
+  function gravarHash(alvo, modo) {
     var hash = ALVO_HASH[alvo];
     if (!hash) return;
-    if ((location.hash || "").replace(/^#/, "") === hash) return;
-    history.replaceState(null, "", "#" + hash);
+    var next = "#" + hash;
+    var cur = location.hash || "";
+    if (cur !== next) {
+      if (modo === "replace") history.replaceState({ homeArea: alvo }, "", next);
+      else history.pushState({ homeArea: alvo }, "", next);
+    }
+    irAoTopoConteudo();
   }
 
   function mostrarTodos() {
+    aplicarVista("inicio");
     if (typeof window.portalMostrarAbaHome === "function") window.portalMostrarAbaHome("todos", true);
     else {
       document.querySelectorAll(".card-section").forEach(function (sec) {
@@ -118,6 +148,7 @@
   }
 
   function clicarAba(id) {
+    aplicarVista(id);
     if (typeof window.portalMostrarAbaHome === "function") window.portalMostrarAbaHome(id, true);
     else {
       var aba = document.querySelector('.portal-aba[data-alvo="' + id + '"]');
@@ -183,6 +214,7 @@
         document.body.classList.add("home-show-others");
         montarOutrosCards();
         btn.setAttribute("aria-expanded", "true");
+        aplicarVista("outros");
         marcarNav("outros");
         gravarHash("outros");
         fecharMenu();
@@ -243,13 +275,120 @@
     filtrarOutros();
   }
 
+  function normBusca(s) {
+    return String(s || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+  }
+
+  function filtrarFavoritos() {
+    var q = normBusca(document.getElementById("ciopBuscaModulos")?.value);
+    document.querySelectorAll("#homeQuick a").forEach(function (card) {
+      var hit = !q || normBusca(card.textContent).includes(q);
+      card.classList.toggle("ciop-search-hidden", !hit);
+      card.classList.toggle("ciop-search-hit", !!(q && hit));
+    });
+  }
+
   function filtrarOutros() {
-    var search = document.getElementById("ciopBuscaModulos");
-    var value = (search?.value || "").toLocaleLowerCase("pt-BR");
+    var value = normBusca(document.getElementById("ciopBuscaModulos")?.value);
     document.querySelectorAll(".home-other-card").forEach(function (card) {
-      var hit = card.textContent.toLocaleLowerCase("pt-BR").includes(value);
+      var hit = !value || normBusca(card.textContent).includes(value);
       card.hidden = !hit;
       card.classList.toggle("ciop-search-hit", !!(value && hit));
+    });
+  }
+
+  function montarBuscaVazia() {
+    if (document.getElementById("homeSearchEmpty")) return;
+    var box = document.createElement("div");
+    box.id = "homeSearchEmpty";
+    box.className = "home-search-empty";
+    box.hidden = true;
+    box.setAttribute("role", "status");
+    box.innerHTML =
+      '<p id="homeSearchEmptyText"></p>' +
+      '<button type="button" class="home-search-clear-btn" id="homeSearchEmptyClear">Limpar busca</button>' +
+      '<p class="home-search-empty-hint" id="homeSearchEmptyHint"></p>';
+    var first = document.querySelector(".card-section");
+    if (first && first.parentNode) first.parentNode.insertBefore(box, first);
+    else document.querySelector(".container")?.appendChild(box);
+    document.getElementById("homeSearchEmptyClear")?.addEventListener("click", function () {
+      var limpar = document.getElementById("ciopBuscaLimpar");
+      var input = document.getElementById("ciopBuscaModulos");
+      if (limpar) limpar.click();
+      else if (input) {
+        input.value = "";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.focus();
+      }
+    });
+  }
+
+  function atualizarBuscaUi(alvo) {
+    var input = document.getElementById("ciopBuscaModulos");
+    if (!input) return;
+    var area = nomeArea(alvo);
+    if (alvo === "inicio") {
+      input.placeholder = "Buscar nos favoritos";
+      input.setAttribute("aria-description", "Filtra os acessos rápidos da página inicial.");
+    } else if (alvo === "outros") {
+      input.placeholder = "Buscar em Outros";
+      input.setAttribute("aria-description", "Filtra só os acessos de Outros.");
+    } else {
+      input.placeholder = "Buscar em " + area;
+      input.setAttribute("aria-description", "Filtra só os módulos de " + area + ". Os demais continuam nas outras áreas.");
+    }
+    filtrarFavoritos();
+    atualizarBuscaVazia();
+  }
+
+  function atualizarBuscaVazia() {
+    var input = document.getElementById("ciopBuscaModulos");
+    var empty = document.getElementById("homeSearchEmpty");
+    var text = document.getElementById("homeSearchEmptyText");
+    var hint = document.getElementById("homeSearchEmptyHint");
+    if (!input || !empty || !text) return;
+    var q = (input.value || "").trim();
+    var view = document.documentElement.getAttribute("data-home-view");
+    var alvo = document.documentElement.getAttribute("data-home-area");
+    var area = nomeArea(alvo);
+    var visiveis = 0;
+    if (view === "inicio") {
+      visiveis = document.querySelectorAll("#homeQuick a:not([hidden]):not(.ciop-search-hidden)").length;
+    } else if (view === "outros") {
+      visiveis = document.querySelectorAll(".home-other-card:not([hidden])").length;
+    } else {
+      var sec = document.getElementById(alvo);
+      visiveis = sec ? sec.querySelectorAll("a.card:not([hidden]):not(.ciop-search-hidden)").length : 0;
+    }
+    var show = !!q && visiveis === 0;
+    empty.hidden = !show;
+    if (!show) return;
+    if (view === "inicio") {
+      text.textContent = "Nenhum favorito corresponde a «" + q + "».";
+      if (hint) hint.textContent = "Os demais módulos estão em Operação, Indicadores, Relatórios e Painéis de TV.";
+    } else {
+      text.textContent = "Nenhum módulo em " + area + " corresponde a «" + q + "».";
+      if (hint) hint.textContent = "Esta busca filtra só " + area + ". Os demais módulos continuam nas outras áreas.";
+    }
+  }
+
+  function prepararCardsCatalogo() {
+    document.querySelectorAll(".card-section a.card").forEach(function (card) {
+      if (card.querySelector(".card-copy")) return;
+      var title = card.querySelector(".card-title");
+      var desc = card.querySelector(".card-desc");
+      if (!title && !desc) return;
+      var copy = document.createElement("div");
+      copy.className = "card-copy";
+      if (title) copy.appendChild(title);
+      if (desc) copy.appendChild(desc);
+      var top = card.querySelector(".card-top");
+      if (top) top.appendChild(copy);
+      else card.insertBefore(copy, card.querySelector(".card-btn") || null);
     });
   }
 
@@ -273,7 +412,7 @@
     dock.innerHTML =
       '<button type="button" class="home-dock-btn is-active" data-home-nav="inicio">' + ICO.inicio + "<span>Início</span></button>" +
       '<button type="button" class="home-dock-btn" data-home-nav="secaoOperacao">' + ICO.operacao + "<span>Operação</span></button>" +
-      '<button type="button" class="home-dock-btn" data-home-nav="secaoDashboards">' + ICO.monitoramento + "<span>Monitor</span></button>" +
+      '<button type="button" class="home-dock-btn" data-home-nav="secaoDashboards">' + ICO.monitoramento + "<span>Indicadores</span></button>" +
       '<button type="button" class="home-dock-btn" data-home-nav="secaoRelatorios">' + ICO.relatorios + "<span>Relatórios</span></button>" +
       '<button type="button" class="home-dock-btn" data-home-nav="mais" aria-controls="sidebar" aria-expanded="false">' + ICO.outros + "<span>Mais</span></button>";
     dock.addEventListener("click", function (ev) {
@@ -305,12 +444,15 @@
       montarOutrosCards();
       var outrosBtn = document.querySelector('[data-home-nav="outros"]');
       if (outrosBtn) outrosBtn.setAttribute("aria-expanded", "true");
+      aplicarVista("outros");
       marcarNav("outros");
+      irAoTopoConteudo();
       return;
     }
     document.body.classList.remove("home-show-others");
     if (alvo === "inicio") mostrarTodos();
     else clicarAba(alvo);
+    irAoTopoConteudo();
   }
 
   function montarTopo() {
@@ -601,11 +743,11 @@
     });
     var dash = document.getElementById("secaoDashboards");
     if (dash) {
-      dash.setAttribute("aria-label", "Monitoramento e indicadores");
+      dash.setAttribute("aria-label", "Indicadores");
       var t = dash.querySelector(".card-section-title");
-      if (t) t.textContent = "Monitoramento e indicadores";
+      if (t) t.textContent = "Indicadores";
       var btn = dash.querySelector(".card-section-toggle");
-      if (btn) btn.setAttribute("aria-label", "Abrir ou fechar Monitoramento e indicadores");
+      if (btn) btn.setAttribute("aria-label", "Abrir ou fechar Indicadores");
     }
     var tv = document.getElementById("secaoTv");
     if (tv) {
@@ -644,26 +786,18 @@
 
   function montarAbaTodos() {
     var list = document.getElementById("portalAbas");
-    if (!list || list.querySelector('[data-alvo="todos"]')) return;
-    var dash = list.querySelector('[data-alvo="secaoDashboards"]');
-    if (dash) dash.textContent = "Monitoramento e indicadores";
-    var tv = list.querySelector('[data-alvo="secaoTv"]');
-    if (tv) tv.textContent = "Painéis de TV";
-    var btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "portal-aba";
-    btn.setAttribute("role", "tab");
-    btn.setAttribute("data-alvo", "todos");
-    btn.setAttribute("aria-selected", "true");
-    btn.textContent = "Todos";
-    var ind = list.querySelector(".portal-aba-indicador");
-    if (ind && ind.nextSibling) list.insertBefore(btn, ind.nextSibling);
-    else list.insertBefore(btn, list.firstChild);
-    btn.addEventListener("click", mostrarTodos);
-    setTimeout(function () {
-      if (HASH_ALVO[(location.hash || "").replace(/^#/, "").toLowerCase()]) aplicarHash();
-      else mostrarTodos();
-    }, 0);
+    if (list) {
+      var dash = list.querySelector('[data-alvo="secaoDashboards"]');
+      if (dash) dash.textContent = "Indicadores";
+      var tv = list.querySelector('[data-alvo="secaoTv"]');
+      if (tv) tv.textContent = "Painéis de TV";
+    }
+    var chave = (location.hash || "").replace(/^#/, "").toLowerCase();
+    if (HASH_ALVO[chave]) aplicarHash();
+    else {
+      mostrarTodos();
+      gravarHash("inicio", "replace");
+    }
   }
 
   function lead() {
@@ -740,7 +874,9 @@
     montarPerformanceNoHeader();
     montarCommandStrip();
     organizarCatalogo();
+    prepararCardsCatalogo();
     montarAtalhos();
+    montarBuscaVazia();
     window.portalHomeSettings?.init();
     sincronizarAtalhos();
     montarAbaTodos();
@@ -811,13 +947,20 @@
     if (alvo === "todos") marcarNav("inicio");
     else if (alvo) marcarNav(alvo);
   });
-  document.getElementById("ciopBuscaModulos")?.addEventListener("input", filtrarOutros);
-  document.getElementById("ciopBuscaLimpar")?.addEventListener("click", function () { setTimeout(filtrarOutros, 0); });
+  function aposBusca() {
+    filtrarFavoritos();
+    filtrarOutros();
+    atualizarBuscaVazia();
+  }
+  document.getElementById("ciopBuscaModulos")?.addEventListener("input", aposBusca);
+  document.getElementById("ciopBuscaModulos")?.addEventListener("change", aposBusca);
+  document.getElementById("ciopBuscaLimpar")?.addEventListener("click", function () { setTimeout(aposBusca, 0); });
   document.addEventListener("keydown", function (event) {
     if (event.key !== "Escape") return;
     fecharMenu();
   });
   window.addEventListener("hashchange", aplicarHash);
+  window.addEventListener("popstate", aplicarHash);
   setTimeout(ola, 600);
   setTimeout(ola, 1600);
   setTimeout(atualizarCampanhaSide, 800);
