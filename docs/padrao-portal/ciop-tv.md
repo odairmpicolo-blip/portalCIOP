@@ -15,7 +15,7 @@ Margem do palco: `clamp(16px, 2vh, 28px)` na vertical e `clamp(28px, 2.6vw, 48px
 | Rodapé | Período dos indicadores, data/hora de Londrina e hora da última leitura. Sem lista de módulos e sem a palavra “ao vivo” para série histórica. |
 | Progresso | Uma barra de 3 px. É o tempo da tela, não a seleção do dia. |
 
-Capa e campanha em arte ocupam a tela inteira. O cabeçalho e o rodapé saem, porque a imagem já traz a marca e o texto. A barra de progresso continua.
+A capa ocupa a tela inteira: o cabeçalho e o rodapé saem, porque a arte já traz a marca. A barra de progresso continua. Clima e campanha ficam dentro das mesmas margens, com cabeçalho e rodapé visíveis.
 
 ## Tipografia
 
@@ -46,7 +46,7 @@ Os tempos abaixo não foram alterados nesta revisão.
 | Previsão | 10 s |
 | Campanha do mês | 10 s |
 
-O ciclo completo fica em torno de 1 min 58 s. `IPV_MS` e `ICV_MS` (30 s) alimentam a barra da tela. Quem avança o indicador é o passo do dia, não um segundo relógio. Os dias aparecem nomeados (`ter` + data) na base do card. A barra luminosa antiga de cada card foi retirada.
+O ciclo completo fica em torno de 1 min 58 s. `IPV_MS` e `ICV_MS` (30 s) alimentam a barra da tela. Quem avança o indicador é o passo do dia, não um segundo relógio. Os dias aparecem nomeados (`ter` + data) na base do card. Em cada card, uma barra cresce durante o dia exibido e recomeça no dia seguinte.
 
 ## Dados
 
@@ -64,16 +64,22 @@ Nada da fórmula mudou.
 
 ## Clima
 
-Ver também [clima-tv.md](clima-tv.md).
+Três faixas, sem uma fileira de cards. Ver também [clima-tv.md](clima-tv.md).
 
-- Temperatura e condição em destaque; cidade, mínima e máxima ao lado.
-- Oito horas alinhadas. Cada hora usa `is_day` da Open-Meteo. O “Agora” e o cenário usam nascer e pôr daquela data em `America/Sao_Paulo`, porque o `is_day` da hora ainda diz “dia” depois do pôr.
-- Oito dias numa escala térmica só. A faixa é temperatura. O percentual ao lado é chance de chuva, não volume.
-- Cards: vento, sensação, umidade, chance de chuva com o volume em mm na linha de baixo, sol e pressão (menor).
-- Depois do pôr, o card de sol passa a “Próximo nascer” com o horário e a data do dia seguinte.
-- Fonte: “Open-Meteo · Londrina · atualizado HH:MM”.
-- Sol pequeno no canto. Noite em azul profundo com lua genérica. Sem fase lunar calculada. Chuva, nuvem e trovoada não viram lua.
+- Agora: “Agora em Londrina”, temperatura em destaque, condição, sensação, mínima e máxima. A ilustração fica só no canto direito, com máscara, e não atravessa o texto.
+- Próximas horas: uma faixa. “Agora” tem fundo leve. O percentual da hora é chance de chuva. O ícone da hora usa o dia ou a noite daquele horário.
+- Abaixo: cerca de dois terços para os dias e um terço para vento, umidade, volume de chuva do dia e o próximo evento solar. Pressão fica numa linha menor, sem card.
+- Oito dias em 1080 px de altura; sete quando a altura é menor que 860 px, para não encolher a fonte. A escala térmica é a dos dias visíveis. O percentual da linha é chance; o detalhe “Chuva” é o volume em mm.
+- Ícone do dia é o da condição diurna. Noite não troca chuva, nuvem ou tempestade por lua.
+- Depois do pôr, o detalhe passa a “Nascer do sol” com “Amanhã HH:MM” e a data.
+- Rodapé: “Open-Meteo · atualizado às HH:MM” e a data/hora. Falha de leitura não zera os números: o rodapé marca “sem atualização”.
 
-## Capa e campanha
+## Campanha
 
-`object-fit: contain`, sem zoom que corte logo ou texto. A capa não repete o logo CIOP por cima da arte. Campanha mensal continua em `CAMPANHAS`, com `?mes=` para inspeção. Com `arte: true`, o texto e o logo sobrepostos ficam ocultos.
+A arte não é fundo de tela. O fundo continua o azul do painel. A cor da campanha (`cor` em `CAMPANHAS`) entra só no traço e num halo.
+
+- Proporção real da imagem, no carregamento: largura/altura a partir de 1,35 usa arte centralizada e legenda abaixo. Abaixo disso, arte à esquerda (cerca de 60%) e texto à direita.
+- `object-fit: contain`. Não estica e não corta texto, rosto ou marca.
+- Título é o `nome`. A mensagem é o `titulo` cadastrado, uma vez. Se for igual ao nome, não repete. `sub` e `causa` iguais ao título não entram de novo. Não se inventa texto.
+- Cabeçalho: “Campanha do mês”. Rodapé: “Comunicação institucional” e a data/hora. O logo do cabeçalho permanece; a arte não ganha um segundo logo por cima.
+- Troca mensal segue `CAMPANHAS` e `?mes=` para inspeção. As artes atuais são horizontais (cerca de 1859×846). Um arquivo mais estreito cai sozinho no layout de duas colunas.

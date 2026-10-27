@@ -21,9 +21,11 @@ Códigos de chuva, tempestade, neblina e neve **não** viram lua à noite. Só c
 
 Previsão diária usa ícone diurno representativo do dia.
 
+No Painel CIOP a cena não cobre o card: fica no canto superior direito, com máscara, sobre o azul do painel. A composição das três faixas está em [ciop-tv.md](ciop-tv.md).
+
 ## Cenário
 
-- Dia limpo: azul, sol pequeno à direita, sem raios girando.
+- Dia limpo: azul suave e sol pequeno, sem raios girando.
 - Noite limpa: índigo, lua discreta e estrelas estáticas.
 - Nublado/chuva/tempestade: nuvens; sem sol grande atrás dos números.
 - Animações contínuas desligadas no kiosk (`prefers-reduced-motion` também zera o restante).
