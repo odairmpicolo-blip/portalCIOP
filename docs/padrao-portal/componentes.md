@@ -48,7 +48,7 @@ Consultas (veículo/funcionário/SEI): campo da própria página + classes `.cv-
 
 ## Cards de módulos e favoritos
 
-Home: `a.card` (catálogo em linha compacta) e `.home-quick a` (atalhos / favoritos pessoais, até 6, gravados no diálogo de ajustes — `portal-home-settings.js`). Descrições dos favoritos são encurtadas no `refresh()`; títulos permanecem completos. Visibilidade: `data-modulo`, `data-perfis`, `data-usuarios`; `auth.js` aplica `.portal-card-visivel`.
+Home: `a.card` (catálogo compacto por área) e `.home-quick a` (somente os até 6 favoritos do usuário — `portal-home-settings.js`). Favoritos são cards maiores, com ícone destacado. O catálogo tem ícone à esquerda, título, descrição e seta. Áreas: **Operação**, **Monitoramento e indicadores**, **Relatórios**, **Painéis de TV**. Descrições dos favoritos são encurtadas no `refresh()`; títulos permanecem completos. Visibilidade: `data-modulo`, `data-perfis`, `data-usuarios`; `auth.js` aplica `.portal-card-visivel`.
 
 Não inventar card na home sem permissão.
 

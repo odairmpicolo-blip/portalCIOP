@@ -70,9 +70,9 @@
   }
 
   var TITULO_AREA = {
-    inicio: "Módulos da operação",
+    inicio: "",
     secaoOperacao: "Operação",
-    secaoDashboards: "Monitoramento",
+    secaoDashboards: "Monitoramento e indicadores",
     secaoRelatorios: "Relatórios",
     secaoTv: "Painéis de TV",
     outros: "Outros acessos"
@@ -141,9 +141,9 @@
       '<p class="home-nav-label">Áreas</p>' +
       '<button type="button" class="home-nav-btn is-active" data-home-nav="inicio">' + ICO.inicio + " Início</button>" +
       '<button type="button" class="home-nav-btn" data-home-nav="secaoOperacao">' + ICO.operacao + " Operação</button>" +
-      '<button type="button" class="home-nav-btn" data-home-nav="secaoDashboards">' + ICO.monitoramento + " Monitoramento</button>" +
+      '<button type="button" class="home-nav-btn" data-home-nav="secaoDashboards">' + ICO.monitoramento + " Indicadores</button>" +
       '<button type="button" class="home-nav-btn" data-home-nav="secaoRelatorios">' + ICO.relatorios + " Relatórios</button>" +
-      '<button type="button" class="home-nav-btn" data-home-nav="secaoTv">' + ICO.monitor + " TV</button>" +
+      '<button type="button" class="home-nav-btn" data-home-nav="secaoTv">' + ICO.monitor + " Painéis de TV</button>" +
       '<p class="home-nav-label">Conta</p>' +
       '<a class="home-nav-btn" data-home-nav="admin" data-modulo="gerenciar-usuarios" data-perfis="Administrador,Supervisor,Gerência,Gerencia,Secretária,Secretaria" href="pages/admin-usuarios.html">' +
       ICO.admin + " Administração</a>" +
@@ -558,6 +558,65 @@
     badge.removeAttribute("data-empty");
   }
 
+  function acharCardCatalogo(sel) {
+    if (sel.modulo) {
+      var byMod = document.querySelector('.card-section a.card[data-modulo="' + sel.modulo + '"]');
+      if (byMod && (!sel.href || (byMod.getAttribute("href") || "").indexOf(sel.href) !== -1)) return byMod;
+    }
+    if (!sel.href) return null;
+    return Array.prototype.find.call(document.querySelectorAll(".card-section a.card"), function (card) {
+      return (card.getAttribute("href") || "").indexOf(sel.href) !== -1;
+    });
+  }
+
+  function organizarCatalogo() {
+    var grupos = {
+      secaoDashboards: [
+        { modulo: "itinerarios" },
+        { modulo: "onibus-agora" },
+        { modulo: "monitoramento" },
+        { modulo: "onibus-agora-clever" },
+        { modulo: "fleetbus-agora" },
+        { modulo: "pontos-controle" },
+        { href: "pages/consumo-diario" },
+        { href: "pages/incidentes-dashboard.html" },
+        { href: "pages/incidentes-cad.html" },
+        { modulo: "dados-telemetria" },
+        { modulo: "desempenho-motoristas" }
+      ],
+      secaoRelatorios: [
+        { modulo: "criar-relatorio" },
+        { href: "pages/consulta-veiculo.html" },
+        { href: "pages/consulta-funcionario.html" },
+        { modulo: "consulta-decreto" }
+      ]
+    };
+    Object.keys(grupos).forEach(function (destId) {
+      var dest = document.querySelector("#" + destId + " .card-section-corpo");
+      if (!dest) return;
+      grupos[destId].forEach(function (sel) {
+        var card = acharCardCatalogo(sel);
+        if (card) dest.appendChild(card);
+      });
+    });
+    var dash = document.getElementById("secaoDashboards");
+    if (dash) {
+      dash.setAttribute("aria-label", "Monitoramento e indicadores");
+      var t = dash.querySelector(".card-section-title");
+      if (t) t.textContent = "Monitoramento e indicadores";
+      var btn = dash.querySelector(".card-section-toggle");
+      if (btn) btn.setAttribute("aria-label", "Abrir ou fechar Monitoramento e indicadores");
+    }
+    var tv = document.getElementById("secaoTv");
+    if (tv) {
+      tv.setAttribute("aria-label", "Painéis de TV");
+      var tvTitle = tv.querySelector(".card-section-title");
+      if (tvTitle) tvTitle.textContent = "Painéis de TV";
+      var tvBtn = tv.querySelector(".card-section-toggle");
+      if (tvBtn) tvBtn.setAttribute("aria-label", "Abrir ou fechar Painéis de TV");
+    }
+  }
+
   function montarAtalhos() {
     if (document.getElementById("homeQuick")) return;
     var abas = document.getElementById("portalAbas");
@@ -566,13 +625,8 @@
     wrap.className = "home-modules-overview";
     wrap.innerHTML =
       '<div class="home-quick-head"><h2>Acessos rápidos</h2></div>' +
-      '<section class="home-quick" id="homeQuick">' +
-      '<a href="pages/monitoramento.html">' + ICO.monitor + "<strong>Monitoramento</strong><span>Operação ao vivo</span></a>" +
-      '<a href="pages/Folhadeservico1.html">' + ICO.servico + "<strong>Lançar serviço</strong><span>Novo lançamento</span></a>" +
-      '<a href="pages/liberacao-lancamento.html">' + ICO.liberacao + "<strong>Liberação</strong><span>Fila de liberações</span></a>" +
-      '<a href="pages/criar-relatorio.html">' + ICO.relatorio + "<strong>Criar relatório</strong><span>Novo relatório</span></a>" +
-      "</section>" +
-      '<div class="home-mods-head"><h2>Módulos da operação</h2></div>';
+      '<section class="home-quick" id="homeQuick" aria-label="Acessos rápidos"></section>' +
+      '<div class="home-mods-head"><h2></h2></div>';
     abas.parentNode.insertBefore(wrap, abas);
     wrap.querySelector(".home-mods-head").appendChild(abas);
   }
@@ -592,7 +646,7 @@
     var list = document.getElementById("portalAbas");
     if (!list || list.querySelector('[data-alvo="todos"]')) return;
     var dash = list.querySelector('[data-alvo="secaoDashboards"]');
-    if (dash) dash.textContent = "Monitoramento";
+    if (dash) dash.textContent = "Monitoramento e indicadores";
     var tv = list.querySelector('[data-alvo="secaoTv"]');
     if (tv) tv.textContent = "Painéis de TV";
     var btn = document.createElement("button");
@@ -685,6 +739,7 @@
     montarIndicadoresNoHeader();
     montarPerformanceNoHeader();
     montarCommandStrip();
+    organizarCatalogo();
     montarAtalhos();
     window.portalHomeSettings?.init();
     sincronizarAtalhos();

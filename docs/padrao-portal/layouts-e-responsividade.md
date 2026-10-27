@@ -19,8 +19,9 @@ Breakpoints **efetivos** no CSS atual (não inventar uma escala nova). Conferên
 - Padding do `body`: `20px 20px 40px calc(var(--home-side) + 36px)`.
 - `--home-side`: **204 px** (~15% abaixo de 240); **184 px** em `max-width: 1200px`.
 - `.home-sheet`: painel translúcido (vidro esbranquiçado no claro, fumê no escuro) sobre a foto suavizada. Cards em vidro fosco por cima.
-- Grid de módulos (catálogo): **linhas compactas** 2 colunas; 3 col ≥1600; 1 col ≤900. Ícone 20 px, seta afastada (`right: 12px`), min-height 58 px — distinto dos favoritos.
-- Atalhos (6 favoritos): **3 colunas** por padrão; **6** ≥1400 px; **2** ≤899 px; **1** ≤419 px. Títulos completos; descrições curtas sem reticências.
+- Grid de módulos (catálogo): **linhas compactas** 2 colunas; 3 col ≥1600; 1 col ≤560. Ícone ~18 px à esquerda, seta, altura automática (sem corte de texto). Gap **18 px** no desktop, **12 px** ≤900, **10 px** no celular.
+- Atalhos (só os 6 favoritos): cards **maiores**; **3 colunas** por padrão; **6** ≥1600 px; **2** ≤900 px; **1** ≤560 px. Títulos completos; descrições curtas.
+- Seções do catálogo com título visível e **28–32 px** entre grupos (20 px ≤900, 16 px no celular). Cada card tem superfície e borda próprias; a seção não é um vidro único.
 - Ícones ICV (prancheta + visto) e Incidentes CAD (lista com pontos) — não reutilizar o gráfico de barras.
 - Sequência: busca/conta → saudação + resumo → painel unificado (performance + hora + clima) → aviso → acessos rápidos → módulos.
 - Hero: saudação e subtítulo **no painel** (sem card próprio). Contagens em texto compacto abaixo da saudação. Um único `.home-ops` de vidro com três regiões (~50% performance, ~22% hora/data, ~28% clima). Sem cards internos; só divisórias. Performance e previsão são links separados. ≤1100 px: performance na primeira linha, hora e clima na segunda. ≤560 px: uma coluna, sem rolagem horizontal. Acessos rápidos: 3 colunas (6 só ≥1800 px).
