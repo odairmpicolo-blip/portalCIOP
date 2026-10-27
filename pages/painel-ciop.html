@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;600;700;800;900&display=swap">
-<link rel="stylesheet" href="../assets/css/portal-clima-anim.css?v=20261027wx5">
-<script src="../assets/js/portal-clima-cena.js?v=20261027wx4"></script>
+<link rel="stylesheet" href="../assets/css/portal-clima-anim.css?v=20261026wx1">
+<script src="../assets/js/portal-clima-cena.js?v=20261027wx3"></script>
 <style>
   :root{
     --bg-1:#04060f;
@@ -307,7 +307,7 @@
     border:1px solid rgba(255,255,255,.14);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.16), 0 24px 50px rgba(0,0,0,.28);
     display:grid;
-    grid-template-rows:auto auto auto minmax(0,1fr);
+    grid-template-rows:auto auto minmax(0,1fr);
     gap:clamp(10px,1.2vh,14px);
     position:relative; overflow:hidden;
   }
@@ -321,12 +321,10 @@
     box-shadow:inset 0 1px 0 rgba(255,255,255,.2);
   }
   .wx-hero{
-    display:flex; flex-direction:row; align-items:center; justify-content:flex-start;
+    display:flex; flex-direction:row; align-items:baseline; justify-content:flex-start;
     gap:clamp(12px,1.6vw,28px); flex-wrap:wrap;
     text-align:left; position:relative; z-index:1;
-    min-width:0;
-    min-height:clamp(132px,16vh,164px);
-    padding:0 clamp(200px,22vw,260px) 0 clamp(8px,1vw,18px);
+    min-width:0; padding:0 clamp(8px,1vw,18px);
     text-shadow:0 6px 20px rgba(0,0,0,.4);
   }
   .wx-city{
@@ -366,17 +364,24 @@
   }
   .wx-hour.is-sunset .wx-hour-temp{ font-size:clamp(12px,1.05vw,15px); font-weight:700; white-space:nowrap; }
   .wx-sunset-mark{ font-size:clamp(22px,2.1vw,30px); line-height:1; }
-  .wx-stats{
+  .wx-body{
     display:grid;
-    grid-template-columns:repeat(6, minmax(0, 1fr));
-    gap:clamp(8px,.8vw,12px);
-    position:relative; z-index:1; min-width:0;
+    grid-template-columns:minmax(240px,.82fr) minmax(0,1.35fr) minmax(280px,.95fr);
+    gap:clamp(10px,1.1vw,14px);
+    min-height:0; position:relative; z-index:1;
+  }
+  .wx-col{
+    display:grid; grid-template-rows:minmax(0,1.15fr) minmax(0,.85fr);
+    gap:clamp(8px,1vw,12px); min-height:0;
+  }
+  .wx-col-quad{
+    display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr;
+    gap:clamp(8px,1vw,12px); min-height:0;
   }
   .wx-mini{
-    padding:clamp(10px,1.1vh,14px) clamp(12px,1.2vw,16px);
-    display:flex; flex-direction:column; justify-content:center; gap:4px; min-width:0; min-height:0;
+    padding:clamp(12px,1.4vh,18px) clamp(12px,1.3vw,18px);
+    display:flex; flex-direction:column; justify-content:space-between; gap:6px; min-width:0; min-height:0;
   }
-  .wx-stats .wx-chip-value{ font-size:clamp(22px,2vw,34px); }
   .wx-chip-label{
     font-size:clamp(13px,1.15vw,16px); color:rgba(255,255,255,.8); text-transform:uppercase;
     letter-spacing:.1em; font-weight:700;
@@ -389,7 +394,7 @@
   .wx-wind-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:0; }
   .wx-compass{
     position:relative; flex:0 0 auto;
-    width:clamp(56px,4.6vw,72px); height:clamp(56px,4.6vw,72px);
+    width:clamp(78px,7.4vw,108px); height:clamp(78px,7.4vw,108px);
     border-radius:50%; border:1px solid rgba(255,255,255,.22);
     background:radial-gradient(circle at 50% 50%, rgba(255,255,255,.08), transparent 62%);
   }
@@ -414,16 +419,16 @@
   }
   .wx-days{ display:flex; flex-direction:column; flex:1 1 auto; min-height:0; justify-content:space-between; }
   .wx-day{
-    display:grid; grid-template-columns:5.2rem 2rem 3.4rem 2.8rem minmax(80px,1fr) 3.2rem;
-    align-items:center; gap:12px; min-height:0;
-    padding:1px 0;
+    display:grid; grid-template-columns:4.6rem 2rem 3.2rem 2.8rem minmax(64px,1fr) 3rem;
+    align-items:center; gap:10px; min-height:0;
+    padding:clamp(4px,.55vh,8px) 0;
   }
   .wx-day + .wx-day{ border-top:1px solid rgba(255,255,255,.1); }
-  .wx-day-name{ font-size:clamp(16px,1.4vw,22px); font-weight:600; color:#fff; line-height:1.1; }
+  .wx-day-name{ font-size:clamp(18px,1.6vw,24px); font-weight:600; color:#fff; }
   .wx-day-icon.tv-wx, .wx-day .tv-wx{ font-size:clamp(22px,2vw,28px); }
   .wx-day-rain{ font-size:clamp(15px,1.3vw,20px); font-weight:700; color:#7dd3fc; }
   .wx-day-min, .wx-day-max{
-    font-size:clamp(16px,1.4vw,22px); font-weight:600; font-variant-numeric:tabular-nums; line-height:1.1;
+    font-size:clamp(18px,1.6vw,24px); font-weight:600; font-variant-numeric:tabular-nums;
   }
   .wx-day-min{ color:rgba(255,255,255,.84); text-align:right; }
   .wx-day-max{ color:#fff; text-align:right; }
@@ -436,9 +441,10 @@
   }
   @media (max-aspect-ratio: 4/3){
     .wx{ display:flex; flex-direction:column; }
-    .wx-hero{ flex-direction:column; align-items:flex-start; gap:2px; min-height:120px; padding-right:140px; }
+    .wx-hero{ flex-direction:column; align-items:center; gap:2px; }
     .wx-temp{ font-size:clamp(64px,14vw,96px); }
-    .wx-stats{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
+    .wx-body{ grid-template-columns:1fr; flex:1; }
+    .wx-col, .wx-col-quad{ display:grid; grid-template-columns:1fr 1fr; grid-template-rows:auto; }
     .wx-day{ grid-template-columns:3.4rem 1.4rem 2.2rem 2rem minmax(40px,1fr) 2.2rem; }
   }
 
@@ -833,42 +839,42 @@
           <div class="wx-card-head">Condições</div>
           <div class="wx-hours" id="wxHoras"></div>
         </div>
-        <div class="wx-stats">
-          <div class="wx-glass wx-mini">
-            <span class="wx-chip-label">Vento</span>
-            <div class="wx-wind-row">
-              <div>
-                <div class="wx-chip-value" id="wxVento">-- km/h</div>
-                <div class="wx-chip-sub" id="wxRajada">Rajadas --</div>
-                <div class="wx-chip-sub" id="wxDir">--</div>
-              </div>
-              <div class="wx-compass" aria-hidden="true">
-                <span class="n">N</span><span class="l">L</span><span class="s">S</span><span class="o">O</span>
-                <i id="wxAgulha"></i>
+        <div class="wx-body">
+          <div class="wx-col">
+            <div class="wx-glass wx-mini">
+              <span class="wx-chip-label">Vento</span>
+              <div class="wx-wind-row">
+                <div>
+                  <div class="wx-chip-value" id="wxVento">-- km/h</div>
+                  <div class="wx-chip-sub" id="wxRajada">Rajadas --</div>
+                  <div class="wx-chip-sub" id="wxDir">--</div>
+                </div>
+                <div class="wx-compass" aria-hidden="true">
+                  <span class="n">N</span><span class="l">L</span><span class="s">S</span><span class="o">O</span>
+                  <i id="wxAgulha"></i>
+                </div>
               </div>
             </div>
+            <div class="wx-glass wx-mini">
+              <span class="wx-chip-label">Pôr do sol</span>
+              <span class="wx-chip-value" id="wxPorSol">--:--</span>
+              <span class="wx-chip-sub" id="wxNascer">Nascer --:--</span>
+            </div>
           </div>
-          <div class="wx-glass wx-mini">
-            <span class="wx-chip-label">Pôr do sol</span>
-            <span class="wx-chip-value" id="wxPorSol">--:--</span>
-            <span class="wx-chip-sub" id="wxNascer">Nascer --:--</span>
+          <div class="wx-glass wx-days-card">
+            <div class="wx-card-head">Previsão de 8 dias</div>
+            <div class="wx-days" id="wxDias"></div>
           </div>
-          <div class="wx-glass wx-mini"><span class="wx-chip-label">Sensação</span><span class="wx-chip-value" id="wxSens">--°</span></div>
-          <div class="wx-glass wx-mini"><span class="wx-chip-label">Umidade</span><span class="wx-chip-value" id="wxUmi">--%</span></div>
-          <div class="wx-glass wx-mini">
-            <span class="wx-chip-label">Chuva</span>
-            <span class="wx-chip-value" id="wxChuva">--%</span>
-            <span class="wx-chip-sub" id="wxChuvaMm">-- mm hoje</span>
+          <div class="wx-col-quad">
+            <div class="wx-glass wx-mini"><span class="wx-chip-label">Sensação</span><span class="wx-chip-value" id="wxSens">--°</span></div>
+            <div class="wx-glass wx-mini"><span class="wx-chip-label">Umidade</span><span class="wx-chip-value" id="wxUmi">--%</span></div>
+            <div class="wx-glass wx-mini">
+              <span class="wx-chip-label">Chuva</span>
+              <span class="wx-chip-value" id="wxChuva">--%</span>
+              <span class="wx-chip-sub" id="wxChuvaMm">-- mm hoje</span>
+            </div>
+            <div class="wx-glass wx-mini"><span class="wx-chip-label">Pressão</span><span class="wx-chip-value" id="wxPressao">--</span></div>
           </div>
-          <div class="wx-glass wx-mini">
-            <span class="wx-chip-label">Pressão</span>
-            <span class="wx-chip-value" id="wxPressao">--</span>
-            <span class="wx-chip-sub">hPa</span>
-          </div>
-        </div>
-        <div class="wx-glass wx-days-card">
-          <div class="wx-card-head">Previsão de 8 dias</div>
-          <div class="wx-days" id="wxDias"></div>
         </div>
       </div>
     </section>

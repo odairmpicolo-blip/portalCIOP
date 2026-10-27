@@ -98,77 +98,14 @@
   function svgSun() {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><g class="wx-sun-rays"><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g><circle class="wx-sun-core" cx="12" cy="12" r="4" fill="rgba(250,204,21,.4)"/></svg>';
   }
-  var luaSeq = 0;
-
-  /* 0 = nova, 0.5 = cheia. Âncora no novilúnio de 6 jan 2000, 18:14 UTC. */
-  function faseDaLua(ms) {
-    var synodic = 29.530588853;
-    var days = ((ms == null ? Date.now() : ms) - Date.UTC(2000, 0, 6, 18, 14)) / 86400000;
-    var age = days % synodic;
-    if (age < 0) age += synodic;
-    return age / synodic;
-  }
-
-  /* Londrina vê o espelho do hemisfério norte: crescente é um C, minguante é um D. */
-  function caminhoLua(phase, cx, cy, r) {
-    var p = ((Number(phase) % 1) + 1) % 1;
-    if (p < 0.004 || p > 0.996) return "";
-    if (p > 0.496 && p < 0.504) {
-      return "M " + cx + " " + (cy - r) + " A " + r + " " + r + " 0 1 1 " + (cx - 0.01) + " " + (cy - r) + " Z";
-    }
-    var mag = Math.cos(p * Math.PI * 2);
-    var rx = Math.max(Math.abs(mag) * r, 0.35);
-    var direita = !(p < 0.5);
-    var outer = direita ? 1 : 0;
-    var term = (mag > 0) === direita ? 0 : 1;
-    return "M " + cx + " " + (cy - r) +
-      " A " + r + " " + r + " 0 0 " + outer + " " + cx + " " + (cy + r) +
-      " A " + rx + " " + r + " 0 0 " + term + " " + cx + " " + (cy - r) + " Z";
-  }
-
-  function svgLua(phase, grande) {
-    var p = ((Number(phase) % 1) + 1) % 1;
-    var id = "luaF" + (luaSeq += 1);
-    var d = caminhoLua(p, 50, 50, 46);
-    var luz = d
-      ? '<path d="' + d + '" fill="url(#' + id + ')" clip-path="url(#' + id + 'c)"/>'
-      : "";
-    var crateras = grande
-      ? '<g clip-path="url(#' + id + 'c)" opacity=".55">' +
-        '<circle cx="38" cy="42" r="7" fill="rgba(100,116,139,.35)"/>' +
-        '<circle cx="58" cy="36" r="4.2" fill="rgba(100,116,139,.28)"/>' +
-        '<circle cx="46" cy="62" r="5" fill="rgba(100,116,139,.3)"/>' +
-        '<circle cx="64" cy="58" r="3.2" fill="rgba(148,163,184,.35)"/>' +
-        "</g>"
-      : "";
-    return (
-      '<svg class="wx-moon-svg" viewBox="0 0 100 100" aria-hidden="true">' +
-      "<defs>" +
-      '<radialGradient id="' + id + '" cx="36%" cy="32%" r="70%">' +
-      '<stop offset="0%" stop-color="#fffdf6"/>' +
-      '<stop offset="48%" stop-color="#e8eef6"/>' +
-      '<stop offset="100%" stop-color="#b7c3d4"/>' +
-      "</radialGradient>" +
-      '<clipPath id="' + id + 'c"><circle cx="50" cy="50" r="46"/></clipPath>' +
-      "</defs>" +
-      '<circle cx="50" cy="50" r="46" fill="rgba(148,163,184,.16)"/>' +
-      luz +
-      crateras +
-      '<circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,.42)" stroke-width="1.2"/>' +
-      "</svg>"
-    );
-  }
-
   function svgMoon() {
-    return svgLua(faseDaLua(), false);
+    return '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path class="wx-moon" d="M15.2 3.2a7.6 7.6 0 1 0 5.6 11.4A8.2 8.2 0 0 1 15.2 3.2z" fill="rgba(226,232,240,.92)" stroke="#e2e8f0" stroke-width="1.2"/></svg>';
   }
   function svgPartlyDay() {
     return '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle class="wx-sun-core" cx="9" cy="9" r="3.2" fill="rgba(250,204,21,.45)" stroke="#facc15" stroke-width="1.6"/><path class="wx-cloud" d="M8 18h9.2a3.4 3.4 0 0 0 0-6.8 5.2 5.2 0 0 0-9.6-1.1A3 3 0 0 0 8 18z" fill="rgba(186,230,253,.22)" stroke="#e2e8f0" stroke-width="1.6"/></svg>';
   }
   function svgPartlyNight() {
-    var d = caminhoLua(faseDaLua(), 8.2, 7.2, 4.6);
-    var luz = d ? '<path d="' + d + '" fill="#e8eef6"/>' : "";
-    return '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8.2" cy="7.2" r="4.6" fill="rgba(148,163,184,.2)"/>' + luz + '<path class="wx-cloud" d="M8 18h9.2a3.4 3.4 0 0 0 0-6.8 5.2 5.2 0 0 0-9.6-1.1A3 3 0 0 0 8 18z" fill="rgba(186,230,253,.22)" stroke="#e2e8f0" stroke-width="1.6"/></svg>';
+    return '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="wx-moon" d="M9.2 4.2a5.4 5.4 0 1 0 4.2 8.6A6 6 0 0 1 9.2 4.2z" fill="rgba(226,232,240,.9)" stroke="#e2e8f0" stroke-width="1.1"/><path class="wx-cloud" d="M8 18h9.2a3.4 3.4 0 0 0 0-6.8 5.2 5.2 0 0 0-9.6-1.1A3 3 0 0 0 8 18z" fill="rgba(186,230,253,.22)" stroke="#e2e8f0" stroke-width="1.6"/></svg>';
   }
   function svgCloud() {
     return '<svg viewBox="0 0 24 24" fill="rgba(186,230,253,.2)" stroke="#7dd3fc" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="wx-cloud" d="M7 18h10a4 4 0 0 0 0-8 6 6 0 0 0-11.3-1.5A3.5 3.5 0 0 0 7 18z"/></svg>';
@@ -225,14 +162,14 @@
   }
 
   function estrelas() {
-    return '<div class="wx-stars" aria-hidden="true"></div><div class="wx-milky" aria-hidden="true"></div>';
+    return '<div class="wx-stars" aria-hidden="true"></div>';
   }
 
   function cenaHtml(grupo, isDay) {
     var noite = isDay === false;
     if (grupo === "sun") {
       if (noite) {
-        return '<div class="wx-sky"></div>' + estrelas() + '<div class="wx-moon-disc">' + svgLua(faseDaLua(), true) + '</div><div class="wx-haze"></div>';
+        return '<div class="wx-sky"></div>' + estrelas() + '<div class="wx-moon-disc"></div><div class="wx-haze"></div>';
       }
       return '<div class="wx-sky"></div><div class="wx-sun"></div><div class="wx-haze"></div>';
     }
@@ -241,7 +178,7 @@
         return (
           '<div class="wx-sky"></div>' +
           estrelas() +
-          '<div class="wx-moon-disc is-soft">' + svgLua(faseDaLua(), true) + '</div>' +
+          '<div class="wx-moon-disc is-soft"></div>' +
           '<div class="wx-cloud-mass c1"></div>' +
           '<div class="wx-cloud-mass c2"></div>' +
           '<div class="wx-haze"></div>'
