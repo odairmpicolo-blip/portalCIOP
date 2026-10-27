@@ -413,53 +413,18 @@
   }
   .wx-fonte{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
 
-  /* ===== Campanha — arte enquadrada, fundo do painel ===== */
+  /* ===== Campanha — arte grande, cantos arredondados, sem legenda ===== */
   .campanha{
     --campanha-cor:#e11d73;
+    --campanha-fundo:#140810;
     height:100%; min-height:0; overflow:hidden;
-    background:transparent; border:none; border-radius:0;
-    display:grid; align-items:center;
+    border-radius:32px;
+    background:var(--campanha-fundo);
   }
-  .campanha.is-vertical{
-    grid-template-columns:minmax(0,1.45fr) minmax(280px,.9fr);
-    gap:clamp(24px,3vw,56px);
-  }
-  .campanha.is-horizontal{
-    grid-template-rows:minmax(0,1fr) auto;
-    justify-items:center; align-content:center;
-    gap:clamp(16px,2.2vh,28px);
-  }
-  .campanha-arte{
-    margin:0; min-width:0; min-height:0; height:100%; width:100%;
-    display:flex; align-items:center; justify-content:center;
-    border-radius:20px;
-    background:rgba(255,255,255,.03);
-    box-shadow:0 0 72px color-mix(in srgb, var(--campanha-cor) 18%, transparent);
-  }
-  .campanha.is-horizontal .campanha-arte{
-    width:min(100%, 1280px); max-height:100%;
-  }
-  .campanha.is-horizontal .campanha-copy{ width:min(100%, 1280px); }
-  .campanha-arte img{
-    display:block; max-width:100%; max-height:100%; width:auto; height:auto;
+  .campanha img{
+    display:block; width:100%; height:100%;
     object-fit:contain; object-position:center;
   }
-  .campanha-copy{ min-width:0; text-align:left; }
-  .campanha-traco{
-    width:48px; height:4px; border-radius:99px; margin-bottom:16px;
-    background:var(--campanha-cor);
-  }
-  .campanha-kicker{ display:none; }
-  .campanha-copy h2{
-    margin:0; color:#f3f7fc; font-weight:750; letter-spacing:-.03em; line-height:1.05;
-  }
-  .campanha.is-vertical .campanha-copy h2{ font-size:clamp(48px,3.8vw,80px); max-width:12ch; }
-  .campanha.is-horizontal .campanha-copy h2{ font-size:clamp(32px,2.6vw,52px); }
-  .campanha-copy p{
-    margin:12px 0 0; max-width:28ch; color:#d5e0f2; font-weight:600;
-    font-size:clamp(24px,1.7vw,36px); line-height:1.35;
-  }
-  .campanha-copy p:empty{ display:none; }
 
   /* ===== Capa CIOP ===== */
   .scene{ position:relative; width:100%; height:100%; overflow:hidden; background:#020617; }
@@ -795,16 +760,8 @@
     </section>
 
     <section class="slide" id="slide-campanha">
-      <div class="campanha is-horizontal" id="campanhaScene">
-        <figure class="campanha-arte">
-          <img id="campanhaImg" alt="">
-        </figure>
-        <div class="campanha-copy">
-          <div class="campanha-traco" aria-hidden="true"></div>
-          <p class="campanha-kicker">Campanha do mês</p>
-          <h2 id="campanhaNome">Campanha</h2>
-          <p id="campanhaTexto"></p>
-        </div>
+      <div class="campanha" id="campanhaScene">
+        <img id="campanhaImg" alt="">
       </div>
     </section>
 
@@ -1477,35 +1434,14 @@ function campanhaDoMes() {
   return CAMPANHAS[idx];
 }
 
-function mensagemCampanha(c, horizontal) {
-  const nome = (c.nome || "").trim();
-  const titulo = (c.titulo || "").trim();
-  const causa = (c.causa || "").trim();
-  const igual = (a, b) => a.toLowerCase() === b.toLowerCase();
-  if (titulo && !igual(titulo, nome)) return titulo;
-  if (!horizontal && causa && !igual(causa, nome)) return causa;
-  return "";
-}
-function enquadrarCampanha() {
-  const img = document.getElementById("campanhaImg");
-  const scene = document.getElementById("campanhaScene");
-  if (!img || !scene || !img.naturalWidth) return;
-  const horizontal = img.naturalWidth / img.naturalHeight >= 1.35;
-  scene.classList.toggle("is-horizontal", horizontal);
-  scene.classList.toggle("is-vertical", !horizontal);
-  document.getElementById("campanhaTexto").textContent = mensagemCampanha(campanhaDoMes(), horizontal);
-}
 function aplicarCampanha() {
   const c = campanhaDoMes();
   const img = document.getElementById("campanhaImg");
   const scene = document.getElementById("campanhaScene");
   img.alt = c.nome;
-  document.getElementById("campanhaNome").textContent = c.nome;
-  document.getElementById("campanhaTexto").textContent = mensagemCampanha(c, scene.classList.contains("is-horizontal"));
   scene.style.setProperty("--campanha-cor", c.cor);
-  img.onload = enquadrarCampanha;
+  scene.style.setProperty("--campanha-fundo", c.fundo || c.cor);
   img.src = c.img;
-  if (img.complete && img.naturalWidth) enquadrarCampanha();
 }
 
 let SEMANA = { de: "", ate: "" };

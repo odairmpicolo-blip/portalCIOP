@@ -76,10 +76,7 @@ Três faixas, sem uma fileira de cards. Ver também [clima-tv.md](clima-tv.md).
 
 ## Campanha
 
-A arte não é fundo de tela. O fundo continua o azul do painel. A cor da campanha (`cor` em `CAMPANHAS`) entra só no traço e num halo.
+A arte ocupa o painel, com cantos arredondados (32 px) e `object-fit: contain`. Não estica e não corta texto, rosto ou marca. Não há legenda por baixo da imagem: o texto já está na arte.
 
-- Proporção real da imagem, no carregamento: largura/altura a partir de 1,35 usa arte centralizada e legenda abaixo. Abaixo disso, arte à esquerda (cerca de 60%) e texto à direita.
-- `object-fit: contain`. Não estica e não corta texto, rosto ou marca.
-- Título é o `nome`. A mensagem é o `titulo` cadastrado, uma vez. Se for igual ao nome, não repete. `sub` e `causa` iguais ao título não entram de novo. Não se inventa texto.
 - Cabeçalho: “Campanha do mês”. Rodapé: “Comunicação institucional” e a data/hora. O logo do cabeçalho permanece; a arte não ganha um segundo logo por cima.
-- Troca mensal segue `CAMPANHAS` e `?mes=` para inspeção. As artes atuais são horizontais (cerca de 1859×846). Um arquivo mais estreito cai sozinho no layout de duas colunas.
+- Troca mensal segue `CAMPANHAS` e `?mes=` para inspeção. As artes atuais são horizontais (cerca de 1859×846). O fundo do card usa `fundo` da campanha, para a sobra acompanhar a arte.
