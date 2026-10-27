@@ -11,8 +11,10 @@ import { intervaloDatas } from "../lib/validar.js";
  *                        Todas as colunas de negócio são TEXT.
  *   cr_0108_cargas       controle de carga por dia (data_ref, status, linhas). Minúscula,
  *                        e por isso é dela que sai o /meta — contar 2,3 mi levaria 30 s.
- *   cr_custom            ICV e IPV por dia.
- *   cr_custom_ontime     IPV detalhado por dia.
+ *   cr_custom            ICV e IPV por dia (TCGL).
+ *   cr_custom_ontime     IPV −2/+6 por dia (TCGL).
+ *   cr_custom_ldsul      ICV por dia (LondriSul).
+ *   cr_custom_ldsul_ontime  IPV −2/+6 por dia (LondriSul).
  *
  * A coluna `diferenca` vem como hora com sinal ("-00:09", "00:00", "00:11"), então
  * precisa virar minutos antes de qualquer conta. A conversão abaixo foi validada
@@ -473,9 +475,10 @@ router.get("/icv", requireFirebaseUser, async (req, res) => {
 });
 
 /* Medições distintas de pontualidade, cada uma na sua tabela:
-     2/6 (padrão)      cr_custom_ontime — 213 dias, IPV na casa dos 92%
-     1/3 TCGL          cr_0258          — 44 dias (01/06 a 15/07), IPV na casa dos 80%
-     1/3 LondriSul     cr_0258_ldsul    — mesma régua −1/+3, dias ainda em carga
+     2/6 (padrão)      cr_custom_ontime       — TCGL, régua −2/+6
+     2/6 LondriSul     cr_custom_ldsul_ontime — mesma régua −2/+6
+     1/3 TCGL          cr_0258                — régua −1/+3
+     1/3 LondriSul     cr_0258_ldsul          — mesma régua −1/+3
    Elas NÃO se somam nem se misturam: medem coisas diferentes e uma média entre as
    duas produziria um número sem significado. O parâmetro fonte escolhe qual ler, e a
    resposta usa os mesmos nomes de campo nos dois casos para a página não traduzir.
@@ -485,6 +488,9 @@ const FONTES_IPV = {
   "2-6": { tabela: "cr_custom_ontime",
            ipv: "ipv_actual", adiantado: "adiantado", atrasado: "atrasado",
            pontos: "pontos_de_controle_processados" },
+  "2-6-ldsul": { tabela: "cr_custom_ldsul_ontime",
+                 ipv: "ipv_actual", adiantado: "adiantado", atrasado: "atrasado",
+                 pontos: "pontos_de_controle_processados" },
   "1-3": { tabela: "cr_0258",
            ipv: "on_time", adiantado: "early", atrasado: "late",
            pontos: "timepoints_processed" },
@@ -493,6 +499,8 @@ const FONTES_IPV = {
                  ipv: "on_time", adiantado: "early", atrasado: "late",
                  pontos: "timepoints_processed" }
 };
+
+const FONTE_IPV_ERRO = "fonte inválida (use 2-6, 2-6-ldsul, 1-3 ou 1-3-ldsul)";
 
 const TOKEN_IPV_SHARE = process.env.IPV_SHARE_TOKEN || "IPV@2026";
 
@@ -504,7 +512,7 @@ async function consultarIpv(req) {
   const chave = String(req.query.fonte || "2-6");
   const f = FONTES_IPV[chave];
   if (!f) {
-    const err = new Error("fonte inválida (use 2-6, 1-3 ou 1-3-ldsul)");
+    const err = new Error(FONTE_IPV_ERRO);
     err.status = 400;
     throw err;
   }
@@ -549,7 +557,21 @@ router.get("/share/ipv", async (req, res) => {
   }
 });
 
+/* Cumprimento de viagem. Sem fonte, continua em cr_custom (TCGL).
+   fonte=ldsul lê cr_custom_ldsul, a mesma estrutura de colunas. */
+const FONTES_ICV = {
+  tcgl: "cr_custom",
+  ldsul: "cr_custom_ldsul"
+};
+
 async function consultarIcv(req) {
+  const chave = String(req.query.fonte || "tcgl");
+  const tabela = FONTES_ICV[chave];
+  if (!tabela) {
+    const err = new Error("fonte inválida (use tcgl ou ldsul)");
+    err.status = 400;
+    throw err;
+  }
   const cond = [];
   const par = [];
   for (const [campo, sql] of [["de", "data_ref >= ?::date"], ["ate", "data_ref <= ?::date"]]) {
@@ -563,7 +585,7 @@ async function consultarIcv(req) {
             ${numero("icv")}             AS icv,
             ${numero("scheduled_trips")} AS "scheduled_trips",
             ${numero("trips")}           AS trips
-     FROM cr_custom ${cond.length ? `WHERE ${cond.join(" AND ")}` : ""}
+     FROM ${tabela} ${cond.length ? `WHERE ${cond.join(" AND ")}` : ""}
      ORDER BY data_ref`,
     par
   );
@@ -573,7 +595,7 @@ async function consultarIcv(req) {
     scheduled_trips: x.scheduled_trips == null ? null : Number(x.scheduled_trips),
     trips: x.trips == null ? null : Number(x.trips)
   }));
-  return { dias };
+  return { fonte: chave, dias };
 }
 
 router.get("/share/icv", async (req, res) => {
@@ -584,9 +606,13 @@ router.get("/share/icv", async (req, res) => {
     return;
   }
   try {
-    const { dias } = await consultarIcv(req);
-    res.json({ ok: true, indicador: "ICV", origem: "dsql", dias });
+    const { fonte, dias } = await consultarIcv(req);
+    res.json({ ok: true, indicador: "ICV", origem: "dsql", fonte, dias });
   } catch (err) {
+    if (err.status === 400) {
+      res.status(400).json({ ok: false, erro: err.message });
+      return;
+    }
     erro(res, err);
   }
 });
@@ -595,7 +621,7 @@ router.get("/ipv", requireFirebaseUser, async (req, res) => {
   const chave = String(req.query.fonte || "2-6");
   const f = FONTES_IPV[chave];
   if (!f) {
-    res.status(400).json({ ok: false, erro: "fonte inválida (use 2-6, 1-3 ou 1-3-ldsul)" });
+    res.status(400).json({ ok: false, erro: FONTE_IPV_ERRO });
     return;
   }
   try {

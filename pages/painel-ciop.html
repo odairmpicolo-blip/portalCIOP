@@ -917,8 +917,6 @@
 
 <script type="module">
 const PARAMS = new URLSearchParams(location.search);
-const LS_IPV_URL = "https://londrisul.online/relatorios/tvs/pontualidade/api.php?token=" + encodeURIComponent("OverallAnual@2026");
-const LS_ICV_URL = "https://londrisul.online/relatorios/tvs/pontualidade/api.php?token=" + encodeURIComponent("IPV@2026");
 const TCGL_IPV_URL = "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com/cr0108/share/ipv?token=" + encodeURIComponent("IPV@2026");
 const TCGL_ICV_URL = "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com/cr0108/share/icv?token=" + encodeURIComponent("IPV@2026");
 const CLIMA_URL = "https://api.open-meteo.com/v1/forecast?latitude=-23.3045&longitude=-51.1696&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl,precipitation,is_day&hourly=temperature_2m,weather_code,precipitation_probability,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,precipitation_sum&timezone=America%2FSao_Paulo&forecast_days=8";
@@ -1163,12 +1161,17 @@ async function carregarLdsulIpv13() {
   return carregarTcglIpvFonte("1-3-ldsul");
 }
 
-async function carregarTcglIcv() {
-  const res = await comTimeout(fetch(TCGL_ICV_URL, { cache: "no-store" }), 10000, "api tcgl icv");
+async function carregarIcvFonte(fonte) {
+  const url = TCGL_ICV_URL + (fonte ? "&fonte=" + encodeURIComponent(fonte) : "");
+  const res = await comTimeout(fetch(url, { cache: "no-store" }), 10000, "api icv");
   if (!res.ok) throw new Error("HTTP " + res.status);
   const payload = await res.json();
-  if (!payload || payload.ok === false) throw new Error(payload?.erro || "ICV TCGL inválido");
+  if (!payload || payload.ok === false) throw new Error(payload?.erro || "ICV inválido");
   return payload.dias || [];
+}
+
+async function carregarTcglIcv() {
+  return carregarIcvFonte("");
 }
 
 function agregarTcgl(itens, de, ate) {
@@ -1235,40 +1238,14 @@ function agregarIcv(itens, de, ate, origem) {
   return { ipv, serie, origem };
 }
 
-function mesesDaFaixa() {
-  return [...new Set([
-    Number(SEMANA.de.slice(5, 7)),
-    Number(SEMANA.ate.slice(5, 7)),
-    Number(SEMANA_ANT.de.slice(5, 7)),
-    Number(SEMANA_ANT.ate.slice(5, 7))
-  ].filter(Boolean))];
-}
-
-async function carregarLondrisulPorMes(url, motivo) {
-  const payloads = await Promise.all(mesesDaFaixa().map(async (mes) => {
-    const res = await comTimeout(fetch(url + "&mes=" + mes, { cache: "no-store" }), 8000, motivo);
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    return res.json();
-  }));
-  const dias = [];
-  const visto = new Set();
-  for (const p of payloads) {
-    for (const d of p.dias || []) {
-      const data = String(d.data || "").slice(0, 10);
-      if (!data || visto.has(data)) continue;
-      visto.add(data);
-      dias.push(d);
-    }
-  }
+async function carregarLondrisulIpv() {
+  const dias = await carregarTcglIpvFonte("2-6-ldsul");
   return { dias };
 }
 
-async function carregarLondrisulIpv() {
-  return carregarLondrisulPorMes(LS_IPV_URL, "api londrisul ipv");
-}
-
 async function carregarLondrisulIcv() {
-  return carregarLondrisulPorMes(LS_ICV_URL, "api londrisul icv");
+  const dias = await carregarIcvFonte("ldsul");
+  return { dias };
 }
 
 function horaCurta(d) {
