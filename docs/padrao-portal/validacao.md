@@ -16,7 +16,7 @@ Legenda: **Navegador** = exercitado com servidor local; **Código** = tokens/DS/
 | `index.html` | Home | Navegador (ops1, claro+escuro, 1440; código 390/768/1366/1920) | Navegador + CSS | Login cobre sessão | `.home-ops` ~50/22/28; hora HH:mm; Adiantado rgb(220,38,38) / Atrasado rgb(202,138,4); welcome `#102c53` / `#f5f8ff` |
 | `pages/icv.html` | Dashboard | Código | Código | Login | Gráfico reage a `dk-theme-change` |
 | `pages/pontualidade.html` | IPV | Navegador (KPI + seletor + tabela, claro/escuro; fill ≠ color) | Código | Login | Adiantado `--portal-op-early`, Atrasado `--portal-op-late` |
-| `pages/pontualidade-ajustada.html` | Dashboard | Código | Código | Erro amigável | API `/ipv-ajustado` ausente |
+| `pages/pontualidade-ajustada.html` | Dashboard | Navegador local (login) | Código | Erro + retry | Handler local; **publicado** ainda 404 |
 | `pages/pontualidade-tempo-real.html` | Ao vivo | Código | Código | Login | Paleta kiosk-like |
 | `pages/performance-tempo-real.html` | Dashboard | Código | Código | Login | |
 | `pages/performance-comparacao.html` | Dashboard | Código | Código | Login | |
@@ -75,7 +75,7 @@ Não há banco de “antes” da home autenticada. O catálogo serve de **depois
 | Item | Tipo | Status |
 | --- | --- | --- |
 | `intervaloDatas` em `/cr0108/cad` | Confirmado | Import no backend ok; front traduz a mensagem se a Lambda antiga ainda falhar |
-| Front chama `/cr0108/ipv-ajustado` | Confirmado | Rota não implementada; mensagem humana |
+| Front chama `/cr0108/ipv-ajustado` | Confirmado | Handler no Express **local**; API publicada 404 `Rota não encontrada` (Express, não Gateway). Lambda precisa de redeploy |
 | KPI reiniciava no meio da anima | Confirmado | `dataset.counting` |
 | Logo overlay 404 | Confirmado | `dkTcglPath` usa URL absoluta; loading logos excluídos da troca |
 | Decreto sempre escuro no claro | Confirmado | Override `dk-light .ai-console` |

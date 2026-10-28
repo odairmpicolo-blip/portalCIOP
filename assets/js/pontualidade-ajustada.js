@@ -11,13 +11,25 @@ const brData = (iso) => {
   return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
 };
 
+function pintarErro(msg) {
+  const el = $("status");
+  el.textContent = "";
+  el.appendChild(document.createTextNode(msg + " "));
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn-modulo-link";
+  btn.textContent = "Tentar novamente";
+  btn.addEventListener("click", () => carregar().catch((err) => pintarErro(err.message || String(err))));
+  el.appendChild(btn);
+}
+
 async function carregar() {
   const de = $("fDe").value;
   const ate = $("fAte").value;
   $("status").textContent = "Carregando período…";
   await initPortalAwsRuntime();
   if (!awsApiEnabled()) {
-    $("status").textContent = "Serviço temporariamente indisponível.";
+    pintarErro("Serviço temporariamente indisponível.");
     return;
   }
   const token = await firebaseIdToken();
@@ -80,7 +92,7 @@ function pintar(r) {
 function setPeriodo(de, ate) {
   $("fDe").value = de;
   $("fAte").value = ate;
-  carregar().catch((err) => { $("status").textContent = err.message || String(err); });
+  carregar().catch((err) => pintarErro(err.message || String(err)));
 }
 
 $("btnHoje").addEventListener("click", () => {
@@ -88,11 +100,11 @@ $("btnHoje").addEventListener("click", () => {
   setPeriodo(h, h);
 });
 $("btnJunho").addEventListener("click", () => setPeriodo("2026-06-01", "2026-06-30"));
-$("fDe").addEventListener("change", () => carregar().catch((err) => { $("status").textContent = err.message; }));
-$("fAte").addEventListener("change", () => carregar().catch((err) => { $("status").textContent = err.message; }));
+$("fDe").addEventListener("change", () => carregar().catch((err) => pintarErro(err.message || String(err))));
+$("fAte").addEventListener("change", () => carregar().catch((err) => pintarErro(err.message || String(err))));
 $("btnPdf").addEventListener("click", () => window.print());
 
 const h = isoHoje();
 $("fDe").value = h;
 $("fAte").value = h;
-carregar().catch((err) => { $("status").textContent = err.message || String(err); });
+carregar().catch((err) => pintarErro(err.message || String(err)));

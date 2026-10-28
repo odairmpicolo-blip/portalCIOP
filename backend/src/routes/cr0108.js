@@ -2,6 +2,7 @@ import { Router } from "express";
 import { query } from "../db.js";
 import { requireFirebaseUser } from "../middleware/auth.js";
 import { intervaloDatas } from "../lib/validar.js";
+import { ipvAjustadoPeriodo, extraPontosIncidentes, chaveLinha } from "../lib/ipv-ajustado.js";
 
 /**
  * CR-0108, ICV e IPV lidos direto do Aurora DSQL.
@@ -233,7 +234,8 @@ async function consultarResumo(req, tabela, comLinha, montarResumo, colunas, mon
 
 function erro(res, err) {
   console.error("cr0108:", err);
-  res.status(500).json({ ok: false, erro: err.message });
+  const status = Number(err.status) || 500;
+  res.status(status).json({ ok: false, erro: err.message, codigo: err.codigo });
 }
 
 /* ------------------------------------------------------------------ meta */
@@ -646,6 +648,81 @@ router.get("/ipv", requireFirebaseUser, async (req, res) => {
       par
     );
     res.json({ ok: true, origem: "dsql", fonte: chave, itens: r.rows });
+  } catch (err) { erro(res, err); }
+});
+
+/* IPV Custom (−2/+6) + incidentes do Relatório 002. Mesmo prefixo /cr0108 para o {proxy+} do API Gateway. */
+router.get("/ipv-ajustado", requireFirebaseUser, async (req, res) => {
+  try {
+    const { de, ate } = intervaloDatas(req.query.de, req.query.ate, { obrigatorio: true });
+    const { dias: ipvDias } = await consultarIpv({
+      query: { fonte: "2-6", de, ate, tipoDia: req.query.tipoDia }
+    });
+    const inc = await query(
+      `SELECT data_ref::text AS data, linha, count(*)::int AS n
+       FROM cr_0002
+       WHERE data_ref >= $1::date AND data_ref <= $2::date
+       GROUP BY 1, 2`,
+      [de, ate]
+    );
+    const catRows = await query(
+      `SELECT linha, count(DISTINCT ponto_de_controle)::int AS pontos
+       FROM cr_0108
+       WHERE data_ref = $1::date
+       GROUP BY linha`,
+      [ate]
+    ).catch(() => ({ rows: [] }));
+    const catalogo = new Map();
+    for (const row of catRows.rows || []) {
+      const k = chaveLinha(row.linha);
+      if (k) catalogo.set(k, Number(row.pontos) || 0);
+    }
+    const doPeriodo = extraPontosIncidentes(inc.rows || [], catalogo);
+    const dias = ipvDias.map((d) => {
+      const data = String(d.data || "").slice(0, 10);
+      const doDia = extraPontosIncidentes(
+        (inc.rows || []).filter((r) => String(r.data || "").slice(0, 10) === data),
+        catalogo
+      );
+      const calc = ipvAjustadoPeriodo([{
+        ipv: d.ipv,
+        pontos: d.pontos,
+        extraPontos: doDia.extra,
+        incidentes: doDia.incidentes
+      }]);
+      return {
+        data,
+        ipv: calc.ipv,
+        ipvAjustado: calc.ipvAjustado,
+        incidentes: doDia.incidentes,
+        extra: doDia.extra,
+        volume: calc.volume,
+        pontos: d.pontos,
+        customPendente: d.ipv == null
+      };
+    });
+    const tot = ipvAjustadoPeriodo(dias.map((d) => ({
+      ipv: d.ipv,
+      pontos: d.volume,
+      extraPontos: d.extra,
+      incidentes: d.incidentes
+    })));
+    res.json({
+      ok: true,
+      origem: "dsql",
+      de,
+      ate,
+      ipv: tot.ipv,
+      ipvAjustado: tot.ipvAjustado,
+      ganhoPp: tot.ganhoPp,
+      incidentes: tot.incidentes,
+      extraPontos: tot.extra,
+      volume: tot.volume,
+      semConexao: doPeriodo.semCatalogo || 0,
+      linhas: doPeriodo.porLinha || [],
+      dias,
+      aviso: catalogo.size ? undefined : "Catálogo de pontos oficiais indisponível neste recorte; incidentes foram contados sem recuperar ponto."
+    });
   } catch (err) { erro(res, err); }
 });
 
