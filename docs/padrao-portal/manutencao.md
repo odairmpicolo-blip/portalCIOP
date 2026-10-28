@@ -14,6 +14,7 @@
 | Esta documentação | `docs/padrao-portal/` | Índice + catálogo se o componente mudou |
 | Clima TV (ícone, dia/noite, cena) | `portal-clima-cena.js` + `portal-clima-anim.css` | Não copiar SVG WMO nas páginas |
 | Composição do Painel CIOP | `pages/painel-ciop.html` | Ver [ciop-tv.md](ciop-tv.md). Não alterar a média nem o Total |
+| Cumprimento do dia na performance ao vivo | `pages/performance-tempo-real.html` | Ver [performance-tempo-real.md](performance-tempo-real.md). Não mudar a pontualidade do mapa |
 
 Bump de cache vigente: tokens `?v=20261027term2`; DS `auto1`; visual `term2` (Terminais Agora); clima TV no Painel CIOP `tv1` (Painel TV ainda em `wx1` até a próxima edição); home CSS `ops15` / JS `ops10`; clima home `ops5`; atalhos `home5`; `theme-toggle.js` `auto1`. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no `script.src` do inject (`theme-toggle.js`, `portal-design-system.js`, `auth.js`).
 
@@ -46,6 +47,7 @@ Bump de cache vigente: tokens `?v=20261027term2`; DS `auto1`; visual `term2` (Te
 | 2026-10 | Home sem rodapé de copyright; versão no menu abaixo de Sistema online (`package.json` / meta `1.0.0`) | `portal-teste` |
 | 2026-10 | Home: refino de saudação, painel 50/22/28, aviso e favoritos 3×2 | `portal-teste` |
 | 2026-10 | Início mostra as quatro áreas abaixo dos favoritos | `portal-teste` (não publicar sem pedido) |
+| 2026-10 | Performance ao vivo: cumprimento do dia fechado por empresa, separado da pontualidade | `portal-teste` |
 
 ## Responsável
 

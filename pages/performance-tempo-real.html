@@ -14,19 +14,38 @@
     --bg-1:#04060f;
     --bg-2:#0a1024;
     --ink:#f4f7ff;
-    --muted:rgba(226,234,250,.62);
-    --green:#22c55e;
+    --muted:rgba(226,234,250,.72);
+    --card:rgba(255,255,255,.06);
+    --card-line:rgba(255,255,255,.16);
+    --track:rgba(255,255,255,.1);
+    --green:#4ade80;
     --amber:#fbbf24;
-    --red:#ef4444;
+    --red:#fb7185;
+    --icv:#38bdf8;
+    --icv-deep:#0284c7;
+  }
+  html.dk-light{
+    --bg-1:#eef3fb;
+    --bg-2:#e4ecf7;
+    --ink:#0f172a;
+    --muted:#475569;
+    --card:rgba(255,255,255,.88);
+    --card-line:rgba(15,23,42,.12);
+    --track:rgba(15,23,42,.08);
+    --green:#15803d;
+    --amber:#a16207;
+    --red:#dc2626;
+    --icv:#0369a1;
+    --icv-deep:#0284c7;
   }
   *{ box-sizing:border-box; }
   html, body{
     margin:0; min-height:100%; color:var(--ink);
     font-family:Outfit, Inter, system-ui, sans-serif;
     background:
-      radial-gradient(900px 520px at 8% -10%, rgba(43,52,128,.55), transparent 58%),
-      radial-gradient(800px 480px at 100% 0%, rgba(228,74,28,.28), transparent 52%),
-      linear-gradient(180deg, var(--bg-1), var(--bg-2) 58%, #050814);
+      radial-gradient(900px 520px at 8% -10%, rgba(43,52,128,.28), transparent 58%),
+      radial-gradient(800px 480px at 100% 0%, rgba(228,74,28,.16), transparent 52%),
+      linear-gradient(180deg, var(--bg-1), var(--bg-2));
   }
   body::before{
     content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.18;
@@ -60,33 +79,68 @@
     font-weight:800; letter-spacing:.08em; text-transform:uppercase;
     font-size:clamp(12px,1vw,15px);
     padding:8px 14px 8px 12px; border-radius:999px;
-    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+    background:var(--card); border:1px solid var(--card-line);
   }
   .live-dot{ width:9px; height:9px; border-radius:50%; background:#22c55e; box-shadow:0 0 12px #22c55e; animation:pulse 2.2s ease-in-out infinite; }
   @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
-  .stamp{ font-variant-numeric:tabular-nums; letter-spacing:0; text-transform:none; color:#c9d6ef; }
+  .stamp{ font-variant-numeric:tabular-nums; letter-spacing:0; text-transform:none; color:var(--muted); }
+
+  .sistema{
+    display:grid; grid-template-columns:minmax(180px,auto) minmax(0,1fr) minmax(180px,auto);
+    align-items:center; gap:clamp(16px,2vw,36px);
+    padding:clamp(12px,1.6vh,18px) clamp(16px,1.8vw,28px);
+    border-radius:24px;
+    background:var(--card); border:1px solid var(--card-line);
+  }
+  .sistema-nome{
+    font-size:clamp(13px,1.05vw,16px); font-weight:800; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--muted);
+  }
+  .sistema-pont{
+    display:flex; justify-content:center; gap:clamp(18px,2.4vw,40px); min-width:0;
+  }
+  .sistema-kpi{ display:flex; flex-direction:column; align-items:center; gap:2px; min-width:0; }
+  .sistema-kpi b{
+    font-size:clamp(28px,2.6vw,44px); font-weight:900; letter-spacing:-.04em; line-height:1;
+    font-variant-numeric:tabular-nums;
+  }
+  .sistema-kpi span{
+    font-size:clamp(12px,.95vw,15px); font-weight:800; letter-spacing:.04em; text-transform:uppercase;
+  }
+  .sistema-kpi.ok b, .sistema-kpi.ok span{ color:var(--green); }
+  .sistema-kpi.early b, .sistema-kpi.early span{ color:var(--red); }
+  .sistema-kpi.late b, .sistema-kpi.late span{ color:var(--amber); }
+  .sistema-icv{ text-align:right; min-width:0; }
+  .sistema-icv em{
+    display:block; font-style:normal; font-size:clamp(12px,.9vw,14px); font-weight:800;
+    letter-spacing:.12em; text-transform:uppercase; color:var(--muted);
+  }
+  .sistema-icv b{
+    display:block; font-size:clamp(32px,3vw,52px); font-weight:900; letter-spacing:-.04em;
+    line-height:.95; color:var(--icv); font-variant-numeric:tabular-nums;
+  }
+  .sistema-icv b.is-off{
+    font-size:clamp(18px,1.5vw,26px); font-weight:800; letter-spacing:0; color:var(--muted);
+  }
+  .sistema-icv small{
+    display:block; margin-top:2px; font-size:clamp(12px,.9vw,14px); font-weight:700; color:var(--muted);
+  }
 
   .vivo-grid{
-    display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(14px,1.8vw,24px);
-    min-height:min(42vh, 420px);
+    display:grid; grid-template-columns:1fr 1fr; gap:clamp(14px,1.8vw,24px);
+    min-height:0;
   }
   .firm{
-    --accent:#38bdf8; --glow:rgba(56,189,248,.45);
+    --accent:#38bdf8; --glow:rgba(56,189,248,.35);
     position:relative; min-height:0; overflow:hidden;
-    border-radius:32px;
-    padding:clamp(18px,2.4vh,32px) clamp(18px,2vw,30px) clamp(16px,2vh,24px);
+    border-radius:28px;
+    padding:clamp(16px,2vh,24px) clamp(18px,2vw,28px);
     background:
       radial-gradient(120% 80% at 100% 0%, var(--glow), transparent 55%),
-      linear-gradient(165deg, rgba(255,255,255,.14), rgba(255,255,255,.04) 42%, rgba(8,12,28,.62));
-    border:1px solid rgba(255,255,255,.2);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.28),
-      inset 0 -1px 0 rgba(0,0,0,.28),
-      0 28px 56px rgba(0,0,0,.4);
-    backdrop-filter:blur(18px);
-    display:grid;
-    grid-template-rows:auto minmax(180px,1fr);
-    gap:clamp(8px,1.2vh,14px);
+      var(--card);
+    border:1px solid var(--card-line);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.18);
+    display:flex; flex-direction:column; gap:clamp(12px,1.6vh,18px);
   }
   .firm::before{
     content:""; position:absolute; width:280px; height:280px; right:-90px; top:-90px; border-radius:50%;
@@ -109,90 +163,96 @@
     --accent:#e2e8f0; --accent-hi:#ffffff; --accent-deep:#94a3b8;
     --glow:rgba(226,232,240,.42);
   }
-  .firm-top{ position:relative; display:flex; flex-direction:column; gap:6px; }
+  .firm-top{ position:relative; display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
   .firm-kicker{
-    font-size:clamp(13px,1.1vw,16px); font-weight:800; letter-spacing:.22em; text-transform:uppercase;
-    color:var(--accent); text-shadow:0 0 18px var(--glow);
+    font-size:clamp(12px,1vw,15px); font-weight:800; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--accent);
   }
   .firm h2{
-    margin:0; font-size:clamp(32px,3.6vw,56px); font-weight:900; letter-spacing:-.045em; line-height:.92;
-    text-shadow:0 8px 28px rgba(0,0,0,.35);
+    margin:0; font-size:clamp(28px,2.6vw,42px); font-weight:900; letter-spacing:-.04em; line-height:.95;
   }
-  .vivo-bars{
-    height:100%; min-height:0;
-    display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(8px,1.1vw,16px);
+  .bloco-titulo{
+    font-size:clamp(12px,.95vw,15px); font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--muted);
   }
-  .vivo-bar{
-    display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:6px;
-    min-height:0; text-align:center;
+  .pont-nums{
+    display:flex; flex-wrap:wrap; gap:8px clamp(14px,1.6vw,28px);
+    margin-top:8px; font-size:clamp(16px,1.35vw,22px); font-weight:800;
   }
-  .vivo-bar b{
-    font-size:clamp(16px,1.9vw,30px); font-weight:900;
-    font-variant-numeric:tabular-nums; line-height:1; white-space:nowrap;
+  .pont-nums b{ font-variant-numeric:tabular-nums; font-weight:900; }
+  .pont-nums .ok{ color:var(--green); }
+  .pont-nums .early{ color:var(--red); }
+  .pont-nums .late{ color:var(--amber); }
+  .stack{
+    display:flex; height:14px; margin-top:10px; border-radius:99px; overflow:hidden; background:var(--track);
   }
-  .vivo-col{
-    position:relative; min-height:0; height:100%;
-    background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.1);
-    border-radius:14px;
+  .stack i{ display:block; height:100%; width:0; }
+  .stack .ok{ background:var(--green); }
+  .stack .early{ background:var(--red); }
+  .stack .late{ background:var(--amber); }
+  .icv{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .icv-pct{
+    font-size:clamp(48px,4.6vw,76px); font-weight:900; letter-spacing:-.045em; line-height:.9;
+    color:var(--icv); font-variant-numeric:tabular-nums;
   }
-  .vivo-col i{
-    position:absolute; left:22%; right:22%; bottom:8px; top:8px;
-    transform:scaleY(var(--p, 0));
-    transform-origin:bottom center;
-    border-radius:8px 8px 4px 4px;
-    transition:transform .2s ease;
+  .icv-pct.is-off{
+    font-size:clamp(22px,1.8vw,32px); font-weight:800; letter-spacing:0; color:var(--muted);
   }
-  .vivo-bar em{
-    font-style:normal; font-size:clamp(10px,.85vw,13px); font-weight:800;
-    letter-spacing:.04em; text-transform:uppercase; line-height:1.2;
+  .icv-conta, .icv-quando{
+    font-size:clamp(15px,1.15vw,20px); font-weight:700; color:var(--ink);
   }
-  .vivo-bar.ok b, .vivo-bar.ok em{ color:#4ade80; }
-  .vivo-bar.ok i{ background:linear-gradient(180deg,#86efac,#22c55e); box-shadow:0 0 14px rgba(34,197,94,.4); }
-  .vivo-bar.late b, .vivo-bar.late em{ color:#fbbf24; }
-  .vivo-bar.late i{ background:linear-gradient(180deg,#fde68a,#fbbf24); box-shadow:0 0 14px rgba(251,191,36,.35); }
-  .vivo-bar.early b, .vivo-bar.early em{ color:#fb7185; }
-  .vivo-bar.early i{ background:linear-gradient(180deg,#fda4af,#ef4444); box-shadow:0 0 14px rgba(239,68,68,.35); }
+  .icv-quando{ color:var(--muted); font-size:clamp(13px,1vw,16px); }
+  .icv.is-stale .icv-quando{ color:var(--amber); }
+  .icv-bar{
+    height:10px; margin-top:8px; border-radius:99px; overflow:hidden; background:var(--track);
+  }
+  .icv-bar i{
+    display:block; height:100%; width:0; border-radius:inherit;
+    background:linear-gradient(90deg, var(--icv-deep), var(--icv));
+  }
 
   .garages{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; }
   .garage{
-    padding:16px 16px 14px; border-radius:16px;
-    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);
+    padding:12px 14px 10px; border-radius:16px;
+    background:var(--card); border:1px solid var(--card-line);
   }
-  .garage b{ display:block; font-size:13px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; margin-bottom:10px; color:#c9d6ef; }
-  .bars{ display:flex; height:12px; border-radius:99px; overflow:hidden; background:rgba(255,255,255,.08); }
+  .garage b{ display:block; font-size:13px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; margin-bottom:10px; color:var(--muted); }
+  .bars{ display:flex; height:12px; border-radius:99px; overflow:hidden; background:var(--track); }
   .bars i{ display:block; height:100%; }
   .garage .mini{ margin-top:10px; display:flex; justify-content:space-between; gap:4px; font-size:12px; font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap; }
 
   .vivo-chart{
     flex:1 1 auto;
-    min-height:180px;
+    min-height:160px;
     height:auto;
     margin-bottom:0;
     border-radius:24px; padding:10px 14px 10px;
-    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);
+    background:var(--card); border:1px solid var(--card-line);
     display:flex; flex-direction:column; gap:4px;
   }
   .vivo-chart-head{
     display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
-    font-size:clamp(12px,1vw,15px); font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:#c9d6ef;
+    font-size:clamp(12px,1vw,15px); font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--muted);
   }
   .vivo-legend{ display:flex; gap:12px; font-size:clamp(11px,.9vw,13px); letter-spacing:.04em; }
   .vivo-legend i{ font-style:normal; }
-  .vivo-legend .ok{ color:#4ade80; }
-  .vivo-legend .late{ color:#fbbf24; }
-  .vivo-legend .early{ color:#fb7185; }
+  .vivo-legend .ok{ color:var(--green); }
+  .vivo-legend .late{ color:var(--amber); }
+  .vivo-legend .early{ color:var(--red); }
   .vivo-chart canvas{ flex:1; min-height:0; width:100% !important; }
   .erro{ color:#fb7185; font-weight:800; }
   .ftr{
     display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
     font-size:clamp(12px,1vw,15px); color:var(--muted); font-weight:700;
   }
-  .ftr a{ color:#c9d6ef; text-decoration:none; }
+  .ftr a{ color:var(--ink); text-decoration:none; }
   @media (max-width: 980px){
-    .vivo-grid, .garages{ grid-template-columns:1fr; }
-    .vivo-grid{ min-height:0; }
-    .firm{ min-height:280px; }
+    .kiosk{ height:auto; overflow:auto; }
+    .sistema, .vivo-grid, .garages{ grid-template-columns:1fr; }
+    .sistema-icv, .sistema-pont{ text-align:left; justify-content:flex-start; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .live-dot{ animation:none; }
   }
 </style>
 <link rel="stylesheet" href="../assets/css/portal-visual.css?v=20261026row1">
@@ -210,45 +270,79 @@
     </div>
     <div class="hdr-right">
       <span class="live-dot"></span>
-      <span>Ao vivo</span>
+      <span>Pontualidade</span>
       <span class="stamp" id="stamp">Atualizando…</span>
+      <span class="stamp" id="icvStamp">Cumprimento…</span>
     </div>
   </header>
 
   <div class="erro" id="erro" hidden></div>
 
+  <section class="sistema" aria-label="Total do sistema">
+    <div class="sistema-nome">Total do sistema</div>
+    <div class="sistema-pont">
+      <div class="sistema-kpi ok"><b id="okTotal">—</b><span>No horário</span></div>
+      <div class="sistema-kpi early"><b id="nEarlyTotal">—</b><span>Adiantado</span></div>
+      <div class="sistema-kpi late"><b id="nLateTotal">—</b><span>Atrasado</span></div>
+    </div>
+    <div class="sistema-icv">
+      <em>Cumprimento</em>
+      <b id="icvTotal">—</b>
+      <small id="icvTotalNota"></small>
+    </div>
+  </section>
+
   <div class="vivo-grid">
     <article class="firm ipv-tcgl">
       <div class="firm-top">
-        <div class="firm-kicker">Área 1</div>
         <h2>TCGL</h2>
+        <div class="firm-kicker">Área 1</div>
       </div>
-      <div class="vivo-bars">
-        <div class="vivo-bar ok"><b id="okTcgl">—</b><span class="vivo-col"><i id="colOkTcgl"></i></span><em>No horário</em></div>
-        <div class="vivo-bar late"><b id="nLateTcgl">—</b><span class="vivo-col"><i id="colLateTcgl"></i></span><em>Atrasado</em></div>
-        <div class="vivo-bar early"><b id="nEarlyTcgl">—</b><span class="vivo-col"><i id="colEarlyTcgl"></i></span><em>Adiantado</em></div>
+      <div>
+        <div class="bloco-titulo">Pontualidade</div>
+        <div class="pont-nums">
+          <span class="ok"><b id="okTcgl">—</b> No horário</span>
+          <span class="early"><b id="nEarlyTcgl">—</b> Adiantado</span>
+          <span class="late"><b id="nLateTcgl">—</b> Atrasado</span>
+        </div>
+        <div class="stack" aria-hidden="true">
+          <i class="ok" id="segOkTcgl"></i>
+          <i class="early" id="segEarlyTcgl"></i>
+          <i class="late" id="segLateTcgl"></i>
+        </div>
+      </div>
+      <div class="icv" id="icvBoxTcgl">
+        <div class="bloco-titulo" id="icvTituloTcgl">Cumprimento de viagens</div>
+        <div class="icv-pct" id="icvPctTcgl">—</div>
+        <div class="icv-conta" id="icvContaTcgl"></div>
+        <div class="icv-quando" id="icvQuandoTcgl"></div>
+        <div class="icv-bar" aria-hidden="true"><i id="icvBarTcgl"></i></div>
       </div>
     </article>
     <article class="firm ipv-ls">
       <div class="firm-top">
-        <div class="firm-kicker">Área 2</div>
         <h2>LondriSul</h2>
+        <div class="firm-kicker">Área 2</div>
       </div>
-      <div class="vivo-bars">
-        <div class="vivo-bar ok"><b id="okLs">—</b><span class="vivo-col"><i id="colOkLs"></i></span><em>No horário</em></div>
-        <div class="vivo-bar late"><b id="nLateLs">—</b><span class="vivo-col"><i id="colLateLs"></i></span><em>Atrasado</em></div>
-        <div class="vivo-bar early"><b id="nEarlyLs">—</b><span class="vivo-col"><i id="colEarlyLs"></i></span><em>Adiantado</em></div>
+      <div>
+        <div class="bloco-titulo">Pontualidade</div>
+        <div class="pont-nums">
+          <span class="ok"><b id="okLs">—</b> No horário</span>
+          <span class="early"><b id="nEarlyLs">—</b> Adiantado</span>
+          <span class="late"><b id="nLateLs">—</b> Atrasado</span>
+        </div>
+        <div class="stack" aria-hidden="true">
+          <i class="ok" id="segOkLs"></i>
+          <i class="early" id="segEarlyLs"></i>
+          <i class="late" id="segLateLs"></i>
+        </div>
       </div>
-    </article>
-    <article class="firm ipv-ciop">
-      <div class="firm-top">
-        <div class="firm-kicker">SISTEMA</div>
-        <h2>Total</h2>
-      </div>
-      <div class="vivo-bars">
-        <div class="vivo-bar ok"><b id="okTotal">—</b><span class="vivo-col"><i id="colOkTotal"></i></span><em>No horário</em></div>
-        <div class="vivo-bar late"><b id="nLateTotal">—</b><span class="vivo-col"><i id="colLateTotal"></i></span><em>Atrasado</em></div>
-        <div class="vivo-bar early"><b id="nEarlyTotal">—</b><span class="vivo-col"><i id="colEarlyTotal"></i></span><em>Adiantado</em></div>
+      <div class="icv" id="icvBoxLs">
+        <div class="bloco-titulo" id="icvTituloLs">Cumprimento de viagens</div>
+        <div class="icv-pct" id="icvPctLs">—</div>
+        <div class="icv-conta" id="icvContaLs"></div>
+        <div class="icv-quando" id="icvQuandoLs"></div>
+        <div class="icv-bar" aria-hidden="true"><i id="icvBarLs"></i></div>
       </div>
     </article>
   </div>
@@ -260,8 +354,8 @@
       <span>Decorrer do dia · hora a hora</span>
       <div class="vivo-legend">
         <i class="ok">● No horário</i>
-        <i class="late">● Atrasado</i>
         <i class="early">● Adiantado</i>
+        <i class="late">● Atrasado</i>
       </div>
     </div>
     <canvas id="horaChart"></canvas>
@@ -275,16 +369,26 @@
 
 <script>
 const API = "https://londrisul.online/relatorios/mapa/api.php?chave=" + encodeURIComponent("Pontualidade@2026");
+const ICV_API = "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com/cr0108/share/icv?token=" + encodeURIComponent("IPV@2026");
+const ICV_KEY = "ciop-perf-icv-dia-v1";
 const HIST_KEY = "ciop-mapa-pontualidade-horas-v1";
 const DIAS_KEY = "ciop-mapa-pontualidade-dias-v1";
-const CORES = { ok: "#22c55e", late: "#fbbf24", early: "#ef4444" };
 const POLL_MS = 5000;
+const ICV_POLL_MS = 5 * 60 * 1000;
 const SLOTS_HORA = 12;
+const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
 let horaChart;
 let carregando = false;
 let ultimoStamp = "";
 
 const fmtPct = (v) => (v == null || !Number.isFinite(v) ? "—" : v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%");
+const fmtInt = (v) => Math.round(v).toLocaleString("pt-BR");
+function cores() {
+  const claro = document.documentElement.classList.contains("dk-light");
+  return claro
+    ? { ok: "#15803d", late: "#a16207", early: "#dc2626", grid: "rgba(15,23,42,.1)", tick: "#334155" }
+    : { ok: "#4ade80", late: "#fbbf24", early: "#fb7185", grid: "rgba(255,255,255,.08)", tick: "rgba(226,234,250,.9)" };
+}
 const toPct = (v) => {
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
@@ -339,6 +443,12 @@ function pintarCol(id, v) {
   const el = document.getElementById(id);
   if (el) el.style.setProperty("--p", String(alturaBarra(v) / 100));
 }
+function pintarSeg(id, v) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const n = v == null || !Number.isFinite(v) ? 0 : Math.max(0, v);
+  el.style.width = n + "%";
+}
 function pintarFirma(suf, bloco) {
   setTxt("ok" + suf, bloco.ok);
   setTxt("nLate" + suf, bloco.late);
@@ -346,6 +456,9 @@ function pintarFirma(suf, bloco) {
   pintarCol("colOk" + suf, bloco.ok);
   pintarCol("colLate" + suf, bloco.late);
   pintarCol("colEarly" + suf, bloco.early);
+  pintarSeg("segOk" + suf, bloco.ok);
+  pintarSeg("segEarly" + suf, bloco.early);
+  pintarSeg("segLate" + suf, bloco.late);
 }
 function pintarGaragens(lista) {
   const el = document.getElementById("garages");
@@ -355,14 +468,15 @@ function pintarGaragens(lista) {
     const late = toPct(g.latePercent) || 0;
     const early = toPct(g.earlyPercent) || 0;
     const nome = String(g.nome || "").replace(/^G\./, "").replace(/^TCGLL$/i, "TCGL");
+    const paleta = cores();
     return `<div class="garage">
       <b>${nome}</b>
-      <div class="bars" title="No horário ${fmtPct(ok)} · atrasado ${fmtPct(late)} · adiantado ${fmtPct(early)}">
-        <i style="width:${ok}%;background:${CORES.ok}"></i>
-        <i style="width:${late}%;background:${CORES.late}"></i>
-        <i style="width:${early}%;background:${CORES.early}"></i>
+      <div class="bars" title="No horário ${fmtPct(ok)} · adiantado ${fmtPct(early)} · atrasado ${fmtPct(late)}">
+        <i style="width:${ok}%;background:${paleta.ok}"></i>
+        <i style="width:${early}%;background:${paleta.early}"></i>
+        <i style="width:${late}%;background:${paleta.late}"></i>
       </div>
-      <div class="mini"><span style="color:#4ade80">${fmtPct(ok)}</span><span style="color:#fbbf24">${fmtPct(late)}</span><span style="color:#fb7185">${fmtPct(early)}</span></div>
+      <div class="mini"><span style="color:${paleta.ok}">${fmtPct(ok)}</span><span style="color:${paleta.early}">${fmtPct(early)}</span><span style="color:${paleta.late}">${fmtPct(late)}</span></div>
     </div>`;
   }).join("");
 }
@@ -452,6 +566,147 @@ function serieHora(hist, campo) {
   });
   return out;
 }
+function shiftIso(s, n) {
+  const d = new Date(s + "T12:00:00");
+  d.setDate(d.getDate() + n);
+  const p = (x) => String(x).padStart(2, "0");
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+}
+function rotuloData(iso) {
+  const d = new Date(iso + "T12:00:00");
+  return d.getDate() + " de " + MESES[d.getMonth()];
+}
+function contarViagem(v) {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+function diaIcv(row) {
+  if (!row) return null;
+  const data = String(row.data || "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return null;
+  const programadas = contarViagem(row.scheduled_trips);
+  const realizadas = contarViagem(row.trips);
+  if (programadas == null || realizadas == null || !(programadas > 0)) return null;
+  return { data, programadas, realizadas, pct: (realizadas / programadas) * 100 };
+}
+function ultimoDiaFechado(dias) {
+  const validos = (dias || []).map(diaIcv).filter(Boolean);
+  validos.sort((a, b) => a.data.localeCompare(b.data));
+  return validos.length ? validos[validos.length - 1] : null;
+}
+function totalIcv(tcgl, ls) {
+  if (!tcgl || !ls || tcgl.data !== ls.data) return null;
+  const programadas = tcgl.programadas + ls.programadas;
+  const realizadas = tcgl.realizadas + ls.realizadas;
+  if (!(programadas > 0)) return null;
+  return { data: tcgl.data, programadas, realizadas, pct: (realizadas / programadas) * 100 };
+}
+function textoQuando(bloco) {
+  if (!bloco) return "";
+  const base = "Dia fechado · " + rotuloData(bloco.data);
+  return bloco.data === hojeSP() ? base + " · sem horário de corte" : base;
+}
+function pintarBlocoIcv(suf, bloco, antigo) {
+  const box = document.getElementById("icvBox" + suf);
+  const titulo = document.getElementById("icvTitulo" + suf);
+  const pct = document.getElementById("icvPct" + suf);
+  const conta = document.getElementById("icvConta" + suf);
+  const quando = document.getElementById("icvQuando" + suf);
+  const bar = document.getElementById("icvBar" + suf);
+  if (!box || !pct) return;
+  box.classList.toggle("is-stale", !!antigo && !!bloco);
+  if (!bloco) {
+    titulo.textContent = "Cumprimento de viagens";
+    pct.textContent = "Cumprimento indisponível";
+    pct.classList.add("is-off");
+    conta.textContent = "";
+    quando.textContent = "";
+    if (bar) bar.style.width = "0%";
+    return;
+  }
+  titulo.textContent = "Cumprimento de viagens";
+  pct.textContent = fmtPct(bloco.pct);
+  pct.classList.remove("is-off");
+  conta.textContent = fmtInt(bloco.programadas) + " programadas · " + fmtInt(bloco.realizadas) + " realizadas";
+  quando.textContent = textoQuando(bloco) + (antigo ? " · dados antigos" : "");
+  if (bar) bar.style.width = Math.max(0, Math.min(100, bloco.pct)) + "%";
+}
+function pintarIcv(estado, antigo) {
+  const tcgl = estado && estado.tcgl;
+  const ls = estado && estado.ls;
+  const total = estado && estado.total;
+  pintarBlocoIcv("Tcgl", tcgl, antigo);
+  pintarBlocoIcv("Ls", ls, antigo);
+  const el = document.getElementById("icvTotal");
+  const nota = document.getElementById("icvTotalNota");
+  const stamp = document.getElementById("icvStamp");
+  if (!el) return;
+  if (!total) {
+    el.textContent = "indisponível";
+    el.classList.add("is-off");
+    if (nota) nota.textContent = tcgl && ls && tcgl.data !== ls.data ? "datas diferentes" : "";
+  } else {
+    el.textContent = fmtPct(total.pct);
+    el.classList.remove("is-off");
+    if (nota) nota.textContent = textoQuando(total) + (antigo ? " · dados antigos" : "");
+  }
+  if (!stamp) return;
+  const dia = total || tcgl || ls;
+  const curta = dia ? dia.data.slice(8, 10) + "/" + dia.data.slice(5, 7) : "";
+  if (!estado) {
+    stamp.textContent = "Cumprimento indisponível";
+    return;
+  }
+  const hora = estado.lidoEm
+    ? new Date(estado.lidoEm).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", hour12: false })
+    : "";
+  stamp.textContent = antigo
+    ? "Cumprimento · dados antigos" + (curta ? " · " + curta : "")
+    : "Cumprimento · " + hora + (curta ? " · dia " + curta : "");
+}
+function lerIcvGuardado() {
+  try {
+    const raw = JSON.parse(sessionStorage.getItem(ICV_KEY) || "null");
+    if (!raw || (!raw.tcgl && !raw.ls)) return null;
+    return raw;
+  } catch (_) {
+    return null;
+  }
+}
+function guardarIcv(estado) {
+  try { sessionStorage.setItem(ICV_KEY, JSON.stringify(estado)); } catch (_) {}
+}
+async function lerFonteIcv(fonte, de, ate) {
+  const url = ICV_API + "&de=" + de + "&ate=" + ate + (fonte ? "&fonte=" + encodeURIComponent(fonte) : "") + "&t=" + Date.now();
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const payload = await res.json();
+  if (!payload || payload.ok === false) throw new Error(payload?.erro || "ICV inválido");
+  return ultimoDiaFechado(payload.dias);
+}
+let carregandoIcv = false;
+async function carregarIcv() {
+  if (carregandoIcv) return;
+  carregandoIcv = true;
+  const ate = hojeSP();
+  const de = shiftIso(ate, -21);
+  try {
+    const [tcgl, ls] = await Promise.all([
+      lerFonteIcv("", de, ate),
+      lerFonteIcv("ldsul", de, ate)
+    ]);
+    const estado = { tcgl, ls, total: totalIcv(tcgl, ls), lidoEm: new Date().toISOString() };
+    if (!tcgl && !ls) throw new Error("sem dia fechado");
+    guardarIcv(estado);
+    pintarIcv(estado, false);
+  } catch (_) {
+    const guardado = lerIcvGuardado();
+    pintarIcv(guardado, !!guardado);
+  } finally {
+    carregandoIcv = false;
+  }
+}
 function linha(label, cor, dados, fill) {
   return {
     label, data: dados,
@@ -472,13 +727,17 @@ function pintarLinhaHora(hist) {
   const data = {
     labels,
     datasets: [
-      linha("No horário", CORES.ok, serieHora(hist, "ok"), true),
-      linha("Atrasado", CORES.late, serieHora(hist, "late"), false),
-      linha("Adiantado", CORES.early, serieHora(hist, "early"), false)
+      linha("No horário", cores().ok, serieHora(hist, "ok"), true),
+      linha("Adiantado", cores().early, serieHora(hist, "early"), false),
+      linha("Atrasado", cores().late, serieHora(hist, "late"), false)
     ]
   };
   if (horaChart) {
+    const paleta = cores();
     horaChart.data = data;
+    horaChart.options.scales.x.grid.color = paleta.grid;
+    horaChart.options.scales.x.ticks.color = paleta.tick;
+    horaChart.options.scales.y.grid.color = paleta.grid;
     horaChart.update("none");
     return;
   }
@@ -496,11 +755,11 @@ function pintarLinhaHora(hist) {
       },
       scales: {
         x: {
-          grid: { color: "rgba(255,255,255,.06)" },
+          grid: { color: cores().grid },
           border: { display: false },
           ticks: {
             display: true,
-            color: "rgba(226,234,250,.9)",
+            color: cores().tick,
             maxRotation: 0, autoSkip: false,
             font: { size: 20, weight: "800" },
             padding: 8,
@@ -511,7 +770,7 @@ function pintarLinhaHora(hist) {
           min: 0, max: 100,
           ticks: { display: false },
           border: { display: false },
-          grid: { color: "rgba(255,255,255,.06)" }
+          grid: { color: cores().grid }
         }
       },
       layout: { padding: { top: 6, right: 8, bottom: 8, left: 4 } },
@@ -520,8 +779,10 @@ function pintarLinhaHora(hist) {
     }
   });
 }
+let ultimoDesenho = null;
 function pintar(payload) {
   const d = parseEmpresas(payload);
+  ultimoDesenho = d;
   pintarFirma("Tcgl", d.tcgl);
   pintarFirma("Ls", d.ls);
   pintarFirma("Total", d.total);
@@ -550,9 +811,17 @@ async function carregar() {
   }
 }
 pintarLinhaHora(lerHist());
+const icvInicial = lerIcvGuardado();
+if (icvInicial) pintarIcv(icvInicial, false);
 carregar();
+carregarIcv();
 setInterval(carregar, POLL_MS);
+setInterval(carregarIcv, ICV_POLL_MS);
 setInterval(pintarStamp, 1000);
+new MutationObserver(() => {
+  pintarLinhaHora(lerHist());
+  if (ultimoDesenho) pintarGaragens(ultimoDesenho.garagens);
+}).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
 </script>
 </body>
 </html>
