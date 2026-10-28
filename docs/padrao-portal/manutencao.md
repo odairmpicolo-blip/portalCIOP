@@ -49,6 +49,7 @@ Bump de cache vigente: tokens `?v=20261027term2`; DS `auto1`; visual `term2` (Te
 | 2026-10 | Início mostra as quatro áreas abaixo dos favoritos | `portal-teste` (não publicar sem pedido) |
 | 2026-10 | Performance ao vivo: cumprimento do dia fechado por empresa, separado da pontualidade | `portal-teste` |
 | 2026-10 | Performance ao vivo: cumprimento passa a ser o do CAD até o horário da leitura | `portal-teste` |
+| 2026-10 | Performance ao vivo: três colunas com barras, cumprimento e hora a hora | `portal-teste` |
 
 ## Responsável
 

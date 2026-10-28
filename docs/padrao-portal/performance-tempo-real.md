@@ -2,6 +2,8 @@
 
 Página: `pages/performance-tempo-real.html`. Pontualidade e cumprimento do dia saem da API do mapa, no mesmo ciclo. O cumprimento não entra na média de No horário, Adiantado ou Atrasado.
 
+A tela é três colunas iguais: TCGL, LondriSul e Total do sistema. Em cada coluna: barras verticais de pontualidade, cumprimento do dia e a linha hora a hora daquela coluna. O histórico de horas fica no navegador; hora sem leitura fica vazia. A fonte não manda a quantidade de viagens, então a linha “programadas · realizadas” não aparece.
+
 ## Pontualidade
 
 Fonte: `https://londrisul.online/relatorios/mapa/api.php` (chave já usada pela página). Atualiza a cada 5 s.

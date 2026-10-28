@@ -10,250 +10,142 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
-  :root{
-    --bg-1:#04060f;
-    --bg-2:#0a1024;
-    --ink:#f4f7ff;
-    --muted:rgba(226,234,250,.72);
-    --card:rgba(255,255,255,.06);
-    --card-line:rgba(255,255,255,.16);
+  :root, html.dk-light{
+    --bg-1:#07111f;
+    --bg-2:#0b1b33;
+    --ink:#f4f8ff;
+    --muted:#9fb0c9;
+    --card:#0e2240;
+    --card-line:#1d4e89;
     --track:rgba(255,255,255,.1);
-    --green:#4ade80;
-    --amber:#fbbf24;
-    --red:#fb7185;
-    --icv:#38bdf8;
-    --icv-deep:#0284c7;
-  }
-  html.dk-light{
-    --bg-1:#eef3fb;
-    --bg-2:#e4ecf7;
-    --ink:#0f172a;
-    --muted:#475569;
-    --card:rgba(255,255,255,.88);
-    --card-line:rgba(15,23,42,.12);
-    --track:rgba(15,23,42,.08);
-    --green:#15803d;
-    --amber:#a16207;
-    --red:#dc2626;
-    --icv:#0369a1;
-    --icv-deep:#0284c7;
+    --green:#3dde73;
+    --amber:#f5d20a;
+    --red:#ff4d4d;
+    --icv:#3b9eff;
+    --icv-deep:#1d6fe0;
   }
   *{ box-sizing:border-box; }
   html, body{
-    margin:0; min-height:100%; color:var(--ink);
+    margin:0; height:100%; color:var(--ink);
     font-family:Outfit, Inter, system-ui, sans-serif;
     background:
-      radial-gradient(900px 520px at 8% -10%, rgba(43,52,128,.28), transparent 58%),
-      radial-gradient(800px 480px at 100% 0%, rgba(228,74,28,.16), transparent 52%),
+      radial-gradient(1200px 280px at 50% -40px, rgba(56,130,220,.22), transparent 70%),
       linear-gradient(180deg, var(--bg-1), var(--bg-2));
   }
-  body::before{
-    content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.18;
-    background-image:
-      linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
-    background-size:64px 64px;
-    mask-image:radial-gradient(ellipse at 50% 30%, #000 30%, transparent 78%);
-  }
   .kiosk{
-    position:relative; z-index:1;
-    min-height:100vh;
-    height:100vh;
-    overflow:hidden;
+    height:100vh; overflow:hidden;
     display:flex; flex-direction:column;
-    padding:clamp(12px,1.6vh,24px) clamp(18px,2.2vw,40px) 32px;
-    gap:clamp(12px,1.6vh,20px);
+    padding:18px 22px 14px;
+    gap:14px;
   }
-  .hdr{
-    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  .hdr{ display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .brand{ display:flex; align-items:center; gap:14px; min-width:0; }
+  .ico{
+    width:42px; height:42px; border-radius:12px; flex:0 0 auto;
+    display:grid; place-items:center; color:#d7e7ff;
+    background:#123056; border:1px solid #2a5f9a;
   }
-  .brand{ display:flex; align-items:center; gap:16px; min-width:0; }
-  .brand img{
-    height:clamp(44px,5vh,64px); width:auto;
-    filter:drop-shadow(0 4px 10px rgba(0,0,0,.7)) drop-shadow(0 10px 22px rgba(0,0,0,.45));
-  }
-  .brand-title{ font-size:clamp(22px,2.4vw,36px); font-weight:900; letter-spacing:-.04em; }
-  .brand-sub{ font-size:clamp(12px,.95vw,15px); color:var(--muted); font-weight:700; letter-spacing:.04em; }
+  .ico svg, .sec-ico svg, .firm-ico svg{ width:22px; height:22px; display:block; }
+  .brand-title{ font-size:28px; font-weight:800; letter-spacing:-.03em; }
+  .brand-title b{ font-weight:900; }
+  .brand-title span{ color:#7f93ad; font-weight:600; margin:0 8px; }
   .hdr-right{
-    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-    font-weight:800; letter-spacing:.08em; text-transform:uppercase;
-    font-size:clamp(12px,1vw,15px);
-    padding:8px 14px 8px 12px; border-radius:999px;
-    background:var(--card); border:1px solid var(--card-line);
+    display:flex; align-items:center; gap:8px;
+    font-weight:800; font-size:15px;
+    padding:8px 16px; border-radius:999px;
+    color:#d9ffe8; background:#12351f; border:1px solid #1f7a45;
   }
-  .live-dot{ width:9px; height:9px; border-radius:50%; background:#22c55e; box-shadow:0 0 12px #22c55e; animation:pulse 2.2s ease-in-out infinite; }
-  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
-  .stamp{ font-variant-numeric:tabular-nums; letter-spacing:0; text-transform:none; color:var(--muted); }
+  .live-dot{ width:8px; height:8px; border-radius:50%; background:#3dde73; box-shadow:0 0 10px #3dde73; }
+  .stamp{ font-variant-numeric:tabular-nums; }
 
-  .sistema{
-    display:grid; grid-template-columns:minmax(180px,auto) minmax(0,1fr) minmax(180px,auto);
-    align-items:center; gap:clamp(16px,2vw,36px);
-    padding:clamp(12px,1.6vh,18px) clamp(16px,1.8vw,28px);
-    border-radius:24px;
-    background:var(--card); border:1px solid var(--card-line);
-  }
-  .sistema-nome{
-    font-size:clamp(13px,1.05vw,16px); font-weight:800; letter-spacing:.16em;
-    text-transform:uppercase; color:var(--muted);
-  }
-  .sistema-pont{
-    display:flex; justify-content:center; gap:clamp(18px,2.4vw,40px); min-width:0;
-  }
-  .sistema-kpi{ display:flex; flex-direction:column; align-items:center; gap:2px; min-width:0; }
-  .sistema-kpi b{
-    font-size:clamp(28px,2.6vw,44px); font-weight:900; letter-spacing:-.04em; line-height:1;
-    font-variant-numeric:tabular-nums;
-  }
-  .sistema-kpi span{
-    font-size:clamp(12px,.95vw,15px); font-weight:800; letter-spacing:.04em; text-transform:uppercase;
-  }
-  .sistema-kpi.ok b, .sistema-kpi.ok span{ color:var(--green); }
-  .sistema-kpi.early b, .sistema-kpi.early span{ color:var(--red); }
-  .sistema-kpi.late b, .sistema-kpi.late span{ color:var(--amber); }
-  .sistema-icv{ text-align:right; min-width:0; }
-  .sistema-icv em{
-    display:block; font-style:normal; font-size:clamp(12px,.9vw,14px); font-weight:800;
-    letter-spacing:.12em; text-transform:uppercase; color:var(--muted);
-  }
-  .sistema-icv b{
-    display:block; font-size:clamp(32px,3vw,52px); font-weight:900; letter-spacing:-.04em;
-    line-height:.95; color:var(--icv); font-variant-numeric:tabular-nums;
-  }
-  .sistema-icv b.is-off{
-    font-size:clamp(18px,1.5vw,26px); font-weight:800; letter-spacing:0; color:var(--muted);
-  }
-  .sistema-icv small{
-    display:block; margin-top:2px; font-size:clamp(12px,.9vw,14px); font-weight:700; color:var(--muted);
-  }
-
-  .vivo-grid{
-    display:grid; grid-template-columns:1fr 1fr; gap:clamp(14px,1.8vw,24px);
-    min-height:0;
+  .cols{
+    flex:1; min-height:0;
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;
   }
   .firm{
-    --accent:#38bdf8; --glow:rgba(56,189,248,.35);
-    position:relative; min-height:0; overflow:hidden;
-    border-radius:28px;
-    padding:clamp(16px,2vh,24px) clamp(18px,2vw,28px);
-    background:
-      radial-gradient(120% 80% at 100% 0%, var(--glow), transparent 55%),
-      var(--card);
+    min-height:0; overflow:hidden;
+    border-radius:18px; padding:16px 16px 12px;
+    background:linear-gradient(180deg, #102848, var(--card));
     border:1px solid var(--card-line);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.18);
-    display:flex; flex-direction:column; gap:clamp(12px,1.6vh,18px);
+    display:flex; flex-direction:column; gap:10px;
   }
-  .firm::before{
-    content:""; position:absolute; width:280px; height:280px; right:-90px; top:-90px; border-radius:50%;
-    background:radial-gradient(circle, var(--glow), transparent 70%); pointer-events:none; opacity:.9;
+  .firm-top{ display:flex; align-items:center; gap:10px; }
+  .firm-ico{
+    width:34px; height:34px; border-radius:10px; color:#d7e7ff;
+    display:grid; place-items:center; background:#16345c; border:1px solid #2a5f9a;
   }
-  .firm::after{
-    content:""; position:absolute; left:18px; right:18px; top:0; height:3px;
-    background:linear-gradient(90deg, transparent, var(--accent), transparent);
-    box-shadow:0 0 18px var(--accent);
+  .firm h2{ margin:0; font-size:22px; font-weight:800; letter-spacing:-.02em; }
+  .sec{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .sec-nome{
+    display:flex; align-items:center; gap:8px;
+    font-size:13px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:#d5e4f7;
   }
-  .ipv-tcgl{
-    --accent:#38bdf8; --accent-hi:#e0f2fe; --accent-deep:#0369a1;
-    --glow:rgba(56,189,248,.5);
+  .sec-ico{ width:16px; height:16px; color:#8eb0d6; display:grid; place-items:center; }
+  .sec-ico svg{ width:16px; height:16px; }
+  .sec-ate{ font-size:13px; font-weight:700; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .vplot{
+    height:220px; display:grid; grid-template-columns:36px 1fr; grid-template-rows:18px 1fr 22px;
+    column-gap:6px; min-height:0; flex:0 0 auto;
   }
-  .ipv-ls{
-    --accent:#fb923c; --accent-hi:#ffedd5; --accent-deep:#c2410c;
-    --glow:rgba(251,146,60,.5);
+  .vaxis{
+    grid-column:1; grid-row:2;
+    display:flex; flex-direction:column; justify-content:space-between;
+    font-size:11px; font-weight:700; color:#7f93ad; text-align:right;
   }
-  .ipv-ciop{
-    --accent:#e2e8f0; --accent-hi:#ffffff; --accent-deep:#94a3b8;
-    --glow:rgba(226,232,240,.42);
+  .vbars{
+    grid-column:2; grid-row:1 / 4; position:relative;
+    display:grid; grid-template-columns:repeat(3, 1fr);
   }
-  .firm-top{ position:relative; display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
-  .firm-kicker{
-    font-size:clamp(12px,1vw,15px); font-weight:800; letter-spacing:.18em; text-transform:uppercase;
-    color:var(--accent);
+  .vbars::before{
+    content:""; position:absolute; left:0; right:0; top:18px; bottom:22px; pointer-events:none;
+    border-left:1px solid rgba(255,255,255,.16);
+    border-bottom:1px solid rgba(255,255,255,.16);
+    background-image:repeating-linear-gradient(to top, rgba(255,255,255,.12) 0 1px, transparent 1px 20%);
   }
-  .firm h2{
-    margin:0; font-size:clamp(28px,2.6vw,42px); font-weight:900; letter-spacing:-.04em; line-height:.95;
+  .vbar{ height:100%; display:grid; grid-template-rows:18px 1fr 22px; justify-items:center; }
+  .vbar b{ font-size:13px; font-weight:800; font-variant-numeric:tabular-nums; line-height:18px; }
+  .vbar em{ font-style:normal; font-size:12px; font-weight:700; color:#d5e4f7; }
+  .vbar.ok b{ color:var(--green); }
+  .vbar.early b{ color:var(--red); }
+  .vbar.late b{ color:var(--amber); }
+  .vbar-track{ width:58%; height:100%; position:relative; }
+  .vbar-track i{
+    position:absolute; left:0; right:0; bottom:0; height:calc(var(--p, 0) * 100%);
+    border-radius:6px 6px 2px 2px;
   }
-  .bloco-titulo{
-    font-size:clamp(12px,.95vw,15px); font-weight:800; letter-spacing:.14em; text-transform:uppercase;
-    color:var(--muted);
-  }
-  .pont-nums{
-    display:flex; flex-wrap:wrap; gap:8px clamp(14px,1.6vw,28px);
-    margin-top:8px; font-size:clamp(16px,1.35vw,22px); font-weight:800;
-  }
-  .pont-nums b{ font-variant-numeric:tabular-nums; font-weight:900; }
-  .pont-nums .ok{ color:var(--green); }
-  .pont-nums .early{ color:var(--red); }
-  .pont-nums .late{ color:var(--amber); }
-  .stack{
-    display:flex; height:14px; margin-top:10px; border-radius:99px; overflow:hidden; background:var(--track);
-  }
-  .stack i{ display:block; height:100%; width:0; }
-  .stack .ok{ background:var(--green); }
-  .stack .early{ background:var(--red); }
-  .stack .late{ background:var(--amber); }
-  .icv{ display:flex; flex-direction:column; gap:4px; min-width:0; }
-  .icv-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
+  .vbar.ok i{ background:var(--green); }
+  .vbar.early i{ background:var(--red); }
+  .vbar.late i{ background:var(--amber); }
+  .icv{ display:flex; flex-direction:column; gap:6px; min-height:132px; }
   .icv-pct{
-    font-size:clamp(48px,4.6vw,76px); font-weight:900; letter-spacing:-.045em; line-height:.9;
+    font-size:64px; font-weight:900; letter-spacing:-.04em; line-height:.9; min-height:64px;
     color:var(--icv); font-variant-numeric:tabular-nums;
   }
-  .icv-pct.is-off{
-    font-size:clamp(22px,1.8vw,32px); font-weight:800; letter-spacing:0; color:var(--muted);
-  }
-  .icv-conta, .icv-quando{
-    font-size:clamp(15px,1.15vw,20px); font-weight:700; color:var(--ink);
-  }
-  .icv-quando{ color:var(--muted); font-size:clamp(13px,1vw,16px); }
-  .icv.is-stale .icv-quando{ color:var(--amber); }
-  .icv-bar{
-    height:10px; margin-top:8px; border-radius:99px; overflow:hidden; background:var(--track);
-  }
-  .icv-bar i{
-    display:block; height:100%; width:0; border-radius:inherit;
-    background:linear-gradient(90deg, var(--icv-deep), var(--icv));
-  }
-
-  .garages{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; }
-  .garage{
-    padding:12px 14px 10px; border-radius:16px;
-    background:var(--card); border:1px solid var(--card-line);
-  }
-  .garage b{ display:block; font-size:13px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; margin-bottom:10px; color:var(--muted); }
-  .bars{ display:flex; height:12px; border-radius:99px; overflow:hidden; background:var(--track); }
-  .bars i{ display:block; height:100%; }
-  .garage .mini{ margin-top:10px; display:flex; justify-content:space-between; gap:4px; font-size:12px; font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap; }
-
-  .vivo-chart{
-    flex:1 1 auto;
-    min-height:160px;
-    height:auto;
-    margin-bottom:0;
-    border-radius:24px; padding:10px 14px 10px;
-    background:var(--card); border:1px solid var(--card-line);
+  .icv-pct.is-off{ font-size:26px; font-weight:800; letter-spacing:0; color:var(--muted); line-height:64px; }
+  .icv-conta{ min-height:18px; font-size:14px; font-weight:700; color:#d5e4f7; }
+  .icv-conta:empty{ display:none; }
+  .icv-bar{ height:14px; border-radius:99px; overflow:hidden; background:#16345a; }
+  .icv-bar i{ display:block; height:100%; width:0; background:linear-gradient(90deg, var(--icv-deep), var(--icv)); }
+  .mini{
+    flex:1 1 200px; min-height:180px; max-height:320px;
     display:flex; flex-direction:column; gap:4px;
   }
-  .vivo-chart-head{
-    display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
-    font-size:clamp(12px,1vw,15px); font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--muted);
-  }
-  .vivo-legend{ display:flex; gap:12px; font-size:clamp(11px,.9vw,13px); letter-spacing:.04em; }
+  .mini canvas{ flex:1; min-height:0; width:100% !important; }
+  .vivo-legend{ display:flex; justify-content:center; gap:14px; font-size:12px; font-weight:700; }
   .vivo-legend i{ font-style:normal; }
   .vivo-legend .ok{ color:var(--green); }
-  .vivo-legend .late{ color:var(--amber); }
   .vivo-legend .early{ color:var(--red); }
-  .vivo-chart canvas{ flex:1; min-height:0; width:100% !important; }
-  .erro{ color:#fb7185; font-weight:800; }
+  .vivo-legend .late{ color:var(--amber); }
+  .erro{ color:#fb7185; font-weight:800; font-size:13px; }
   .ftr{
-    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
-    font-size:clamp(12px,1vw,15px); color:var(--muted); font-weight:700;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    font-size:14px; color:#9fb0c9; font-weight:700;
   }
   .ftr a{ color:var(--ink); text-decoration:none; }
   @media (max-width: 980px){
     .kiosk{ height:auto; overflow:auto; }
-    .sistema, .vivo-grid, .garages{ grid-template-columns:1fr; }
-    .sistema-icv, .sistema-pont{ text-align:left; justify-content:flex-start; }
-  }
-  @media (prefers-reduced-motion:reduce){
-    .live-dot{ animation:none; }
+    .cols{ grid-template-columns:1fr; }
+    .vplot{ height:200px; }
   }
 </style>
 <link rel="stylesheet" href="../assets/css/portal-visual.css?v=20261026row1">
@@ -263,112 +155,107 @@
 <div class="kiosk">
   <header class="hdr">
     <div class="brand">
-      <img src="../assets/img/logo-ciop.png" alt="CIOP">
-      <div>
-        <div class="brand-title">Performance em tempo real</div>
-        <div class="brand-sub">CIOP — Centro de Inteligência Operacional de Londrina</div>
-      </div>
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M5 16.5A1.5 1.5 0 1 0 6.5 18 1.5 1.5 0 0 0 5 16.5zm12.5 0A1.5 1.5 0 1 0 19 18a1.5 1.5 0 0 0-1.5-1.5zM4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5V16a2 2 0 0 1-2 2h-.1a2.5 2.5 0 0 1-4.8 0h-2.2a2.5 2.5 0 0 1-4.8 0H6a2 2 0 0 1-2-2V6.5zM6 6v5h5V6H6zm7 0v5h5V6h-5z"/></svg></span>
+      <div class="brand-title"><b>CIOP</b><span>|</span>Performance em tempo real</div>
     </div>
     <div class="hdr-right">
       <span class="live-dot"></span>
-      <span>Pontualidade</span>
       <span class="stamp" id="stamp">Atualizando…</span>
-      <span class="stamp" id="icvStamp">Cumprimento…</span>
     </div>
   </header>
 
   <div class="erro" id="erro" hidden></div>
 
-  <section class="sistema" aria-label="Total do sistema">
-    <div class="sistema-nome">Total do sistema</div>
-    <div class="sistema-pont">
-      <div class="sistema-kpi ok"><b id="okTotal">—</b><span>No horário</span></div>
-      <div class="sistema-kpi early"><b id="nEarlyTotal">—</b><span>Adiantado</span></div>
-      <div class="sistema-kpi late"><b id="nLateTotal">—</b><span>Atrasado</span></div>
-    </div>
-    <div class="sistema-icv">
-      <em>Cumprimento</em>
-      <b id="icvTotal">—</b>
-      <small id="icvTotalNota"></small>
-    </div>
-  </section>
-
-  <div class="vivo-grid">
-    <article class="firm ipv-tcgl">
+  <div class="cols">
+    <article class="firm" aria-label="TCGL">
       <div class="firm-top">
+        <span class="firm-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M5 16.5A1.5 1.5 0 1 0 6.5 18 1.5 1.5 0 0 0 5 16.5zm12.5 0A1.5 1.5 0 1 0 19 18a1.5 1.5 0 0 0-1.5-1.5zM4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5V16a2 2 0 0 1-2 2h-.1a2.5 2.5 0 0 1-4.8 0h-2.2a2.5 2.5 0 0 1-4.8 0H6a2 2 0 0 1-2-2V6.5zM6 6v5h5V6H6zm7 0v5h5V6h-5z"/></svg></span>
         <h2>TCGL</h2>
-        <div class="firm-kicker">Área 1</div>
       </div>
-      <div>
-        <div class="bloco-titulo">Pontualidade</div>
-        <div class="pont-nums">
-          <span class="ok"><b id="okTcgl">—</b> No horário</span>
-          <span class="early"><b id="nEarlyTcgl">—</b> Adiantado</span>
-          <span class="late"><b id="nLateTcgl">—</b> Atrasado</span>
-        </div>
-        <div class="stack" aria-hidden="true">
-          <i class="ok" id="segOkTcgl"></i>
-          <i class="early" id="segEarlyTcgl"></i>
-          <i class="late" id="segLateTcgl"></i>
+      <div class="sec"><div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 19h16v2H4v-2zm2-3h3V8H6v8zm5 0h3V4h-3v12zm5 0h3v-6h-3v6z"/></svg></span>Pontualidade</div></div>
+      <div class="vplot">
+        <div class="vaxis" aria-hidden="true"><span>100%</span><span>80%</span><span>60%</span><span>40%</span><span>20%</span><span>0%</span></div>
+        <div class="vbars">
+          <div class="vbar ok"><b id="okTcgl">—</b><div class="vbar-track"><i id="colOkTcgl"></i></div><em>No horário</em></div>
+          <div class="vbar early"><b id="nEarlyTcgl">—</b><div class="vbar-track"><i id="colEarlyTcgl"></i></div><em>Adiantado</em></div>
+          <div class="vbar late"><b id="nLateTcgl">—</b><div class="vbar-track"><i id="colLateTcgl"></i></div><em>Atrasado</em></div>
         </div>
       </div>
       <div class="icv" id="icvBoxTcgl">
-        <div class="bloco-titulo" id="icvTituloTcgl">Cumprimento do dia</div>
-        <div class="icv-head">
-          <div class="icv-pct" id="icvPctTcgl">—</div>
-          <div class="icv-quando" id="icvQuandoTcgl"></div>
+        <div class="sec">
+          <div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 11h-5V7h2v4h3z"/></svg></span><span id="icvTituloTcgl">Cumprimento do dia</span></div>
+          <div class="sec-ate" id="icvQuandoTcgl"></div>
         </div>
-        <div class="icv-conta" id="icvContaTcgl"></div>
+        <div class="icv-pct" id="icvPctTcgl">—</div>
         <div class="icv-bar" aria-hidden="true"><i id="icvBarTcgl"></i></div>
+        <div class="icv-conta" id="icvContaTcgl"></div>
+      </div>
+      <div class="sec"><div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17l6-6 4 4 8-8v3h2V4h-6v2h3l-7 7-4-4-7 7z"/></svg></span>Pontualidade por hora</div></div>
+      <div class="mini"><canvas id="horaTcgl"></canvas>
+        <div class="vivo-legend"><i class="ok">● No horário</i><i class="early">● Adiantado</i><i class="late">● Atrasado</i></div>
       </div>
     </article>
-    <article class="firm ipv-ls">
+    <article class="firm" aria-label="LondriSul">
       <div class="firm-top">
+        <span class="firm-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M5 16.5A1.5 1.5 0 1 0 6.5 18 1.5 1.5 0 0 0 5 16.5zm12.5 0A1.5 1.5 0 1 0 19 18a1.5 1.5 0 0 0-1.5-1.5zM4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5V16a2 2 0 0 1-2 2h-.1a2.5 2.5 0 0 1-4.8 0h-2.2a2.5 2.5 0 0 1-4.8 0H6a2 2 0 0 1-2-2V6.5zM6 6v5h5V6H6zm7 0v5h5V6h-5z"/></svg></span>
         <h2>LondriSul</h2>
-        <div class="firm-kicker">Área 2</div>
       </div>
-      <div>
-        <div class="bloco-titulo">Pontualidade</div>
-        <div class="pont-nums">
-          <span class="ok"><b id="okLs">—</b> No horário</span>
-          <span class="early"><b id="nEarlyLs">—</b> Adiantado</span>
-          <span class="late"><b id="nLateLs">—</b> Atrasado</span>
-        </div>
-        <div class="stack" aria-hidden="true">
-          <i class="ok" id="segOkLs"></i>
-          <i class="early" id="segEarlyLs"></i>
-          <i class="late" id="segLateLs"></i>
+      <div class="sec"><div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 19h16v2H4v-2zm2-3h3V8H6v8zm5 0h3V4h-3v12zm5 0h3v-6h-3v6z"/></svg></span>Pontualidade</div></div>
+      <div class="vplot">
+        <div class="vaxis" aria-hidden="true"><span>100%</span><span>80%</span><span>60%</span><span>40%</span><span>20%</span><span>0%</span></div>
+        <div class="vbars">
+          <div class="vbar ok"><b id="okLs">—</b><div class="vbar-track"><i id="colOkLs"></i></div><em>No horário</em></div>
+          <div class="vbar early"><b id="nEarlyLs">—</b><div class="vbar-track"><i id="colEarlyLs"></i></div><em>Adiantado</em></div>
+          <div class="vbar late"><b id="nLateLs">—</b><div class="vbar-track"><i id="colLateLs"></i></div><em>Atrasado</em></div>
         </div>
       </div>
       <div class="icv" id="icvBoxLs">
-        <div class="bloco-titulo" id="icvTituloLs">Cumprimento do dia</div>
-        <div class="icv-head">
-          <div class="icv-pct" id="icvPctLs">—</div>
-          <div class="icv-quando" id="icvQuandoLs"></div>
+        <div class="sec">
+          <div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 11h-5V7h2v4h3z"/></svg></span><span id="icvTituloLs">Cumprimento do dia</span></div>
+          <div class="sec-ate" id="icvQuandoLs"></div>
         </div>
-        <div class="icv-conta" id="icvContaLs"></div>
+        <div class="icv-pct" id="icvPctLs">—</div>
         <div class="icv-bar" aria-hidden="true"><i id="icvBarLs"></i></div>
+        <div class="icv-conta" id="icvContaLs"></div>
+      </div>
+      <div class="sec"><div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17l6-6 4 4 8-8v3h2V4h-6v2h3l-7 7-4-4-7 7z"/></svg></span>Pontualidade por hora</div></div>
+      <div class="mini"><canvas id="horaLs"></canvas>
+        <div class="vivo-legend"><i class="ok">● No horário</i><i class="early">● Adiantado</i><i class="late">● Atrasado</i></div>
+      </div>
+    </article>
+    <article class="firm" aria-label="Total do sistema">
+      <div class="firm-top">
+        <span class="firm-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M5 16.5A1.5 1.5 0 1 0 6.5 18 1.5 1.5 0 0 0 5 16.5zm12.5 0A1.5 1.5 0 1 0 19 18a1.5 1.5 0 0 0-1.5-1.5zM4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5V16a2 2 0 0 1-2 2h-.1a2.5 2.5 0 0 1-4.8 0h-2.2a2.5 2.5 0 0 1-4.8 0H6a2 2 0 0 1-2-2V6.5zM6 6v5h5V6H6zm7 0v5h5V6h-5z"/></svg></span>
+        <h2>TOTAL DO SISTEMA</h2>
+      </div>
+      <div class="sec"><div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 19h16v2H4v-2zm2-3h3V8H6v8zm5 0h3V4h-3v12zm5 0h3v-6h-3v6z"/></svg></span>Pontualidade</div></div>
+      <div class="vplot">
+        <div class="vaxis" aria-hidden="true"><span>100%</span><span>80%</span><span>60%</span><span>40%</span><span>20%</span><span>0%</span></div>
+        <div class="vbars">
+          <div class="vbar ok"><b id="okTotal">—</b><div class="vbar-track"><i id="colOkTotal"></i></div><em>No horário</em></div>
+          <div class="vbar early"><b id="nEarlyTotal">—</b><div class="vbar-track"><i id="colEarlyTotal"></i></div><em>Adiantado</em></div>
+          <div class="vbar late"><b id="nLateTotal">—</b><div class="vbar-track"><i id="colLateTotal"></i></div><em>Atrasado</em></div>
+        </div>
+      </div>
+      <div class="icv" id="icvBoxTotal">
+        <div class="sec">
+          <div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 11h-5V7h2v4h3z"/></svg></span><span id="icvTituloTotal">Cumprimento do dia</span></div>
+          <div class="sec-ate" id="icvQuandoTotal"></div>
+        </div>
+        <div class="icv-pct" id="icvPctTotal">—</div>
+        <div class="icv-bar" aria-hidden="true"><i id="icvBarTotal"></i></div>
+        <div class="icv-conta" id="icvContaTotal"></div>
+      </div>
+      <div class="sec"><div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17l6-6 4 4 8-8v3h2V4h-6v2h3l-7 7-4-4-7 7z"/></svg></span>Pontualidade por hora</div></div>
+      <div class="mini"><canvas id="horaTotal"></canvas>
+        <div class="vivo-legend"><i class="ok">● No horário</i><i class="early">● Adiantado</i><i class="late">● Atrasado</i></div>
       </div>
     </article>
   </div>
 
-  <div class="garages" id="garages"></div>
-
-  <section class="vivo-chart">
-    <div class="vivo-chart-head">
-      <span>Decorrer do dia · hora a hora</span>
-      <div class="vivo-legend">
-        <i class="ok">● No horário</i>
-        <i class="early">● Adiantado</i>
-        <i class="late">● Atrasado</i>
-      </div>
-    </div>
-    <canvas id="horaChart"></canvas>
-  </section>
-
   <footer class="ftr">
-    <span>CIOP · Centro de Inteligência Operacional de Londrina</span>
-    <a href="../index.html">Portal</a>
+    <span id="ftrData"></span>
+    <span>CIOP · Operações</span>
   </footer>
 </div>
 
@@ -379,16 +266,18 @@ const HIST_KEY = "ciop-mapa-pontualidade-horas-v1";
 const DIAS_KEY = "ciop-mapa-pontualidade-dias-v1";
 const POLL_MS = 5000;
 const SLOTS_HORA = 12;
-let horaChart;
+const miniCharts = {};
 let carregando = false;
 let ultimoStamp = "";
 
-const fmtPct = (v) => (v == null || !Number.isFinite(v) ? "—" : v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%");
+const fmtPct = (v) => {
+  if (v == null || !Number.isFinite(v)) return "—";
+  const arred = Math.round(v * 10) / 10;
+  const casas = Math.abs(arred - Math.round(arred)) < 0.001 ? 0 : 1;
+  return arred.toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas }) + "%";
+};
 function cores() {
-  const claro = document.documentElement.classList.contains("dk-light");
-  return claro
-    ? { ok: "#15803d", late: "#a16207", early: "#dc2626", grid: "rgba(15,23,42,.1)", tick: "#334155" }
-    : { ok: "#4ade80", late: "#fbbf24", early: "#fb7185", grid: "rgba(255,255,255,.08)", tick: "rgba(226,234,250,.9)" };
+  return { ok: "#3dde73", late: "#f5d20a", early: "#ff4d4d", grid: "rgba(255,255,255,.1)", tick: "#9fb0c9" };
 }
 const toPct = (v) => {
   const n = Number(v);
@@ -438,7 +327,7 @@ function setTxt(id, v) {
 }
 function alturaBarra(v) {
   if (v == null || !Number.isFinite(v)) return 0;
-  return Math.max(3, Math.min(100, v));
+  return Math.max(0, Math.min(100, v));
 }
 function pintarCol(id, v) {
   const el = document.getElementById(id);
@@ -511,9 +400,15 @@ function idadeApi(stamp) {
 function pintarStamp() {
   const el = document.getElementById("stamp");
   if (!el) return;
-  const hora = (String(ultimoStamp).match(/(\d{2}:\d{2}:\d{2})/) || [])[1] || ultimoStamp || "Ao vivo";
-  const idade = idadeApi(ultimoStamp);
-  el.textContent = idade ? `${hora} · ${idade}` : hora;
+  const hm = (String(ultimoStamp).match(/(\d{2}:\d{2})/) || [])[1];
+  el.textContent = hm ? "Atualizado às " + hm : "Atualizando…";
+}
+function pintarData() {
+  const el = document.getElementById("ftrData");
+  if (!el) return;
+  el.textContent = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo", day: "numeric", month: "long", year: "numeric"
+  }).format(new Date());
 }
 function lerHist() {
   try {
@@ -613,28 +508,9 @@ function pintarBlocoIcv(suf, bloco, antigo) {
   if (bar) bar.style.width = Math.max(0, Math.min(100, bloco.pct)) + "%";
 }
 function pintarIcv(estado, antigo) {
-  const ls = estado && estado.ls;
-  const total = estado && estado.total;
   pintarBlocoIcv("Tcgl", null, false);
-  pintarBlocoIcv("Ls", ls, antigo);
-  const el = document.getElementById("icvTotal");
-  const nota = document.getElementById("icvTotalNota");
-  const stamp = document.getElementById("icvStamp");
-  if (el) {
-    if (!total) {
-      el.textContent = "indisponível";
-      el.classList.add("is-off");
-      if (nota) nota.textContent = "";
-    } else {
-      el.textContent = fmtPct(total.pct);
-      el.classList.remove("is-off");
-      if (nota) nota.textContent = textoAte(total, antigo);
-    }
-  }
-  if (!stamp) return;
-  const ref = total || ls;
-  if (!ref) stamp.textContent = "Cumprimento indisponível";
-  else stamp.textContent = (antigo ? "Cumprimento · dados antigos · até " : "Cumprimento · até ") + ref.corte;
+  pintarBlocoIcv("Ls", estado && estado.ls, antigo);
+  pintarBlocoIcv("Total", estado && estado.total, antigo);
 }
 function lerIcvGuardado() {
   try {
@@ -667,65 +543,74 @@ function linha(label, cor, dados, fill) {
     spanGaps: true
   };
 }
-function pintarLinhaHora(hist) {
-  const labels = Array.from({ length: 24 * SLOTS_HORA }, (_, i) => {
-    if (i % (SLOTS_HORA * 2) !== 0) return "";
-    return String(i / SLOTS_HORA).padStart(2, "0") + "h";
+const HORAS_GRAF = [6, 8, 10, 12, 14, 16, 18, 20, 22];
+function serieEmpresa(hist, empresa, campo) {
+  return HORAS_GRAF.map((h) => {
+    const ponto = hist.horas?.[String(h)];
+    const src = empresa ? ponto?.[empresa] : ponto;
+    const v = Number(src?.[campo]);
+    return Number.isFinite(v) ? Math.round(v * 10) / 10 : null;
   });
+}
+function pintarMini(id, hist, empresa) {
+  const canvas = document.getElementById(id);
+  if (!canvas || typeof Chart === "undefined") return;
+  const paleta = cores();
+  const labels = HORAS_GRAF.map((h) => String(h).padStart(2, "0") + "h");
   const data = {
     labels,
     datasets: [
-      linha("No horário", cores().ok, serieHora(hist, "ok"), true),
-      linha("Adiantado", cores().early, serieHora(hist, "early"), false),
-      linha("Atrasado", cores().late, serieHora(hist, "late"), false)
+      linha("No horário", paleta.ok, serieEmpresa(hist, empresa, "ok"), false),
+      linha("Adiantado", paleta.early, serieEmpresa(hist, empresa, "early"), false),
+      linha("Atrasado", paleta.late, serieEmpresa(hist, empresa, "late"), false)
     ]
   };
-  if (horaChart) {
-    const paleta = cores();
-    horaChart.data = data;
-    horaChart.options.scales.x.grid.color = paleta.grid;
-    horaChart.options.scales.x.ticks.color = paleta.tick;
-    horaChart.options.scales.y.grid.color = paleta.grid;
-    horaChart.update("none");
+  if (miniCharts[id]) {
+    miniCharts[id].data = data;
+    miniCharts[id].update("none");
     return;
   }
-  horaChart = new Chart(document.getElementById("horaChart"), {
+  miniCharts[id] = new Chart(canvas, {
     type: "line",
     data,
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      interaction: { mode: "index", intersect: false },
       spanGaps: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${fmtPct(c.parsed.y)}` } }
-      },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
       scales: {
         x: {
-          grid: { color: cores().grid },
+          grid: { color: paleta.grid },
           border: { display: false },
           ticks: {
-            display: true,
-            color: cores().tick,
-            maxRotation: 0, autoSkip: false,
-            font: { size: 20, weight: "800" },
-            padding: 8,
-            callback: (_v, i) => (i % 2 === 0 ? labels[i] : "")
+            color: paleta.tick, maxRotation: 0, autoSkip: false,
+            font: { size: 11, weight: "700" },
+            callback: (_v, i) => (HORAS_GRAF[i] % 4 === 2 ? labels[i] : "")
           }
         },
         y: {
           min: 0, max: 100,
           ticks: { display: false },
           border: { display: false },
-          grid: { color: cores().grid }
+          grid: { color: paleta.grid }
         }
       },
-      layout: { padding: { top: 6, right: 8, bottom: 8, left: 4 } },
+      layout: { padding: { top: 4, right: 4, bottom: 0, left: 0 } },
       animation: false,
-      elements: { line: { tension: .25, borderWidth: 3 }, point: { radius: 0, hoverRadius: 5 } }
+      elements: {
+        line: { tension: .35, borderWidth: 2 },
+        point: {
+          radius: (ctx) => (ctx.dataset.data.filter((v) => v != null).length < 2 ? 3 : 0),
+          backgroundColor: (ctx) => ctx.dataset.borderColor
+        }
+      }
     }
   });
+}
+function pintarLinhaHora(hist) {
+  pintarMini("horaTcgl", hist, "tcgl");
+  pintarMini("horaLs", hist, "ls");
+  pintarMini("horaTotal", hist, null);
 }
 let ultimoDesenho = null;
 function pintar(payload) {
@@ -771,6 +656,7 @@ async function carregar() {
     carregando = false;
   }
 }
+pintarData();
 pintarLinhaHora(lerHist());
 const icvInicial = lerIcvGuardado();
 if (icvInicial) pintarIcv(icvInicial, false);
