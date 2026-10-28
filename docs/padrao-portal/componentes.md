@@ -42,7 +42,7 @@ Kiosk: sem este menu.
 
 ## Busca
 
-Home: `.ciop-search` + `.ciop-search-input` (altura 46 px, 16 px de fonte). No **Início** filtra os favoritos; nas áreas filtra **só o catálogo visível**. Placeholder e `aria-description` dizem o recorte. Vazio: `.home-search-empty` com texto, **Limpar busca** e lembrete de que os demais módulos estão nas outras áreas. Não é busca global do backend.
+Home: `.ciop-search` + `.ciop-search-input` (altura 46 px, 16 px de fonte). No **Início** filtra favoritos e os catálogos das quatro áreas; nas áreas do menu filtra **só o catálogo visível**. Placeholder e `aria-description` dizem o recorte. Vazio: `.home-search-empty` com texto e **Limpar busca**. Não é busca global do backend.
 
 Consultas (veículo/funcionário/SEI): campo da própria página + classes `.cv-panel` cobertas pelo DS.
 

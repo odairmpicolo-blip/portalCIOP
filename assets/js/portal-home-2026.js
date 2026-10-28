@@ -336,8 +336,8 @@
     if (!input) return;
     var area = nomeArea(alvo);
     if (alvo === "inicio") {
-      input.placeholder = "Buscar nos favoritos";
-      input.setAttribute("aria-description", "Filtra os acessos rápidos da página inicial.");
+      input.placeholder = "Buscar módulos";
+      input.setAttribute("aria-description", "Filtra os acessos rápidos e todas as áreas da página inicial.");
     } else if (alvo === "outros") {
       input.placeholder = "Buscar em Outros";
       input.setAttribute("aria-description", "Filtra só os acessos de Outros.");
@@ -346,6 +346,7 @@
       input.setAttribute("aria-description", "Filtra só os módulos de " + area + ". Os demais continuam nas outras áreas.");
     }
     filtrarFavoritos();
+    input.dispatchEvent(new Event("input", { bubbles: true }));
     atualizarBuscaVazia();
   }
 
@@ -361,7 +362,8 @@
     var area = nomeArea(alvo);
     var visiveis = 0;
     if (view === "inicio") {
-      visiveis = document.querySelectorAll("#homeQuick a:not([hidden]):not(.ciop-search-hidden)").length;
+      visiveis = document.querySelectorAll("#homeQuick a:not([hidden]):not(.ciop-search-hidden)").length +
+        document.querySelectorAll(".card-section a.card:not([hidden]):not(.ciop-search-hidden)").length;
     } else if (view === "outros") {
       visiveis = document.querySelectorAll(".home-other-card:not([hidden])").length;
     } else {
@@ -372,8 +374,8 @@
     empty.hidden = !show;
     if (!show) return;
     if (view === "inicio") {
-      text.textContent = "Nenhum favorito corresponde a «" + q + "».";
-      if (hint) hint.textContent = "Os demais módulos estão em Operação, Indicadores, Relatórios e Painéis de TV.";
+      text.textContent = "Nenhum módulo corresponde a «" + q + "».";
+      if (hint) hint.textContent = "Tente outro termo ou limpe a busca para ver favoritos e todas as áreas.";
     } else {
       text.textContent = "Nenhum módulo em " + area + " corresponde a «" + q + "».";
       if (hint) hint.textContent = "Esta busca filtra só " + area + ". Os demais módulos continuam nas outras áreas.";
