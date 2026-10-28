@@ -10,142 +10,189 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
-  :root, html.dk-light{
-    --bg-1:#07111f;
-    --bg-2:#0b1b33;
-    --ink:#f4f8ff;
-    --muted:#9fb0c9;
-    --card:#0e2240;
-    --card-line:#1d4e89;
-    --track:rgba(255,255,255,.1);
-    --green:#3dde73;
-    --amber:#f5d20a;
-    --red:#ff4d4d;
-    --icv:#3b9eff;
-    --icv-deep:#1d6fe0;
+  :root{
+    --bg-1:#04060f;
+    --bg-2:#0a1024;
+    --ink:#f4f7ff;
+    --muted:rgba(226,234,250,.62);
+    --green:#22c55e;
+    --amber:#fbbf24;
+    --red:#ef4444;
   }
   *{ box-sizing:border-box; }
   html, body{
-    margin:0; height:100%; color:var(--ink);
+    margin:0; min-height:100%; color:var(--ink);
     font-family:Outfit, Inter, system-ui, sans-serif;
     background:
-      radial-gradient(1200px 280px at 50% -40px, rgba(56,130,220,.22), transparent 70%),
-      linear-gradient(180deg, var(--bg-1), var(--bg-2));
+      radial-gradient(900px 520px at 8% -10%, rgba(43,52,128,.55), transparent 58%),
+      radial-gradient(800px 480px at 100% 0%, rgba(228,74,28,.28), transparent 52%),
+      linear-gradient(180deg, var(--bg-1), var(--bg-2) 58%, #050814);
+  }
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.18;
+    background-image:
+      linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+    background-size:64px 64px;
+    mask-image:radial-gradient(ellipse at 50% 30%, #000 30%, transparent 78%);
   }
   .kiosk{
-    height:100vh; overflow:hidden;
+    position:relative; z-index:1;
+    min-height:100vh;
+    height:100vh;
+    overflow:hidden;
     display:flex; flex-direction:column;
-    padding:18px 22px 14px;
-    gap:14px;
+    padding:clamp(12px,1.6vh,24px) clamp(18px,2.2vw,40px) 32px;
+    gap:clamp(12px,1.6vh,20px);
   }
-  .hdr{ display:flex; align-items:center; justify-content:space-between; gap:16px; }
-  .brand{ display:flex; align-items:center; gap:14px; min-width:0; }
-  .ico{
-    width:42px; height:42px; border-radius:12px; flex:0 0 auto;
-    display:grid; place-items:center; color:#d7e7ff;
-    background:#123056; border:1px solid #2a5f9a;
+  .hdr{
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
   }
-  .ico svg, .sec-ico svg, .firm-ico svg{ width:22px; height:22px; display:block; }
-  .brand-title{ font-size:28px; font-weight:800; letter-spacing:-.03em; }
-  .brand-title b{ font-weight:900; }
-  .brand-title span{ color:#7f93ad; font-weight:600; margin:0 8px; }
+  .brand{ display:flex; align-items:center; gap:16px; min-width:0; }
+  .brand img{
+    height:clamp(44px,5vh,64px); width:auto;
+    filter:drop-shadow(0 4px 10px rgba(0,0,0,.7)) drop-shadow(0 10px 22px rgba(0,0,0,.45));
+  }
+  .brand-title{ font-size:clamp(22px,2.4vw,36px); font-weight:900; letter-spacing:-.04em; }
+  .brand-sub{ font-size:clamp(12px,.95vw,15px); color:var(--muted); font-weight:700; letter-spacing:.04em; }
   .hdr-right{
-    display:flex; align-items:center; gap:8px;
-    font-weight:800; font-size:15px;
-    padding:8px 16px; border-radius:999px;
-    color:#d9ffe8; background:#12351f; border:1px solid #1f7a45;
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+    font-size:clamp(12px,1vw,15px);
+    padding:8px 14px 8px 12px; border-radius:999px;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
   }
-  .live-dot{ width:8px; height:8px; border-radius:50%; background:#3dde73; box-shadow:0 0 10px #3dde73; }
-  .stamp{ font-variant-numeric:tabular-nums; }
+  .live-dot{ width:9px; height:9px; border-radius:50%; background:#22c55e; box-shadow:0 0 12px #22c55e; animation:pulse 2.2s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
+  .stamp{ font-variant-numeric:tabular-nums; letter-spacing:0; text-transform:none; color:#c9d6ef; }
 
-  .cols{
-    flex:1; min-height:0;
-    display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;
+  .vivo-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(14px,1.8vw,24px);
+    min-height:min(42vh, 420px);
   }
   .firm{
-    min-height:0; overflow:hidden;
-    border-radius:18px; padding:16px 16px 12px;
-    background:linear-gradient(180deg, #102848, var(--card));
-    border:1px solid var(--card-line);
-    display:flex; flex-direction:column; gap:10px;
+    --accent:#38bdf8; --glow:rgba(56,189,248,.45);
+    position:relative; min-height:0; overflow:hidden;
+    border-radius:32px;
+    padding:clamp(18px,2.4vh,32px) clamp(18px,2vw,30px) clamp(16px,2vh,24px);
+    background:
+      radial-gradient(120% 80% at 100% 0%, var(--glow), transparent 55%),
+      linear-gradient(165deg, rgba(255,255,255,.14), rgba(255,255,255,.04) 42%, rgba(8,12,28,.62));
+    border:1px solid rgba(255,255,255,.2);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.28),
+      inset 0 -1px 0 rgba(0,0,0,.28),
+      0 28px 56px rgba(0,0,0,.4);
+    backdrop-filter:blur(18px);
+    display:grid;
+    grid-template-rows:auto minmax(180px,1fr);
+    gap:clamp(8px,1.2vh,14px);
   }
-  .firm-top{ display:flex; align-items:center; gap:10px; }
-  .firm-ico{
-    width:34px; height:34px; border-radius:10px; color:#d7e7ff;
-    display:grid; place-items:center; background:#16345c; border:1px solid #2a5f9a;
+  .firm::before{
+    content:""; position:absolute; width:280px; height:280px; right:-90px; top:-90px; border-radius:50%;
+    background:radial-gradient(circle, var(--glow), transparent 70%); pointer-events:none; opacity:.9;
   }
-  .firm h2{ margin:0; font-size:22px; font-weight:800; letter-spacing:-.02em; }
-  .sec{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
-  .sec-nome{
-    display:flex; align-items:center; gap:8px;
-    font-size:13px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:#d5e4f7;
+  .firm::after{
+    content:""; position:absolute; left:18px; right:18px; top:0; height:3px;
+    background:linear-gradient(90deg, transparent, var(--accent), transparent);
+    box-shadow:0 0 18px var(--accent);
   }
-  .sec-ico{ width:16px; height:16px; color:#8eb0d6; display:grid; place-items:center; }
-  .sec-ico svg{ width:16px; height:16px; }
-  .sec-ate{ font-size:13px; font-weight:700; color:var(--muted); font-variant-numeric:tabular-nums; }
-  .vplot{
-    height:220px; display:grid; grid-template-columns:36px 1fr; grid-template-rows:18px 1fr 22px;
-    column-gap:6px; min-height:0; flex:0 0 auto;
+  .ipv-tcgl{
+    --accent:#38bdf8; --accent-hi:#e0f2fe; --accent-deep:#0369a1;
+    --glow:rgba(56,189,248,.5);
   }
-  .vaxis{
-    grid-column:1; grid-row:2;
-    display:flex; flex-direction:column; justify-content:space-between;
-    font-size:11px; font-weight:700; color:#7f93ad; text-align:right;
+  .ipv-ls{
+    --accent:#fb923c; --accent-hi:#ffedd5; --accent-deep:#c2410c;
+    --glow:rgba(251,146,60,.5);
   }
-  .vbars{
-    grid-column:2; grid-row:1 / 4; position:relative;
-    display:grid; grid-template-columns:repeat(3, 1fr);
+  .ipv-ciop{
+    --accent:#e2e8f0; --accent-hi:#ffffff; --accent-deep:#94a3b8;
+    --glow:rgba(226,232,240,.42);
   }
-  .vbars::before{
-    content:""; position:absolute; left:0; right:0; top:18px; bottom:22px; pointer-events:none;
-    border-left:1px solid rgba(255,255,255,.16);
-    border-bottom:1px solid rgba(255,255,255,.16);
-    background-image:repeating-linear-gradient(to top, rgba(255,255,255,.12) 0 1px, transparent 1px 20%);
+  .firm-top{ position:relative; display:flex; flex-direction:column; gap:6px; }
+  .firm-kicker{
+    font-size:clamp(13px,1.1vw,16px); font-weight:800; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--accent); text-shadow:0 0 18px var(--glow);
   }
-  .vbar{ height:100%; display:grid; grid-template-rows:18px 1fr 22px; justify-items:center; }
-  .vbar b{ font-size:13px; font-weight:800; font-variant-numeric:tabular-nums; line-height:18px; }
-  .vbar em{ font-style:normal; font-size:12px; font-weight:700; color:#d5e4f7; }
-  .vbar.ok b{ color:var(--green); }
-  .vbar.early b{ color:var(--red); }
-  .vbar.late b{ color:var(--amber); }
-  .vbar-track{ width:58%; height:100%; position:relative; }
-  .vbar-track i{
-    position:absolute; left:0; right:0; bottom:0; height:calc(var(--p, 0) * 100%);
-    border-radius:6px 6px 2px 2px;
+  .firm h2{
+    margin:0; font-size:clamp(32px,3.6vw,56px); font-weight:900; letter-spacing:-.045em; line-height:.92;
+    text-shadow:0 8px 28px rgba(0,0,0,.35);
   }
-  .vbar.ok i{ background:var(--green); }
-  .vbar.early i{ background:var(--red); }
-  .vbar.late i{ background:var(--amber); }
-  .icv{ display:flex; flex-direction:column; gap:6px; min-height:132px; }
-  .icv-pct{
-    font-size:64px; font-weight:900; letter-spacing:-.04em; line-height:.9; min-height:64px;
-    color:var(--icv); font-variant-numeric:tabular-nums;
+  .vivo-bars{
+    height:100%; min-height:0;
+    display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(8px,1.1vw,16px);
   }
-  .icv-pct.is-off{ font-size:26px; font-weight:800; letter-spacing:0; color:var(--muted); line-height:64px; }
-  .icv-conta{ min-height:18px; font-size:14px; font-weight:700; color:#d5e4f7; }
-  .icv-conta:empty{ display:none; }
-  .icv-bar{ height:14px; border-radius:99px; overflow:hidden; background:#16345a; }
-  .icv-bar i{ display:block; height:100%; width:0; background:linear-gradient(90deg, var(--icv-deep), var(--icv)); }
-  .mini{
-    flex:1 1 200px; min-height:180px; max-height:320px;
+  .vivo-bar{
+    display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:6px;
+    min-height:0; text-align:center;
+  }
+  .vivo-bar b{
+    font-size:clamp(16px,1.9vw,30px); font-weight:900;
+    font-variant-numeric:tabular-nums; line-height:1; white-space:nowrap;
+  }
+  .vivo-col{
+    position:relative; min-height:0; height:100%;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:14px;
+  }
+  .vivo-col i{
+    position:absolute; left:22%; right:22%; bottom:8px; top:8px;
+    transform:scaleY(var(--p, 0));
+    transform-origin:bottom center;
+    border-radius:8px 8px 4px 4px;
+    transition:transform .2s ease;
+  }
+  .vivo-bar em{
+    font-style:normal; font-size:clamp(10px,.85vw,13px); font-weight:800;
+    letter-spacing:.04em; text-transform:uppercase; line-height:1.2;
+  }
+  .vivo-bar.ok b, .vivo-bar.ok em{ color:#4ade80; }
+  .vivo-bar.ok i{ background:linear-gradient(180deg,#86efac,#22c55e); box-shadow:0 0 14px rgba(34,197,94,.4); }
+  .vivo-bar.late b, .vivo-bar.late em{ color:#fbbf24; }
+  .vivo-bar.late i{ background:linear-gradient(180deg,#fde68a,#fbbf24); box-shadow:0 0 14px rgba(251,191,36,.35); }
+  .vivo-bar.early b, .vivo-bar.early em{ color:#fb7185; }
+  .vivo-bar.early i{ background:linear-gradient(180deg,#fda4af,#ef4444); box-shadow:0 0 14px rgba(239,68,68,.35); }
+
+  .garages{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; }
+  .garage{
+    padding:16px 16px 14px; border-radius:16px;
+    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);
+  }
+  .garage b{ display:block; font-size:13px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; margin-bottom:10px; color:#c9d6ef; }
+  .bars{ display:flex; height:12px; border-radius:99px; overflow:hidden; background:rgba(255,255,255,.08); }
+  .bars i{ display:block; height:100%; }
+  .garage .mini{ margin-top:10px; display:flex; justify-content:space-between; gap:4px; font-size:12px; font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  .vivo-chart{
+    flex:1 1 auto;
+    min-height:180px;
+    height:auto;
+    margin-bottom:0;
+    border-radius:24px; padding:10px 14px 10px;
+    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);
     display:flex; flex-direction:column; gap:4px;
   }
-  .mini canvas{ flex:1; min-height:0; width:100% !important; }
-  .vivo-legend{ display:flex; justify-content:center; gap:14px; font-size:12px; font-weight:700; }
-  .vivo-legend i{ font-style:normal; }
-  .vivo-legend .ok{ color:var(--green); }
-  .vivo-legend .early{ color:var(--red); }
-  .vivo-legend .late{ color:var(--amber); }
-  .erro{ color:#fb7185; font-weight:800; font-size:13px; }
-  .ftr{
-    display:flex; align-items:center; justify-content:space-between; gap:12px;
-    font-size:14px; color:#9fb0c9; font-weight:700;
+  .vivo-chart-head{
+    display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+    font-size:clamp(12px,1vw,15px); font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:#c9d6ef;
   }
-  .ftr a{ color:var(--ink); text-decoration:none; }
+  .vivo-legend{ display:flex; gap:12px; font-size:clamp(11px,.9vw,13px); letter-spacing:.04em; }
+  .vivo-legend i{ font-style:normal; }
+  .vivo-legend .ok{ color:#4ade80; }
+  .vivo-legend .late{ color:#fbbf24; }
+  .vivo-legend .early{ color:#fb7185; }
+  .vivo-chart canvas{ flex:1; min-height:0; width:100% !important; }
+  .erro{ color:#fb7185; font-weight:800; }
+  .ftr{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    font-size:clamp(12px,1vw,15px); color:var(--muted); font-weight:700;
+  }
+  .ftr a{ color:#c9d6ef; text-decoration:none; }
   @media (max-width: 980px){
-    .kiosk{ height:auto; overflow:auto; }
-    .cols{ grid-template-columns:1fr; }
-    .vplot{ height:200px; }
+    .vivo-grid, .garages{ grid-template-columns:1fr; }
+    .vivo-grid{ min-height:0; }
+    .firm{ min-height:280px; }
   }
 </style>
 <link rel="stylesheet" href="../assets/css/portal-visual.css?v=20261026row1">
@@ -155,130 +202,89 @@
 <div class="kiosk">
   <header class="hdr">
     <div class="brand">
-      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M5 16.5A1.5 1.5 0 1 0 6.5 18 1.5 1.5 0 0 0 5 16.5zm12.5 0A1.5 1.5 0 1 0 19 18a1.5 1.5 0 0 0-1.5-1.5zM4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5V16a2 2 0 0 1-2 2h-.1a2.5 2.5 0 0 1-4.8 0h-2.2a2.5 2.5 0 0 1-4.8 0H6a2 2 0 0 1-2-2V6.5zM6 6v5h5V6H6zm7 0v5h5V6h-5z"/></svg></span>
-      <div class="brand-title"><b>CIOP</b><span>|</span>Performance em tempo real</div>
+      <img src="../assets/img/logo-ciop.png" alt="CIOP">
+      <div>
+        <div class="brand-title">Performance em tempo real</div>
+        <div class="brand-sub">CIOP — Centro de Inteligência Operacional de Londrina</div>
+      </div>
     </div>
     <div class="hdr-right">
       <span class="live-dot"></span>
+      <span>Ao vivo</span>
       <span class="stamp" id="stamp">Atualizando…</span>
     </div>
   </header>
 
   <div class="erro" id="erro" hidden></div>
 
-  <div class="cols">
-    <article class="firm" aria-label="TCGL">
+  <div class="vivo-grid">
+    <article class="firm ipv-tcgl">
       <div class="firm-top">
-        <span class="firm-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M5 16.5A1.5 1.5 0 1 0 6.5 18 1.5 1.5 0 0 0 5 16.5zm12.5 0A1.5 1.5 0 1 0 19 18a1.5 1.5 0 0 0-1.5-1.5zM4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5V16a2 2 0 0 1-2 2h-.1a2.5 2.5 0 0 1-4.8 0h-2.2a2.5 2.5 0 0 1-4.8 0H6a2 2 0 0 1-2-2V6.5zM6 6v5h5V6H6zm7 0v5h5V6h-5z"/></svg></span>
+        <div class="firm-kicker">Área 1</div>
         <h2>TCGL</h2>
       </div>
-      <div class="sec"><div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 19h16v2H4v-2zm2-3h3V8H6v8zm5 0h3V4h-3v12zm5 0h3v-6h-3v6z"/></svg></span>Pontualidade</div></div>
-      <div class="vplot">
-        <div class="vaxis" aria-hidden="true"><span>100%</span><span>80%</span><span>60%</span><span>40%</span><span>20%</span><span>0%</span></div>
-        <div class="vbars">
-          <div class="vbar ok"><b id="okTcgl">—</b><div class="vbar-track"><i id="colOkTcgl"></i></div><em>No horário</em></div>
-          <div class="vbar early"><b id="nEarlyTcgl">—</b><div class="vbar-track"><i id="colEarlyTcgl"></i></div><em>Adiantado</em></div>
-          <div class="vbar late"><b id="nLateTcgl">—</b><div class="vbar-track"><i id="colLateTcgl"></i></div><em>Atrasado</em></div>
-        </div>
-      </div>
-      <div class="icv" id="icvBoxTcgl">
-        <div class="sec">
-          <div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 11h-5V7h2v4h3z"/></svg></span><span id="icvTituloTcgl">Cumprimento do dia</span></div>
-          <div class="sec-ate" id="icvQuandoTcgl"></div>
-        </div>
-        <div class="icv-pct" id="icvPctTcgl">—</div>
-        <div class="icv-bar" aria-hidden="true"><i id="icvBarTcgl"></i></div>
-        <div class="icv-conta" id="icvContaTcgl"></div>
-      </div>
-      <div class="sec"><div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17l6-6 4 4 8-8v3h2V4h-6v2h3l-7 7-4-4-7 7z"/></svg></span>Pontualidade por hora</div></div>
-      <div class="mini"><canvas id="horaTcgl"></canvas>
-        <div class="vivo-legend"><i class="ok">● No horário</i><i class="early">● Adiantado</i><i class="late">● Atrasado</i></div>
+      <div class="vivo-bars">
+        <div class="vivo-bar ok"><b id="okTcgl">—</b><span class="vivo-col"><i id="colOkTcgl"></i></span><em>No horário</em></div>
+        <div class="vivo-bar late"><b id="nLateTcgl">—</b><span class="vivo-col"><i id="colLateTcgl"></i></span><em>Atrasado</em></div>
+        <div class="vivo-bar early"><b id="nEarlyTcgl">—</b><span class="vivo-col"><i id="colEarlyTcgl"></i></span><em>Adiantado</em></div>
       </div>
     </article>
-    <article class="firm" aria-label="LondriSul">
+    <article class="firm ipv-ls">
       <div class="firm-top">
-        <span class="firm-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M5 16.5A1.5 1.5 0 1 0 6.5 18 1.5 1.5 0 0 0 5 16.5zm12.5 0A1.5 1.5 0 1 0 19 18a1.5 1.5 0 0 0-1.5-1.5zM4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5V16a2 2 0 0 1-2 2h-.1a2.5 2.5 0 0 1-4.8 0h-2.2a2.5 2.5 0 0 1-4.8 0H6a2 2 0 0 1-2-2V6.5zM6 6v5h5V6H6zm7 0v5h5V6h-5z"/></svg></span>
+        <div class="firm-kicker">Área 2</div>
         <h2>LondriSul</h2>
       </div>
-      <div class="sec"><div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 19h16v2H4v-2zm2-3h3V8H6v8zm5 0h3V4h-3v12zm5 0h3v-6h-3v6z"/></svg></span>Pontualidade</div></div>
-      <div class="vplot">
-        <div class="vaxis" aria-hidden="true"><span>100%</span><span>80%</span><span>60%</span><span>40%</span><span>20%</span><span>0%</span></div>
-        <div class="vbars">
-          <div class="vbar ok"><b id="okLs">—</b><div class="vbar-track"><i id="colOkLs"></i></div><em>No horário</em></div>
-          <div class="vbar early"><b id="nEarlyLs">—</b><div class="vbar-track"><i id="colEarlyLs"></i></div><em>Adiantado</em></div>
-          <div class="vbar late"><b id="nLateLs">—</b><div class="vbar-track"><i id="colLateLs"></i></div><em>Atrasado</em></div>
-        </div>
-      </div>
-      <div class="icv" id="icvBoxLs">
-        <div class="sec">
-          <div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 11h-5V7h2v4h3z"/></svg></span><span id="icvTituloLs">Cumprimento do dia</span></div>
-          <div class="sec-ate" id="icvQuandoLs"></div>
-        </div>
-        <div class="icv-pct" id="icvPctLs">—</div>
-        <div class="icv-bar" aria-hidden="true"><i id="icvBarLs"></i></div>
-        <div class="icv-conta" id="icvContaLs"></div>
-      </div>
-      <div class="sec"><div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17l6-6 4 4 8-8v3h2V4h-6v2h3l-7 7-4-4-7 7z"/></svg></span>Pontualidade por hora</div></div>
-      <div class="mini"><canvas id="horaLs"></canvas>
-        <div class="vivo-legend"><i class="ok">● No horário</i><i class="early">● Adiantado</i><i class="late">● Atrasado</i></div>
+      <div class="vivo-bars">
+        <div class="vivo-bar ok"><b id="okLs">—</b><span class="vivo-col"><i id="colOkLs"></i></span><em>No horário</em></div>
+        <div class="vivo-bar late"><b id="nLateLs">—</b><span class="vivo-col"><i id="colLateLs"></i></span><em>Atrasado</em></div>
+        <div class="vivo-bar early"><b id="nEarlyLs">—</b><span class="vivo-col"><i id="colEarlyLs"></i></span><em>Adiantado</em></div>
       </div>
     </article>
-    <article class="firm" aria-label="Total do sistema">
+    <article class="firm ipv-ciop">
       <div class="firm-top">
-        <span class="firm-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M5 16.5A1.5 1.5 0 1 0 6.5 18 1.5 1.5 0 0 0 5 16.5zm12.5 0A1.5 1.5 0 1 0 19 18a1.5 1.5 0 0 0-1.5-1.5zM4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5V16a2 2 0 0 1-2 2h-.1a2.5 2.5 0 0 1-4.8 0h-2.2a2.5 2.5 0 0 1-4.8 0H6a2 2 0 0 1-2-2V6.5zM6 6v5h5V6H6zm7 0v5h5V6h-5z"/></svg></span>
-        <h2>TOTAL DO SISTEMA</h2>
+        <div class="firm-kicker">SISTEMA</div>
+        <h2>Total</h2>
       </div>
-      <div class="sec"><div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 19h16v2H4v-2zm2-3h3V8H6v8zm5 0h3V4h-3v12zm5 0h3v-6h-3v6z"/></svg></span>Pontualidade</div></div>
-      <div class="vplot">
-        <div class="vaxis" aria-hidden="true"><span>100%</span><span>80%</span><span>60%</span><span>40%</span><span>20%</span><span>0%</span></div>
-        <div class="vbars">
-          <div class="vbar ok"><b id="okTotal">—</b><div class="vbar-track"><i id="colOkTotal"></i></div><em>No horário</em></div>
-          <div class="vbar early"><b id="nEarlyTotal">—</b><div class="vbar-track"><i id="colEarlyTotal"></i></div><em>Adiantado</em></div>
-          <div class="vbar late"><b id="nLateTotal">—</b><div class="vbar-track"><i id="colLateTotal"></i></div><em>Atrasado</em></div>
-        </div>
-      </div>
-      <div class="icv" id="icvBoxTotal">
-        <div class="sec">
-          <div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 11h-5V7h2v4h3z"/></svg></span><span id="icvTituloTotal">Cumprimento do dia</span></div>
-          <div class="sec-ate" id="icvQuandoTotal"></div>
-        </div>
-        <div class="icv-pct" id="icvPctTotal">—</div>
-        <div class="icv-bar" aria-hidden="true"><i id="icvBarTotal"></i></div>
-        <div class="icv-conta" id="icvContaTotal"></div>
-      </div>
-      <div class="sec"><div class="sec-nome"><span class="sec-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17l6-6 4 4 8-8v3h2V4h-6v2h3l-7 7-4-4-7 7z"/></svg></span>Pontualidade por hora</div></div>
-      <div class="mini"><canvas id="horaTotal"></canvas>
-        <div class="vivo-legend"><i class="ok">● No horário</i><i class="early">● Adiantado</i><i class="late">● Atrasado</i></div>
+      <div class="vivo-bars">
+        <div class="vivo-bar ok"><b id="okTotal">—</b><span class="vivo-col"><i id="colOkTotal"></i></span><em>No horário</em></div>
+        <div class="vivo-bar late"><b id="nLateTotal">—</b><span class="vivo-col"><i id="colLateTotal"></i></span><em>Atrasado</em></div>
+        <div class="vivo-bar early"><b id="nEarlyTotal">—</b><span class="vivo-col"><i id="colEarlyTotal"></i></span><em>Adiantado</em></div>
       </div>
     </article>
   </div>
 
+  <div class="garages" id="garages"></div>
+
+  <section class="vivo-chart">
+    <div class="vivo-chart-head">
+      <span>Decorrer do dia · hora a hora</span>
+      <div class="vivo-legend">
+        <i class="ok">● No horário</i>
+        <i class="late">● Atrasado</i>
+        <i class="early">● Adiantado</i>
+      </div>
+    </div>
+    <canvas id="horaChart"></canvas>
+  </section>
+
   <footer class="ftr">
-    <span id="ftrData"></span>
-    <span>CIOP · Operações</span>
+    <span>CIOP · Centro de Inteligência Operacional de Londrina</span>
+    <a href="../index.html">Portal</a>
   </footer>
 </div>
 
 <script>
 const API = "https://londrisul.online/relatorios/mapa/api.php?chave=" + encodeURIComponent("Pontualidade@2026");
-const ICV_KEY = "ciop-perf-cumprimento-vivo-v1";
 const HIST_KEY = "ciop-mapa-pontualidade-horas-v1";
 const DIAS_KEY = "ciop-mapa-pontualidade-dias-v1";
+const CORES = { ok: "#22c55e", late: "#fbbf24", early: "#ef4444" };
 const POLL_MS = 5000;
 const SLOTS_HORA = 12;
-const miniCharts = {};
+let horaChart;
 let carregando = false;
 let ultimoStamp = "";
 
-const fmtPct = (v) => {
-  if (v == null || !Number.isFinite(v)) return "—";
-  const arred = Math.round(v * 10) / 10;
-  const casas = Math.abs(arred - Math.round(arred)) < 0.001 ? 0 : 1;
-  return arred.toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas }) + "%";
-};
-function cores() {
-  return { ok: "#3dde73", late: "#f5d20a", early: "#ff4d4d", grid: "rgba(255,255,255,.1)", tick: "#9fb0c9" };
-}
+const fmtPct = (v) => (v == null || !Number.isFinite(v) ? "—" : v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%");
 const toPct = (v) => {
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
@@ -327,17 +333,11 @@ function setTxt(id, v) {
 }
 function alturaBarra(v) {
   if (v == null || !Number.isFinite(v)) return 0;
-  return Math.max(0, Math.min(100, v));
+  return Math.max(3, Math.min(100, v));
 }
 function pintarCol(id, v) {
   const el = document.getElementById(id);
   if (el) el.style.setProperty("--p", String(alturaBarra(v) / 100));
-}
-function pintarSeg(id, v) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const n = v == null || !Number.isFinite(v) ? 0 : Math.max(0, v);
-  el.style.width = n + "%";
 }
 function pintarFirma(suf, bloco) {
   setTxt("ok" + suf, bloco.ok);
@@ -346,9 +346,6 @@ function pintarFirma(suf, bloco) {
   pintarCol("colOk" + suf, bloco.ok);
   pintarCol("colLate" + suf, bloco.late);
   pintarCol("colEarly" + suf, bloco.early);
-  pintarSeg("segOk" + suf, bloco.ok);
-  pintarSeg("segEarly" + suf, bloco.early);
-  pintarSeg("segLate" + suf, bloco.late);
 }
 function pintarGaragens(lista) {
   const el = document.getElementById("garages");
@@ -358,15 +355,14 @@ function pintarGaragens(lista) {
     const late = toPct(g.latePercent) || 0;
     const early = toPct(g.earlyPercent) || 0;
     const nome = String(g.nome || "").replace(/^G\./, "").replace(/^TCGLL$/i, "TCGL");
-    const paleta = cores();
     return `<div class="garage">
       <b>${nome}</b>
-      <div class="bars" title="No horário ${fmtPct(ok)} · adiantado ${fmtPct(early)} · atrasado ${fmtPct(late)}">
-        <i style="width:${ok}%;background:${paleta.ok}"></i>
-        <i style="width:${early}%;background:${paleta.early}"></i>
-        <i style="width:${late}%;background:${paleta.late}"></i>
+      <div class="bars" title="No horário ${fmtPct(ok)} · atrasado ${fmtPct(late)} · adiantado ${fmtPct(early)}">
+        <i style="width:${ok}%;background:${CORES.ok}"></i>
+        <i style="width:${late}%;background:${CORES.late}"></i>
+        <i style="width:${early}%;background:${CORES.early}"></i>
       </div>
-      <div class="mini"><span style="color:${paleta.ok}">${fmtPct(ok)}</span><span style="color:${paleta.early}">${fmtPct(early)}</span><span style="color:${paleta.late}">${fmtPct(late)}</span></div>
+      <div class="mini"><span style="color:#4ade80">${fmtPct(ok)}</span><span style="color:#fbbf24">${fmtPct(late)}</span><span style="color:#fb7185">${fmtPct(early)}</span></div>
     </div>`;
   }).join("");
 }
@@ -400,15 +396,9 @@ function idadeApi(stamp) {
 function pintarStamp() {
   const el = document.getElementById("stamp");
   if (!el) return;
-  const hm = (String(ultimoStamp).match(/(\d{2}:\d{2})/) || [])[1];
-  el.textContent = hm ? "Atualizado às " + hm : "Atualizando…";
-}
-function pintarData() {
-  const el = document.getElementById("ftrData");
-  if (!el) return;
-  el.textContent = new Intl.DateTimeFormat("pt-BR", {
-    timeZone: "America/Sao_Paulo", day: "numeric", month: "long", year: "numeric"
-  }).format(new Date());
+  const hora = (String(ultimoStamp).match(/(\d{2}:\d{2}:\d{2})/) || [])[1] || ultimoStamp || "Ao vivo";
+  const idade = idadeApi(ultimoStamp);
+  el.textContent = idade ? `${hora} · ${idade}` : hora;
 }
 function lerHist() {
   try {
@@ -462,75 +452,6 @@ function serieHora(hist, campo) {
   });
   return out;
 }
-function horaCorte(stamp) {
-  const m = String(stamp || "").match(/(\d{2}):(\d{2})/);
-  return m ? m[1] + ":" + m[2] : "";
-}
-/* Partidas e viagens perdidas vêm juntas no resumo do CAD e fecham em 100.
-   Partidas é o cumprimento das viagens que já saíram até o relógio da leitura.
-   A garagem da TCGL não traz esses campos; não se calcula a TCGL pela diferença. */
-function cumprimentoVivo(payload, exigeSistema) {
-  if (!payload || !payload.resumo) return null;
-  if (exigeSistema && payload.padrao_sem_tcgl !== false) return null;
-  const part = toPct(payload.resumo.partidas_percent);
-  const perd = toPct(payload.resumo.viagens_perdidas_percent);
-  if (part == null || perd == null) return null;
-  if (Math.abs(part + perd - 100) > 2) return null;
-  const corte = horaCorte(payload.atualizado_em || payload.capturado_em);
-  if (!corte) return null;
-  return { pct: part, corte };
-}
-function textoAte(bloco, antigo) {
-  if (!bloco) return "";
-  return "Até " + bloco.corte + (antigo ? " · dados antigos" : "");
-}
-function pintarBlocoIcv(suf, bloco, antigo) {
-  const box = document.getElementById("icvBox" + suf);
-  const titulo = document.getElementById("icvTitulo" + suf);
-  const pct = document.getElementById("icvPct" + suf);
-  const conta = document.getElementById("icvConta" + suf);
-  const quando = document.getElementById("icvQuando" + suf);
-  const bar = document.getElementById("icvBar" + suf);
-  if (!box || !pct) return;
-  box.classList.toggle("is-stale", !!antigo && !!bloco);
-  titulo.textContent = "Cumprimento do dia";
-  if (conta) conta.textContent = "";
-  if (!bloco) {
-    pct.textContent = "Cumprimento indisponível";
-    pct.classList.add("is-off");
-    if (quando) quando.textContent = "";
-    if (bar) bar.style.width = "0%";
-    return;
-  }
-  pct.textContent = fmtPct(bloco.pct);
-  pct.classList.remove("is-off");
-  if (quando) quando.textContent = textoAte(bloco, antigo);
-  if (bar) bar.style.width = Math.max(0, Math.min(100, bloco.pct)) + "%";
-}
-function pintarIcv(estado, antigo) {
-  pintarBlocoIcv("Tcgl", null, false);
-  pintarBlocoIcv("Ls", estado && estado.ls, antigo);
-  pintarBlocoIcv("Total", estado && estado.total, antigo);
-}
-function lerIcvGuardado() {
-  try {
-    const raw = JSON.parse(sessionStorage.getItem(ICV_KEY) || "null");
-    if (!raw || (!raw.ls && !raw.total)) return null;
-    return raw;
-  } catch (_) {
-    return null;
-  }
-}
-function guardarIcv(estado) {
-  try { sessionStorage.setItem(ICV_KEY, JSON.stringify(estado)); } catch (_) {}
-}
-async function lerMapa(extra) {
-  const res = await fetch(API + (extra || "") + "&t=" + Date.now(), { cache: "no-store" });
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  const payload = await res.json();
-  if (!payload || payload.ok === false) throw new Error(payload?.erro || "API inválida");
-  return payload;
-}
 function linha(label, cor, dados, fill) {
   return {
     label, data: dados,
@@ -543,79 +464,64 @@ function linha(label, cor, dados, fill) {
     spanGaps: true
   };
 }
-const HORAS_GRAF = [6, 8, 10, 12, 14, 16, 18, 20, 22];
-function serieEmpresa(hist, empresa, campo) {
-  return HORAS_GRAF.map((h) => {
-    const ponto = hist.horas?.[String(h)];
-    const src = empresa ? ponto?.[empresa] : ponto;
-    const v = Number(src?.[campo]);
-    return Number.isFinite(v) ? Math.round(v * 10) / 10 : null;
+function pintarLinhaHora(hist) {
+  const labels = Array.from({ length: 24 * SLOTS_HORA }, (_, i) => {
+    if (i % (SLOTS_HORA * 2) !== 0) return "";
+    return String(i / SLOTS_HORA).padStart(2, "0") + "h";
   });
-}
-function pintarMini(id, hist, empresa) {
-  const canvas = document.getElementById(id);
-  if (!canvas || typeof Chart === "undefined") return;
-  const paleta = cores();
-  const labels = HORAS_GRAF.map((h) => String(h).padStart(2, "0") + "h");
   const data = {
     labels,
     datasets: [
-      linha("No horário", paleta.ok, serieEmpresa(hist, empresa, "ok"), false),
-      linha("Adiantado", paleta.early, serieEmpresa(hist, empresa, "early"), false),
-      linha("Atrasado", paleta.late, serieEmpresa(hist, empresa, "late"), false)
+      linha("No horário", CORES.ok, serieHora(hist, "ok"), true),
+      linha("Atrasado", CORES.late, serieHora(hist, "late"), false),
+      linha("Adiantado", CORES.early, serieHora(hist, "early"), false)
     ]
   };
-  if (miniCharts[id]) {
-    miniCharts[id].data = data;
-    miniCharts[id].update("none");
+  if (horaChart) {
+    horaChart.data = data;
+    horaChart.update("none");
     return;
   }
-  miniCharts[id] = new Chart(canvas, {
+  horaChart = new Chart(document.getElementById("horaChart"), {
     type: "line",
     data,
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
       spanGaps: true,
-      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${fmtPct(c.parsed.y)}` } }
+      },
       scales: {
         x: {
-          grid: { color: paleta.grid },
+          grid: { color: "rgba(255,255,255,.06)" },
           border: { display: false },
           ticks: {
-            color: paleta.tick, maxRotation: 0, autoSkip: false,
-            font: { size: 11, weight: "700" },
-            callback: (_v, i) => (HORAS_GRAF[i] % 4 === 2 ? labels[i] : "")
+            display: true,
+            color: "rgba(226,234,250,.9)",
+            maxRotation: 0, autoSkip: false,
+            font: { size: 20, weight: "800" },
+            padding: 8,
+            callback: (_v, i) => (i % 2 === 0 ? labels[i] : "")
           }
         },
         y: {
           min: 0, max: 100,
           ticks: { display: false },
           border: { display: false },
-          grid: { color: paleta.grid }
+          grid: { color: "rgba(255,255,255,.06)" }
         }
       },
-      layout: { padding: { top: 4, right: 4, bottom: 0, left: 0 } },
+      layout: { padding: { top: 6, right: 8, bottom: 8, left: 4 } },
       animation: false,
-      elements: {
-        line: { tension: .35, borderWidth: 2 },
-        point: {
-          radius: (ctx) => (ctx.dataset.data.filter((v) => v != null).length < 2 ? 3 : 0),
-          backgroundColor: (ctx) => ctx.dataset.borderColor
-        }
-      }
+      elements: { line: { tension: .25, borderWidth: 3 }, point: { radius: 0, hoverRadius: 5 } }
     }
   });
 }
-function pintarLinhaHora(hist) {
-  pintarMini("horaTcgl", hist, "tcgl");
-  pintarMini("horaLs", hist, "ls");
-  pintarMini("horaTotal", hist, null);
-}
-let ultimoDesenho = null;
 function pintar(payload) {
   const d = parseEmpresas(payload);
-  ultimoDesenho = d;
   pintarFirma("Tcgl", d.tcgl);
   pintarFirma("Ls", d.ls);
   pintarFirma("Total", d.total);
@@ -630,43 +536,23 @@ async function carregar() {
   carregando = true;
   const erro = document.getElementById("erro");
   try {
-    const [payload, sistema] = await Promise.all([
-      lerMapa(""),
-      lerMapa("&todas=1").catch(() => null)
-    ]);
+    const res = await fetch(API + "&t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const payload = await res.json();
+    if (!payload || payload.ok === false) throw new Error(payload?.erro || "API inválida");
     erro.hidden = true;
     pintar(payload);
-    const estado = {
-      ls: cumprimentoVivo(payload, false),
-      total: cumprimentoVivo(sistema, true)
-    };
-    if (estado.ls || estado.total) {
-      guardarIcv(estado);
-      pintarIcv(estado, false);
-    } else {
-      const guardado = lerIcvGuardado();
-      pintarIcv(guardado, !!guardado);
-    }
   } catch (err) {
     erro.hidden = false;
     erro.textContent = "Não foi possível atualizar a performance em tempo real: " + (err.message || err);
-    const guardado = lerIcvGuardado();
-    pintarIcv(guardado, !!guardado);
   } finally {
     carregando = false;
   }
 }
-pintarData();
 pintarLinhaHora(lerHist());
-const icvInicial = lerIcvGuardado();
-if (icvInicial) pintarIcv(icvInicial, false);
 carregar();
 setInterval(carregar, POLL_MS);
 setInterval(pintarStamp, 1000);
-new MutationObserver(() => {
-  pintarLinhaHora(lerHist());
-  if (ultimoDesenho) pintarGaragens(ultimoDesenho.garagens);
-}).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
 </script>
 </body>
 </html>

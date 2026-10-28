@@ -35,7 +35,7 @@ Não redesenhar a marca. Não inventar KPI, fórmula ou paleta por página.
 | Onde editar sem quebrar o resto | [manutencao.md](manutencao.md) |
 | Clima na TV (dia/noite, ícones) | [clima-tv.md](clima-tv.md) |
 | Painel CIOP em TV 16:9 | [ciop-tv.md](ciop-tv.md) |
-| Performance ao vivo e cumprimento do dia | [performance-tempo-real.md](performance-tempo-real.md) |
+| Performance ao vivo (pontualidade) | [performance-tempo-real.md](performance-tempo-real.md) |
 | Exemplos clicáveis (dados fictícios) | [catalogo.html](catalogo.html) |
 | Capturas de demonstração | [assets/](assets/) |
 
