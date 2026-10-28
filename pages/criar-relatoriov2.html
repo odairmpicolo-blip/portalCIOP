@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
+<script src="../assets/js/theme-toggle.js?v=20261028audit2"></script>
 <script>
 document.documentElement.classList.add("portal-auth-pending");
 </script>
@@ -594,10 +595,12 @@ body.pdf-exporting .paper-wrap{
 body.pdf-exporting .paper{
     width:210mm;
     max-width:none;
-    min-height:297mm;
+    min-height:0;
+    height:auto;
+    box-sizing:border-box;
     border:0;
     box-shadow:none;
-    padding:0 0 14mm;
+    padding:0 0 8mm;
     background:#fff;
 }
 body.pdf-exporting .report-body{display:none}
@@ -635,7 +638,7 @@ html.dk-dark .paper label{
     .container{max-width:none;margin:0;padding:0;background:#fff!important}
     .workspace{display:block}
     .paper-wrap{border:0;padding:0;background:#fff!important;overflow:visible}
-    .paper{width:210mm;max-width:none;min-height:297mm;border:0;box-shadow:none;padding:0 0 14mm;background:#fff!important}
+    .paper{width:210mm;max-width:none;min-height:0;height:auto;box-sizing:border-box;border:0;box-shadow:none;padding:0 0 8mm;background:#fff!important}
     .report-body{display:none}
     .report-body-print{display:block}
 }
@@ -895,9 +898,11 @@ body.pdf-exporting .paper{
     width:210mm !important;
     max-width:210mm !important;
     min-width:210mm !important;
-    min-height:297mm !important;
+    min-height:0 !important;
+    height:auto !important;
+    box-sizing:border-box !important;
     margin:0 !important;
-    padding:0 0 14mm !important;
+    padding:0 0 8mm !important;
     border:0 !important;
     border-radius:0 !important;
     box-shadow:none !important;
@@ -1160,9 +1165,6 @@ body.pdf-exporting .report-foot{
 <link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
 <link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
     <link rel="stylesheet" href="../assets/css/dashboard-kit.css">
-    
-
-<script src="../assets/js/theme-toggle.js?v=20261027auto1"></script>
 <script src="../assets/js/loading.js?v=20261022loading1"></script>
 <script type="module" src="../assets/js/auth.js?v=20261022intro1"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
@@ -2348,6 +2350,72 @@ async function aguardarImagensPdf(alvo) {
     }));
 }
 
+function recortarFolhaEmBranco(canvas) {
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return canvas;
+    const { width, height } = canvas;
+    if (!width || !height) return canvas;
+    const data = ctx.getImageData(0, 0, width, height).data;
+    const branco = 250;
+    let ultimaTinta = 0;
+    for (let y = height - 1; y >= 0; y--) {
+        const linha = y * width * 4;
+        for (let x = 0; x < width; x++) {
+            const i = linha + x * 4;
+            if (data[i] < branco || data[i + 1] < branco || data[i + 2] < branco) {
+                ultimaTinta = y;
+                y = -1;
+                break;
+            }
+        }
+    }
+    const cortada = Math.min(height, ultimaTinta + 8);
+    if (cortada >= height - 2) return canvas;
+    const out = document.createElement("canvas");
+    out.width = width;
+    out.height = Math.max(1, cortada);
+    out.getContext("2d").drawImage(canvas, 0, 0);
+    return out;
+}
+
+function faixaTemTinta(canvas, y0, y1) {
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return true;
+    const w = canvas.width;
+    const h = canvas.height;
+    const top = Math.max(0, Math.floor(y0));
+    const bot = Math.min(h, Math.ceil(y1));
+    if (bot <= top) return false;
+    const data = ctx.getImageData(0, top, w, bot - top).data;
+    const branco = 250;
+    for (let i = 0; i < data.length; i += 4) {
+        if (data[i] < branco || data[i + 1] < branco || data[i + 2] < branco) return true;
+    }
+    return false;
+}
+
+function montarPaginasPdf(pdf, canvas, qualidade) {
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const imgData = canvas.toDataURL("image/jpeg", 0.92);
+    const imgH = (canvas.height * pageW) / canvas.width;
+    const tolerancia = 2;
+    if (imgH <= pageH + tolerancia) {
+        pdf.addImage(imgData, "JPEG", 0, 0, pageW, Math.min(imgH, pageH), undefined, qualidade);
+        return;
+    }
+    pdf.addImage(imgData, "JPEG", 0, 0, pageW, imgH, undefined, qualidade);
+    let restante = imgH - pageH;
+    while (restante > tolerancia) {
+        const y0 = canvas.height * ((imgH - restante) / imgH);
+        const y1 = canvas.height * ((imgH - restante + pageH) / imgH);
+        if (!faixaTemTinta(canvas, y0, y1)) break;
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, restante - imgH, pageW, imgH, undefined, qualidade);
+        restante -= pageH;
+    }
+}
+
 async function construirPdfRelatorio() {
     await assinaturasPreparadas;
     atualizarCorpoPDF();
@@ -2394,33 +2462,7 @@ async function construirPdfRelatorio() {
         format: "a4",
         compress: true
     });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const imgData = canvas.toDataURL("image/jpeg", 0.95);
-    const imgH = (canvas.height * pageW) / canvas.width;
-
-    /* Uma captura com diferença mínima de arredondamento ainda pertence a uma folha A4. */
-    const toleranciaA4 = 3;
-    if (imgH <= pageH + toleranciaA4) {
-        const alturaFinal = Math.min(imgH, pageH);
-        const larguraFinal = pageW * (alturaFinal / imgH);
-        const xFinal = (pageW - larguraFinal) / 2;
-        pdf.addImage(imgData, "JPEG", xFinal, 0, larguraFinal, alturaFinal, undefined, "MEDIUM");
-        return pdf;
-    }
-
-    /* Páginas adicionais são criadas somente quando o conteúdo realmente excede o A4. */
-    let y = 0;
-    let restante = imgH;
-    pdf.addImage(imgData, "JPEG", 0, y, pageW, imgH, undefined, "MEDIUM");
-    restante -= pageH;
-    while (restante > toleranciaA4) {
-        pdf.addPage();
-        y = restante - imgH;
-        pdf.addImage(imgData, "JPEG", 0, y, pageW, imgH, undefined, "MEDIUM");
-        restante -= pageH;
-    }
-
+    montarPaginasPdf(pdf, recortarFolhaEmBranco(canvas), "MEDIUM");
     return pdf;
 }
 

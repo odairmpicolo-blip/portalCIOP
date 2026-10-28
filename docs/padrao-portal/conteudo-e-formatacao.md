@@ -48,7 +48,7 @@ Meses abreviados no ICV: Jan, Fev, Mar, Abr, Mai, Jun, Jul, Ago, Set, Out, Nov, 
 
 ## Período, fonte, atualização
 
-Toolbar deve dizer o recorte (`01/10/2026 a 26/10/2026`), a origem quando houver (Clever, CR-0108, snapshot) e “Atualizado às …”. Exemplo ao vivo: “Atualizado às 15:11:34 · estimativa local (Clever)”.
+Toolbar deve dizer o recorte (`01/10/2026 a 26/10/2026`) em `.portal-data-period` e, em outra linha ou outro elemento, “Atualizado às …” (`.portal-data-updated`). Origem (Clever, CR-0108, snapshot) junto do recorte, não misturada com o relógio de atualização. Exemplo ao vivo: período do snapshot vs. “Atualizado às 15:11:34”.
 
 Não misturar ICV com IPV no mesmo número.
 

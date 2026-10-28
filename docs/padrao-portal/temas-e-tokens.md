@@ -31,7 +31,7 @@ O arquivo `theme-toggle.js` começa com `dkEarlyBoot()`: lê `dk-theme` e aplica
 
 A home e o ICV repetem o mesmo boot inline no primeiro script do HTML (defesa extra).
 
-**Limitação implementada:** páginas sem `theme-toggle.js` no HTML só o recebem em `auth.js` → `garantirThemeToggle()`, depois do parse. Nessas telas ainda pode haver um flash. Lista e mitigação: [validacao.md](validacao.md). **Proposta (não feita):** colocar o script no `<head>` de todas.
+Internas autenticadas passam a ter `theme-toggle.js` no `<head>` (sem `defer`), antes de `auth.js`. O Auto continua a usar o sol de Londrina (`dkPreferDarkBySun`). `auth.js` ainda chama `garantirThemeToggle()` se o script faltar. Kiosks de TV mantêm o script com `defer` (fundo próprio, tema da interface não pinta o palco).
 
 ## Tabela de tokens (valores reais)
 
@@ -49,7 +49,11 @@ Usar o token da **escrita** da superfície, não uma cor global de “texto bran
 | Tooltip | `--portal-tooltip` | `--portal-on-tooltip` (`#f5f8ff` nos dois temas) |
 | Seleção | `--portal-selection` | `--portal-on-selection` |
 | Status operacional | — | `--portal-op-ontime` / `--early` / `--late` (não o texto do painel) |
-| Desabilitado | campo com `--portal-glass-light` | `--portal-text-disabled` (sem `opacity` no bloco inteiro) |
+| Desabilitado | campo com `--portal-glass-light` | `--portal-on-disabled` / `--portal-text-disabled` (sem `opacity` no bloco inteiro) |
+| Carregando | painel | `--portal-state-loading` (classe `.portal-state-loading`) |
+| Vazio | painel | `--portal-state-empty` (`.portal-state-empty`, “—” ) |
+| Indisponível | painel | `--portal-state-unavailable` (`.portal-state-unavailable`, `.is-unavailable`) |
+| Dado histórico | painel | `--portal-state-historic` (`.portal-state-historic`, `.is-stale`) |
 | Documento / PDF | `--portal-paper` `#fff` | `#102c53` (mesmo no tema escuro da interface) |
 
 `--azul` e `--portal-fill-brand` servem a **preenchimento** de marca (botão, thead navy). Não usar `--azul` como cor de KPI no escuro.

@@ -276,14 +276,22 @@ window.dkSwapBrandLogos = dkSwapBrandLogos;
 
 /* All standard portal pages receive the same presentation layer through this shared entry point. */
 (function () {
-  if (document.querySelector('script[data-portal-design-system]')) return;
   var current = document.currentScript;
-  if (!current?.src) return;
-  var script = document.createElement('script');
-  script.src = new URL('portal-design-system.js?v=20261027auto1', current.src).href;
-  script.dataset.portalDesignSystem = '1';
-  script.defer = true;
-  document.head.appendChild(script);
+  if (!current || !current.src) return;
+  if (!document.querySelector('script[data-portal-shell]')) {
+    var shell = document.createElement('script');
+    shell.src = new URL('portal-shell.js?v=20261028audit2', current.src).href;
+    shell.dataset.portalShell = '1';
+    shell.defer = true;
+    document.head.appendChild(shell);
+  }
+  if (!document.querySelector('script[data-portal-design-system]')) {
+    var script = document.createElement('script');
+    script.src = new URL('portal-design-system.js?v=20261028audit2', current.src).href;
+    script.dataset.portalDesignSystem = '1';
+    script.defer = true;
+    document.head.appendChild(script);
+  }
 })();
 
 window.addEventListener("portal:usuario-validado", function () { dkApply(dkStoredPref()); });

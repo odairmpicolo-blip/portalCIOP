@@ -444,7 +444,7 @@ function garantirWallpaperIos() {
 function garantirThemeToggle() {
   if (document.querySelector("script[src*='theme-toggle.js']")) return;
   const script = document.createElement("script");
-  script.src = portalPath("assets/js/theme-toggle.js?v=20261027auto1");
+  script.src = portalPath("assets/js/theme-toggle.js?v=20261028audit2");
   document.head.appendChild(script);
 }
 
@@ -526,7 +526,7 @@ function garantirCssUi() {
   if (document.querySelector("link[data-portal-ui]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = portalPath("assets/css/portal-ui.css?v=20260821ui1");
+  link.href = portalPath("assets/css/portal-ui.css?v=20261028audit1");
   link.dataset.portalUi = "1";
   document.head.appendChild(link);
 }

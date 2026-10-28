@@ -26,7 +26,11 @@ O JS marca `html#portal-page-glass.portal-glass-system` e `body#portal-page-cont
 
 `.header` em flex, min-height ~72 px, logo `.portal-brand-art` (max 180×54), `.title-wrap` no centro, `.header-actions` à direita.
 
+Casco interno: `portal-shell.js` (via `theme-toggle.js`) normaliza `.header` em marca | título | `.header-actions` (sessão e extras da página). `data-portal-shell="off"` preserva cabeçalho próprio. Home e kiosk não usam este casco.
+
 Sessão (injetada após login): `.ciop-session`, `.ciop-session-user`, `.ciop-session-cargo`, `.btn-senha-portal`, `.btn-logout`. Na home o “alterar senha” do header some; a troca de senha vive no diálogo de ajustes.
+
+Seletor de tema: `.dk-theme-picker` injetado por `portal-design-system.js` em `.header-actions`. `theme-toggle.js` no `<head>` (sem `defer`) aplica `dk-light`/`dk-dark` **antes** da primeira pintura, inclusive Auto (sol em Londrina). Não esperar o módulo `auth.js`.
 
 Voltar ao Portal: `.btn-portal` / `.portal-return` / `data-portal-voltar`. Se a página não tiver, `garantirVoltarAoPortal()` cria o link.
 
@@ -100,7 +104,14 @@ Todos no DS: min-height 44 px, radius 12 px, Inter 650. Foco: outline 3 px `--po
 
 ## Campos, selects, datas e filtros
 
-`input`, `select`, `textarea` (exceto checkbox/radio/range/color e `.ai-chat-input`): fundo `--portal-field` / painel, borda `--portal-line`, radius 11–12 px. `readonly` / `disabled`: opacity 0,7.
+`input`, `select`, `textarea` (exceto checkbox/radio/range/color e `.ai-chat-input`): fundo `--portal-field` / painel, borda `--portal-line`, radius 11–12 px. Superfície densa o bastante para ler sobre a fotografia (inclusive céu claro). **Não** usar `opacity` no controle inteiro.
+
+| Estado | Superfície | Texto | Extra |
+| --- | --- | --- | --- |
+| Editável | `--portal-field` | `--portal-on-field` | |
+| Somente leitura | `--portal-glass-dense` | `--portal-on-field` | `cursor: default`; não parece desabilitado |
+| Desabilitado | `--portal-glass-dense` | `--portal-on-disabled` | borda tracejada; `cursor: not-allowed` |
+| Carregando | `--portal-field` | `--portal-state-loading` | `.portal-field-loading` ou `aria-busy="true"`; `cursor: wait` |
 
 Filtros: `.filters`, `.filter-panel`, `.portal-filters-bar`, `.pa-filtros` em flex wrap; `.campo` / `.filter-group` `flex: 1 1 160px; min-width: 160px` — evita data cortada.
 
@@ -118,7 +129,7 @@ Home (≤900 px): `.portal-abas` / `.portal-aba` com `aria-selected`. Picker de 
 
 ## Tabelas, paginação e exportações
 
-Envolver em `.table-wrap` / `.table-wrapper` / `.tabela-wrap` / `.table-container` / `.table-scroll` (`overflow: auto`). `thead th` sticky, fundo dense. `.num` alinhado à direita.
+Envolver em `.table-wrap` / `.table-wrapper` / `.tabela-wrap` / `.table-container` / `.table-scroll` (`overflow-x: auto`). Células `white-space: nowrap`. Não reduzir thead abaixo de 11 px: preferir rolagem horizontal. `thead` de marca (CAD): `--portal-fill-brand` + texto `#fff`. Corpo: `--portal-on-surface` sobre `--portal-table`. `.num` alinhado à direita.
 
 Paginação: cada módulo (não há componente único). Export PDF/CSV: botões da página (ICV `btnExportarPdf`, pontualidade `pontualidade-relatorio-export.js`). **Não** alterar regra de negócio ao estilizar.
 
@@ -139,9 +150,12 @@ Menu lateral: só home.
 ## Carregamento, vazio, sucesso e erro
 
 - Overlay `#portalLoadingOverlay` (`auth.js` / `loading.js`) até validar sessão; `html.portal-auth-pending` bloqueia pointer.
-- Status de dashboard: texto no toolbar (“Carregando período…”, “Serviço temporariamente indisponível.”).
-- Vazio: “—” ou traço em KPI; mensagem na tabela. **Não** pintar zero quando a API não veio (KM da TV mostra `--`).
-- Erro: português para o usuário; detalhe técnico no `console` ou em texto secundário.
+- Carregando: `.portal-state-loading` (“Carregando período…”). É **transitório**. Ao terminar, mostrar `.portal-data-period` (recorte real) e `.portal-data-updated`. Se falhar: mensagem + **Tentar novamente**. No catálogo o botão “Mostrar carregando” resolve sozinho em ~700 ms (não fica preso).
+- Vazio: `.portal-state-empty` — “—” no KPI, mensagem na tabela. **Não** pintar zero quando a API não veio.
+- Indisponível: `.portal-state-unavailable` / `.is-unavailable`.
+- Histórico / stale: `.portal-state-historic` / `.is-stale`. Não misturar com ao vivo.
+- Período dos dados: `.portal-data-period` / `.kpi-sub`. Atualização: `.portal-data-updated` / `.atualizado` — linhas distintas.
+- Erro: português para o usuário; detalhe técnico no `console`.
 
 ## Controles de mapas
 

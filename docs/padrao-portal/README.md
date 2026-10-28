@@ -31,6 +31,7 @@ Não redesenhar a marca. Não inventar KPI, fórmula ou paleta por página.
 | Textos, datas, zero vs. “—” | [conteudo-e-formatacao.md](conteudo-e-formatacao.md) |
 | Contraste, teclado, blur | [acessibilidade-e-desempenho.md](acessibilidade-e-desempenho.md) |
 | Página nova, passo a passo | [guia-novas-paginas.md](guia-novas-paginas.md) |
+| Inventário de páginas e etapas da auditoria | [inventario-auditoria.md](inventario-auditoria.md) |
 | Matriz de testes e pendências | [validacao.md](validacao.md) |
 | Onde editar sem quebrar o resto | [manutencao.md](manutencao.md) |
 | Clima na TV (dia/noite, ícones) | [clima-tv.md](clima-tv.md) |
@@ -48,6 +49,8 @@ Tema claro e tema escuro no catálogo. Linha 999, prefixo 0000 — nada operacio
 ![Catálogo em tema claro](assets/catalogo-claro.png)
 
 ![Catálogo em tema escuro](assets/catalogo-escuro.png)
+
+Auditoria 2026-10-28 (etapa 1, foto + vidro): [catalogo-audit-claro-topo.png](assets/catalogo-audit-claro-topo.png), [catalogo-audit-escuro-topo.png](assets/catalogo-audit-escuro-topo.png).
 
 Cores operacionais no claro (Adiantado vermelho, Atrasado âmbar, ausência como “—”):
 

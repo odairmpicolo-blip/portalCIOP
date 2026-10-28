@@ -16,7 +16,7 @@
 | Composição do Painel CIOP | `pages/painel-ciop.html` | Ver [ciop-tv.md](ciop-tv.md). Não alterar a média nem o Total |
 | Performance ao vivo (pontualidade) | `pages/performance-tempo-real.html` | Ver [performance-tempo-real.md](performance-tempo-real.md). Não mudar a média do mapa |
 
-Bump de cache vigente: tokens `?v=20261027term2`; DS `auto1`; visual `term2` (Terminais Agora); clima TV no Painel CIOP `tv1` (Painel TV ainda em `wx1` até a próxima edição); home CSS `ops15` / JS `ops10`; clima home `ops5`; atalhos `home5`; `theme-toggle.js` `auto1`. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no `script.src` do inject (`theme-toggle.js`, `portal-design-system.js`, `auth.js`).
+Bump de cache vigente: tokens/DS/shell `?v=20261028audit2`; `theme-toggle.js` `audit2` no `<head>` das internas autenticadas; `portal-ui.css` `audit1` (`auth.js`); visual `term2`; clima TV no Painel CIOP `tv1`; home CSS `ops15` / JS `ops10`. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no inject.
 
 ## Impacto
 
@@ -49,7 +49,6 @@ Bump de cache vigente: tokens `?v=20261027term2`; DS `auto1`; visual `term2` (Te
 | 2026-10 | Início mostra as quatro áreas abaixo dos favoritos | `portal-teste` (não publicar sem pedido) |
 | 2026-10 | Performance ao vivo: cumprimento do dia fechado por empresa, separado da pontualidade | `portal-teste` |
 | 2026-10 | Performance ao vivo: cumprimento passa a ser o do CAD até o horário da leitura | `portal-teste` |
-| 2026-10 | Performance ao vivo: três colunas com barras, cumprimento e hora a hora | `portal-teste` |
 | 2026-10 | Performance ao vivo: volta à tela de pontualidade anterior ao cumprimento | `portal-teste` |
 
 ## Responsável

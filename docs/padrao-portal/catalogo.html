@@ -24,8 +24,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Catálogo visual — padrão Portal CIOP</title>
-  <link rel="stylesheet" href="../../assets/css/portal-tokens.css?v=20261026liquid1" data-portal-tokens="1">
-  <script src="../../assets/js/theme-toggle.js?v=20261027auto1"></script>
+  <link rel="stylesheet" href="../../assets/css/portal-tokens.css?v=20261028audit2" data-portal-tokens="1">
+  <script src="../../assets/js/theme-toggle.js?v=20261028audit2"></script>
+  <script src="../../assets/js/portal-design-system.js?v=20261028audit2"></script>
   <style>
     body#portal-page-content {
       margin: 0;
@@ -74,7 +75,7 @@
     .type-sample .t-muted { font-size: 12px; color: var(--portal-text-secondary); }
     .type-sample .t-num { font-size: 24px; font-weight: 750; font-variant-numeric: tabular-nums; }
     .ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-    .btn-row .btn-primary[disabled], .btn-row .btn-secondary[disabled] { opacity: 0.55; cursor: not-allowed; }
+    .btn-row .btn-primary[disabled], .btn-row .btn-secondary[disabled] { opacity: 1; cursor: not-allowed; }
     .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
     .kpi-card { padding: 14px; border-radius: var(--portal-radius-lg); background: var(--portal-table); border: 1px solid var(--portal-border); }
     .kpi-title { font-size: 12px; color: var(--portal-text-secondary); font-weight: 500; }
@@ -104,7 +105,7 @@
   </style>
 </head>
 <body id="portal-page-content">
-  <header class="header">
+  <header class="header" data-portal-shell="off">
     <img class="portal-brand-art" src="../../assets/img/portal-logo-clean-light.png" alt="Portal CIOP TCGL Operações" height="54" width="180">
     <div class="title-wrap">
       <h1>Catálogo visual</h1>
@@ -177,6 +178,12 @@
         <label class="campo">Somente leitura
           <input value="Prefixo 0000" readonly>
         </label>
+        <label class="campo">Desabilitado
+          <input value="Indisponível" disabled>
+        </label>
+        <label class="campo">Carregando campo
+          <input class="portal-field-loading" value="Carregando…" aria-busy="true" readonly>
+        </label>
       </form>
     </section>
 
@@ -200,10 +207,12 @@
         </article>
         <article class="kpi-card">
           <div class="kpi-title">Sem dado</div>
-          <div class="kpi-value">—</div>
-          <div class="kpi-sub">ausência, não zero</div>
+          <div class="kpi-value portal-state-empty">—</div>
+          <div class="kpi-sub portal-data-period">ausência, não zero</div>
         </article>
       </div>
+      <p class="portal-data-period" style="margin:12px 0 0;font-size:13px">Período dos dados: 01/10/2026 a 26/10/2026</p>
+      <p class="portal-data-updated" style="margin:4px 0 0;font-size:12px">Atualizado às 15:00</p>
     </section>
 
     <section class="cat-section" aria-labelledby="t-tab">
@@ -253,10 +262,14 @@
         <button type="button" class="btn-secondary" id="btnErr">Mostrar erro</button>
         <button type="button" class="btn-secondary" id="btnOk">Mostrar sucesso</button>
       </div>
-      <p class="state" id="stLoad" hidden>Carregando período…</p>
-      <p class="state" id="stEmpty" hidden>Sem dados neste recorte.</p>
-      <p class="state" id="stErr" hidden>Não foi possível carregar os dados. Nada foi gravado.</p>
-      <p class="state" id="stOk">01/10/2026 a 26/10/2026 · 3 linhas fictícias · atualizado às 15:00</p>
+      <p class="state portal-state-loading" id="stLoad" hidden>Carregando período…</p>
+      <p class="state portal-state-empty" id="stEmpty" hidden>Sem dados neste recorte.</p>
+      <p class="state portal-state-unavailable" id="stErr" hidden>Não foi possível carregar o período. <button type="button" class="btn-secondary" id="btnRetry">Tentar novamente</button></p>
+      <p class="state portal-state-historic" id="stHist" hidden>Dado histórico (snapshot). Não confundir com ao vivo.</p>
+      <p class="state" id="stOk"><span class="portal-data-period">Período 01/10/2026 a 26/10/2026</span> · 3 linhas fictícias<br><span class="portal-data-updated">Atualizado às 15:00</span></p>
+      <div class="cat-row" style="margin-top:8px">
+        <button type="button" class="btn-secondary" id="btnHist">Mostrar histórico</button>
+      </div>
       <p style="margin:16px 0 8px;font-size:13px;color:var(--portal-text-secondary)">Prévia de documento (papel branco nos dois temas)</p>
       <div class="paper">
         <strong>Ocorrência demonstrativa</strong>
@@ -313,15 +326,25 @@
       if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", paint);
       else paint();
 
+      var loadTimer;
       function show(id) {
-        ["stLoad", "stEmpty", "stErr", "stOk"].forEach(function (k) {
+        ["stLoad", "stEmpty", "stErr", "stHist", "stOk"].forEach(function (k) {
           document.getElementById(k).hidden = k !== id;
         });
       }
-      document.getElementById("btnLoad").onclick = function () { show("stLoad"); };
-      document.getElementById("btnEmpty").onclick = function () { show("stEmpty"); };
-      document.getElementById("btnErr").onclick = function () { show("stErr"); };
-      document.getElementById("btnOk").onclick = function () { show("stOk"); };
+      function carregarPeriodo(ok) {
+        clearTimeout(loadTimer);
+        show("stLoad");
+        loadTimer = setTimeout(function () {
+          show(ok ? "stOk" : "stErr");
+        }, 700);
+      }
+      document.getElementById("btnLoad").onclick = function () { carregarPeriodo(true); };
+      document.getElementById("btnRetry").onclick = function () { carregarPeriodo(true); };
+      document.getElementById("btnEmpty").onclick = function () { clearTimeout(loadTimer); show("stEmpty"); };
+      document.getElementById("btnErr").onclick = function () { carregarPeriodo(false); };
+      document.getElementById("btnHist").onclick = function () { clearTimeout(loadTimer); show("stHist"); };
+      document.getElementById("btnOk").onclick = function () { clearTimeout(loadTimer); show("stOk"); };
     })();
   </script>
 </body>
