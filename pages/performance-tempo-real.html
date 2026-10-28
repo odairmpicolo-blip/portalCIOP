@@ -191,6 +191,7 @@
   .stack .early{ background:var(--red); }
   .stack .late{ background:var(--amber); }
   .icv{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .icv-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
   .icv-pct{
     font-size:clamp(48px,4.6vw,76px); font-weight:900; letter-spacing:-.045em; line-height:.9;
     color:var(--icv); font-variant-numeric:tabular-nums;
@@ -312,10 +313,12 @@
         </div>
       </div>
       <div class="icv" id="icvBoxTcgl">
-        <div class="bloco-titulo" id="icvTituloTcgl">Cumprimento de viagens</div>
-        <div class="icv-pct" id="icvPctTcgl">—</div>
+        <div class="bloco-titulo" id="icvTituloTcgl">Cumprimento do dia</div>
+        <div class="icv-head">
+          <div class="icv-pct" id="icvPctTcgl">—</div>
+          <div class="icv-quando" id="icvQuandoTcgl"></div>
+        </div>
         <div class="icv-conta" id="icvContaTcgl"></div>
-        <div class="icv-quando" id="icvQuandoTcgl"></div>
         <div class="icv-bar" aria-hidden="true"><i id="icvBarTcgl"></i></div>
       </div>
     </article>
@@ -338,10 +341,12 @@
         </div>
       </div>
       <div class="icv" id="icvBoxLs">
-        <div class="bloco-titulo" id="icvTituloLs">Cumprimento de viagens</div>
-        <div class="icv-pct" id="icvPctLs">—</div>
+        <div class="bloco-titulo" id="icvTituloLs">Cumprimento do dia</div>
+        <div class="icv-head">
+          <div class="icv-pct" id="icvPctLs">—</div>
+          <div class="icv-quando" id="icvQuandoLs"></div>
+        </div>
         <div class="icv-conta" id="icvContaLs"></div>
-        <div class="icv-quando" id="icvQuandoLs"></div>
         <div class="icv-bar" aria-hidden="true"><i id="icvBarLs"></i></div>
       </div>
     </article>
@@ -369,20 +374,16 @@
 
 <script>
 const API = "https://londrisul.online/relatorios/mapa/api.php?chave=" + encodeURIComponent("Pontualidade@2026");
-const ICV_API = "https://62wvo4yk9b.execute-api.sa-east-1.amazonaws.com/cr0108/share/icv?token=" + encodeURIComponent("IPV@2026");
-const ICV_KEY = "ciop-perf-icv-dia-v1";
+const ICV_KEY = "ciop-perf-cumprimento-vivo-v1";
 const HIST_KEY = "ciop-mapa-pontualidade-horas-v1";
 const DIAS_KEY = "ciop-mapa-pontualidade-dias-v1";
 const POLL_MS = 5000;
-const ICV_POLL_MS = 5 * 60 * 1000;
 const SLOTS_HORA = 12;
-const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
 let horaChart;
 let carregando = false;
 let ultimoStamp = "";
 
 const fmtPct = (v) => (v == null || !Number.isFinite(v) ? "—" : v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%");
-const fmtInt = (v) => Math.round(v).toLocaleString("pt-BR");
 function cores() {
   const claro = document.documentElement.classList.contains("dk-light");
   return claro
@@ -566,46 +567,27 @@ function serieHora(hist, campo) {
   });
   return out;
 }
-function shiftIso(s, n) {
-  const d = new Date(s + "T12:00:00");
-  d.setDate(d.getDate() + n);
-  const p = (x) => String(x).padStart(2, "0");
-  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+function horaCorte(stamp) {
+  const m = String(stamp || "").match(/(\d{2}):(\d{2})/);
+  return m ? m[1] + ":" + m[2] : "";
 }
-function rotuloData(iso) {
-  const d = new Date(iso + "T12:00:00");
-  return d.getDate() + " de " + MESES[d.getMonth()];
+/* Partidas e viagens perdidas vêm juntas no resumo do CAD e fecham em 100.
+   Partidas é o cumprimento das viagens que já saíram até o relógio da leitura.
+   A garagem da TCGL não traz esses campos; não se calcula a TCGL pela diferença. */
+function cumprimentoVivo(payload, exigeSistema) {
+  if (!payload || !payload.resumo) return null;
+  if (exigeSistema && payload.padrao_sem_tcgl !== false) return null;
+  const part = toPct(payload.resumo.partidas_percent);
+  const perd = toPct(payload.resumo.viagens_perdidas_percent);
+  if (part == null || perd == null) return null;
+  if (Math.abs(part + perd - 100) > 2) return null;
+  const corte = horaCorte(payload.atualizado_em || payload.capturado_em);
+  if (!corte) return null;
+  return { pct: part, corte };
 }
-function contarViagem(v) {
-  if (v == null || v === "") return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-function diaIcv(row) {
-  if (!row) return null;
-  const data = String(row.data || "").slice(0, 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return null;
-  const programadas = contarViagem(row.scheduled_trips);
-  const realizadas = contarViagem(row.trips);
-  if (programadas == null || realizadas == null || !(programadas > 0)) return null;
-  return { data, programadas, realizadas, pct: (realizadas / programadas) * 100 };
-}
-function ultimoDiaFechado(dias) {
-  const validos = (dias || []).map(diaIcv).filter(Boolean);
-  validos.sort((a, b) => a.data.localeCompare(b.data));
-  return validos.length ? validos[validos.length - 1] : null;
-}
-function totalIcv(tcgl, ls) {
-  if (!tcgl || !ls || tcgl.data !== ls.data) return null;
-  const programadas = tcgl.programadas + ls.programadas;
-  const realizadas = tcgl.realizadas + ls.realizadas;
-  if (!(programadas > 0)) return null;
-  return { data: tcgl.data, programadas, realizadas, pct: (realizadas / programadas) * 100 };
-}
-function textoQuando(bloco) {
+function textoAte(bloco, antigo) {
   if (!bloco) return "";
-  const base = "Dia fechado · " + rotuloData(bloco.data);
-  return bloco.data === hojeSP() ? base + " · sem horário de corte" : base;
+  return "Até " + bloco.corte + (antigo ? " · dados antigos" : "");
 }
 function pintarBlocoIcv(suf, bloco, antigo) {
   const box = document.getElementById("icvBox" + suf);
@@ -616,59 +598,48 @@ function pintarBlocoIcv(suf, bloco, antigo) {
   const bar = document.getElementById("icvBar" + suf);
   if (!box || !pct) return;
   box.classList.toggle("is-stale", !!antigo && !!bloco);
+  titulo.textContent = "Cumprimento do dia";
+  if (conta) conta.textContent = "";
   if (!bloco) {
-    titulo.textContent = "Cumprimento de viagens";
     pct.textContent = "Cumprimento indisponível";
     pct.classList.add("is-off");
-    conta.textContent = "";
-    quando.textContent = "";
+    if (quando) quando.textContent = "";
     if (bar) bar.style.width = "0%";
     return;
   }
-  titulo.textContent = "Cumprimento de viagens";
   pct.textContent = fmtPct(bloco.pct);
   pct.classList.remove("is-off");
-  conta.textContent = fmtInt(bloco.programadas) + " programadas · " + fmtInt(bloco.realizadas) + " realizadas";
-  quando.textContent = textoQuando(bloco) + (antigo ? " · dados antigos" : "");
+  if (quando) quando.textContent = textoAte(bloco, antigo);
   if (bar) bar.style.width = Math.max(0, Math.min(100, bloco.pct)) + "%";
 }
 function pintarIcv(estado, antigo) {
-  const tcgl = estado && estado.tcgl;
   const ls = estado && estado.ls;
   const total = estado && estado.total;
-  pintarBlocoIcv("Tcgl", tcgl, antigo);
+  pintarBlocoIcv("Tcgl", null, false);
   pintarBlocoIcv("Ls", ls, antigo);
   const el = document.getElementById("icvTotal");
   const nota = document.getElementById("icvTotalNota");
   const stamp = document.getElementById("icvStamp");
-  if (!el) return;
-  if (!total) {
-    el.textContent = "indisponível";
-    el.classList.add("is-off");
-    if (nota) nota.textContent = tcgl && ls && tcgl.data !== ls.data ? "datas diferentes" : "";
-  } else {
-    el.textContent = fmtPct(total.pct);
-    el.classList.remove("is-off");
-    if (nota) nota.textContent = textoQuando(total) + (antigo ? " · dados antigos" : "");
+  if (el) {
+    if (!total) {
+      el.textContent = "indisponível";
+      el.classList.add("is-off");
+      if (nota) nota.textContent = "";
+    } else {
+      el.textContent = fmtPct(total.pct);
+      el.classList.remove("is-off");
+      if (nota) nota.textContent = textoAte(total, antigo);
+    }
   }
   if (!stamp) return;
-  const dia = total || tcgl || ls;
-  const curta = dia ? dia.data.slice(8, 10) + "/" + dia.data.slice(5, 7) : "";
-  if (!estado) {
-    stamp.textContent = "Cumprimento indisponível";
-    return;
-  }
-  const hora = estado.lidoEm
-    ? new Date(estado.lidoEm).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", hour12: false })
-    : "";
-  stamp.textContent = antigo
-    ? "Cumprimento · dados antigos" + (curta ? " · " + curta : "")
-    : "Cumprimento · " + hora + (curta ? " · dia " + curta : "");
+  const ref = total || ls;
+  if (!ref) stamp.textContent = "Cumprimento indisponível";
+  else stamp.textContent = (antigo ? "Cumprimento · dados antigos · até " : "Cumprimento · até ") + ref.corte;
 }
 function lerIcvGuardado() {
   try {
     const raw = JSON.parse(sessionStorage.getItem(ICV_KEY) || "null");
-    if (!raw || (!raw.tcgl && !raw.ls)) return null;
+    if (!raw || (!raw.ls && !raw.total)) return null;
     return raw;
   } catch (_) {
     return null;
@@ -677,35 +648,12 @@ function lerIcvGuardado() {
 function guardarIcv(estado) {
   try { sessionStorage.setItem(ICV_KEY, JSON.stringify(estado)); } catch (_) {}
 }
-async function lerFonteIcv(fonte, de, ate) {
-  const url = ICV_API + "&de=" + de + "&ate=" + ate + (fonte ? "&fonte=" + encodeURIComponent(fonte) : "") + "&t=" + Date.now();
-  const res = await fetch(url, { cache: "no-store" });
+async function lerMapa(extra) {
+  const res = await fetch(API + (extra || "") + "&t=" + Date.now(), { cache: "no-store" });
   if (!res.ok) throw new Error("HTTP " + res.status);
   const payload = await res.json();
-  if (!payload || payload.ok === false) throw new Error(payload?.erro || "ICV inválido");
-  return ultimoDiaFechado(payload.dias);
-}
-let carregandoIcv = false;
-async function carregarIcv() {
-  if (carregandoIcv) return;
-  carregandoIcv = true;
-  const ate = hojeSP();
-  const de = shiftIso(ate, -21);
-  try {
-    const [tcgl, ls] = await Promise.all([
-      lerFonteIcv("", de, ate),
-      lerFonteIcv("ldsul", de, ate)
-    ]);
-    const estado = { tcgl, ls, total: totalIcv(tcgl, ls), lidoEm: new Date().toISOString() };
-    if (!tcgl && !ls) throw new Error("sem dia fechado");
-    guardarIcv(estado);
-    pintarIcv(estado, false);
-  } catch (_) {
-    const guardado = lerIcvGuardado();
-    pintarIcv(guardado, !!guardado);
-  } finally {
-    carregandoIcv = false;
-  }
+  if (!payload || payload.ok === false) throw new Error(payload?.erro || "API inválida");
+  return payload;
 }
 function linha(label, cor, dados, fill) {
   return {
@@ -797,15 +745,28 @@ async function carregar() {
   carregando = true;
   const erro = document.getElementById("erro");
   try {
-    const res = await fetch(API + "&t=" + Date.now(), { cache: "no-store" });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const payload = await res.json();
-    if (!payload || payload.ok === false) throw new Error(payload?.erro || "API inválida");
+    const [payload, sistema] = await Promise.all([
+      lerMapa(""),
+      lerMapa("&todas=1").catch(() => null)
+    ]);
     erro.hidden = true;
     pintar(payload);
+    const estado = {
+      ls: cumprimentoVivo(payload, false),
+      total: cumprimentoVivo(sistema, true)
+    };
+    if (estado.ls || estado.total) {
+      guardarIcv(estado);
+      pintarIcv(estado, false);
+    } else {
+      const guardado = lerIcvGuardado();
+      pintarIcv(guardado, !!guardado);
+    }
   } catch (err) {
     erro.hidden = false;
     erro.textContent = "Não foi possível atualizar a performance em tempo real: " + (err.message || err);
+    const guardado = lerIcvGuardado();
+    pintarIcv(guardado, !!guardado);
   } finally {
     carregando = false;
   }
@@ -814,9 +775,7 @@ pintarLinhaHora(lerHist());
 const icvInicial = lerIcvGuardado();
 if (icvInicial) pintarIcv(icvInicial, false);
 carregar();
-carregarIcv();
 setInterval(carregar, POLL_MS);
-setInterval(carregarIcv, ICV_POLL_MS);
 setInterval(pintarStamp, 1000);
 new MutationObserver(() => {
   pintarLinhaHora(lerHist());

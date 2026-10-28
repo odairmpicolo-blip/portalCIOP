@@ -1,6 +1,6 @@
 # Performance em tempo real
 
-Página: `pages/performance-tempo-real.html`. A pontualidade continua na API do mapa. O cumprimento do dia é outra leitura e não entra na média de No horário, Adiantado ou Atrasado.
+Página: `pages/performance-tempo-real.html`. Pontualidade e cumprimento do dia saem da API do mapa, no mesmo ciclo. O cumprimento não entra na média de No horário, Adiantado ou Atrasado.
 
 ## Pontualidade
 
@@ -11,35 +11,16 @@ Fonte: `https://londrisul.online/relatorios/mapa/api.php` (chave já usada pela 
 - Total: média aritmética de TCGL e LondriSul. Se só uma área tiver valor, o Total usa essa área. Essa conta não mudou.
 - Adiantado permanece vermelho. Atrasado permanece âmbar. A ordem na tela é No horário, Adiantado, Atrasado.
 
-## Cumprimento de viagens do dia
+## Cumprimento de viagens do dia, ao vivo
 
-Fonte pública já usada no Painel CIOP, sem endpoint novo:
+Mesma API do mapa, no mesmo ciclo de 5 s. Não usa o dia fechado do `share/icv`: aquele relatório não tem horário de corte e, em 28/10/2026, parava em 25/10.
 
-`GET /cr0108/share/icv?token=IPV@2026`
+O resumo do CAD traz `partidas_percent` e `viagens_perdidas_percent`. Na leitura conferida os dois fecham em 100 (tolerância de 2 pontos, por arredondamento). O cumprimento exibido é `partidas_percent`: as viagens que saíram até o relógio da própria leitura. O rótulo é “Até HH:MM”, com a hora de `atualizado_em`. Não se escreve um corte inventado.
 
-- TCGL: sem `fonte` (`cr_custom`).
-- LondriSul: `fonte=ldsul` (`cr_custom_ldsul`).
-- Campos usados: `data`, `scheduled_trips`, `trips`.
-- A página pede os últimos 21 dias e fica com o dia mais recente em que as duas contagens são números e as programadas são maiores que zero. Não faz média da janela, nem do mês, nem da semana.
+- LondriSul: o resumo da chamada padrão. Nela a TCGL vem marcada como excluída (`padrao_sem_tcgl: true`) e o resumo é a área 2.
+- Total do sistema: a mesma API com `todas=1`. Só entra se a resposta vier com `padrao_sem_tcgl: false`, ou seja, o CAD já incluiu a TCGL. Não é a média do percentual da LondriSul com outro número.
+- TCGL: a garagem não traz partidas nem viagens perdidas. A tela mostra “Cumprimento indisponível”. Não se calcula a TCGL pela diferença entre o total e a LondriSul.
 
-Fórmula, a mesma do Painel CIOP (`agregarIcv`):
+A fonte não manda viagens programadas nem realizadas. Essas contagens não aparecem. A diferença entre partidas e 100 não é rotulada como supressão.
 
-`cumprimento = viagens realizadas / viagens programadas × 100`
-
-A coluna `icv` do relatório não entra no número da tela: ela não fecha com as viagens da mesma linha. O percentual exibido é o das contagens, para programadas e realizadas serem o mesmo dia.
-
-Período: um dia civil fechado (`data_ref`). A rota não traz horário de corte. A tela escreve “Dia fechado” e a data. Não escreve “hoje até HH:MM”. Se o dia da fonte for o dia de hoje, o rótulo continua “dia fechado” e acrescenta “sem horário de corte”. Não se comparam realizadas de agora com a programação que ainda vai ocorrer.
-
-Em 28/10/2026 as duas fontes paravam em 25/10/2026. A tela mostra essa data; não trata o atraso como se fosse o dia corrente.
-
-Total do sistema: soma das programadas e soma das realizadas, só quando TCGL e LondriSul têm a mesma `data`. Não é a média dos dois percentuais. Datas diferentes, ou uma empresa sem dia válido: o total fica “indisponível”. Cada empresa continua com o próprio dia.
-
-Viagens não realizadas não aparecem. A rota pública não devolve `suppressed_trips`. A diferença programadas − realizadas não é supressão.
-
-Atualização: o workflow `atualizar-folha-servico.yml` recarrega o ICV a cada 30 min. A página relê a cada 5 min. O relógio do cabeçalho do cumprimento é o dessa leitura, separado do relógio da pontualidade.
-
-Indisponibilidade:
-
-- Sem leitura válida nesta abertura: “Cumprimento indisponível”. O percentual não vira zero.
-- Falha depois de uma leitura válida: mantém o último dia e marca “dados antigos”.
-- O último dia válido também fica em `sessionStorage` (`ciop-perf-icv-dia-v1`) para a TV não abrir em branco se a rede falhar na hora.
+Atualização: a cada 5 s, junto com a pontualidade. O cabeçalho do cumprimento usa o mesmo corte. Falha sem leitura anterior: “Cumprimento indisponível”, sem zerar. Falha depois de uma leitura válida: mantém o último percentual e marca “dados antigos”. O último valor fica em `sessionStorage` (`ciop-perf-cumprimento-vivo-v1`).
