@@ -39,6 +39,7 @@
 
   var HASH_ALVO = {
     inicio: "inicio",
+    todos: "inicio",
     operacao: "secaoOperacao",
     monitoramento: "secaoDashboards",
     indicadores: "secaoDashboards",
@@ -81,6 +82,66 @@
     return NOMES_AREA[alvo] || "Início";
   }
 
+  var filtroAtual = "todos";
+
+  function buscaAtiva() {
+    return !!normBusca(document.getElementById("ciopBuscaModulos")?.value);
+  }
+
+  function irAosModulos() {
+    var el = document.getElementById("homeModulos");
+    if (!el) return;
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+  }
+
+  function cardsLiberados(sec) {
+    return sec.querySelectorAll("a.card:not([hidden]):not(.ciop-search-hidden)").length;
+  }
+
+  function aplicarRecorteModulos() {
+    var q = buscaAtiva();
+    document.documentElement.setAttribute("data-home-search", q ? "1" : "0");
+    document.querySelectorAll(".card-section").forEach(function (sec) {
+      var n = cardsLiberados(sec);
+      if (q) {
+        sec.hidden = n === 0;
+        return;
+      }
+      if (filtroAtual === "todos") {
+        sec.hidden = n === 0;
+        return;
+      }
+      sec.hidden = sec.id !== filtroAtual;
+    });
+    document.querySelectorAll("#portalAbas .portal-aba").forEach(function (b) {
+      var alvo = b.getAttribute("data-alvo");
+      var on = alvo === filtroAtual;
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    var vazio = document.getElementById("homeFiltroVazio");
+    if (vazio) {
+      var sec = filtroAtual === "todos" ? null : document.getElementById(filtroAtual);
+      var semModulo = !q && !!sec && sec.querySelectorAll("a.card:not([hidden])").length === 0;
+      vazio.hidden = !semModulo;
+      if (semModulo) vazio.textContent = "Nenhum módulo de " + nomeArea(filtroAtual) + " está liberado para o seu acesso.";
+    }
+    var status = document.getElementById("homeSearchStatus");
+    if (status) {
+      if (!q) {
+        status.hidden = true;
+        status.textContent = "";
+      } else {
+        var achados = document.querySelectorAll(".card-section a.card:not([hidden]):not(.ciop-search-hidden)").length;
+        status.hidden = false;
+        status.textContent = achados
+          ? achados + (achados === 1 ? " módulo encontrado, com a categoria de cada um." : " módulos encontrados, com a categoria de cada um.")
+          : "";
+      }
+    }
+  }
+
   function irAoTopoConteudo() {
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
@@ -90,8 +151,8 @@
   }
 
   function atualizarTituloArea() {
-    var h = document.querySelector(".home-modules-overview > .home-mods-head h2");
-    if (h) h.textContent = "";
+    var h = document.querySelector("#homeModulos > h2");
+    if (h) h.textContent = "Todos os módulos";
     var dashTab = document.querySelector('.portal-aba[data-alvo="secaoDashboards"]');
     if (dashTab) dashTab.textContent = "Indicadores";
     var tvTab = document.querySelector('.portal-aba[data-alvo="secaoTv"]');
@@ -120,7 +181,7 @@
     });
   }
 
-  function gravarHash(alvo, modo) {
+  function gravarHash(alvo, modo, ancora) {
     var hash = ALVO_HASH[alvo];
     if (!hash) return;
     var next = "#" + hash;
@@ -129,31 +190,25 @@
       if (modo === "replace") history.replaceState({ homeArea: alvo }, "", next);
       else history.pushState({ homeArea: alvo }, "", next);
     }
-    irAoTopoConteudo();
+    if (ancora === "modulos") irAosModulos();
+    else if (ancora !== "nenhum") irAoTopoConteudo();
   }
 
   function mostrarTodos() {
+    filtroAtual = "todos";
     aplicarVista("inicio");
     if (typeof window.portalMostrarAbaHome === "function") window.portalMostrarAbaHome("todos", true);
-    else {
-      document.querySelectorAll(".card-section").forEach(function (sec) {
-        sec.hidden = false;
-      });
-      document.querySelectorAll(".portal-aba").forEach(function (b) {
-        b.setAttribute("aria-selected", b.getAttribute("data-alvo") === "todos" ? "true" : "false");
-      });
-    }
     marcarNav("inicio");
+    aplicarRecorteModulos();
   }
 
   function clicarAba(id) {
-    aplicarVista(id);
+    filtroAtual = id;
+    aplicarVista("inicio");
+    document.documentElement.setAttribute("data-home-area", id);
     if (typeof window.portalMostrarAbaHome === "function") window.portalMostrarAbaHome(id, true);
-    else {
-      var aba = document.querySelector('.portal-aba[data-alvo="' + id + '"]');
-      if (aba) aba.click();
-    }
     marcarNav(id);
+    aplicarRecorteModulos();
   }
 
   function montarNav() {
@@ -227,9 +282,13 @@
       wrap.hidden = true;
       var outrosBtn = nav.querySelector('[data-home-nav="outros"]');
       if (outrosBtn) outrosBtn.setAttribute("aria-expanded", "false");
-      if (alvo === "inicio") mostrarTodos();
-      else clicarAba(alvo);
-      gravarHash(alvo);
+      if (alvo === "inicio") {
+        mostrarTodos();
+        gravarHash("inicio");
+      } else {
+        clicarAba(alvo);
+        gravarHash(alvo, "push", "modulos");
+      }
       fecharMenu();
     });
     if (window.dkSwapBrandLogos) window.dkSwapBrandLogos(!!window.dkIsDark && window.dkIsDark());
@@ -287,11 +346,8 @@
   }
 
   function filtrarFavoritos() {
-    var q = normBusca(document.getElementById("ciopBuscaModulos")?.value);
     document.querySelectorAll("#homeQuick a").forEach(function (card) {
-      var hit = !q || normBusca(card.textContent).includes(q);
-      card.classList.toggle("ciop-search-hidden", !hit);
-      card.classList.toggle("ciop-search-hit", !!(q && hit));
+      card.classList.remove("ciop-search-hidden", "ciop-search-hit");
     });
   }
 
@@ -315,9 +371,26 @@
       '<p id="homeSearchEmptyText"></p>' +
       '<button type="button" class="home-search-clear-btn" id="homeSearchEmptyClear">Limpar busca</button>' +
       '<p class="home-search-empty-hint" id="homeSearchEmptyHint"></p>';
+    var status = document.createElement("p");
+    status.id = "homeSearchStatus";
+    status.className = "home-search-status";
+    status.hidden = true;
+    status.setAttribute("role", "status");
+    var vazio = document.createElement("p");
+    vazio.id = "homeFiltroVazio";
+    vazio.className = "home-filtro-vazio";
+    vazio.hidden = true;
+    vazio.setAttribute("role", "status");
     var first = document.querySelector(".card-section");
-    if (first && first.parentNode) first.parentNode.insertBefore(box, first);
-    else document.querySelector(".container")?.appendChild(box);
+    if (first && first.parentNode) {
+      first.parentNode.insertBefore(status, first);
+      first.parentNode.insertBefore(vazio, first);
+      first.parentNode.insertBefore(box, first);
+    } else {
+      document.querySelector(".container")?.appendChild(status);
+      document.querySelector(".container")?.appendChild(vazio);
+      document.querySelector(".container")?.appendChild(box);
+    }
     document.getElementById("homeSearchEmptyClear")?.addEventListener("click", function () {
       var limpar = document.getElementById("ciopBuscaLimpar");
       var input = document.getElementById("ciopBuscaModulos");
@@ -333,16 +406,12 @@
   function atualizarBuscaUi(alvo) {
     var input = document.getElementById("ciopBuscaModulos");
     if (!input) return;
-    var area = nomeArea(alvo);
-    if (alvo === "inicio") {
-      input.placeholder = "Buscar módulos";
-      input.setAttribute("aria-description", "Filtra os acessos rápidos e todas as áreas da página inicial.");
-    } else if (alvo === "outros") {
+    if (alvo === "outros") {
       input.placeholder = "Buscar em Outros";
       input.setAttribute("aria-description", "Filtra só os acessos de Outros.");
     } else {
-      input.placeholder = "Buscar em " + area;
-      input.setAttribute("aria-description", "Filtra só os módulos de " + area + ". Os demais continuam nas outras áreas.");
+      input.placeholder = "Buscar módulos";
+      input.setAttribute("aria-description", "Pesquisa todos os módulos permitidos, em qualquer categoria. Limpar restaura o filtro anterior.");
     }
     filtrarFavoritos();
     input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -361,24 +430,20 @@
     var alvo = document.documentElement.getAttribute("data-home-area");
     var area = nomeArea(alvo);
     var visiveis = 0;
-    if (view === "inicio") {
-      visiveis = document.querySelectorAll("#homeQuick a:not([hidden]):not(.ciop-search-hidden)").length +
-        document.querySelectorAll(".card-section a.card:not([hidden]):not(.ciop-search-hidden)").length;
-    } else if (view === "outros") {
+    if (view === "outros") {
       visiveis = document.querySelectorAll(".home-other-card:not([hidden])").length;
     } else {
-      var sec = document.getElementById(alvo);
-      visiveis = sec ? sec.querySelectorAll("a.card:not([hidden]):not(.ciop-search-hidden)").length : 0;
+      visiveis = document.querySelectorAll(".card-section a.card:not([hidden]):not(.ciop-search-hidden)").length;
     }
     var show = !!q && visiveis === 0;
     empty.hidden = !show;
     if (!show) return;
-    if (view === "inicio") {
-      text.textContent = "Nenhum módulo corresponde a «" + q + "».";
-      if (hint) hint.textContent = "Tente outro termo ou limpe a busca para ver favoritos e todas as áreas.";
+    if (view === "outros") {
+      text.textContent = "Nenhum acesso em Outros corresponde a «" + q + "».";
+      if (hint) hint.textContent = "Limpe a busca para ver os acessos de Outros.";
     } else {
-      text.textContent = "Nenhum módulo em " + area + " corresponde a «" + q + "».";
-      if (hint) hint.textContent = "Esta busca filtra só " + area + ". Os demais módulos continuam nas outras áreas.";
+      text.textContent = "Nenhum módulo corresponde a «" + q + "».";
+      if (hint) hint.textContent = "A busca olha todas as categorias. Limpe para voltar ao filtro anterior.";
     }
   }
 
@@ -392,9 +457,25 @@
       copy.className = "card-copy";
       if (title) copy.appendChild(title);
       if (desc) copy.appendChild(desc);
+      var sec = card.closest(".card-section");
+      var nome = (sec && (sec.querySelector(".card-section-title")?.textContent || sec.getAttribute("aria-label"))) || "";
+      nome = String(nome).trim();
+      if (nome && !card.querySelector(".card-cat")) {
+        var cat = document.createElement("span");
+        cat.className = "card-cat";
+        cat.textContent = nome;
+        copy.appendChild(cat);
+      }
       var top = card.querySelector(".card-top");
       if (top) top.appendChild(copy);
       else card.insertBefore(copy, card.querySelector(".card-btn") || null);
+      if (!card.querySelector(".card-go")) {
+        var go = document.createElement("span");
+        go.className = "card-go";
+        var btn = card.querySelector(".card-btn");
+        go.textContent = (btn && btn.textContent.trim()) || "Acessar";
+        card.appendChild(go);
+      }
     });
   }
 
@@ -433,9 +514,13 @@
         return;
       }
       document.body.classList.remove("home-show-others");
-      if (alvo === "inicio") mostrarTodos();
-      else clicarAba(alvo);
-      gravarHash(alvo);
+      if (alvo === "inicio") {
+        mostrarTodos();
+        gravarHash("inicio");
+      } else {
+        clicarAba(alvo);
+        gravarHash(alvo, "push", "modulos");
+      }
       fecharMenu();
     });
     document.body.appendChild(dock);
@@ -456,9 +541,13 @@
       return;
     }
     document.body.classList.remove("home-show-others");
-    if (alvo === "inicio") mostrarTodos();
-    else clicarAba(alvo);
-    irAoTopoConteudo();
+    if (alvo === "inicio") {
+      mostrarTodos();
+      irAoTopoConteudo();
+    } else {
+      clicarAba(alvo);
+      irAosModulos();
+    }
   }
 
   function montarTopo() {
@@ -793,11 +882,12 @@
     var wrap = document.createElement("div");
     wrap.className = "home-modules-overview";
     wrap.innerHTML =
-      '<div class="home-quick-head"><h2>Acessos rápidos</h2></div>' +
-      '<section class="home-quick" id="homeQuick" aria-label="Acessos rápidos"></section>' +
-      '<div class="home-mods-head"><h2></h2></div>';
+      '<div class="home-quick-head"><h2>Seus favoritos</h2></div>' +
+      '<section class="home-quick" id="homeQuick" aria-label="Seus favoritos"></section>' +
+      '<div class="home-mods-head" id="homeModulos"><h2>Todos os módulos</h2></div>';
     abas.parentNode.insertBefore(wrap, abas);
-    wrap.querySelector(".home-mods-head").appendChild(abas);
+    wrap.querySelector("#homeModulos").appendChild(abas);
+    abas.setAttribute("aria-label", "Filtrar módulos");
   }
 
   // Atalhos reflect the original module visibility; they must never expose a restricted entry.
@@ -817,7 +907,7 @@
       var dash = list.querySelector('[data-alvo="secaoDashboards"]');
       if (dash) dash.textContent = "Indicadores";
       var tv = list.querySelector('[data-alvo="secaoTv"]');
-      if (tv) tv.textContent = "Painéis de TV";
+      if (tv) tv.textContent = "TV";
     }
     var chave = (location.hash || "").replace(/^#/, "").toLowerCase();
     if (HASH_ALVO[chave]) aplicarHash();
@@ -949,6 +1039,7 @@
     atualizarSino();
     atualizarKpiPlural();
     sincronizarOutros();
+    setTimeout(aplicarRecorteModulos, 80);
   });
   window.addEventListener("dk-theme-change", function () {
     logoHome();
@@ -969,7 +1060,10 @@
     });
   }
   observar();
-  var cardsObserver = new MutationObserver(sincronizarAtalhos);
+  var cardsObserver = new MutationObserver(function () {
+    sincronizarAtalhos();
+    aplicarRecorteModulos();
+  });
   document.querySelectorAll(".card-section a.card").forEach(function (card) {
     cardsObserver.observe(card, { attributes: true, attributeFilter: ["hidden", "style", "class"] });
   });
@@ -997,13 +1091,37 @@
     var aba = ev.target.closest(".portal-aba");
     if (!aba) return;
     var alvo = aba.getAttribute("data-alvo");
+    if (!alvo) return;
+    filtroAtual = alvo;
+    aplicarVista("inicio");
     if (alvo === "todos") marcarNav("inicio");
-    else if (alvo) marcarNav(alvo);
+    else {
+      document.documentElement.setAttribute("data-home-area", alvo);
+      marcarNav(alvo);
+    }
+    gravarHash(alvo === "todos" ? "inicio" : alvo, "push", "nenhum");
+    setTimeout(aplicarRecorteModulos, 0);
+  });
+  document.getElementById("portalAbas")?.addEventListener("keydown", function (ev) {
+    var teclas = ["ArrowRight", "ArrowLeft", "Home", "End"];
+    if (teclas.indexOf(ev.key) === -1) return;
+    var btns = Array.prototype.slice.call(document.querySelectorAll("#portalAbas .portal-aba"));
+    var i = btns.indexOf(document.activeElement);
+    if (i < 0) return;
+    ev.preventDefault();
+    var next = i;
+    if (ev.key === "ArrowRight") next = (i + 1) % btns.length;
+    else if (ev.key === "ArrowLeft") next = (i - 1 + btns.length) % btns.length;
+    else if (ev.key === "Home") next = 0;
+    else next = btns.length - 1;
+    btns[next].focus();
+    btns[next].click();
   });
   function aposBusca() {
     filtrarFavoritos();
     filtrarOutros();
     atualizarBuscaVazia();
+    aplicarRecorteModulos();
   }
   document.getElementById("ciopBuscaModulos")?.addEventListener("input", aposBusca);
   document.getElementById("ciopBuscaModulos")?.addEventListener("change", aposBusca);

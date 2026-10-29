@@ -13,7 +13,7 @@ Legenda: **Navegador** = exercitado com servidor local; **Código** = tokens/DS/
 | Página | Papel | Temas | 390–1920 | Estados | Notas |
 | --- | --- | --- | --- | --- | --- |
 | `login.html` | Acesso | Navegador | Navegador 1920/390 | Formulário | Foto nos dois temas |
-| `index.html` | Home | Navegador (ops1, claro+escuro, 1440; código 390/768/1366/1920) | Navegador + CSS | Login cobre sessão | `.home-ops` ~50/22/28; hora HH:mm; Adiantado rgb(220,38,38) / Atrasado rgb(202,138,4); welcome `#102c53` / `#f5f8ff` |
+| `index.html` | Home | Navegador (favoritos + catálogo, claro/escuro) | 390 / 1024 / 1440 | Login cobre sessão | Seus favoritos (6); Todos os módulos com filtro; busca global restaura o filtro |
 | `pages/icv.html` | Dashboard | Código | Código | Login | Gráfico reage a `dk-theme-change` |
 | `pages/pontualidade.html` | IPV | Navegador (KPI + seletor + tabela, claro/escuro; fill ≠ color) | Código | Login | Adiantado `--portal-op-early`, Atrasado `--portal-op-late` |
 | `pages/pontualidade-ajustada.html` | Dashboard | Navegador local (login) | Código | Erro + retry | Handler local; **publicado** ainda 404 |

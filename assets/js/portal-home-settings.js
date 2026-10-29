@@ -1,7 +1,14 @@
 /* Personal preferences never grant access: every shortcut is checked against the original module. */
 (function () {
   var dialog, chooser, status, noticesDialog, initialized = false, memoryList = null, saving = false, lastEmail = '';
-  var defaults = ['pages/monitoramento.html', 'pages/Folhadeservico1.html', 'pages/liberacao-lancamento.html', 'pages/criar-relatorio.html'];
+  var defaults = [
+    'pages/monitoramento.html',
+    'pages/Folhadeservico1.html',
+    'pages/liberacao-lancamento.html',
+    'pages/criar-relatorio.html',
+    'pages/pontualidade.html',
+    'pages/icv.html'
+  ];
   function account() { return String(window.portalUsuario?.email || '').trim().toLowerCase(); }
   function key() { return 'ciop-home-shortcuts-v1:' + encodeURIComponent(account()); }
   function sanitize(list) {
@@ -133,7 +140,7 @@
     if (!quick.children.length && account()) {
       var empty = document.createElement('button');
       empty.type = 'button'; empty.className = 'home-quick-empty';
-      empty.textContent = 'Escolher meus acessos rápidos'; empty.addEventListener('click', open);
+      empty.textContent = 'Escolher meus favoritos'; empty.addEventListener('click', open);
       quick.appendChild(empty);
     }
   }
@@ -177,7 +184,7 @@
       label.append(input, text); chooser.appendChild(label);
     });
     chooser.onchange = function (event) {
-      if (chooser.querySelectorAll('input:checked').length > 6) { event.target.checked = false; status.textContent = 'Escolha até 6 acessos rápidos.'; }
+      if (chooser.querySelectorAll('input:checked').length > 6) { event.target.checked = false; status.textContent = 'Escolha até 6 favoritos.'; }
       else status.textContent = '';
     };
   }
@@ -209,7 +216,7 @@
     initialized = true;
     dialog = document.createElement('dialog'); dialog.id = 'homeSettingsDialog';
     dialog.setAttribute('aria-labelledby', 'homeSettingsTitle');
-    dialog.innerHTML = '<div class="home-settings-top"><div><p class="home-settings-eyebrow">CONFIGURAÇÕES</p><h2 id="homeSettingsTitle">Ajustes</h2></div><button type="button" class="home-settings-close" aria-label="Fechar ajustes">×</button></div><section class="home-settings-section home-settings-security"><details id="homeSettingsPassword"><summary><span class="home-settings-lock" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v3"/></svg></span><span><strong>Alterar senha</strong><small>Atualize sua senha de acesso.</small></span></summary><div id="homeSettingsPasswordSlot"></div></details></section><section class="home-settings-section home-settings-admin" hidden><h3>Administração</h3><div class="home-settings-admin-actions"></div></section><section class="home-settings-section"><h3>Aparência</h3><p>Escolha o tema que combina com você.</p><div id="homeSettingsTheme"></div></section><section class="home-settings-section"><h3>Acessos rápidos</h3><p>Escolha até 6 módulos para ter sempre à mão. Eles ficam na sua conta e abrem em qualquer computador ou celular.</p><div id="homeSettingsModules"></div></section><p id="homeSettingsStatus" role="status" aria-live="polite"></p><div class="home-settings-footer"><small>Salvos na sua conta, em qualquer lugar.</small><button type="button" class="home-settings-save">Salvar acessos</button></div>';
+    dialog.innerHTML = '<div class="home-settings-top"><div><p class="home-settings-eyebrow">CONFIGURAÇÕES</p><h2 id="homeSettingsTitle">Ajustes</h2></div><button type="button" class="home-settings-close" aria-label="Fechar ajustes">×</button></div><section class="home-settings-section home-settings-security"><details id="homeSettingsPassword"><summary><span class="home-settings-lock" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v3"/></svg></span><span><strong>Alterar senha</strong><small>Atualize sua senha de acesso.</small></span></summary><div id="homeSettingsPasswordSlot"></div></details></section><section class="home-settings-section home-settings-admin" hidden><h3>Administração</h3><div class="home-settings-admin-actions"></div></section><section class="home-settings-section"><h3>Aparência</h3><p>Escolha o tema que combina com você.</p><div id="homeSettingsTheme"></div></section><section class="home-settings-section"><h3>Seus favoritos</h3><p>Escolha até 6 módulos para ter sempre à mão. Eles ficam na sua conta e abrem em qualquer computador ou celular.</p><div id="homeSettingsModules"></div></section><p id="homeSettingsStatus" role="status" aria-live="polite"></p><div class="home-settings-footer"><small>Salvos na sua conta, em qualquer lugar.</small><button type="button" class="home-settings-save">Salvar favoritos</button></div>';
     var novidades = document.createElement('section'); novidades.className = 'home-settings-section';
     novidades.innerHTML = '<h3>Sobre o portal</h3><button type="button" class="home-settings-action">Rever novidades do portal</button>';
     novidades.querySelector('button').onclick = function () { dialog.close(); window.portalNovidades?.abrir(); };
@@ -270,7 +277,7 @@
       salvarNuvem(values).then(function () {
         status.textContent = '';
         dialog.close();
-        avisarSalvo('Acessos rápidos salvos na sua conta. Disponíveis em qualquer lugar.');
+        avisarSalvo('Favoritos salvos na sua conta. Disponíveis em qualquer lugar.');
       }).catch(function () {
         status.textContent = 'Salvo neste aparelho. Não deu para sincronizar na nuvem agora.';
         avisarSalvo('Salvo neste aparelho. Tente de novo para usar em outro local.');
