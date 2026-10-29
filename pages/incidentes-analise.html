@@ -146,22 +146,28 @@ body{
 .filters-panel::before{display:none}
 .filters-grid{
   display:flex !important;
-  flex-wrap:nowrap !important;
-  gap:8px;
+  flex-wrap:wrap !important;
+  gap:8px 12px;
   align-items:flex-end;
-  overflow-x:auto;
-  -webkit-overflow-scrolling:touch;
+  overflow:visible;
 }
 .filters-grid .field{
-  flex:1 1 0;
-  min-width:0;
+  flex:1 1 10rem;
+  min-width:10rem;
+}
+.filters-grid .field:has(input[type="date"]){
+  flex:1 1 12.5rem;
+  min-width:12.5rem;
+}
+.filters-grid .field.field-toggle{
+  flex:0 1 auto;
+  min-width:10.5rem;
 }
 .filters-grid .filter-actions{
   flex:0 0 auto;
 }
-.field label{display:block;margin:0 0 3px;color:var(--muted);font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
-.field-headrow{display:flex;align-items:center;justify-content:space-between;gap:4px;flex-wrap:nowrap;min-width:0}
-.field-headrow label{margin:0 0 3px}
+.field label,.field-toggle-label{display:block;margin:0 0 3px;color:var(--muted);font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+.field-headrow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;min-width:0}
 .linha-produtiva-toggle{display:inline-flex;align-items:center;gap:5px;cursor:pointer;text-transform:none;font-weight:600;color:var(--blue);user-select:none;height:auto}
 .linha-produtiva-toggle input{position:absolute;opacity:0;width:0;height:0}
 .linha-produtiva-toggle .lpt-track{position:relative;width:28px;height:16px;border-radius:999px;background:rgba(255,255,255,.55);border:1px solid rgba(6,36,92,.15);flex:0 0 auto;transition:background .18s ease,border-color .18s ease}
@@ -243,7 +249,7 @@ select option{color:#101828}
 
 @media (max-width:1180px){
   .kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
-  .filters-grid{flex-wrap:nowrap !important}
+  .filters-grid{flex-wrap:wrap !important}
   .chart-card.span-8,.chart-card.span-6,.chart-card.span-4{grid-column:span 12}
 }
 @media (max-width:720px){
@@ -300,7 +306,7 @@ select option{color:#101828}
   .container{
     max-width:none !important;
     margin:0 !important;
-    padding:calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-left)) 28px calc(14px + env(safe-area-inset-right)) !important;
+    padding:calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-left)) calc(88px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-right)) !important;
   }
   html.native-embedded .container{padding-top:14px !important;}
 
@@ -315,12 +321,12 @@ select option{color:#101828}
 
   .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
   .filters-grid{
-    flex-wrap:nowrap !important;
-    gap:8px !important;
+    flex-wrap:wrap !important;
+    gap:8px 12px !important;
   }
   .filters-grid .field{
-    flex:0 0 148px !important;
-    min-width:148px !important;
+    flex:1 1 12.5rem !important;
+    min-width:12.5rem !important;
   }
   .filter-actions{align-items:stretch;flex-direction:row;flex:0 0 auto}
   .field label{font-size:12px !important;}
@@ -517,15 +523,16 @@ select option{color:#101828}
 <select id="estadoFiltro"><option value="">Todos</option></select>
 </div>
 <div class="field">
-<div class="field-headrow">
 <label for="linhaFiltro">Linha</label>
+<select id="linhaFiltro"><option value="">Todas</option></select>
+</div>
+<div class="field field-toggle">
+<span class="field-toggle-label">Linhas</span>
 <label class="linha-produtiva-toggle" title="Mostrar somente linhas produtivas (numéricas) - oculta ociosas como DH, PI, PO">
 <input type="checkbox" id="linhaProdutivaFiltro">
 <span class="lpt-track"><span class="lpt-thumb"></span></span>
 <span class="lpt-text">Só produtivas</span>
 </label>
-</div>
-<select id="linhaFiltro"><option value="">Todas</option></select>
 </div>
 <div class="filter-actions">
 <button class="btn btn-secondary" type="button" id="limparFiltros">Limpar filtros</button>
@@ -645,7 +652,7 @@ select option{color:#101828}
 <link rel="stylesheet" href="../assets/css/portal-brand.css?v=20260818head3">
 <link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
 <link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
-<link rel="stylesheet" href="../assets/css/portal-filtros.css">
+<link rel="stylesheet" href="../assets/css/portal-filtros.css?v=20261029filt1">
 <script src="../assets/js/loading.js?v=20261022loading1"></script>
 <script type="module" src="../assets/js/auth.js?v=20261022intro1"></script>
 <script src="../assets/js/portal-senha.js" defer></script>

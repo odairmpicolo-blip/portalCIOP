@@ -26,14 +26,14 @@ Breakpoints **efetivos** no CSS atual (não inventar uma escala nova). Conferên
 - Sequência no Início: busca/conta → saudação + resumo → painel unificado (performance + hora + clima) → aviso → acessos rápidos → catálogos das quatro áreas. Nas áreas do menu: busca/conta → título → catálogo.
 - Hero: “Olá, Nome” compacto, subtítulo abaixo, resumo (módulos / usuários / avisos, com singular/plural) à **direita** no desktop e abaixo em telas estreitas. Um único `.home-ops` (~50% performance, ~22% hora, ~28% clima), padding 16–24 px, relógio afastado da divisória. Clima: temperatura e condição numa linha; `Mín. 13° · Máx. 23°` na seguinte. Intervalos: **16–20 px** entre cards, **24–28 px** entre seções.
 - Avisos: faixa baixa; rótulo pequeno; detalhe laranja de 2 px à esquerda; botão “Ver aviso”.
-- ≤900 px: sidebar vira drawer em vidro (`--home-nav`); dock fixo; padding-bottom `calc(108px + env(safe-area-inset-bottom))`.
+- ≤900 px: sidebar vira drawer em vidro (`--home-nav`); dock fixo; padding-bottom `calc(108px + env(safe-area-inset-bottom))`. Internas: `padding-bottom: calc(72–88px + env(safe-area-inset-bottom))` para não cobrir o fim da página com a navegação fixa / área segura.
 - ≤600 px: busca em 100% da largura; KPI em uma coluna.
 
 ## Dashboard / formulário / consulta
 
 Header compacto (logo | título que quebra com `overflow-wrap: anywhere` | ações). `main.container` `max-width: 100%`, `min-width: 0`.
 
-Filtros: min 160 px por campo, wrap. KPI: `repeat(auto-fit, minmax(160px, 1fr))`, valor `nowrap`.
+Filtros: wrap **antes** de colidir (`flex-wrap: wrap`). Campo de data/hora: largura mínima **12,5 rem**, `padding-right` para o ícone nativo do calendário ficar **dentro** do input. KPI: `repeat(auto-fit, minmax(160px, 1fr))`, valor `nowrap`. Relatório de Liberação: cabeçalhos com `white-space: normal`, coluna `min-width: 7,5 rem`, rolagem no `.table-wrap` — não reduzir a fonte abaixo de ~11 px para caber.
 
 ICV desktop (≥721): `portal-liquid-icv.css`. Abaixo disso o CSS da própria página (shell mais “nativo”) permanece — não forçar o vidro desktop no celular do ICV.
 

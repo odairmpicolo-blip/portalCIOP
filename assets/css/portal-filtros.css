@@ -64,28 +64,28 @@ section.filters .field:first-child {
 
 .filters-panel .filters {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
     gap: 14px 16px;
     align-items: end;
 }
 
 .panel .filters {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
     gap: 14px 16px;
     align-items: end;
 }
 
 .sidebar.portal-filters-bar {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
     gap: 14px 16px;
     align-items: end;
 }
 
 .panel .controls {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
     gap: 14px 16px;
     align-items: end;
 }
@@ -106,9 +106,17 @@ section.filters .field:first-child {
     flex: 0 1 auto;
 }
 
-.filter-group--data {
-    flex: 0 0 172px;
-    width: 172px;
+.filter-group--data,
+.filter-field--data,
+.campo-data,
+.filters .field:has(input[type="date"]),
+.filters .field:has(input[type="time"]),
+.filters .campo:has(input[type="date"]),
+.filters-grid .field:has(input[type="date"]) {
+    flex: 1 1 12.5rem;
+    min-width: 12.5rem;
+    width: auto;
+    max-width: 100%;
 }
 
 .filter-group--select,
@@ -330,8 +338,8 @@ section.filters .field:first-child {
 }
 
 .date-row input {
-    flex: 1;
-    min-width: 0;
+    flex: 1 1 12.5rem;
+    min-width: 12.5rem;
 }
 
 .date-row span,
@@ -399,8 +407,10 @@ section.filters .field:first-child {
 @media (min-width: 1000px) {
     .filter-group--data,
     .filters-inline .filter-field:has(input[type="date"]) {
-        flex: 0 0 168px;
-        width: 168px;
+        flex: 1 1 12.5rem;
+        min-width: 12.5rem;
+        width: auto;
+        max-width: 100%;
     }
 
     .filter-group label,
@@ -521,4 +531,96 @@ html.dk-dark .panel .controls select {
   background-color: var(--portal-field) !important;
   color: var(--portal-on-field) !important;
   border-color: var(--portal-border);
+}
+
+/* Date/time: ícone nativo permanece dentro do campo; filtros quebram linha. */
+.filter-grid,
+.filters-inline,
+section.filters,
+.filters-grid,
+.toolbar-filtros,
+.toolbar-filtros-linha,
+.filtros {
+    flex-wrap: wrap !important;
+}
+
+.filter-wrapper input[type="date"],
+.filter-wrapper input[type="time"],
+.filter-grid input[type="date"],
+.filter-grid input[type="time"],
+.filter-group input[type="date"],
+.filter-group input[type="time"],
+.filters input[type="date"],
+.filters input[type="time"],
+.filters-panel input[type="date"],
+.filters-panel input[type="time"],
+.filter-field input[type="date"],
+.filter-field input[type="time"],
+.filters-inline input[type="date"],
+.filters-inline input[type="time"],
+.campo input[type="date"],
+.campo input[type="time"],
+.toolbar-filtros input[type="date"],
+.toolbar-filtros input[type="time"] {
+    position: relative;
+    box-sizing: border-box;
+    min-width: 12.5rem;
+    width: 100%;
+    max-width: 100%;
+    padding-right: 2.5rem !important;
+}
+
+.filter-wrapper input[type="date"]::-webkit-calendar-picker-indicator,
+.filter-wrapper input[type="time"]::-webkit-calendar-picker-indicator,
+.filter-grid input[type="date"]::-webkit-calendar-picker-indicator,
+.filter-grid input[type="time"]::-webkit-calendar-picker-indicator,
+.filter-group input[type="date"]::-webkit-calendar-picker-indicator,
+.filter-group input[type="time"]::-webkit-calendar-picker-indicator,
+.filters input[type="date"]::-webkit-calendar-picker-indicator,
+.filters input[type="time"]::-webkit-calendar-picker-indicator,
+.filters-panel input[type="date"]::-webkit-calendar-picker-indicator,
+.filters-panel input[type="time"]::-webkit-calendar-picker-indicator,
+.filter-field input[type="date"]::-webkit-calendar-picker-indicator,
+.filter-field input[type="time"]::-webkit-calendar-picker-indicator,
+.filters-inline input[type="date"]::-webkit-calendar-picker-indicator,
+.filters-inline input[type="time"]::-webkit-calendar-picker-indicator,
+.campo input[type="date"]::-webkit-calendar-picker-indicator,
+.campo input[type="time"]::-webkit-calendar-picker-indicator,
+.toolbar-filtros input[type="date"]::-webkit-calendar-picker-indicator,
+.toolbar-filtros input[type="time"]::-webkit-calendar-picker-indicator {
+    position: absolute;
+    right: 0.55rem;
+    width: 1.15rem;
+    height: 1.15rem;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.78;
+}
+
+html.dk-dark .filters input[type="date"]::-webkit-calendar-picker-indicator,
+html.dk-dark .filters input[type="time"]::-webkit-calendar-picker-indicator,
+html.dk-dark .filter-wrapper input[type="date"]::-webkit-calendar-picker-indicator,
+html.dk-dark .filter-wrapper input[type="time"]::-webkit-calendar-picker-indicator,
+html.dk-dark .filter-field input[type="date"]::-webkit-calendar-picker-indicator,
+html.dk-dark .campo input[type="date"]::-webkit-calendar-picker-indicator,
+html.dk-dark .toolbar-filtros input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.9;
+}
+
+.filters .field.field-toggle {
+    flex: 0 1 auto;
+    min-width: 10.5rem;
+    max-width: 100%;
+    justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+    .filter-wrapper,
+    .filters-panel,
+    section.filters,
+    .container {
+        padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    }
 }

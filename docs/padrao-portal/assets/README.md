@@ -23,5 +23,16 @@ Imagens do [catálogo](../catalogo.html) com **dados fictícios** (linha 999, pr
 | `painel-ciop-clima-noite.png` | Painel CIOP TV: céu limpo à noite com lua genérica, colunas horárias e “Agora” |
 | `terminais-proximas-claro.png` | Terminais Agora: Próxima troca e lista Próximas, tema claro |
 | `terminais-proximas-escuro.png` | O mesmo recorte no tema escuro (linhas escuras, nome/horário claros) |
+| `terminais-chrome-claro.png` | Terminais Agora: logo cheia + filtro “Todos os terminais”, tema claro |
+| `terminais-chrome-escuro.png` | O mesmo chrome no tema escuro |
+
+| `filtros-antes-1440-claro.png` | Colisão reproduzida: date 118 px, nowrap, Só produtivas no rótulo Linha |
+| `filtros-depois-390-claro.png` | Filtros wrap + dock/safe-area, 390×844, claro |
+| `filtros-depois-390-escuro.png` | O mesmo recorte, tema escuro |
+| `filtros-depois-1024-claro.png` | 1024×768, claro |
+| `filtros-depois-1024-escuro.png` | 1024×768, escuro |
+| `filtros-depois-1440-claro.png` | 1440×900, claro — ícone de data dentro do campo |
+| `filtros-depois-1440-escuro.png` | 1440×900, escuro |
+| `filtros-depois-tv-1920-claro.png` | Composição 1920×1080 (referência TV / desktop largo) |
 
 Ao mudar o padrão visual compartilhado, recapturar estas imagens e atualizar o `.md` correspondente.
