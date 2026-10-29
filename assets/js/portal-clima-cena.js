@@ -133,13 +133,13 @@
     if (p < 0.03 || p > 0.97) {
       return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.1" fill="#64748b" opacity=".5"/></svg>';
     }
-    var rx = Math.max(0.4, Math.abs(Math.cos(p * 2 * Math.PI)) * 7.1).toFixed(2);
-    var growing = p < 0.5;
-    var broad = Math.cos(p * 2 * Math.PI) < 0;
-    var sweep = growing ? (broad ? 1 : 0) : (broad ? 0 : 1);
-    var d = growing
-      ? "M12 4.9 A7.1 7.1 0 0 0 12 19.1 A" + rx + " 7.1 0 0 " + sweep + " 12 4.9 Z"
-      : "M12 4.9 A7.1 7.1 0 0 1 12 19.1 A" + rx + " 7.1 0 0 " + sweep + " 12 4.9 Z";
+    var rx = Math.max(0.35, Math.abs(Math.cos(p * 2 * Math.PI)) * 7.1).toFixed(2);
+    var waxing = p < 0.5;
+    var gibbous = Math.cos(p * 2 * Math.PI) < 0;
+    /* Sul: crescente à esquerda. Gibosa usa o arco interno no sentido oposto, para não virar uma lasca. */
+    var outer = waxing ? 0 : 1;
+    var inner = gibbous ? 1 - outer : outer;
+    var d = "M12 4.9 A7.1 7.1 0 0 " + outer + " 12 19.1 A" + rx + " 7.1 0 0 " + inner + " 12 4.9 Z";
     return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle class="wx-moon" cx="12" cy="12" r="7.1" fill="#1e293b"/><path class="wx-moon" d="' + d + '" fill="#e8eef6"/></svg>';
   }
   function svgMoon(phase) {
