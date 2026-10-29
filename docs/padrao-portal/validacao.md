@@ -18,7 +18,7 @@ Legenda: **Navegador** = exercitado com servidor local; **Código** = tokens/DS/
 | `pages/pontualidade.html` | IPV | Navegador (KPI + seletor + tabela, claro/escuro; fill ≠ color) | Código | Login | Adiantado `--portal-op-early`, Atrasado `--portal-op-late` |
 | `pages/pontualidade-ajustada.html` | Dashboard | Navegador local (login) | Código | Erro + retry | Handler local; **publicado** ainda 404 |
 | `pages/pontualidade-tempo-real.html` | Ao vivo | Código | Código | Login | Paleta kiosk-like |
-| `pages/performance-tempo-real.html` | Dashboard | Navegador kiosk | 390/1024/1440 | Vazio ICV do dia | Cumprimento = CR ICV do dia; pontualidade = mapa |
+| `pages/performance-tempo-real.html` | Dashboard | Navegador kiosk | 390/1024/1440/1920 | Sem histórico / erro mapa | Pontualidade = mapa. Cumprimento fora do kiosk até haver corte horário. |
 | `pages/performance-comparacao.html` | Dashboard | Código | Código | Login | |
 | `pages/incidentes-cad.html` | Dashboard | Código | Código | Login | Import `intervaloDatas` no backend |
 | `pages/incidentes-dashboard.html` | Dashboard | Código | Código | Login | |
