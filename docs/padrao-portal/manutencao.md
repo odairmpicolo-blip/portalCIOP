@@ -51,6 +51,7 @@ Bump de cache vigente **no working tree**: kiosk `theme-toggle.js` `audit4` (nã
 | 2026-10 | Performance ao vivo: cumprimento passa a ser o do CAD até o horário da leitura | `portal-teste` |
 | 2026-10 | Performance ao vivo: volta à tela de pontualidade anterior ao cumprimento | `portal-teste` |
 | 2026-10 | CIOP TV: barras de pontualidade na escala 0–100% e a data exibida acende no gráfico | `portal-teste` |
+| 2026-10 | CIOP TV: previsão do tempo em céu inteiro, vidro e três colunas (prévia local) | `portal-teste` (não publicar sem pedido) |
 
 ## Responsável
 

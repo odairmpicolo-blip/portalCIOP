@@ -15,7 +15,7 @@ Margem do palco: `clamp(16px, 2vh, 28px)` na vertical e `clamp(28px, 2.6vw, 48px
 | Rodapé | Período dos indicadores, data/hora de Londrina e hora da última leitura. Sem lista de módulos e sem a palavra “ao vivo” para série histórica. |
 | Progresso | Uma barra de 3 px. É o tempo da tela, não a seleção do dia. |
 
-A capa ocupa a tela inteira: o cabeçalho e o rodapé saem, porque a arte já traz a marca. A barra de progresso continua. Clima e campanha ficam dentro das mesmas margens, com cabeçalho e rodapé visíveis.
+A capa ocupa a tela inteira: o cabeçalho e o rodapé saem, porque a arte já traz a marca. A previsão do tempo também ocupa a tela: o cabeçalho e o rodapé do ciclo saem, e a própria tela traz logo, título, data e hora. A barra de progresso continua. A campanha fica dentro das mesmas margens, com cabeçalho e rodapé visíveis.
 
 ## Tipografia
 
@@ -65,15 +65,15 @@ Nada da fórmula mudou.
 
 ## Clima
 
-Três faixas, sem uma fileira de cards. Ver também [clima-tv.md](clima-tv.md).
+Tela horizontal em 1920×1080, com margem de cerca de 48 px (um pouco menor abaixo de 820 px de altura, para caber em 1366×768). Ver também [clima-tv.md](clima-tv.md).
 
-- Agora: “Agora em Londrina”, temperatura em destaque, condição, sensação, mínima e máxima. A ilustração fica só no canto direito, com máscara, e não atravessa o texto.
-- Próximas horas: uma faixa. “Agora” tem fundo leve. O percentual da hora é chance de chuva. O ícone da hora usa o dia ou a noite daquele horário.
-- Abaixo: cerca de dois terços para os dias e um terço para vento, umidade, volume de chuva do dia e o próximo evento solar. Pressão fica numa linha menor, sem card.
-- Oito dias em 1080 px de altura; sete quando a altura é menor que 860 px, para não encolher a fonte. A escala térmica é a dos dias visíveis. O percentual da linha é chance; o detalhe “Chuva” é o volume em mm.
-- Ícone do dia é o da condição diurna. Noite não troca chuva, nuvem ou tempestade por lua.
-- Depois do pôr, o detalhe passa a “Nascer do sol” com “Amanhã HH:MM” e a data.
-- Rodapé: “Open-Meteo · atualizado às HH:MM” e a data/hora. Falha de leitura não zera os números: o rodapé marca “sem atualização”.
+- Cabeçalho da própria tela: logo CIOP, “Previsão do tempo”, Londrina/PR, data, hora e a linha discreta de atualização.
+- Destaque: cidade, temperatura entre 96 e 120 px, condição, sensação, mínima e máxima. O ícone fica ao lado e menor que o número.
+- “Próximas horas”: oito colunas fixas, cada uma com horário, ícone, chance de chuva (%) e temperatura. Sem carrossel.
+- Embaixo, três colunas. Esquerda: vento, rajadas e nascer/pôr do sol. O alerta só entra se houver fonte oficial com severidade, validade e origem; sem isso o espaço fica com vento e sol, sem painel vazio. Centro: sete dias, com a mesma escala térmica. Direita: umidade (%), precipitação do dia (mm) e pressão (hPa). Não há radar: não existe integração autorizada, e mancha decorativa não substitui imagem.
+- O percentual é chance. O mm é volume. Ausência continua “—”; zero só aparece quando a fonte mediu zero.
+- Ícone da hora usa `is_day` ou o nascer/pôr daquele instante em `America/Sao_Paulo`. Céu limpo à noite é lua; parcialmente nublado à noite é nuvem com lua. Chuva, nuvem e tempestade não viram lua. O ícone do dia na lista de sete dias é o diurno.
+- Falha de leitura mantém o último dado e marca “Sem atualização · último dado em DD/MM às HH:MM”. Não zera temperatura, chuva nem pressão.
 
 ## Campanha
 
@@ -91,7 +91,7 @@ Servidor local `:8768`, `Emulation.setDeviceMetricsOverride` 1920×1080. Fórmul
 | Capa | `capa` | html/body 1920×1080 | `modo-capa`; cabeçalho e rodapé somem |
 | Pontualidade −2/+6 | `ipv` | não | Título 40 px `rgb(244,247,255)`; semana TCGL 91,06% / LS 91,65% / Total 91,35% = média |
 | Cumprimento | `icv` | não | Semana ~94,86 / 94,09 / 94,47 = média. **Não** é soma/soma |
-| Clima | `tempo` | não | 19 °C; 8 horas; 8 dias; Open-Meteo. Em 1366×768: 7 dias. Pressão preenche depois da API |
+| Clima | `tempo` | não | Céu inteiro, vidro, 8 horas e 7 dias. Open-Meteo. Sem radar e sem alerta inventado |
 | Campanha | `campanha` | não | Outubro Rosa; `object-fit: contain`; wrapper `border-radius: 32px` |
 
 Problema encontrado: `theme-toggle.js` injetava tokens, design system e `portal-page-contrast.css` no kiosk (e aplicava `dk-dark`). O padrão manda a TV ficar fora desse chrome. Correção: kiosk não recebe inject nem boot de tema.
