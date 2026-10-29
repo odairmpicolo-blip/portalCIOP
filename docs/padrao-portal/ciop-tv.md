@@ -59,7 +59,7 @@ Nada da fórmula mudou.
 - Variação da semana: Total (ou a área) desta semana menos a semana anterior, em pontos percentuais.
 - Variação do dia: o dia exibido menos o mesmo dia da semana anterior.
 - −2/+6 e −1/+3 são telas separadas (`fonte` vazia / `2-6-ldsul` e `1-3` / `1-3-ldsul`).
-- Os sete dias do card usam a mesma escala nas três áreas (mínimo e máximo de TCGL e LondriSul). O menor valor fica com 16% da altura, para continuar visível na TV; o maior fica em 100%. Dia sem dado não vira zero: o traço fica vazio e o número é “—”.
+- Os sete dias usam a escala de 0 a 100% nas três áreas: a altura da barra é o percentual daquele dia. Dia sem dado não vira zero: o traço fica vazio e o número é “—”. A data exibida acende a barra e o rótulo daquele dia.
 - Falha de leitura mantém o último valor e o rodapé marca “leitura incompleta” ou “sem atualização”. A apresentação não reinicia e o boot não espera a rede.
 
 ## Clima

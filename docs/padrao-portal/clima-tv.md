@@ -21,7 +21,7 @@ Códigos de chuva, tempestade, neblina e neve **não** viram lua à noite. Só c
 
 Previsão diária usa ícone diurno representativo do dia.
 
-No Painel CIOP a cena não cobre o card: fica no canto superior direito, com máscara, sobre o azul do painel. A composição das três faixas está em [ciop-tv.md](ciop-tv.md).
+No Painel CIOP a cena não cobre o card: fica no canto superior direito, com máscara, sobre o azul do painel. Com o movimento desligado, a chuva permanece desenhada dentro do quadro, em vez de ficar parada acima da área visível. A composição das três faixas está em [ciop-tv.md](ciop-tv.md).
 
 ## Cenário
 
