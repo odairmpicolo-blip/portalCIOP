@@ -138,7 +138,7 @@
     var gibbous = Math.cos(p * 2 * Math.PI) < 0;
     /* Sul: crescente à esquerda. Gibosa usa o arco interno no sentido oposto, para não virar uma lasca. */
     var outer = waxing ? 0 : 1;
-    var inner = gibbous ? 1 - outer : outer;
+    var inner = gibbous ? outer : 1 - outer;
     var d = "M12 4.9 A7.1 7.1 0 0 " + outer + " 12 19.1 A" + rx + " 7.1 0 0 " + inner + " 12 4.9 Z";
     return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle class="wx-moon" cx="12" cy="12" r="7.1" fill="#1e293b"/><path class="wx-moon" d="' + d + '" fill="#e8eef6"/></svg>';
   }
