@@ -39,6 +39,7 @@ Não redesenhar a marca. Não inventar KPI, fórmula ou paleta por página.
 | Clima na TV (dia/noite, ícones) | [clima-tv.md](clima-tv.md) |
 | Painel CIOP em TV 16:9 | [ciop-tv.md](ciop-tv.md) |
 | Performance ao vivo (pontualidade) | [performance-tempo-real.md](performance-tempo-real.md) |
+| Auditoria 29/10/2026 | [auditoria-2026-10-29.md](auditoria-2026-10-29.md) |
 | Exemplos clicáveis (dados fictícios) | [catalogo.html](catalogo.html) |
 | Capturas de demonstração | [assets/](assets/) |
 

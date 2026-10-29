@@ -73,6 +73,10 @@
       var bruto = String(el.textContent || "").replace(/[^\d,-]/g, "").replace(",", ".");
       var inicio = Number(bruto);
       if (!Number.isFinite(inicio) || !bruto) inicio = 0;
+      if (sufixo.indexOf("%") >= 0 || Math.abs(inicio) > 150 || Math.abs(fim) > 150 || inicio === 0) {
+        pintarKpi(el, fim, casas, sufixo);
+        return;
+      }
       if (reduzirMovimento() || Math.abs(fim - inicio) < (casas ? Math.pow(10, -casas) : 1)) {
         pintarKpi(el, fim, casas, sufixo);
         return;
@@ -692,18 +696,12 @@
 
       document.querySelectorAll(".grid .card").forEach(function (card) {
         if (card.hidden && !card.classList.contains("ciop-search-hidden")) return;
-        const sec = card.closest(".card-section");
-        if (document.documentElement.classList.contains("portal-home-2026") && sec && sec.hidden) {
-          card.classList.remove("ciop-search-hidden", "ciop-search-hit");
-          marcarTrecho(card.querySelector(".card-title"), "");
-          marcarTrecho(card.querySelector(".card-desc"), "");
-          return;
-        }
         const titleEl = card.querySelector(".card-title");
         const descEl = card.querySelector(".card-desc");
         const title = titleEl?.textContent || "";
         const desc = descEl?.textContent || "";
-        const hit = !q || norm(title + " " + desc).includes(q);
+        const categoria = card.querySelector(".card-cat")?.textContent || "";
+        const hit = !q || norm(title + " " + desc + " " + categoria).includes(q);
         card.classList.toggle("ciop-search-hidden", !hit);
         card.classList.toggle("ciop-search-hit", !!(q && hit));
         marcarTrecho(titleEl, q);

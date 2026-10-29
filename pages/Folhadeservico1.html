@@ -2444,6 +2444,13 @@ html.dk-dark .filter-group option{
         if (mostrarFeedback || dadosMestres.length === 0) {
             atualizarStatusLancamentos("Carregando lançamentos da planilha...");
         }
+        if (!mostrarFeedback && dadosMestres.length === 0) {
+            const cachePrevio = lerCacheLancamentos();
+            if (cachePrevio.lancamentos && cachePrevio.lancamentos.length) {
+                aplicarLancamentosRecentes(cachePrevio.lancamentos, "cache local");
+                atualizarStatusLancamentos("Atualizando da planilha...");
+            }
+        }
         try {
             const response = await fetchComTimeout(urlLancamentosRecentes(), {}, TEMPO_LIMITE_RECENTES_MS);
             const retorno = JSON.parse(await response.text());

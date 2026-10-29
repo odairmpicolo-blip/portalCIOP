@@ -102,10 +102,11 @@ body{
 .status-evidenciado .pill{background:rgba(255,107,0,.15);color:#9a3412}
 .auto-item-meta,.auto-item-sub{font-size:10px;color:var(--ink-faint);margin-top:2px;font-weight:600}
 
-.editor{min-width:0}
+.editor{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) 176px;grid-template-rows:auto minmax(0,1fr);align-items:stretch}
+.editor-toolbar{grid-column:1/-1}
 .editor-scroll{
-  flex:1;min-height:0;overflow:auto;padding:10px 12px 14px;
-  display:flex;flex-direction:column;align-items:stretch;
+  grid-column:1;min-height:0;overflow:auto;padding:10px 12px 14px;
+  display:flex;flex-direction:column;align-items:center;
 }
 .editor-empty{
   flex:1;display:grid;place-items:center;
@@ -116,8 +117,15 @@ body{
   flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;
 }
 .actions-bar{
-  display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;border-top:1px solid rgba(255,255,255,.45);
-  background:rgba(255,255,255,.35);flex:0 0 auto;justify-content:flex-start;align-items:center;
+  grid-column:2;grid-row:2;display:flex;flex-direction:column;flex-wrap:nowrap;gap:8px;
+  padding:10px 10px 14px;border-left:1px solid rgba(255,255,255,.45);
+  background:rgba(255,255,255,.35);min-height:0;overflow:auto;align-items:stretch;
+}
+.actions-bar .btn,.actions-bar .btn-ghost{width:100%;justify-content:center}
+@media(max-width:900px){
+  .editor{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr) auto}
+  .actions-bar{grid-column:1;grid-row:3;flex-direction:row;flex-wrap:wrap;border-left:0;border-top:1px solid rgba(255,255,255,.45)}
+  .actions-bar .btn,.actions-bar .btn-ghost{width:auto}
 }
 
 /* ===== Ficha A4 estilo Excel ===== */
@@ -361,6 +369,13 @@ html.dk-dark .sheet-brand-logo{
   background:#fff !important;
   color:#111 !important;
 }
+html.dk-dark .editor-scroll{background:transparent}
+html.dk-dark .editor-empty{color:#e2e8f0}
+html.dk-dark .actions-bar{
+  background:rgba(15,23,42,.55);border-color:rgba(148,163,184,.28);
+}
+html.dk-dark .actions-bar .btn-secondary,
+html.dk-dark .actions-bar .btn-ghost{color:#e8eef8;border-color:rgba(226,232,240,.28)}
 
 .modal{position:fixed;inset:0;background:rgba(24,24,42,.5);display:grid;place-items:center;padding:16px;z-index:50;backdrop-filter:blur(6px)}
 .modal[hidden]{display:none!important}

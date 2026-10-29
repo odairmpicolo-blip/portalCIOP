@@ -7,16 +7,39 @@
   var ultimoFlip = null;
   var ultimoPayload = null;
 
+  /* Vento da Open-Meteo neste painel vem em km/h (padrão da API, sem wind_speed_unit).
+     Forte: sustentado ≥ 40 km/h ou rajada ≥ 60 km/h. Não troca chuva nem tempestade. */
+  var VENTO_FORTE_KMH = 40;
+  var RAJADA_FORTE_KMH = 60;
+  var LUA_NOVA_REF = Date.UTC(2000, 0, 6, 18, 14, 0);
+  var LUA_SINODICO_MS = 29.530588853 * 24 * 60 * 60 * 1000;
+  var luaSeq = 0;
+
   function grupoClima(code) {
     var c = Number(code);
+    if (!isFinite(c)) return "neutral";
     if (c === 0 || c === 1) return "sun";
     if (c === 2) return "partly";
     if (c === 3) return "cloud";
     if (c === 45 || c === 48) return "fog";
     if ([71, 73, 75, 77, 85, 86].indexOf(c) >= 0) return "snow";
-    if ([82, 95, 96, 99].indexOf(c) >= 0) return "storm";
-    if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81].indexOf(c) >= 0) return "rain";
+    if ([95, 96, 99].indexOf(c) >= 0) return "storm";
+    if ([51, 53, 55, 56, 57].indexOf(c) >= 0) return "drizzle";
+    if ([61, 63, 65, 66, 67, 80, 81, 82].indexOf(c) >= 0) return "rain";
     return "cloud";
+  }
+
+  function ventoForte(speed, gust) {
+    var s = Number(speed);
+    var g = Number(gust);
+    return (isFinite(s) && s >= VENTO_FORTE_KMH) || (isFinite(g) && g >= RAJADA_FORTE_KMH);
+  }
+
+  function faseLua(ms) {
+    var t = ms == null ? Date.now() : Number(ms);
+    if (!isFinite(t)) return null;
+    var x = (t - LUA_NOVA_REF) / LUA_SINODICO_MS;
+    return x - Math.floor(x);
   }
 
   function parseIsoSp(iso) {
@@ -100,14 +123,33 @@
   function svgSun() {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><g class="wx-sun-rays"><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g><circle class="wx-sun-core" cx="12" cy="12" r="4" fill="rgba(250,204,21,.4)"/></svg>';
   }
-  function svgMoon() {
-    return '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path class="wx-moon" d="M15.2 3.2a7.6 7.6 0 1 0 5.6 11.4A8.2 8.2 0 0 1 15.2 3.2z" fill="rgba(226,232,240,.92)" stroke="#e2e8f0" stroke-width="1.2"/></svg>';
+  /* Fase 0 = lua nova, 0,5 = cheia. Londrina fica no hemisfério sul: crescente ilumina à esquerda. */
+  function luaMarkup(phase) {
+    var p = phase == null ? NaN : Number(phase);
+    if (!isFinite(p)) {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.1" fill="#d5deea"/></svg>';
+    }
+    p = ((p % 1) + 1) % 1;
+    if (p < 0.03 || p > 0.97) {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.1" fill="#64748b" opacity=".5"/></svg>';
+    }
+    var rx = Math.max(0.4, Math.abs(Math.cos(p * 2 * Math.PI)) * 7.1).toFixed(2);
+    var growing = p < 0.5;
+    var broad = Math.cos(p * 2 * Math.PI) < 0;
+    var sweep = growing ? (broad ? 1 : 0) : (broad ? 0 : 1);
+    var d = growing
+      ? "M12 4.9 A7.1 7.1 0 0 0 12 19.1 A" + rx + " 7.1 0 0 " + sweep + " 12 4.9 Z"
+      : "M12 4.9 A7.1 7.1 0 0 1 12 19.1 A" + rx + " 7.1 0 0 " + sweep + " 12 4.9 Z";
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle class="wx-moon" cx="12" cy="12" r="7.1" fill="#1e293b"/><path class="wx-moon" d="' + d + '" fill="#e8eef6"/></svg>';
+  }
+  function svgMoon(phase) {
+    return luaMarkup(phase);
   }
   function svgPartlyDay() {
     return '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle class="wx-sun-core" cx="9" cy="9" r="3.2" fill="rgba(250,204,21,.45)" stroke="#facc15" stroke-width="1.6"/><path class="wx-cloud" d="M8 18h9.2a3.4 3.4 0 0 0 0-6.8 5.2 5.2 0 0 0-9.6-1.1A3 3 0 0 0 8 18z" fill="rgba(186,230,253,.22)" stroke="#e2e8f0" stroke-width="1.6"/></svg>';
   }
-  function svgPartlyNight() {
-    return '<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="wx-moon" d="M9.2 4.2a5.4 5.4 0 1 0 4.2 8.6A6 6 0 0 1 9.2 4.2z" fill="rgba(226,232,240,.9)" stroke="#e2e8f0" stroke-width="1.1"/><path class="wx-cloud" d="M8 18h9.2a3.4 3.4 0 0 0 0-6.8 5.2 5.2 0 0 0-9.6-1.1A3 3 0 0 0 8 18z" fill="rgba(186,230,253,.22)" stroke="#e2e8f0" stroke-width="1.6"/></svg>';
+  function svgPartlyNight(phase) {
+    return '<span class="wx-ico-stack">' + luaMarkup(phase) + svgCloud() + "</span>";
   }
   function svgCloud() {
     return '<svg viewBox="0 0 24 24" fill="rgba(186,230,253,.2)" stroke="#7dd3fc" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="wx-cloud" d="M7 18h10a4 4 0 0 0 0-8 6 6 0 0 0-11.3-1.5A3.5 3.5 0 0 0 7 18z"/></svg>';
@@ -125,19 +167,21 @@
     return '<svg viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path class="wx-cloud" d="M7 14h10a4 4 0 0 0 0-8 6 6 0 0 0-11.3-1.5A3.5 3.5 0 0 0 7 14z" fill="rgba(226,232,240,.2)"/><circle class="wx-flake" cx="8.5" cy="18.5" r="1" fill="#e2e8f0"/><circle class="wx-flake" cx="12" cy="19.5" r="1.1" fill="#e2e8f0"/><circle class="wx-flake" cx="15.5" cy="18.5" r="1" fill="#e2e8f0"/></svg>';
   }
 
-  function iconeMarkup(code, isDay) {
+  function iconeMarkup(code, isDay, atMs) {
     var grupo = grupoClima(code);
     var dia = isDay !== false;
-    if (grupo === "sun") return dia ? svgSun() : svgMoon();
-    if (grupo === "partly") return dia ? svgPartlyDay() : svgPartlyNight();
-    if (grupo === "rain") return svgRain();
+    var fase = dia ? null : faseLua(atMs);
+    if (grupo === "sun") return dia ? svgSun() : svgMoon(fase);
+    if (grupo === "partly") return dia ? svgPartlyDay() : svgPartlyNight(fase);
+    if (grupo === "drizzle" || grupo === "rain") return svgRain();
     if (grupo === "storm") return svgStorm();
     if (grupo === "fog") return svgFog();
     if (grupo === "snow") return svgSnow();
+    if (grupo === "neutral") return svgCloud();
     return svgCloud();
   }
 
-  function climaSvg(code, extraClass, isDay) {
+  function climaSvg(code, extraClass, isDay, atMs) {
     var grupo = grupoClima(code);
     var period = isDay === false ? "night" : "day";
     return (
@@ -148,7 +192,7 @@
       '" data-period="' +
       period +
       '">' +
-      iconeMarkup(code, isDay !== false) +
+      iconeMarkup(code, isDay !== false, atMs) +
       "</span>"
     );
   }
@@ -167,97 +211,86 @@
     return '<div class="wx-stars" aria-hidden="true"></div>';
   }
 
-  function cenaHtml(grupo, isDay) {
+  function discoLua(phase) {
+    return '<div class="wx-moon-disc">' + luaMarkup(phase) + "</div>";
+  }
+
+  function cenaHtml(grupo, isDay, vento, phase) {
     var noite = isDay === false;
-    if (grupo === "sun") {
-      if (noite) {
-        return '<div class="wx-sky"></div>' + estrelas() + '<div class="wx-moon-disc"></div><div class="wx-haze"></div>';
-      }
-      return '<div class="wx-sky"></div><div class="wx-sun"></div><div class="wx-haze"></div>';
+    var nuvens = '<div class="wx-cloud-mass c1"></div><div class="wx-cloud-mass c2"></div>';
+    if (grupo === "neutral") {
+      return '<div class="wx-sky"></div><div class="wx-haze"></div>';
     }
-    if (grupo === "partly") {
+    if (grupo === "sun") {
       if (noite) {
         return (
           '<div class="wx-sky"></div>' +
           estrelas() +
-          '<div class="wx-moon-disc is-soft"></div>' +
-          '<div class="wx-cloud-mass c1"></div>' +
-          '<div class="wx-cloud-mass c2"></div>' +
+          discoLua(phase) +
+          (vento ? nuvens : '<div class="wx-cloud-soft c2"></div>') +
           '<div class="wx-haze"></div>'
         );
       }
       return (
-        '<div class="wx-sky"></div>' +
-        '<div class="wx-sun is-soft"></div>' +
-        '<div class="wx-cloud-mass c1"></div>' +
-        '<div class="wx-cloud-mass c2"></div>' +
+        '<div class="wx-sky"></div><div class="wx-sun"></div>' +
+        '<div class="wx-cloud-soft c1"></div><div class="wx-cloud-soft c2"></div>' +
         '<div class="wx-haze"></div>'
       );
+    }
+    if (grupo === "partly") {
+      if (noite) {
+        return '<div class="wx-sky"></div>' + estrelas() + discoLua(phase) + nuvens + '<div class="wx-haze"></div>';
+      }
+      return '<div class="wx-sky"></div><div class="wx-sun is-soft"></div>' + nuvens + '<div class="wx-haze"></div>';
     }
     if (grupo === "cloud") {
       return (
         '<div class="wx-sky"></div>' +
-        '<div class="wx-cloud-mass c1"></div>' +
-        '<div class="wx-cloud-mass c2"></div>' +
-        '<div class="wx-cloud-mass c3"></div>' +
-        '<div class="wx-haze"></div>'
+        (noite ? discoLua(phase) : "") +
+        nuvens +
+        '<div class="wx-cloud-mass c3"></div><div class="wx-haze"></div>'
       );
     }
+    if (grupo === "drizzle") {
+      return '<div class="wx-sky"></div>' + nuvens + '<div class="wx-rain is-fine">' + gotas(8) + '</div><div class="wx-haze"></div>';
+    }
     if (grupo === "rain") {
-      return (
-        '<div class="wx-sky"></div>' +
-        '<div class="wx-cloud-mass c1"></div>' +
-        '<div class="wx-cloud-mass c2"></div>' +
-        '<div class="wx-rain">' +
-        gotas(18) +
-        "</div>" +
-        '<div class="wx-haze"></div>'
-      );
+      return '<div class="wx-sky"></div>' + nuvens + '<div class="wx-cloud-mass c4"></div><div class="wx-rain">' + gotas(14) + '</div><div class="wx-haze"></div>';
     }
     if (grupo === "storm") {
       return (
-        '<div class="wx-sky"></div>' +
-        '<div class="wx-cloud-mass c1"></div>' +
-        '<div class="wx-cloud-mass c2"></div>' +
-        '<div class="wx-cloud-mass c4"></div>' +
-        '<div class="wx-rain is-heavy">' +
-        gotas(22) +
-        "</div>" +
-        '<div class="wx-haze"></div>'
+        '<div class="wx-sky"></div>' + nuvens +
+        '<div class="wx-cloud-mass c4"></div><div class="wx-glow"></div>' +
+        '<div class="wx-rain is-heavy">' + gotas(16) + '</div><div class="wx-haze"></div>'
       );
     }
     if (grupo === "fog") {
-      return (
-        '<div class="wx-sky"></div>' +
-        '<div class="wx-fog-bank b1"></div>' +
-        '<div class="wx-fog-bank b2"></div>' +
-        '<div class="wx-fog-bank b3"></div>' +
-        '<div class="wx-haze"></div>'
-      );
+      return '<div class="wx-sky"></div><div class="wx-fog-bank b1"></div><div class="wx-fog-bank b2"></div><div class="wx-fog-bank b3"></div><div class="wx-haze"></div>';
     }
-    return (
-      '<div class="wx-sky"></div>' +
-      '<div class="wx-cloud-mass c1"></div>' +
-      '<div class="wx-snow"></div>' +
-      '<div class="wx-haze"></div>'
-    );
+    return '<div class="wx-sky"></div><div class="wx-cloud-mass c1"></div><div class="wx-snow"></div><div class="wx-haze"></div>';
   }
 
-  function marcarCenaClima(code, fxId, isDay) {
+  function marcarCenaClima(code, fxId, isDay, extras) {
+    extras = extras || {};
     var fx = document.getElementById(fxId);
-    var grupo = grupoClima(code);
-    var dia = isDay !== false;
+    var neutro = extras.neutro === true || code == null || code === "" || !isFinite(Number(code));
+    var grupo = neutro ? "neutral" : grupoClima(code);
+    var dia = !neutro && isDay !== false;
+    var noite = !dia && !neutro;
+    var vento = !neutro && ventoForte(extras.vento != null ? extras.vento : extras.wind, extras.rajada != null ? extras.rajada : extras.gust);
+    var phase = noite ? faseLua(extras.atMs) : null;
     var scene = fx && (fx.closest(".wx") || fx.closest(".tv-card-weather"));
     if (scene) {
       scene.setAttribute("data-wx", grupo);
-      scene.setAttribute("data-period", dia ? "day" : "night");
+      scene.setAttribute("data-period", neutro ? "neutral" : (dia ? "day" : "night"));
+      scene.classList.toggle("is-wind", vento);
     }
     if (!fx) return;
-    var chave = grupo + (dia ? "-d" : "-n");
+    var chave = grupo + (neutro ? "-z" : (dia ? "-d" : "-n")) + (vento ? "-w" : "") + (noite ? "-p" + Math.round((phase || 0) * 20) : "");
     if (fx.dataset.grupo === chave) return;
     fx.dataset.grupo = chave;
-    fx.className = "wx-fx is-" + grupo + (dia ? " is-day" : " is-night");
-    fx.innerHTML = cenaHtml(grupo, dia);
+    fx.className = "wx-fx is-" + grupo + (neutro ? "" : (dia ? " is-day" : " is-night")) + (vento ? " is-wind" : "") + " is-in";
+    fx.innerHTML = cenaHtml(grupo, dia, vento, phase);
   }
 
   function proximosSolares(dates, sunrises, sunsets) {
@@ -296,6 +329,8 @@
 
   w.portalClimaTz = TZ;
   w.portalGrupoClima = grupoClima;
+  w.portalClimaVentoForte = ventoForte;
+  w.portalClimaFaseLua = faseLua;
   w.portalClimaParseIso = parseIsoSp;
   w.portalClimaEhDia = ehDia;
   w.portalClimaSvg = climaSvg;

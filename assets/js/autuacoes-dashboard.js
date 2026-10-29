@@ -987,10 +987,10 @@ function render() {
     const totalTarifas = somaCampo(rows, "valor_tarifas");
 
     byId("totalAutuacoes").textContent = formatInt(total);
-    byId("topAgenteValor").textContent = ag[0] ? formatInt(ag[0][1]) : "0";
+    byId("topAgenteValor").textContent = ag[0] ? formatInt(ag[0][1]) : "—";
     byId("topAgenteNome").textContent = ag[0] ? ag[0][0] : "Sem dados";
-    byId("topAgenteReais").textContent = ag[0] ? formatMoeda(somaReaisPorAgente(rows, ag[0][0])) : formatMoeda(0);
-    byId("topMotivoValor").textContent = mot[0] ? formatInt(mot[0][1]) : "0";
+    byId("topAgenteReais").textContent = ag[0] ? formatMoeda(somaReaisPorAgente(rows, ag[0][0])) : "—";
+    byId("topMotivoValor").textContent = mot[0] ? formatInt(mot[0][1]) : "—";
     byId("topMotivoNome").textContent = mot[0] ? mot[0][0] : "Sem dados";
     byId("totalTarifas").textContent = formatTarifas(totalTarifas);
     byId("totalGastoReais").textContent = formatMoeda(totalReais);

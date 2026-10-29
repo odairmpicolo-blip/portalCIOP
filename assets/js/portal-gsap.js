@@ -24,6 +24,10 @@
     var inicio = Number(bruto);
     if (!Number.isFinite(inicio) || !bruto) inicio = 0;
     var primeiro = !bruto;
+    if (sufixo.indexOf("%") >= 0 || Math.abs(inicio) > 150 || Math.abs(fim) > 150 || inicio === 0) {
+      encerrar();
+      return;
+    }
 
     function pintar(n) {
       var txt = casas > 0 ? n.toFixed(casas).replace(".", ",") : String(Math.round(n));

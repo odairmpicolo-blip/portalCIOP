@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;600;700;800;900&display=swap">
-<link rel="stylesheet" href="../assets/css/portal-clima-anim.css?v=20261029wx1">
-<script src="../assets/js/portal-clima-cena.js?v=20261027tv1"></script>
+<link rel="stylesheet" href="../assets/css/portal-clima-anim.css?v=20261029cena1">
+<script src="../assets/js/portal-clima-cena.js?v=20261029cena1"></script>
 <style>
   :root{
     --bg-1:#04060f;
@@ -291,8 +291,8 @@
   /* ===== Clima — céu aberto, vidro só nas faixas ===== */
   #slide-tempo .wx{
     --wx-ink:#f4f8ff;
-    --wx-muted:rgba(244,248,255,.78);
-    --wx-glass:rgba(18,40,64,.18);
+    --wx-muted:rgba(244,248,255,.92);
+    --wx-glass:rgba(10,24,40,.42);
     --wx-line:rgba(255,255,255,.34);
     --wx-blue:#b9dcff;
     height:100%; min-height:0;
@@ -305,8 +305,8 @@
   }
   #slide-tempo .wx.is-ink-light{
     --wx-ink:#f4f8ff;
-    --wx-muted:rgba(244,248,255,.78);
-    --wx-glass:rgba(18,40,64,.18);
+    --wx-muted:rgba(244,248,255,.92);
+    --wx-glass:rgba(10,24,40,.42);
     --wx-line:rgba(255,255,255,.34);
     --wx-blue:#b9dcff;
   }
@@ -326,10 +326,70 @@
       radial-gradient(ellipse 40% 28% at 48% 78%, rgba(70,104,138,.45), transparent 70%),
       linear-gradient(180deg, #2f6ea8 0%, #5ea0d0 36%, #4a86b8 100%);
   }
-  #slide-tempo .wx-fx.is-rain .wx-sky{
+  #slide-tempo .wx-fx.is-drizzle .wx-sky{
     background:
-      radial-gradient(ellipse 55% 32% at 72% 0%, rgba(150,186,214,.28), transparent 60%),
-      linear-gradient(180deg, #16324c 0%, #1d4668 42%, #27587c 100%);
+      radial-gradient(ellipse 50% 30% at 30% 10%, rgba(255,255,255,.12), transparent 60%),
+      linear-gradient(180deg, #5e6c7a 0%, #7d8b98 46%, #667480 100%);
+  }
+  #slide-tempo .wx-fx.is-rain .wx-sky,
+  #slide-tempo .wx-fx.is-storm .wx-sky{
+    background:
+      radial-gradient(ellipse 55% 32% at 72% 0%, rgba(150,186,214,.22), transparent 60%),
+      linear-gradient(180deg, #12283c 0%, #1a3c58 42%, #214e70 100%);
+  }
+  #slide-tempo .wx-fx.is-storm .wx-sky{
+    background:
+      radial-gradient(ellipse 40% 28% at 70% 8%, rgba(180,170,220,.18), transparent 62%),
+      linear-gradient(180deg, #10182e 0%, #1a2444 48%, #243056 100%);
+  }
+  #slide-tempo .wx-fx.is-night.is-rain .wx-sky,
+  #slide-tempo .wx-fx.is-night.is-drizzle .wx-sky{
+    filter:none;
+    background:linear-gradient(180deg, #0c1626 0%, #15283c 52%, #1b3348 100%);
+  }
+  #slide-tempo .wx-fx.is-night.is-storm .wx-sky{
+    filter:none;
+    background:linear-gradient(180deg, #0a1020 0%, #16142e 50%, #1c1838 100%);
+  }
+  #slide-tempo .wx-fx.is-partly .wx-sky{
+    background:
+      radial-gradient(ellipse 32% 24% at 74% 10%, rgba(255,220,150,.34), transparent 62%),
+      linear-gradient(180deg, #2f74b4 0%, #6aa6d4 42%, #4d86b8 100%);
+  }
+  #slide-tempo .wx-fx.is-partly.is-night .wx-sky{
+    background:
+      radial-gradient(ellipse 24% 18% at 22% 14%, rgba(226,232,240,.16), transparent 60%),
+      linear-gradient(180deg, #0c1430 0%, #1a2848 55%, #243456 100%);
+  }
+  #slide-tempo .wx-fx.is-cloud.is-night .wx-sky{
+    background: linear-gradient(180deg, #141c30 0%, #1e2c44 48%, #28384e 100%);
+  }
+  #slide-tempo .wx-fx.is-fog .wx-sky{
+    background: linear-gradient(180deg, #6a7886 0%, #8b97a3 40%, #5e6c78 100%);
+  }
+  #slide-tempo .wx-fx.is-neutral .wx-sky{
+    background: linear-gradient(180deg, #2a384c 0%, #3d5168 100%);
+  }
+  #slide-tempo .wx-fx.is-cloud.is-night .wx-moon-disc{ opacity:.32; }
+  #slide-tempo .wx-fx.is-drizzle .wx-raindrop{ width:1px; opacity:.4; }
+  #slide-tempo .wx-fx .wx-glow{ animation:wx-glow 12s ease-in-out infinite; }
+  #slide-tempo .wx-fx.is-wind .wx-cloud-mass,
+  #slide-tempo .wx-fx.is-wind .wx-cloud-soft{ animation-duration:10s; }
+  #slide-tempo .wx-fx.is-in{ animation:wx-scene-in .7s ease; }
+  .kiosk:not(.modo-clima) #slide-tempo .wx-fx,
+  .kiosk:not(.modo-clima) #slide-tempo .wx-fx *{ animation-play-state:paused !important; }
+  @keyframes wx-scene-in{ from{ opacity:.4; } to{ opacity:1; } }
+  @keyframes wx-glow{
+    0%, 80%, 100%{ opacity:0; }
+    88%{ opacity:.32; }
+    93%{ opacity:.08; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    #slide-tempo .wx-fx.is-in,
+    #slide-tempo .wx-fx .wx-glow,
+    #slide-tempo .wx-fx .wx-cloud-mass,
+    #slide-tempo .wx-fx .wx-cloud-soft,
+    #slide-tempo .wx-fx .wx-raindrop{ animation:none !important; }
   }
   #slide-tempo .wx-fx.is-sun .wx-sky{
     background:
@@ -1267,12 +1327,38 @@ function pintarEvolucao(est, ids, n = diaIpv) {
   });
 }
 
-function climaSvg(code, extraClass, isDay) {
-  if (window.portalClimaSvg) return window.portalClimaSvg(code, extraClass, isDay);
+function climaSvg(code, extraClass, isDay, atMs) {
+  if (window.portalClimaSvg) return window.portalClimaSvg(code, extraClass, isDay, atMs);
   return "";
 }
-function marcarCenaClima(code, fxId, isDay) {
-  if (window.portalMarcarCenaClima) window.portalMarcarCenaClima(code, fxId, isDay);
+const CENAS_PREVIA = {
+  sol: { code: 0, dia: true },
+  parcial: { code: 2, dia: true },
+  nublado: { code: 3, dia: true },
+  garoa: { code: 53, dia: true },
+  chuva: { code: 63, dia: true },
+  tempestade: { code: 95, dia: true },
+  vento: { code: 1, dia: true, vento: 48, rajada: 70 },
+  neblina: { code: 45, dia: true },
+  noite: { code: 0, dia: false },
+  "noite-nublada": { code: 3, dia: false },
+  "noite-chuva": { code: 63, dia: false },
+  "noite-vento": { code: 1, dia: false, vento: 46, rajada: 62 },
+  "noite-tempestade": { code: 95, dia: false },
+  neutro: { neutro: true }
+};
+function cenaPrevia() {
+  const nome = PARAMS.get("cena");
+  return nome && CENAS_PREVIA[nome] ? CENAS_PREVIA[nome] : null;
+}
+function marcarCenaClima(code, fxId, isDay, extras) {
+  const sim = cenaPrevia();
+  if (sim && window.portalMarcarCenaClima) {
+    if (sim.neutro) window.portalMarcarCenaClima(null, fxId, false, { neutro: true });
+    else window.portalMarcarCenaClima(sim.code, fxId, sim.dia, { vento: sim.vento, rajada: sim.rajada, atMs: Date.now() });
+    return;
+  }
+  if (window.portalMarcarCenaClima) window.portalMarcarCenaClima(code, fxId, isDay, extras || {});
 }
 function climaEhDia(opts) {
   return window.portalClimaEhDia ? window.portalClimaEhDia(opts) : true;
@@ -1478,7 +1564,7 @@ function pintarHorasClima() {
     const vigente = agora >= h.time && agora < h.time + 60 * 60 * 1000;
     return `<div class="wx-hour${vigente ? " is-now" : ""}">
       <span class="wx-hour-name">${vigente ? "Agora" : h.label}</span>
-      ${climaSvg(h.code, "wx-hour-icon", h.isDay)}
+      ${climaSvg(h.code, "wx-hour-icon", h.isDay, h.time)}
       <span class="wx-hour-rain">${chuvaTxt}</span>
       <span class="wx-hour-temp">${h.temp != null && Number.isFinite(Number(h.temp)) ? Math.round(h.temp) + "°" : "—"}</span>
     </div>`;
@@ -1519,10 +1605,19 @@ async function carregarClima() {
     sunrises: daily.sunrise,
     sunsets: daily.sunset
   });
-  marcarCenaClima(cod, "wxFx", agoraDia);
+  marcarCenaClima(cod, "wxFx", agoraDia, {
+    vento: cur.wind_speed_10m,
+    rajada: cur.wind_gusts_10m,
+    atMs: Date.now()
+  });
   aplicarPele(cod, agoraDia);
   const icone = document.getElementById("wxIcone");
-  if (icone) icone.innerHTML = climaSvg(cod, "wx-hero-mark", agoraDia);
+  const simIcone = cenaPrevia();
+  if (icone) {
+    icone.innerHTML = simIcone
+      ? (simIcone.neutro ? "" : climaSvg(simIcone.code, "wx-hero-mark", simIcone.dia, Date.now()))
+      : climaSvg(cod, "wx-hero-mark", agoraDia, Date.now());
+  }
   document.getElementById("wxTemp").textContent = climaTexto(cur.temperature_2m, "°C");
   document.getElementById("wxLabel").textContent = label || "—";
   const maxHoje = climaNumero(daily.temperature_2m_max?.[0]);
@@ -1567,10 +1662,19 @@ async function carregarClima() {
         sunrises: d.sunrise,
         sunsets: d.sunset
       });
-      marcarCenaClima(c.weather_code, "wxFx", dia);
+      marcarCenaClima(c.weather_code, "wxFx", dia, {
+        vento: c.wind_speed_10m,
+        rajada: c.wind_gusts_10m,
+        atMs: Date.now()
+      });
       aplicarPele(c.weather_code, dia);
       const icone = document.getElementById("wxIcone");
-      if (icone) icone.innerHTML = climaSvg(c.weather_code, "wx-hero-mark", dia);
+      const simIcone = cenaPrevia();
+      if (icone) {
+        icone.innerHTML = simIcone
+          ? (simIcone.neutro ? "" : climaSvg(simIcone.code, "wx-hero-mark", simIcone.dia, Date.now()))
+          : climaSvg(c.weather_code, "wx-hero-mark", dia, Date.now());
+      }
       climaHoras = montarHorasClima(fresh.hourly || {}, d);
       pintarHorasClima();
     });
@@ -1850,8 +1954,13 @@ function leituraFalhou() {
 function climaFalhou() {
   const fonte = document.getElementById("wxFonte");
   const wx = document.querySelector("#slide-tempo .wx");
+  const fx = document.getElementById("wxFx");
   if (wx) wx.classList.add("is-stale");
   if (fonte) fonte.textContent = textoFonteClima(true);
+  if (cenaPrevia()) marcarCenaClima(null, "wxFx", true);
+  else if (fx && !fx.dataset.grupo && window.portalMarcarCenaClima) {
+    window.portalMarcarCenaClima(null, "wxFx", false, { neutro: true });
+  }
   atualizarStatus();
 }
 

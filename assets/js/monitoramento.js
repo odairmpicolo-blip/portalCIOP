@@ -1453,7 +1453,14 @@
       mapa.tiles = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap"
       }).addTo(mapa.leaflet);
-      mapa.camada = L.layerGroup().addTo(mapa.leaflet);
+      mapa.camada = (typeof L.markerClusterGroup === "function")
+        ? L.markerClusterGroup({
+            showCoverageOnHover: false,
+            spiderfyOnMaxZoom: true,
+            disableClusteringAtZoom: 16,
+            maxClusterRadius: function (z) { return z < 12 ? 72 : z < 14 ? 48 : 28; }
+          }).addTo(mapa.leaflet)
+        : L.layerGroup().addTo(mapa.leaflet);
       desenharTerminais();
       window.__cadMapInvalidate = () => mapa.leaflet.invalidateSize();
       document.querySelectorAll("[data-tiles]").forEach((btn) => {

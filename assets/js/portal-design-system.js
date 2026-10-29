@@ -25,7 +25,7 @@
   if (!document.querySelector('link[data-portal-page-contrast]')) {
     var contrast = document.createElement('link');
     contrast.rel = 'stylesheet';
-    contrast.href = new URL('assets/css/portal-page-contrast.css?v=20261028audit3', root).href;
+    contrast.href = new URL('assets/css/portal-page-contrast.css?v=20261029audit1', root).href;
     contrast.dataset.portalPageContrast = '1';
     document.head.appendChild(contrast);
   }

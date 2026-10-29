@@ -419,13 +419,28 @@ function pintarStamp() {
   const idade = idadeApi(ultimoStamp);
   el.textContent = idade ? `${hora} · ${idade}` : hora;
 }
+function mesclarHoras(a, b) {
+  const out = { ...(a || {}) };
+  Object.entries(b || {}).forEach(([k, p]) => {
+    if (!p || typeof p !== "object") return;
+    out[k] = { ...(out[k] || {}), ...p };
+  });
+  return out;
+}
 function lerHist() {
+  const hoje = hojeSP();
   try {
     const raw = JSON.parse(localStorage.getItem(HIST_KEY) || "null");
-    if (!raw || raw.date !== hojeSP()) return { date: hojeSP(), horas: {} };
-    return raw;
+    const all = JSON.parse(localStorage.getItem(DIAS_KEY) || "{}") || {};
+    const dia = all[hoje] || {};
+    const localOk = raw && raw.date === hoje;
+    return {
+      date: hoje,
+      horas: mesclarHoras(dia.horas, localOk ? raw.horas : {}),
+      minutos: mesclarHoras(dia.minutos, localOk ? raw.minutos : {})
+    };
   } catch (_) {
-    return { date: hojeSP(), horas: {} };
+    return { date: hoje, horas: {}, minutos: {} };
   }
 }
 function gravarHist(d) {
@@ -445,7 +460,8 @@ function gravarHist(d) {
     const prev = all[hist.date] || { date: hist.date, horas: {} };
     all[hist.date] = {
       date: hist.date,
-      horas: { ...(prev.horas || {}), ...hist.horas },
+      horas: mesclarHoras(prev.horas, hist.horas),
+      minutos: mesclarHoras(prev.minutos, hist.minutos),
       total: d.total || total,
       tcgl: d.tcgl || prev.tcgl || null,
       ls: d.ls || prev.ls || null,
@@ -609,6 +625,19 @@ carregar();
 setInterval(carregar, POLL_MS);
 setInterval(pintarStamp, 1000);
 window.addEventListener("resize", () => { if (horaChart) horaChart.resize(); });
+(async function hidratarHistNuvem() {
+  try {
+    const mod = await import("../assets/js/performance-horas-store.js");
+    const cloud = await mod.listarDiasFirestore();
+    const dia = cloud[hojeSP()];
+    if (!dia || !dia.horas) return;
+    const hist = lerHist();
+    hist.horas = mesclarHoras(dia.horas, hist.horas);
+    hist.minutos = mesclarHoras(dia.minutos, hist.minutos);
+    try { localStorage.setItem(HIST_KEY, JSON.stringify(hist)); } catch (_) {}
+    pintarLinhaHora(hist);
+  } catch (_) {}
+})();
 </script>
 </body>
 </html>

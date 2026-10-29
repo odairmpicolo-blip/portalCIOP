@@ -628,11 +628,7 @@
     }
     var casas = Math.round(n * 100) % 100 === 0 ? 0 : 2;
     function run() {
-      if (typeof window.portalContarNumero === "function") {
-        window.portalContarNumero(el, n, { suffix: "%", decimals: casas, duration: 0.9 });
-      } else {
-        el.textContent = fmtPct(n);
-      }
+      el.textContent = fmtPct(n);
     }
     if (delayMs) setTimeout(run, delayMs);
     else run();
