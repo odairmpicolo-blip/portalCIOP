@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { intervaloDatas } from './validar.js';
+import { ipvAjustadoPeriodo, extraPontosIncidentes, chaveLinha } from './ipv-ajustado.js';
 
 // Executa os handlers reais com apenas transporte HTTP e banco substituídos.
 const fonte = fs.readFileSync(new URL('../routes/cr0108.js', import.meta.url), 'utf8')
@@ -17,8 +19,17 @@ function preparar(datas, resumo, original, falhar = false) {
     }
     return {rows: resumo};
   };
-  const ctx = vm.createContext({query, Router:()=>({get:(path,...fns)=>rotas.set(path,fns.at(-1))}),
-    requireFirebaseUser:()=>{}, console:{error(){}}});
+  const ctx = vm.createContext({
+    query,
+    Router: () => ({ get: (path, ...fns) => rotas.set(path, fns.at(-1)) }),
+    requireFirebaseUser: () => {},
+    console: { error() {} },
+    process: { env: {} },
+    intervaloDatas,
+    ipvAjustadoPeriodo,
+    extraPontosIncidentes,
+    chaveLinha
+  });
   vm.runInContext(fonte, ctx);
   return {chamadas, async executar(rota, filtros={}) {
     let status=200, body;
