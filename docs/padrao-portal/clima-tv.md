@@ -21,7 +21,7 @@ Códigos de chuva, tempestade, neblina e neve **não** viram lua à noite. Só c
 
 Previsão diária usa ícone diurno representativo do dia.
 
-No Painel CIOP a cena cobre a tela de previsão: o céu muda com a condição real (limpo, nublado, chuva, noite) e os números ficam em vidro fosco. Dia claro usa texto escuro; noite, chuva e nublado usam texto claro. Isso não segue o tema do portal. A composição horizontal está em [ciop-tv.md](ciop-tv.md).
+No Painel CIOP a cena cobre a tela de previsão. O céu muda com a condição real e não é uma camada cinza chapada: limpo é azul, nublado tem variação de luz, chuva e noite ficam mais fundos. A condição atual fica direto nesse céu. O vidro, translúcido e de borda fina, só entra nas horas e nos cards de baixo. O texto principal permanece claro, com um véu leve só na base, para a leitura não depender de um cartão sólido. Isso não segue o tema do portal. A composição está em [ciop-tv.md](ciop-tv.md).
 
 Capturas da prévia local (29/10/2026, Open-Meteo, Londrina): `assets/ciop-tv-clima-1920.png` e `assets/ciop-tv-clima-1366.png`. As imagens `ciop-tv-clima-noite.png` e `ciop-tv-clima-limpo.png` só trocam o céu e a cor do texto para conferir a leitura; os números continuam os da leitura da tarde.
 

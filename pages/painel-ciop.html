@@ -288,220 +288,231 @@
     .firm-week-pct{ font-size:clamp(52px,11vw,88px); }
   }
 
-  /* ===== Clima — céu inteiro, vidro, faixa horizontal ===== */
+  /* ===== Clima — céu aberto, vidro só nas faixas ===== */
   #slide-tempo .wx{
-    --wx-ink:#f7fbff;
-    --wx-muted:#d5e2f2;
-    --wx-glass:rgba(7,16,32,.62);
-    --wx-line:rgba(255,255,255,.22);
-    --wx-blue:#7ec8ff;
-    --wx-orange:#ff7a45;
+    --wx-ink:#f4f8ff;
+    --wx-muted:rgba(244,248,255,.78);
+    --wx-glass:rgba(18,40,64,.18);
+    --wx-line:rgba(255,255,255,.34);
+    --wx-blue:#b9dcff;
     height:100%; min-height:0;
     position:relative; overflow:hidden;
     display:grid;
     grid-template-rows:auto auto auto minmax(0,1fr);
-    gap:16px;
+    gap:14px;
     color:var(--wx-ink);
+    background:transparent;
   }
   #slide-tempo .wx.is-ink-light{
-    --wx-ink:#071422;
-    --wx-muted:#1c3348;
-    --wx-glass:rgba(255,255,255,.78);
-    --wx-line:rgba(7,20,34,.16);
-    --wx-blue:#0b4f9e;
-    --wx-orange:#c2410c;
+    --wx-ink:#f4f8ff;
+    --wx-muted:rgba(244,248,255,.78);
+    --wx-glass:rgba(18,40,64,.18);
+    --wx-line:rgba(255,255,255,.34);
+    --wx-blue:#b9dcff;
   }
   #slide-tempo .wx-fx{
     inset:0; width:auto; height:auto;
     border-radius:28px;
     -webkit-mask-image:none; mask-image:none;
   }
+  #slide-tempo .wx-fx::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(180deg, rgba(5,12,24,.08) 0%, transparent 22%, transparent 70%, rgba(5,12,24,.12) 100%);
+  }
+  #slide-tempo .wx-fx.is-cloud .wx-sky{
+    background:
+      radial-gradient(ellipse 48% 36% at 18% 12%, rgba(214,230,244,.42), transparent 64%),
+      radial-gradient(ellipse 62% 42% at 82% 6%, rgba(255,255,255,.2), transparent 58%),
+      radial-gradient(ellipse 40% 28% at 48% 78%, rgba(70,104,138,.45), transparent 70%),
+      linear-gradient(180deg, #2f6ea8 0%, #5ea0d0 36%, #4a86b8 100%);
+  }
+  #slide-tempo .wx-fx.is-rain .wx-sky{
+    background:
+      radial-gradient(ellipse 55% 32% at 72% 0%, rgba(150,186,214,.28), transparent 60%),
+      linear-gradient(180deg, #16324c 0%, #1d4668 42%, #27587c 100%);
+  }
+  #slide-tempo .wx-fx.is-sun .wx-sky{
+    background:
+      radial-gradient(ellipse 36% 28% at 78% 8%, rgba(255,214,120,.38), transparent 62%),
+      linear-gradient(180deg, #1a6cb8 0%, #3c92d4 46%, #2f78b4 100%);
+  }
+  #slide-tempo .wx-fx.is-sun.is-night .wx-sky{
+    background:
+      radial-gradient(ellipse 28% 22% at 18% 16%, rgba(226,232,240,.2), transparent 60%),
+      linear-gradient(180deg, #070b22 0%, #141b3e 52%, #1c2454 100%);
+  }
+  #slide-tempo .wx-fx .wx-sun{
+    width:160px; height:160px; left:7%; right:auto; top:11%; opacity:.82;
+  }
+  #slide-tempo .wx-fx .wx-moon-disc{
+    width:92px; height:92px; left:8%; right:auto; top:13%;
+  }
   #slide-tempo .wx-fx .wx-cloud-mass,
   #slide-tempo .wx-fx .wx-cloud-soft{
     animation:wx-drift 36s ease-in-out infinite;
-    filter:blur(18px);
   }
+  #slide-tempo .wx-fx.is-cloud .wx-cloud-mass,
+  #slide-tempo .wx-fx.is-cloud .wx-cloud-soft{ background:rgba(255,255,255,.12); }
   #slide-tempo .wx-fx .wx-raindrop{
-    width:2px; opacity:.55;
+    width:2px; opacity:.5;
     animation:wx-fall 3.4s linear infinite;
   }
   #slide-tempo .wx-top,
   #slide-tempo .wx-hero,
   #slide-tempo .wx-band,
-  #slide-tempo .wx-col,
-  #slide-tempo .wx-metric{
+  #slide-tempo .wx-lower,
+  #slide-tempo .wx-side,
+  #slide-tempo .wx-metrics,
+  #slide-tempo .wx-days-panel{
     position:relative; z-index:1; min-width:0;
   }
   #slide-tempo .wx-glass{
     background:var(--wx-glass);
     border:1px solid var(--wx-line);
-    border-radius:28px;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.18);
-    backdrop-filter:blur(18px) saturate(1.15);
-    -webkit-backdrop-filter:blur(18px) saturate(1.15);
+    border-radius:22px;
+    box-shadow:none;
+    backdrop-filter:blur(16px) saturate(1.25);
+    -webkit-backdrop-filter:blur(16px) saturate(1.25);
   }
   #slide-tempo .wx-top{
     display:flex; align-items:center; justify-content:space-between; gap:24px;
-    min-height:56px;
+    min-height:44px;
   }
-  #slide-tempo .wx-brand, #slide-tempo .wx-place{
-    background:var(--wx-glass);
-    border:1px solid var(--wx-line);
-    border-radius:20px;
-    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
-  }
-  #slide-tempo .wx-brand{ display:flex; align-items:center; gap:14px; min-width:0; padding:8px 16px 8px 10px; }
-  #slide-tempo .wx-place{ padding:8px 16px; }
-  #slide-tempo .wx-brand img{ height:44px; width:auto; }
-  #slide-tempo .wx-brand h1{
-    margin:0; font-size:32px; font-weight:750; letter-spacing:-.03em; line-height:1;
-    color:var(--wx-ink);
-  }
-  #slide-tempo .wx-brand h1::after{
-    content:""; display:block; width:72px; height:3px; margin-top:6px; border-radius:99px;
-    background:linear-gradient(90deg,#2b3480,var(--wx-orange));
-  }
+  #slide-tempo .wx-logo{ height:40px; width:auto; }
   #slide-tempo .wx-place{
-    text-align:right; display:flex; flex-direction:column; gap:2px; min-width:0;
-  }
-  #slide-tempo .wx-place strong{
-    font-size:24px; font-weight:750; letter-spacing:-.02em; color:var(--wx-ink);
+    text-align:right; display:flex; flex-direction:column; gap:0; min-width:0;
   }
   #slide-tempo .wx-quando{
-    font-size:24px; font-weight:600; color:var(--wx-muted); font-variant-numeric:tabular-nums;
+    font-size:22px; font-weight:500; color:var(--wx-ink); font-variant-numeric:tabular-nums;
   }
   #slide-tempo .wx-fonte{
     position:static; width:auto; height:auto; overflow:visible; clip:auto;
-    font-size:18px; font-weight:650; color:var(--wx-muted);
+    font-size:18px; font-weight:400; color:var(--wx-muted);
   }
-  #slide-tempo .wx.is-stale .wx-fonte{ color:var(--wx-orange); }
-  #slide-tempo .wx-hero.wx-glass{
-    display:grid; grid-template-columns:minmax(0,1fr) auto;
-    align-items:center; gap:24px;
-    padding:18px 32px;
+  #slide-tempo .wx.is-stale .wx-fonte{ color:#ffb089; }
+  #slide-tempo .wx-hero{
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    padding:0 0 2px; background:none; border:0; box-shadow:none;
+    backdrop-filter:none; -webkit-backdrop-filter:none;
+  }
+  #slide-tempo .wx-hero::before{
+    content:""; position:absolute; z-index:-1; left:50%; top:54%;
+    width:720px; height:300px; transform:translate(-50%,-50%);
+    background:radial-gradient(ellipse, rgba(8,28,52,.4), transparent 68%);
+    pointer-events:none;
   }
   #slide-tempo .wx-city{
-    margin:0 0 2px; font-size:24px; font-weight:700; letter-spacing:.04em;
+    margin:0; font-size:22px; font-weight:500; letter-spacing:.08em;
     text-transform:uppercase; color:var(--wx-muted);
   }
+  #slide-tempo .wx-nowline{
+    display:flex; align-items:center; justify-content:center; gap:16px; margin-top:2px;
+  }
   #slide-tempo .wx-temp{
-    font-size:112px; font-weight:300; letter-spacing:-.05em; line-height:.86;
+    font-size:112px; font-weight:700; letter-spacing:-.045em; line-height:.86;
     font-variant-numeric:tabular-nums; color:var(--wx-ink); text-shadow:none;
   }
   #slide-tempo .wx-cond{
-    margin-top:6px; font-size:32px; font-weight:650; line-height:1.1; color:var(--wx-ink);
+    margin-top:4px; font-size:28px; font-weight:500; line-height:1.1; color:var(--wx-ink);
   }
   #slide-tempo .wx-meta{
-    display:flex; flex-wrap:wrap; gap:8px 22px; margin-top:8px;
-    font-size:24px; font-weight:600; color:var(--wx-muted); font-variant-numeric:tabular-nums;
+    display:flex; flex-wrap:wrap; justify-content:center; gap:6px 18px; margin-top:6px;
+    font-size:22px; font-weight:500; color:var(--wx-muted); font-variant-numeric:tabular-nums;
   }
-  #slide-tempo .wx-meta b{ font-weight:750; color:var(--wx-ink); }
-  #slide-tempo .wx-hero-icon{ font-size:88px; line-height:1; }
+  #slide-tempo .wx-meta b{ font-weight:600; color:var(--wx-ink); }
+  #slide-tempo .wx-hero-icon{ font-size:72px; line-height:1; }
   #slide-tempo .wx-hero-icon .tv-wx{ font-size:1em; width:1em; height:1em; display:block; }
   #slide-tempo .tv-wx svg{ width:1em; height:1em; display:block; }
-  #slide-tempo .wx-band.wx-glass{ padding:14px 18px 16px; }
+  #slide-tempo .wx-band.wx-glass{ padding:12px 16px 14px; }
   #slide-tempo .wx-card-head{
-    margin:0 0 8px; padding:0 8px;
-    font-size:20px; font-weight:750; letter-spacing:.12em; text-transform:uppercase;
+    margin:0 0 8px; padding:0 6px;
+    font-size:18px; font-weight:500; letter-spacing:.08em; text-transform:uppercase;
     color:var(--wx-muted);
   }
-  #slide-tempo .wx-hours{ display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:8px; }
+  #slide-tempo .wx-hours{ display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:6px; }
   #slide-tempo .wx-hour{
     min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:4px; padding:8px 4px; border-radius:18px;
+    gap:2px; padding:8px 4px; border-radius:16px;
   }
-  #slide-tempo .wx-hour.is-now{
-    background:color-mix(in srgb, var(--wx-orange) 16%, transparent);
-    box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--wx-orange) 55%, transparent);
-  }
+  #slide-tempo .wx-hour.is-now{ background:rgba(255,255,255,.16); box-shadow:none; }
   #slide-tempo .wx-hour-name,
   #slide-tempo .wx-hour-temp,
-  #slide-tempo .wx-hour-rain{
-    font-variant-numeric:tabular-nums; line-height:1.1;
-  }
-  #slide-tempo .wx-hour-name{ font-size:24px; font-weight:750; color:var(--wx-muted); }
-  #slide-tempo .wx-hour.is-now .wx-hour-name{ color:var(--wx-ink); }
-  #slide-tempo .wx-hour-icon.tv-wx{ font-size:40px; height:1em; }
-  #slide-tempo .wx-hour-rain{ font-size:24px; font-weight:750; color:var(--wx-blue); min-height:1.1em; }
-  #slide-tempo .wx-hour-temp{ font-size:28px; font-weight:750; color:var(--wx-ink); }
+  #slide-tempo .wx-hour-rain{ font-variant-numeric:tabular-nums; line-height:1.1; }
+  #slide-tempo .wx-hour-name{ font-size:22px; font-weight:500; color:var(--wx-muted); }
+  #slide-tempo .wx-hour.is-now .wx-hour-name{ color:var(--wx-ink); font-weight:600; }
+  #slide-tempo .wx-hour-icon.tv-wx{ font-size:48px; height:1em; }
+  #slide-tempo .wx-hour-rain{ font-size:20px; font-weight:500; color:var(--wx-blue); min-height:1.1em; }
+  #slide-tempo .wx-hour-temp{ font-size:26px; font-weight:700; color:var(--wx-ink); }
   #slide-tempo .wx-lower{
-    min-height:0; display:grid;
-    grid-template-columns:minmax(280px,.9fr) minmax(0,1.7fr) minmax(240px,.8fr);
-    gap:16px;
+    min-height:0; display:grid; align-items:stretch;
+    grid-template-columns:minmax(240px,.78fr) minmax(0,1.7fr) minmax(220px,.72fr);
+    gap:14px;
   }
-  #slide-tempo .wx-col{ min-height:0; display:flex; flex-direction:column; gap:12px; padding:16px 18px; }
-  #slide-tempo .wx-col .wx-card-head{ padding:0; }
-  #slide-tempo .wx-stack{ flex:1; min-height:0; display:flex; flex-direction:column; gap:12px; }
+  #slide-tempo .wx-side,
+  #slide-tempo .wx-metrics{
+    min-height:0; display:flex; flex-direction:column; justify-content:flex-start; gap:12px;
+  }
+  #slide-tempo .wx-card{
+    display:flex; flex-direction:column; align-items:flex-start; gap:2px;
+    padding:12px 16px;
+  }
+  #slide-tempo .wx-k{
+    font-size:16px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--wx-muted);
+  }
+  #slide-tempo .wx-v{
+    font-size:28px; font-weight:700; line-height:1.1; color:var(--wx-ink); font-variant-numeric:tabular-nums;
+  }
+  #slide-tempo .wx-sub{
+    font-size:18px; font-weight:400; color:var(--wx-muted); font-variant-numeric:tabular-nums;
+  }
   #slide-tempo .wx-alerta[hidden]{ display:none !important; }
   #slide-tempo .wx-alerta{
     border-radius:18px; padding:12px 14px;
-    background:color-mix(in srgb, var(--wx-orange) 18%, transparent);
-    border:1px solid color-mix(in srgb, var(--wx-orange) 50%, transparent);
+    background:rgba(255,122,69,.16);
+    border:1px solid rgba(255,122,69,.4);
   }
-  #slide-tempo .wx-alerta b{ display:block; font-size:24px; line-height:1.2; }
-  #slide-tempo .wx-alerta span{ display:block; margin-top:4px; font-size:20px; color:var(--wx-muted); }
-  #slide-tempo .wx-detalhe{
-    flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; gap:4px;
-    padding:8px 4px;
-  }
-  #slide-tempo .wx-detalhe-label{
-    font-size:18px; font-weight:750; letter-spacing:.08em; text-transform:uppercase; color:var(--wx-muted);
-  }
-  #slide-tempo .wx-detalhe-valor{
-    font-size:32px; font-weight:700; line-height:1.1; color:var(--wx-ink); font-variant-numeric:tabular-nums;
-  }
-  #slide-tempo .wx-detalhe-sub{
-    font-size:24px; font-weight:600; color:var(--wx-muted); font-variant-numeric:tabular-nums;
+  #slide-tempo .wx-alerta b{ display:block; font-size:22px; font-weight:600; line-height:1.2; }
+  #slide-tempo .wx-alerta span{ display:block; margin-top:4px; font-size:18px; font-weight:400; color:var(--wx-muted); }
+  #slide-tempo .wx-days-panel{
+    min-height:0; display:flex; flex-direction:column; padding:14px 16px 12px;
   }
   #slide-tempo .wx-days{
-    flex:1; min-height:0; display:flex; flex-direction:column; justify-content:space-between; gap:4px;
+    flex:1; min-height:0; display:flex; flex-direction:column; justify-content:space-evenly; gap:2px;
   }
   #slide-tempo .wx-day{
     display:grid;
-    grid-template-columns:5.2rem 2rem 3.6rem 3.2rem minmax(48px,1fr) 3.4rem;
-    align-items:center; gap:10px; min-height:0;
-    background:transparent; border:0; backdrop-filter:none; -webkit-backdrop-filter:none;
+    grid-template-columns:4.6rem 2.2rem 3.4rem 3rem minmax(40px,1fr) 3.2rem;
+    align-items:center; gap:8px; min-height:0;
+    background:transparent !important; border:0 !important;
+    backdrop-filter:none !important; -webkit-backdrop-filter:none !important;
+    box-shadow:none;
   }
-  #slide-tempo .wx-day-name{ font-size:24px; font-weight:700; color:var(--wx-ink); }
-  #slide-tempo .wx-day-icon.tv-wx{ font-size:32px; }
-  #slide-tempo .wx-day-rain{ font-size:24px; font-weight:750; color:var(--wx-blue); font-variant-numeric:tabular-nums; }
+  #slide-tempo .wx-day-name{ font-size:22px; font-weight:500; color:var(--wx-ink); }
+  #slide-tempo .wx-day-icon.tv-wx{ font-size:36px; }
+  #slide-tempo .wx-day-rain{ font-size:20px; font-weight:500; color:var(--wx-blue); font-variant-numeric:tabular-nums; }
   #slide-tempo .wx-day-min, #slide-tempo .wx-day-max{
-    font-size:24px; font-weight:700; font-variant-numeric:tabular-nums;
+    font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--wx-ink);
   }
-  #slide-tempo .wx-day-min{ color:var(--wx-muted); text-align:right; }
-  #slide-tempo .wx-day-max{ color:var(--wx-ink); text-align:right; }
+  #slide-tempo .wx-day-min{ font-weight:500; color:var(--wx-muted); text-align:right; }
+  #slide-tempo .wx-day-max{ text-align:right; }
   #slide-tempo .wx-bar{
-    height:8px; border-radius:99px; position:relative; overflow:hidden;
-    background:color-mix(in srgb, var(--wx-ink) 14%, transparent);
+    height:6px; border-radius:99px; position:relative; overflow:hidden;
+    background:rgba(255,255,255,.16);
   }
   #slide-tempo .wx-bar i{
     position:absolute; top:0; bottom:0; border-radius:99px;
-    background:linear-gradient(90deg,#2b3480,var(--wx-orange));
+    background:linear-gradient(90deg,#7eb6ff,#f0c27a);
   }
-  #slide-tempo .wx-metrics{ display:flex; flex-direction:column; gap:12px; min-height:0; }
-  #slide-tempo .wx-metric{
-    flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; gap:4px;
-    padding:14px 18px;
-  }
-  #slide-tempo .wx-metric span{ font-size:18px; font-weight:750; letter-spacing:.08em; text-transform:uppercase; color:var(--wx-muted); }
-  #slide-tempo .wx-metric b{ font-size:36px; font-weight:700; line-height:1; color:var(--wx-ink); font-variant-numeric:tabular-nums; }
-  #slide-tempo .wx-metric small{ font-size:20px; font-weight:600; color:var(--wx-muted); }
   @media (max-height:820px){
     .kiosk.modo-clima{ padding:28px 32px 32px; }
     .kiosk.modo-clima .ciclo{ left:32px; right:32px; bottom:12px; }
-    #slide-tempo .wx{ gap:10px; }
+    #slide-tempo .wx{ gap:8px; }
     #slide-tempo .wx-temp{ font-size:96px; }
-    #slide-tempo .wx-hero-icon{ font-size:72px; }
-    #slide-tempo .wx-cond{ font-size:26px; }
-    #slide-tempo .wx-meta, #slide-tempo .wx-hour-name, #slide-tempo .wx-hour-rain,
-    #slide-tempo .wx-day-name, #slide-tempo .wx-day-rain, #slide-tempo .wx-day-min,
-    #slide-tempo .wx-day-max, #slide-tempo .wx-detalhe-sub, #slide-tempo .wx-quando,
-    #slide-tempo .wx-place strong{ font-size:22px; }
-    #slide-tempo .wx-hour-temp, #slide-tempo .wx-detalhe-valor{ font-size:24px; }
-    #slide-tempo .wx-metric b{ font-size:28px; }
-    #slide-tempo .wx-hero.wx-glass{ padding:12px 20px; }
-    #slide-tempo .wx-brand h1{ font-size:26px; }
-    #slide-tempo .wx-brand img{ height:36px; }
+    #slide-tempo .wx-hero-icon{ font-size:60px; }
+    #slide-tempo .wx-cond{ font-size:24px; }
+    #slide-tempo .wx-logo{ height:32px; }
+    #slide-tempo .wx-v{ font-size:24px; }
+    #slide-tempo .wx-hour-temp{ font-size:22px; }
   }
 
   /* ===== Campanha — arte grande, cantos arredondados, sem legenda ===== */
@@ -803,67 +814,61 @@
       <div class="wx is-ink-dark">
         <div class="wx-fx" id="wxFx" aria-hidden="true"></div>
         <header class="wx-top">
-          <div class="wx-brand">
-            <img src="../assets/img/logo-ciop.png" alt="CIOP">
-            <h1>Previsão do tempo</h1>
-          </div>
+          <img class="wx-logo" src="../assets/img/logo-ciop.png" alt="CIOP">
           <div class="wx-place">
-            <strong>Londrina/PR</strong>
             <span class="wx-quando" id="wxQuando">—</span>
             <span class="wx-fonte" id="wxFonte">Open-Meteo</span>
           </div>
         </header>
-        <section class="wx-hero wx-glass" aria-label="Condição atual">
-          <div>
-            <p class="wx-city">Londrina</p>
+        <section class="wx-hero" aria-label="Condição atual">
+          <p class="wx-city">Londrina</p>
+          <div class="wx-nowline">
+            <div class="wx-hero-icon" id="wxIcone" aria-hidden="true"></div>
             <div class="wx-temp" id="wxTemp">—</div>
-            <div class="wx-cond" id="wxLabel">—</div>
-            <div class="wx-meta">
-              <span>Sensação <b id="wxSens">—</b></span>
-              <span id="wxMinMax">Mín. — · Máx. —</span>
-            </div>
           </div>
-          <div class="wx-hero-icon" id="wxIcone" aria-hidden="true"></div>
+          <div class="wx-cond" id="wxLabel">—</div>
+          <div class="wx-meta">
+            <span id="wxMinMax">Mín. — · Máx. —</span>
+            <span>Sensação <b id="wxSens">—</b></span>
+          </div>
         </section>
         <section class="wx-band wx-glass" aria-label="Próximas horas">
           <h2 class="wx-card-head">Próximas horas</h2>
           <div class="wx-hours" id="wxHoras"></div>
         </section>
         <section class="wx-lower">
-          <div class="wx-col wx-glass">
+          <div class="wx-side">
             <div class="wx-alerta" id="wxAlerta" hidden></div>
-            <div class="wx-stack">
-              <div class="wx-detalhe">
-                <span class="wx-detalhe-label">Vento</span>
-                <span class="wx-detalhe-valor" id="wxVento">—</span>
-                <span class="wx-detalhe-sub" id="wxRajada">Rajadas —</span>
-              </div>
-              <div class="wx-detalhe" id="wxSolCard">
-                <span class="wx-detalhe-label">Sol</span>
-                <span class="wx-detalhe-valor" id="wxPorSol">Pôr —</span>
-                <span class="wx-detalhe-sub" id="wxNascer">Nascer —</span>
-              </div>
+            <div class="wx-card wx-glass">
+              <span class="wx-k">Vento</span>
+              <b class="wx-v" id="wxVento">—</b>
+              <span class="wx-sub" id="wxRajada">Rajadas —</span>
+            </div>
+            <div class="wx-card wx-glass" id="wxSolCard">
+              <span class="wx-k">Sol</span>
+              <b class="wx-v" id="wxPorSol">Pôr —</b>
+              <span class="wx-sub" id="wxNascer">Nascer —</span>
             </div>
           </div>
-          <div class="wx-col wx-glass">
+          <div class="wx-days-panel wx-glass">
             <h2 class="wx-card-head">Próximos 7 dias</h2>
             <div class="wx-days" id="wxDias"></div>
           </div>
           <div class="wx-metrics">
-            <div class="wx-metric wx-glass">
-              <span>Umidade</span>
-              <b id="wxUmi">—</b>
-              <small>relativa</small>
+            <div class="wx-card wx-glass">
+              <span class="wx-k">Umidade</span>
+              <b class="wx-v" id="wxUmi">—</b>
+              <span class="wx-sub">relativa</span>
             </div>
-            <div class="wx-metric wx-glass">
-              <span>Precipitação</span>
-              <b id="wxChuva">—</b>
-              <small id="wxChuvaMm">volume previsto hoje</small>
+            <div class="wx-card wx-glass">
+              <span class="wx-k">Precipitação</span>
+              <b class="wx-v" id="wxChuva">—</b>
+              <span class="wx-sub" id="wxChuvaMm">volume previsto hoje</span>
             </div>
-            <div class="wx-metric wx-glass">
-              <span>Pressão</span>
-              <b id="wxPressao">—</b>
-              <small>ao nível do mar</small>
+            <div class="wx-card wx-glass">
+              <span class="wx-k">Pressão</span>
+              <b class="wx-v" id="wxPressao">—</b>
+              <span class="wx-sub">ao nível do mar</span>
             </div>
           </div>
         </section>
@@ -1472,7 +1477,7 @@ function pintarHorasClima() {
     const agora = Date.now();
     const vigente = agora >= h.time && agora < h.time + 60 * 60 * 1000;
     return `<div class="wx-hour${vigente ? " is-now" : ""}">
-      <span class="wx-hour-name">${h.label}</span>
+      <span class="wx-hour-name">${vigente ? "Agora" : h.label}</span>
       ${climaSvg(h.code, "wx-hour-icon", h.isDay)}
       <span class="wx-hour-rain">${chuvaTxt}</span>
       <span class="wx-hour-temp">${h.temp != null && Number.isFinite(Number(h.temp)) ? Math.round(h.temp) + "°" : "—"}</span>

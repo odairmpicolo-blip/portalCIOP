@@ -67,10 +67,10 @@ Nada da fórmula mudou.
 
 Tela horizontal em 1920×1080, com margem de cerca de 48 px (um pouco menor abaixo de 820 px de altura, para caber em 1366×768). Ver também [clima-tv.md](clima-tv.md).
 
-- Cabeçalho da própria tela: logo CIOP, “Previsão do tempo”, Londrina/PR, data, hora e a linha discreta de atualização.
-- Destaque: cidade, temperatura entre 96 e 120 px, condição, sensação, mínima e máxima. O ícone fica ao lado e menor que o número.
-- “Próximas horas”: oito colunas fixas, cada uma com horário, ícone, chance de chuva (%) e temperatura. Sem carrossel.
-- Embaixo, três colunas. Esquerda: vento, rajadas e nascer/pôr do sol. O alerta só entra se houver fonte oficial com severidade, validade e origem; sem isso o espaço fica com vento e sol, sem painel vazio. Centro: sete dias, com a mesma escala térmica. Direita: umidade (%), precipitação do dia (mm) e pressão (hPa). Não há radar: não existe integração autorizada, e mancha decorativa não substitui imagem.
+- Cabeçalho discreto: logo CIOP à esquerda, data e atualização à direita, sem cartão.
+- Destaque no céu, centralizado: Londrina, temperatura (96–120 px, peso forte), condição, mínima e máxima. O ícone fica ao lado do número, menor que ele. Não há cartão atrás da condição atual.
+- “Próximas horas”: faixa de vidro translúcido, oito colunas. A hora vigente diz “Agora”, com fundo suave e sem borda. Cada coluna traz ícone, chance de chuva (%) e temperatura.
+- Embaixo, três colunas alinhadas ao conteúdo. Esquerda: dois cards separados, vento e nascer/pôr. Centro, mais largo: sete dias, mesma escala térmica. Direita: cards compactos de umidade (%), precipitação do dia (mm) e pressão (hPa). O alerta só entra se houver fonte oficial; sem isso não fica painel vazio. Não há radar.
 - O percentual é chance. O mm é volume. Ausência continua “—”; zero só aparece quando a fonte mediu zero.
 - Ícone da hora usa `is_day` ou o nascer/pôr daquele instante em `America/Sao_Paulo`. Céu limpo à noite é lua; parcialmente nublado à noite é nuvem com lua. Chuva, nuvem e tempestade não viram lua. O ícone do dia na lista de sete dias é o diurno.
 - Falha de leitura mantém o último dado e marca “Sem atualização · último dado em DD/MM às HH:MM”. Não zera temperatura, chuva nem pressão.
