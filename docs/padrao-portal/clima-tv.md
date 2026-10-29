@@ -43,7 +43,7 @@ O vento é modificador. A Open-Meteo entrega `wind_speed_10m` e `wind_gusts_10m`
 | Neve | 71, 73, 75, 77, 85, 86 | nuvem e flocos | flocos |
 | Neutro | sem código válido | céu azul-ardósia, sem sol | — |
 
-O código 82 (pancada violenta) fica na chuva, sem raio. O raio só existe em 95, 96 e 99, e o clarear leva cerca de 12 s.
+O código 82 (pancada violenta) fica na chuva, sem raio. Garoa desenha 8 gotas finas, chuva 14 e tempestade 16, mais um véu que clareia em cerca de 12 s. Não há raio.
 
 Cada ícone horário usa o código e o `is_day` (ou o nascer/pôr) **daquela hora**, também depois da meia-noite. A lista de sete dias continua com ícone diurno.
 
@@ -52,5 +52,3 @@ A animação só corre com a previsão ativa no ciclo (`modo-clima`). Nas outras
 Falha de leitura conserva o último cenário e marca a data da última leitura. Se nunca houve leitura, o fundo é o neutro, sem sol.
 
 Prévia local, sem trocar os números: `_preview-clima-cenas.html` ou `?tela=tempo&cena=` com `sol`, `parcial`, `nublado`, `garoa`, `chuva`, `tempestade`, `vento`, `neblina`, `noite`, `noite-nublada`, `noite-chuva`, `noite-vento`, `noite-tempestade`, `neutro`.
-
-Os desenhos são CSS e SVG próprios do portal, sem foto, vídeo ou áudio. A chuva usa poucas gotas (8 na garoa, 14 na chuva, 16 na tempestade). O clarear da tempestade é um véu de 12 s, sem raio. `prefers-reduced-motion` e a saída do ciclo pausam o movimento e deixam o mesmo desenho parado.
