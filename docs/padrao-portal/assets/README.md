@@ -36,5 +36,6 @@ Marca oficial (arquivos em `assets/img/`): `portal-ciop-claro.png` e `portal-cio
 | `filtros-depois-1440-claro.png` | 1440×900, claro — ícone de data dentro do campo |
 | `filtros-depois-1440-escuro.png` | 1440×900, escuro |
 | `filtros-depois-tv-1920-claro.png` | Composição 1920×1080 (referência TV / desktop largo) |
+| `rev-20261029-*.png` | Revisão das pendências publicadas (criar relatório, folha, telemetria, ajustes, performance, TV, home) |
 
 Ao mudar o padrão visual compartilhado, recapturar estas imagens e atualizar o `.md` correspondente.

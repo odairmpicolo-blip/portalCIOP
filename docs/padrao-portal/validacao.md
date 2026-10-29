@@ -18,7 +18,7 @@ Legenda: **Navegador** = exercitado com servidor local; **Código** = tokens/DS/
 | `pages/pontualidade.html` | IPV | Navegador (KPI + seletor + tabela, claro/escuro; fill ≠ color) | Código | Login | Adiantado `--portal-op-early`, Atrasado `--portal-op-late` |
 | `pages/pontualidade-ajustada.html` | Dashboard | Navegador local (login) | Código | Erro + retry | Handler local; **publicado** ainda 404 |
 | `pages/pontualidade-tempo-real.html` | Ao vivo | Código | Código | Login | Paleta kiosk-like |
-| `pages/performance-tempo-real.html` | Dashboard | Código | Código | Login | |
+| `pages/performance-tempo-real.html` | Dashboard | Navegador kiosk | 390/1024/1440 | Vazio ICV do dia | Cumprimento = CR ICV do dia; pontualidade = mapa |
 | `pages/performance-comparacao.html` | Dashboard | Código | Código | Login | |
 | `pages/incidentes-cad.html` | Dashboard | Código | Código | Login | Import `intervaloDatas` no backend |
 | `pages/incidentes-dashboard.html` | Dashboard | Código | Código | Login | |
@@ -36,7 +36,7 @@ Legenda: **Navegador** = exercitado com servidor local; **Código** = tokens/DS/
 | `pages/gerenciapatio.html` | Pátio | Auth injeta tema | Código | Login | Botão sol/lua legado |
 | `pages/admin-usuarios.html` | Admin | Código | Código | Login | |
 | `pages/painel-tv.html` | Kiosk | Fora desta rodada | — | — | Conferência 1920 foi no Painel CIOP |
-| `pages/painel-ciop.html` | Kiosk | Navegador 1920 (capa, ipv, icv, clima, campanha) + clima 1366 | Sem overflow | Kiosk | Total = média; sem DS/contrast |
+| `pages/painel-ciop.html` | Kiosk | Navegador 1920 (capa, ipv, icv, clima, campanha) | Sem overflow | Kiosk | ICV Total ponderado por volumes; IPV Total segue média |
 | `pages/painel-tv-*`, `painel-ciop-icv.html` | Kiosk | Fora | — | — | — |
 | `docs/padrao-portal/catalogo.html` | Catálogo | Navegador (abrir local) | Conferir ao publicar doc | Dados fictícios | Sem auth, sem gravação |
 | `_preview-*`, `portal-app` | Fora | Fora | Fora | — | |

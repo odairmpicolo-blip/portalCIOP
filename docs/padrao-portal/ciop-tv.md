@@ -54,8 +54,9 @@ Nada da fórmula mudou.
 
 - Semana operacional: domingo a sábado. A semana nova entra na terça, em `America/Sao_Paulo`.
 - Média da semana de pontualidade: soma de `ipv × pontos de controle` / soma dos pontos. Sem pontos, cai para a média simples dos dias.
-- Cumprimento: viagens realizadas / programadas no período. Sem programadas, média simples dos dias.
-- **Total:** média aritmética de TCGL e LondriSul. Não é ponderada por pontos. Se só uma área tiver valor, o Total usa essa área. O mesmo vale para o dia e para a semana anterior.
+- Cumprimento: viagens realizadas / programadas no período (`trips` ÷ `scheduled_trips`). Sem programadas na área, a área ainda pode mostrar a média dos `icv` diários; o **Total do sistema não**.
+- **Total ICV:** soma das realizadas de TCGL e LondriSul ÷ soma das programadas × 100, no mesmo período e corte. Sem volumes nas áreas com dado, o Total é “—” e a nota registra a pendência. **Não** se apresenta média simples como cumprimento do sistema.
+- **Total IPV** (−2/+6 e −1/+3): permanece média aritmética das áreas (pontualidade, não volume de viagens).
 - Variação da semana: Total (ou a área) desta semana menos a semana anterior, em pontos percentuais.
 - Variação do dia: o dia exibido menos o mesmo dia da semana anterior.
 - −2/+6 e −1/+3 são telas separadas (`fonte` vazia / `2-6-ldsul` e `1-3` / `1-3-ldsul`).

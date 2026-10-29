@@ -356,6 +356,7 @@
     var hint = document.getElementById("homeSearchEmptyHint");
     if (!input || !empty || !text) return;
     var q = (input.value || "").trim();
+    document.documentElement.setAttribute("data-home-search", q ? "1" : "0");
     var view = document.documentElement.getAttribute("data-home-view");
     var alvo = document.documentElement.getAttribute("data-home-area");
     var area = nomeArea(alvo);

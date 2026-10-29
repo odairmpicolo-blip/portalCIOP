@@ -2,6 +2,8 @@
 
 Referência oficial para **manter** e **criar** páginas no portal clássico (`index.html`, `login.html`, `pages/*.html`). Documenta o que está no código após a modernização Liquid Glass (outubro de 2026).
 
+Pendências da revisão publicada (29/10/2026): [revisao-publicada-2026-10-29.md](revisao-publicada-2026-10-29.md).
+
 O `portal-app/` (React) e os kiosks de TV **não** copiam este chrome. TV mantém composição 16:9 para leitura à distância; o app nativo tem shell próprio.
 
 ## Objetivo e identidade

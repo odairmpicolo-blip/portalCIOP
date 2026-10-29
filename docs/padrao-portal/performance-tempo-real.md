@@ -1,6 +1,6 @@
 # Performance em tempo real
 
-Página: `pages/performance-tempo-real.html` (composição kiosk, não o chrome Liquid Glass das internas). Três colunas: **TCGL**, **LondriSul** e **Total**. Pontualidade em barras; pontualidade por hora em linhas (Chart.js). Não há cumprimento de viagens nesta página.
+Página: `pages/performance-tempo-real.html` (composição kiosk, não o chrome Liquid Glass das internas). Três colunas: **TCGL**, **LondriSul** e **Total**. Pontualidade em barras; pontualidade por hora em linhas (Chart.js). Cumprimento do dia (realizadas / programadas e %) vem da API compartilhada de ICV, só do `data_ref` de hoje.
 
 ## Pontualidade (confirmado no código)
 
@@ -13,27 +13,18 @@ Fonte: `https://londrisul.online/relatorios/mapa/api.php` (chave já usada pela 
 
 O histórico hora a hora fica no navegador (`ciop-mapa-pontualidade-horas-v1`). Hora sem leitura fica vazia. O stamp da API (`atualizado_em` / `capturado_em`) é a **atualização**; não há recorte de período diário nesta fonte.
 
-## Cumprimento diário — regra proposta (não calculada nesta página)
+## Cumprimento do dia (implementado)
 
-Não alterar o código de pontualidade nem o ICV da TV até a fonte confirmar o que entra no numerador e no denominador.
-
-Regra desejada na Performance em tempo real (quando houver dados):
+Fonte: `GET …/cr0108/share/icv?token=…&fonte=tcgl|ldsul&de=YYYY-MM-DD&ate=YYYY-MM-DD` (mesmo contrato da TV). Campos `scheduled_trips` (programadas) e `trips` (realizadas) na linha cujo `data` é o dia civil de `America/Sao_Paulo`.
 
 | Recorte | Fórmula |
 | --- | --- |
-| Empresa (TCGL ou LondriSul) | realizadas ÷ programadas × 100 |
-| Total | soma das realizadas das empresas ÷ soma das programadas × 100 |
-| Denominador 0 | texto **“Sem programação”** — não pintar 0% nem “—” de pontualidade |
-| Período e corte | os mesmos para TCGL, LondriSul e Total |
+| TCGL / LondriSul | `trips` ÷ `scheduled_trips` × 100, só a linha de hoje |
+| Total | soma das realizadas ÷ soma das programadas × 100, **as duas** áreas no mesmo dia |
+| Sem linha de hoje | “—” e texto de ausência — **não** completa com dia anterior nem média |
+| Sem volumes | “—” — **não** usa o percentual ICV isolado como se fosse volume |
+| Corte | dia civil CR ICV (`data_ref`). A API **não** expõe hora de corte |
 
-Pendências **na fonte** (não inventar no front):
+A consolidação do ICV costuma atrasar em relação ao relógio (em 29/10/2026 a última linha disponível era 26/10). Isso é vazio do dia, não falha de pontualidade.
 
-1. Quais viagens contam como **programadas** (tabela do dia, escala, CR-0108, ICV).
-2. Quais contam como **realizadas** (partida, chegada, ponto de controle).
-3. Cancelamento: sai do denominador, fica como não realizada, ou outro tratamento.
-4. Viagem extra: entra só no numerador, nos dois, ou fora.
-5. Viagem **ainda não vencida** no horário de corte: fora do denominador, ou programada em aberto.
-6. Horário de corte oficial e fuso (`America/Sao_Paulo`).
-7. Se o ICV (`pages/icv.html`) e o board da TV já usam essa regra ou outra (a TV documenta cumprimento como realizadas/programadas no período, e o **Total da TV** é média aritmética das áreas — diferente da soma proposta acima).
-
-A API do mapa (`parseEmpresas`) **não** traz programadas, realizadas nem corte. ICV e `painel-ciop.html` são outros recortes. Sem essas respostas, a padronização visual desta tela permanece só nas barras de pontualidade.
+A API do mapa continua só para pontualidade (barras e linhas). Os dois indicadores não se misturam.

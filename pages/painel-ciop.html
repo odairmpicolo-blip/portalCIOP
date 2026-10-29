@@ -718,8 +718,8 @@
               <h2>Total</h2>
             </div>
             <div class="firm-block">
-              <div class="firm-label">Média das áreas</div>
-              <div class="firm-note">média simples de TCGL e LondriSul, em p.p.</div>
+              <div class="firm-label">Cumprimento do sistema</div>
+              <div class="firm-note">soma das realizadas ÷ soma das programadas, mesmo período e corte</div>
               <div class="firm-week-row">
                 <div class="firm-week-pct" id="weekIcvCiop">—</div>
                 <div class="firm-delta firm-delta-lg flat" id="weekDeltaIcvCiop">—</div>
@@ -928,6 +928,34 @@ function seriePorDia(serie, dias = DIAS) {
   });
 }
 
+function seriePorDiaVol(serie, dias = DIAS) {
+  const map = new Map((serie || []).map((x) => [x.data, x]));
+  return dias.map((d) => {
+    const x = map.get(d.iso);
+    if (!x) return null;
+    return { ipv: x.ipv, prog: Number(x.prog) || 0, viag: Number(x.viag) || 0 };
+  });
+}
+
+function icvPeso(a, b) {
+  const aTem = !!(a && ((a.serie && a.serie.length) || a.ipv != null || (a.somaProg || 0) > 0));
+  const bTem = !!(b && ((b.serie && b.serie.length) || b.ipv != null || (b.somaProg || 0) > 0));
+  const aVol = (Number(a?.somaProg) || 0) > 0;
+  const bVol = (Number(b?.somaProg) || 0) > 0;
+  if ((aTem && !aVol) || (bTem && !bVol)) return { ipv: null, pendente: true };
+  const prog = (Number(a?.somaProg) || 0) + (Number(b?.somaProg) || 0);
+  const viag = (Number(a?.somaViag) || 0) + (Number(b?.somaViag) || 0);
+  if (prog <= 0) return { ipv: null, pendente: true };
+  return { ipv: (viag / prog) * 100, pendente: false };
+}
+
+function volComoBloco(v) {
+  if (!v) return null;
+  const tem = v.ipv != null || (v.prog || 0) > 0;
+  if (!tem) return null;
+  return { ipv: v.ipv, somaProg: v.prog || 0, somaViag: v.viag || 0, serie: [{}] };
+}
+
 function pintarDelta(id, atual, anterior, contra) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -1048,10 +1076,17 @@ function aplicarDiaEm(n, est, ids) {
   const d = DIAS[n] || DIAS[0];
   const a = est.tcgl?.byDay?.[n] ?? null;
   const b = est.ls?.byDay?.[n] ?? null;
-  const t = a != null && b != null ? (a + b) / 2 : (a ?? b ?? null);
   const a0 = est.tcglAnt?.byDay?.[n] ?? null;
   const b0 = est.lsAnt?.byDay?.[n] ?? null;
-  const t0 = a0 != null && b0 != null ? (a0 + b0) / 2 : (a0 ?? b0 ?? null);
+  let t;
+  let t0;
+  if (ids === ICV_IDS) {
+    t = icvPeso(volComoBloco(est.tcgl?.byDayVol?.[n]), volComoBloco(est.ls?.byDayVol?.[n])).ipv;
+    t0 = icvPeso(volComoBloco(est.tcglAnt?.byDayVol?.[n]), volComoBloco(est.lsAnt?.byDayVol?.[n])).ipv;
+  } else {
+    t = a != null && b != null ? (a + b) / 2 : (a ?? b ?? null);
+    t0 = a0 != null && b0 != null ? (a0 + b0) / 2 : (a0 ?? b0 ?? null);
+  }
   setPct(ids.pct + "Tcgl", a);
   setPct(ids.pct + "Ls", b);
   setPct(ids.pct + "Ciop", t);
@@ -1085,8 +1120,14 @@ function aplicarDiaIcv(n) {
 function pintarArea(prefix, bloco, ant, ids = IPV_IDS) {
   const week = document.getElementById(ids.week + prefix);
   if (week) week.textContent = formatPct(bloco?.ipv);
-  if (bloco) bloco.byDay = seriePorDia(bloco.serie, DIAS);
-  if (ant) ant.byDay = seriePorDia(ant.serie, DIAS_ANT);
+  if (bloco) {
+    bloco.byDay = seriePorDia(bloco.serie, DIAS);
+    if (ids === ICV_IDS) bloco.byDayVol = seriePorDiaVol(bloco.serie, DIAS);
+  }
+  if (ant) {
+    ant.byDay = seriePorDia(ant.serie, DIAS_ANT);
+    if (ids === ICV_IDS) ant.byDayVol = seriePorDiaVol(ant.serie, DIAS_ANT);
+  }
   pintarDelta(ids.weekDelta + prefix, bloco?.ipv, ant?.ipv, "a semana anterior");
   agendarEncaixe();
 }
@@ -1109,6 +1150,9 @@ function pintarEvolucao(est, ids, n = diaIpv) {
   const tcgl = serieDia(est.tcgl);
   const ls = serieDia(est.ls);
   const total = DIAS.map((_, i) => {
+    if (ids === ICV_IDS) {
+      return icvPeso(volComoBloco(est.tcgl?.byDayVol?.[i]), volComoBloco(est.ls?.byDayVol?.[i])).ipv;
+    }
     const a = tcgl[i];
     const b = ls[i];
     if (a != null && b != null) return (a + b) / 2;
@@ -1243,18 +1287,19 @@ function agregarIcv(itens, de, ate, origem) {
     if (!data || data < de || data > ate || x.sem_dados) continue;
     const icv = toPct(x.icv);
     if (icv == null) continue;
-    serie.push({ data, ipv: icv });
     const prog = Number(x.scheduled_trips ?? x.viagensProgramadas) || 0;
     const viag = Number(x.trips ?? x.viagens) || 0;
+    serie.push({ data, ipv: icv, prog, viag });
     if (prog > 0) {
       somaProg += prog;
-      somaViag += viag > 0 ? viag : (icv / 100) * prog;
+      somaViag += viag > 0 ? viag : 0;
     }
     somaSimples += icv;
   }
-  if (!serie.length) return { ipv: null, serie: [], origem };
-  const ipv = somaProg ? (somaViag / somaProg) * 100 : somaSimples / serie.length;
-  return { ipv, serie, origem };
+  if (!serie.length) return { ipv: null, serie: [], origem, somaProg: 0, somaViag: 0, temVolume: false };
+  const temVolume = somaProg > 0;
+  const ipv = temVolume ? (somaViag / somaProg) * 100 : somaSimples / serie.length;
+  return { ipv, serie, origem, somaProg, somaViag, temVolume };
 }
 
 async function carregarLondrisulIpv() {
@@ -1617,16 +1662,29 @@ atualizarRelogio();
 setInterval(atualizarRelogio, 1000);
 
 function pintarTotal(est, ids, diaN) {
-  const a = est.tcgl?.ipv;
-  const b = est.ls?.ipv;
   let total = null;
-  if (a != null && b != null) total = (a + b) / 2;
-  else total = a ?? b ?? null;
-  const a0 = est.tcglAnt?.ipv;
-  const b0 = est.lsAnt?.ipv;
   let total0 = null;
-  if (a0 != null && b0 != null) total0 = (a0 + b0) / 2;
-  else total0 = a0 ?? b0 ?? null;
+  if (ids === ICV_IDS) {
+    const sys = icvPeso(est.tcgl, est.ls);
+    const sys0 = icvPeso(est.tcglAnt, est.lsAnt);
+    total = sys.ipv;
+    total0 = sys0.ipv;
+    const note = document.querySelector("#card-icv-ciop .firm-note");
+    if (note) {
+      note.textContent = sys.pendente
+        ? "Volumes de realizadas/programadas indisponíveis — Total não usa média simples"
+        : "soma das realizadas ÷ soma das programadas, mesmo período e corte";
+    }
+  } else {
+    const a = est.tcgl?.ipv;
+    const b = est.ls?.ipv;
+    if (a != null && b != null) total = (a + b) / 2;
+    else total = a ?? b ?? null;
+    const a0 = est.tcglAnt?.ipv;
+    const b0 = est.lsAnt?.ipv;
+    if (a0 != null && b0 != null) total0 = (a0 + b0) / 2;
+    else total0 = a0 ?? b0 ?? null;
+  }
   const week = document.getElementById(ids.week + "Ciop");
   if (week) week.textContent = formatPct(total);
   pintarDelta(ids.weekDelta + "Ciop", total, total0, "a semana anterior");
