@@ -35,8 +35,9 @@ Legenda: **Navegador** = exercitado com servidor local; **Código** = tokens/DS/
 | `pages/km-*.html`, `cr0108*.html`, `desempenho-motoristas.html`, `consumo-diario-*.html` | Dash | Auth injeta tema | Código | Login | Flash |
 | `pages/gerenciapatio.html` | Pátio | Auth injeta tema | Código | Login | Botão sol/lua legado |
 | `pages/admin-usuarios.html` | Admin | Código | Código | Login | |
-| `pages/painel-tv.html` | Kiosk | Navegador | 1920 e 1366 | Vazio KM; sucesso IPV | Adiantado vermelho / Atrasado âmbar |
-| `pages/painel-tv-*`, `painel-ciop*` | Kiosk | Fora do DS home | Não abertos nesta rodada | — | Composição TV |
+| `pages/painel-tv.html` | Kiosk | Fora desta rodada | — | — | Conferência 1920 foi no Painel CIOP |
+| `pages/painel-ciop.html` | Kiosk | Navegador 1920 (capa, ipv, icv, clima, campanha) + clima 1366 | Sem overflow | Kiosk | Total = média; sem DS/contrast |
+| `pages/painel-tv-*`, `painel-ciop-icv.html` | Kiosk | Fora | — | — | — |
 | `docs/padrao-portal/catalogo.html` | Catálogo | Navegador (abrir local) | Conferir ao publicar doc | Dados fictícios | Sem auth, sem gravação |
 | `_preview-*`, `portal-app` | Fora | Fora | Fora | — | |
 
@@ -75,7 +76,7 @@ Não há banco de “antes” da home autenticada. O catálogo serve de **depois
 | Item | Tipo | Status |
 | --- | --- | --- |
 | `intervaloDatas` em `/cr0108/cad` | Confirmado | Import no backend ok; front traduz a mensagem se a Lambda antiga ainda falhar |
-| Front chama `/cr0108/ipv-ajustado` | Confirmado | Handler no Express **local**; API publicada 404 `Rota não encontrada` (Express, não Gateway). Lambda precisa de redeploy |
+| Front chama `/cr0108/ipv-ajustado` | Confirmado | Lambda 2026-10-29: **401** `TOKEN_AUSENTE` sem sessão |
 | KPI reiniciava no meio da anima | Confirmado | `dataset.counting` |
 | Logo overlay 404 | Confirmado | `dkTcglPath` usa URL absoluta; loading logos excluídos da troca |
 | Decreto sempre escuro no claro | Confirmado | Override `dk-light .ai-console` |

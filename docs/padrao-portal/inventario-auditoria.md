@@ -1,6 +1,6 @@
 # Inventário da auditoria visual (outubro 2026)
 
-Etapa 1: contraste por par superfície + escrita. Etapa 2: casco compartilhado (`portal-shell.js` + picker + campos). **Etapa 2 não concluída.** Cumprimento da Performance **não** calculado. Página que só abre **não** entra como aprovada.
+Etapa 1: contraste por par superfície + escrita. Etapa 2: casco compartilhado (`portal-shell.js` + picker + campos). **Etapa 2 não concluída** (páginas autenticadas e conferência visual das cinco internas ainda abertas). Etapa 3: TV 16:9. Cumprimento da Performance **não** calculado. Página que só abre **não** entra como aprovada.
 
 ## Conferência publicada (2026-10-28, noite)
 
@@ -72,10 +72,11 @@ HTTP da conferência (antes deste working tree): teste `criar-relatorio.html` e 
 
 1. **Cumprimento** — regra proposta documentada; fonte (programadas, realizadas, cancelamentos, extras, não vencidas, corte) não confirmada. Ver [performance-tempo-real.md](performance-tempo-real.md). **Permanece pendente.**
 2. **Regra do Total** — ICV proposto soma/soma; TV hoje usa média aritmética. Sem confirmação, não alterar.
-3. **TV** — ciclo clima/campanha em 1920 não foi varrido de ponta a ponta nesta rodada.
+3. **TV** — Painel CIOP 1920 conferido (capa, −2/+6, cumprimento, clima, campanha). `painel-tv.html` e 4K não varridos. Ver [ciop-tv.md](ciop-tv.md).
 4. **Páginas autenticadas** — menus, modais, filtros, tabelas e gráficos não aprovados: exigem sessão.
-5. **`/cr0108/ipv-ajustado`** — handler local; Lambda publicada ainda 404.
-6. Modais da home: trap de foco não exercitado.
+5. **`/cr0108/ipv-ajustado`** — Lambda implantada 2026-10-29: sem token responde **401** `TOKEN_AUSENTE` (não mais 404).
+6. **Home (etapa 3)** — estados vazio/busca/aviso/clima da `index.html` ainda não varridos.
+7. Modais da home: trap de foco não exercitado.
 
 ## Evidências desta etapa
 

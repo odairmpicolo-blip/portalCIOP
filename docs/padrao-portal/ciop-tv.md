@@ -80,3 +80,19 @@ A arte ocupa o painel, com cantos arredondados (32 px) e `object-fit: contain`. 
 
 - Cabeçalho: “Campanha do mês”. Rodapé: “Comunicação institucional” e a data/hora. O logo do cabeçalho permanece; a arte não ganha um segundo logo por cima.
 - Troca mensal segue `CAMPANHAS` e `?mes=` para inspeção. As artes atuais são horizontais (cerca de 1859×846). O fundo do card usa `fundo` da campanha, para a sobra acompanhar a arte.
+
+## Conferência 1920 (2026-10-29)
+
+Servidor local `:8768`, `Emulation.setDeviceMetricsOverride` 1920×1080. Fórmulas **não** alteradas: Total da TV permanece média aritmética das áreas.
+
+| Tela | `?tela=` | Overflow 1920 | Observado |
+| --- | --- | --- | --- |
+| Capa | `capa` | html/body 1920×1080 | `modo-capa`; cabeçalho e rodapé somem |
+| Pontualidade −2/+6 | `ipv` | não | Título 40 px `rgb(244,247,255)`; semana TCGL 91,06% / LS 91,65% / Total 91,35% = média |
+| Cumprimento | `icv` | não | Semana ~94,86 / 94,09 / 94,47 = média. **Não** é soma/soma |
+| Clima | `tempo` | não | 19 °C; 8 horas; 8 dias; Open-Meteo. Em 1366×768: 7 dias. Pressão preenche depois da API |
+| Campanha | `campanha` | não | Outubro Rosa; `object-fit: contain`; wrapper `border-radius: 32px` |
+
+Problema encontrado: `theme-toggle.js` injetava tokens, design system e `portal-page-contrast.css` no kiosk (e aplicava `dk-dark`). O padrão manda a TV ficar fora desse chrome. Correção: kiosk não recebe inject nem boot de tema.
+
+Ainda fora desta conferência: ciclo automático ponta a ponta (~2 min) sem `?tela=`; `painel-tv.html`; 3840×2160; noite após o pôr (Nascer do sol).

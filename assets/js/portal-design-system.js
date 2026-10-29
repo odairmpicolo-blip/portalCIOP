@@ -7,6 +7,7 @@
   if (html.classList.contains('portal-home-2026')) return;
   var kiosk = !!document.querySelector('#kiosk, .kiosk');
   html.classList.add(kiosk ? 'portal-glass-kiosk' : 'portal-glass-system');
+  if (kiosk) return;
   if (!html.id) html.id = 'portal-page-glass';
   if (!document.body.id) document.body.id = 'portal-page-content';
   var style = document.createElement('link');

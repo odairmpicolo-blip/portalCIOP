@@ -16,7 +16,7 @@
 | Composição do Painel CIOP | `pages/painel-ciop.html` | Ver [ciop-tv.md](ciop-tv.md). Não alterar a média nem o Total |
 | Performance ao vivo (pontualidade) | `pages/performance-tempo-real.html` | Ver [performance-tempo-real.md](performance-tempo-real.md). Não mudar a média do mapa |
 
-Bump de cache vigente **no working tree**: tokens/DS/contrast `?v=20261028audit3`; `theme-toggle.js` `audit3` nas páginas desta revisão. **Publicado** (teste `ebe86169`, prod `bcef572cf`, conferência 2026-10-28): ainda `audit2`. Fastly em produção usa `max-age=600`; o HTML publicado já pedia `audit2` e o JS correspondente vinha 200 — a pendência de contraste não era cache, era CSS da página com `--blue` na escrita. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no inject.
+Bump de cache vigente **no working tree**: kiosk `theme-toggle.js` `audit4` (não injeta DS/contrast na TV); internas ainda `audit3` no HTML publicado. Ao mudar o arquivo, **subir** o sufixo nos HTML que apontam direto e no inject.
 
 ## Impacto
 

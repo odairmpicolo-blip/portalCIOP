@@ -76,8 +76,18 @@ function dkMsUntilSunSwitch(at) {
   return Math.min(Math.max(waitMs + 800, 1000), 6 * 60 * 60 * 1000);
 }
 
+function dkIsKioskPage() {
+  try {
+    var path = String(location.pathname || "");
+    if (/painel-ciop|painel-tv|performance-tempo-real/.test(path)) return true;
+    if (document.getElementById("kiosk") || document.querySelector(".kiosk")) return true;
+  } catch (e) {}
+  return false;
+}
+
 /* Apply the stored theme before paint when this file is in <head>. */
 (function dkEarlyBoot() {
+  if (dkIsKioskPage()) return;
   try {
     var key = "dk-theme";
     var stored = localStorage.getItem(key);
@@ -236,6 +246,7 @@ function dkSetPref(pref) {
 }
 
 (function dkBoot() {
+  if (dkIsKioskPage()) return;
   var stored = dkStoredPref();
   try {
     if (localStorage.getItem(DK_KEY) == null) localStorage.setItem(DK_KEY, stored);
@@ -253,6 +264,7 @@ function dkOnOptClick(ev) {
 }
 
 function dkInit() {
+  if (dkIsKioskPage()) return;
   var opts = document.querySelectorAll(".dk-theme-opt");
   for (var i = 0; i < opts.length; i++) {
     opts[i].removeEventListener("click", dkOnOptClick);
@@ -278,6 +290,7 @@ window.dkSwapBrandLogos = dkSwapBrandLogos;
 (function () {
   var current = document.currentScript;
   if (!current || !current.src) return;
+  if (dkIsKioskPage()) return;
   if (!document.querySelector('script[data-portal-shell]')) {
     var shell = document.createElement('script');
     shell.src = new URL('portal-shell.js?v=20261028audit2', current.src).href;
@@ -287,7 +300,7 @@ window.dkSwapBrandLogos = dkSwapBrandLogos;
   }
   if (!document.querySelector('script[data-portal-design-system]')) {
     var script = document.createElement('script');
-    script.src = new URL('portal-design-system.js?v=20261028audit3', current.src).href;
+    script.src = new URL('portal-design-system.js?v=20261028audit4', current.src).href;
     script.dataset.portalDesignSystem = '1';
     script.defer = true;
     document.head.appendChild(script);
