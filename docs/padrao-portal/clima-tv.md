@@ -23,7 +23,7 @@ Previsão diária usa ícone diurno representativo do dia.
 
 No Painel CIOP a cena cobre a tela de previsão. O céu muda com a condição real e não é uma camada cinza chapada: limpo é azul, nublado tem variação de luz, chuva e noite ficam mais fundos. A condição atual fica direto nesse céu. O vidro, translúcido e de borda fina, só entra nas horas e nos cards de baixo. O texto principal permanece claro, com um véu leve só na base, para a leitura não depender de um cartão sólido. Isso não segue o tema do portal. A composição está em [ciop-tv.md](ciop-tv.md).
 
-Capturas da prévia local (29/10/2026, Open-Meteo, Londrina): `assets/ciop-tv-clima-1920.png` e `assets/ciop-tv-clima-1366.png`. As imagens `ciop-tv-clima-noite.png` e `ciop-tv-clima-limpo.png` só trocam o céu e a cor do texto para conferir a leitura; os números continuam os da leitura da tarde.
+Capturas da prévia local em 1920×1080 (29/10/2026). Os números são os da Open-Meteo; o parâmetro `cena` só troca o céu e o ícone principal: `assets/ciop-tv-cena-sol.png`, `assets/ciop-tv-cena-nublado.png`, `assets/ciop-tv-cena-chuva.png`, `assets/ciop-tv-cena-tempestade.png`, `assets/ciop-tv-cena-neblina.png`, `assets/ciop-tv-cena-noite.png`, `assets/ciop-tv-cena-noite-nublada.png`, `assets/ciop-tv-cena-noite-chuva.png`. A composição publicada continua em `assets/ciop-tv-clima-1920.png`.
 
 ## Cenário
 
@@ -52,3 +52,5 @@ A animação só corre com a previsão ativa no ciclo (`modo-clima`). Nas outras
 Falha de leitura conserva o último cenário e marca a data da última leitura. Se nunca houve leitura, o fundo é o neutro, sem sol.
 
 Prévia local, sem trocar os números: `_preview-clima-cenas.html` ou `?tela=tempo&cena=` com `sol`, `parcial`, `nublado`, `garoa`, `chuva`, `tempestade`, `vento`, `neblina`, `noite`, `noite-nublada`, `noite-chuva`, `noite-vento`, `noite-tempestade`, `neutro`.
+
+Os desenhos são CSS e SVG próprios do portal, sem foto, vídeo ou áudio. A chuva usa poucas gotas (8 na garoa, 14 na chuva, 16 na tempestade). O clarear da tempestade é um véu de 12 s, sem raio. `prefers-reduced-motion` e a saída do ciclo pausam o movimento e deixam o mesmo desenho parado.
