@@ -25,7 +25,7 @@ Tamanhos típicos: header ~52×168; sidebar da home ~58×156; login `min(380px, 
 
 **Não aplicar** a troca em: CIOP TV (`logo-ciop.png`, `LOGO_TCGL.png`, `.kiosk-logo`, `.campanha-logo`), empresas, documentos (`titulo-portal-ciop*`, `.pdf-sheet-top`, `.print-only`, `[data-print-brand]`).
 
-Favicon da aba: `assets/img/portal-favicon.png` e `portal-favicon-192.png` — recorte quadrado legado; não misturar com o lockup horizontal.
+Favicon da aba: ônibus frontal (`assets/img/portal-favicon.png` 32×32, `portal-favicon-192.png` 192×192, original `portal-favicon-source.png`). Não misturar com o lockup horizontal da marca.
 
 ## Fotografia de fundo
 

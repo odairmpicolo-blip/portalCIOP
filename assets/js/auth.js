@@ -500,13 +500,13 @@ function garantirPwa() {
     fav.rel = "icon";
     fav.type = "image/png";
     fav.sizes = "32x32";
-    fav.href = portalPath("assets/img/portal-favicon.png?v=20261026fav1");
+    fav.href = portalPath("assets/img/portal-favicon.png?v=20261029fav2");
     document.head.appendChild(fav);
   }
   if (!document.querySelector("link[rel=\"apple-touch-icon\"]")) {
     const icon = document.createElement("link");
     icon.rel = "apple-touch-icon";
-    icon.href = portalPath("assets/img/portal-favicon-192.png?v=20261026fav1");
+    icon.href = portalPath("assets/img/portal-favicon-192.png?v=20261029fav2");
     document.head.appendChild(icon);
   }
 }

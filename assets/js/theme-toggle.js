@@ -132,8 +132,8 @@ function dkIsKioskPage() {
 (function dkFavicon() {
   if (document.querySelector('link[rel="icon"], link[rel="shortcut icon"]')) return;
   var current = document.currentScript;
-  var href = "assets/img/portal-favicon.png?v=20261026fav1";
-  if (current && current.src) href = new URL("../img/portal-favicon.png?v=20261026fav1", current.src).href;
+  var href = "assets/img/portal-favicon.png?v=20261029fav2";
+  if (current && current.src) href = new URL("../img/portal-favicon.png?v=20261029fav2", current.src).href;
   var link = document.createElement("link");
   link.rel = "icon";
   link.type = "image/png";

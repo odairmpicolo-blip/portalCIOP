@@ -6,7 +6,7 @@ Passo a passo para um módulo no **portal clássico**. Não vale para `portal-ap
 
 | Peça | Caminho |
 | --- | --- |
-| Boot + tema | `assets/js/theme-toggle.js?v=20261029logo1` no **`<head>`** |
+| Boot + tema | `assets/js/theme-toggle.js?v=20261029fav2` no **`<head>`** |
 | Tokens (opcional explícito) | `assets/css/portal-tokens.css?v=20261026liquid1` — o DS também injeta |
 | Marca | `img.portal-brand-art` |
 | Auth | `assets/js/auth.js` (sessão, overlay, permissões, voltar Portal) |
@@ -65,9 +65,9 @@ Colocar em `pages/meu-modulo.html`. Caminhos `../assets/…`.
   <script>document.documentElement.classList.add("portal-auth-pending");</script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/png" href="../assets/img/portal-favicon.png?v=20261026fav1">
+  <link rel="icon" type="image/png" href="../assets/img/portal-favicon.png?v=20261029fav2">
   <title>Meu módulo - Portal CIOP</title>
-  <script src="../assets/js/theme-toggle.js?v=20261029logo1"></script>
+  <script src="../assets/js/theme-toggle.js?v=20261029fav2"></script>
 </head>
 <body>
   <header class="header">
