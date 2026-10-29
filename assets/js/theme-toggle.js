@@ -98,7 +98,35 @@ function dkIsKioskPage() {
     html.classList.add(dark ? "dk-dark" : "dk-light");
     html.setAttribute("data-dk-pref", stored);
     html.setAttribute("data-dk-resolved", dark ? "dark" : "light");
+    var script = document.currentScript;
+    var imgBase = script && script.src ? new URL("../img/", script.src).href : "assets/img/";
+    ["portal-ciop-claro.png", "portal-ciop-escuro.png"].forEach(function (file) {
+      var link = document.createElement("link");
+      link.rel = "preload";
+      link.as = "image";
+      link.href = imgBase + file + "?v=20261029logo1";
+      document.head.appendChild(link);
+    });
   } catch (e) {}
+})();
+
+(function dkWatchBrand() {
+  if (dkIsKioskPage()) return;
+  function scan(node) {
+    if (!node) return;
+    if (node.nodeName === "IMG") dkBrandApplyImg(node);
+    if (!node.querySelectorAll) return;
+    var list = node.querySelectorAll("img.portal-brand-art, img.home-logo, img.login-corner-logo");
+    for (var i = 0; i < list.length; i++) dkBrandApplyImg(list[i]);
+  }
+  if (document.body) scan(document);
+  var mo = new MutationObserver(function (records) {
+    for (var i = 0; i < records.length; i++) {
+      var nodes = records[i].addedNodes;
+      for (var j = 0; j < nodes.length; j++) scan(nodes[j]);
+    }
+  });
+  mo.observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 (function dkFavicon() {
@@ -115,8 +143,9 @@ function dkIsKioskPage() {
 })();
 
 var DK_KEY = "dk-theme";
-var DK_BRAND_LIGHT = "logomarca-portalciop-tcgl-claro.png";
-var DK_BRAND_DARK = "portal-logo-clean-dark.png";
+var DK_BRAND_LIGHT = "portal-ciop-claro.png";
+var DK_BRAND_DARK = "portal-ciop-escuro.png";
+var DK_BRAND_VER = "v=20261029logo1";
 var DK_AUTO_TIMER = null;
 
 function dkNormalize(pref) {
@@ -151,32 +180,57 @@ function dkTcglPath(img, fileName) {
     var resolved = img.currentSrc || img.src || img.getAttribute("src") || "";
     var u = new URL(resolved, location.href);
     u.pathname = u.pathname.replace(/[^/]+$/, fileName);
-    u.search = "v=20261026chrome2";
+    u.search = DK_BRAND_VER;
     return u.href;
   } catch (e) {
     var src = img.getAttribute("src") || "";
-    if (src.indexOf("../assets/") !== -1) return "../assets/img/" + fileName + "?v=20261026chrome2";
-    if (src.charAt(0) === "/" || src.indexOf("http") === 0) return src.replace(/[^/]+(\?.*)?$/, fileName + "?v=20261026chrome2");
-    if (src.indexOf("assets/") !== -1) return "assets/img/" + fileName + "?v=20261026chrome2";
-    return fileName;
+    if (src.indexOf("../assets/") !== -1) return "../assets/img/" + fileName + "?" + DK_BRAND_VER;
+    if (src.charAt(0) === "/" || src.indexOf("http") === 0) return src.replace(/[^/]+(\?.*)?$/, fileName + "?" + DK_BRAND_VER);
+    if (src.indexOf("assets/") !== -1) return "assets/img/" + fileName + "?" + DK_BRAND_VER;
+    return fileName + "?" + DK_BRAND_VER;
   }
 }
 
-function dkSwapBrandLogos(isDark) {
-  var fileName = isDark ? DK_BRAND_DARK : DK_BRAND_LIGHT;
-  var imgs = document.querySelectorAll(
-    "img.portal-brand-art, img.home-logo, img[src*='portal-logo-clean-'], img[src*='logomarca-portalciop-tcgl']"
-  );
-  for (var i = 0; i < imgs.length; i++) {
-    var img = imgs[i];
-    var src = img.getAttribute("src") || "";
-    if (img.classList.contains("portal-loading-logo")) continue;
-    if (img.closest(".portal-loading-overlay, #portalLoading, .portal-loading")) continue;
-    if (/titulo-portal-ciop|campanha|cartao-aniversario|print-only|pdf-/.test(src)) continue;
-    if (img.closest(".pdf-sheet-top, .pdf-doc-brand, .pdf-print, .print-only, [data-print-brand]")) continue;
-    img.setAttribute("src", dkTcglPath(img, fileName));
-    img.setAttribute("alt", "Portal CIOP TCGL Operações");
+function dkBrandSkip(img) {
+  if (!img || img.nodeName !== "IMG") return true;
+  if (dkIsKioskPage()) return true;
+  if (img.classList.contains("portal-loading-logo") || img.classList.contains("ciop-intro-logo-light") || img.classList.contains("ciop-intro-logo-dark")) return true;
+  if (img.classList.contains("logo-ciop") || img.classList.contains("logo-tcgl") || img.classList.contains("kiosk-logo") || img.classList.contains("campanha-logo") || img.classList.contains("logo-big") || img.classList.contains("scene-ciop")) return true;
+  if (img.closest("#kiosk, .kiosk, .portal-loading-overlay, #portalLoading, .portal-loading")) return true;
+  if (img.closest(".pdf-sheet-top, .pdf-doc-brand, .pdf-print, .print-only, [data-print-brand]")) return true;
+  var src = img.getAttribute("src") || "";
+  if (/titulo-portal-ciop|campanha|cartao-aniversario|print-only|pdf-|logo-ciop|LOGO_TCGL|logo-tcgl/i.test(src)) return true;
+  return false;
+}
+
+function dkBrandIsPortal(img) {
+  if (img.classList.contains("portal-brand-art") || img.classList.contains("home-logo") || img.classList.contains("login-corner-logo")) return true;
+  var src = img.getAttribute("src") || "";
+  return /portal-ciop-claro|portal-ciop-escuro|portal-logo-clean-|logomarca-portalciop-tcgl/.test(src);
+}
+
+function dkBrandApplyImg(img) {
+  if (dkBrandSkip(img) || !dkBrandIsPortal(img)) return;
+  var fileName = document.documentElement.classList.contains("dk-dark") ? DK_BRAND_DARK : DK_BRAND_LIGHT;
+  var href = img.getAttribute("src") || img.src || "";
+  if (href.indexOf(fileName) !== -1 && href.indexOf("20261029logo1") !== -1) {
+    if (!img.getAttribute("width")) img.setAttribute("width", "1024");
+    if (!img.getAttribute("height")) img.setAttribute("height", "349");
+    return;
   }
+  var next = dkTcglPath(img, fileName);
+  img.setAttribute("src", next);
+  img.src = next;
+  img.setAttribute("alt", "Portal CIOP TCGL Operações");
+  img.setAttribute("width", "1024");
+  img.setAttribute("height", "349");
+}
+
+function dkSwapBrandLogos() {
+  var imgs = document.querySelectorAll(
+    "img.portal-brand-art, img.home-logo, img.login-corner-logo, img[src*='portal-ciop-'], img[src*='portal-logo-clean-'], img[src*='logomarca-portalciop-tcgl']"
+  );
+  for (var i = 0; i < imgs.length; i++) dkBrandApplyImg(imgs[i]);
 }
 
 function dkSwapTcglLogos(isDark) {
@@ -300,7 +354,7 @@ window.dkSwapBrandLogos = dkSwapBrandLogos;
   }
   if (!document.querySelector('script[data-portal-design-system]')) {
     var script = document.createElement('script');
-    script.src = new URL('portal-design-system.js?v=20261028audit4', current.src).href;
+    script.src = new URL('portal-design-system.js?v=20261029logo1', current.src).href;
     script.dataset.portalDesignSystem = '1';
     script.defer = true;
     document.head.appendChild(script);

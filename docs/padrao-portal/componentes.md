@@ -24,7 +24,7 @@ O JS marca `html#portal-page-glass.portal-glass-system` e `body#portal-page-cont
 
 ## Cabeçalho e sessão
 
-`.header` em flex, min-height ~72 px, logo `.portal-brand-art` (max 180×54), `.title-wrap` no centro, `.header-actions` à direita.
+`.header` em flex, min-height ~72 px, logo `.portal-brand-art` (`portal-ciop-claro.png` / `portal-ciop-escuro.png`, max ~168×52, `object-fit: contain`), `.title-wrap` no centro, `.header-actions` à direita.
 
 Casco interno: `portal-shell.js` (via `theme-toggle.js`) normaliza `.header` em marca | título | `.header-actions` (sessão e extras da página). `data-portal-shell="off"` preserva cabeçalho próprio. Home e kiosk não usam este casco.
 
@@ -36,7 +36,7 @@ Voltar ao Portal: `.btn-portal` / `.portal-return` / `data-portal-voltar`. Se a 
 
 ## Menu lateral e navegação móvel
 
-**Só a home.** Painel `.home-sheet` translúcido sobre a fotografia suavizada. Sidebar fixa (`--home-side`: 204 px, 184 px ≤1200 px), vidro `--home-nav`. Logo ≤148×78, proporção preservada. Só a área atual `.is-active`. Hover, `:focus-visible` e seleção são estados distintos. Campanha compacta; indicador “sistema online” permanece, com a versão **Portal CIOP · vX.Y.Z** logo abaixo (`meta[name=portal-ciop-version]`, igual a `package.json`; hoje `1.0.0`). No celular a versão fica no drawer, não no dock. A home não tem rodapé de copyright. Abaixo de 900 px: drawer + dock inferior (`.home-dock`, padding inferior `108px + env(safe-area-inset-bottom)`). Saudação compacta “Olá, Nome”; subtítulo logo abaixo; módulos, usuários e avisos em linha discreta à **direita** no desktop (abaixo em telas estreitas), com singular/plural. Nomes curtos iguais no menu, no dock e no título da área: **Início**, **Operação**, **Indicadores**, **Relatórios**, **Painéis de TV**.
+**Só a home.** Painel `.home-sheet` translúcido sobre a fotografia suavizada. Sidebar fixa (`--home-side`: 204 px, 184 px ≤1200 px), vidro `--home-nav`. Logo `.home-logo` ≤156×58, proporção 1024/349. Só a área atual `.is-active`. Hover, `:focus-visible` e seleção são estados distintos. Campanha compacta; indicador “sistema online” permanece, com a versão **Portal CIOP · vX.Y.Z** logo abaixo (`meta[name=portal-ciop-version]`, igual a `package.json`; hoje `1.0.0`). No celular a versão fica no drawer, não no dock. A home não tem rodapé de copyright. Abaixo de 900 px: drawer + dock inferior (`.home-dock`, padding inferior `108px + env(safe-area-inset-bottom)`). Saudação compacta “Olá, Nome”; subtítulo logo abaixo; módulos, usuários e avisos em linha discreta à **direita** no desktop (abaixo em telas estreitas), com singular/plural. Nomes curtos iguais no menu, no dock e no título da área: **Início**, **Operação**, **Indicadores**, **Relatórios**, **Painéis de TV**.
 
 Hamburger `.menu-toggle` 44×44, SVG de três linhas. Overlay `#overlay`.
 

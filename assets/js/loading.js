@@ -2,8 +2,8 @@
   const ID = "portalLoadingOverlay";
   const STYLE_ID = "portalLoadingStyle";
   let hideTimer = null;
-  const logoLight = new URL("../img/portal-logo-clean-light.png", document.currentScript.src).href;
-  const logoDark = new URL("../img/portal-logo-clean-dark.png", document.currentScript.src).href;
+  const logoLight = new URL("../img/portal-ciop-claro.png?v=20261029logo1", document.currentScript.src).href;
+  const logoDark = new URL("../img/portal-ciop-escuro.png?v=20261029logo1", document.currentScript.src).href;
 
   function ensureStyle() {
     let style = document.getElementById(STYLE_ID);
@@ -39,8 +39,8 @@
   function buildMarkup() {
     return `<div class="portal-loading-box">
  <div class="portal-loading-art" aria-hidden="true">
-  <img class="portal-loading-logo portal-loading-logo-light" src="${logoLight}" alt="" decoding="async" onerror="this.onerror=null;this.src=this.src.replace('portal-logo-clean-light.png','logomarca-portalciop-tcgl-claro.png')">
-  <img class="portal-loading-logo portal-loading-logo-dark" src="${logoDark}" alt="" decoding="async" onerror="this.onerror=null;this.src=this.src.replace('portal-logo-clean-dark.png','logomarca-portalciop-tcgl-escuro.png')">
+  <img class="portal-loading-logo portal-loading-logo-light" src="${logoLight}" width="1024" height="349" alt="" decoding="async">
+  <img class="portal-loading-logo portal-loading-logo-dark" src="${logoDark}" width="1024" height="349" alt="" decoding="async">
  </div>
  <p class="portal-loading-title"></p>
  <p class="portal-loading-sub">Só um instante. Estamos preparando tudo.</p>

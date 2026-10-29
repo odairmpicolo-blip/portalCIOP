@@ -57,6 +57,8 @@ Ver canvas interno de validação e o relatório da rodada: foto; vidro; contras
 4. Anonimizar e-mail real; preferir linha/prefixo fictícios.
 5. Guardar PNG fora do Git se contiver dado operacional.
 
+Logos (2026-10-29, **local** `portal-teste`, ainda não republicar no domínio até pedido): `assets/img/portal-ciop-claro.png` / `portal-ciop-escuro.png`. Troca por tema efetivo (claro, escuro, auto) em `theme-toggle.js` antes da pintura. TV/empresas/documentos inalterados.
+
 Colisões de filtros (2026-10-29): date/time com `min-width: 12.5rem` e `padding-right: 2.5rem`; wrap compartilhado; “Só produtivas” fora do campo Veículo; Liberação thead 11 px + scroll. Prévia sem auth: [`preview-colisoes-antes.html`](preview-colisoes-antes.html) / [`preview-colisoes-depois.html`](preview-colisoes-depois.html). PNGs em [`assets/`](assets/README.md) (`filtros-antes-1440-claro.png`, `filtros-depois-{390,1024,1440}-{claro,escuro}.png`, `filtros-depois-tv-1920-claro.png`). Painel CIOP 1920 após dados: `scrollWidth === 1920`, sem overflow X.
 
 Capturas versionadas (catálogo, dados fictícios): [`assets/catalogo-claro.png`](assets/catalogo-claro.png), [`assets/catalogo-escuro.png`](assets/catalogo-escuro.png), [`assets/catalogo-kpis-claro.png`](assets/catalogo-kpis-claro.png).

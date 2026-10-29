@@ -6,7 +6,7 @@ Passo a passo para um módulo no **portal clássico**. Não vale para `portal-ap
 
 | Peça | Caminho |
 | --- | --- |
-| Boot + tema | `assets/js/theme-toggle.js?v=20261027auto1` no **`<head>`** |
+| Boot + tema | `assets/js/theme-toggle.js?v=20261029logo1` no **`<head>`** |
 | Tokens (opcional explícito) | `assets/css/portal-tokens.css?v=20261026liquid1` — o DS também injeta |
 | Marca | `img.portal-brand-art` |
 | Auth | `assets/js/auth.js` (sessão, overlay, permissões, voltar Portal) |
@@ -67,7 +67,7 @@ Colocar em `pages/meu-modulo.html`. Caminhos `../assets/…`.
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/png" href="../assets/img/portal-favicon.png?v=20261026fav1">
   <title>Meu módulo - Portal CIOP</title>
-  <script src="../assets/js/theme-toggle.js?v=20261027auto1"></script>
+  <script src="../assets/js/theme-toggle.js?v=20261029logo1"></script>
 </head>
 <body>
   <header class="header">
@@ -77,8 +77,8 @@ Colocar em `pages/meu-modulo.html`. Caminhos `../assets/…`.
       <p class="subtitle">Descrição em uma linha</p>
     </div>
     <div class="header-actions">
-      <img class="portal-brand-art" src="../assets/img/portal-logo-clean-light.png"
-           alt="Portal CIOP TCGL Operações" height="54">
+      <img class="portal-brand-art" src="../assets/img/portal-ciop-claro.png?v=20261029logo1"
+           width="1024" height="349" alt="Portal CIOP TCGL Operações">
     </div>
   </header>
   <main class="container">

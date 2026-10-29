@@ -19,7 +19,7 @@
     tokens.dataset.portalTokens = '1';
     document.head.appendChild(tokens);
   }
-  style.href = new URL('assets/css/portal-design-system.css?v=20261029filt1', root).href;
+  style.href = new URL('assets/css/portal-design-system.css?v=20261029logo1', root).href;
   style.dataset.portalDesign = '1';
   document.head.appendChild(style);
   if (!document.querySelector('link[data-portal-page-contrast]')) {
@@ -31,7 +31,7 @@
   }
   function brand() {
     var dark = html.classList.contains('dk-dark') || kiosk;
-    var src = new URL('assets/img/' + (dark ? 'portal-logo-clean-dark.png' : 'logomarca-portalciop-tcgl-claro.png'), root).href;
+    var src = new URL('assets/img/' + (dark ? 'portal-ciop-escuro.png' : 'portal-ciop-claro.png') + '?v=20261029logo1', root).href;
     document.querySelectorAll('img.portal-brand-art').forEach(function (img) {
       if (img.src !== src) img.src = src;
     });

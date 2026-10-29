@@ -18,8 +18,7 @@
   };
 
   function logoHome() {
-    var img = document.querySelector('.home-logo');
-    if (img) img.src = 'assets/img/portal-logo-clean-' + (document.documentElement.classList.contains('dk-dark') ? 'dark' : 'light') + '.png';
+    if (window.dkSwapBrandLogos) window.dkSwapBrandLogos();
   }
 
   function primeiroNome() {
@@ -163,7 +162,7 @@
     var brand = document.createElement("div");
     brand.className = "home-brand";
     brand.innerHTML =
-      '<img class="home-logo" src="assets/img/portal-logo-clean-light.png" alt="Portal CIOP TCGL Operações">' +
+      '<img class="home-logo" src="assets/img/portal-ciop-claro.png?v=20261029logo1" width="1024" height="349" alt="Portal CIOP TCGL Operações">' +
       '<span class="home-brand-copy"><b>Portal CIOP</b><small>TCGL · Operações</small></span>';
     var nav = document.createElement("nav");
     nav.className = "home-nav";

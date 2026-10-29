@@ -108,8 +108,8 @@ function mostrarCarregando(texto = "Carregando portal") {
     style.id = "portalLoadingStyle";
     document.head.appendChild(style);
   }
-  const logoLight = new URL("../img/portal-logo-clean-light.png", import.meta.url).href;
-  const logoDark = new URL("../img/portal-logo-clean-dark.png", import.meta.url).href;
+  const logoLight = new URL("../img/portal-ciop-claro.png?v=20261029logo1", import.meta.url).href;
+  const logoDark = new URL("../img/portal-ciop-escuro.png?v=20261029logo1", import.meta.url).href;
   style.textContent = `
 .portal-loading-overlay{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:20px;box-sizing:border-box;background:rgba(8,24,44,.16);backdrop-filter:blur(8px) saturate(115%);-webkit-backdrop-filter:blur(8px) saturate(115%);transition:opacity .28s ease,visibility .28s ease}
 .portal-loading-overlay.hide{opacity:0;visibility:hidden;pointer-events:none}
@@ -139,8 +139,8 @@ function mostrarCarregando(texto = "Carregando portal") {
   overlay.setAttribute("aria-live", "polite");
   overlay.innerHTML = `<div class="portal-loading-box">
  <div class="portal-loading-art" aria-hidden="true">
-  <img class="portal-loading-logo portal-loading-logo-light" src="${logoLight}" alt="" decoding="async" onerror="this.onerror=null;this.src=this.src.replace('portal-logo-clean-light.png','logomarca-portalciop-tcgl-claro.png')">
-  <img class="portal-loading-logo portal-loading-logo-dark" src="${logoDark}" alt="" decoding="async" onerror="this.onerror=null;this.src=this.src.replace('portal-logo-clean-dark.png','logomarca-portalciop-tcgl-escuro.png')">
+  <img class="portal-loading-logo portal-loading-logo-light" src="${logoLight}" width="1024" height="349" alt="" decoding="async">
+  <img class="portal-loading-logo portal-loading-logo-dark" src="${logoDark}" width="1024" height="349" alt="" decoding="async">
  </div>
  <p class="portal-loading-title"></p>
  <p class="portal-loading-sub">Só um instante. Estamos preparando tudo.</p>

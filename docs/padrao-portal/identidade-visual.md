@@ -4,24 +4,28 @@ Fonte: `assets/img/`, `assets/css/portal-tokens.css`, `assets/js/theme-toggle.js
 
 ## Logos CIOP / TCGL
 
-Arquivos oficiais — **não redesenhar**, não sobrepor outra marca, não aplicar filtro CSS:
+Arquivos oficiais — **não redesenhar**, não recolorir, **não aplicar** `filter` no PNG. Sem emblema lateral da TCGL; o texto **TCGL • OPERAÇÕES** já está na arte.
 
-| Tema | Arquivo |
-| --- | --- |
-| Claro | `assets/img/portal-logo-clean-light.png` |
-| Escuro | `assets/img/portal-logo-clean-dark.png` |
+| Tema efetivo | Arquivo | Proporção |
+| --- | --- | --- |
+| Claro | `assets/img/portal-ciop-claro.png` | 1024×349, transparência |
+| Escuro | `assets/img/portal-ciop-escuro.png` | 1024×352, transparência |
 
-Uso: `img.portal-brand-art` (páginas) e `img.home-logo` (home). O texto “TCGL · Operações” já está no PNG. A classe `.portal-brand-meta` fica **oculta** no design system.
+Cache: `?v=20261029logo1`. `width="1024"` `height="349"` + `object-fit: contain`.
 
-Favicon da aba: recorte quadrado do ônibus da marca oficial sobre `#06245c` (`assets/img/portal-favicon.png` e `portal-favicon-192.png`). `index.html` / `login.html` apontam no `<head>`; as internas recebem o mesmo via `theme-toggle.js` e `auth.js`. Não redesenhar o traço.
+Uso: `img.portal-brand-art` (internas e login), `img.home-logo` (lateral da home). `.portal-brand-meta` permanece **oculta** — não duplicar o subtítulo.
 
-Quem troca o arquivo no claro/escuro: `dkSwapBrandLogos` em `theme-toggle.js` e o `brand()` de `portal-design-system.js`.
+Quem escolhe o arquivo: `theme-toggle.js` (`dkEarlyBoot` aplica `dk-light`/`dk-dark`/`data-dk-resolved` **antes da pintura**, inclusive Auto = sol em Londrina; `dkWatchBrand` troca o `src` assim que o `<img>` entra no DOM). `dkSwapBrandLogos` / `portal-design-system.js` / `portal-brand.js` usam os mesmos nomes.
+
+Loading e novidades: dois PNGs (claro + escuro) e CSS `.dk-dark` mostra só o par correspondente — sem flash.
+
+Tamanhos típicos: header ~52×168; sidebar da home ~58×156; login `min(380px, 78vw)`; celular header ~36×180.
 
 `alt` padrão: `Portal CIOP TCGL Operações`.
 
-**Não aplicar** a troca em: `titulo-portal-ciop*`, artes de campanha, cartão de aniversário, `.pdf-sheet-top`, `.print-only`, `[data-print-brand]`.
+**Não aplicar** a troca em: CIOP TV (`logo-ciop.png`, `LOGO_TCGL.png`, `.kiosk-logo`, `.campanha-logo`), empresas, documentos (`titulo-portal-ciop*`, `.pdf-sheet-top`, `.print-only`, `[data-print-brand]`).
 
-Fallback do overlay de carregamento (se o PNG limpo 404): `logomarca-portalciop-tcgl-claro.png` / `…-escuro.png` (`auth.js`, `loading.js`).
+Favicon da aba: `assets/img/portal-favicon.png` e `portal-favicon-192.png` — recorte quadrado legado; não misturar com o lockup horizontal.
 
 ## Fotografia de fundo
 

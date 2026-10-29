@@ -2,6 +2,8 @@
 
 Imagens do [catálogo](../catalogo.html) com **dados fictícios** (linha 999, prefixo 0000). Sem e-mail real, sem KPI operacional.
 
+Marca oficial (arquivos em `assets/img/`): `portal-ciop-claro.png` e `portal-ciop-escuro.png` — regras em [identidade-visual.md](../identidade-visual.md). Prévia: [`logo-portal-claro-1440.png`](logo-portal-claro-1440.png), [`logo-portal-escuro-1440.png`](logo-portal-escuro-1440.png).
+
 | Arquivo | Conteúdo |
 | --- | --- |
 | `catalogo-claro.png` | Chrome, vidro e foto no tema claro |

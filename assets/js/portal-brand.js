@@ -7,15 +7,15 @@
 
   function brandImgSrc() {
     var dark = document.documentElement.classList.contains("dk-dark");
-    var file = dark ? "portal-logo-clean-dark.png" : "portal-logo-clean-light.png";
+    var file = dark ? "portal-ciop-escuro.png" : "portal-ciop-claro.png";
     return window.location.pathname.includes("/pages/")
-      ? "../assets/img/" + file + "?v=20261026chrome1"
-      : "assets/img/" + file + "?v=20261026chrome1";
+      ? "../assets/img/" + file + "?v=20261029logo1"
+      : "assets/img/" + file + "?v=20261029logo1";
   }
 
   function brandInnerHtml() {
     return (
-      '<img class="portal-brand-art" src="' + brandImgSrc() + '" alt="Portal CIOP TCGL Operações">'
+      '<img class="portal-brand-art" src="' + brandImgSrc() + '" width="1024" height="349" alt="Portal CIOP TCGL Operações">'
     );
   }
 

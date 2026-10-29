@@ -46,8 +46,8 @@ function ensure() {
   dialog.setAttribute('aria-labelledby', 'portalNovidadesTitulo');
   dialog.setAttribute('aria-describedby', 'portalNovidadesTexto');
   dialog.innerHTML = '<header class="ciop-intro-header"><span>NOVIDADES DO PORTAL</span><button type="button" class="ciop-intro-skip">Fechar apresentação <span aria-hidden="true">×</span></button></header><div class="ciop-intro-art" aria-hidden="true"><img class="ciop-intro-logo-light" alt=""><img class="ciop-intro-logo-dark" alt=""><div class="ciop-intro-symbol"></div><div class="ciop-intro-orbit"></div></div><div class="ciop-intro-copy" aria-live="polite"><p class="ciop-intro-step"></p><h2 id="portalNovidadesTitulo"></h2><p class="ciop-intro-lead"></p><p id="portalNovidadesTexto"></p></div><footer><div class="ciop-intro-dots" role="group" aria-label="Etapas da apresentação"></div><div class="ciop-intro-actions"><button type="button" class="ciop-intro-back">Voltar</button><button type="button" class="ciop-intro-next">Continuar</button></div></footer>';
-  dialog.querySelector('.ciop-intro-logo-light').src = new URL('assets/img/portal-logo-clean-light.png', root).href;
-  dialog.querySelector('.ciop-intro-logo-dark').src = new URL('assets/img/portal-logo-clean-dark.png', root).href;
+  dialog.querySelector('.ciop-intro-logo-light').src = new URL('assets/img/portal-ciop-claro.png?v=20261029logo1', root).href;
+  dialog.querySelector('.ciop-intro-logo-dark').src = new URL('assets/img/portal-ciop-escuro.png?v=20261029logo1', root).href;
   slides.forEach((item, index) => {
     const button = document.createElement('button'); button.type = 'button';
     button.setAttribute('aria-label', 'Etapa ' + (index + 1) + ': ' + item[0]);

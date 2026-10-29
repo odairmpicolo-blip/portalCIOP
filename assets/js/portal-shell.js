@@ -51,7 +51,7 @@
   header.innerHTML =
     '<div class="portal-brand-lockup">' +
       '<a class="portal-brand-mark" href="' + base + 'index.html" aria-label="Portal CIOP TCGL Operações">' +
-        '<img class="portal-brand-art" src="' + base + 'assets/img/logomarca-portalciop-tcgl-claro.png" alt="Portal CIOP">' +
+        '<img class="portal-brand-art" src="' + base + 'assets/img/portal-ciop-claro.png?v=20261029logo1" width="1024" height="349" alt="Portal CIOP TCGL Operações">' +
         '<span class="portal-brand-meta">TCGL · Operações</span>' +
       "</a>" +
       '<a href="https://www.tcgrandelondrina.com.br/" target="_blank" rel="noopener" class="logo-tcgl-link" aria-label="Site TCGL">' +
