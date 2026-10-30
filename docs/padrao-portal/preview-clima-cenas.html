@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prévia de cenários — CIOP TV</title>
+<style>
+  body{margin:0;font:16px/1.45 system-ui,sans-serif;background:#0e1726;color:#f4f7fb;padding:24px}
+  h1{font-size:22px;margin:0 0 8px}
+  p{max-width:68ch;color:#d5e2f0}
+  table{border-collapse:collapse;width:100%;max-width:980px;margin-top:16px}
+  th,td{border-bottom:1px solid rgba(255,255,255,.16);text-align:left;padding:8px 10px;font-variant-numeric:tabular-nums}
+  a{color:#93c5fd}
+  code{font-size:.92em}
+</style>
+</head>
+<body>
+<h1>Prévia de desenvolvimento — cenários da CIOP TV</h1>
+<p>Esta página só confere a decisão de <code>portalEscolherCena</code>. Ela não substitui a Open-Meteo. Na TV, <code>?tela=tempo&amp;cena=</code> troca o céu e o ícone principal; temperaturas, horas e dias continuam os dados reais. Sem <code>cena</code>, a tela usa a previsão.</p>
+<p id="resumo">Carregando a função…</p>
+<table id="grade">
+  <thead><tr><th>Cena</th><th>Código</th><th>Dia</th><th>Vento</th><th>Grupo</th><th>Período</th><th>Classe</th><th>TV</th></tr></thead>
+  <tbody></tbody>
+</table>
+<script src="../../assets/js/portal-clima-cena.js?v=20261030cena4"></script>
+<script>
+(function () {
+  var casos = [
+    ["sol", 0, true, 12, 20],
+    ["parcial", 2, true, 10, 20],
+    ["nublado", 3, true, 8, 15],
+    ["garoa", 53, true, 12, 20],
+    ["garoa-vento", 53, true, 48, 70],
+    ["chuva", 63, true, 14, 22],
+    ["chuva-vento", 63, true, 48, 70],
+    ["tempestade", 95, true, 48, 80],
+    ["vento", 1, true, 48, 70],
+    ["neblina", 45, true, 6, 10],
+    ["noite", 0, false, 8, 12],
+    ["noite-parcial", 2, false, 8, 12],
+    ["noite-nublada", 3, false, 8, 12],
+    ["noite-garoa", 53, false, 10, 16],
+    ["noite-chuva", 63, false, 12, 18],
+    ["noite-chuva-vento", 63, false, 48, 70],
+    ["noite-vento", 1, false, 46, 62],
+    ["noite-neblina", 45, false, 8, 12],
+    ["noite-tempestade", 95, false, 20, 30],
+    ["neutro", null, true, 0, 0]
+  ];
+  var tb = document.querySelector("#grade tbody");
+  if (!window.portalEscolherCena) {
+    document.getElementById("resumo").textContent = "portalEscolherCena não carregou.";
+    return;
+  }
+  casos.forEach(function (c) {
+    var cena = c[1] == null
+      ? window.portalEscolherCena({ neutro: true })
+      : window.portalEscolherCena({ code: c[1], isDay: c[2], vento: c[3], rajada: c[4] });
+    var classe = "is-" + cena.grupo + (cena.neutro ? "" : (cena.dia ? " is-day" : " is-night")) + (cena.vento ? " is-wind" : "");
+    var tr = document.createElement("tr");
+    var nome = c[0];
+    var link = "../../pages/painel-ciop.html?tela=tempo&cena=" + encodeURIComponent(nome);
+    tr.innerHTML = "<td>" + nome + "</td><td>" + (c[1] == null ? "—" : c[1]) + "</td><td>" + (c[2] ? "dia" : "noite") + "</td><td>" + c[3] + " / " + c[4] + "</td><td>" + cena.grupo + "</td><td>" + (cena.neutro ? "neutro" : (cena.dia ? "dia" : "noite")) + "</td><td><code>" + classe + "</code></td><td><a href=\"" + link + "\">abrir</a></td>";
+    tb.appendChild(tr);
+  });
+  document.getElementById("resumo").textContent = casos.length + " combinações. Chuva ou garoa com vento forte permanece chuva ou garoa. Tempestade com vento permanece tempestade.";
+})();
+</script>
+</body>
+</html>

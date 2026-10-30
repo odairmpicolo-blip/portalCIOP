@@ -252,7 +252,9 @@
       );
     }
     if (grupo === "drizzle") {
-      return '<div class="wx-sky"></div>' + nuvens + '<div class="wx-rain is-fine">' + gotas(8) + '</div><div class="wx-haze"></div>';
+      return '<div class="wx-sky"></div>' + nuvens +
+        '<div class="wx-cloud-mass c3"></div><div class="wx-cloud-soft c1"></div>' +
+        '<div class="wx-rain is-fine">' + gotas(22) + '</div><div class="wx-haze"></div>';
     }
     if (grupo === "rain") {
       return '<div class="wx-sky"></div>' + nuvens + '<div class="wx-cloud-mass c4"></div><div class="wx-rain">' + gotas(14) + '</div><div class="wx-haze"></div>';
@@ -270,15 +272,69 @@
     return '<div class="wx-sky"></div><div class="wx-cloud-mass c1"></div><div class="wx-snow"></div><div class="wx-haze"></div>';
   }
 
+  /* Uma decisão só: condição, vento e dia/noite. O vento não troca o grupo.
+     Sem flag e sem sol, a chamada antiga (só o código) continua de dia. */
+  function escolherCena(opts) {
+    opts = opts || {};
+    var code = opts.code != null ? opts.code : opts.weather_code;
+    var neutro = opts.neutro === true || code == null || code === "" || !isFinite(Number(code));
+    var grupo = neutro ? "neutral" : grupoClima(code);
+    var informado = opts.isDay !== undefined && opts.isDay !== null ? opts.isDay : opts.is_day;
+    var temFlag = flagDia(informado) !== null;
+    var temSolar = !!(opts.dates && opts.sunrises && opts.sunsets) || (opts.sunriseMs > 0 && opts.sunsetMs > 0);
+    var dia = false;
+    if (!neutro) {
+      if (!temFlag && !temSolar && opts.atMs == null && !opts.horaCheia) dia = true;
+      else dia = ehDia({
+        isDay: informado,
+        horaCheia: opts.horaCheia,
+        atMs: opts.atMs,
+        sunriseMs: opts.sunriseMs,
+        sunsetMs: opts.sunsetMs,
+        dates: opts.dates,
+        sunrises: opts.sunrises,
+        sunsets: opts.sunsets
+      });
+    }
+    var noite = !dia && !neutro;
+    var vento = !neutro && ventoForte(
+      opts.vento != null ? opts.vento : opts.wind,
+      opts.rajada != null ? opts.rajada : opts.gust
+    );
+    return {
+      grupo: grupo,
+      dia: dia,
+      noite: noite,
+      vento: vento,
+      neutro: neutro,
+      phase: noite ? faseLua(opts.atMs) : null
+    };
+  }
+
   function marcarCenaClima(code, fxId, isDay, extras) {
     extras = extras || {};
+    var cena = escolherCena({
+      code: code,
+      isDay: isDay,
+      is_day: extras.is_day,
+      horaCheia: extras.horaCheia,
+      atMs: extras.atMs,
+      sunriseMs: extras.sunriseMs,
+      sunsetMs: extras.sunsetMs,
+      dates: extras.dates,
+      sunrises: extras.sunrises,
+      sunsets: extras.sunsets,
+      vento: extras.vento != null ? extras.vento : extras.wind,
+      rajada: extras.rajada != null ? extras.rajada : extras.gust,
+      neutro: extras.neutro
+    });
     var fx = document.getElementById(fxId);
-    var neutro = extras.neutro === true || code == null || code === "" || !isFinite(Number(code));
-    var grupo = neutro ? "neutral" : grupoClima(code);
-    var dia = !neutro && isDay !== false;
-    var noite = !dia && !neutro;
-    var vento = !neutro && ventoForte(extras.vento != null ? extras.vento : extras.wind, extras.rajada != null ? extras.rajada : extras.gust);
-    var phase = noite ? faseLua(extras.atMs) : null;
+    var neutro = cena.neutro;
+    var grupo = cena.grupo;
+    var dia = cena.dia;
+    var noite = cena.noite;
+    var vento = cena.vento;
+    var phase = cena.phase;
     var scene = fx && (fx.closest(".wx") || fx.closest(".tv-card-weather"));
     if (scene) {
       scene.setAttribute("data-wx", grupo);
@@ -333,6 +389,7 @@
   w.portalClimaFaseLua = faseLua;
   w.portalClimaParseIso = parseIsoSp;
   w.portalClimaEhDia = ehDia;
+  w.portalEscolherCena = escolherCena;
   w.portalClimaSvg = climaSvg;
   w.portalClimaIcone = iconeMarkup;
   w.portalMarcarCenaClima = marcarCenaClima;

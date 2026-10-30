@@ -96,3 +96,36 @@ CIOP TV: garoa real, nuvens, chuva e ícones por horário permanecem. Prévia lo
 - Telemetria oficial, antes do retorno ao login: “Ao vivo” no claro `#1e293b` sobre `#f8fafc`; no escuro `#f4f7fb` sobre `rgba(8,18,32,.94)`. Etiquetas no escuro `#f4f7fb`.
 - CR-0108 oficial, com os dados carregados e antes do retorno ao login: evolução com 211 pontos; faixa horária com 24 horas, `max` 100 e empilhada. Claro: eixo e legenda `#1e293b`, grade `rgba(30,41,59,.18)`. Escuro: `#f4f7fb` e `rgba(213,226,240,.28)`.
 - Autuações: o JavaScript novo está no domínio (`formatInt` sem casas e o leitor de milhar). A pintura dos gráficos com a planilha no ar não foi refeita nesta passagem porque a página pede sessão para buscar os dados. A conferência dos números `1.519`, `230.500` e `R$ 1.690.275,41` ficou no teste local.
+
+## Terceira passagem — selos e céu da TV
+
+Causa dos selos: `portal-visual.css` pinta `span` dentro de cartão e toolbar com `--portal-text`. No escuro isso é texto claro. Os fundos “sem registro” (`#fee2e2`) e “parcial / divergente” (`#fef3c7`) estavam no HTML, e o aviso laranja do CR-0108 (`.selo-velho`) também. A cor do selo perdia para a regra do `span`.
+
+Correção na origem: tokens `--portal-chip-*-{fg,bg,bd}` nos dois temas e a classe `.portal-chip`, excluída da regra do `span`. Sem uma cor branca global e sem um `!important` novo. A legenda da telemetria e o selo do CR-0108 usam essas classes. O aviso velho continua âmbar; o aviso em dia continua verde.
+
+Conferido em 127.0.0.1:8768, com o script de login ainda na página (classe `portal-auth-pending`, sem redirecionar durante a medida):
+
+| Selo | Claro | Escuro |
+| --- | --- | --- |
+| sem registro | 6,68:1 (`#9f1239` / `#ffe4e6`) | 8,51:1 (`#fecdd3` / `#5c2430`) |
+| parcial / divergente | 6,37:1 | 8,24:1 |
+| maior km | 6,49:1 | 7,52:1 |
+| menor km | 4,79:1 | 7,30:1 |
+| CR aviso velho | 6,38:1 | 9,90:1 |
+| CR aviso em dia | 6,78:1 | 8,02:1 |
+
+“Ao vivo” no claro continuou 13,98:1. Etiqueta de indicador no claro continuou `#2c2c2e`, não branco. Título do CR no escuro continuou `#f5f8ff`. O selo real da base local estava “Dados até 30/07/2026 · sem atualizar há 90 dias”. Capturas: `assets/pend-telemetria-selos-claro-20261030.png`, `assets/pend-telemetria-selos-escuro-20261030.png`, `assets/pend-telemetria-escuro-pagina-20261030.png`, `assets/pend-cr0108-selo-claro-20261030.png`, `assets/pend-cr0108-selo-escuro-20261030.png`.
+
+A faixa colorida das linhas da tabela (sem registro / divergente) continua atrás da regra compartilhada que zera o fundo da célula (`.table-wrap td` em `portal-ui.css`). O texto da célula fica no par da tabela. Isso não foi medido com linha real: o JSON local desta página estava vazio.
+
+CIOP TV, 1920×1080, sem rolagem (`scrollHeight` 1080) e sem corte dos cartões. Garoa real: `is-drizzle is-day`, “Garoa fraca”, 26 °C, umidade 56%, precipitação 1,8 mm, pressão 1009 hPa, vento 11 km/h O, pôr 18:36. Céu azul-ardósia, 22 gotas, nuvem com `filter: blur(7px)`, céu e herói com `filter: none`. Vidro `rgba(8,18,34,.74)`. Texto do cartão 14,6:1. Horas numa faixa; 18h dia e 19h noite, cada uma com o próprio instante. Colunas laterais com `space-between` e `flex-grow: 0`. `prefers-reduced-motion: reduce` deixou nuvem e gota com `animation-name: none`.
+
+`portalEscolherCena` conferido nas 20 combinações da prévia `docs/padrao-portal/preview-clima-cenas.html`. Chuva e garoa com vento forte permanecem chuva e garoa. Tempestade com vento permanece tempestade. Na TV, `?cena=chuva-vento` ficou `is-rain is-day is-wind` e o texto continuou “Garoa fraca”, 26 °C. `noite-garoa` ficou `is-drizzle is-night`. `tempestade` ficou `is-storm is-day`. Capturas: `assets/ciop-tv-garoa-1920-20261030.png`, `assets/ciop-tv-chuva-vento-1920-20261030.png`, `assets/ciop-tv-noite-garoa-1920-20261030.png`, `assets/ciop-tv-tempestade-1920-20261030.png`.
+
+Falha da API na primeira carga (Open-Meteo bloqueada): temperatura, rótulo, vento, umidade, chuva e pressão em “—”, horas vazias, cena `is-neutral`, fonte “Open-Meteo · sem atualização”. Nenhum número inventado. Ao liberar a rede e recarregar: “Garoa fraca”, 26 °C, 8 horas, `is-drizzle is-day`, fonte “Atualizado às 16:09”. A nova tentativa de 10 minutos, que conservaria a última leitura sem recarregar, não foi esperada nesta sessão.
+
+Performance, Autuações, cores de pontualidade e a fotografia do portal não foram alteradas nesta passagem.
+
+### Estado desta passagem
+
+- Implementado e conferido em 127.0.0.1:8768. Publicado no repositório de teste. www.portalciop.com.br ainda não tem estes selos nem este céu.

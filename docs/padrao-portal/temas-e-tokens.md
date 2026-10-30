@@ -56,6 +56,21 @@ Usar o token da **escrita** da superfície, não uma cor global de “texto bran
 | Dado histórico | painel | `--portal-state-historic` (`.portal-state-historic`, `.is-stale`) |
 | Documento / PDF | `--portal-paper` `#fff` | `#102c53` (mesmo no tema escuro da interface) |
 
+### Selos de estado (`.portal-chip`)
+
+Texto, fundo e borda andam juntos. A classe fica fora da regra que pinta `span` de painel em `portal-visual.css`, para o tema escuro não colocar texto claro em cima de um fundo claro. Contraste medido acima de 4,5:1 nos dois temas.
+
+| Estado | Classe | Claro (texto / fundo) | Escuro (texto / fundo) |
+| --- | --- | --- | --- |
+| Sem registro | `.portal-chip-missing` | `#9f1239` / `#ffe4e6` | `#fecdd3` / `#5c2430` |
+| Parcial | `.portal-chip-partial` | `#92400e` / `#fef3c7` | `#fde68a` / `#5a3a0c` |
+| Aviso | `.portal-chip-warn` | `#9a3412` / `#ffedd5` | `#ffedd5` / `#5c2e0a` |
+| Ok | `.portal-chip-ok` | `#065f46` / `#d1fae5` | `#bbf7d0` / `#064e3b` |
+| Maior km | `.portal-chip-max` | `#166534` / `#dcfce7` | `#bbf7d0` / `#14532d` |
+| Menor km | `.portal-chip-min` | `#0e7490` / `#cffafe` | `#a5f3fc` / `#164e63` |
+
+Tokens: `--portal-chip-{missing|partial|warn|ok|max|min}-{fg|bg|bd}` em `assets/css/portal-tokens.css`. A borda usa o sufixo `bd`.
+
 `--azul` e `--portal-fill-brand` servem a **preenchimento** de marca (botão, thead navy). Não usar `--azul` como cor de KPI no escuro.
 
 ### Seletor de modelo (`.modelo-btn` / `.modelo-item`)
