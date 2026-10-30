@@ -63,8 +63,10 @@ Capturas 1920×1080: `assets/ciop-tv-cena-vento-20261030.png`, `assets/ciop-tv-c
 
 ## Conferência no domínio oficial
 
-Em 30/10/2026, 14:44 (America/Sao_Paulo), www.portalciop.com.br/pages/performance-tempo-real.html ainda servia o HTML anterior: não continha `raioPonto`. O workflow “Deploy GitHub Pages” do commit de produção (`41100357290`) estava na fila, sem ter publicado o site.
+Às 14:46 (America/Sao_Paulo) o HTML novo já estava em www.portalciop.com.br, com o workflow do GitHub Pages ainda em espera.
 
-Telemetria, Autuações, CR-0108 e Evidências pedem login nesse domínio. Mesmo depois do deploy, a conferência visual dessas quatro páginas continua pendente sem sessão.
+Performance em 1920×1080, depois dos dados: TCGL 83/7/10, LondriSul 78/13/9, Total 80,50/10/9,50. O gráfico é linha, 24 rótulos, pontos reais das 0h às 14h e lacuna depois disso. Fuso `America/Sao_Paulo`. Captura: `assets/pend-performance-oficial-20261030.png`.
 
-A Performance e a previsão da TV só podem ser dadas como conferidas no domínio quando o HTML novo estiver no ar e a página for aberta de novo em 1920×1080, depois dos dados.
+Previsão da TV no mesmo tamanho: cena real `is-drizzle is-day`, “Garoa fraca”, 27 °C. Nuvem do slide com `filter: none`.
+
+Telemetria, Autuações, CR-0108 e Evidências pedem login nesse domínio. A conferência visual dessas quatro páginas no ar continua pendente sem sessão.
