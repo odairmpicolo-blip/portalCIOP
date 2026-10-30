@@ -354,7 +354,7 @@ window.dkSwapBrandLogos = dkSwapBrandLogos;
   }
   if (!document.querySelector('script[data-portal-design-system]')) {
     var script = document.createElement('script');
-    script.src = new URL('portal-design-system.js?v=20261029logo1', current.src).href;
+    script.src = new URL('portal-design-system.js?v=20261030pend1', current.src).href;
     script.dataset.portalDesignSystem = '1';
     script.defer = true;
     document.head.appendChild(script);

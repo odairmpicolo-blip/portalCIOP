@@ -12,8 +12,8 @@ document.documentElement.classList.add("portal-auth-pending");
 body.autuacoes-page{
   font-family:"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
 }
-.cards{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;align-items:stretch}
-.cards .card{align-items:stretch;min-height:88px;padding:14px 16px}
+.cards{grid-template-columns:repeat(5,minmax(11.5rem,1fr));gap:14px;align-items:stretch}
+.cards .card{align-items:stretch;min-height:88px;padding:14px 16px;min-width:0;overflow:visible;container-type:inline-size}
 .cards .card-title{font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:#1e293b}
 .cards .card-value{font-size:24px;font-weight:800;line-height:1.15;color:#06245c;margin-top:4px}
 .cards .card-sub{font-size:12px;font-weight:600;color:#334155;margin-top:4px}
@@ -21,7 +21,7 @@ body.autuacoes-page{
   position:relative;
   border:1px solid rgba(255,107,0,.28)!important;
   box-shadow:none;
-  overflow:hidden;
+  overflow:visible;
 }
 .card-highlight::before{
   content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
@@ -29,7 +29,7 @@ body.autuacoes-page{
 }
 .card-highlight .icon{background:linear-gradient(135deg,#d94b00,#ff7a18)!important}
 .card-highlight .card-title{color:#9a3412}
-.card-highlight .card-value{color:#ea580c;font-size:26px;font-weight:800}
+.card-highlight .card-value{color:#c2410c;font-size:clamp(12px,8cqi,22px);font-weight:800;letter-spacing:-.03em;white-space:nowrap;overflow:visible;max-width:100%}
 .card-highlight .card-sub{color:#9a3412;font-weight:700}
 .charts-layout{
   display:grid;grid-template-columns:1.25fr .9fr 1fr;gap:16px;
@@ -106,7 +106,22 @@ body.autuacoes-page{
 td.money{font-weight:700;color:#c2410c;white-space:nowrap;font-variant-numeric:tabular-nums;overflow:visible;min-width:7.5rem}
 html.dk-dark table td,html.dk-dark td.left,html.dk-dark .no-data{color:#e8eef8!important}
 html.dk-dark td.money{color:#fdba74!important}
-html.dk-dark .cards .card-value,html.dk-dark .card-title{color:#e8eef8}
+html.dk-dark body.autuacoes-page :is(.cards .card-title,.cards .card-value,.chart-box h3,.legend-name,.filter-field label,.year-chip,th){
+  color:#f4f7fb !important;-webkit-text-fill-color:#f4f7fb !important;
+}
+html.dk-dark body.autuacoes-page :is(.card-sub,.legend-row b,.card-highlight .card-sub){
+  color:#d5e2f0 !important;-webkit-text-fill-color:#d5e2f0 !important;
+}
+html.dk-dark body.autuacoes-page .card-highlight .card-title,
+html.dk-dark body.autuacoes-page .card-highlight .card-value,
+html.dk-dark body.autuacoes-page td.money{
+  color:#fdba74 !important;-webkit-text-fill-color:#fdba74 !important;
+}
+html:not(.dk-dark) body.autuacoes-page :is(.cards .card-title,.chart-box h3,.filter-field label,.year-chip){
+  color:#1e293b !important;-webkit-text-fill-color:#1e293b !important;
+}
+html:not(.dk-dark) body.autuacoes-page .cards .card-value{color:#06245c !important;-webkit-text-fill-color:#06245c !important}
+html:not(.dk-dark) body.autuacoes-page .card-highlight .card-value{color:#c2410c !important;-webkit-text-fill-color:#c2410c !important}
 .cards .card-value{overflow:visible;white-space:nowrap;font-variant-numeric:tabular-nums}
 th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
 th.sortable:hover{background:#0a2a6e}
@@ -737,7 +752,7 @@ h1 {
     border-left:4px solid var(--ciop-accent) !important;
   }
   .card-highlight .card-title{color:var(--ink-soft) !important;}
-  .card-highlight .card-value{color:var(--g-orange) !important;font-size:26px !important;}
+  .card-highlight .card-value{color:var(--g-orange) !important;font-size:clamp(13px,8cqi,24px) !important;white-space:nowrap;overflow:visible;max-width:100%}
   .card-highlight .card-sub{color:var(--ink-faint) !important;}
 
   /* ---- Gráficos ---- */
@@ -920,18 +935,38 @@ h1 {
 <link rel="stylesheet" href="../assets/css/portal-brand.css?v=20261029logo1">
 <link rel="stylesheet" href="../assets/css/portal-header.css?v=20260818head3">
 <link rel="stylesheet" href="../assets/css/portal-session.css?v=20260818open">
-<link rel="stylesheet" href="../assets/css/portal-filtros.css?v=20261029filt1">
+<link rel="stylesheet" href="../assets/css/portal-filtros.css?v=20261030pend1">
 <link rel="stylesheet" href="../assets/css/dashboard-kit.css">
     
 
-<script src="../assets/js/theme-toggle.js?v=20261029fav2"></script>
+<script src="../assets/js/theme-toggle.js?v=20261030pend1"></script>
 <script type="module" src="../assets/js/auth.js?v=20261022legivel4"></script>
 <script src="../assets/js/portal-senha.js" defer></script>
 <link rel="stylesheet" href="../assets/css/portal-glass-desktop.css?v=20260930v1">
 <link rel="stylesheet" href="../assets/css/portal-futuristic.css?v=20260930v1">
 <link rel="stylesheet" href="../assets/css/portal-tokens.css?v=20260930v1">
 <link rel="stylesheet" href="../assets/css/portal-unify.css?v=20260930v1">
-<link rel="stylesheet" href="../assets/css/portal-visual.css?v=20261026row1">
+<link rel="stylesheet" href="../assets/css/portal-visual.css?v=20261030pend1">
+<style>
+html:not(.dk-dark):not(.portal-home-2026):not(:has(#kiosk)) body.autuacoes-page:has(.header) .card-highlight .card-value:not(#kpiAdiantado):not(#kpiAtrasado){
+  color:#c2410c !important;-webkit-text-fill-color:#c2410c !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body.autuacoes-page:has(.header) :is(
+  .card-highlight .card-value, td.money, .card-sub-money
+):not(#kpiAdiantado):not(#kpiAtrasado){
+  color:#fdba74 !important;-webkit-text-fill-color:#fdba74 !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body.autuacoes-page:has(.header) :is(
+  .cards .card-title, .chart-box h3, .legend-name, .filter-field label, .year-chip, th, .cards .card-value
+){
+  color:#f4f7fb !important;-webkit-text-fill-color:#f4f7fb !important;
+}
+html.dk-dark:not(.portal-home-2026):not(:has(#kiosk)) body.autuacoes-page:has(.header) :is(
+  .card-sub, .legend-row b, .chart-empty, .no-data
+){
+  color:#d5e2f0 !important;-webkit-text-fill-color:#d5e2f0 !important;
+}
+</style>
 </head>
 <body class="autuacoes-page" data-require-perfis="Administrador,Supervisor,Gerência,Gerencia">
 <div class="body-bg-wall" aria-hidden="true"></div>

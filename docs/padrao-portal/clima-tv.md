@@ -27,7 +27,7 @@ Capturas da prévia local em 1920×1080 (29/10/2026). Os números são os da Ope
 
 ## Cenário
 
-O fundo é desenhado em CSS e SVG próprios, sem foto, vídeo ou som. A condição vem do `weather_code` WMO da Open-Meteo. O período vem de `is_day` na hora prevista, ou de `sunrise`/`sunset` em `America/Sao_Paulo` no instante atual. O tema do portal não entra.
+O fundo é desenhado em CSS e SVG próprios, sem foto, vídeo ou som. No slide da previsão do Painel CIOP as nuvens são lóbulos (vários radiais), sem o desfoque de 30 px que virava mancha. O céu é um degradê, com um brilho pequeno no alto. `?cena=` não altera temperaturas nem a lista horária. A condição vem do `weather_code` WMO da Open-Meteo. O período vem de `is_day` na hora prevista, ou de `sunrise`/`sunset` em `America/Sao_Paulo` no instante atual. O tema do portal não entra.
 
 O vento é modificador. A Open-Meteo entrega `wind_speed_10m` e `wind_gusts_10m` em **km/h** nesta URL (não há `wind_speed_unit`). Vento forte: sustentado ≥ 40 km/h ou rajada ≥ 60 km/h. Ele acelera as nuvens. Chuva e garoa com vento continuam chuva e garoa. Tempestade (95, 96, 99) não vira cena de vento.
 

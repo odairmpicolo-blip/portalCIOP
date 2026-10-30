@@ -13,7 +13,8 @@ A consulta ICV do dia costuma não ter linha de hoje (consolidação atrasada). 
 - Removido o cumprimento do painel principal até existir fonte com realizadas, programadas, empresa, período **e horário de corte**.
 - Cartões voltam a duas linhas (título + barras).
 - Área do gráfico com altura mínima e canvas absoluto no plot, para o Chart.js ter dimensões reais.
-- Série continua `type: "line"`. `spanGaps: false` — hora sem leitura fica lacuna; não se interpola nem se inventa ponto.
+- Série continua `type: "line"`, com 24 horas civis em `America/Sao_Paulo`. `spanGaps: false` — hora sem leitura fica lacuna; não se interpola nem se inventa ponto.
+- Cada hora usa a leitura real mais recente daquela hora (bucket da hora ou slot de 5 minutos). Um ponto isolado tem raio 7; com vizinho, raio 3. Sem histórico no dia, o texto explica que as barras são a leitura de agora. Falha da API não desenha ponto.
 - Estados: “Carregando…”, “Sem histórico…”, erro de consulta. O último histórico válido permanece na tela se a API falhar depois.
 - Pontualidade (mapa, 5 s) não depende de ICV. Não há fetch de cumprimento nesta página.
 

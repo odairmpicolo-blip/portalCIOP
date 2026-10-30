@@ -211,7 +211,7 @@
     .firm{ min-height:280px; }
   }
 </style>
-<link rel="stylesheet" href="../assets/css/portal-visual.css?v=20261026row1">
+<link rel="stylesheet" href="../assets/css/portal-visual.css?v=20261030pend1">
 <script src="../assets/js/theme-toggle.js?v=20261027auto1" defer></script>
 </head>
 <body>
@@ -475,17 +475,38 @@ function gravarHist(d) {
   return hist;
 }
 function serieHora(hist, campo) {
-  const out = Array(24 * SLOTS_HORA).fill(null);
+  const out = Array(24).fill(null);
   for (let h = 0; h < 24; h++) {
-    const v = Number(hist.horas?.[String(h)]?.[campo]);
-    if (Number.isFinite(v)) out[h * SLOTS_HORA] = Math.round(v * 10) / 10;
+    let melhor = null;
+    let ts = -1;
+    const hora = hist.horas?.[String(h)];
+    const vh = Number(hora?.[campo]);
+    if (Number.isFinite(vh)) {
+      melhor = vh;
+      ts = Number(hora?.ts) || 0;
+    }
+    Object.entries(hist.minutos || {}).forEach(([k, p]) => {
+      const slot = Number(k);
+      if (Math.floor(slot / SLOTS_HORA) !== h) return;
+      const vm = Number(p?.[campo]);
+      const tsm = Number(p?.ts) || 0;
+      if (!Number.isFinite(vm)) return;
+      if (melhor == null || tsm >= ts) {
+        melhor = vm;
+        ts = tsm;
+      }
+    });
+    if (melhor != null) out[h] = Math.round(melhor * 10) / 10;
   }
-  Object.entries(hist.minutos || {}).forEach(([k, p]) => {
-    const i = Number(k);
-    const v = Number(p?.[campo]);
-    if (i >= 0 && i < out.length && Number.isFinite(v)) out[i] = Math.round(v * 10) / 10;
-  });
   return out;
+}
+function raioPonto(ctx) {
+  const data = ctx.dataset?.data || [];
+  const i = ctx.dataIndex;
+  const v = data[i];
+  if (v == null || !Number.isFinite(Number(v))) return 0;
+  const vizinho = (i > 0 && data[i - 1] != null) || (i + 1 < data.length && data[i + 1] != null);
+  return vizinho ? 3 : 7;
 }
 function linha(label, cor, dados, fill) {
   return {
@@ -517,10 +538,7 @@ function pintarLinhaHora(hist) {
     setChartStatus("Biblioteca do gráfico indisponível.", true);
     return;
   }
-  const labels = Array.from({ length: 24 * SLOTS_HORA }, (_, i) => {
-    if (i % (SLOTS_HORA * 2) !== 0) return "";
-    return String(i / SLOTS_HORA).padStart(2, "0") + "h";
-  });
+  const labels = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0") + "h");
   const series = [
     serieHora(hist, "ok"),
     serieHora(hist, "late"),
@@ -535,7 +553,7 @@ function pintarLinhaHora(hist) {
     ]
   };
   if (!histTemPonto(hist)) {
-    setChartStatus("Sem histórico de pontualidade nesta sessão para o dia.");
+    setChartStatus("Sem histórico neste dia. As barras são a leitura de agora; o gráfico só marca horas já gravadas, sem completar lacunas.");
   } else {
     setChartStatus("");
   }
@@ -580,7 +598,10 @@ function pintarLinhaHora(hist) {
         },
         layout: { padding: { top: 6, right: 8, bottom: 8, left: 4 } },
         animation: false,
-        elements: { line: { tension: .25, borderWidth: 3 }, point: { radius: 0, hoverRadius: 5 } }
+        elements: {
+          line: { tension: .25, borderWidth: 3 },
+          point: { radius: raioPonto, hoverRadius: 8, hitRadius: 10 }
+        }
       }
     });
     requestAnimationFrame(() => horaChart && horaChart.resize());
