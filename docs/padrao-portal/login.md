@@ -48,11 +48,17 @@ Foco visível: 3 px `#1265c2` no claro e `#82c4ff` no escuro. Carregando mantém
 
 Em 390×844 não há rolagem horizontal. O logo fica no canto, o cartão abaixo, sem cobrir campos nem a mensagem.
 
-## WhatsApp
+## WhatsApp Web
 
-O login antigo **não tem** número nem mensagem de suporte no histórico do repositório (`login.html` nasce em `00caefcb` sem WhatsApp). O único link histórico do portal é o da home, “Conectar ao WhatsApp”, para `https://web.whatsapp.com/`. Isso abre o WhatsApp Web vazio; não é suporte. `wa.me` aparece só em Terminais Agora, montado com o telefone de cada terminal.
+Abaixo do formulário, separado do botão Entrar, há o atalho **Abrir WhatsApp Web**.
 
-O botão “Suporte pelo WhatsApp” **não foi publicado**. Falta o número (e a mensagem, se houver) confirmados por Odair.
+- Destino fixo: `https://web.whatsapp.com/`
+- `target="_blank"` e `rel="noopener noreferrer"`
+- Ícone verde do WhatsApp e rótulo em `--portal-text` sobre `--portal-fallback`
+- Não lê e-mail, senha nem qualquer campo do formulário
+- Não é suporte e não leva número de telefone
+
+O histórico do login não tem um número de atendimento. Este botão só abre o WhatsApp Web, o mesmo destino do atalho antigo da home.
 
 ## O que permanece
 
@@ -71,6 +77,12 @@ Sem e-mail, senha ou outro dado pessoal. O aviso da terceira imagem é o texto r
 ![Login claro, 390 px](assets/login-claro-390-20261030.png)
 
 ![Login escuro, 390 px](assets/login-escuro-390-20261030.png)
+
+Atalho para o WhatsApp Web, abaixo do formulário:
+
+![Login claro com WhatsApp Web](assets/login-whatsapp-claro-20261030.png)
+
+![Login escuro com WhatsApp Web](assets/login-whatsapp-escuro-20261030.png)
 
 ## Verificação desta rodada
 

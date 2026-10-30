@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Redução da frota · Dia útil</title>
+<style>
+  :root {
+    --paper: #F3F0E8;
+    --ink: #171A1E;
+    --muted: #6F685F;
+    --faint: #6E6862;
+    --line: #E2DBD0;
+    --copper: #C4471A;
+    --green: #1C6B50;
+    --dark: #12161A;
+    --cream: #F6F1E6;
+    --serif: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+    --sans: "Avenir Next", Avenir, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #0c0e10; overflow: hidden; }
+  body { font-family: var(--sans); color: var(--ink); }
+  .slide {
+    display: none;
+    position: absolute;
+    width: 1920px;
+    height: 1080px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(var(--s, 1));
+    overflow: hidden;
+    background: var(--paper);
+  }
+  .slide.on { display: block; }
+  .dark { background: var(--dark); color: var(--cream); }
+  .pad { position: absolute; inset: 0; padding: 72px 88px 64px; }
+  .toprule { position: absolute; left: 0; right: 0; top: 0; height: 6px; background: var(--copper); }
+  .eye {
+    font-size: 15px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .dark .eye { color: #B7A99A; }
+  .foot {
+    position: absolute;
+    left: 88px; right: 88px; bottom: 36px;
+    display: flex; justify-content: space-between;
+    font-size: 14px; letter-spacing: 0.04em; color: var(--faint);
+  }
+  .dark .foot { color: #8A8176; }
+  .serif { font-family: var(--serif); font-weight: 500; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* cover */
+  .cover-kicker { font-size: 16px; letter-spacing: 0.28em; text-transform: uppercase; color: #C4B5A4; font-weight: 600; }
+  .cover h1 { font-family: var(--serif); font-weight: 500; font-size: 132px; line-height: 0.9; letter-spacing: -0.03em; margin-top: 220px; color: #F6F1E6; }
+  .cover .rule { width: 72px; height: 4px; background: var(--copper); margin: 36px 0 28px; }
+  .cover .lead { font-size: 32px; color: #E4D8C8; font-weight: 500; }
+  .cover .meta { position: absolute; left: 88px; right: 88px; bottom: 72px; display: flex; gap: 56px; }
+  .cover .meta b { display: block; font-family: var(--serif); font-size: 32px; font-weight: 500; color: #F6F1E6; }
+  .cover .meta span { display: block; margin-top: 4px; font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; color: #A89886; }
+
+  /* result */
+  .result h2 { font-family: var(--serif); font-size: 108px; line-height: 0.92; letter-spacing: -0.03em; margin-top: 18px; }
+  .result h2 em { font-style: normal; color: var(--copper); }
+  .result .sub { margin-top: 14px; font-size: 26px; color: var(--muted); }
+  .bridge { margin-top: 28px; font-size: 22px; color: var(--ink); }
+  .bridge strong { font-weight: 650; }
+  .cols3 { display: grid; grid-template-columns: 1fr 1fr 1fr; margin-top: 48px; border-top: 1px solid var(--line); }
+  .cols3 article { padding: 32px 36px 0 0; }
+  .cols3 article + article { padding-left: 36px; border-left: 1px solid var(--line); }
+  .cols3 .big { font-family: var(--serif); font-size: 72px; line-height: 1; letter-spacing: -0.03em; }
+  .cols3 .lbl { margin-top: 10px; font-size: 20px; color: var(--ink); }
+  .cols3 .det { margin-top: 8px; font-size: 18px; color: var(--muted); }
+  .note { margin-top: 42px; font-size: 18px; color: var(--muted); max-width: 1100px; }
+
+  /* rules */
+  .rules h2 { font-family: var(--serif); font-size: 64px; letter-spacing: -0.03em; margin: 18px 0 8px; }
+  .rules .deck { margin-top: 56px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 48px; }
+  .rules .idx { font-family: var(--serif); font-size: 28px; color: var(--copper); }
+  .rules h3 { font-family: var(--serif); font-size: 36px; font-weight: 500; margin: 18px 0 16px; letter-spacing: -0.02em; }
+  .rules p { font-size: 22px; line-height: 1.45; color: #3C3934; }
+
+  /* bars */
+  .bars h2 { font-family: var(--serif); font-size: 52px; letter-spacing: -0.03em; margin-top: 12px; }
+  .bars .intro { margin-top: 8px; font-size: 20px; color: var(--muted); display: flex; justify-content: space-between; gap: 40px; }
+  .legend { display: flex; gap: 22px; align-items: center; font-size: 15px; color: var(--muted); white-space: nowrap; }
+  .legend i { display: inline-block; width: 18px; height: 8px; border-radius: 99px; margin-right: 8px; vertical-align: middle; }
+  .grid2 { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 64px; }
+  .row { display: grid; grid-template-columns: 36px 92px 1fr 88px; gap: 12px; align-items: center; height: 58px; }
+  .rk { font-size: 13px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .nm { font-size: 18px; font-weight: 650; letter-spacing: -0.02em; }
+  .slot { position: relative; height: 8px; background: #E4DDD2; border-radius: 99px; }
+  .slot i { position: absolute; top: 0; height: 8px; border-radius: 99px; }
+  .slot .a { background: var(--copper); }
+  .slot .b { background: var(--green); }
+  .kv { text-align: right; font-size: 16px; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+  /* table */
+  .quadro h2 { font-family: var(--serif); font-size: 42px; letter-spacing: -0.03em; margin-top: 4px; }
+  .quadro .intro { margin: 4px 0 12px; font-size: 17px; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: right; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 650; padding: 0 12px 10px; border-bottom: 1.5px solid var(--ink); }
+  th:first-child, td:first-child { text-align: left; }
+  td { padding: 0 12px; height: 27px; font-size: 15px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; text-align: right; }
+  td:first-child { text-align: left; font-weight: 650; }
+  tr.hot td { background: #F8EBE3; }
+  tr.total td { background: var(--ink); color: var(--cream); border-bottom: 0; font-weight: 650; height: 34px; }
+  .fine { margin-top: 12px; font-size: 13px; color: var(--faint); }
+
+  /* cases */
+  .cases h2 { font-family: var(--serif); font-size: 52px; letter-spacing: -0.03em; margin-top: 12px; }
+  .cases .intro { margin-top: 8px; font-size: 20px; color: var(--muted); }
+  .casegrid { margin-top: 48px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px; }
+  .case {
+    background: #FBF9F4;
+    border-top: 4px solid var(--copper);
+    padding: 28px 28px 32px;
+    min-height: 540px;
+    display: flex; flex-direction: column;
+  }
+  .case .who { font-size: 15px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--copper); font-weight: 700; }
+  .case h3 { font-family: var(--serif); font-size: 64px; font-weight: 500; letter-spacing: -0.03em; margin: 12px 0 4px; }
+  .case .where { font-size: 20px; color: var(--muted); }
+  .case .km { font-family: var(--serif); font-size: 68px; letter-spacing: -0.03em; margin: 36px 0 4px; }
+  .case .km span { font-family: var(--sans); font-size: 20px; color: var(--muted); margin-left: 6px; }
+  .split { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 16px; }
+  .split div { display: flex; justify-content: space-between; font-size: 18px; padding: 7px 0; }
+  .split b { font-weight: 650; }
+  .case p { margin-top: auto; font-size: 18px; line-height: 1.4; color: #3C3934; }
+
+  /* pieces */
+  .pecas h2 { font-family: var(--serif); font-size: 52px; letter-spacing: -0.03em; margin-top: 12px; }
+  .pecas .intro { margin-top: 8px; font-size: 22px; color: var(--muted); max-width: 980px; }
+  .plist { margin-top: 42px; }
+  .prow { display: grid; grid-template-columns: 420px 1fr 120px 1fr 120px; gap: 18px; align-items: center; height: 92px; border-top: 1px solid var(--line); }
+  .prow:last-child { border-bottom: 1px solid var(--line); }
+  .prow .tn { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; }
+  .prow .ts { display: block; font-size: 14px; color: var(--faint); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 4px; }
+  .hbar { height: 10px; background: #E4DDD2; border-radius: 99px; position: relative; }
+  .hbar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink); border-radius: 99px; }
+  .hbar.volta i { background: var(--copper); }
+  .pv { text-align: right; font-family: var(--serif); font-size: 28px; font-variant-numeric: tabular-nums; }
+  .hlabels { display: grid; grid-template-columns: 420px 1fr 120px 1fr 120px; gap: 18px; margin-top: 28px; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .hlabels span:nth-child(3), .hlabels span:nth-child(5) { text-align: right; }
+  .src { margin-top: 28px; font-size: 16px; color: var(--muted); }
+
+  /* close */
+  .close h2 { font-family: var(--serif); font-size: 28px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #C4B5A4; }
+  .close .hero { font-family: var(--serif); font-size: 104px; line-height: 0.92; letter-spacing: -0.03em; margin-top: 28px; color: #F6F1E6; }
+  .close .hero em { font-style: normal; color: #E7A08A; font-size: 40px; display: block; margin-top: 12px; letter-spacing: 0; }
+  .close ul { margin-top: 56px; list-style: none; max-width: 980px; }
+  .close li { font-size: 28px; line-height: 1.35; padding: 14px 0; border-top: 1px solid #2A3036; color: #E7DDD0; }
+  .close li:last-child { border-bottom: 1px solid #2A3036; }
+  .close .src { position: absolute; left: 88px; bottom: 72px; color: #8A8176; font-size: 16px; }
+
+  .nav {
+    position: fixed; right: 22px; bottom: 16px; z-index: 5;
+    display: flex; gap: 8px; align-items: center;
+    color: #d9d3c8; font-family: var(--sans); font-size: 12px; letter-spacing: 0.14em;
+    opacity: 0.55;
+  }
+  .nav button {
+    background: transparent; color: inherit; border: 1px solid rgba(255,255,255,.25);
+    width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+
+<section class="slide dark cover on" data-n="1">
+  <div class="pad">
+    <div class="cover-kicker">Planejamento · Outubro 2026</div>
+    <h1>Redução<br>da frota</h1>
+    <div class="rule"></div>
+    <p class="lead">3.181,86 km estimados a menos, em um dia útil.</p>
+    <div class="meta">
+      <div><b>23</b><span>linhas</span></div>
+      <div><b>115</b><span>tabelas</span></div>
+      <div><b>Dia útil</b><span>cenário TCGL</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide result" data-n="2">
+  <div class="toprule"></div>
+  <div class="pad">
+    <div class="eye">O corte</div>
+    <h2>3.181,86 <em>km</em></h2>
+    <p class="sub">estimados que saem da operação em um dia útil.</p>
+    <p class="bridge">De <strong>2.275</strong> viagens hoje para <strong>2.004</strong> na proposta.</p>
+    <div class="cols3">
+      <article>
+        <div class="big num">271</div>
+        <div class="lbl">viagens saem por completo</div>
+        <div class="det num">2.640,05 km</div>
+      </article>
+      <article>
+        <div class="big num">93</div>
+        <div class="lbl">seguem, mais curtas</div>
+        <div class="det num">541,81 km</div>
+      </article>
+      <article>
+        <div class="big num">115</div>
+        <div class="lbl">tabelas permanecem</div>
+        <div class="det">nenhuma foi extinta</div>
+      </article>
+    </div>
+    <p class="note">83% desse quilômetro está na viagem que deixa de existir. 17% está no trecho que deixa de ir ao Terminal Central — a viagem continua.</p>
+    <div class="foot"><span>Propostas 2026 · Dia útil · Km estimado</span><span>02</span></div>
+  </div>
+</section>
+
+<section class="slide rules" data-n="3">
+  <div class="toprule"></div>
+  <div class="pad">
+    <div class="eye">A leitura</div>
+    <h2>Três regras da conta</h2>
+    <div class="deck">
+      <article>
+        <div class="idx">01</div>
+        <h3>Viagem inteira</h3>
+        <p>A partida sai da proposta. Entra o quilômetro estimado da viagem completa no cenário TCGL.</p>
+      </article>
+      <article>
+        <div class="idx">02</div>
+        <h3>Pedaço</h3>
+        <p>O ônibus deixa o Terminal Central e segue no bairro. Sai a viagem inteira menos o pedaço que continua rodando.</p>
+      </article>
+      <article>
+        <div class="idx">03</div>
+        <h3>Tabela</h3>
+        <p>As 115 tabelas seguem na grade. O corte é de viagem, ou de um trecho dentro da viagem. O carro não sai da operação.</p>
+      </article>
+    </div>
+    <div class="foot"><span>Propostas 2026 · Dia útil · Km estimado</span><span>03</span></div>
+  </div>
+</section>
+
+<section class="slide bars" data-n="4">
+  <div class="toprule"></div>
+  <div class="pad">
+    <div class="eye">Onde concentra</div>
+    <h2>O quilômetro por linha</h2>
+    <div class="intro">
+      <span>Cinco linhas respondem por 42% do km. Na 417/902, a maior parte é trecho, não viagem cancelada.</span>
+      <span class="legend"><span><i style="background:#C4471A"></i>viagem inteira</span><span><i style="background:#1C6B50"></i>pedaço</span></span>
+    </div>
+    <div class="grid2" id="bars"></div>
+    <div class="foot"><span>Propostas 2026 · Dia útil · Km estimado</span><span>04</span></div>
+  </div>
+</section>
+
+<section class="slide quadro" data-n="5">
+  <div class="toprule"></div>
+  <div class="pad">
+    <div class="eye">O quadro</div>
+    <h2>As 23 linhas</h2>
+    <p class="intro">Viagens de hoje e da proposta, o que sai inteiro, o que fica mais curto, e o km estimado.</p>
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th>Linha</th><th>Hoje</th><th>Proposta</th><th>Inteiras</th><th>Pedaços</th><th>Km que sai</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p class="fine">Fora deste recorte: 423 e 703 a 706. Linhas em destaque têm viagem encurtada.</p>
+    <div class="foot"><span>Propostas 2026 · Dia útil · Km estimado</span><span>05</span></div>
+  </div>
+</section>
+
+<section class="slide cases" data-n="6">
+  <div class="toprule"></div>
+  <div class="pad">
+    <div class="eye">O pedaço</div>
+    <h2>Onde a viagem não some</h2>
+    <p class="intro">O carro continua. Sai o trecho até o Terminal Central — ou, na 902, a diferença até o Catuaí.</p>
+    <div class="casegrid">
+      <article class="case">
+        <div class="who">Linha 308</div>
+        <h3>308</h3>
+        <div class="where">Graciosa e Parecis</div>
+        <div class="km num">215,35<span>km</span></div>
+        <div class="split">
+          <div><span>6 viagens inteiras</span><b class="num">50,59</b></div>
+          <div><span>35 pedaços</span><b class="num">164,76</b></div>
+        </div>
+        <p>O ônibus segue pela Graciosa ou pela Parecis e deixa de atender o Terminal Central.</p>
+      </article>
+      <article class="case">
+        <div class="who">Linha 407</div>
+        <h3>407</h3>
+        <div class="where">João Paz e Semiramis</div>
+        <div class="km num">228,58<span>km</span></div>
+        <div class="split">
+          <div><span>7 viagens inteiras</span><b class="num">70,85</b></div>
+          <div><span>39 pedaços</span><b class="num">157,73</b></div>
+        </div>
+        <p>O ônibus segue por João Paz ou Semiramis e deixa de atender o Terminal Central.</p>
+      </article>
+      <article class="case">
+        <div class="who">Linhas 417 e 902</div>
+        <h3>417</h3>
+        <div class="where">Maritacas, das 9h às 16h</div>
+        <div class="km num">320,63<span>km</span></div>
+        <div class="split">
+          <div><span>9 viagens inteiras</span><b class="num">101,31</b></div>
+          <div><span>19 pedaços</span><b class="num">219,32</b></div>
+        </div>
+        <p>Nesse horário a 902 passa a ser 417 até o Catuaí, com o mesmo km das viagens da noite.</p>
+      </article>
+    </div>
+    <div class="foot"><span>Propostas 2026 · Dia útil · Km estimado</span><span>06</span></div>
+  </div>
+</section>
+
+<section class="slide pecas" data-n="7">
+  <div class="toprule"></div>
+  <div class="pad">
+    <div class="eye">A medida</div>
+    <h2>O pedaço que continua</h2>
+    <p class="intro">Este quilômetro permanece na operação. O que sai da frota é a viagem inteira menos este valor.</p>
+    <div class="hlabels"><span>Trecho</span><span>Ida</span><span></span><span>Volta</span><span></span></div>
+    <div class="plist" id="pecas"></div>
+    <p class="src">Graciosa, Parecis, João Paz e Semiramis medidos no mapa, ida e volta em separado. A 417 usa a viagem noturna até o Catuaí, do próprio cenário TCGL.</p>
+    <div class="foot"><span>Propostas 2026 · Dia útil · Km estimado</span><span>07</span></div>
+  </div>
+</section>
+
+<section class="slide dark close" data-n="8">
+  <div class="pad">
+    <h2>Para a diretoria</h2>
+    <div class="hero">3.181,86 km<em>por dia útil</em></div>
+    <ul>
+      <li>271 viagens deixam de sair.</li>
+      <li>93 seguem sem o trecho até o Terminal Central.</li>
+      <li>As 115 tabelas permanecem na grade.</li>
+    </ul>
+    <p class="src">Km estimado do cenário TCGL 06-09. Sem o número anotado na planilha.</p>
+  </div>
+</section>
+
+</div>
+<div class="nav"><button id="prev" aria-label="Anterior">‹</button><span id="ctr">01 / 08</span><button id="next" aria-label="Seguinte">›</button></div>
+<script>
+const LINES = [
+  ["101", 75, 68, 7, 0, 57.40],
+  ["106", 162, 156, 6, 0, 51.71],
+  ["107", 76, 37, 39, 0, 276.00],
+  ["110-111", 171, 153, 18, 0, 171.71],
+  ["112", 105, 87, 18, 0, 153.03],
+  ["113", 162, 148, 14, 0, 145.00],
+  ["303", 71, 63, 8, 0, 99.86],
+  ["306", 70, 52, 18, 0, 113.95],
+  ["308", 79, 73, 6, 35, 215.35, 50.59, 164.76],
+  ["311", 158, 144, 14, 0, 127.10],
+  ["351", 68, 60, 8, 0, 26.46],
+  ["404", 95, 84, 11, 0, 76.99],
+  ["405", 113, 112, 1, 0, 9.32],
+  ["407", 144, 137, 7, 39, 228.58, 70.85, 157.73],
+  ["417-902", 86, 77, 9, 19, 320.63, 101.31, 219.32],
+  ["420", 126, 117, 9, 0, 86.11],
+  ["501", 157, 149, 8, 0, 55.14],
+  ["800", 45, 36, 9, 0, 136.01],
+  ["802", 44, 34, 10, 0, 115.89],
+  ["803", 137, 131, 6, 0, 70.01],
+  ["806", 35, 25, 10, 0, 150.38],
+  ["900", 55, 33, 22, 0, 308.12],
+  ["913", 41, 28, 13, 0, 187.11]
+];
+const PECA = [
+  ["Via Graciosa", "308", 2.827, 4.082],
+  ["Via Parecis", "308", 4.363, 2.851],
+  ["Via João Paz", "407", 6.577, 5.851],
+  ["Via Semiramis", "407", 6.021, 6.141],
+  ["417 até o Catuaí", "km da noite", 4.482, 5.989]
+];
+const br = (n, d=2) => n.toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const br0 = n => n.toLocaleString("pt-BR");
+const MAX = 320.63;
+const MAXP = 6.577;
+
+const ranked = [...LINES].sort((a,b) => b[5]-a[5]);
+document.getElementById("bars").innerHTML = ranked.map((r,i) => {
+  const ki = r[6] != null ? r[6] : r[5];
+  const kp = r[7] || 0;
+  return `<div class="row">
+    <span class="rk">${String(i+1).padStart(2,"0")}</span>
+    <span class="nm">${r[0]}</span>
+    <span class="slot">
+      <i class="a" style="left:0;width:${(ki/MAX*100).toFixed(2)}%"></i>
+      <i class="b" style="left:${(ki/MAX*100).toFixed(2)}%;width:${(kp/MAX*100).toFixed(2)}%"></i>
+    </span>
+    <span class="kv">${br(r[5])}</span>
+  </div>`;
+}).join("");
+
+const tb = document.querySelector("#tbl tbody");
+const hot = new Set(["308","407","417-902"]);
+tb.innerHTML = LINES.map(r => `<tr class="${hot.has(r[0]) ? "hot" : ""}">
+  <td>${r[0]}</td><td>${br0(r[1])}</td><td>${br0(r[2])}</td><td>${br0(r[3])}</td><td>${br0(r[4])}</td><td>${br(r[5])}</td>
+</tr>`).join("") + `<tr class="total"><td>Total</td><td>2.275</td><td>2.004</td><td>271</td><td>93</td><td>3.181,86</td></tr>`;
+
+document.getElementById("pecas").innerHTML = PECA.map(p => `
+  <div class="prow">
+    <div><span class="tn">${p[0]}</span><span class="ts">${p[1]}</span></div>
+    <div class="hbar"><i style="width:${(p[2]/MAXP*100).toFixed(1)}%"></i></div>
+    <div class="pv">${br(p[2], 3)}</div>
+    <div class="hbar volta"><i style="width:${(p[3]/MAXP*100).toFixed(1)}%"></i></div>
+    <div class="pv">${br(p[3], 3)}</div>
+  </div>`).join("");
+
+const slides = [...document.querySelectorAll(".slide")];
+let cur = 0;
+function fit() {
+  const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+  document.documentElement.style.setProperty("--s", s);
+}
+function show(n) {
+  cur = (n + slides.length) % slides.length;
+  slides.forEach((s, i) => s.classList.toggle("on", i === cur));
+  document.getElementById("ctr").textContent = String(cur + 1).padStart(2, "0") + " / 08";
+  history.replaceState(null, "", "#"+ (cur+1));
+}
+document.getElementById("prev").onclick = () => show(cur - 1);
+document.getElementById("next").onclick = () => show(cur + 1);
+window.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { e.preventDefault(); show(cur + 1); }
+  if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); show(cur - 1); }
+});
+window.addEventListener("resize", fit);
+fit();
+const start = Math.max(1, Math.min(8, parseInt(location.hash.slice(1), 10) || 1));
+show(start - 1);
+</script>
+</body>
+</html>

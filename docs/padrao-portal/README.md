@@ -40,6 +40,7 @@ Não redesenhar a marca. Não inventar KPI, fórmula ou paleta por página.
 | Painel CIOP em TV 16:9 | [ciop-tv.md](ciop-tv.md) |
 | Performance ao vivo (pontualidade) | [performance-tempo-real.md](performance-tempo-real.md) |
 | Tela de login (contraste, autofill, vidro) | [login.md](login.md) |
+| Itens fora da publicação (apresentação, planilha, prévias, YAML) | [revisao-itens-fora.md](revisao-itens-fora.md) |
 | Auditoria 29/10/2026 | [auditoria-2026-10-29.md](auditoria-2026-10-29.md) |
 | Exemplos clicáveis (dados fictícios) | [catalogo.html](catalogo.html) |
 | Capturas de demonstração | [assets/](assets/) |
