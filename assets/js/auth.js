@@ -205,7 +205,67 @@ function negarAcessoPagina() {
   return false;
 }
 
+function sessaoEmApresentacao() {
+  return document.documentElement.classList.contains("portal-glass-kiosk")
+    || !!document.getElementById("kiosk")
+    || !!document.querySelector(".kiosk");
+}
+
+function limparNomeFicticio(el) {
+  if (!el) return;
+  if (/^(usuário|usuario)$/i.test(String(el.textContent || "").trim())) el.textContent = "";
+}
+
+function reservarSessao(session) {
+  if (!session || sessaoEmApresentacao() || session.dataset.sessionState === "ready") return;
+  session.dataset.sessionState = "loading";
+  session.setAttribute("aria-busy", "true");
+  if (!session.getAttribute("aria-label")) session.setAttribute("aria-label", "Sessão do usuário");
+  limparNomeFicticio(session.querySelector(".ciop-session-user, #usuarioLogado"));
+  if (!session.querySelector(".ciop-session-status")) {
+    const status = document.createElement("span");
+    status.className = "ciop-session-status";
+    status.textContent = "Carregando sessão";
+    session.prepend(status);
+  }
+}
+
+function marcarSessaoPronta() {
+  document.querySelectorAll(".ciop-session").forEach((session) => {
+    session.dataset.sessionState = "ready";
+    session.setAttribute("aria-busy", "false");
+    session.querySelector(".ciop-session-status")?.remove();
+  });
+}
+
+function posicionarSessaoComTema() {
+  if (paginaEhHomePortal() || sessaoEmApresentacao()) return;
+  const session = document.querySelector(".header-actions .ciop-session, .header .ciop-session");
+  const host = session?.parentElement;
+  if (!session || !host) return;
+  const picker = host.querySelector(":scope > .dk-theme-picker");
+  if (!picker || picker.parentElement !== host) return;
+  if (session.nextElementSibling !== picker) session.insertAdjacentElement("afterend", picker);
+}
+
+function garantirBotaoSenha(session) {
+  if (!session || paginaEhHomePortal() || sessaoEmApresentacao()) return;
+  if (session.querySelector(".btn-senha-portal, [data-portal-senha-btn]")) return;
+  if (!document.getElementById("senhaPanel")) return;
+  const actions = session.querySelector(".ciop-session-actions") || session;
+  const botao = document.createElement("button");
+  botao.type = "button";
+  botao.className = "btn-senha-portal";
+  botao.dataset.portalSenhaBtn = "1";
+  botao.textContent = "Senha";
+  botao.addEventListener("click", () => window.toggleSenhaPanel?.());
+  const sair = actions.querySelector(".btn-logout");
+  if (sair) actions.insertBefore(botao, sair);
+  else actions.appendChild(botao);
+}
+
 function modernizarSessaoUsuario() {
+  if (sessaoEmApresentacao()) return;
   garantirSessaoPadrao();
   const session = document.querySelector(".ciop-session");
   if (!session) return;
@@ -236,7 +296,10 @@ function modernizarSessaoUsuario() {
     if (btn.parentElement !== actions) actions.appendChild(btn);
   });
 
+  garantirBotaoSenha(session);
   session.classList.add("ciop-session-modern");
+  reservarSessao(session);
+  posicionarSessaoComTema();
 }
 
 window.modernizarSessaoUsuario = modernizarSessaoUsuario;
@@ -247,18 +310,25 @@ function paginaEhHomePortal() {
 }
 
 function garantirSessaoPadrao() {
-  if (paginaEhHomePortal()) return;
+  if (paginaEhHomePortal() || sessaoEmApresentacao()) return;
   let session = document.querySelector(".ciop-session");
   if (!session) {
     const header = document.querySelector("header.header, .header");
     const actions = header?.querySelector(".header-actions") || header;
     if (!actions) return;
+    const senha = document.getElementById("senhaPanel")
+      ? '<button data-portal-senha-btn="1" type="button" class="btn-senha-portal" onclick="toggleSenhaPanel()">Senha</button>'
+      : "";
     session = document.createElement("div");
     session.className = "ciop-session";
+    session.dataset.sessionState = "loading";
+    session.setAttribute("aria-busy", "true");
     session.setAttribute("aria-label", "Sessão do usuário");
-    session.innerHTML = '<span id="usuarioLogado" class="ciop-session-user">Usuário</span>'
-      + '<span id="perfilUsuario" class="ciop-session-cargo" hidden></span>'
-      + '<button type="button" class="btn-logout" onclick="logout()">Sair</button>';
+    session.innerHTML = '<span class="ciop-session-status">Carregando sessão</span>'
+      + '<div class="ciop-session-info"><span id="usuarioLogado" class="ciop-session-user"></span>'
+      + '<span id="perfilUsuario" class="ciop-session-cargo" hidden></span></div>'
+      + '<div class="ciop-session-actions">' + senha
+      + '<button type="button" class="btn-logout" onclick="logout()">Sair</button></div>';
     actions.appendChild(session);
   }
   if (!session.querySelector(".btn-logout, button[onclick*='logout']")) {
@@ -330,7 +400,7 @@ function atualizarSaudacaoHero(cadastroOuNome) {
   aplicarSaudacaoHero(nome, { genero });
 }
 
-const PORTAL_SESSION_CSS_V = "20260818open";
+const PORTAL_SESSION_CSS_V = "20261030sess1";
 
 function garantirCssSessao() {
   const href = portalPath(`assets/css/portal-session.css?v=${PORTAL_SESSION_CSS_V}`);
@@ -561,7 +631,19 @@ function garantirRodapePortal() {
 }
 
 garantirRodapePortal();
-window.addEventListener("portal:usuario-validado", modernizarSessaoUsuario);
+window.addEventListener("portal:usuario-validado", () => {
+  modernizarSessaoUsuario();
+  if (document.getElementById("usuarioLogado")?.textContent?.trim()) marcarSessaoPronta();
+  posicionarSessaoComTema();
+});
+
+function prepararSessaoInicial() {
+  if (sessaoEmApresentacao()) return;
+  modernizarSessaoUsuario();
+  posicionarSessaoComTema();
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", prepararSessaoInicial);
+else prepararSessaoInicial();
 
 async function getCadastro(user) {
   const email = String(user.email || "").toLowerCase();
@@ -881,6 +963,7 @@ authReady.finally(() => onAuthStateChanged(auth, async (user) => {
     }
     atualizarSaudacaoHero(cadastro);
     modernizarSessaoUsuario();
+    marcarSessaoPronta();
     cadastroAplicado = cadastro;
     if (aplicarPermissoes(cadastro) !== false) {
       window.portalUsuarioValidado = true;

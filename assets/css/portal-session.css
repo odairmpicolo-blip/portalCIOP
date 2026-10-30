@@ -1,112 +1,135 @@
-/* Portal CIOP — usuário logado: pílula Liquid Glass iOS */
+/* Sessão do usuário — o mesmo cartão da página inicial.
+   Nome e cargo reais, vidro, borda, altura e botões. Sem dado fictício. */
 
 .ciop-session,
 .ciop-session.ciop-session-modern {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto;
-  gap: 0 10px;
+  --sess-ink: var(--home-ink, var(--portal-text, #102c53));
+  --sess-muted: var(--home-muted, var(--portal-text-secondary, #3a5270));
+  --sess-card: var(--home-card, rgba(255, 255, 255, 0.4));
+  --sess-line: var(--home-line, rgba(255, 255, 255, 0.42));
+  --sess-reflect: var(--home-reflect, inset 0 1px 0 rgba(255, 255, 255, 0.55));
+  --sess-blur: var(--home-blur, blur(16px) saturate(150%));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
+  justify-items: start;
+  gap: 2px 8px;
   width: max-content;
-  max-width: min(520px, 44vw);
-  padding: 10px 16px !important;
-  line-height: 1.2 !important;
-  overflow: visible !important;
+  max-width: min(340px, 100%);
+  min-height: 46px;
+  padding: 6px 10px;
+  border: 1px solid var(--sess-line);
+  border-radius: 12px;
+  background: var(--sess-card);
+  box-shadow: var(--sess-reflect);
+  backdrop-filter: var(--sess-blur);
+  -webkit-backdrop-filter: var(--sess-blur);
+  color: var(--sess-ink);
   position: relative;
   isolation: isolate;
-  border-radius: 999px !important;
-  border: 1px solid rgba(255, 255, 255, 0.62) !important;
-  background: rgba(255, 255, 255, 0.18) !important;
-  backdrop-filter: blur(28px) saturate(210%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(210%) !important;
-  box-shadow:
-    0 14px 36px -18px rgba(6, 20, 50, 0.45),
-    0 1px 0 rgba(255, 255, 255, 0.55) inset,
-    0 -1px 0 rgba(255, 255, 255, 0.1) inset !important;
-  color: var(--portal-text, #06245c);
-  font-size: inherit !important;
+  box-sizing: border-box;
 }
 
-/* Brilho superior fino (sem leite) */
-.ciop-session.ciop-session-modern::before,
-.ciop-session::before {
-  content: "";
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  top: 1px;
-  height: 40%;
-  border-radius: 999px;
-  pointer-events: none;
-  z-index: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.42) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  opacity: 0.7;
+html.dk-dark .ciop-session,
+html.dk-dark .ciop-session.ciop-session-modern {
+  --sess-ink: var(--home-ink, var(--portal-text, #f5f8ff));
+  --sess-muted: var(--home-muted, var(--portal-text-secondary, #d5e3f4));
+  --sess-card: var(--home-card, rgba(8, 22, 40, 0.56));
+  --sess-line: var(--home-line, rgba(191, 219, 246, 0.18));
+  --sess-reflect: var(--home-reflect, inset 0 1px 0 rgba(255, 255, 255, 0.12));
 }
 
-/* Barra CIOP azul → laranja */
-.ciop-session.ciop-session-modern::after,
+.ciop-session::before,
 .ciop-session::after {
-  content: "";
+  content: none;
+  display: none;
+}
+
+.ciop-session-status {
   position: absolute;
-  left: 5px;
-  top: 8px;
-  bottom: 8px;
-  width: 2px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #06245c 0%, #0b3a8a 48%, #ff6b00 100%);
-  opacity: 0.95;
-  z-index: 1;
-  box-shadow: 0 0 8px rgba(255, 107, 0, 0.25);
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .ciop-session-avatar {
-  display: none !important;
+  display: none;
+}
+
+.ciop-session-info,
+.ciop-session-user,
+.ciop-session-cargo {
+  justify-self: stretch;
+  max-width: 100%;
+}
+
+.ciop-session > .ciop-session-user,
+.ciop-session > #usuarioLogado {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.ciop-session > .ciop-session-cargo,
+.ciop-session > .ciop-session-profile,
+.ciop-session > #perfilUsuario {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.ciop-session > .btn-senha-portal {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
+.ciop-session > .btn-logout {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-self: center;
 }
 
 .ciop-session-info {
   grid-column: 1;
-  grid-row: 1;
-  display: grid;
-  gap: 1px;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
   min-width: 0;
-  padding-left: 8px;
-  position: relative;
-  z-index: 1;
+  min-height: 1.7rem;
+}
+
+.ciop-session[data-session-state="loading"] .ciop-session-info {
+  min-height: 2.4rem;
 }
 
 .ciop-session-user {
-  grid-column: unset !important;
-  grid-row: unset !important;
-  max-width: none !important;
-  white-space: normal !important;
-  overflow: visible !important;
-  text-overflow: unset !important;
+  color: var(--sess-ink);
+  -webkit-text-fill-color: var(--sess-ink);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.4;
+  max-width: none;
+  white-space: normal;
+  overflow: visible;
   overflow-wrap: anywhere;
-  font-weight: 800;
-  font-size: 0.86rem;
-  line-height: 1.2;
-  color: var(--portal-text, #06245c);
-  letter-spacing: -0.01em;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  text-overflow: unset;
 }
 
 .ciop-session-profile,
 .ciop-session-cargo {
-  grid-column: unset !important;
-  grid-row: unset !important;
-  max-width: none !important;
-  white-space: normal !important;
-  overflow: visible !important;
-  text-overflow: unset !important;
+  color: var(--sess-muted);
+  -webkit-text-fill-color: var(--sess-muted);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: normal;
   overflow-wrap: anywhere;
-  color: var(--portal-text-secondary, #344054);
-  font-weight: 600;
-  font-size: 0.58rem;
-  line-height: 1.15;
 }
 
 .ciop-session-profile:empty,
@@ -116,149 +139,219 @@
   display: none;
 }
 
+.ciop-session:not([data-session-state="ready"]) .ciop-session-user {
+  font-size: 0;
+  line-height: 0;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.ciop-session:not([data-session-state="ready"]) .ciop-session-user::before {
+  content: "";
+  display: block;
+  width: 7.5rem;
+  height: 0.72rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--sess-ink, #102c53) 22%, transparent);
+}
+
 .ciop-session-actions {
-  grid-column: 2;
-  grid-row: 1;
+  grid-column: 2 / span 2;
+  grid-row: 1 / span 2;
   display: flex;
-  flex-direction: row;
   align-items: center;
-  gap: 5px;
-  padding-left: 10px;
-  border-left: 1px solid rgba(255, 255, 255, 0.4);
-  position: relative;
-  z-index: 1;
+  gap: 6px;
+  flex: 0 0 auto;
 }
 
 .ciop-session .btn-senha-portal,
-.ciop-session .btn-logout:not(.btn-senha-portal),
-.ciop-session button.btn-senha-portal,
-.ciop-session button.btn-logout {
-  grid-column: unset !important;
-  grid-row: unset !important;
-  justify-self: unset !important;
-  align-self: unset !important;
-  min-width: 0;
-  border-radius: 999px !important;
-  padding: 4px 8px !important;
-  font-size: 0.6rem !important;
-  font-weight: 700 !important;
-  line-height: 1;
+.ciop-session .btn-logout {
+  flex: 0 0 auto;
+  min-height: 30px;
+  height: auto;
+  padding: 6px 9px;
+  border: 1px solid var(--sess-line);
+  border-radius: 10px;
+  background: var(--sess-card);
+  color: var(--sess-ink);
+  -webkit-text-fill-color: var(--sess-ink);
+  box-shadow: none;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
   cursor: pointer;
-  transition:
-    background 0.18s ease,
-    color 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
-}
-
-/* Senha: vidro azul */
-.ciop-session .btn-senha-portal,
-.ciop-session button.btn-senha-portal {
-  background: rgba(6, 36, 92, 0.38) !important;
-  color: #fff !important;
-  border: 1px solid rgba(255, 255, 255, 0.42) !important;
-  backdrop-filter: blur(14px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(180%) !important;
-  box-shadow:
-    0 4px 14px rgba(6, 36, 92, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
 }
 
 .ciop-session .btn-senha-portal:hover,
+.ciop-session .btn-logout:hover,
 .ciop-session .btn-senha-portal:focus-visible,
-.ciop-session button.btn-senha-portal:hover,
-.ciop-session button.btn-senha-portal:focus-visible {
-  background: rgba(255, 107, 0, 0.62) !important;
-  color: #fff !important;
-  border-color: rgba(255, 255, 255, 0.45) !important;
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(255, 107, 0, 0.28) !important;
+.ciop-session .btn-logout:focus-visible {
+  background: color-mix(in srgb, var(--sess-card) 82%, var(--sess-ink));
 }
 
-/* Sair: vidro claro + texto vermelho (não botão vermelho sólido) */
-.ciop-session .btn-logout:not(.btn-senha-portal),
-.ciop-session button.btn-logout:not(.btn-senha-portal) {
-  background: rgba(255, 255, 255, 0.32) !important;
-  color: #b91c1c !important;
-  border: 1px solid rgba(255, 255, 255, 0.55) !important;
-  backdrop-filter: blur(14px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(180%) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+.header-actions > .ciop-session {
+  order: 1;
 }
 
-.ciop-session .btn-logout:not(.btn-senha-portal):hover,
-.ciop-session .btn-logout:not(.btn-senha-portal):focus-visible,
-.ciop-session button.btn-logout:not(.btn-senha-portal):hover,
-.ciop-session button.btn-logout:not(.btn-senha-portal):focus-visible {
-  background: rgba(220, 38, 38, 0.72) !important;
-  color: #fff !important;
-  border-color: rgba(255, 255, 255, 0.4) !important;
-  transform: translateY(-1px);
+.header-actions > .dk-theme-picker {
+  order: 2;
 }
 
-@media (max-width: 520px) {
+.header-actions > :not(.ciop-session):not(.dk-theme-picker) {
+  order: 3;
+}
+
+#kiosk .ciop-session,
+.kiosk .ciop-session,
+html.portal-glass-kiosk .ciop-session {
+  display: none !important;
+}
+
+@media (max-width: 1100px) {
+  .header-actions {
+    max-width: 100%;
+  }
+
   .ciop-session,
   .ciop-session.ciop-session-modern {
-    max-width: min(320px, 92vw);
-    padding: 6px 10px !important;
-    gap: 0 8px;
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .ciop-session,
+  .ciop-session.ciop-session-modern {
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    max-width: 100%;
   }
 
-  .ciop-session-user {
-    font-size: 0.72rem;
-  }
-
-  .ciop-session-profile,
-  .ciop-session-cargo {
-    font-size: 0.64rem;
+  .ciop-session-info,
+  .ciop-session-actions,
+  .ciop-session > .ciop-session-user,
+  .ciop-session > .ciop-session-cargo,
+  .ciop-session > .btn-senha-portal,
+  .ciop-session > .btn-logout {
+    grid-column: 1;
+    grid-row: auto;
   }
 
   .ciop-session-actions {
-    padding-left: 8px;
-    gap: 4px;
-  }
-
-  .ciop-session .btn-senha-portal,
-  .ciop-session .btn-logout:not(.btn-senha-portal),
-  .ciop-session button.btn-senha-portal,
-  .ciop-session button.btn-logout {
-    min-width: 42px;
-    padding: 6px 9px !important;
-    font-size: 0.64rem !important;
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
 }
 
-/* Desktop com foto: vidro mais aberto para o ônibus aparecer */
-@media (min-width: 721px) {
-  body:has(.bg-wall) .ciop-session,
-  body:has(.bg-wall) .ciop-session.ciop-session-modern,
-  body:has(.body-bg-wall) .ciop-session,
-  body:has(.body-bg-wall) .ciop-session.ciop-session-modern {
-    background: rgba(255, 255, 255, 0.14) !important;
-    border-color: rgba(255, 255, 255, 0.65) !important;
-    backdrop-filter: blur(32px) saturate(220%) !important;
-    -webkit-backdrop-filter: blur(32px) saturate(220%) !important;
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .ciop-session,
+  .ciop-session.ciop-session-modern {
+    --sess-card: var(--home-solid, var(--portal-solid, #fff));
+    background: var(--sess-card);
+  }
+
+  html.dk-dark .ciop-session,
+  html.dk-dark .ciop-session.ciop-session-modern {
+    --sess-card: #102033;
   }
 }
 
-/* Tema escuro — pílula do usuário */
-html.dk-dark .ciop-session,
-html.dk-dark .ciop-session.ciop-session-modern {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-color: rgba(168, 178, 188, 0.34) !important;
-  color: #f4f6f8 !important;
-  box-shadow:
-    0 14px 36px -18px rgba(0, 0, 0, 0.55),
-    0 1px 0 rgba(255, 255, 255, 0.12) inset !important;
+/* Ganha das folhas antigas (pílula, 44px, texto branco) sem alterar a home. */
+:is(
+  html:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .ciop-session.ciop-session,
+  html#portal-page-glass:has(body#portal-page-content).portal-glass-system .ciop-session.ciop-session
+) {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto auto !important;
+  align-items: center !important;
+  justify-items: start !important;
+  gap: 2px 8px !important;
+  width: max-content !important;
+  max-width: min(340px, 100%) !important;
+  min-width: 0 !important;
+  min-height: 46px !important;
+  padding: 6px 10px !important;
+  border: 1px solid var(--sess-line) !important;
+  border-radius: 12px !important;
+  background: var(--sess-card) !important;
+  box-shadow: var(--sess-reflect) !important;
+  backdrop-filter: var(--sess-blur) !important;
+  -webkit-backdrop-filter: var(--sess-blur) !important;
+  color: var(--sess-ink) !important;
 }
 
-html.dk-dark .ciop-session-user {
-  color: #ffffff !important;
-  text-shadow: none !important;
+:is(
+  html:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .ciop-session .ciop-session-user,
+  html#portal-page-glass:has(body#portal-page-content).portal-glass-system .ciop-session .ciop-session-user
+) {
+  color: var(--sess-ink) !important;
+  -webkit-text-fill-color: var(--sess-ink) !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+  line-height: 1.4 !important;
+  max-width: none !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
 }
 
-html.dk-dark .ciop-session-profile,
-html.dk-dark .ciop-session-cargo {
-  color: rgba(255, 255, 255, 0.82) !important;
+:is(
+  html:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .ciop-session .ciop-session-cargo:not([hidden]),
+  html#portal-page-glass:has(body#portal-page-content).portal-glass-system .ciop-session .ciop-session-cargo:not([hidden])
+) {
+  display: block !important;
+  color: var(--sess-muted) !important;
+  -webkit-text-fill-color: var(--sess-muted) !important;
+  font-size: 10px !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  white-space: normal !important;
+}
+
+:is(
+  html:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .ciop-session:not([data-session-state="ready"]) .ciop-session-user,
+  html#portal-page-glass:has(body#portal-page-content).portal-glass-system .ciop-session:not([data-session-state="ready"]) .ciop-session-user
+) {
+  font-size: 0 !important;
+  line-height: 0 !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+:is(
+  html:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .ciop-session :is(.btn-senha-portal, .btn-logout),
+  html#portal-page-glass:has(body#portal-page-content).portal-glass-system .ciop-session :is(.btn-senha-portal, .btn-logout)
+) {
+  min-height: 30px !important;
+  height: auto !important;
+  padding: 6px 9px !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--sess-line) !important;
+  background: var(--sess-card) !important;
+  color: var(--sess-ink) !important;
+  -webkit-text-fill-color: var(--sess-ink) !important;
+  box-shadow: none !important;
+  font-size: 11px !important;
+  font-weight: 650 !important;
+}
+
+:is(
+  html:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .ciop-session :is(.btn-senha-portal, .btn-logout) *,
+  html#portal-page-glass:has(body#portal-page-content).portal-glass-system .ciop-session :is(.btn-senha-portal, .btn-logout) *
+) {
+  color: var(--sess-ink) !important;
+  -webkit-text-fill-color: var(--sess-ink) !important;
+}
+
+@media (max-width: 720px) {
+  :is(
+    html:not(.portal-home-2026):not(:has(#kiosk)) body:has(.header):not(.login-v2) .ciop-session.ciop-session,
+    html#portal-page-glass:has(body#portal-page-content).portal-glass-system .ciop-session.ciop-session
+  ) {
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
 }

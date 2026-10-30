@@ -28,9 +28,9 @@ O JS marca `html#portal-page-glass.portal-glass-system` e `body#portal-page-cont
 
 Casco interno: `portal-shell.js` (via `theme-toggle.js`) normaliza `.header` em marca | título | `.header-actions` (sessão e extras da página). `data-portal-shell="off"` preserva cabeçalho próprio. Home e kiosk não usam este casco.
 
-Sessão (injetada após login): `.ciop-session`, `.ciop-session-user`, `.ciop-session-cargo`, `.btn-senha-portal`, `.btn-logout`. Na home o “alterar senha” do header some; a troca de senha vive no diálogo de ajustes.
+Sessão: um único componente em `assets/css/portal-session.css` e `auth.js` (`modernizarSessaoUsuario`). Especificação, páginas e pendências: [sessao-usuario.md](sessao-usuario.md). Na home o “Senha” do cabeçalho continua oculto; a troca vive no diálogo de ajustes. Nas demais páginas, “Senha” só aparece se a página já tinha o botão ou tem `#senhaPanel`. “Sair” continua em `logout()`.
 
-Seletor de tema: `.dk-theme-picker` injetado por `portal-design-system.js` em `.header-actions`. `theme-toggle.js` no `<head>` (sem `defer`) aplica `dk-light`/`dk-dark` **antes** da primeira pintura, inclusive Auto (sol em Londrina). Não esperar o módulo `auth.js`.
+Seletor de tema: `.dk-theme-picker` fica imediatamente depois da sessão em `.header-actions`. Na home o seletor permanece na barra lateral. `theme-toggle.js` no `<head>` aplica `dk-light`/`dk-dark` antes da primeira pintura, inclusive Auto (sol em Londrina).
 
 Voltar ao Portal: `.btn-portal` / `.portal-return` / `data-portal-voltar`. Se a página não tiver, `garantirVoltarAoPortal()` cria o link.
 

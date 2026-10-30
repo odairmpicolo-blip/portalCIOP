@@ -19,7 +19,7 @@
     tokens.dataset.portalTokens = '1';
     document.head.appendChild(tokens);
   }
-  style.href = new URL('assets/css/portal-design-system.css?v=20261029logo1', root).href;
+    style.href = new URL('assets/css/portal-design-system.css?v=20261030sess1', root).href;
   style.dataset.portalDesign = '1';
   document.head.appendChild(style);
   if (!document.querySelector('link[data-portal-page-contrast]')) {
@@ -58,7 +58,9 @@
       '<button type="button" class="dk-theme-opt" data-dk-pref="light" aria-label="Tema claro">Claro</button>' +
       '<button type="button" class="dk-theme-opt" data-dk-pref="auto" aria-label="Tema automático (claro de dia, escuro à noite)">Auto</button>' +
       '<button type="button" class="dk-theme-opt" data-dk-pref="dark" aria-label="Tema escuro">Escuro</button>';
-    host.insertBefore(box, host.firstChild);
+    var session = host.querySelector(":scope > .ciop-session");
+    if (session) session.insertAdjacentElement("afterend", box);
+    else host.insertBefore(box, host.firstChild);
     var pref = document.documentElement.getAttribute('data-dk-pref') || 'auto';
     box.querySelectorAll('.dk-theme-opt').forEach(function (btn) {
       var on = btn.getAttribute('data-dk-pref') === pref;

@@ -50,7 +50,9 @@ test("estrategiaColunaTelemetria classifica colunas conhecidas", () => {
     assert.equal(estrategiaColunaTelemetria("Fim"), "max");
     assert.equal(estrategiaColunaTelemetria("End Time Local"), "max");
     assert.equal(estrategiaColunaTelemetria("Horas Motor"), "fixo");
-    assert.equal(estrategiaColunaTelemetria("Km Percorrido"), "soma");
+    assert.equal(estrategiaColunaTelemetria("Km Percorrido"), "distancia");
+    assert.equal(estrategiaColunaTelemetria("Km Inicial"), "hodometro-inicio");
+    assert.equal(estrategiaColunaTelemetria("Km Final"), "hodometro-fim");
 });
 
 test("agregarLinhasTelemetria soma colunas numericas e mantem o ultimo valor em colunas fixas", () => {
@@ -116,4 +118,66 @@ test("normalizarLinhaTelemetria agrupa colunas equivalentes e preserva chaves in
     assert.equal(out.data_iso, "2026-07-07");
     assert.equal(out.veiculo_norm, "abc1234");
     assert.equal("Customer ID" in out, false);
+});
+
+test("hodometro do veiculo 1150 nao vira distancia e o original fica no diagnostico", () => {
+    const salto = agregarLinhasTelemetria([{
+        Inicio: "2026-09-14 04:35:38",
+        Fim: "2026-09-14 23:59:57",
+        "Km Inicial": "134931",
+        "Km Final": "2415955712",
+        "Km Percorrido": "2415820781"
+    }]);
+    assert.equal(salto.__kmInconsistente, true);
+    assert.equal(salto["Km Percorrido"], "");
+    assert.equal(salto["Km Inicial"], "134931");
+    assert.equal(salto["Km Final"], "2415955712");
+    assert.equal(salto.__kmDiagnostico[0].percorrido, "2415820781");
+    assert.equal(salto.__kmDiagnostico[0].motivo, "acima do limite de distancia do dia");
+
+    const volta = agregarLinhasTelemetria([{
+        Inicio: "2026-09-15 00:00:00",
+        Fim: "2026-09-15 22:56:34",
+        "Km Inicial": "2415955712",
+        "Km Final": "135567",
+        "Km Percorrido": "-2415820145"
+    }]);
+    assert.equal(volta.__kmInconsistente, true);
+    assert.equal(volta["Km Percorrido"], "");
+    assert.equal(volta.__kmDiagnostico[0].percorrido, "-2415820145");
+    assert.equal(volta.__kmDiagnostico[0].motivo, "reinicio ou diferenca negativa do hodometro");
+});
+
+test("soma distancias confiaveis na ordem do inicio e nao soma o hodometro", () => {
+    const out = agregarLinhasTelemetria([
+        { Inicio: "2026-10-30 14:00", Fim: "2026-10-30 18:00", "Km Inicial": "1120", "Km Final": "1200", "Km Percorrido": "80" },
+        { Inicio: "2026-10-30 08:00", Fim: "2026-10-30 12:00", "Km Inicial": "1000", "Km Final": "1120", "Km Percorrido": "120" }
+    ]);
+    assert.equal(out["Km Percorrido"], "200");
+    assert.equal(out["Km Inicial"], "1000");
+    assert.equal(out["Km Final"], "1200");
+    assert.equal(out.__kmInconsistente, undefined);
+});
+
+test("exclui o trecho inconsistente e mantem a distancia que da para calcular", () => {
+    const out = agregarLinhasTelemetria([
+        { Inicio: "2026-10-30 08:00", "Km Inicial": "1000", "Km Final": "1100", "Km Percorrido": "100" },
+        { Inicio: "2026-10-30 14:00", "Km Inicial": "2415955712", "Km Final": "135567", "Km Percorrido": "-2415820145" }
+    ]);
+    assert.equal(out["Km Percorrido"], "100");
+    assert.equal(out.__kmInconsistente, undefined);
+    assert.equal(out.__kmExcluidos, 1);
+    assert.equal(out.__kmDiagnostico[0].percorrido, "-2415820145");
+    assert.equal(out["Km Inicial"], "1000");
+});
+
+test("sem km informado usa a diferenca do hodometro so quando ela cabe no dia", () => {
+    const out = agregarLinhasTelemetria([{
+        Inicio: "2026-10-07 00:16:48",
+        Fim: "2026-10-07 20:56:28",
+        "Km Inicial": "223972",
+        "Km Final": "224199"
+    }]);
+    assert.equal(out["Km Percorrido"], "227");
+    assert.equal(out.__kmInconsistente, undefined);
 });

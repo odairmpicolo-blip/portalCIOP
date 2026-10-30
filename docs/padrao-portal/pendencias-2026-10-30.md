@@ -129,3 +129,43 @@ Performance, Autuações, cores de pontualidade e a fotografia do portal não fo
 ### Estado desta passagem
 
 - Implementado e conferido em 127.0.0.1:8768. Publicado no repositório de teste. www.portalciop.com.br ainda não tem estes selos nem este céu.
+
+## Quarta passagem — grade da TV, “Agora”, carga do clima e km
+
+Alteração local nesta passagem. Não publicada.
+
+### Grade e nuvens
+
+Causa do vão: a faixa de baixo ocupava o resto da tela e os cartões laterais usavam `justify-content: space-between` com altura do conteúdo. Em 1920×1080 o vão entre dois cartões passava de 300 px.
+
+Correção em `pages/painel-ciop.html`: a faixa das horas recebe a sobra (`minmax(168px, 1.2fr)`); a de baixo fica na altura do conteúdo. Vento e sol à esquerda, sete dias ao centro, umidade, precipitação e pressão à direita. Espaço entre cartões: 12 px, medido. Sem rolagem (`scrollHeight` 1080). As nuvens deixaram o `blur(7px)` e passaram a círculos sobrepostos, sem `filter`, no céu. Não cruzam o texto dos cartões.
+
+Conferido em 127.0.0.1:8768, 1920×1080. Leitura real às 16:57: “Céu limpo”, 26 °C, “Atualizado às 16:57”. Capturas: `assets/ciop-tv-ceu-limpo-1920-20261030.png`, `assets/ciop-tv-chuva-vento-1920-20261030.png`, `assets/ciop-tv-noite-garoa-1920-20261030.png`, `assets/ciop-tv-noite-tempestade-1920-20261030.png`. `?cena=` só troca céu e ícone principal; o rótulo e as temperaturas continuam os da Open-Meteo.
+
+### “Agora” e a condição principal
+
+Causa: o destaque usava `current.weather_code`. O primeiro item da faixa usava `hourly.weather_code` da hora civil. Os dois instantes divergem. A probabilidade horária também aparecia só como porcentagem, e a hora corrente sumia nos últimos 10 minutos (`t + 50 min`).
+
+Correção: “Agora” usa o mesmo código e a mesma temperatura do destaque. As horas seguintes usam a previsão daquela hora, com sol ou lua pelo instante em `America/Sao_Paulo`. A porcentagem leva o texto “prob. na hora”. O rótulo WMO está em `portalRotuloClima`. A hora que contém o relógio permanece na faixa até ela terminar.
+
+Conferido na mesma leitura: destaque e “Agora” com ícone de sol e rótulo “Céu limpo”; 17h com o ícone da hora (garoa) e “68% prob. na hora” no “Agora”, sem transformar a probabilidade em chuva.
+
+### Carga
+
+Causa: `#boot` some antes da resposta e `fetch` não tinha limite nem nova tentativa. Uma busca pendurada deixava a tela em “—” até um recarregamento manual. O único retorno era o ciclo de 10 minutos.
+
+Correção: “Atualizando previsão” enquanto busca; 12 s de limite; uma busca por vez; tentativas em 2 s, 4 s e 8 s; depois, a cada 30 s. Sem dado válido: “Previsão temporariamente indisponível” e traços, nunca zero. Com dado anterior, os números ficam e a fonte marca o horário.
+
+Conferido: Open-Meteo bloqueada, campos em “—” e fonte “Previsão temporariamente indisponível”. Rede liberada, sem recarregar: aos ~11 s, “Atualizado às 16:54”, 26 °C, “Céu limpo”, 8 horas. O texto “Atualizando previsão” é o estado inicial do HTML e o da função de busca; nesta sessão a ferramenta de navegação só devolveu a página depois do limite de 12 s, então esse rótulo não apareceu no intervalo amostrado.
+
+### Quilometragem
+
+Causa: no Clever do veículo 1150 o hodômetro saltou. Em 14/09/2026, início 134.931 km e fim 2.415.955.712 km; o “Km Percorrido” gravado foi a diferença 2.415.820.781. Em 15/09 o fim voltou a 135.567 km e o campo ficou −2.415.820.145. Não é formatação. A agregação também somava “Km Inicial” e “Km Final” como se fossem distância.
+
+Correção em `assets/js/telemetria-merge.js` e na cópia `backend/src/lib/telemetria-merge.js`. A distância do dia só entra se for de 0 a 2.000 km (24 h a 80 km/h). Hodômetro segue a ordem de “Inicio”: o primeiro início e o último fim, sem soma. Diferença negativa ou acima de 2.000 km não vira valor absoluto, não é truncada e não vira zero. A célula mostra “Dado inconsistente”; o título guarda o original. O registro sai das somas e dos gráficos. A contagem avisa a exclusão. O teto de 1.000 km dos indicadores permanece para o que ainda é uma distância.
+
+Conferido na base local, aba Clever: 14/09/2026 do 1150, “Dado inconsistente”, título “Km Percorrido 2415820781 · Km Inicial 134931 · Km Final 2415955712 — acima do limite de distancia do dia”. 15/09, título com “-2415820145” e motivo de reinício. Contagem: “217 com dado inconsistente, fora das somas e dos gráficos”. Os casos rodaram no JavaScriptCore; `node` não está neste ambiente, então `node --test` não rodou.
+
+Os selos da telemetria foram medidos de novo nos dois temas e continuam nos tokens da passagem anterior. O CSS do CR-0108 não foi alterado nesta passagem. O gráfico do CR não foi reaberto.
+
+Pendência: esta passagem não foi publicada. O domínio oficial não foi conferido. “Km Inicial” e “Km Final” continuam mostrando a leitura bruta do contador, inclusive o salto, porque esse é o valor original; só a distância do dia deixa de ser exibida como número.

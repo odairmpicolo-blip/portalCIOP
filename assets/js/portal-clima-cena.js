@@ -15,6 +15,42 @@
   var LUA_SINODICO_MS = 29.530588853 * 24 * 60 * 60 * 1000;
   var luaSeq = 0;
 
+  var ROTULO_CLIMA = {
+    0: "Céu limpo",
+    1: "Poucas nuvens",
+    2: "Parcialmente nublado",
+    3: "Nublado",
+    45: "Nevoeiro",
+    48: "Nevoeiro",
+    51: "Garoa fraca",
+    53: "Garoa",
+    55: "Garoa forte",
+    56: "Garoa gelada",
+    57: "Garoa gelada",
+    61: "Chuva fraca",
+    63: "Chuva",
+    65: "Chuva forte",
+    66: "Chuva gelada",
+    67: "Chuva gelada",
+    71: "Neve fraca",
+    73: "Neve",
+    75: "Neve forte",
+    77: "Grãos de neve",
+    80: "Pancadas fracas",
+    81: "Pancadas de chuva",
+    82: "Pancadas fortes",
+    85: "Pancadas de neve",
+    86: "Pancadas de neve",
+    95: "Trovoada",
+    96: "Trovoada c/ granizo",
+    99: "Trovoada c/ granizo"
+  };
+
+  function rotuloClima(code) {
+    var c = Number(code);
+    return Object.prototype.hasOwnProperty.call(ROTULO_CLIMA, c) ? ROTULO_CLIMA[c] : "";
+  }
+
   function grupoClima(code) {
     var c = Number(code);
     if (!isFinite(c)) return "neutral";
@@ -384,6 +420,7 @@
   }
 
   w.portalClimaTz = TZ;
+  w.portalRotuloClima = rotuloClima;
   w.portalGrupoClima = grupoClima;
   w.portalClimaVentoForte = ventoForte;
   w.portalClimaFaseLua = faseLua;

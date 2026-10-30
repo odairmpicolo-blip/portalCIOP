@@ -11,7 +11,8 @@ import {
 import {
   agregarLinhasTelemetria,
   normalizarLinhaTelemetria,
-  normalizarColunaTelemetria
+  normalizarColunaTelemetria,
+  KM_DISTANCIA_DIA_MAX
 } from "./telemetria-merge.js";
 
 const FROTA = (window.FROTA_PATIO || []).slice().sort((a, b) =>
@@ -195,6 +196,33 @@ function formatarDecimal(val, dec = 2) {
 function colunaTemperatura(nome) {
   const n = colunaChave(nome);
   return n.includes("temperatura");
+}
+
+function colunaKmPercorrido(col) {
+  const n = normChave(col);
+  return n === "km percorrido" || n.startsWith("km percorrido ");
+}
+
+function kmExibidoInconsistente(col, row) {
+  if (!colunaKmPercorrido(col)) return false;
+  if (row?.__kmInconsistente && normChave(col) === "km percorrido") return true;
+  const v = parseNumero(row?.[col]);
+  return Number.isFinite(v) && (v < 0 || v > KM_DISTANCIA_DIA_MAX);
+}
+
+function tituloKmOriginal(row, col) {
+  const itens = Array.isArray(row?.__kmDiagnostico) ? row.__kmDiagnostico : [];
+  if (itens.length) {
+    return itens.map((item) => {
+      const partes = [];
+      if (item.percorrido) partes.push(`Km Percorrido ${item.percorrido}`);
+      if (item.inicial) partes.push(`Km Inicial ${item.inicial}`);
+      if (item.final) partes.push(`Km Final ${item.final}`);
+      return `${partes.join(" · ") || "sem leitura"} — ${item.motivo || "dado inconsistente"}`;
+    }).join(" | ");
+  }
+  const bruto = row?.[col];
+  return bruto ? `Valor original: ${bruto}` : "Valor original preservado para diagnóstico";
 }
 
 function formatarCelula(col, val, row) {
@@ -586,7 +614,7 @@ function calcularStats(rows, colVeiculo) {
 
   const atencaoMap = new Map();
   const obterAtencao = (v) => {
-    if (!atencaoMap.has(v)) atencaoMap.set(v, { veiculo: v, diasTcgl: 0, diasClever: 0, diasFaltando: 0, datasFaltando: [], kmIrreal: [] });
+    if (!atencaoMap.has(v)) atencaoMap.set(v, { veiculo: v, diasTcgl: 0, diasClever: 0, diasFaltando: 0, datasFaltando: [], kmIrreal: [], kmInconsistente: [] });
     return atencaoMap.get(v);
   };
 
@@ -625,7 +653,11 @@ function calcularStats(rows, colVeiculo) {
     let payload = reg.payload || reg;
     if (typeof payload === "string") try { payload = JSON.parse(payload); } catch (_) { payload = {}; }
     const km = kmDePayload(payload);
-    if (Number.isFinite(km) && km > KM_DIARIO_MAX) {
+    if (Number.isFinite(km) && (km < 0 || km > KM_DISTANCIA_DIA_MAX)) {
+      const v = normVeiculo(reg.veiculo);
+      const info = obterAtencao(v);
+      info.kmInconsistente.push({ data: reg.data_iso, km });
+    } else if (Number.isFinite(km) && km > KM_DIARIO_MAX) {
       const v = normVeiculo(reg.veiculo);
       const info = obterAtencao(v);
       info.kmIrreal.push({ data: reg.data_iso, km: Math.round(km) });
@@ -938,7 +970,7 @@ function payloadParaRow(reg, colVeiculo, colData) {
 function calcPctValor(numerador, divisor) {
   const n = parseNumero(numerador);
   const d = parseNumero(divisor);
-  if (!Number.isFinite(n) || !Number.isFinite(d) || d <= 0 || n > 1000 || d > 1000) return null;
+  if (!Number.isFinite(n) || !Number.isFinite(d) || d <= 0 || n < 0 || d < 0 || n > 1000 || d > 1000) return null;
   let pct = (n / d) * 100;
   if (pct > 100) pct = 200 - pct;
   return pct;
@@ -1109,6 +1141,7 @@ function montarLinhasAtencao() {
     const problemas = [];
     if (info.diasClever === 0) problemas.push("Sem Clever");
     else if (info.diasFaltando >= 3) problemas.push("Clever parcial");
+    if (info.kmInconsistente?.length) problemas.push("Dado inconsistente");
     if (info.kmIrreal.length) problemas.push("Km irreal");
     return {
       [colVeiculo]: info.veiculo,
@@ -1151,6 +1184,7 @@ async function exportarPdfAtencao() {
     const problemas = [];
     if (info.diasClever === 0) problemas.push("Sem Clever");
     else if (info.diasFaltando >= 3) problemas.push("Clever parcial");
+    if (info.kmInconsistente?.length) problemas.push("Dado inconsistente");
     if (info.kmIrreal.length) problemas.push("Km irreal");
     return [
       info.veiculo,
@@ -1885,8 +1919,14 @@ function renderTabelaDados(rows, cols) {
   $("contagemDados").textContent = (() => {
     const semDados = rows.filter((r) => r.__semDados).length;
     const comDados = rows.length - semDados;
-    if (semDados) return `${rows.length} linha(s) · ${comDados} com dados · ${semDados} sem registro no período`;
-    return `${rows.length} registro(s)`;
+    const inconsistentes = rows.filter((r) => r.__kmInconsistente || colsVisiveis.some((c) => kmExibidoInconsistente(c, r))).length;
+    const trechos = rows.reduce((s, r) => s + (r.__kmInconsistente ? 0 : (Number(r.__kmExcluidos) || 0)), 0);
+    const partes = [];
+    if (semDados) partes.push(`${rows.length} linha(s)`, `${comDados} com dados`, `${semDados} sem registro no período`);
+    else partes.push(`${rows.length} registro(s)`);
+    if (inconsistentes) partes.push(`${inconsistentes} com dado inconsistente, fora das somas e dos gráficos`);
+    if (trechos) partes.push(`${trechos} trecho(s) excluído(s) da soma por dado inconsistente`);
+    return partes.join(" · ");
   })();
 
   if (!rows.length) {
@@ -1904,6 +1944,10 @@ function renderTabelaDados(rows, cols) {
   corpo.innerHTML = visiveis.map((row) => {
     const rowCls = classeLinhaDado(row, colunasKpi);
     const cells = colsVisiveis.map((col) => {
+      if (kmExibidoInconsistente(col, row)) {
+        const title = escapeHtml(tituloKmOriginal(row, col));
+        return `<td><span class="portal-chip portal-chip-warn" title="${title}">Dado inconsistente</span></td>`;
+      }
       const val = formatarCelula(col, row[col] ?? "", row);
       let cls = "";
       const ext = extremosKm[col];

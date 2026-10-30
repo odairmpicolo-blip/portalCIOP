@@ -8,6 +8,8 @@
   const header = document.querySelector("header.header, div.header, .header");
   if (!header || header.getAttribute("data-portal-shell") === "off") return;
   if (header.classList.contains("portal-shell-header")) return;
+  /* Cabeçalho que já tem a sessão guarda o título próprio (imagem, arte, subtítulo). */
+  if (header.querySelector(".ciop-session")) return;
 
   const inPages = window.location.pathname.includes("/pages/");
   const base = inPages ? "../" : "";
@@ -26,14 +28,18 @@
   const subHtml = sub ? sub.outerHTML : "";
 
   const session = header.querySelector(".ciop-session");
+  const querSenha = !!document.getElementById("senhaPanel") || !!(session && session.querySelector(".btn-senha-portal, [data-portal-senha-btn]"));
+  const senhaBtn = querSenha
+    ? '<button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>'
+    : "";
   const sessionHtml = session
     ? session.outerHTML
-    : '<div class="ciop-session" aria-label="Sessão do usuário">' +
-      '<span id="usuarioLogado" class="ciop-session-user">Usuário</span>' +
-      '<span id="perfilUsuario" class="ciop-session-cargo" hidden></span>' +
-      '<button data-portal-senha-btn="1" onclick="toggleSenhaPanel()" class="btn-senha-portal" type="button">Senha</button>' +
-      '<button onclick="logout()" class="btn-logout" type="button">Sair</button>' +
-      "</div>";
+    : '<div class="ciop-session" data-session-state="loading" aria-busy="true" aria-label="Sessão do usuário">' +
+      '<span class="ciop-session-status">Carregando sessão</span>' +
+      '<div class="ciop-session-info"><span id="usuarioLogado" class="ciop-session-user"></span>' +
+      '<span id="perfilUsuario" class="ciop-session-cargo" hidden></span></div>' +
+      '<div class="ciop-session-actions">' + senhaBtn +
+      '<button onclick="logout()" class="btn-logout" type="button">Sair</button></div></div>';
 
   const actions = header.querySelector(".header-actions");
   const extras = [];
