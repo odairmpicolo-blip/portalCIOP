@@ -27,6 +27,11 @@ Marca oficial (arquivos em `assets/img/`): `portal-ciop-claro.png` e `portal-cio
 | `terminais-proximas-escuro.png` | O mesmo recorte no tema escuro (linhas escuras, nome/horário claros) |
 | `terminais-chrome-claro.png` | Terminais Agora: logo cheia + filtro “Todos os terminais”, tema claro |
 | `terminais-chrome-escuro.png` | O mesmo chrome no tema escuro |
+| `login-claro-vazio-20261030.png` | Login vazio, tema claro, sem dados pessoais |
+| `login-escuro-vazio-20261030.png` | Login vazio, tema escuro |
+| `login-escuro-erro-20261030.png` | Login escuro com o aviso real de e-mail ausente na recuperação |
+| `login-claro-390-20261030.png` | Login claro em 390 px |
+| `login-escuro-390-20261030.png` | Login escuro em 390 px |
 
 | `filtros-antes-1440-claro.png` | Colisão reproduzida: date 118 px, nowrap, Só produtivas no rótulo Linha |
 | `filtros-depois-390-claro.png` | Filtros wrap + dock/safe-area, 390×844, claro |

@@ -46,6 +46,7 @@ Usar o token da **escrita** da superfície, não uma cor global de “texto bran
 | Página / painel | `--portal-glass-mid` / `--portal-glass-dense` | `--portal-on-surface` (= `--portal-text`) |
 | Card elevado | `--portal-glass-mid` | `--portal-on-elevated` |
 | Campo | `--portal-field` | `--portal-on-field` |
+| Campo do login | `--portal-fallback` (opaco) | `--portal-on-field` |
 | Tooltip | `--portal-tooltip` | `--portal-on-tooltip` (`#f5f8ff` nos dois temas) |
 | Seleção | `--portal-selection` | `--portal-on-selection` |
 | Status operacional | — | `--portal-op-ontime` / `--early` / `--late` (não o texto do painel) |
@@ -55,6 +56,8 @@ Usar o token da **escrita** da superfície, não uma cor global de “texto bran
 | Indisponível | painel | `--portal-state-unavailable` (`.portal-state-unavailable`, `.is-unavailable`) |
 | Dado histórico | painel | `--portal-state-historic` (`.portal-state-historic`, `.is-stale`) |
 | Documento / PDF | `--portal-paper` `#fff` | `#102c53` (mesmo no tema escuro da interface) |
+
+No login, `--portal-field` no tema escuro é um véu branco de 8% e não segura texto claro. Os campos usam `--portal-fallback` opaco. Detalhe em [login.md](login.md).
 
 ### Selos de estado (`.portal-chip`)
 

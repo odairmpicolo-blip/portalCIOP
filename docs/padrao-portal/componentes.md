@@ -28,9 +28,9 @@ O JS marca `html#portal-page-glass.portal-glass-system` e `body#portal-page-cont
 
 Casco interno: `portal-shell.js` (via `theme-toggle.js`) normaliza `.header` em marca | título | `.header-actions` (sessão e extras da página). `data-portal-shell="off"` preserva cabeçalho próprio. Home e kiosk não usam este casco.
 
-Sessão: um único componente em `assets/css/portal-session.css` e `auth.js` (`modernizarSessaoUsuario`). Especificação, páginas e pendências: [sessao-usuario.md](sessao-usuario.md). Na home o “Senha” do cabeçalho continua oculto; a troca vive no diálogo de ajustes. Nas demais páginas, “Senha” só aparece se a página já tinha o botão ou tem `#senhaPanel`. “Sair” continua em `logout()`.
+Sessão: um único componente em `assets/css/portal-session.css` e `auth.js` (`modernizarSessaoUsuario`). A home entra na mesma regra. Especificação, páginas e pendências: [sessao-usuario.md](sessao-usuario.md). “Senha” chama `toggleSenhaPanel()`; “Sair” chama `logout()`.
 
-Seletor de tema: `.dk-theme-picker` fica imediatamente depois da sessão em `.header-actions`. Na home o seletor permanece na barra lateral. `theme-toggle.js` no `<head>` aplica `dk-light`/`dk-dark` antes da primeira pintura, inclusive Auto (sol em Londrina).
+Seletor de tema: `.dk-theme-picker` fica imediatamente depois da sessão em `.header-actions`. Na home o seletor entra nos Ajustes. `theme-toggle.js` no `<head>` aplica `dk-light`/`dk-dark` antes da primeira pintura, inclusive Auto (sol em Londrina).
 
 Voltar ao Portal: `.btn-portal` / `.portal-return` / `data-portal-voltar`. Se a página não tiver, `garantirVoltarAoPortal()` cria o link.
 

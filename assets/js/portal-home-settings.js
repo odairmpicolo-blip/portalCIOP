@@ -231,10 +231,13 @@
     chooser = dialog.querySelector('#homeSettingsModules'); status = dialog.querySelector('#homeSettingsStatus');
     var passwordSection = dialog.querySelector('#homeSettingsPassword');
     var passwordPanel = document.getElementById('senhaPanel');
-    if (passwordPanel) dialog.querySelector('#homeSettingsPasswordSlot').appendChild(passwordPanel);
-    passwordSection.addEventListener('toggle', function () { window.toggleSenhaPanel?.(passwordSection.open); });
+    passwordSection.querySelector('summary')?.addEventListener('click', function (event) {
+      event.preventDefault();
+      dialog.close();
+      window.toggleSenhaPanel?.(true);
+    });
     passwordPanel?.querySelector('.secondary')?.addEventListener('click', function () { passwordSection.open = false; });
-    dialog.addEventListener('close', function () { passwordSection.open = false; window.toggleSenhaPanel?.(false); });
+    dialog.addEventListener('close', function () { passwordSection.open = false; });
     var adminActions = dialog.querySelector('.home-settings-admin-actions');
     [document.getElementById('sidebarAdicionarAviso'), document.querySelector('#homeOutros a[data-modulo="gerenciar-usuarios"]')].forEach(function (action) {
       if (!action) return;

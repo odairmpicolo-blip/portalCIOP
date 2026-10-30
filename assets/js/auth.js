@@ -249,7 +249,7 @@ function posicionarSessaoComTema() {
 }
 
 function garantirBotaoSenha(session) {
-  if (!session || paginaEhHomePortal() || sessaoEmApresentacao()) return;
+  if (!session || sessaoEmApresentacao()) return;
   if (session.querySelector(".btn-senha-portal, [data-portal-senha-btn]")) return;
   if (!document.getElementById("senhaPanel")) return;
   const actions = session.querySelector(".ciop-session-actions") || session;
