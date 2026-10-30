@@ -4,7 +4,7 @@ A página inicial (`index.html` + `portal-home-2026.js`) reúne o catálogo no m
 
 ## Estrutura
 
-1. Topo: saudação, ícone do WhatsApp Web na mesma linha, resumo, performance, horário e clima.
+1. Topo: saudação, ícone do WhatsApp Web no fim da linha de baixo, resumo, performance, horário e clima.
 2. Quadro de avisos.
 3. **Seus favoritos** — até 6 atalhos da conta (`portal-home-settings.js`), mesma origem dos cards do catálogo.
 4. **Todos os módulos** — filtros Todos / Operação / Indicadores / Relatórios / TV.

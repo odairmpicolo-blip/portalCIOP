@@ -50,7 +50,7 @@ Em 390×844 não há rolagem horizontal. O logo fica no canto, o cartão abaixo,
 
 ## WhatsApp Web
 
-O login não tem atalho de WhatsApp. O ícone fica na tela inicial, na mesma linha da saudação, depois do nome. Só o ícone, sem o texto “Abrir WhatsApp Web”.
+O login não tem atalho de WhatsApp. O ícone fica na tela inicial, no fim da linha abaixo do nome (“Sua operação em um só lugar.”). Só o ícone, sem o texto “Abrir WhatsApp Web”.
 
 - Destino fixo: `https://web.whatsapp.com/`
 - `target="_blank"` e `rel="noopener noreferrer"`

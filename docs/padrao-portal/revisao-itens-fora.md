@@ -76,6 +76,6 @@ Esses YAML locais não foram enviados. Publicar `.github/workflows/` depende de 
 
 ## WhatsApp
 
-O atalho **Abrir WhatsApp Web** não fica no login. Na tela inicial, na mesma linha da saudação e depois do nome, há só o ícone. Destino `https://web.whatsapp.com/`, `target="_blank"` e `rel="noopener noreferrer"`. Não leva e-mail, senha nem número. No Chrome local, o alvo mede 44×44 px, sem texto visível, na mesma linha do nome, no claro e no escuro, e em 390 px sem rolagem horizontal.
+O atalho **Abrir WhatsApp Web** não fica no login. Na tela inicial, no fim da linha abaixo do nome, há só o ícone. Destino `https://web.whatsapp.com/`, `target="_blank"` e `rel="noopener noreferrer"`. Não leva e-mail, senha nem número. No Chrome local, o alvo mede 44×44 px, sem texto visível, abaixo do nome e no fim dessa linha, em 1920 e em 390 px, sem rolagem horizontal.
 
 Não há número de suporte. Este botão não substitui um contato de atendimento.
