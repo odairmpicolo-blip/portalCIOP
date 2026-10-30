@@ -51,8 +51,10 @@
   }
 
   function pintarKpi(el, n, casas, sufixo) {
-    var txt = casas > 0 ? n.toFixed(casas).replace(".", ",") : String(Math.round(n));
-    el.textContent = txt + sufixo;
+    var opts = casas > 0
+      ? { minimumFractionDigits: casas, maximumFractionDigits: casas }
+      : { maximumFractionDigits: 0 };
+    el.textContent = n.toLocaleString("pt-BR", opts) + sufixo;
   }
 
   if (typeof window.portalContarNumero !== "function") {
@@ -113,6 +115,7 @@
   function parseKpiTexto(txt) {
     var s = String(txt || "").trim();
     if (!s || s === "—" || s === "-" || s === "–") return null;
+    if (/R\$/.test(s)) return null;
     if (/^\d{1,2}:\d{2}/.test(s)) return null;
     if (/\d{1,2}\/\d{1,2}/.test(s)) return null;
     if (/[A-Za-zÀ-ú]{3,}/.test(s) && !/%/.test(s)) return null;
@@ -121,13 +124,19 @@
     var raw = m[1];
     var suffix = m[2] || "";
     var n;
-    if (raw.indexOf(",") >= 0) n = Number(raw.replace(/\./g, "").replace(",", "."));
-    else if (/^\d{1,3}(?:\.\d{3})+$/.test(raw)) n = Number(raw.replace(/\./g, ""));
-    else n = Number(raw);
-    if (!Number.isFinite(n) || Math.abs(n) > 1e9) return null;
     var dec = 0;
-    var frac = raw.split(/[.,]/)[1];
-    if (frac) dec = frac.length;
+    if (raw.indexOf(",") >= 0) {
+      n = Number(raw.replace(/\./g, "").replace(",", "."));
+      dec = (raw.split(",")[1] || "").length;
+    } else if (/^-?\d{1,3}(?:\.\d{3})+$/.test(raw)) {
+      n = Number(raw.replace(/\./g, ""));
+      dec = 0;
+    } else {
+      n = Number(raw);
+      var frac = raw.split(".")[1];
+      if (frac) dec = frac.length;
+    }
+    if (!Number.isFinite(n) || Math.abs(n) > 1e9) return null;
     return { n: n, suffix: suffix, decimals: dec };
   }
 

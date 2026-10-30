@@ -14,6 +14,7 @@ let sortState = { key: "data_iso", dir: "desc" };
 const COLORS = ["#00d4ff", "#1359c7", "#ff6b00", "#7045b8", "#28a64a", "#f6bf26", "#00a6a6", "#de1b1b", "#9b59b6", "#16a085", "#e67e22", "#4d7cff"];
 
 function isDarkTheme() {
+    if (document.documentElement.classList.contains("dk-light")) return false;
     return document.documentElement.classList.contains("dk-dark")
         || (window.innerWidth <= 720 && !document.documentElement.classList.contains("native-light"));
 }
@@ -21,8 +22,8 @@ function isDarkTheme() {
 function chartTheme() {
     if (isDarkTheme()) {
         return {
-            navy: "#e8edf2",
-            muted: "#ffffff",
+            navy: "#f4f7fb",
+            muted: "#f4f7fb",
             cyan: "#00d4ff",
             blue: "#38bdf8",
             orange: "#ff6b00",
@@ -31,9 +32,9 @@ function chartTheme() {
             tooltipBorder: "rgba(0,212,255,.35)"
         };
     }
-    return {
-        navy: "#071f57",
-        muted: "#667085",
+        return {
+            navy: "#102c53",
+            muted: "#1e293b",
         cyan: "#00d4ff",
         blue: "#1359c7",
         orange: "#ff6b00",
@@ -94,7 +95,8 @@ function escalaLinearFuturo(eixo = "y") {
         ticks: {
             color: CHART_THEME.muted,
             font: fonteGrafico("600", 10),
-            padding: 6
+            padding: 6,
+            callback(value) { return formatInt(value); }
         }
     };
 }
@@ -209,9 +211,10 @@ const pluginNomeAgenteNaBarra = {
             const pad = 10;
             const texto = truncarTexto(ctx, label, Math.max(barWidth - pad * 2 - 28, 0));
             ctx.textAlign = "left";
-            ctx.shadowColor = "rgba(7,31,87,.45)";
-            ctx.shadowBlur = 4;
-            ctx.fillStyle = "#fff";
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "rgba(7,16,32,.9)";
+            ctx.strokeText(texto, barLeft + pad, bar.y);
+            ctx.fillStyle = "#f8fafc";
             ctx.fillText(texto, barLeft + pad, bar.y);
         });
         ctx.restore();
@@ -319,7 +322,18 @@ function normalizeRows(payload) {
     }).filter((d) => d.data_iso || d.data_br || d.notificacao || d.auto || d.motivo || d.agente);
 }
 
-function formatInt(n) { return Number(n || 0).toLocaleString("pt-BR"); }
+function formatInt(n) {
+    let v = n;
+    if (typeof v === "string") {
+        const t = v.trim().replace(/\s/g, "").replace(/R\$/gi, "");
+        if (t.includes(",") && t.includes(".")) v = t.replace(/\./g, "").replace(",", ".");
+        else if (t.includes(",")) v = t.replace(",", ".");
+        else v = t;
+    }
+    const num = Number(v);
+    if (!Number.isFinite(num)) return "—";
+    return Math.round(num).toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+}
 
 function formatMoeda(n) {
     return Number(n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -327,7 +341,8 @@ function formatMoeda(n) {
 
 function formatTarifas(n) {
     const v = Number(n || 0);
-    if (!v) return "0";
+    if (!Number.isFinite(v) || !v) return "0";
+    if (Math.abs(v - Math.round(v)) < 0.0005) return formatInt(v);
     return v.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
@@ -638,7 +653,12 @@ function desenharGraficoPeriodo(rows) {
                     ...escalaLinearFuturo("x"),
                     display: !eAno,
                     grid: { display: false },
-                    ticks: { ...escalaLinearFuturo("x").ticks, font: fonteGrafico("700", 10), color: CHART_THEME.navy }
+                    ticks: {
+                        ...escalaLinearFuturo("x").ticks,
+                        font: fonteGrafico("700", 10),
+                        color: CHART_THEME.navy,
+                        callback(value) { return formatInt(value); }
+                    }
                 },
                 y: escalaLinearFuturo("y")
             }
@@ -700,8 +720,8 @@ function desenharGraficoAgentes(rows) {
                     anchor: "end",
                     align: "end",
                     offset: 6,
-                    color: CHART_THEME.navy,
-                    backgroundColor: "rgba(255,255,255,.88)",
+                    color: isDarkTheme() ? "#f4f7fb" : "#102c53",
+                    backgroundColor: isDarkTheme() ? "rgba(8,18,32,.92)" : "rgba(255,255,255,.94)",
                     borderRadius: 6,
                     padding: { top: 3, bottom: 3, left: 6, right: 6 },
                     font: fonteGrafico("800", 10),
@@ -711,7 +731,11 @@ function desenharGraficoAgentes(rows) {
             scales: {
                 x: {
                     ...escalaLinearFuturo("x"),
-                    ticks: { ...escalaLinearFuturo("x").ticks, stepSize: 1 }
+                    ticks: {
+                        ...escalaLinearFuturo("x").ticks,
+                        stepSize: 1,
+                        callback(value) { return formatInt(value); }
+                    }
                 },
                 y: {
                     ...escalaLinearFuturo("y"),
@@ -871,7 +895,7 @@ function drawPie(items, total) {
     ctx.restore();
 
     ctx.save();
-    ctx.fillStyle = CHART_THEME.navy;
+    ctx.fillStyle = "#102c53";
     ctx.font = `800 ${Math.max(15, size * 0.12)}px 'Segoe UI', system-ui, Arial, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -879,7 +903,7 @@ function drawPie(items, total) {
     ctx.shadowBlur = 8;
     ctx.fillText(formatInt(total), cx, cy - size * 0.02);
     ctx.shadowBlur = 0;
-    ctx.fillStyle = CHART_THEME.muted;
+    ctx.fillStyle = "#334155";
     ctx.font = `600 ${Math.max(9, size * 0.052)}px 'Segoe UI', system-ui, Arial, sans-serif`;
     ctx.fillText("autuações", cx, cy + size * 0.085);
     ctx.restore();

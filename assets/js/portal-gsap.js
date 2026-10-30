@@ -30,8 +30,10 @@
     }
 
     function pintar(n) {
-      var txt = casas > 0 ? n.toFixed(casas).replace(".", ",") : String(Math.round(n));
-      el.textContent = txt + sufixo;
+      var opts = casas > 0
+        ? { minimumFractionDigits: casas, maximumFractionDigits: casas }
+        : { maximumFractionDigits: 0 };
+      el.textContent = n.toLocaleString("pt-BR", opts) + sufixo;
     }
 
     function encerrar() {

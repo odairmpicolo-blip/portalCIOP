@@ -186,7 +186,7 @@
   .vivo-legend .early{ color:#fb7185; }
   .vivo-chart-status{
     margin:0; min-height:1.15em;
-    font-size:clamp(11px,.85vw,13px); font-weight:700; color:var(--muted);
+    font-size:clamp(11px,.85vw,13px); font-weight:700; color:#e8eef8;
   }
   .vivo-chart-status.is-error{ color:#fb7185; }
   .vivo-chart-plot{
@@ -525,6 +525,41 @@ function histTemPonto(hist) {
   const mins = Object.keys(hist?.minutos || {}).length;
   return horas > 0 || mins > 0;
 }
+function horaMinutoSP(ts) {
+  const p = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", hour12: false
+  }).formatToParts(new Date(ts));
+  const n = (tipo) => (p.find((x) => x.type === tipo) || {}).value || "00";
+  return n("hour") + ":" + n("minute");
+}
+function primeiroInstante(hist) {
+  let minTs = Infinity;
+  const ver = (p) => {
+    const t = Number(p?.ts);
+    if (Number.isFinite(t) && t > 0 && t < minTs) minTs = t;
+  };
+  Object.values(hist?.horas || {}).forEach(ver);
+  Object.values(hist?.minutos || {}).forEach(ver);
+  const horas = Object.keys(hist?.horas || {}).map(Number).filter((h) => h >= 0 && h <= 23);
+  const horaMin = horas.length ? Math.min(...horas) : null;
+  if (!Number.isFinite(minTs) && horaMin == null) return null;
+  if (!Number.isFinite(minTs)) return { hora: horaMin };
+  if (horaMin == null) return minTs;
+  const horaDoTs = Number(horaMinutoSP(minTs).slice(0, 2));
+  if (horaMin < horaDoTs) return { hora: horaMin };
+  return minTs;
+}
+function textoHist(hist) {
+  if (!histTemPonto(hist)) {
+    return "Sem histórico neste dia. As barras são a leitura de agora; o gráfico só marca horas já gravadas, sem completar lacunas.";
+  }
+  const ini = primeiroInstante(hist);
+  if (!ini) {
+    return "Sem histórico neste dia. As barras são a leitura de agora; o gráfico só marca horas já gravadas, sem completar lacunas.";
+  }
+  const hm = typeof ini === "number" ? horaMinutoSP(ini) : String(ini.hora).padStart(2, "0") + ":00";
+  return "Histórico disponível a partir de " + hm + ".";
+}
 function setChartStatus(msg, isError) {
   const el = document.getElementById("chartStatus");
   if (!el) return;
@@ -552,11 +587,7 @@ function pintarLinhaHora(hist) {
       linha("Adiantado", CORES.early, series[2], false)
     ]
   };
-  if (!histTemPonto(hist)) {
-    setChartStatus("Sem histórico neste dia. As barras são a leitura de agora; o gráfico só marca horas já gravadas, sem completar lacunas.");
-  } else {
-    setChartStatus("");
-  }
+  setChartStatus(textoHist(hist));
   try {
     if (horaChart) {
       horaChart.data = data;

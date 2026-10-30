@@ -70,3 +70,25 @@ Performance em 1920×1080, depois dos dados: TCGL 83/7/10, LondriSul 78/13/9, To
 Previsão da TV no mesmo tamanho: cena real `is-drizzle is-day`, “Garoa fraca”, 27 °C. Nuvem do slide com `filter: none`.
 
 Telemetria, Autuações, CR-0108 e Evidências pedem login nesse domínio. A conferência visual dessas quatro páginas no ar continua pendente sem sessão.
+
+## Segunda passagem — cobertura e contraste
+
+O gráfico da Performance voltou a desenhar linha, mas a revisão só via pontos perto das 13h e 14h. Isso não era um recorte da consulta: a API do mapa não tem série horária, só a leitura de agora. O Firestore `performanceHoras` exige administrador, e o kiosk público não grava nem lê essa coleção. Cada navegador só plota o que ele mesmo persistiu em `localStorage`.
+
+Correção em `pages/performance-tempo-real.html`: quando há ponto, o status é “Histórico disponível a partir de HH:mm”, em `America/Sao_Paulo`, pelo menor `ts` gravado. Hora antiga sem `ts` usa `HH:00` do bucket. Lacuna continua `null`, `spanGaps: false`, sem zero inventado. Recarregar e o poll de 5 s mantêm as horas já salvas.
+
+Conferido no teste (127.0.0.1:8768, 1920×1080), com o histórico real deste navegador: status “Histórico disponível a partir de 14:33.”, pontos só às 14h e 15h, hora 9 vazia, 24 rótulos, fuso `America/Sao_Paulo`. Uma hora 8h inserida só para o teste sobreviveu ao recarregamento e a uma atualização automática, com raio 7 no ponto isolado, e foi removida em seguida. Captura: `assets/pend-performance-hist-20261030.png`. Limitação: horas anteriores a 14:33 neste navegador não foram coletadas e não podem ser recuperadas da API.
+
+Telemetria: o texto “Ao vivo” ficava claro (`#d5e2f0`) sobre a pílula clara (`#f8fafc`). A pílula agora acompanha o tema: no escuro, fundo `rgba(8,18,32,.94)` e texto `#f4f7fb`; no claro, fundo `#f8fafc` e texto `#1e293b`. Títulos dos indicadores permanecem. No teste, “Ao vivo” ficou 14,0:1 no claro e 17,4:1 no escuro; etiqueta do card 13,4:1 e 16,2:1. Em 390 px o “Ao vivo” escuro ficou 16,4:1. Capturas: `assets/pend-telemetria-claro-aovivo-20261030.png`, `assets/pend-telemetria-escuro-aovivo-20261030.png`.
+
+Autuações: `formatInt` já gerava `1.519`, mas `portal-futuristic.js` lia o ponto de milhar como três casas e reescrevia o card como `1519,000`. O leitor agora trata `1.519` como inteiro e a pintura usa `pt-BR` com agrupamento. Moeda segue com centavos; percentual da legenda segue uma casa (`21,9%`). Etiquetas dos gráficos usam texto escuro no claro e `#f4f7fb` sobre chip escuro no escuro. No teste, com o JSON local: total `1.519`, tarifas `230.500`, gasto `R$ 1.690.275,41` (`#c2410c` no claro, `#fdba74` no escuro). Captura do escuro: `assets/pend-autuacoes-escuro-20261030.png`.
+
+CR-0108: calendário e abas permanecem. Eixos, marcas, legenda e grade dos dois gráficos passam a `#1e293b` / `rgba(30,41,59,.18)` no claro e `#f4f7fb` / `rgba(213,226,240,.28)` no escuro. `max: 100`, empilhamento e a série (211 pontos na evolução, 24 horas) não mudaram. Captura: `assets/pend-cr0108-escuro-grafico-20261030.png`.
+
+CIOP TV: garoa real, nuvens, chuva e ícones por horário permanecem. Prévia local em 1920×1080, sem alterar os números de produção (continuou “Garoa fraca”, 27 °C, vento 12 km/h): `tempestade` (`is-storm is-day`), `vento` (`is-sun is-day is-wind`), `noite-chuva` (`is-rain is-night`), `noite-vento` (`is-sun is-night is-wind`). Nuvem do slide com `filter: none`. Capturas atualizadas: `assets/ciop-tv-cena-tempestade-20261030.png`, `assets/ciop-tv-cena-vento-20261030.png`, `assets/ciop-tv-cena-noite-chuva-20261030.png`, `assets/ciop-tv-cena-noite-vento-20261030.png`.
+
+### Estado desta passagem
+
+- Implementado no teste local e conferido em 127.0.0.1:8768.
+- Publicado: ainda não, neste registro.
+- Conferido em www.portalciop.com.br: ainda não. A cobertura do histórico no domínio só vale depois que o HTML novo estiver no ar e o primeiro instante gravado naquele navegador for lido. Telemetria, Autuações e CR-0108 no domínio continuam atrás do login.

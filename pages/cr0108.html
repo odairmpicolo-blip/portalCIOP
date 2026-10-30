@@ -446,6 +446,13 @@ function renderKpis(){
 /* ---- Gráficos ----------------------------------------------------------------- */
 let gEvolucao = null, gHora = null;
 
+function corEixo(){
+    const escuro = document.documentElement.classList.contains("dk-dark");
+    return escuro
+        ? { texto: "#f4f7fb", grade: "rgba(213,226,240,.28)" }
+        : { texto: "#1e293b", grade: "rgba(30,41,59,.18)" };
+}
+
 function renderEvolucao(){
     const p = periodo();
     const serie = seriePeriodo();
@@ -481,13 +488,14 @@ function renderEvolucao(){
             borderWidth: 2, pointRadius: rotulos.length > 60 ? 0 : 2, tension: .25
         }))
     };
+    const eixo = corEixo();
     const opcoes = {
         responsive: true, maintainAspectRatio: true,
         interaction: { mode: "index", intersect: false },
-        plugins: { legend: { labels: { boxWidth: 10, font: { size: 11, weight: "bold" } } },
+        plugins: { legend: { labels: { color: eixo.texto, boxWidth: 10, font: { size: 11, weight: "bold" } } },
             tooltip: { callbacks: { label: ctx => ctx.dataset.label + ": " + nPct(ctx.parsed.y) } } },
-        scales: { y: { ticks: { callback: v => v + "%", font: { size: 10 } }, grid: { color: "#eef2f7" } },
-                  x: { ticks: { font: { size: 9 }, maxRotation: 60, autoSkip: true, maxTicksLimit: 16 }, grid: { display: false } } }
+        scales: { y: { ticks: { color: eixo.texto, callback: v => v + "%", font: { size: 10 } }, grid: { color: eixo.grade } },
+                  x: { ticks: { color: eixo.texto, font: { size: 9 }, maxRotation: 60, autoSkip: true, maxTicksLimit: 16 }, grid: { display: false } } }
     };
     if (gEvolucao) gEvolucao.destroy();
     gEvolucao = new Chart($("graficoEvolucao"), { type: "line", data: dados, options: opcoes });
@@ -519,12 +527,13 @@ function renderHora(){
             backgroundColor: c.cor, borderWidth: 0
         }))
     };
+    const eixo = corEixo();
     const opcoes = {
         responsive: true, maintainAspectRatio: true,
-        plugins: { legend: { labels: { boxWidth: 10, font: { size: 11, weight: "bold" } } },
+        plugins: { legend: { labels: { color: eixo.texto, boxWidth: 10, font: { size: 11, weight: "bold" } } },
             tooltip: { callbacks: { label: ctx => ctx.dataset.label + ": " + nPct(ctx.parsed.y) } } },
-        scales: { x: { stacked: true, ticks: { font: { size: 9 } }, grid: { display: false } },
-                  y: { stacked: true, max: 100, ticks: { callback: v => v + "%", font: { size: 10 } }, grid: { color: "#eef2f7" } } }
+        scales: { x: { stacked: true, ticks: { color: eixo.texto, font: { size: 9 } }, grid: { display: false } },
+                  y: { stacked: true, max: 100, ticks: { color: eixo.texto, callback: v => v + "%", font: { size: 10 } }, grid: { color: eixo.grade } } }
     };
     if (gHora) gHora.destroy();
     gHora = new Chart($("graficoHora"), { type: "bar", data: dados, options: opcoes });
@@ -961,6 +970,11 @@ function selarAtualizacao(meta){
         console.error(err);
     }
 }
+
+window.addEventListener("dk-theme-change", function () {
+    if (gEvolucao) renderEvolucao();
+    if (gHora) renderHora();
+});
 
 iniciar();
 </script>
