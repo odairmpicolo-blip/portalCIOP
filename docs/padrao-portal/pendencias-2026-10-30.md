@@ -89,6 +89,10 @@ CIOP TV: garoa real, nuvens, chuva e ícones por horário permanecem. Prévia lo
 
 ### Estado desta passagem
 
-- Implementado no teste local e conferido em 127.0.0.1:8768.
-- Publicado: ainda não, neste registro.
-- Conferido em www.portalciop.com.br: ainda não. A cobertura do histórico no domínio só vale depois que o HTML novo estiver no ar e o primeiro instante gravado naquele navegador for lido. Telemetria, Autuações e CR-0108 no domínio continuam atrás do login.
+- Implementado e conferido em 127.0.0.1:8768.
+- Publicado no teste: `d30d4161`. Publicado em produção: `4ef6cce01`. O Pages concluiu e o HTML novo passou a ser servido em www.portalciop.com.br.
+- Conferido no domínio, 1920×1080, por volta das 15:40 (America/Sao_Paulo): Performance com “Histórico disponível a partir de 00:08.”, pontos reais das 0h às 15h, oito horas seguintes vazias, nenhum zero, `spanGaps: false`. Recarregar manteve o início. Esse 00:08 é o primeiro registro deste navegador no domínio, não uma reconstituição da API. Um navegador aberto só à tarde continua começando na hora em que ele mesmo gravou. Captura: `assets/pend-performance-oficial-hist-20261030.png`.
+- TV oficial, sem `?cena=`: `is-drizzle is-day`, “Garoa fraca”, 27 °C, nuvem com `filter: none`. Os números de produção não foram alterados.
+- Telemetria oficial, antes do retorno ao login: “Ao vivo” no claro `#1e293b` sobre `#f8fafc`; no escuro `#f4f7fb` sobre `rgba(8,18,32,.94)`. Etiquetas no escuro `#f4f7fb`.
+- CR-0108 oficial, com os dados carregados e antes do retorno ao login: evolução com 211 pontos; faixa horária com 24 horas, `max` 100 e empilhada. Claro: eixo e legenda `#1e293b`, grade `rgba(30,41,59,.18)`. Escuro: `#f4f7fb` e `rgba(213,226,240,.28)`.
+- Autuações: o JavaScript novo está no domínio (`formatInt` sem casas e o leitor de milhar). A pintura dos gráficos com a planilha no ar não foi refeita nesta passagem porque a página pede sessão para buscar os dados. A conferência dos números `1.519`, `230.500` e `R$ 1.690.275,41` ficou no teste local.
