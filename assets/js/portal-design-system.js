@@ -19,7 +19,7 @@
     tokens.dataset.portalTokens = '1';
     document.head.appendChild(tokens);
   }
-    style.href = new URL('assets/css/portal-design-system.css?v=20261030login7', root).href;
+    style.href = new URL('assets/css/portal-design-system.css?v=20261030wa1', root).href;
   style.dataset.portalDesign = '1';
   document.head.appendChild(style);
   if (!document.querySelector('link[data-portal-page-contrast]')) {

@@ -50,15 +50,13 @@ Em 390×844 não há rolagem horizontal. O logo fica no canto, o cartão abaixo,
 
 ## WhatsApp Web
 
-Abaixo do formulário, separado do botão Entrar, há o atalho **Abrir WhatsApp Web**.
+O login não tem atalho de WhatsApp. O ícone fica na tela inicial, na mesma linha da saudação, depois do nome. Só o ícone, sem o texto “Abrir WhatsApp Web”.
 
 - Destino fixo: `https://web.whatsapp.com/`
 - `target="_blank"` e `rel="noopener noreferrer"`
-- Ícone verde do WhatsApp e rótulo em `--portal-text` sobre `--portal-fallback`
-- Não lê e-mail, senha nem qualquer campo do formulário
+- Nome acessível: “Abrir WhatsApp Web”
+- Não lê e-mail, senha nem qualquer campo
 - Não é suporte e não leva número de telefone
-
-O histórico do login não tem um número de atendimento. Este botão só abre o WhatsApp Web, o mesmo destino do atalho antigo da home.
 
 ## O que permanece
 
@@ -78,11 +76,7 @@ Sem e-mail, senha ou outro dado pessoal. O aviso da terceira imagem é o texto r
 
 ![Login escuro, 390 px](assets/login-escuro-390-20261030.png)
 
-Atalho para o WhatsApp Web, abaixo do formulário:
-
-![Login claro com WhatsApp Web](assets/login-whatsapp-claro-20261030.png)
-
-![Login escuro com WhatsApp Web](assets/login-whatsapp-escuro-20261030.png)
+As capturas `login-whatsapp-claro-20261030.png` e `login-whatsapp-escuro-20261030.png` mostram o atalho que ficou no login e depois saiu de lá.
 
 ## Verificação desta rodada
 
@@ -90,4 +84,4 @@ Chrome (navegador Chromium do Cursor), em `http://127.0.0.1:8768/login.html`: va
 
 Edge e Firefox não estão instalados. Safari está instalado e não foi conduzido nesta rodada.
 
-A correção está só no repositório local. Não foi commitada nem publicada.
+O ícone fica na saudação da tela inicial.

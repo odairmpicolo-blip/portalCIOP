@@ -32,8 +32,8 @@ Marca oficial (arquivos em `assets/img/`): `portal-ciop-claro.png` e `portal-cio
 | `login-escuro-erro-20261030.png` | Login escuro com o aviso real de e-mail ausente na recuperação |
 | `login-claro-390-20261030.png` | Login claro em 390 px |
 | `login-escuro-390-20261030.png` | Login escuro em 390 px |
-| `login-whatsapp-claro-20261030.png` | Login claro com o atalho Abrir WhatsApp Web |
-| `login-whatsapp-escuro-20261030.png` | O mesmo atalho no tema escuro |
+| `login-whatsapp-claro-20261030.png` | Captura antiga: atalho no login, posição que saiu |
+| `login-whatsapp-escuro-20261030.png` | A mesma captura antiga no tema escuro |
 | `frota-slide-05-20261030.png` | Slide 5 da apresentação de redução da frota, quadro das 23 linhas |
 
 | `filtros-antes-1440-claro.png` | Colisão reproduzida: date 118 px, nowrap, Só produtivas no rótulo Linha |
