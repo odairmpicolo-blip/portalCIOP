@@ -56,6 +56,15 @@ Correção só em `#slide-tempo` de `pages/painel-ciop.html`: nuvens em lóbulos
 
 Capturas 1920×1080: `assets/ciop-tv-cena-vento-20261030.png`, `assets/ciop-tv-cena-tempestade-20261030.png`, `assets/ciop-tv-cena-noite-chuva-20261030.png`, `assets/ciop-tv-cena-noite-vento-20261030.png`.
 
-## O que ainda não está conferido no domínio oficial
+## Publicação
 
-Telemetria, Autuações, CR-0108 e Evidências pedem login em www.portalciop.com.br. A Performance e a previsão da TV não pedem. A conferência dessas duas, depois da publicação, fica no final deste arquivo.
+- Teste (`portal-teste` `main`): `d2349f4b`.
+- Produção (`portalCIOP` `main`): `eee7e4e2c`.
+
+## Conferência no domínio oficial
+
+Em 30/10/2026, 14:44 (America/Sao_Paulo), www.portalciop.com.br/pages/performance-tempo-real.html ainda servia o HTML anterior: não continha `raioPonto`. O workflow “Deploy GitHub Pages” do commit de produção (`41100357290`) estava na fila, sem ter publicado o site.
+
+Telemetria, Autuações, CR-0108 e Evidências pedem login nesse domínio. Mesmo depois do deploy, a conferência visual dessas quatro páginas continua pendente sem sessão.
+
+A Performance e a previsão da TV só podem ser dadas como conferidas no domínio quando o HTML novo estiver no ar e a página for aberta de novo em 1920×1080, depois dos dados.
