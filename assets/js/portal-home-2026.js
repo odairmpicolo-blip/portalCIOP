@@ -752,24 +752,56 @@
     hero.appendChild(meta);
   }
 
+  var ARTES_CAMPANHA = [
+    { chave: "janeiro", arquivo: "01-janeiro.png", w: 1859, h: 846, alt: "Janeiro — Branco e Roxo. Saúde mental e conscientização sobre a hanseníase." },
+    { chave: "fevereiro", arquivo: "02-fevereiro.png", w: 1859, h: 846, alt: "Fevereiro — Roxo e Laranja. Lúpus, fibromialgia, Alzheimer e leucemia." },
+    { chave: "marco", arquivo: "03-marco.png", w: 1859, h: 846, alt: "Março — Azul-marinho e Lilás. Câncer colorretal e câncer do colo do útero." },
+    { chave: "abril", arquivo: "04-abril.png", w: 1859, h: 846, alt: "Abril — Azul e Verde. Autismo e segurança e saúde no trabalho." },
+    { chave: "maio", arquivo: "05-maio.png", w: 1859, h: 846, alt: "Maio — Amarelo, Laranja, Roxo e Vermelho. Trânsito, proteção de crianças, doenças inflamatórias intestinais e câncer de boca." },
+    { chave: "junho", arquivo: "06-junho.png", w: 1859, h: 846, alt: "Junho — Vermelho, Laranja e Violeta. Doação de sangue, anemia, leucemia e violência contra a pessoa idosa." },
+    { chave: "julho", arquivo: "07-julho.png", w: 1859, h: 846, alt: "Julho — Amarelo e Verde. Hepatites virais e câncer de cabeça e pescoço." },
+    { chave: "agosto", arquivo: "08-agosto.png", w: 1859, h: 846, alt: "Agosto — Dourado, Lilás e Laranja. Aleitamento materno, violência contra a mulher e esclerose múltipla." },
+    { chave: "setembro", arquivo: "09-setembro.png", w: 1860, h: 845, alt: "Setembro — Amarelo, Verde e Dourado. Valorização da vida, doação de órgãos e câncer infantojuvenil." },
+    { chave: "outubro", arquivo: "10-outubro.png", w: 1859, h: 846, alt: "Outubro — Rosa. Conscientização sobre o câncer de mama." },
+    { chave: "novembro", arquivo: "11-novembro.png", w: 1859, h: 846, alt: "Novembro — Azul. Saúde do homem, câncer de próstata e diabetes." },
+    { chave: "dezembro", arquivo: "12-dezembro.png", w: 1859, h: 846, alt: "Dezembro — Vermelho e Laranja. HIV, outras ISTs e câncer de pele." }
+  ];
+
+  function chaveMesCampanha(valor) {
+    return String(valor || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function arteCampanhaAtual() {
+    var chaves = [chaveMesCampanha(document.documentElement.dataset.mesCampanha)];
+    var cons = document.getElementById("heroMesConsciencia");
+    if (!(cons && /carregando/i.test(cons.textContent || ""))) {
+      var mes = document.getElementById("heroMesNome");
+      chaves.push(chaveMesCampanha(mes && mes.textContent));
+    }
+    var i;
+    for (i = 0; i < chaves.length; i++) {
+      var arte = ARTES_CAMPANHA.find(function (item) { return item.chave === chaves[i]; });
+      if (arte) return arte;
+    }
+    return ARTES_CAMPANHA[new Date().getMonth()] || ARTES_CAMPANHA[0];
+  }
+
   function atualizarCampanhaSide() {
     var dest = document.getElementById("homeCampanhaSide");
     if (!dest) return;
-    var mes = document.getElementById("heroMesNome");
-    var destaq = document.getElementById("heroCampanhaDestaque");
-    var cons = document.getElementById("heroMesConsciencia");
-    var ribbon = document.getElementById("heroRibbon");
-    var nome = ((mes && mes.textContent) || "") + " " + ((destaq && destaq.textContent) || "");
-    var texto = (cons && cons.textContent) || "";
-    if ((!nome.trim() && !texto.trim()) || /carregando/i.test(texto)) { dest.hidden = true; return; }
+    var arte = arteCampanhaAtual();
+    var src = "assets/img/campanhas-ciop/" + arte.arquivo;
+    var atual = dest.querySelector("img.home-campanha-arte");
     dest.hidden = false;
-    dest.innerHTML =
-      (ribbon && ribbon.innerHTML ? '<span class="home-campaign-ribbon">' + ribbon.innerHTML + '</span>' : '<span class="home-campaign-ribbon" aria-hidden="true"><svg viewBox="0 0 32 48"><path d="M8 7C11-1 23-1 26 7c3 9-5 21-17 39L2 37C13 23 21 12 19 7c-1-2-4-2-5 0-3 6 6 20 16 30l-7 9C10 30 3 17 8 7Z" fill="currentColor"/></svg></span>') +
-      "<div><strong>" +
-      nome.trim() +
-      "</strong><br>" +
-      texto.trim() +
-      "</div>";
+    if (atual && atual.getAttribute("src") === src) return;
+    var img = document.createElement("img");
+    img.className = "home-campanha-arte";
+    img.src = src;
+    img.alt = arte.alt;
+    img.width = arte.w;
+    img.height = arte.h;
+    img.decoding = "async";
+    dest.replaceChildren(img);
   }
 
   function versaoPortal() {
