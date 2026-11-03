@@ -786,9 +786,54 @@
     return ARTES_CAMPANHA[new Date().getMonth()] || ARTES_CAMPANHA[0];
   }
 
+  function garantirCampanhaDialog() {
+    var dlg = document.getElementById("homeCampanhaDialog");
+    if (dlg) return dlg;
+    dlg = document.createElement("dialog");
+    dlg.id = "homeCampanhaDialog";
+    dlg.className = "home-campanha-dialog";
+    var fechar = document.createElement("button");
+    fechar.type = "button";
+    fechar.className = "home-campanha-fechar";
+    fechar.setAttribute("aria-label", "Fechar campanha");
+    fechar.textContent = "×";
+    fechar.addEventListener("click", function () { dlg.close(); });
+    var img = document.createElement("img");
+    img.className = "home-campanha-grande";
+    img.alt = "";
+    img.decoding = "async";
+    dlg.append(fechar, img);
+    dlg.addEventListener("click", function (ev) {
+      if (ev.target === dlg) dlg.close();
+    });
+    document.body.appendChild(dlg);
+    return dlg;
+  }
+
+  function abrirCampanha() {
+    var arte = arteCampanhaAtual();
+    var dlg = garantirCampanhaDialog();
+    var img = dlg.querySelector("img.home-campanha-grande");
+    img.src = "assets/img/campanhas-ciop/" + arte.arquivo;
+    img.alt = arte.alt;
+    img.width = arte.w;
+    img.height = arte.h;
+    dlg.setAttribute("aria-label", arte.alt);
+    document.getElementById("sidebar")?.classList.remove("active");
+    document.getElementById("overlay")?.classList.remove("active");
+    if (typeof dlg.showModal === "function" && !dlg.open) dlg.showModal();
+  }
+
   function atualizarCampanhaSide() {
     var dest = document.getElementById("homeCampanhaSide");
     if (!dest) return;
+    if (!dest.dataset.campanhaBound) {
+      dest.dataset.campanhaBound = "1";
+      dest.addEventListener("click", function (ev) {
+        if (!ev.target.closest(".home-campanha-abrir")) return;
+        abrirCampanha();
+      });
+    }
     var arte = arteCampanhaAtual();
     var src = "assets/img/campanhas-ciop/" + arte.arquivo;
     var atual = dest.querySelector("img.home-campanha-arte");
@@ -801,7 +846,12 @@
     img.width = arte.w;
     img.height = arte.h;
     img.decoding = "async";
-    dest.replaceChildren(img);
+    var abrir = document.createElement("button");
+    abrir.type = "button";
+    abrir.className = "home-campanha-abrir";
+    abrir.setAttribute("aria-label", "Ampliar campanha: " + arte.alt);
+    abrir.appendChild(img);
+    dest.replaceChildren(abrir);
   }
 
   function versaoPortal() {
