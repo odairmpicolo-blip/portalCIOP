@@ -82,7 +82,7 @@
   }
   function modules() {
     var result = new Map();
-    document.querySelectorAll('.card-section a.card').forEach(function (card) {
+    document.querySelectorAll('.card-section .card').forEach(function (card) {
       if (card.hidden || card.style.display === 'none') return;
       if (card.matches('[data-perfis], [data-usuarios], [data-modulo]') && !card.classList.contains('portal-card-visivel')) return;
       var href = card.getAttribute('href');

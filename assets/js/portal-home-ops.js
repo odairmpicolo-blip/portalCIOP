@@ -32,7 +32,7 @@
     var host = document.getElementById("portalAtalhos");
     if (!host) return;
 
-    var cards = Array.prototype.slice.call(document.querySelectorAll(".card-section a.card"));
+    var cards = Array.prototype.slice.call(document.querySelectorAll(".card-section .card"));
     var escolhidos = [];
     var usados = {};
 

@@ -46,8 +46,8 @@
     indicadores: "secaoDashboards",
     relatorios: "secaoRelatorios",
     tv: "secaoTv",
-    links: "links",
-    outros: "links"
+    links: "secaoLinks",
+    outros: "secaoLinks"
   };
   var ALVO_HASH = {
     inicio: "inicio",
@@ -55,7 +55,7 @@
     secaoDashboards: "indicadores",
     secaoRelatorios: "relatorios",
     secaoTv: "tv",
-    links: "links"
+    secaoLinks: "links"
   };
   var NOMES_AREA = {
     inicio: "Início",
@@ -63,7 +63,7 @@
     secaoDashboards: "Indicadores",
     secaoRelatorios: "Relatórios",
     secaoTv: "Painéis de TV",
-    links: "Links"
+    secaoLinks: "Links"
   };
 
   function fecharMenu() {
@@ -98,7 +98,7 @@
   }
 
   function cardsLiberados(sec) {
-    return sec.querySelectorAll("a.card:not([hidden]):not(.ciop-search-hidden)").length;
+    return sec.querySelectorAll(".card:not([hidden]):not(.ciop-search-hidden)").length;
   }
 
   function aplicarRecorteModulos() {
@@ -125,7 +125,7 @@
     var vazio = document.getElementById("homeFiltroVazio");
     if (vazio) {
       var sec = filtroAtual === "todos" ? null : document.getElementById(filtroAtual);
-      var semModulo = !q && !!sec && sec.querySelectorAll("a.card:not([hidden])").length === 0;
+      var semModulo = !q && !!sec && sec.querySelectorAll(".card:not([hidden])").length === 0;
       vazio.hidden = !semModulo;
       if (semModulo) vazio.textContent = "Nenhum módulo de " + nomeArea(filtroAtual) + " está liberado para o seu acesso.";
     }
@@ -135,7 +135,7 @@
         status.hidden = true;
         status.textContent = "";
       } else {
-        var achados = document.querySelectorAll(".card-section a.card:not([hidden]):not(.ciop-search-hidden)").length;
+        var achados = document.querySelectorAll(".card-section .card:not([hidden]):not(.ciop-search-hidden)").length;
         status.hidden = false;
         status.textContent = achados
           ? achados + (achados === 1 ? " módulo encontrado, com a categoria de cada um." : " módulos encontrados, com a categoria de cada um.")
@@ -159,39 +159,23 @@
     if (dashTab) dashTab.textContent = "Indicadores";
     var tvTab = document.querySelector('.portal-aba[data-alvo="secaoTv"]');
     if (tvTab) tvTab.textContent = "Painéis de TV";
-    var linksTab = document.querySelector('.portal-aba[data-alvo="links"]');
+    var linksTab = document.querySelector('.portal-aba[data-alvo="secaoLinks"]');
     if (linksTab) linksTab.textContent = "Links";
   }
 
-  function abrirLinks() {
-    document.body.classList.add("home-show-others");
-    montarOutrosCards();
-    var linksBtn = document.querySelector('[data-home-nav="links"]');
-    if (linksBtn) linksBtn.setAttribute("aria-expanded", "true");
-    filtroAtual = "links";
-    document.querySelectorAll("#portalAbas .portal-aba").forEach(function (b) {
-      var on = b.getAttribute("data-alvo") === "links";
-      b.setAttribute("aria-pressed", on ? "true" : "false");
-      b.setAttribute("aria-selected", on ? "true" : "false");
-    });
-    aplicarVista("links");
-    marcarNav("links");
-  }
-
   function aplicarVista(alvo) {
-    var view = alvo === "inicio" ? "inicio" : alvo === "links" ? "links" : "area";
+    var view = alvo === "inicio" ? "inicio" : "area";
     document.documentElement.setAttribute("data-home-view", view);
     document.documentElement.setAttribute("data-home-area", alvo || "inicio");
     document.body.classList.toggle("home-view-inicio", view === "inicio");
     document.body.classList.toggle("home-view-area", view === "area");
-    document.body.classList.toggle("home-view-outros", view === "links");
-    document.body.classList.toggle("home-view-links", view === "links");
+    document.body.classList.remove("home-view-outros", "home-view-links", "home-show-others");
     atualizarTituloArea();
     atualizarBuscaUi(alvo);
   }
 
   function marcarNav(alvo) {
-    var dockAlvo = alvo === "admin" || alvo === "links" ? "mais" : alvo;
+    var dockAlvo = alvo === "admin" ? "mais" : alvo;
     document.querySelectorAll(".home-nav-btn, .home-dock-btn").forEach(function (btn) {
       var chave = btn.getAttribute("data-home-nav");
       var active = chave === alvo || (btn.classList.contains("home-dock-btn") && chave === dockAlvo);
@@ -215,7 +199,6 @@
   }
 
   function mostrarTodos() {
-    document.body.classList.remove("home-show-others");
     filtroAtual = "todos";
     aplicarVista("inicio");
     if (typeof window.portalMostrarAbaHome === "function") window.portalMostrarAbaHome("todos", true);
@@ -224,7 +207,6 @@
   }
 
   function clicarAba(id) {
-    document.body.classList.remove("home-show-others");
     filtroAtual = id;
     aplicarVista("inicio");
     document.documentElement.setAttribute("data-home-area", id);
@@ -251,23 +233,13 @@
       '<button type="button" class="home-nav-btn" data-home-nav="secaoDashboards">' + ICO.monitoramento + " Indicadores</button>" +
       '<button type="button" class="home-nav-btn" data-home-nav="secaoRelatorios">' + ICO.relatorios + " Relatórios</button>" +
       '<button type="button" class="home-nav-btn" data-home-nav="secaoTv">' + ICO.monitor + " Painéis de TV</button>" +
-      '<button type="button" class="home-nav-btn home-links-btn" data-home-nav="links" aria-controls="homeOtherPanel">' +
+      '<button type="button" class="home-nav-btn home-links-btn" data-home-nav="secaoLinks">' +
       ICO.links + " Links</button>" +
       '<p class="home-nav-label">Conta</p>' +
       '<a class="home-nav-btn" data-home-nav="admin" data-modulo="gerenciar-usuarios" data-perfis="Administrador,Supervisor,Gerência,Gerencia,Secretária,Secretaria" href="pages/admin-usuarios.html">' +
       ICO.admin + " Administração</a>";
-    var wrap = document.createElement("div");
-    wrap.className = "home-side-links";
-    wrap.id = "homeOutros";
-    wrap.hidden = true;
-    Array.prototype.slice.call(side.children).forEach(function (el) {
-      if (el.classList.contains("dk-theme-picker")) return;
-      if (el.classList.contains("home-nav") || el.classList.contains("home-brand")) return;
-      if (el.classList.contains("sidebar-header")) {
-        el.remove();
-        return;
-      }
-      wrap.appendChild(el);
+    Array.prototype.slice.call(side.querySelectorAll(".side-link, .sidebar-header, #homeOutros")).forEach(function (el) {
+      el.remove();
     });
     var campanha = document.createElement("div");
     campanha.className = "home-campanha-side";
@@ -281,7 +253,6 @@
     var picker = side.querySelector(".dk-theme-picker");
     side.insertBefore(brand, side.firstChild);
     side.insertBefore(nav, brand.nextSibling);
-    nav.appendChild(wrap);
     side.appendChild(campanha);
     side.appendChild(online);
     side.appendChild(versao);
@@ -290,14 +261,6 @@
       var btn = ev.target.closest("[data-home-nav]");
       if (!btn || btn.tagName === "A") return;
       var alvo = btn.getAttribute("data-home-nav");
-      if (alvo === "links") {
-        abrirLinks();
-        gravarHash("links");
-        fecharMenu();
-        return;
-      }
-      document.body.classList.remove("home-show-others");
-      wrap.hidden = true;
       if (alvo === "inicio") {
         mostrarTodos();
         gravarHash("inicio");
@@ -308,61 +271,6 @@
       fecharMenu();
     });
     if (window.dkSwapBrandLogos) window.dkSwapBrandLogos(!!window.dkIsDark && window.dkIsDark());
-    sincronizarOutros();
-  }
-
-  function sincronizarOutros() {
-    var wrap = document.getElementById("homeOutros");
-    var btn = document.querySelector('[data-home-nav="links"]');
-    var aba = document.querySelector('.portal-aba[data-alvo="links"]');
-    if (!wrap || !btn) return;
-    var visivel = Array.prototype.some.call(wrap.querySelectorAll(".side-link"), function (el) {
-      if (el.hidden) return false;
-      var st = window.getComputedStyle(el);
-      return st.display !== "none" && st.visibility !== "hidden";
-    });
-    btn.hidden = !visivel;
-    if (aba) aba.hidden = !visivel;
-    if (document.getElementById("homeOtherPanel")) montarOutrosCards();
-    if (!visivel) {
-      wrap.hidden = true;
-      if (document.documentElement.getAttribute("data-home-view") === "links") {
-        document.body.classList.remove("home-show-others");
-        mostrarTodos();
-        gravarHash("inicio", "replace");
-      }
-    }
-  }
-
-  function montarOutrosCards() {
-    var container = document.querySelector(".container");
-    if (!container) return;
-    var panel = document.getElementById("homeOtherPanel");
-    if (!panel) {
-      panel = document.createElement("section");
-      panel.id = "homeOtherPanel";
-      panel.setAttribute("aria-label", "Links operacionais");
-      panel.innerHTML = '<div class="home-mods-head"><h2>Links</h2></div><p class="home-other-lead">Sistemas e atalhos operacionais do dia a dia.</p><div class="home-other-grid grid"></div>';
-      container.insertBefore(panel, container.firstChild);
-    } else {
-      var titulo = panel.querySelector(".home-mods-head h2");
-      if (titulo) titulo.textContent = "Links";
-      var leadEl = panel.querySelector(".home-other-lead");
-      if (leadEl) leadEl.textContent = "Sistemas e atalhos operacionais do dia a dia.";
-      panel.setAttribute("aria-label", "Links operacionais");
-    }
-    var grid = panel.querySelector(".home-other-grid");
-    grid.replaceChildren();
-    document.querySelectorAll("#homeOutros .side-link").forEach(function (source) {
-      if (source.hidden || source.style.display === "none" || (source.matches("[data-perfis], [data-usuarios], [data-modulo]") && !source.classList.contains("portal-card-visivel"))) return;
-      var card = source.cloneNode(true);
-      card.removeAttribute("id");
-      card.className = "home-other-card portal-card-visivel";
-      card.querySelectorAll("[id]").forEach(function (el) { el.removeAttribute("id"); });
-      if (source.tagName === "BUTTON") card.addEventListener("click", function () { source.click(); });
-      grid.appendChild(card);
-    });
-    filtrarOutros();
   }
 
   function normBusca(s) {
@@ -376,15 +284,6 @@
   function filtrarFavoritos() {
     document.querySelectorAll("#homeQuick a").forEach(function (card) {
       card.classList.remove("ciop-search-hidden", "ciop-search-hit");
-    });
-  }
-
-  function filtrarOutros() {
-    var value = normBusca(document.getElementById("ciopBuscaModulos")?.value);
-    document.querySelectorAll(".home-other-card").forEach(function (card) {
-      var hit = !value || normBusca(card.textContent).includes(value);
-      card.hidden = !hit;
-      card.classList.toggle("ciop-search-hit", !!(value && hit));
     });
   }
 
@@ -434,13 +333,8 @@
   function atualizarBuscaUi(alvo) {
     var input = document.getElementById("ciopBuscaModulos");
     if (!input) return;
-    if (alvo === "links") {
-      input.placeholder = "Buscar em Links";
-      input.setAttribute("aria-description", "Filtra só os links operacionais.");
-    } else {
-      input.placeholder = "Buscar módulos";
-      input.setAttribute("aria-description", "Pesquisa todos os módulos permitidos, em qualquer categoria. Limpar restaura o filtro anterior.");
-    }
+    input.placeholder = "Buscar módulos";
+    input.setAttribute("aria-description", "Pesquisa todos os módulos permitidos, em qualquer categoria. Limpar restaura o filtro anterior.");
     filtrarFavoritos();
     input.dispatchEvent(new Event("input", { bubbles: true }));
     atualizarBuscaVazia();
@@ -454,29 +348,16 @@
     if (!input || !empty || !text) return;
     var q = (input.value || "").trim();
     document.documentElement.setAttribute("data-home-search", q ? "1" : "0");
-    var view = document.documentElement.getAttribute("data-home-view");
-    var alvo = document.documentElement.getAttribute("data-home-area");
-    var area = nomeArea(alvo);
-    var visiveis = 0;
-    if (view === "links") {
-      visiveis = document.querySelectorAll(".home-other-card:not([hidden])").length;
-    } else {
-      visiveis = document.querySelectorAll(".card-section a.card:not([hidden]):not(.ciop-search-hidden)").length;
-    }
+    var visiveis = document.querySelectorAll(".card-section .card:not([hidden]):not(.ciop-search-hidden)").length;
     var show = !!q && visiveis === 0;
     empty.hidden = !show;
     if (!show) return;
-    if (view === "links") {
-      text.textContent = "Nenhum link corresponde a «" + q + "».";
-      if (hint) hint.textContent = "Limpe a busca para ver todos os links.";
-    } else {
-      text.textContent = "Nenhum módulo corresponde a «" + q + "».";
-      if (hint) hint.textContent = "A busca olha todas as categorias. Limpe para voltar ao filtro anterior.";
-    }
+    text.textContent = "Nenhum módulo corresponde a «" + q + "».";
+    if (hint) hint.textContent = "A busca olha todas as categorias. Limpe para voltar ao filtro anterior.";
   }
 
   function prepararCardsCatalogo() {
-    document.querySelectorAll(".card-section a.card").forEach(function (card) {
+    document.querySelectorAll(".card-section .card").forEach(function (card) {
       if (card.querySelector(".card-copy")) return;
       var title = card.querySelector(".card-title");
       var desc = card.querySelector(".card-desc");
@@ -541,7 +422,6 @@
         btn.setAttribute("aria-expanded", String(!aberto));
         return;
       }
-      document.body.classList.remove("home-show-others");
       if (alvo === "inicio") {
         mostrarTodos();
         gravarHash("inicio");
@@ -558,12 +438,6 @@
     var chave = (location.hash || "").replace(/^#/, "").toLowerCase();
     var alvo = HASH_ALVO[chave];
     if (!alvo) return;
-    if (alvo === "links") {
-      abrirLinks();
-      irAoTopoConteudo();
-      return;
-    }
-    document.body.classList.remove("home-show-others");
     if (alvo === "inicio") {
       mostrarTodos();
       irAoTopoConteudo();
@@ -919,11 +793,11 @@
 
   function acharCardCatalogo(sel) {
     if (sel.modulo) {
-      var byMod = document.querySelector('.card-section a.card[data-modulo="' + sel.modulo + '"]');
+      var byMod = document.querySelector('.card-section .card[data-modulo="' + sel.modulo + '"]');
       if (byMod && (!sel.href || (byMod.getAttribute("href") || "").indexOf(sel.href) !== -1)) return byMod;
     }
     if (!sel.href) return null;
-    return Array.prototype.find.call(document.querySelectorAll(".card-section a.card"), function (card) {
+    return Array.prototype.find.call(document.querySelectorAll(".card-section .card"), function (card) {
       return (card.getAttribute("href") || "").indexOf(sel.href) !== -1;
     });
   }
@@ -995,7 +869,7 @@
   function sincronizarAtalhos() {
     if (window.portalHomeSettings) { window.portalHomeSettings.refresh(); return; }
     document.querySelectorAll("#homeQuick a").forEach(function (link) {
-      var source = Array.prototype.find.call(document.querySelectorAll(".card-section a.card"), function (card) {
+      var source = Array.prototype.find.call(document.querySelectorAll(".card-section .card"), function (card) {
         return card.getAttribute("href") === link.getAttribute("href");
       });
       link.hidden = !source || source.hidden || source.style.display === "none" || (source.matches("[data-perfis], [data-usuarios], [data-modulo]") && !source.classList.contains("portal-card-visivel"));
@@ -1126,7 +1000,6 @@
     atualizarOnlineSide();
     atualizarVersaoSide();
     atualizarSino();
-    sincronizarOutros();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", iniciar);
@@ -1139,7 +1012,6 @@
     atualizarVersaoSide();
     atualizarSino();
     atualizarKpiPlural();
-    sincronizarOutros();
     setTimeout(aplicarRecorteModulos, 80);
   });
   window.addEventListener("dk-theme-change", function () {
@@ -1165,15 +1037,8 @@
     sincronizarAtalhos();
     aplicarRecorteModulos();
   });
-  document.querySelectorAll(".card-section a.card").forEach(function (card) {
+  document.querySelectorAll(".card-section .card").forEach(function (card) {
     cardsObserver.observe(card, { attributes: true, attributeFilter: ["hidden", "style", "class"] });
-  });
-  document.querySelectorAll("#homeOutros .side-link").forEach(function (link) {
-    cardsObserver.observe(link, { attributes: true, attributeFilter: ["hidden", "style", "class"] });
-  });
-  var linksObserver = new MutationObserver(sincronizarOutros);
-  document.querySelectorAll("#homeOutros .side-link").forEach(function (link) {
-    linksObserver.observe(link, { attributes: true, attributeFilter: ["hidden", "style", "class"] });
   });
   function compactarAvisos() {
     var board = document.querySelector(".notice-board");
@@ -1193,12 +1058,6 @@
     if (!aba) return;
     var alvo = aba.getAttribute("data-alvo");
     if (!alvo) return;
-    if (alvo === "links") {
-      abrirLinks();
-      gravarHash("links", "push", "nenhum");
-      return;
-    }
-    document.body.classList.remove("home-show-others");
     filtroAtual = alvo;
     aplicarVista("inicio");
     if (alvo === "todos") marcarNav("inicio");
@@ -1226,7 +1085,6 @@
   });
   function aposBusca() {
     filtrarFavoritos();
-    filtrarOutros();
     atualizarBuscaVazia();
     aplicarRecorteModulos();
   }
@@ -1242,5 +1100,4 @@
   setTimeout(ola, 600);
   setTimeout(ola, 1600);
   setTimeout(atualizarCampanhaSide, 800);
-  setTimeout(sincronizarOutros, 900);
 })();
