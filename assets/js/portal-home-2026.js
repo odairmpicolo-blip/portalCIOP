@@ -14,7 +14,8 @@
     liberacao: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
     relatorio: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h4"/></svg>',
     sino: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"/><path d="M10 21h4"/></svg>',
-    outros: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>'
+    outros: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>',
+    links: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l1.41-1.41a5 5 0 0 0-7.07-7.07L10 5.93"/><path d="M14 11a5 5 0 0 0-7.07 0L5.52 12.41a5 5 0 1 0 7.07 7.07L14 18.07"/></svg>'
   };
 
   function logoHome() {
@@ -45,7 +46,8 @@
     indicadores: "secaoDashboards",
     relatorios: "secaoRelatorios",
     tv: "secaoTv",
-    outros: "outros"
+    links: "links",
+    outros: "links"
   };
   var ALVO_HASH = {
     inicio: "inicio",
@@ -53,7 +55,7 @@
     secaoDashboards: "indicadores",
     secaoRelatorios: "relatorios",
     secaoTv: "tv",
-    outros: "outros"
+    links: "links"
   };
   var NOMES_AREA = {
     inicio: "Início",
@@ -61,7 +63,7 @@
     secaoDashboards: "Indicadores",
     secaoRelatorios: "Relatórios",
     secaoTv: "Painéis de TV",
-    outros: "Outros"
+    links: "Links"
   };
 
   function fecharMenu() {
@@ -157,21 +159,39 @@
     if (dashTab) dashTab.textContent = "Indicadores";
     var tvTab = document.querySelector('.portal-aba[data-alvo="secaoTv"]');
     if (tvTab) tvTab.textContent = "Painéis de TV";
+    var linksTab = document.querySelector('.portal-aba[data-alvo="links"]');
+    if (linksTab) linksTab.textContent = "Links";
+  }
+
+  function abrirLinks() {
+    document.body.classList.add("home-show-others");
+    montarOutrosCards();
+    var linksBtn = document.querySelector('[data-home-nav="links"]');
+    if (linksBtn) linksBtn.setAttribute("aria-expanded", "true");
+    filtroAtual = "links";
+    document.querySelectorAll("#portalAbas .portal-aba").forEach(function (b) {
+      var on = b.getAttribute("data-alvo") === "links";
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    aplicarVista("links");
+    marcarNav("links");
   }
 
   function aplicarVista(alvo) {
-    var view = alvo === "inicio" ? "inicio" : alvo === "outros" ? "outros" : "area";
+    var view = alvo === "inicio" ? "inicio" : alvo === "links" ? "links" : "area";
     document.documentElement.setAttribute("data-home-view", view);
     document.documentElement.setAttribute("data-home-area", alvo || "inicio");
     document.body.classList.toggle("home-view-inicio", view === "inicio");
     document.body.classList.toggle("home-view-area", view === "area");
-    document.body.classList.toggle("home-view-outros", view === "outros");
+    document.body.classList.toggle("home-view-outros", view === "links");
+    document.body.classList.toggle("home-view-links", view === "links");
     atualizarTituloArea();
     atualizarBuscaUi(alvo);
   }
 
   function marcarNav(alvo) {
-    var dockAlvo = alvo === "admin" || alvo === "outros" ? "mais" : alvo;
+    var dockAlvo = alvo === "admin" || alvo === "links" ? "mais" : alvo;
     document.querySelectorAll(".home-nav-btn, .home-dock-btn").forEach(function (btn) {
       var chave = btn.getAttribute("data-home-nav");
       var active = chave === alvo || (btn.classList.contains("home-dock-btn") && chave === dockAlvo);
@@ -195,6 +215,7 @@
   }
 
   function mostrarTodos() {
+    document.body.classList.remove("home-show-others");
     filtroAtual = "todos";
     aplicarVista("inicio");
     if (typeof window.portalMostrarAbaHome === "function") window.portalMostrarAbaHome("todos", true);
@@ -203,6 +224,7 @@
   }
 
   function clicarAba(id) {
+    document.body.classList.remove("home-show-others");
     filtroAtual = id;
     aplicarVista("inicio");
     document.documentElement.setAttribute("data-home-area", id);
@@ -229,11 +251,11 @@
       '<button type="button" class="home-nav-btn" data-home-nav="secaoDashboards">' + ICO.monitoramento + " Indicadores</button>" +
       '<button type="button" class="home-nav-btn" data-home-nav="secaoRelatorios">' + ICO.relatorios + " Relatórios</button>" +
       '<button type="button" class="home-nav-btn" data-home-nav="secaoTv">' + ICO.monitor + " Painéis de TV</button>" +
+      '<button type="button" class="home-nav-btn home-links-btn" data-home-nav="links" aria-controls="homeOtherPanel">' +
+      ICO.links + " Links</button>" +
       '<p class="home-nav-label">Conta</p>' +
       '<a class="home-nav-btn" data-home-nav="admin" data-modulo="gerenciar-usuarios" data-perfis="Administrador,Supervisor,Gerência,Gerencia,Secretária,Secretaria" href="pages/admin-usuarios.html">' +
-      ICO.admin + " Administração</a>" +
-      '<button type="button" class="home-nav-btn home-outros-btn" data-home-nav="outros" aria-expanded="false" aria-controls="homeOtherPanel">' +
-      ICO.outros + ' Outros<span class="home-outros-chevron" aria-hidden="true"></span></button>';
+      ICO.admin + " Administração</a>";
     var wrap = document.createElement("div");
     wrap.className = "home-side-links";
     wrap.id = "homeOutros";
@@ -268,20 +290,14 @@
       var btn = ev.target.closest("[data-home-nav]");
       if (!btn || btn.tagName === "A") return;
       var alvo = btn.getAttribute("data-home-nav");
-      if (alvo === "outros") {
-        document.body.classList.add("home-show-others");
-        montarOutrosCards();
-        btn.setAttribute("aria-expanded", "true");
-        aplicarVista("outros");
-        marcarNav("outros");
-        gravarHash("outros");
+      if (alvo === "links") {
+        abrirLinks();
+        gravarHash("links");
         fecharMenu();
         return;
       }
       document.body.classList.remove("home-show-others");
       wrap.hidden = true;
-      var outrosBtn = nav.querySelector('[data-home-nav="outros"]');
-      if (outrosBtn) outrosBtn.setAttribute("aria-expanded", "false");
       if (alvo === "inicio") {
         mostrarTodos();
         gravarHash("inicio");
@@ -297,7 +313,8 @@
 
   function sincronizarOutros() {
     var wrap = document.getElementById("homeOutros");
-    var btn = document.querySelector('[data-home-nav="outros"]');
+    var btn = document.querySelector('[data-home-nav="links"]');
+    var aba = document.querySelector('.portal-aba[data-alvo="links"]');
     if (!wrap || !btn) return;
     var visivel = Array.prototype.some.call(wrap.querySelectorAll(".side-link"), function (el) {
       if (el.hidden) return false;
@@ -305,10 +322,15 @@
       return st.display !== "none" && st.visibility !== "hidden";
     });
     btn.hidden = !visivel;
+    if (aba) aba.hidden = !visivel;
     if (document.getElementById("homeOtherPanel")) montarOutrosCards();
     if (!visivel) {
       wrap.hidden = true;
-      btn.setAttribute("aria-expanded", "false");
+      if (document.documentElement.getAttribute("data-home-view") === "links") {
+        document.body.classList.remove("home-show-others");
+        mostrarTodos();
+        gravarHash("inicio", "replace");
+      }
     }
   }
 
@@ -319,9 +341,15 @@
     if (!panel) {
       panel = document.createElement("section");
       panel.id = "homeOtherPanel";
-      panel.setAttribute("aria-label", "Outros acessos operacionais");
-      panel.innerHTML = '<div class="home-mods-head"><h2>Outros acessos</h2></div><p class="home-other-lead">Ferramentas e sistemas para o seu dia a dia.</p><div class="home-other-grid grid"></div>';
+      panel.setAttribute("aria-label", "Links operacionais");
+      panel.innerHTML = '<div class="home-mods-head"><h2>Links</h2></div><p class="home-other-lead">Sistemas e atalhos operacionais do dia a dia.</p><div class="home-other-grid grid"></div>';
       container.insertBefore(panel, container.firstChild);
+    } else {
+      var titulo = panel.querySelector(".home-mods-head h2");
+      if (titulo) titulo.textContent = "Links";
+      var leadEl = panel.querySelector(".home-other-lead");
+      if (leadEl) leadEl.textContent = "Sistemas e atalhos operacionais do dia a dia.";
+      panel.setAttribute("aria-label", "Links operacionais");
     }
     var grid = panel.querySelector(".home-other-grid");
     grid.replaceChildren();
@@ -406,9 +434,9 @@
   function atualizarBuscaUi(alvo) {
     var input = document.getElementById("ciopBuscaModulos");
     if (!input) return;
-    if (alvo === "outros") {
-      input.placeholder = "Buscar em Outros";
-      input.setAttribute("aria-description", "Filtra só os acessos de Outros.");
+    if (alvo === "links") {
+      input.placeholder = "Buscar em Links";
+      input.setAttribute("aria-description", "Filtra só os links operacionais.");
     } else {
       input.placeholder = "Buscar módulos";
       input.setAttribute("aria-description", "Pesquisa todos os módulos permitidos, em qualquer categoria. Limpar restaura o filtro anterior.");
@@ -430,7 +458,7 @@
     var alvo = document.documentElement.getAttribute("data-home-area");
     var area = nomeArea(alvo);
     var visiveis = 0;
-    if (view === "outros") {
+    if (view === "links") {
       visiveis = document.querySelectorAll(".home-other-card:not([hidden])").length;
     } else {
       visiveis = document.querySelectorAll(".card-section a.card:not([hidden]):not(.ciop-search-hidden)").length;
@@ -438,9 +466,9 @@
     var show = !!q && visiveis === 0;
     empty.hidden = !show;
     if (!show) return;
-    if (view === "outros") {
-      text.textContent = "Nenhum acesso em Outros corresponde a «" + q + "».";
-      if (hint) hint.textContent = "Limpe a busca para ver os acessos de Outros.";
+    if (view === "links") {
+      text.textContent = "Nenhum link corresponde a «" + q + "».";
+      if (hint) hint.textContent = "Limpe a busca para ver todos os links.";
     } else {
       text.textContent = "Nenhum módulo corresponde a «" + q + "».";
       if (hint) hint.textContent = "A busca olha todas as categorias. Limpe para voltar ao filtro anterior.";
@@ -530,13 +558,8 @@
     var chave = (location.hash || "").replace(/^#/, "").toLowerCase();
     var alvo = HASH_ALVO[chave];
     if (!alvo) return;
-    if (alvo === "outros") {
-      document.body.classList.add("home-show-others");
-      montarOutrosCards();
-      var outrosBtn = document.querySelector('[data-home-nav="outros"]');
-      if (outrosBtn) outrosBtn.setAttribute("aria-expanded", "true");
-      aplicarVista("outros");
-      marcarNav("outros");
+    if (alvo === "links") {
+      abrirLinks();
       irAoTopoConteudo();
       return;
     }
@@ -1170,6 +1193,12 @@
     if (!aba) return;
     var alvo = aba.getAttribute("data-alvo");
     if (!alvo) return;
+    if (alvo === "links") {
+      abrirLinks();
+      gravarHash("links", "push", "nenhum");
+      return;
+    }
+    document.body.classList.remove("home-show-others");
     filtroAtual = alvo;
     aplicarVista("inicio");
     if (alvo === "todos") marcarNav("inicio");
