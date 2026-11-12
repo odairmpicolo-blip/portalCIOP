@@ -24,11 +24,22 @@ export function configurarRelatorioIa(opts = {}) {
 }
 
 function ctxLinha(ctx) {
-    return ctx.linha ? ", linha/rota " + ctx.linha : "";
+    return ctx.linha ? ", na linha/rota " + ctx.linha : "";
 }
 
 function ctxCarro(ctx) {
-    return ctx.carro ? ", carro " + ctx.carro : "";
+    return ctx.carro ? ", conduzindo o carro " + ctx.carro : "";
+}
+
+/** "às 14:35" quando o horário foi informado; placeholder visível quando não. */
+function ctxHorario(ctx) {
+    const h = String(ctx.horario || "").trim();
+    return h ? "às " + h : "às ___:___";
+}
+
+/** "No dia 12/11/2026, às 14:35," — abertura padrão de todos os modelos. */
+function abertura(ctx) {
+    return "No dia " + (ctx.data || "___/___/____") + ", " + ctxHorario(ctx) + ",";
 }
 
 function blocoFuncionario(ctx) {
@@ -39,56 +50,63 @@ function blocoFuncionario(ctx) {
 }
 
 export function gerarTextoModelo(tipoId, ctx) {
-    const data = ctx.data || "___/___/____";
+    const ab = abertura(ctx);
     const f = blocoFuncionario(ctx);
 
     const modelos = {
         carro_adiantado: (() => {
-            const funcao = (ctx.funcao || "função").toLowerCase();
-            const nome = ctx.nome || "nome do funcionário";
-            const registro = ctx.registro || "registro";
             const quantidade = String(ctx.quantidade || ctx.minutos || "").trim() || "___";
             return (
-                "No dia " + data + ", o(a) " + funcao + " " + nome + ", registro " + registro +
-                ", apresentou saída adiantada de " + quantidade + " minutos em relação ao horário previsto, comprometendo a regularidade do serviço.\n\n" +
-                "Conforme monitoramento e registros operacionais, o veículo iniciou a viagem antes do horário programado, sem autorização prévia do CIOP."
+                ab + " " + f + ", realizou a viagem com adiantamento de " + quantidade +
+                " minutos em relação ao horário previsto na programação, sem autorização prévia do CIOP.\n\n" +
+                "Conforme monitoramento e registros operacionais, o veículo antecipou a saída, o que prejudica os usuários que aguardavam o ônibus no horário programado e compromete a regularidade do serviço.\n\n" +
+                "Solicita-se a ciência do funcionário e a orientação quanto ao cumprimento dos horários estabelecidos."
             );
         })(),
 
         atraso_frequente:
-            "No dia " + data + ", " + f + ", foi identificado histórico de atrasos frequentes no cumprimento dos horários da linha.\n\n" +
-            "A recorrência de atrasos impacta a confiabilidade do serviço e a experiência do usuário, exigindo acompanhamento e medidas corretivas.",
+            ab + " " + f + ", apresentou atrasos recorrentes no cumprimento dos horários programados da linha, conforme histórico identificado pelo monitoramento.\n\n" +
+            "Conforme monitoramento e registros operacionais, a reincidência de atrasos impacta a confiabilidade do serviço e a experiência dos usuários, exigindo acompanhamento e medidas corretivas.\n\n" +
+            "Solicita-se a orientação do funcionário e a adoção das providências cabíveis.",
 
         nao_login_tdm:
-            "No dia " + data + ", " + f + ", não realizou login no sistema TDM conforme exigido para início da operação.\n\n" +
-            "A ausência de login impede o registro adequado da jornada e dificulta o controle operacional e de fiscalização.",
+            ab + " " + f + ", iniciou a operação sem realizar o login no sistema TDM, conforme exigido para o início da jornada.\n\n" +
+            "A ausência do login impede o registro adequado da jornada e dificulta o controle operacional e a fiscalização do serviço.\n\n" +
+            "Solicita-se a orientação do funcionário quanto à obrigatoriedade do login no TDM antes do início da viagem.",
 
         nao_acatou_ciop:
-            "No dia " + data + ", " + f + ", deixou de acatar ordens emitidas pelo CIOP durante a operação.\n\n" +
-            "O não cumprimento das determinações do centro de controle compromete a segurança, a regularidade e a padronização do serviço.",
+            ab + " " + f + ", deixou de acatar as ordens emitidas pelo CIOP durante a operação.\n\n" +
+            "Conforme registros e monitoramento, a determinação foi repassada ao funcionário e não foi cumprida, o que compromete a segurança, a regularidade e a padronização do serviço.\n\n" +
+            "Solicita-se a ciência do funcionário e as providências cabíveis.",
 
         nao_acatou_cmtu: (() => {
             const agente = String(ctx.agenteOrgaoGestor || ctx.agenteCmtu || "").trim() || "nome do agente do órgão gestor";
             return (
-                "No dia " + data + ", " + f + ", deixou de acatar ordens transmitidas pela CMTU (órgão gestor), em desacordo com as determinações recebidas durante a operação.\n\n" +
+                ab + " " + f + ", deixou de acatar ordem transmitida pela CMTU (órgão gestor), em desacordo com as determinações recebidas durante a operação.\n\n" +
                 "Conforme registros e monitoramento, a ordem foi repassada pelo(a) agente do órgão gestor " + agente +
-                ", não sendo cumprida pelo funcionário.\n\n" +
-                "Ressalta-se que ordens vindas do órgão gestor não cumpridas configuram infração passível de autuação, nos termos da regulamentação aplicável."
+                " e não foi cumprida pelo funcionário.\n\n" +
+                "Ressalta-se que o descumprimento de ordens do órgão gestor configura infração passível de autuação, nos termos da regulamentação aplicável. Solicita-se as providências cabíveis."
             );
         })(),
 
         supressao_viagem:
-            "No dia " + data + ", " + f + ", houve supressão de viagem prevista no horário de operação.\n\n" +
-            "A viagem não foi realizada conforme programação, gerando impacto na oferta de serviço aos usuários.",
+            ab + " " + f + ", suprimiu viagem prevista na programação, sem justificativa operacional registrada.\n\n" +
+            "A viagem não foi realizada conforme o planejado, gerando impacto na oferta de serviço e prejuízo aos usuários que aguardavam o atendimento.\n\n" +
+            "Solicita-se a apresentação de justificativa pelo funcionário e as providências cabíveis.",
 
         desvio_itinerario:
-            "No dia " + data + ", " + f + ", realizou desvio de itinerário sem justificativa operacional.\n\n" +
-            "O desvio não autorizado altera o trajeto previsto e pode afetar a regularidade e a segurança da operação.",
+            ab + " " + f + ", realizou desvio do itinerário previsto, sem justificativa operacional e sem autorização do CIOP.\n\n" +
+            "O desvio não autorizado altera o trajeto programado, deixa de atender os pontos de parada da linha e pode afetar a regularidade e a segurança da operação.\n\n" +
+            "Solicita-se a apresentação de justificativa pelo funcionário e as providências cabíveis.",
 
         informativo:
-            "No dia " + data + ", o CIOP registra as informações abaixo para conhecimento.\n\n" +
-            (ctx.carro || ctx.linha ? "Referência operacional" + ctxCarro(ctx) + ctxLinha(ctx) + ".\n\n" : "") +
-            "Descreva os fatos observados, contexto, impactos e encaminhamentos necessários."
+            ab + " o CIOP registra, para conhecimento, as informações descritas a seguir.\n\n" +
+            (ctx.carro || ctx.linha
+                ? "Referência operacional: " + [ctx.carro ? "carro " + ctx.carro : "", ctx.linha ? "linha/rota " + ctx.linha : ""].filter(Boolean).join(", ") + ".\n\n"
+                : "") +
+            "Fatos observados: descreva aqui o que ocorreu.\n\n" +
+            "Impactos na operação: descreva aqui as consequências.\n\n" +
+            "Encaminhamentos: descreva aqui as providências adotadas ou necessárias."
     };
 
     return modelos[tipoId] || modelos.informativo;
@@ -103,7 +121,7 @@ function montarPromptGeracao(tipoId, ctx) {
         tipo.informativo
             ? "Relatório informativo SEM identificação de funcionário. Use tom formal e objetivo."
             : "Funcionário: " + (ctx.funcao || "") + " " + (ctx.nome || "") + ", registro " + (ctx.registro || "") + ".",
-        "Data: " + (ctx.data || "") + ".",
+        "Data: " + (ctx.data || "") + (ctx.horario ? ", horário da ocorrência: " + ctx.horario : "") + ".",
         (ctx.carro ? "Carro: " + ctx.carro + ". " : "") + (ctx.linha ? "Linha: " + ctx.linha + "." : ""),
         (ctx.quantidade || ctx.minutos ? "Minutos de adiantamento: " + (ctx.quantidade || ctx.minutos) + "." : ""),
         (ctx.agenteOrgaoGestor || ctx.agenteCmtu

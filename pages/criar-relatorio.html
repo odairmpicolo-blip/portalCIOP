@@ -474,10 +474,12 @@ html.dk-dark .assinatura-vinculada{
 .report-rule.soft i{height:3px;flex-basis:28px}
 .report-meta-grid{
     display:grid;
-    grid-template-columns:1fr 1fr;
+    grid-template-columns:repeat(6,minmax(0,1fr));
     gap:0 18px;
     margin:0 0 8px;
 }
+.report-meta-grid .report-field{grid-column:span 3}
+.report-meta-grid .report-field.field-terco{grid-column:span 2}
 .report-field{
     padding:10px 0 9px 11px;
     border-bottom:1.5px solid #06245c;
@@ -639,7 +641,7 @@ body.pdf-exporting .report-protocolo{
 #pdfExportHost .report-meta-grid,
 .paper.is-pdf-sheet .report-meta-grid,
 body.pdf-exporting .report-meta-grid{
-    grid-template-columns:1fr 1fr !important;
+    grid-template-columns:repeat(6,minmax(0,1fr)) !important;
 }
 #pdfExportHost .report-body,
 .paper.is-pdf-sheet .report-body,
@@ -666,6 +668,8 @@ body.pdf-exporting .paper-wrap{
     .paper:not(.is-pdf-sheet) .report-title-spacer{display:none}
     .paper:not(.is-pdf-sheet) .report-protocolo{grid-column:1;justify-self:center}
     .paper:not(.is-pdf-sheet) .report-meta-grid{grid-template-columns:1fr}
+    .paper:not(.is-pdf-sheet) .report-meta-grid .report-field,
+    .paper:not(.is-pdf-sheet) .report-meta-grid .report-field.field-terco{grid-column:auto}
 }
 /* O "papel" (.paper) simula documento impresso: nunca deve herdar o
    texto branco forçado pelo modo escuro global (html.dk-dark h1/h2/h3/label). */
@@ -1006,6 +1010,10 @@ html.dk-dark .paper label{
                     <input id="dataRelatorio" type="date">
                 </div>
                 <div>
+                    <label for="horarioRelatorio">Horário da ocorrência</label>
+                    <input id="horarioRelatorio" type="time">
+                </div>
+                <div>
                     <label for="carroRelatorio">Carro</label>
                     <input id="carroRelatorio" list="listaCarros" type="text">
                     <datalist id="listaCarros"></datalist>
@@ -1077,11 +1085,15 @@ html.dk-dark .paper label{
                         <span>Carro</span>
                         <strong id="previewCarro"></strong>
                     </div>
-                    <div class="report-field">
+                    <div class="report-field field-terco">
                         <span>Data</span>
                         <strong id="previewData"></strong>
                     </div>
-                    <div class="report-field">
+                    <div class="report-field field-terco">
+                        <span>Horário da ocorrência</span>
+                        <strong id="previewHorario"></strong>
+                    </div>
+                    <div class="report-field field-terco">
                         <span>Linha / Rota</span>
                         <strong id="previewLinha"></strong>
                     </div>
@@ -1123,7 +1135,7 @@ html.dk-dark .paper label{
 <script type="module">
 import { buscarUsuarioFirestore, normalizarCadastro } from "../assets/js/portal-firestore.js";
 import { usuarios as usuariosLocais } from "../assets/js/usuarios.js";
-import { TIPOS_RELATORIO, gerarTextoModelo, gerarTextoIA, corrigirTextoIA, configurarRelatorioIa, resumirErroIa } from "../assets/js/relatorio-ia.js?v=20260701b";
+import { TIPOS_RELATORIO, gerarTextoModelo, gerarTextoIA, corrigirTextoIA, configurarRelatorioIa, resumirErroIa } from "../assets/js/relatorio-ia.js?v=20261112a";
 import { salvarPdfRelatorioOcorrencia } from "../assets/js/relatorio-storage.js?v=20260817a";
 import { initPortalAwsRuntime } from "../assets/js/portal-aws-config.js";
 
@@ -1152,6 +1164,7 @@ const campos = {
     nome: document.getElementById("nomeFuncionario"),
     funcao: document.getElementById("funcaoFuncionario"),
     data: document.getElementById("dataRelatorio"),
+    horario: document.getElementById("horarioRelatorio"),
     carro: document.getElementById("carroRelatorio"),
     linha: document.getElementById("linhaRelatorio"),
     agenteOrgaoGestor: document.getElementById("agenteOrgaoGestor")
@@ -1163,6 +1176,7 @@ const preview = {
     nome: document.getElementById("previewNome"),
     funcao: document.getElementById("previewFuncao"),
     data: document.getElementById("previewData"),
+    horario: document.getElementById("previewHorario"),
     carro: document.getElementById("previewCarro"),
     linha: document.getElementById("previewLinha"),
     assinaturaNome: document.getElementById("previewAssinaturaNome"),
@@ -1195,6 +1209,7 @@ function contextoRelatorio() {
     const params = new URLSearchParams(window.location.search);
     return {
         data: normalizarDataInput(campos.data.value),
+        horario: campos.horario.value,
         nome: campos.nome.value,
         registro: campos.registro.value,
         funcao: campos.funcao.value,
@@ -1465,6 +1480,11 @@ function normalizarDataInput(data) {
     return d.toLocaleDateString("pt-BR");
 }
 
+function agoraHHMM() {
+    const d = new Date();
+    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+}
+
 function hojeISO() {
     const d = new Date();
     const mes = String(d.getMonth() + 1).padStart(2, "0");
@@ -1543,12 +1563,13 @@ function configurarProtocolo(linhas) {
 function gerarCorpoPadrao() {
     if (tipoRelatorio) return gerarTextoModelo(tipoRelatorio, contextoRelatorio());
     const data = normalizarDataInput(campos.data.value);
+    const horario = campos.horario.value ? "às " + campos.horario.value : "às ___:___";
     const nome = campos.nome.value || "nome do funcionário";
     const registro = campos.registro.value || "registro";
     const funcao = campos.funcao.value || "função";
     const carro = campos.carro.value ? ", carro " + campos.carro.value : "";
     const linha = campos.linha.value ? ", linha/rota " + campos.linha.value : "";
-    return "No dia " + data + ", o(a) " + funcao.toLowerCase() + " " + nome + ", registro " + registro + carro + linha + ", apresentou a ocorrência descrita neste relatório.\n\nDescreva aqui os detalhes da ocorrência, providências tomadas e demais informações necessárias.";
+    return "No dia " + data + ", " + horario + ", o(a) " + funcao.toLowerCase() + " " + nome + ", registro " + registro + carro + linha + ", apresentou a ocorrência descrita neste relatório.\n\nDescrição dos fatos: descreva aqui o que ocorreu.\n\nProvidências: descreva aqui as providências tomadas e demais informações necessárias.";
 }
 
 function atualizarCorpoPDF() {
@@ -1615,6 +1636,7 @@ function atualizarPreview() {
     preview.nome.textContent = campos.nome.value || "";
     preview.funcao.textContent = campos.funcao.value || "";
     preview.data.textContent = normalizarDataInput(campos.data.value);
+    preview.horario.textContent = campos.horario.value || "";
     preview.carro.textContent = campos.carro.value || "";
     preview.linha.textContent = campos.linha.value || "";
     const user = usuarioCriador;
@@ -1721,6 +1743,7 @@ async function iniciarRelatorio() {
     let mostrouCache = false;
     if (cacheGids?.[GID_FUNCIONARIOS] && cacheGids?.[GID_DADOS]) {
         campos.data.value = hojeISO();
+        if (!campos.horario.value) campos.horario.value = agoraHHMM();
         carregarFuncionarios(cacheGids[GID_FUNCIONARIOS]);
         carregarDadosGerais(cacheGids[GID_DADOS]);
         await carregarAssinaturaUsuarioLogado();
@@ -1734,6 +1757,7 @@ async function iniciarRelatorio() {
 
     if (!mostrouCache) window.portalMostrarCarregando?.("Carregando relatório");
     campos.data.value = hojeISO();
+    if (!campos.horario.value) campos.horario.value = agoraHHMM();
     try {
         const [funcionariosCsv, dadosCsv, contProtCsv] = await Promise.all([
             carregarCsvComCache(GID_FUNCIONARIOS),
@@ -1811,6 +1835,8 @@ function dadosProtocolo() {
         dataDocumento,
         dataDocumentoIso,
         data: dataDocumento,
+        horario: String(campos.horario.value || "").trim(),
+        "HORÁRIO DA OCORRÊNCIA": String(campos.horario.value || "").trim(),
         carro: String(campos.carro.value || "").trim(),
         linha: String(campos.linha.value || "").trim(),
         analista: analistaTexto,
